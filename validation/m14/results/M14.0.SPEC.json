@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "java: 5 ruled, 0 pending owner",
+      "description": "java: 6 ruled, 5 pending owner",
       "id": "design-decisions-tracked",
       "language": "java",
       "status": "pass"
     },
     {
       "description": "every named node type classified (java)",
-      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 5 decisions",
+      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 11 decisions",
       "id": "section-a-structural",
       "language": "java",
       "status": "pass"
@@ -87,14 +87,14 @@
       "status": "pass"
     },
     {
-      "description": "groovy: 5 ruled, 0 pending owner",
+      "description": "groovy: 5 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
       "language": "groovy",
       "status": "pass"
     },
     {
       "description": "every named node type classified (groovy)",
-      "detail": "153 types, 68 handled, 66 silent, 8 gaps, 5 decisions",
+      "detail": "153 types, 68 handled, 66 silent, 8 gaps, 6 decisions",
       "id": "section-a-structural",
       "language": "groovy",
       "status": "pass"
@@ -161,14 +161,14 @@
       "status": "pass"
     },
     {
-      "description": "kotlin: 6 ruled, 0 pending owner",
+      "description": "kotlin: 6 ruled, 2 pending owner",
       "id": "design-decisions-tracked",
       "language": "kotlin",
       "status": "pass"
     },
     {
       "description": "every named node type classified (kotlin)",
-      "detail": "152 types, 67 handled, 44 silent, 8 gaps, 6 decisions",
+      "detail": "152 types, 67 handled, 44 silent, 8 gaps, 8 decisions",
       "id": "section-a-structural",
       "language": "kotlin",
       "status": "pass"
@@ -235,14 +235,14 @@
       "status": "pass"
     },
     {
-      "description": "scala: 10 ruled, 0 pending owner",
+      "description": "scala: 10 ruled, 6 pending owner",
       "id": "design-decisions-tracked",
       "language": "scala",
       "status": "pass"
     },
     {
       "description": "every named node type classified (scala)",
-      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 10 decisions",
+      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 16 decisions",
       "id": "section-a-structural",
       "language": "scala",
       "status": "pass"
@@ -383,14 +383,14 @@
       "status": "pass"
     },
     {
-      "description": "javascript: 6 ruled, 0 pending owner",
+      "description": "javascript: 6 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
       "language": "javascript",
       "status": "pass"
     },
     {
       "description": "every named node type classified (javascript)",
-      "detail": "125 types, 89 handled, 20 silent, 8 gaps, 6 decisions",
+      "detail": "125 types, 89 handled, 20 silent, 8 gaps, 7 decisions",
       "id": "section-a-structural",
       "language": "javascript",
       "status": "pass"
@@ -457,14 +457,14 @@
       "status": "pass"
     },
     {
-      "description": "vue: 5 ruled, 0 pending owner",
+      "description": "vue: 5 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
       "language": "vue",
       "status": "pass"
     },
     {
       "description": "every named node type classified (vue)",
-      "detail": "37 types, 20 handled, 6 silent, 4 gaps, 5 decisions",
+      "detail": "37 types, 20 handled, 6 silent, 4 gaps, 6 decisions",
       "id": "section-a-structural",
       "language": "vue",
       "status": "pass"
@@ -485,7 +485,7 @@
     },
     {
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "2 tier(s) pinned: import_based, structural",
+      "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
       "language": "vue",
       "status": "pass"
@@ -531,14 +531,14 @@
       "status": "pass"
     },
     {
-      "description": "svelte: 6 ruled, 0 pending owner",
+      "description": "svelte: 6 ruled, 3 pending owner",
       "id": "design-decisions-tracked",
       "language": "svelte",
       "status": "pass"
     },
     {
       "description": "every named node type classified (svelte)",
-      "detail": "74 types, 32 handled, 21 silent, 4 gaps, 6 decisions",
+      "detail": "74 types, 32 handled, 21 silent, 4 gaps, 9 decisions",
       "id": "section-a-structural",
       "language": "svelte",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "7653741c3591d0420183e617e0a98b60023296b4",
-  "committedAt": "2026-09-07T21:03:02+02:00",
+  "commit": "95feccaad8cf5c02e329e903ff3b716675cbca93",
+  "committedAt": "2026-09-08T15:58:58+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1835,7 +1835,9 @@
           "G8: imports relationship kind unpinned (isGroovyImport edge exists but no fixture guards it)"
         ],
         "nodeTypeCount": 153,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "GD19"
+        ],
         "ruledDecisions": [
           "S1",
           "S2",
@@ -1845,7 +1847,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "153 types, 68 handled, 66 silent, 8 gaps, 5 decisions",
+            "detail": "153 types, 68 handled, 66 silent, 8 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1946,17 +1948,24 @@
           "G4: Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies"
         ],
         "nodeTypeCount": 143,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "JD18",
+          "JD19",
+          "JD21",
+          "JD22",
+          "JD23"
+        ],
         "ruledDecisions": [
           "G5",
           "G6",
           "S1",
           "JAO1",
-          "JAO2"
+          "JAO2",
+          "JD20"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 5 decisions",
+            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 11 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2001,7 +2010,9 @@
           "J8: JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag"
         ],
         "nodeTypeCount": 125,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "JSD-calls-oracle"
+        ],
         "ruledDecisions": [
           "D1",
           "D2",
@@ -2012,7 +2023,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "125 types, 89 handled, 20 silent, 8 gaps, 6 decisions",
+            "detail": "125 types, 89 handled, 20 silent, 8 gaps, 7 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2057,7 +2068,10 @@
           "K8: import edges mislabeled: isImportDep flag not recognized by the tier classifier -> import_based never applied (reference_qualified instead); kotlin/scala confirmed finding from the java pass"
         ],
         "nodeTypeCount": 152,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "KD19",
+          "KD20"
+        ],
         "ruledDecisions": [
           "S1",
           "S2",
@@ -2068,7 +2082,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "152 types, 67 handled, 44 silent, 8 gaps, 6 decisions",
+            "detail": "152 types, 67 handled, 44 silent, 8 gaps, 8 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2388,7 +2402,14 @@
           "G9: self-type references lost — trait Logging { self: Service => } emits no reference to Service"
         ],
         "nodeTypeCount": 189,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "ScalaD-D",
+          "ScalaD-E",
+          "ScalaD-F",
+          "ScalaD-G",
+          "ScalaD-H",
+          "ScalaD-I"
+        ],
         "ruledDecisions": [
           "D1",
           "D2",
@@ -2403,7 +2424,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 10 decisions",
+            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 16 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2444,7 +2465,11 @@
           "S6: the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment."
         ],
         "nodeTypeCount": 74,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "D7",
+          "D8",
+          "D9"
+        ],
         "ruledDecisions": [
           "D1",
           "D2",
@@ -2455,7 +2480,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "74 types, 32 handled, 21 silent, 4 gaps, 6 decisions",
+            "detail": "74 types, 32 handled, 21 silent, 4 gaps, 9 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2614,7 +2639,9 @@
           "V4: scope-blind template uses — v-for loop variables (v-for=\"item in items\") and slot props (#default=\"{ row }\") are template-LOCAL bindings, but the V2 collector emitted Uses to them whenever a same-named script member existed. False edges: the template reads the local item/row, not the member. The TS T6 shadowed-local bug class, unguarded in the template surface."
         ],
         "nodeTypeCount": 37,
-        "pendingDecisions": [],
+        "pendingDecisions": [
+          "D10"
+        ],
         "ruledDecisions": [
           "D1",
           "D2",
@@ -2624,7 +2651,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "37 types, 20 handled, 6 silent, 4 gaps, 5 decisions",
+            "detail": "37 types, 20 handled, 6 silent, 4 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2636,7 +2663,7 @@
             "status": "pass"
           },
           "section-d-evidence-tiers": {
-            "detail": "2 tier(s) pinned: import_based, structural",
+            "detail": "3 tier(s) pinned: import_based, structural, usage_contextual",
             "status": "pass"
           },
           "section-e-differential": {

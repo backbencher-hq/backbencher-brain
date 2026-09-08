@@ -144,7 +144,7 @@ interface TreeEdge { label: string; from: string; target: string }
 // independently-written core-HTML/SVG set is a component usage. The set
 // below is written from the HTML spec, deliberately NOT copied from the
 // analyzer's list, so disagreements surface as missing/unexplained.
-const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view"])
+const ORACLE_HTML_TAGS = new Set(["a","abbr","address","area","article","aside","audio","b","base","bdi","bdo","blockquote","body","br","button","canvas","caption","cite","code","col","colgroup","data","datalist","dd","del","details","dfn","dialog","div","dl","dt","em","embed","fieldset","figcaption","figure","footer","form","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","i","iframe","img","input","ins","kbd","label","legend","li","link","main","map","mark","menu","meta","meter","nav","noscript","object","ol","optgroup","option","output","p","picture","pre","progress","q","rp","rt","ruby","s","samp","script","search","section","select","slot","small","source","span","strong","style","sub","summary","sup","table","tbody","td","template","textarea","tfoot","th","thead","time","title","tr","track","u","ul","var","video","wbr","svg","path","g","rect","circle","ellipse","line","polyline","polygon","text","tspan","use","defs","stop","view","linearGradient","radialGradient","clipPath","mask","pattern","marker","symbol"])
 function deriveVueComponentUsages(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -173,6 +173,49 @@ function deriveVueComponentUsages(root: any): { label: string; from: string; tar
 
 // Svelte template component-usage oracle (independent HTML-core set;
 // svelte:* and slot are framework primitives).
+// M37.21 #611 svelte template-snippet truth: {#snippet name(...)} declares a
+// callable; {@render name(...)} invokes it. The analyzer emits calls at the
+// render site (render_tag branch); the embedded-JS oracle can't see template
+// constructs, so this companion derives the SAME contract from the template:
+// every render_tag target that matches a declared snippet is calls truth.
+// Render targets with NO matching snippet are component-internal bindings
+// (e.g. `children` from the $props() destructure) — not independently
+// derivable as calls, so the oracle stays silent on them (they are covered
+// by the analyzer's render_tag contract, not fabricated).
+function deriveSvelteSnippetCalls(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const snippets = new Set<string>()
+  const renders: string[] = []
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "snippet_definition") {
+      // {#snippet name(args)} — the name is the first identifier child
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "fragment_reference")) { snippets.add(c.text); break }
+        if (c && c.type === "snippet_start_tag") {
+          const tn = c.namedChildren?.find((x: any) => x.type === "identifier" || x.type === "snippet_name")
+          if (tn) { snippets.add(tn.text); break }
+        }
+      }
+    }
+    if (n.type === "render_tag") {
+      // render_tag content is opaque text — scan the identifier leaf
+      const text = n.text.replace("{@render", "").trim()
+      let end = 0
+      while (end < text.length && /[A-Za-z0-9_$]/.test(text.slice(0, end + 1))) end++
+      if (end > 0) renders.push(text.slice(0, end))
+    }
+    for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+  }
+  for (const r of renders) {
+    if (snippets.has(r) && !seen.has(r)) { seen.add(r); edges.push({ label: "calls", from: "(expr)", target: r }) }
+  }
+  return edges
+}
+
 function deriveSvelteComponentUsages(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -539,6 +582,195 @@ export function deriveScalaEdges(root: any): { label: string; from: string; targ
 // argument text; target is the bare methodName leaf), GROOVY_BUILTINS +
 // STDLIB_ROOTS prefix filter, explicit_constructor_invocation honest
 // literal ("super"/"this"), juxt_function_call (echo "msg" IS a call).
+// M37.21 #611 typescript calls oracle: mirrors RealTypeScriptAnalyzer's
+// call contract — call_expression with direct callee leaf (member_expression
+// reduced to its property leaf), import()/require() excluded, TS_CONSOLE
+// + TS_OBJECT_LEAF builtin sets (identical to the JS sets — verified by diff),
+// malformed-call guard (hasBraceEquals), GLOBAL constructor calls kept (the
+// analyzer filters only the same console/Object sets on the calls label).
+export function deriveTypeScriptEdges(root: any): { label: string; from: string; target: string; fullCallee?: string }[] {
+  const edges: { label: string; from: string; target: string; fullCallee?: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string, fullCallee?: string) => {
+    if (!target) return
+    const k = label + "|" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target, fullCallee }) }
+  }
+  const TS_CONSOLE_BUILTINS = new Set([
+    "console.log", "console.warn", "console.error", "console.info", "console.debug",
+    "console.trace", "console.table", "console.group", "console.groupEnd",
+    "console.groupCollapsed", "console.time", "console.timeEnd", "console.assert",
+    "console.count", "console.countReset", "console.dir", "console.dirxml",
+    "console.clear", "console.profile", "console.profileEnd",
+  ])
+  const TS_OBJECT_LEAF_METHODS = new Set([
+    "toString", "valueOf", "hasOwnProperty", "isPrototypeOf",
+    "propertyIsEnumerable", "toLocaleString", "__defineGetter__", "__defineSetter__",
+  ])
+  const hasBraceEquals = (text: string): boolean => {
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if (ch === "{" || ch === "}" || ch === ";" || ch === "=") return true
+    }
+    return false
+  }
+  const stripWhitespace = (s: string): string => {
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i]
+      if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") out += ch
+    }
+    return out
+  }
+  const isBuiltinCall = (targetName: string, fullCallee: string): boolean => {
+    if (targetName === "super") return true
+    if (TS_CONSOLE_BUILTINS.has(fullCallee)) return true
+    if (TS_CONSOLE_BUILTINS.has(stripWhitespace(fullCallee))) return true
+    if (TS_OBJECT_LEAF_METHODS.has(targetName)) return true
+    return false
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "call_expression") {
+      const callee = n.namedChild(0)
+      // W2 mirror: computed member calls (cbs.doneEnter[trueSerialized](),
+      // nodeTransforms[i](...)) are SKIPPED on the analyzer side (JS family
+      // contract) — the oracle must skip them too or every skipped shape
+      // surfaces as a fake MISSING edge (BaseTransition.spec.ts).
+      // require() is a module dependency on BOTH analyzers (JS contract;
+      // TS scripts never legitimately call require — vue-element-admin's
+      // CommonJS .vue blocks would otherwise surface as fake MISSING).
+      if (callee && callee.type !== "subscript_expression" && !((callee.text === "import" || callee.type === "import") || (callee.type === "identifier" && callee.text === "require"))) {
+        let targetName = callee.text
+        const fullCallee = callee.text
+        if (callee.type === "member_expression") {
+          const property = callee.childForFieldName("property")
+          if (property) targetName = property.text
+        }
+        if (
+          targetName.length <= 100 &&
+          !targetName.includes("\n") &&
+          !targetName.includes("`") &&
+          !targetName.includes("${") &&
+          !hasBraceEquals(targetName) &&
+          !isBuiltinCall(targetName, fullCallee)
+        ) push("calls", targetName, fullCallee)
+      }
+    } else if (t === "new_expression") {
+      // Mirror of the analyzer's instantiation branch: generic_type head,
+      // leaf segment, generic arguments stripped, GLOBAL_CTORS filtered.
+      const ctor = n.namedChild(0)
+      if (ctor) {
+        let className = ctor.text
+        if (ctor.type === "generic_type") className = ctor.namedChild(0)?.text ?? className
+        const dot = className.lastIndexOf(".")
+        if (dot !== -1 && dot < className.length - 1) className = className.slice(dot + 1)
+        const lt = className.indexOf("<")
+        if (lt !== -1) className = className.slice(0, lt)
+        if (!TS_GLOBAL_CTORS.has(className)) push("instantiates", className)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
+}
+
+// M37.21 #611 javascript calls oracle (web-family twin of the TS oracle —
+// same call_expression contract with JS naming: require()/import() excluded
+// on the ANALYZER side as imports; subscript callees skipped; the two builtin
+// sets are identical to TS's — verified by diff).
+export function deriveJavaScriptEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string) => {
+    if (!target) return
+    const k = label + "|" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  const JS_CONSOLE_BUILTINS = new Set([
+    "console.log", "console.warn", "console.error", "console.info", "console.debug",
+    "console.trace", "console.table", "console.group", "console.groupEnd",
+    "console.groupCollapsed", "console.time", "console.timeEnd", "console.assert",
+    "console.count", "console.countReset", "console.dir", "console.dirxml",
+    "console.clear", "console.profile", "console.profileEnd",
+  ])
+  const JS_OBJECT_LEAF_METHODS = new Set([
+    "toString", "valueOf", "hasOwnProperty", "isPrototypeOf",
+    "propertyIsEnumerable", "toLocaleString", "__defineGetter__", "__defineSetter__",
+  ])
+  const hasBraceEquals = (text: string): boolean => {
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if (ch === "{" || ch === "}" || ch === ";" || ch === "=") return true
+    }
+    return false
+  }
+  const stripWhitespace = (s: string): string => {
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i]
+      if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") out += ch
+    }
+    return out
+  }
+  const isBuiltinCall = (targetName: string, fullCallee: string): boolean => {
+    if (targetName === "super") return true
+    if (JS_CONSOLE_BUILTINS.has(fullCallee)) return true
+    if (JS_CONSOLE_BUILTINS.has(stripWhitespace(fullCallee))) return true
+    if (JS_OBJECT_LEAF_METHODS.has(targetName)) return true
+    return false
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "call_expression") {
+      const fn = n.childForFieldName("function")
+      const isImportCallee = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
+      const isRequire = !!fn && fn.type === "identifier" && fn.text === "require"
+      if (fn && !isRequire && !isImportCallee) {
+        let targetName = fn.text
+        const fullCallee = fn.text
+        if (fn.type === "member_expression") {
+          const prop = fn.childForFieldName("property")
+          if (prop) targetName = prop.text
+        }
+        if (
+          fn.type !== "subscript_expression" &&
+          targetName.length <= 100 &&
+          !targetName.includes("\n") &&
+          !targetName.includes("`") &&
+          !targetName.includes("${") &&
+          !hasBraceEquals(targetName) &&
+          !isBuiltinCall(targetName, fullCallee)
+        ) push("calls", targetName)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
+}
+
+// Analyzer's JS_GLOBAL_CONSTRUCTORS set — shared with the instantiation mirror.
+const TS_GLOBAL_CTORS = new Set([
+  "Promise", "Date", "Map", "Set", "WeakMap", "WeakSet", "Symbol", "Proxy",
+  "Error", "TypeError", "RangeError", "SyntaxError", "URIError", "EvalError",
+  "AggregateError", "RegExp", "Array", "Object", "Function", "Boolean",
+  "Number", "String", "BigInt", "ArrayBuffer", "SharedArrayBuffer",
+  "DataView", "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array",
+  "Uint16Array", "Int32Array", "Uint32Array", "Float32Array", "Float64Array",
+  "BigInt64Array", "BigUint64Array", "WeakRef", "FinalizationRegistry",
+  "AbortController", "FormData", "Blob", "File", "URL", "URLSearchParams",
+  "Headers", "Request", "Response", "Intl", "Image", "Worker", "SharedWorker",
+  "CustomEvent", "Event", "MouseEvent", "KeyboardEvent", "ResizeObserver",
+  "MutationObserver", "IntersectionObserver", "PerformanceObserver",
+  "FileReader", "XMLHttpRequest", "WebSocket", "TextEncoder", "TextDecoder",
+  "DOMParser", "Notification", "BroadcastChannel", "MessageChannel",
+  "FocusEvent", "InputEvent", "PointerEvent", "TouchEvent", "DragEvent", "ErrorEvent", "UIEvent", "StorageEvent", "PromiseRejectionEvent", "HashChangeEvent", "PageTransitionEvent", "PopStateEvent", "ProgressEvent", "SpeechSynthesisEvent", "AnimationEvent", "TransitionEvent", "ClipboardEvent", "WheelEvent", "CompositionEvent", "BeforeUnloadEvent",
+])
+
 export function deriveGroovyEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -4917,6 +5149,140 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "typescript") {
+        // M37.21 #611: dedicated typescript calls/instantiates oracle (web
+        // family precedent — the generic tree walker never audited the call
+        // surface; truth was 25 edges per 60 files vs java's 739).
+        for (const e of deriveTypeScriptEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "javascript") {
+        // M37.21 #611: wire the dedicated JS calls oracle into the plain
+        // javascript lane's truth. The analyzer-side filter already compares
+        // calls for javascript, but without this push the truth side emitted
+        // ZERO calls — every real analyzer call surfaced as unexplained
+        // (vue-core:javascript 294 in the first gated run; per-file parity
+        // was already proven on scripts/verify-commit.js).
+        for (const e of deriveJavaScriptEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "vue" || lang === "svelte") {
+        // M37.21 #611: web-embedded-script CALLS truth (the JD-oracle gap).
+        // The analyzers emit script-side calls (vue merges the JS/TS
+        // sub-analyzer's relationships; svelte ditto + template handlers);
+        // the truth previously carried only structural edges. The embedded
+        // tree's calls derive with the SAME leaf-target contract (site-
+        // agnostic label+target matching). lang=ts blocks run the TS oracle.
+        const subTrees = await deriveEmbeddedScriptTrees(root, content, lang)
+        // Vue's merge pass filters compiler macros (VUE_COMPILER_MACROS:
+        // defineProps/defineEmits/withDefaults/...) from sub-analyzer
+        // relationships — they are LANGUAGE keywords, not call edges. The
+        // oracle mirrors that filter or every macro call is a fake MISSING
+        // (30/60 element-plus files). Svelte's rune filter is separate and
+        // handled inside the analyzer contract (SVELTE_RUNES — the JS oracle
+        // never emits $-prefixed targets, so no mirror needed there).
+        const MACROS = new Set(["defineProps", "defineEmits", "defineExpose", "withDefaults", "defineModel", "defineSlots", "defineOptions"])
+        // Svelte rune mirror (SVELTE_RUNES + RUNE_LEAF_SEGMENTS contract):
+        // the analyzer gates on isRuneCallee(FULL callee text) — `$derived.by`
+        // and `$effect.pre` are member calls whose LEAF lands in the oracle's
+        // target, so a target-side `$`-prefix check never fires (4 fake
+        // MISSING in the svelte repo: by/pre). The TS oracle carries
+        // fullCallee; the mirror re-derives the exact isRuneCallee ruling.
+        const SVELTE_RUNES = new Set(["$state", "$state.raw", "$state.snapshot", "$derived", "$derived.by", "$effect", "$effect.pre", "$effect.tracking", "$effect.root", "$effect.untracked", "$props", "$props.id", "$props.is_safe", "$bindable", "$host", "$inspect", "$inspect.trace", "$render"])
+        const RUNE_LEAFS = new Set(["state", "raw", "snapshot", "derived", "by", "effect", "pre", "tracking", "root", "untracked", "props", "id", "is_safe", "bindable", "host", "inspect", "trace", "render"])
+        const isRuneCalleeMirror = (callee: string): boolean => {
+          if (!callee.startsWith("$")) return false
+          if (SVELTE_RUNES.has(callee)) return true
+          return RUNE_LEAFS.has(callee.split(".").pop() ?? "")
+        }
+        for (const st of subTrees) {
+          for (const e of deriveTypeScriptEdges(st)) {
+            if (lang === "vue" && e.label === "calls" && MACROS.has(e.target)) continue
+            if (lang === "svelte" && e.label === "calls" && isRuneCalleeMirror(e.fullCallee ?? e.target)) continue
+            ;(truth as any[]).push(e)
+          }
+        }
+        // M37.21 #611 svelte TEMPLATE call truth — the analyzer's template
+        // pass emits calls the embedded-script trees cannot express:
+        //   on:click={inc} / on:click={() => bump()} → handler leaf (0.85)
+        //   {@render children(...)}                    → snippet name (0.9)
+        // The svelte grammar exposes attribute values as opaque
+        // svelte_raw_text leaves, so both are scanned with the analyzer's
+        // pure-String contract, mirrored verbatim here.
+        if (lang === "svelte") {
+          const isIdent = (s: string): boolean => {
+            if (!s) return false
+            const ok = (c: string, first: boolean) => (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_" || c === "$" || (!first && c >= "0" && c <= "9")
+            for (let i = 0; i < s.length; i++) if (!ok(s[i], i === 0)) return false
+            return true
+          }
+          const rawText = (attr: any): string => {
+            const value = attr.namedChildren?.find((c: any) => c.type === "expression")
+            if (!value) return ""
+            const st2: any[] = [value]
+            while (st2.length > 0) {
+              const m = st2.pop()!
+              if (m.type === "svelte_raw_text") return m.text
+              for (let i = (m.namedChildCount ?? 0) - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) st2.push(c) }
+            }
+            return ""
+          }
+          const handlerLeaf = (text: string): string | undefined => {
+            for (let i = 0; i < text.length; i++) {
+              const ch = text[i]
+              if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_" || ch === "$") {
+                let end = i
+                while (end < text.length) {
+                  const c = text[end]
+                  if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_" || c === "$") end++
+                  else break
+                }
+                const ident = text.slice(i, end)
+                if (end < text.length && text[end] === "(") return ident
+                i = end
+              }
+            }
+            return isIdent(text) ? text : undefined
+          }
+          const moduleName = path.basename(relPath, path.extname(relPath))
+          const seenRender = new Set<string>()
+          const twalk = (n: any): void => {
+            const t = n.type
+            if (t !== "script_element" && t !== "style_element") {
+              if (t === "element" || t === "self_closing_tag") {
+                const startTag = n.namedChildren?.find((c: any) => c.type === "start_tag") ?? (t === "self_closing_tag" ? n : undefined)
+                if (startTag) {
+                  for (const attr of startTag.namedChildren ?? []) {
+                    if (attr.type !== "attribute") continue
+                    const nameNode = attr.namedChildren?.find((c: any) => c.type === "attribute_name")
+                    const attrName = nameNode?.text ?? ""
+                    if (!attrName.startsWith("on:")) continue
+                    const handler = handlerLeaf(rawText(attr))
+                    if (handler && handler !== moduleName && !seenRender.has("h|" + handler)) {
+                      seenRender.add("h|" + handler)
+                      ;(truth as any[]).push({ label: "calls", from: "(template)", target: handler })
+                    }
+                  }
+                }
+              }
+              if (t === "render_tag") {
+                const text = n.text.replace("{@render", "").trim()
+                let end = 0
+                while (end < text.length && isIdent(text.slice(0, end + 1))) end++
+                const target = text.slice(0, end)
+                if (target && !seenRender.has("r|" + target)) {
+                  seenRender.add("r|" + target)
+                  ;(truth as any[]).push({ label: "calls", from: "(template)", target })
+                }
+              }
+            }
+            for (let k = 0; k < (n.namedChildCount ?? 0); k++) { const c = n.namedChild(k); if (c) twalk(c) }
+          }
+          twalk(root)
+        }
+      }
       if (lang === "java") {
         // M37.21 #610: dedicated java calls oracle (first JVM language with
         // one — the generic walker never audited the call surface).
@@ -5017,6 +5383,11 @@ async function main() {
         for (const e of deriveSvelteComponentUsages(root)) {
           ;(truth as any[]).push(e)
         }
+        // Snippet render-call truth ({@render X()} where X is a declared
+        // {#snippet X}) — see deriveSvelteSnippetCalls.
+        for (const e of deriveSvelteSnippetCalls(root)) {
+          ;(truth as any[]).push(e)
+        }
         // Script-side truth: the svelte grammar stores script bodies as
         // opaque raw_text - re-parse them and derive the SAME structural
         // edges (extends/implements/instantiates) the non-SFC languages get.
@@ -5044,7 +5415,7 @@ async function main() {
       // call truth, so including calls there would flag every real call edge
       // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
       // USES truth as well (write-gated), so c joins the uses-audited set.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

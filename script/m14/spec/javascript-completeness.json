@@ -125,19 +125,19 @@
         "id": "J1",
         "node_type": "import_statement",
         "severity": "high",
-        "missing": "imports kind misclassified usage_contextual instead of import_based — the tier classifier has no 'imports' branch (the TS T1 / JVM K8 finding): every ES6/require/re-export dependency edge falls to usage_contextual",
+        "missing": "imports kind misclassified usage_contextual instead of import_based \u2014 the tier classifier has no 'imports' branch (the TS T1 / JVM K8 finding): every ES6/require/re-export dependency edge falls to usage_contextual",
         "evidence": "probe: import def from './m' -> imports: probe -> ./m:def conf=1 evidenceClass=usage_contextual (expect import_based)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/import-edges) + mutants javascript/reclassify-import-tier + javascript/drop-import-edges CAUGHT (2026-08-27). The dedicated 'imports' kind now classifies as import_based (classifier imports branch added), matching TS T1 / JVM K8."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/import-edges) + mutants javascript/reclassify-import-tier + javascript/drop-import-edges CAUGHT (2026-08-27). The dedicated 'imports' kind now classifies as import_based (classifier imports branch added), matching TS T1 / JVM K8."
       },
       {
         "id": "J2",
         "node_type": "import_statement (dynamic)",
         "severity": "high",
-        "missing": "dynamic import('./lazy') emits a spurious calls -> import edge and NO imports edge for the module — TS7 was closed in the TS wave; the JS dynamic-import fixture currently documents the bug as accepted",
+        "missing": "dynamic import('./lazy') emits a spurious calls -> import edge and NO imports edge for the module \u2014 TS7 was closed in the TS wave; the JS dynamic-import fixture currently documents the bug as accepted",
         "evidence": "probe: const lazy = import('./lazy') -> calls: probe -> import (spurious); no imports edge for ./lazy",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/dynamic-import) + mutants javascript/drop-import-edges + javascript/reclassify-import-tier CAUGHT (2026-08-27). Dynamic import() now emits an imports edge (module:*) and the spurious calls -> import edge is suppressed (the `import` keyword lexes as its own node type — the TS T7 quirk)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/dynamic-import) + mutants javascript/drop-import-edges + javascript/reclassify-import-tier CAUGHT (2026-08-27). Dynamic import() now emits an imports edge (module:*) and the spurious calls -> import edge is suppressed (the `import` keyword lexes as its own node type \u2014 the TS T7 quirk)."
       },
       {
         "id": "J3",
@@ -146,52 +146,52 @@
         "missing": "string interpolation `${x}` emits no Uses on the interpolated identifiers (TS3 T3 / kotlin K4 / scala G4 analog)",
         "evidence": "probe: const s = `hi ${n} x` inside method -> no uses edge on n",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/interp-uses) + mutant javascript/drop-template-uses CAUGHT (2026-08-27). template_substitution identifiers now emit Uses (isTemplateInterpolation), matching TS T3 / kotlin K4 / scala G4."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/interp-uses) + mutant javascript/drop-template-uses CAUGHT (2026-08-27). template_substitution identifiers now emit Uses (isTemplateInterpolation), matching TS T3 / kotlin K4 / scala G4."
       },
       {
         "id": "J4",
         "node_type": "member_expression (call callee)",
         "severity": "medium",
-        "missing": "obj.method() emits BOTH calls (obj.method -> method) AND uses (obj -> method, isFieldAccess) — the family contract (TS/kotlin/scala) skips the callee in uses because calls covers it; JS double-emits",
+        "missing": "obj.method() emits BOTH calls (obj.method -> method) AND uses (obj -> method, isFieldAccess) \u2014 the family contract (TS/kotlin/scala) skips the callee in uses because calls covers it; JS double-emits",
         "evidence": "probe: obj.method() -> calls: method -> method AND uses: obj -> method",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/callee-uses) + mutant javascript/reintroduce-callee-uses CAUGHT (2026-08-27). A member_expression in call-callee position emits the Calls edge only — no double uses edge (family contract; web-tree-sitter wrappers compared by id, never reference)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/callee-uses) + mutant javascript/reintroduce-callee-uses CAUGHT (2026-08-27). A member_expression in call-callee position emits the Calls edge only \u2014 no double uses edge (family contract; web-tree-sitter wrappers compared by id, never reference)."
       },
       {
         "id": "J5",
         "node_type": "class_static_block",
         "severity": "medium",
-        "missing": "calls inside static { } blocks attribute to the MODULE, not the enclosing class — kotlin K7 init-attribution analog",
+        "missing": "calls inside static { } blocks attribute to the MODULE, not the enclosing class \u2014 kotlin K7 init-attribution analog",
         "evidence": "probe: class A { static { initStatic(); } } -> calls: probe-js1 -> initStatic (expect A)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/static-block) + mutant javascript/drop-static-calls CAUGHT (2026-08-27). Calls inside static { } blocks and static field initializers attribute to the enclosing class (kotlin K7 analog)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/static-block) + mutant javascript/drop-static-calls CAUGHT (2026-08-27). Calls inside static { } blocks and static field initializers attribute to the enclosing class (kotlin K7 analog)."
       },
       {
         "id": "J6",
         "node_type": "variable_declarator (instanceof source)",
         "severity": "medium",
-        "missing": "top-level const r = x instanceof T attributes the reference to 'global' instead of r — the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
+        "missing": "top-level const r = x instanceof T attributes the reference to 'global' instead of r \u2014 the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
         "evidence": "probe: const r = obj instanceof TopLevel -> references: global -> TopLevel (expect r)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/instanceof-source) + mutant javascript/global-instanceof-source CAUGHT (2026-08-27). Top-level const r = x instanceof T attributes the reference to r, not the global placeholder (resolveSource gained variable_declarator)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/instanceof-source) + mutant javascript/global-instanceof-source CAUGHT (2026-08-27). Top-level const r = x instanceof T attributes the reference to r, not the global placeholder (resolveSource gained variable_declarator)."
       },
       {
         "id": "J7",
         "node_type": "object_pattern,array_pattern",
         "severity": "medium",
-        "missing": "module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols — TS emits them as constants (probe-verified parity gap)",
+        "missing": "module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols \u2014 TS emits them as constants (probe-verified parity gap)",
         "evidence": "probe: const { d2 } = someObj -> no symbol; TS same shape -> a [constant]",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/destructure-symbols) + mutant javascript/drop-destructure-symbols CAUGHT (2026-08-27). Module-level destructured bindings (object patterns: shorthand/nested/default/renamed; array patterns: head/rest) now emit symbols, matching TS."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/destructure-symbols) + mutant javascript/drop-destructure-symbols CAUGHT (2026-08-27). Module-level destructured bindings (object patterns: shorthand/nested/default/renamed; array patterns: head/rest) now emit symbols, matching TS."
       },
       {
         "id": "J8",
         "node_type": "jsx_element,jsx_self_closing_element,jsx_opening_element,jsx_closing_element,jsx_attribute,jsx_expression,jsx_namespace_name,jsx_text",
         "severity": "high",
-        "missing": "JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
+        "missing": "JSX component usage emits NOTHING \u2014 <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
         "evidence": "probe: const App = () => <div><Button label='x' /></div> -> no uses/instantiates edges for Button",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/jsx-usage) + mutant javascript/drop-jsx-uses CAUGHT (2026-08-27). JSX is native to the JS grammar — capitalized components now emit Uses with jsxElement metadata; lowercase intrinsics stay silent (TS family contract)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/jsx-usage) + mutant javascript/drop-jsx-uses CAUGHT (2026-08-27). JSX is native to the JS grammar \u2014 capitalized components now emit Uses with jsxElement metadata; lowercase intrinsics stay silent (TS family contract)."
       }
     ]
   },
@@ -201,43 +201,50 @@
         "id": "D1",
         "node_type": "typeParameters (none)",
         "status": "RULED",
-        "question": "typeParameters payload: JavaScript has NO generics — the grammar declares no type_parameters node. Recommend: DECLARED N/A (omit from the payload matrix), consistent with the family contract that payloads exist only where the language declares them.",
-        "resolution": "RULED — DECLARED N/A (2026-08-27): JavaScript has no generics — the grammar declares no type_parameters node; the typeParameters payload row is omitted from the Matrix (family contract: payloads exist only where the language declares them)."
+        "question": "typeParameters payload: JavaScript has NO generics \u2014 the grammar declares no type_parameters node. Recommend: DECLARED N/A (omit from the payload matrix), consistent with the family contract that payloads exist only where the language declares them.",
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): JavaScript has no generics \u2014 the grammar declares no type_parameters node; the typeParameters payload row is omitted from the Matrix (family contract: payloads exist only where the language declares them)."
       },
       {
         "id": "D2",
         "node_type": "apiContract (none)",
         "status": "RULED",
         "question": "apiContract payload: JS has no framework API-contract concept (TS's api-contract is typed). Recommend: DECLARED N/A (groovy also omits it).",
-        "resolution": "RULED — DECLARED N/A (2026-08-27): JavaScript has no framework API-contract concept (TS's api-contract is typed); the apiContract payload row is omitted (groovy also omits it)."
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): JavaScript has no framework API-contract concept (TS's api-contract is typed); the apiContract payload row is omitted (groovy also omits it)."
       },
       {
         "id": "D3",
         "node_type": "computed_property_name",
         "status": "RULED",
-        "question": "[key]: value computed names are recursed generically with no dedicated symbol — recommend INTERNAL SILENT (TS D6 consistency).",
-        "resolution": "RULED — INTERNAL SILENT (2026-08-27): computed_property_name [key]: value is recursed generically with no dedicated symbol (TS D6 consistency)."
+        "question": "[key]: value computed names are recursed generically with no dedicated symbol \u2014 recommend INTERNAL SILENT (TS D6 consistency).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): computed_property_name [key]: value is recursed generically with no dedicated symbol (TS D6 consistency)."
       },
       {
         "id": "D4",
         "node_type": "glimmer_template,glimmer_opening_tag,glimmer_closing_tag",
         "status": "RULED",
-        "question": "Glimmer/Ember templates are declared by the grammar but ignored — recommend INTERNAL SILENT (TS D4 consistency).",
-        "resolution": "RULED — INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (TS D4 consistency)."
+        "question": "Glimmer/Ember templates are declared by the grammar but ignored \u2014 recommend INTERNAL SILENT (TS D4 consistency).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (TS D4 consistency)."
       },
       {
         "id": "D5",
         "node_type": "class_static_block",
         "status": "RULED",
-        "question": "class static blocks: the block is recursed (calls found) but attribution lands on the module — J5 covers the attribution fix; the block structure itself is handled.",
-        "resolution": "RULED — HANDLED (2026-08-27): class_static_block structure is recursed; the attribution fix is J5 (calls now land on the enclosing class)."
+        "question": "class static blocks: the block is recursed (calls found) but attribution lands on the module \u2014 J5 covers the attribution fix; the block structure itself is handled.",
+        "resolution": "RULED \u2014 HANDLED (2026-08-27): class_static_block structure is recursed; the attribution fix is J5 (calls now land on the enclosing class)."
       },
       {
         "id": "M3710-COMPANION",
         "node_type": "class_declaration / method_definition (override resolution)",
         "status": "RULED",
-        "question": "AnalyzeContext.overrideCompanion is never populated by production callers — what must the analyzer do for externally-declared bases?",
-        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' — below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-JAVASCRIPT, the javascript/external-override fixture + confidence pins, and 6 family regression mutants."
+        "question": "AnalyzeContext.overrideCompanion is never populated by production callers \u2014 what must the analyzer do for externally-declared bases?",
+        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' \u2014 below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-JAVASCRIPT, the javascript/external-override fixture + confidence pins, and 6 family regression mutants."
+      },
+      {
+        "id": "JSD-calls-oracle",
+        "node_type": "F5 javascript lane call truth",
+        "status": "FIXED",
+        "question": "Does the javascript lane's truth carry calls?",
+        "ruling": "YES after #611: deriveJavaScriptEdges is pushed into the sweep truth for the plain javascript lane (the analyzer-side filter already compared calls; without the push, truth emitted ZERO calls and every analyzer call surfaced unexplained \u2014 294 in the first gated vue-core run; per-file parity on scripts/verify-commit.js was proven during the wave)."
       }
     ]
   }
