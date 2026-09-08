@@ -38,3 +38,19 @@ gate.
 - **Commit**: ad39d78a (logged retroactively at L1 verification time — the
   touch predates this log's enforcement gate; L1's guard now makes a future
   unlogged shared diff fail before it can land).
+
+### 2026-09-08 — post-closure truth fix: attribution semantics disclosed
+
+- **What**: `src/intelligence/graph/graph-engine.ts` — **comment-only change**
+  at the owner-cascade source of truth (callers + callees). No executable
+  statement was altered; the fix is disclosure, not behavior.
+- **Why**: live accuracy probe showed the class-member attribution rule
+  (a call to any class member is also attributed to the class) was
+  row-traceable and intentional but documented nowhere — an agent reading
+  bb_graph could not know depth>1 results include family attribution.
+- **How verified**: D1 now enforces the disclosure text across all five
+  surfaces (128 checks, 4 negatives — gate fails if the text vanishes);
+  P3 agreement re-run 28/28; full M48 gate set re-run green at the fix HEAD.
+- **Risk to hub**: none — zero behavioral delta; hub's `bb/graph` wire smoke
+  re-run verified (leg A 24/24, leg B 5/5) at the same HEAD.
+- **Commit**: 1bbbd932.
