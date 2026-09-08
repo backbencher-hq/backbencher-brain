@@ -46,6 +46,16 @@ const CONTENT_GATES = (reg.gates as Array<{ code: string; script: string; infra?
 for (const g of CONTENT_GATES) {
   const p = path.join(ROOT, "script/m48", g.script)
   if (!existsSync(p)) { check(`live: ${g.code} (${g.script}) exists`, false, "missing script"); continue }
+  // L1's guard requires smoke evidence stamped at HEAD; the smoke runner is
+  // part of L1's gate reality (issue criterion 5), so closure runs it for
+  // real (self-contained temp fixtures) before the guard.
+  if (g.code === "L1") {
+    const smoke = spawnSync("bun", ["run", "script/m48/l1-hub-smoke.ts"], {
+      cwd: ROOT, encoding: "utf8", timeout: 580_000,
+    })
+    check("live: L1 hub smoke runs and verifies", smoke.status === 0,
+      smoke.status === 0 ? "" : (smoke.stdout ?? "").split("\n").filter((l) => /FAIL|status=failed|status=blocked/.test(l)).slice(0, 3).join(" | ") || `exit ${smoke.status}`)
+  }
   const r = spawnSync("bun", ["run", `script/m48/${g.script}`], {
     cwd: ROOT,
     encoding: "utf8",
