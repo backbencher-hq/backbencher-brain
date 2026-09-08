@@ -266,6 +266,90 @@
     "status": "FIXED",
     "question": "M37.21 #610 user-suspect #4: filterChildren defined and never called — dead code.",
     "resolution": "Deleted. F7 hygiene re-run green."
+   },
+   {
+    "id": "JD24",
+    "node_type": "constructor symbols (constructor_declaration / compact_constructor_declaration)",
+    "status": "FIXED",
+    "question": "C3: all ctors emitted the literal name 'constructor' — Contains edges from distinct classes collided (A->constructor vs B->constructor) and overloads were indistinguishable",
+    "decision": "Ctor symbols carry their CLASS NAME (A, kind=constructor) mirroring the csharp family convention. Fixtures ctor-delegation / ctor-value-injection / record-varargs-compact-ctor re-pinned 2026-09-08; mutant java/anonymous-body-scope-leak unchanged, java/return-type-refs-drop + java/per-segment-builtin-filter added (346/346)"
+   },
+   {
+    "id": "JD25",
+    "node_type": "cast_type / var locals in References graph",
+    "status": "FIXED",
+    "question": "C4: `var x = foo()` emitted References foo->var — var is an inference keyword, not a type; cast positions already filtered but locals/params/formals did not",
+    "decision": "var filtered at ALL declared-type positions (locals, params, formals, fields). Probe-verified: zero var edges on the C4 probe source"
+   },
+   {
+    "id": "JD26",
+    "node_type": "builtin/stdlib call exclusion (isJavaBuiltin)",
+    "status": "FIXED",
+    "question": "C5: per-segment check dropped user calls whose MID-CHAIN segment collides with a stdlib root (com.mycompany.Service.doWork on 'com', foo.Logger.bar on 'Logger')",
+    "decision": "ROOT segment only (segments[0]) + exact-match list. Mid-chain collisions never suppress; static-imported bare names (println, assertEquals) remain emitted (documented under-filter, conservative). Oracle mirror updated in lockstep (isJavaBuiltinCall). Fixture root-segment-builtin-filter pins; mutant java/per-segment-builtin-filter"
+   },
+   {
+    "id": "JD27",
+    "node_type": "Spring route / httpMethod extraction (@GetMapping, @RequestMapping, array values, concat values)",
+    "status": "FIXED",
+    "question": "C6/C7/C8/C23: bare @GetMapping fabricated route '/'; method=GET on @RequestMapping ignored; {\"/a\",\"/b\"} array leaked raw text; \"/a\"+\"/b\" and text blocks leaked raw source",
+    "decision": "Empty class+method paths yield NO api endpoint edge (no fabricated '/'); @RequestMapping reads method= (default GET for mapping-style, ANY only when explicitly unspecified-semantic); element_value_array_initializer joins values; extractStringValue constant-folds + chains (literals/text blocks/parens only) and reads multiline_string_fragment for text blocks. Probe-verified: /a/b folded, text block unquoted"
+   },
+   {
+    "id": "JD28",
+    "node_type": "return type References",
+    "status": "FIXED",
+    "question": "C9: fields/params/locals/catch/throws emitted declared_type edges but method return types emitted zero edges (List<User> getUsers() -> nothing)",
+    "decision": "Return positions emit References (declared_type, declaredOn=return_type, conf 0.95). type-usage-graph fixture lifted its stale forbid on R and now PINS the R return edge; mutant java/return-type-refs-drop"
+   },
+   {
+    "id": "JD29",
+    "node_type": "per-method vs file complexity (switch_rule)",
+    "status": "FIXED",
+    "question": "C10: method complexity counted switch_rule (arrow switches) but the file-level walk did not — file total != sum(methods)+1",
+    "decision": "Both sides count the same decision-point set (if/for/enhanced_for/while/do/catch/switch_block_statement_group/switch_rule/ternary/&&/||). Probe: method=4 file=4 parity. complexity-parity fixture guards"
+   },
+   {
+    "id": "JD30",
+    "node_type": "Lombok / Spring-Data triggers",
+    "status": "FIXED",
+    "question": "C20/C21: substring tests (indexOf('Data'), indexOf('JpaRepository')) fired on @Metadata/@Database/MyJpaRepositoryFoo; phantom Spring-Data methods carried parameters:[] inconsistent with sig (Object)",
+    "decision": "Exact short-name annotation test (hasJavaAnnotation) for Lombok; phantom accessors carry the matching (Object) parameter. Probe-verified"
+   },
+   {
+    "id": "JD31",
+    "node_type": "resolveOverrides performance",
+    "status": "FIXED",
+    "question": "C11: suffixIndex rebuilt per override task O(T*C) + queue.shift() O(N) — contradicted the header's O(N) claim",
+    "decision": "suffixIndex hoisted to build-once; shift replaced with head-index cursor. Corpus perf unchanged (already sub-ms/file), complexity now honest"
+   },
+   {
+    "id": "JD32",
+    "node_type": "anonymous class bodies (object_creation_expression + class_body)",
+    "status": "FIXED",
+    "question": "C30 (user-suspect #1): anon body members attributed to the enclosing scope; no anonymous_<Super> symbol; classHierarchy never registered so @Override in anon bodies resolved to nothing",
+    "decision": "anonymous_${Super} Class symbol (ownerName=enclosing type), pushed scope for body members (contains:anonymous_Comparator->compare), classHierarchy.set(anonFqn,[Super]) so pass-1 BFS resolves in-file supertypes (exact-in-file). External-supertype anon bodies stay override-free (truth is in-file). Fixture extended with in-file Handler anon + external forbids; oracle anon mirror added (grails-core 13 anon bodies -> 100/0/0)"
+   },
+   {
+    "id": "JD33",
+    "node_type": "@interface (annotation_type_declaration) member reads",
+    "status": "FIXED",
+    "question": "C17: collectFieldAccessUses type branch missed annotation_type_declaration — reads inside @interface fell back to the receiver variable",
+    "decision": "annotation_type_declaration joins the type-declaration rebind branch. Probe: @interface body read emits Mine->thing"
+   },
+   {
+    "id": "JD34",
+    "node_type": "route constant-string values (concat / text blocks)",
+    "status": "FIXED",
+    "question": "C23: extractStringValue returned raw quoted source for \"/a\"+\"/b\" and text blocks",
+    "decision": "Constant-folder: literals (string_fragment + multiline_string_fragment), parens, and + chains only; any non-literal operand -> undefined (never fabricated from names). Probe: /a/b and /\\n/x\\n"
+   },
+   {
+    "id": "JD35",
+    "node_type": "frameworkPatterns payload",
+    "status": "FIXED",
+    "question": "C25: only bare 'spring' surfaced patterns; spring_mvc/spring_data/jpa/hibernate flags produced zero pattern payload",
+    "decision": "Spring MVC -> mvc_pattern+api_endpoints; Spring Data -> repository_pattern+orm_mapping; JPA/Hibernate -> orm_mapping (first match). Vocabulary matches the spring block"
    }
   ]
  }
