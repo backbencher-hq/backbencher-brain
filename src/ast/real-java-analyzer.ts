@@ -825,6 +825,48 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             confidence: 0.95,
             metadata: { relationshipType: "instantiates", isNew: true },
           })
+          // M37.21 #610 (user-suspect #1, probe-verified): an anonymous class
+          // body (new Comparator<String>() { ... }) declares REAL methods that
+          // were previously attributed to whatever scope was active before the
+          // anonymous class (contains:Service→compare on the probe) — the
+          // members leaked into the enclosing type's contains graph and no
+          // symbol existed for the anonymous type itself. Mirror the kotlin
+          // family convention exactly: anonymous_${superName} (noise name,
+          // never leaks into the index), Class symbol with ownerName =
+          // enclosing type, and a pushed scope so the body's members attribute
+          // to the anonymous type (contains:anonymous_Comparator→compare).
+          const classBody = this.findChildByType(node, "class_body")
+          if (classBody && parentContext) {
+            const anonName = typeName ? `anonymous_${typeName}` : "anonymous_class"
+            const anonFqn = parentContext.fqn ? `${parentContext.fqn}.${anonName}` : anonName
+            const anonSym: ASTEngine.UniversalSymbol = {
+              name: anonName,
+              kind: ASTEngine.SymbolKind.Class,
+              range: this.nodeToRange(node),
+              visibility: parentContext.visibility || "package-private",
+              ownerName: parentContext.name,
+              ownerKind: parentContext.kind,
+              metadata: { nodeType: type, isAnonymousClass: true, superTypes: typeName ? [typeName] : [] },
+            }
+            symbols.push(anonSym)
+            symbolMap.set(anonFqn, anonSym)
+            newContext = {
+              node: classBody,
+              name: anonName,
+              kind: ASTEngine.SymbolKind.Class,
+              fqn: anonFqn,
+              symbolRef: anonSym,
+              visibility: parentContext.visibility,
+              isAbstract: false,
+              isInterface: false,
+              isRecord: false,
+              annotations: [],
+              fields: [],
+              parents: typeName ? [typeName] : [],
+            }
+            scopeStack.push(newContext)
+            pushedScope = true
+          }
         }
       }
 
@@ -1168,17 +1210,6 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null;
     }
   
-    private filterChildren(node: Node, predicate: (child: Node) => boolean): Node[] {
-      const res: Node[] = [];
-      for (let i = 0; i < node.childCount; i++) {
-        const child = node.child(i);
-        if (child && predicate(child)) res.push(child);
-      }
-      return res;
-    }
-
-
-
   private resolveOverrides(
     tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean }[],
     classHierarchy: Map<string, string[]>,
@@ -1199,6 +1230,25 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // Pass 1: exact-signature BFS over the hierarchy (in-file declarations;
       // works without any project context).
+      // M37.21 #610 (user-suspect wave, clojure PersistentTreeMap finding):
+      // classHierarchy is keyed by FQN but inheritance parents are stored as
+      // BARE leaf names, so hop-1 resolved through symbolMap's bare
+      // localOwnerPrefix aliases while hop-2+ looked up classHierarchy with
+      // the bare name and missed — nested-class chains (BlackVal extends
+      // Black extends Node) silently lost overrides whose declaring ancestor
+      // sat two+ levels up (val/left/right on Node). Suffix-resolve every
+      // bare parent to its FQN candidate(s); the symbolMap hit requirement
+      // disambiguates same-named classes (a wrong-candidate FQN has no
+      // matching method symbol). JLS 8.4.8.1 semantics unchanged: BFS walks
+      // the chain level-by-level, breaking at the first accessible (non-
+      // private) declaring ancestor.
+      const suffixIndex = new Map<string, string[]>()
+      for (const fqn of classHierarchy.keys()) {
+        const bare = fqn.slice(fqn.lastIndexOf(".") + 1)
+        const arr = suffixIndex.get(bare)
+        if (arr) arr.push(fqn)
+        else suffixIndex.set(bare, [fqn])
+      }
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
       if (ownerH) {
@@ -1206,26 +1256,31 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const seen: Set<string> = new Set()
 
-      while (queue.length > 0) {
+      while (queue.length > 0 && !targetFqn) {
         const parent = queue.shift()!
         if (seen.has(parent)) continue
         seen.add(parent)
 
-        const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
-        const baseSym = symbolMap.get(potentialTargetFqn)
-        if (baseSym) {
-          // JLS 8.4.8.1: a PRIVATE ancestor method is never overridden — a
-          // same-signature subclass method is independent. Keep walking up
-          // the hierarchy for a real (accessible) declaring ancestor.
-          if (baseSym.visibility !== "private") {
-            targetFqn = potentialTargetFqn
-            break
+        const candidates = suffixIndex.get(parent) ?? [parent]
+        for (const cand of candidates) {
+          const potentialTargetFqn = `${cand}.${task.methodName}${task.signature}`
+          const baseSym = symbolMap.get(potentialTargetFqn)
+          if (baseSym) {
+            // JLS 8.4.8.1: a PRIVATE ancestor method is never overridden — a
+            // same-signature subclass method is independent. Keep walking up
+            // the hierarchy for a real (accessible) declaring ancestor.
+            if (baseSym.visibility !== "private") {
+              targetFqn = potentialTargetFqn
+              break
+            }
           }
         }
-        
-        const pH = classHierarchy.get(parent)
-        if (pH) {
-           for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+        if (targetFqn) break
+        for (const cand of candidates) {
+          const pH = classHierarchy.get(cand)
+          if (pH) {
+             for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+          }
         }
       }
 

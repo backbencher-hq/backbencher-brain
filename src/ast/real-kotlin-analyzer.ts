@@ -1238,6 +1238,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const modifiers = this.extractModifiers(node, ctx)
     const annotations = this.extractAnnotations(node, ctx)
     const enumValues = this.extractKotlinEnumValues(node)
+    // M37.21 #610 (KD19): enums carry supertypes like any other class —
+    // `enum class MODE(...) : ForUpdateOrShareMode` must reach the heritage
+    // post-pass (Kotlin semantics: constructor-invocation supertype =
+    // extends, bare = implements).
+    const superTypes = this.extractSuperTypes(node, ctx)
+    const superTypeKinds = this.extractSuperTypesWithKinds(node)
 
     const symbol: ASTEngine.UniversalSymbol = {
       name: enumName,
@@ -1251,6 +1257,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         modifiers,
         annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
+        superTypes,
+        superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
         enumValues,
         valueCount: enumValues.length,
         hasEnumMethods: this.countMethods(node, ctx) > 0,
@@ -2552,7 +2560,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const cls = symbols[i]
-      if (cls.kind === ASTEngine.SymbolKind.Class || cls.kind === ASTEngine.SymbolKind.Interface) {
+      // M37.21 #610 (KD19, probe-verified on Exposed ForUpdateOption.kt):
+      // enums are first-class heritage participants in Kotlin — `enum class
+      // MODE(...) : ForUpdateOrShareMode` was silently dropped because this
+      // post-pass filtered Class||Interface only. Kotlin semantics
+      // unchanged: supertype WITH constructor invocation = extends, bare =
+      // implements (an enum's entries pass constructor args to the base
+      // when the base is a class).
+      if (cls.kind === ASTEngine.SymbolKind.Class || cls.kind === ASTEngine.SymbolKind.Interface || cls.kind === ASTEngine.SymbolKind.Enum) {
         // M14 #419 K6: anonymous objects (object_literal) carry superTypes in
         // METADATA but emit NO hierarchy edge. They are expression-types, not
         // class declarations — the inheritance graph must not be polluted with

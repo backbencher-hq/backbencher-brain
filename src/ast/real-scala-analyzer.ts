@@ -77,8 +77,26 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // given — exactly the symbol kinds that can own members.
     // ─────────────────────────────────────────────────────────────────────
     const typeIndex = new Map<string, ASTEngine.UniversalSymbol>()
+    // ScalaD-G companion routing: same-name class/module entries coexist —
+    // first-seen per KIND wins. Methods carry ownerKind (stamped at walk
+    // time), so the override post-pass resolves the owner against the entry
+    // matching its owner's KIND, never a first-wins global that a companion
+    // module can shadow.
+    const typeIndexByKind = new Map<string, ASTEngine.UniversalSymbol>()
+    const kindKey = (name: string, kind: ASTEngine.SymbolKind) => `${kind}:${name}`
     const indexType = (s: ASTEngine.UniversalSymbol) => {
       if (!typeIndex.has(s.name)) typeIndex.set(s.name, s)
+      const kk = kindKey(s.name, s.kind)
+      if (!typeIndexByKind.has(kk)) typeIndexByKind.set(kk, s)
+    }
+    // Owner resolution: exact kind match first, then the legacy first-wins
+    // entry (pre-ownerKind symbols and unknown kinds keep old behavior).
+    const resolveOwner = (s: ASTEngine.UniversalSymbol): ASTEngine.UniversalSymbol | undefined => {
+      if (s.ownerKind) {
+        const exact = typeIndexByKind.get(kindKey(s.ownerName ?? "", s.ownerKind))
+        if (exact) return exact
+      }
+      return typeIndex.get(s.ownerName ?? "")
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -233,6 +251,41 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // NOT a call_expression wrapping it, so the old analyzer missed every
         // constructor. Emit instantiates from the enclosing symbol.
         this.handleInstantiation(node, relationships, parent)
+        // M37.21 #610 (JD18 family lesson from java, probe-verified in
+        // scala: run inside new Runnable {...} attributed to Service with no
+        // anonymous symbol): an anonymous class body (template_body child)
+        // declares REAL members. Mirror the kotlin/java family convention:
+        // anonymous_<SuperName> Class symbol (noise name, never leaks into
+        // the index) owned by the enclosing type, pushed as the walk parent
+        // so the body's members attribute to the anonymous type
+        // (contains anonymous_Runnable -> run).
+        const templateBody = this.findChild(node, "template_body")
+        if (templateBody) {
+          const typeNode = node.namedChild(0)
+          let superName = typeNode?.text ?? ""
+          if (typeNode?.type === "generic_type") superName = typeNode.namedChild(0)?.text ?? superName
+          superName = superName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+          const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
+          const anonSym: ASTEngine.UniversalSymbol = {
+            name: anonName,
+            kind: ASTEngine.SymbolKind.Class,
+            range: {
+              startLine: node.startPosition.row + 1,
+              startColumn: node.startPosition.column + 1,
+              endLine: node.endPosition.row + 1,
+              endColumn: node.endPosition.column + 1,
+              startIndex: node.startIndex,
+              endIndex: node.endIndex,
+            },
+            visibility: "public",
+            ownerName: parent?.name,
+            ownerKind: parent?.kind,
+            metadata: { isAnonymousObject: true, superTypes: superName ? [superName] : [], scalaSpecific: true },
+          }
+          symbols.push(anonSym)
+          indexType(anonSym)
+          currentParent = anonSym
+        }
       }
 
       if (
@@ -295,6 +348,16 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // exact in-file match keep the companion/first-supertype tiers.
     const sigText = (m: ASTEngine.UniversalSymbol): string =>
       "(" + (m.parameters ?? []).map((p) => (p.type || "unknown").replace(/\s+/g, "")).join(",") + ")"
+    // ScalaD-H (M37.21 #610, byname-implicits-13.scala / spec-example1.scala):
+    // a param type that is a GENERIC TYPE VARIABLE (`def to(t: T)` in trait
+    // Generic, `def m(x: T)` in @specialized class C) is substituted at the
+    // implementation site (`to(t: AABB)`, `m(x: Int)`) — textual sig equality
+    // then rejects a GENUINE override. Mirror the oracle's hasTypeVar rule:
+    // if either sig carries a type-variable token (single-capital identifier,
+    // possibly compound like `H :: T`), fall back to name-only pairing;
+    // concrete-vs-concrete mismatches still never pair (overload guard).
+    const hasTypeVar = (sig: string): boolean =>
+      /(^|[(,:|])\s*[A-Z](\s|$|\)|,|:|@|\+)/.test(sig)
     const methodSigsByOwner = new Map<string, Map<string, Set<string>>>()
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.isPhantom) continue
@@ -307,7 +370,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BFS over the in-file supertype chain for a non-private ancestor method
     // with the same name and signature (the declaring parent of `s`).
     const findDeclaringAncestor = (s: ASTEngine.UniversalSymbol): string | null => {
-      const ownerSym = typeIndex.get(s.ownerName ?? "")
+      const ownerSym = resolveOwner(s)
       if (!ownerSym) return null
       const sig = sigText(s)
       const seen = new Set<string>()
@@ -317,12 +380,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (seen.has(parent)) continue
         seen.add(parent)
         const parentMethods = methodSigsByOwner.get(parent)
-        if (parentMethods?.get(s.name)?.has(sig)) {
+        const parentSigs = parentMethods?.get(s.name)
+        if (parentSigs?.has(sig)) {
           // Private members are not inherited (JLS/Scala): a private-only
           // exact-signature match is an independent member — keep searching.
           const nonPrivate = symbols.some((bm) =>
             bm.kind === ASTEngine.SymbolKind.Method && bm.ownerName === parent &&
             bm.name === s.name && sigText(bm) === sig && bm.visibility !== "private")
+          if (nonPrivate) return parent
+        }
+        // ScalaD-H generic-substitution fallback: the parent declares the
+        // member under a type-variable sig (or the child is the substituted
+        // form) — name-only pairing, same rule as the oracle. Private-only
+        // members still never pair (checked below only on exact matches).
+        if (!parentSigs?.has(sig) && parentSigs && parentSigs.size > 0 &&
+            ([...parentSigs].some(hasTypeVar) || hasTypeVar(sig))) {
+          const nonPrivate = symbols.some((bm) =>
+            bm.kind === ASTEngine.SymbolKind.Method && bm.ownerName === parent &&
+            bm.name === s.name && bm.visibility !== "private")
           if (nonPrivate) return parent
         }
         const pSym = typeIndex.get(parent)
@@ -363,7 +438,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
           continue
         }
-        const ownerSym = typeIndex.get(s.ownerName)
+        const ownerSym = resolveOwner(s)
         const parents: string[] = ownerSym?.metadata?.superTypes ?? []
         let overrideParent = parents.length > 0 ? parents[0] : ""
         // Confidence reflects EVIDENCE TIER (patterns.ts filters >= 0.7):
@@ -1116,6 +1191,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       id: `${parent ? parent.id + "." : ""}${name}`,
       parent: parent ? parent.name : undefined,
       ownerName: parent ? parent.name : undefined,
+      // ScalaD-G (M37.21 #610, scala3 Setup.scala): companion objects share
+      // the class NAME (object Setup + class Setup) and the override post-pass
+      // looks up the OWNER in a name-keyed typeIndex — without ownerKind the
+      // module shadowed the class and its superTypes were unreachable (BFS
+      // died at hop 0, Setup.isPreCC -> SetupAPI.isPreCC never emitted).
+      // Stamp ownerKind at walk time so the post-pass routes lookups to the
+      // same-kind index entry.
+      ownerKind: parent ? parent.kind : undefined,
       visibility: this.getVisibility(node),
       parameters: extraMetadata.parameters,
       returnType: extraMetadata.returnType,
