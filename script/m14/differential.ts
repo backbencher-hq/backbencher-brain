@@ -244,6 +244,374 @@ async function deriveEmbeddedScriptTrees(root: any, content: string, lang: strin
 //              + SCD1-family write gate).
 // Both sides walk the SAME pinned parse, so leaf-attribution disagreements
 // surface as MISSING/UNEXPLAINED pairs for manual ruling.
+//
+// M37.21 #610 JVM oracle gap (master-review finding): java/kotlin/scala/groovy
+// were the ONLY gated languages with no dedicated calls oracle — the generic
+// deriveTreeEdges audited heritage/instantiates/overrides only, so the entire
+// JVM call surface (the family's most important graph) was never compared.
+// deriveJavaEdges audits it: every method_invocation, explicit constructor
+// delegation (super/this/Foo.super), and method reference (T::m) derives an
+// independent calls truth edge. The builtin/stdlib exclusion mirrors
+// RealJavaAnalyzer.isJavaBuiltin EXACTLY (exact-match list + per-segment
+// STDLIB_ROOTS) — that policy is a documented design decision (JLS-based,
+// measured 4.2% fabrication without it); the oracle audits target FINDING,
+// not the exclusion policy. Both sides walk the same pinned parse.
+const JAVA_EXACT_BUILTINS = new Set([
+  "System.out.println", "System.out.print", "System.out.printf",
+  "System.err.println", "System.err.print",
+  "System.exit", "System.gc", "System.currentTimeMillis",
+  "System.nanoTime", "System.getProperty", "System.getenv",
+  "System.identityHashCode", "System.arraycopy",
+  "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait",
+  "clone", "finalize",
+])
+const JAVA_STDLIB_ROOTS = new Set([
+  "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
+  "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
+  "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
+  "Throwable", "Error", "Exception", "StackTraceElement",
+  "Enum", "Void", "Compiler", "Package",
+  "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
+  "LinkedHashMap", "LinkedHashSet", "WeakHashMap", "IdentityHashMap",
+  "Collections", "Arrays", "Objects", "Optional", "OptionalInt",
+  "OptionalLong", "OptionalDouble", "Stream", "Collectors", "Comparator",
+  "Iterator", "ListIterator", "Spliterator", "Random", "UUID",
+  "Date", "Calendar", "TimeZone", "Locale", "Currency",
+  "Base64", "Scanner", "Formatter", "StringJoiner",
+  "AbstractList", "AbstractMap", "AbstractSet", "AbstractCollection",
+  "EnumMap", "EnumSet", "Queue", "Deque", "Stack", "Vector",
+  "Hashtable", "Properties", "BitSet", "Dictionary",
+  "List", "Map", "Set", "Collection", "Iterable",
+  "File", "Files", "Path", "Paths", "InputStream", "OutputStream",
+  "Reader", "Writer", "BufferedReader", "BufferedWriter",
+  "FileInputStream", "FileOutputStream", "FileReader", "FileWriter",
+  "ByteArrayInputStream", "ByteArrayOutputStream",
+  "StringReader", "StringWriter", "PrintWriter", "PrintStream",
+  "IOException", "FileNotFoundException", "EOFException",
+  "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
+  "Connection", "DriverManager", "ResultSet", "Statement",
+  "PreparedStatement", "SQLException", "DataSource",
+  "javax", "jakarta", "org", "com",
+  "kotlin", "Unit", "Nothing", "Any", "Int", "String",
+  "java", "jdk", "sun",
+  "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
+  "Marker", "MDC", "NDC",
+  "Override", "Deprecated", "SuppressWarnings", "SafeVarargs",
+  "FunctionalInterface", "Nullable", "NotNull", "NonNls",
+  "Test", "Before", "After", "BeforeClass", "AfterClass", "Ignore",
+  "RunWith", "Suite", "Parameterized",
+  "slf4j", "log4j", "logback",
+])
+function isJavaBuiltinCall(call: string): boolean {
+  if (JAVA_EXACT_BUILTINS.has(call)) return true
+  const segments = call.split(".")
+  for (const seg of segments) if (JAVA_STDLIB_ROOTS.has(seg)) return true
+  if (JAVA_STDLIB_ROOTS.has(call)) return true
+  return false
+}
+export function deriveJavaEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string) => {
+    if (!target) return
+    const k = label + "|" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  // Mirror of RealJavaAnalyzer.buildJavaCallExpression: qualified chain text
+  // for builtin filtering (leaf extraction happens after the exclusion).
+  const javaCallExpr = (n: any): string => {
+    const obj = n.childForFieldName?.("object")
+    const name = n.childForFieldName?.("name")
+    if (!name) return n.text
+    if (obj) {
+      const objText = obj.type === "method_invocation" ? javaCallExpr(obj) : obj.text
+      return `${objText}.${name.text}`
+    }
+    return name.text
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "method_invocation") {
+      const call = javaCallExpr(n)
+      if (call && !isJavaBuiltinCall(call)) push("calls", call.split(".").pop() || call)
+    } else if (t === "explicit_constructor_invocation") {
+      // Mirror the analyzer: super(...)/this(...) keep the keyword target;
+      // the qualified form Foo.super(...) keeps its receiver (unnamed keyword
+      // children are read from node text — structural syntax, conf 1.0).
+      const text = n.text.trim()
+      let target = "super"
+      if (text.startsWith("this")) target = "this"
+      else if (!text.startsWith("super")) {
+        const q = text.split("(")[0].trim().split(".")
+        target = q[0] + ".super"
+      }
+      push("calls", target)
+    } else if (t === "method_reference") {
+      // Mirror: T::m emits calls to m (last named child) when a receiver
+      // exists; constructor refs (int[]::new) have one named child only.
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) { const k = n.namedChild(i); if (k) kids.push(k) }
+      if (kids.length >= 2) push("calls", kids[kids.length - 1].text)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
+}
+// M37.21 #610 kotlin calls oracle: mirrors RealKotlinAnalyzer's call-graph
+// contract exactly — buildKotlinCallExpression receiver.selector chains,
+// leaf extraction, stdlib exclusion (stdlibPackagePrefixes + kotlinStdlibExact
+// + kotlinBuiltinExtras for receiver-less calls), the MEASURED PascalCase
+// construction rule (bare PascalCase callee = instantiates; qualified =
+// calls), and constructor_delegation_call super/this edges.
+const KOTLIN_STDLIB_PREFIXES = ["kotlin.", "kotlinx.", "java.", "javax.", "android.", "androidx."]
+const KOTLIN_STDLIB_EXACT = new Set([
+  "println", "print", "readLine", "require", "check", "error",
+  "let", "run", "with", "apply", "also", "takeIf", "takeUnless",
+  "toString", "equals", "hashCode", "copy", "componentN",
+  "mutableMapOf", "mapOf", "mutableListOf", "listOf", "setOf", "mutableSetOf",
+  "arrayOf", "emptyList", "emptyMap", "emptySet",
+  "repeat", "uppercase", "lowercase", "trim", "startsWith", "endsWith",
+  "contains", "substring", "map", "filter", "reduce", "fold", "forEach",
+  "sorted", "sortedBy", "distinct", "first", "last", "add", "remove",
+  "size", "isEmpty", "isNotEmpty", "put", "get", "getOrElse", "getOrDefault",
+  "any", "all", "none", "count", "sum", "max", "min", "take", "drop",
+])
+const KOTLIN_BUILTIN_EXTRAS = new Set([
+  "println", "print", "readLine", "require", "check", "error",
+  "let", "run", "with", "apply", "also", "takeIf", "takeUnless",
+  "toString", "equals", "hashCode", "copy", "componentN",
+  "repeat", "uppercase", "lowercase", "trim",
+  "mutableMapOf", "mapOf", "mutableListOf", "listOf", "setOf", "mutableSetOf",
+  "arrayOf", "emptyList", "emptyMap", "emptySet",
+])
+function isKotlinStdlibCall(call: string): boolean {
+  if (!call) return true
+  for (const p of KOTLIN_STDLIB_PREFIXES) if (call.startsWith(p)) return true
+  if (KOTLIN_STDLIB_EXACT.has(call)) return true
+  if (!call.includes(".") && KOTLIN_BUILTIN_EXTRAS.has(call)) return true
+  return false
+}
+export function deriveKotlinEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string) => {
+    if (!target) return
+    const k = label + "|" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  const kotlinCallExpr = (n: any): string => {
+    // Mirror of RealKotlinAnalyzer.buildKotlinCallExpression: the DIRECT
+    // navigation_expression child only (ERROR-recovered nested call chains
+    // wrapping comments must never recurse — the analyzer reads the direct
+    // callee path and falls back to text.split("(")[0]).
+    const nav = n.namedChildren.find((c: any) => c.type === "navigation_expression")
+    if (nav) {
+      const receiver = nav.namedChild(0)
+      let selector = nav.namedChild(nav.namedChildCount - 1)
+      if (!receiver || !selector) return n.text
+      if (selector.type === "navigation_suffix") {
+        const inner = selector.namedChild(selector.namedChildCount - 1)
+        if (!inner) return n.text
+        selector = inner
+      }
+      const receiverText =
+        receiver.type === "navigation_expression"
+          ? kotlinNavText(receiver)
+          : receiver.type === "call_expression"
+            ? kotlinCallExpr(receiver)
+            : receiver.text
+      return `${receiverText}.${selector.text}`
+    }
+    const functionName = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier")
+    return functionName ? functionName.text : n.text.split("(")[0]
+  }
+  const kotlinNavText = (n: any): string => {
+    const receiver = n.namedChild(0)
+    let selector = n.namedChild(n.namedChildCount - 1)
+    if (!receiver || !selector) return n.text
+    if (selector.type === "navigation_suffix") {
+      const inner = selector.namedChild(selector.namedChildCount - 1)
+      if (!inner) return n.text
+      selector = inner
+    }
+    const receiverText = receiver.type === "navigation_expression" ? kotlinNavText(receiver) : receiver.text
+    return `${receiverText}.${selector.text}`
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "call_expression") {
+      const call = kotlinCallExpr(n)
+      const leaf = call.split(".").pop() || call
+      const isQualified = call.includes(".")
+      const isStdlib = KOTLIN_STDLIB_EXACT.has(call) || (!isQualified && KOTLIN_STDLIB_EXACT.has(leaf))
+      if (call && call !== "print" && call !== "println" && !isStdlib) {
+        const isPascal = leaf.length > 0 && leaf[0] >= "A" && leaf[0] <= "Z"
+        if (isPascal && !isQualified) push("instantiates", leaf)
+        else push("calls", leaf)
+      }
+    } else if (t === "constructor_delegation_call") {
+      const text = n.text.trim()
+      push("calls", text.startsWith("this") ? "this" : "super")
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
+}
+// M37.21 #610 scala calls oracle: mirrors RealScalaAnalyzer.handleCall —
+// quote/splice callee skip, curried-application wrapper skip (inner call
+// emits, wrapper doesn't), field_expression leaf extraction, bracketed
+// type-arg stripping, and the MEASURED companion-apply rule (bare PascalCase
+// callee = instantiates; qualified obj.Method() = calls).
+export function deriveScalaEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string) => {
+    if (!target) return
+    const k = label + "|" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "call_expression") {
+      const fnNode = n.childForFieldName?.("function")
+      if (fnNode) {
+        // Scala 3 quote/splice + backtick literals are never calls.
+        if (!(fnNode.text.startsWith("'") || fnNode.text.startsWith("`"))) {
+          // Curried wrapper: the INNER call is visited separately; deriving
+          // from the wrapper would double-count (SCD7).
+          if (fnNode.type !== "call_expression") {
+            let calledName = fnNode.text
+            const isQualified = fnNode.type === "field_expression"
+            if (isQualified) {
+              const kids: string[] = []
+              for (let i = 0; i < fnNode.namedChildCount; i++) {
+                const c = fnNode.namedChild(i)
+                if (c && c.type === "identifier") kids.push(c.text)
+              }
+              calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
+            }
+            // Strip bracketed type args iteratively (nested List[(A[B], C)]).
+            let prevCalled: string | undefined
+            do {
+              prevCalled = calledName
+              calledName = calledName.replace(/\[[^\[\]]*\]/g, "").trim()
+            } while (calledName !== prevCalled)
+            const first = calledName.charCodeAt(0)
+            const isCapitalized = first >= 65 && first <= 90
+            if (calledName) {
+              if (isCapitalized && !isQualified) push("instantiates", calledName)
+              else push("calls", calledName)
+            }
+          }
+        }
+      }
+    } else if (t === "instance_expression") {
+      // `new X` / `new X(...)` / `new X[T](...)` — mirror handleInstantiation:
+      // generic supertypes collapse to the head, bracketed args stripped.
+      const tn = n.namedChild(0)
+      if (tn) {
+        let name = tn.text
+        if (tn.type === "generic_type" && tn.namedChildCount > 0) name = tn.namedChild(0).text
+        let prevName: string | undefined
+        do {
+          prevName = name
+          name = name.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+        } while (name !== prevName)
+        if (name && name !== "unknown") push("instantiates", name)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
+}
+// M37.21 #610 groovy calls oracle: mirrors RealGroovyAnalyzer's walk —
+// method_invocation (object → buildGroovyQualifiedCall dotted path WITHOUT
+// argument text; target is the bare methodName leaf), GROOVY_BUILTINS +
+// STDLIB_ROOTS prefix filter, explicit_constructor_invocation honest
+// literal ("super"/"this"), juxt_function_call (echo "msg" IS a call).
+export function deriveGroovyEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, target: string) => {
+    if (!target) return
+    const k = label + "|" + target
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+  // Mirror of GROOVY_BUILTINS + STDLIB_ROOTS prefix filter (analyzer lines 46/1096).
+  const GROOVY_BUILTINS = new Set([
+    "println", "print", "printf", "sprintf",
+    "assert", "sleep", "synchronized",
+    "toString", "hashCode", "equals", "getClass", "notify", "notifyAll",
+    "wait", "clone", "finalize",
+    "System.out.println", "System.out.print", "System.out.printf",
+    "System.err.println", "System.err.print",
+    "System.exit", "System.gc", "System.currentTimeMillis", "System.nanoTime",
+    "System.getProperty", "System.getenv", "System.identityHashCode",
+    "System.arraycopy", "System.lineSeparator",
+  ])
+  const STDLIB_ROOTS = new Set([
+    "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
+    "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
+    "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
+    "Throwable", "Error", "Exception", "StackTraceElement",
+    "Enum", "Void", "Compiler", "Package",
+    "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
+    "LinkedHashMap", "LinkedHashSet", "ArrayDeque", "PriorityQueue",
+    "Collections", "Arrays", "Objects", "Optional", "Comparator",
+    "List", "Map", "Set", "Collection", "Iterator", "Iterable",
+    "Calendar", "Date", "UUID", "Locale", "Currency",
+    "File", "Path", "Paths", "Files",
+    "BigDecimal", "BigInteger", "AtomicInteger", "AtomicLong",
+    "StringBuilder", "StringBuffer", "Pattern", "Matcher", "Random",
+    "Logger", "Level", "OutputStream", "InputStream", "Reader", "Writer",
+    "URL", "URI", "Socket", "ServerSocket",
+  ])
+  const isBuiltin = (call: string): boolean => {
+    if (GROOVY_BUILTINS.has(call)) return true
+    const firstDot = call.indexOf(".")
+    const rootSeg = firstDot > 0 ? call.slice(0, firstDot) : call
+    return STDLIB_ROOTS.has(rootSeg)
+  }
+  // Mirror of buildGroovyQualifiedCall: dotted path WITHOUT argument text.
+  const qualifiedCall = (objectNode: any, methodName: string): string => {
+    if (!objectNode) return methodName
+    if (objectNode.type === "method_invocation") {
+      const innerName = objectNode.childForFieldName?.("name")
+      const innerObject = objectNode.childForFieldName?.("object")
+      const base = qualifiedCall(innerObject, innerName?.text ?? "")
+      return `${base}.${methodName}`
+    }
+    return `${objectNode.text}.${methodName}`
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "method_invocation") {
+      const nameNode = n.childForFieldName?.("name")
+      if (nameNode) {
+        const methodName = nameNode.text
+        const objectNode = n.childForFieldName?.("object")
+        const callExpr = qualifiedCall(objectNode, methodName)
+        if (!isBuiltin(callExpr)) push("calls", methodName)
+      }
+    } else if (t === "explicit_constructor_invocation") {
+      const first = n.namedChild(0)
+      if (first && (first.type === "super" || first.type === "this")) push("calls", first.type)
+    } else if (t === "juxt_function_call") {
+      const nameNode = n.childForFieldName?.("name")
+      if (nameNode && !isBuiltin(nameNode.text)) push("calls", nameNode.text)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
+}
 export function deriveCppEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -3927,6 +4295,14 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       if (tn) {
         let name = tn.text
         if (tn.type === "generic_type" && tn.namedChildCount > 0) name = tn.namedChild(0).text
+        // ScalaD-I (M37.21 #610, cats-effect SecureRandomCompanionPlatform):
+        // the analyzer strips bracketed type args ITERATIVELY from the raw
+        // constructor text (`ScalaRandom[F](Applicative[F].pure(random)) with
+        // SecureRandom[F]` -> `ScalaRandom(Applicative.pure(random)) with
+        // SecureRandom`), so truth must normalize identically or the pair
+        // never matches. Iterative strip covers nested args List[(A[B], C)].
+        let prevName
+        do { prevName = name; name = name.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim() } while (name !== prevName)
         edges.push({ label: "instantiates", from: "(expr)", target: name })
       }
     }
@@ -4009,11 +4385,27 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
     return types.length > 0 || container.namedChildCount === 0 ? "(" + types.join(",") + ")" : undefined
   }
+  // ScalaD-E (M37.21 #610, scala3 byname-implicits-13.scala): textual sig
+  // comparison is invalid when a param type is a GENERIC TYPE VARIABLE —
+  // trait Eq's abstract `def eqv[T](x: T, y: T)` has sig (T,T) while its
+  // anonymous implementations carry the substituted (Int,Int)/(String,String).
+  // That is a genuine override (type-parameter substitution), not an
+  // overload. Rule: if EITHER side's sig contains a type-variable token
+  // (single-capital identifier, possibly in a compound type like `H :: T`),
+  // fall back to name-only pairing — mirroring the analyzer's own name-based
+  // findDeclaringAncestor. Concrete types keep strict sig checks so overloads
+  // still never pair.
+  const hasTypeVar = (sig: string | undefined): boolean =>
+    !!sig && /(^|[(,:|])\s*[A-Z](\s|$|\)|,|:|@|\+)/.test(sig)
   const sigCompatible = (child: any, parent: any, m: string): boolean => {
     const cs = child.sigs?.get(m)
     const ps = parent.sigs?.get(m)
     if (cs && ps && cs.size > 0 && ps.size > 0) {
       for (const s of cs) if (ps.has(s)) return true
+      // Generic-substitution fallback: type-variable sigs cannot be compared
+      // textually across instantiation — name-only pairing (analyzer mirror).
+      for (const s of cs) if (hasTypeVar(s)) return true
+      for (const s of ps) if (hasTypeVar(s)) return true
       return false // same name, different signature = OVERLOAD, not an override
     }
     return true // signature unavailable on a side -> legacy name-only pairing
@@ -4033,8 +4425,16 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         if (lt !== -1) nm = nm.slice(0, lt).trim()
         nm = lastSegment(nm)
       }
-      if (nm && !decls[nm]) {
-        decls[nm] = { parents: [], methods: new Set(), sigs: new Map() }
+      // ScalaD-F (M37.21 #610, scala3 HashSet.scala): scala companions share a
+      // NAME (object SetNode at L394 + sealed abstract class SetNode at L404).
+      // The old `!decls[nm]` first-wins guard dropped the class's 19 abstract
+      // methods because the companion registered first — the analyzer's
+      // methodSigsByOwner unions methods across same-named owners, so every
+      // BitmapIndexedSetNode override of SetNode surfaced as unexplained
+      // fabrication. Always ensure the decl entry exists and MERGE members
+      // across every same-named declaration (companion union semantics).
+      if (nm) {
+        if (!decls[nm]) decls[nm] = { parents: [], methods: new Set(), sigs: new Map() }
         // cpp classes use field_declaration_list (no 'body' substring)
         const body = n.namedChildren.find((c: any) => /body|field_declaration_list/.test(c.type))
         if (body) {
@@ -4116,6 +4516,52 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     for (let i = 0; i < n.namedChildCount; i++) collectDecl(n.namedChild(i))
   }
   collectDecl(root)
+  // M37.21 #610 scala anonymous bodies (JD18 mirror): `new Sync[F] { ... }`
+  // parses as instance_expression + template_body — the analyzer now emits
+  // anonymous_<Super> class symbols whose members attribute to the ANONYMOUS
+  // type, so the oracle must register the same synthetic declaration with
+  // its supertype as a parent (an extends edge the tree never derives).
+  // Mirrors RealScalaAnalyzer's anonymous-symbol push: generic supertypes
+  // collapse to the head name, bracketed args stripped.
+  const anonScalaDecl = (n: any) => {
+    if (n.type !== "instance_expression") return
+    const body = n.namedChildren.find((c: any) => c.type === "template_body")
+    if (!body) return
+    const tn = n.namedChild(0)
+    if (!tn) return
+    let superName = tn.text
+    if (tn.type === "generic_type" && tn.namedChildCount > 0) superName = tn.namedChild(0).text
+    superName = superName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+    if (!superName) return
+    const anonName = `anonymous_${superName}`
+    if (!decls[anonName]) {
+      decls[anonName] = { parents: [], methods: new Set(), sigs: new Map() }
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const m = body.namedChild(i)
+        if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
+        const mn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
+        if (mn && mn.text !== "constructor" && mn.text !== anonName) {
+          decls[anonName].methods.add(mn.text)
+          const sig = extractSig(m)
+          if (sig) {
+            let ss = decls[anonName].sigs.get(mn.text)
+            if (!ss) { ss = new Set(); decls[anonName].sigs.set(mn.text, ss) }
+            ss.add(sig)
+          }
+        }
+      }
+    }
+    if (!decls[superName]) decls[superName] = { parents: [], methods: new Set(), sigs: new Map() }
+    declParents.push({ child: anonName, parent: superName })
+  }
+  anonScalaDecl(root)
+  const anonStack: any[] = []
+  for (let i = 0; i < root.namedChildCount; i++) { const c = root.namedChild(i); if (c) anonStack.push(c) }
+  while (anonStack.length) {
+    const x = anonStack.pop()!
+    anonScalaDecl(x)
+    for (let i = 0; i < x.namedChildCount; i++) { const c = x.namedChild(i); if (c) anonStack.push(c) }
+  }
   // hierarchy from already-derived extends edges (head-segment normalized)
   // SCALA-D1 (two-corpus gate finding, cats-effect Queue.scala): a QUALIFIED
   // heritage target (`with unsafe.BoundedQueue[F, A]`) must never seed an
@@ -4451,6 +4897,31 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "java") {
+        // M37.21 #610: dedicated java calls oracle (first JVM language with
+        // one — the generic walker never audited the call surface).
+        for (const e of deriveJavaEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "kotlin") {
+        // M37.21 #610: kotlin calls oracle (JD-oracle gap, java precedent).
+        for (const e of deriveKotlinEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "scala") {
+        // M37.21 #610: scala calls oracle (JD-oracle gap, java precedent).
+        for (const e of deriveScalaEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "groovy") {
+        // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
+        for (const e of deriveGroovyEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "c") {
         for (const e of deriveCCalls(root)) {
           ;(truth as any[]).push(e)
@@ -4553,7 +5024,7 @@ async function main() {
       // call truth, so including calls there would flag every real call edge
       // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
       // USES truth as well (write-gated), so c joins the uses-audited set.
-      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      })).filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

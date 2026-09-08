@@ -481,6 +481,43 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             confidence: 0.95,
             metadata: { relationshipType: "instantiates", isNew: true },
           })
+          // M37.21 #610 (JD18 family lesson from java/scala, probe-verified
+          // in groovy: run inside new Runnable() {...} attributed to Service
+          // with no anonymous symbol): an anonymous inner class body
+          // declares REAL members. Mirror the kotlin/java/scala family
+          // convention: anonymous_<SuperName> Class symbol (noise name,
+          // never leaks into the index) owned by the enclosing type, scope
+          // pushed so the body's members attribute to the anonymous type
+          // (contains anonymous_Runnable -> run).
+          const classBody = this.findChild(node, (n) => n.type === "class_body")
+          if (classBody && parentContext) {
+            const superName = this.baseTypeName(typeNode)
+            const anonName = superName ? `anonymous_${superName}` : "anonymous_class"
+            const anonFqn = parentContext.fqn ? `${parentContext.fqn}.${anonName}` : anonName
+            const anonSym: ASTEngine.UniversalSymbol = {
+              name: anonName,
+              kind: ASTEngine.SymbolKind.Class,
+              range: this.nodeToRange(node),
+              visibility: parentContext.visibility || "public",
+              ownerName: parentContext.name,
+              ownerKind: parentContext.kind,
+              metadata: { nodeType: type, isAnonymousClass: true, superTypes: superName ? [superName] : [] },
+            }
+            symbols.push(anonSym)
+            symbolMap.set(anonFqn, anonSym)
+            newContext = {
+              node: classBody,
+              name: anonName,
+              kind: ASTEngine.SymbolKind.Class,
+              fqn: anonFqn,
+              symbolRef: anonSym,
+              visibility: parentContext.visibility,
+              isInterface: false,
+              parents: superName ? [superName] : [],
+            }
+            scopeStack.push(newContext)
+            pushedScope = true
+          }
         }
       }
       // Closures, local variables, gstrings, command expressions: intentionally
@@ -668,24 +705,50 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       let reasonCode = "exact-in-file"
 
       // Pass 1: exact-signature BFS over the in-file hierarchy.
+      // M37.21 #610 (JD19 family lesson from java): classHierarchy is FQN-
+      // keyed but parents are bare leaf names, so hop-2+ looked up the map
+      // with the bare name and missed — nested-class chains (BlackVal
+      // extends Black extends Node) lost overrides through non-declaring
+      // ancestors AND fell through to the pass-3 first-parent GUESS, which
+      // fabricated wrong edges at 0.5 (BlackVal.val -> Black.val with Black
+      // declaring no val). Suffix-resolve every bare parent to its FQN
+      // candidate(s); symbolMap disambiguates same-named classes.
+      const suffixIndex = new Map<string, string[]>()
+      for (const fqn of classHierarchy.keys()) {
+        const bare = fqn.slice(fqn.lastIndexOf(".") + 1)
+        const arr = suffixIndex.get(bare)
+        if (arr) arr.push(fqn)
+        else suffixIndex.set(bare, [fqn])
+      }
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
       if (ownerH) {
         for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
       }
       const seen: Set<string> = new Set()
-      while (queue.length > 0) {
+      while (queue.length > 0 && !targetFqn) {
         const parent = queue.shift()!
         if (seen.has(parent)) continue
         seen.add(parent)
-        const potential = `${parent}.${task.methodName}${task.signature}`
-        if (symbolMap.has(potential)) {
-          targetFqn = potential
-          break
+        const candidates = suffixIndex.get(parent) ?? [parent]
+        for (const cand of candidates) {
+          // Groovy symbolMap keys method symbols by the OWNER-NAME raw key
+          // (Owner.method(sig)) — an FQN candidate (Outer.Black.val) has no
+          // direct key. Match on the method's declaring-owner leaf: the
+          // candidate's bare class name is the ownerName in the raw key.
+          const ownerBare = cand.slice(cand.lastIndexOf(".") + 1)
+          const potential = `${ownerBare}.${task.methodName}${task.signature}`
+          if (symbolMap.has(potential)) {
+            targetFqn = `${cand}.${task.methodName}${task.signature}`
+            break
+          }
         }
-        const pH = classHierarchy.get(parent)
-        if (pH) {
-          for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+        if (targetFqn) break
+        for (const cand of candidates) {
+          const pH = classHierarchy.get(cand)
+          if (pH) {
+            for (let i = 0; i < pH.length; i++) queue.push(pH[i])
+          }
         }
       }
 
