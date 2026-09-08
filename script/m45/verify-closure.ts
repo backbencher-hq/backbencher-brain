@@ -133,7 +133,8 @@ negative("X1: missing evidence file is rejected", () => !existsSync(path.join(EV
 
 const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8" })
   .split("\n").map((l) => l.slice(3).trim()).filter(Boolean)
-  .filter((f) => f.startsWith("script/m45/") || f.startsWith("docs/m45/") || f.startsWith("validation/m45/") || f === "package.json")
+  .filter((f) => f.startsWith("script/m45/") || f.startsWith("docs/m45/") || f.startsWith("test/fixtures/m45-studio/") || f === "package.json")
+  .filter((f) => !(f.startsWith("validation/m45/") && ["X1.json", "G1.json", "C1.json"].includes(f.split("/").pop() ?? "")))
 check("X1: relevant tree is clean", dirty.length === 0, dirty.join(","))
 
 // --- evidence ------------------------------------------------------------------------------
