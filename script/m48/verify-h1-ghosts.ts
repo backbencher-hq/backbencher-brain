@@ -7,6 +7,9 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+// M48 post-closure: installers pre-allow tools by name in opencode configs —
+// validate against the registry itself, not a copy of the names.
+import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m48/results")
@@ -159,10 +162,45 @@ async function main() {
     }
   }
 
+  // 8. Website installers: the permission blocks they write ARE the user-facing
+  //    tool promise. A dead name there makes agents call removed tools (user-
+  //    reported regression: opencode kept trying bb_select because install.sh
+  //    wrote it into opencode.json). The allow-list must be exactly the real
+  //    surface — every name real, all 16 real names present, zero phantoms
+  //    anywhere in the file (covers array/prose forms too).
+  const REAL = new Set(PUBLIC_TOOL_DESCRIPTORS.map((d) => d.name))
+  const instDir = path.join(ROOT, "website/public")
+  const installers = readdirSync(instDir).filter((f) => /^install\.(sh|ps1)$/.test(f))
+  check("website installers exist to audit", installers.length >= 2, installers.join(","))
+  for (const f of installers) {
+    const src = readFileSync(path.join(instDir, f), "utf8")
+    const allowed = [...src.matchAll(/["']?(bb_[a-z_]+)["']?\s*:\s*["']?allow/g)].map((m) => m[1])
+    const uniq = [...new Set(allowed)]
+    const fake = allowed.filter((t) => !REAL.has(t))
+    check(`${f} pre-allows only real tools`, fake.length === 0, fake.join(","))
+    check(`${f} pre-allows every real tool (${REAL.size})`, uniq.length === REAL.size, `${uniq.length}/${REAL.size}`)
+    // install.sh prunes removed aliases from pre-existing configs (heals 0.2.x
+    // installs). The prune list must be exactly the phantom set — a real tool
+    // pruned would break installs, a phantom missed would keep ghost entries.
+    const pruneMatch = src.match(/const legacy = \[([^\]]*)\]/)
+    if (pruneMatch) {
+      const pruned = [...pruneMatch[1].matchAll(/'(bb_[a-z_]+)'/g)].map((m) => m[1])
+      check(`${f} prunes exactly the removed aliases`,
+        pruned.length === PHANTOMS.length && PHANTOMS.every((p) => pruned.includes(p)) && pruned.every((p) => !REAL.has(p)),
+        pruned.join(","))
+      const withoutPrune = src.replace(pruneMatch[0], "")
+      for (const ph of PHANTOMS) check(`${f} mentions ${ph} only in the prune list`, !withoutPrune.includes(ph), "")
+    } else {
+      for (const ph of PHANTOMS) check(`${f} never mentions ${ph}`, !src.includes(ph), "")
+    }
+  }
+
   // Negatives: the predicates detect real violations.
   negative("a live call of a phantom would be detected", liveCallSites(`await call("bb_relationships", { target: "x" })`, "bb_relationships").length === 1, "")
   negative("an unlabeled prose mention in a doc would be flagged", !historicalContext("random prose bb_select here", "random prose ".length), "")
   negative("a table row without history framing is not exempt", !historicalContext("| `bb_select` | ??? |\n", 2), "")
+  negative("an installer granting a dead name would be flagged", ![...`"bb_select": "allow"`.matchAll(/["']?(bb_[a-z_]+)["']?\s*:\s*["']?allow/g)].every((m) => REAL.has(m[1])), "")
+  negative("an installer missing a real tool would be flagged", [...new Set(["bb_search", "bb_ask"].map(String))].length !== REAL.size, "")
 
   const ok = failed === 0
   console.log(`M48 H1 GHOST CLEANUP: ${ok ? "PASS" : "FAIL"} (${passed} passed, ${failed} failed, ${negatives} negatives)`)
@@ -177,7 +215,7 @@ async function main() {
       evidenceFile: "H1.json",
       generatedAt: new Date().toISOString(),
       passed, failed, negativeCases: negatives, failures,
-      summary: { scriptsScanned: scripts.length, phantomsAudited: PHANTOMS.length, liveHits },
+      summary: { scriptsScanned: scripts.length, phantomsAudited: PHANTOMS.length, liveHits, installersAudited: installers.length },
     }, null, 2) + "\n")
   }
   process.exit(ok ? 0 : 1)
