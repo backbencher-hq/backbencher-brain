@@ -32,7 +32,7 @@
       "id": "X1",
       "title": "Closure: live re-run of R1+R2, no unresolved review claims older than their gate run",
       "status": "pending",
-      "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling."
+      "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling. Intake issue map: J1=#713 (CLOSED with evidence @1a417c9d), K1=#714, S1=#715. Remaining dual-lens languages get one issue each as reviews land; dual-lens closure (#614) resumes after the board clears; M14's remaining analyzers (from clean) proceed last with the full strict battery."
     }
   ]
 }
