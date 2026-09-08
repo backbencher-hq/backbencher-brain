@@ -1,6 +1,6 @@
 {
   "status": "verified",
-  "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m31/verify-bb-docs-truth.ts",
   "evidenceFile": "D2.json",

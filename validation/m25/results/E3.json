@@ -9,7 +9,7 @@
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "negativeCases": 4,
-  "currentCommit": "3fa837266d11fa231b21e1d835a165cf283c58aa",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
   "evidenceFile": "E3.json",
   "renderCapture": "validation/m25/results/E3-render-capture.txt",

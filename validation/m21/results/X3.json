@@ -7,7 +7,7 @@
   "passed": 41,
   "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "e36e6aed5c1e8f3868be3f068dadb751e25fd3bd",
+  "currentCommit": "14407e4496b4eaffc126cf2751822605d1f37973",
   "workingTreeRelevantChanges": [
     " M validation/m14/results/M14.0.F5.json",
     " M validation/m17/results/S2.json",
@@ -211,7 +211,7 @@
   },
   "limitations": [
     "Bottleneck verdicts are derived from X1 (controlled cold fixture) and X2 (sampled large-repo cold runs) wall-clock phase timings on this machine; they are relative consumption points, not throughput guarantees.",
-    "Discovery/worker-startup are disproven only for these cold sampled runs — cold caches, network filesystems, or very different layouts could change that, so 'disproven' is machine-scoped, not universal.",
+    "Discovery/worker-startup are disproven only for these cold sampled runs \u2014 cold caches, network filesystems, or very different layouts could change that, so 'disproven' is machine-scoped, not universal.",
     "Known gaps D2/E2/R3 remain intentionally open (fail-closed); X3 does not retroactively verify them.",
     "The classification rule uses interquartile-relative thresholds so a single oversized repo cannot tilt the verdict; UNRESOLVED is returned whenever runs disagree too much to support an honest claim."
   ]
