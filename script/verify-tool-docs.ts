@@ -33,7 +33,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_analyze: {
     returns: ["Mode-specific typed analysis", "Graph, dependency, complexity, impact, or test evidence", "Explicit unavailable and truncation states"],
     errors: ["Missing required mode", "Missing target for a target-based mode", "Option irrelevant to the selected mode"],
-    limitations: ["Static relationships cannot establish runtime behavior", "Test results describe indexed static evidence, not executed coverage"],
+    limitations: ["Static relationships cannot establish runtime behavior", "Test results describe indexed static evidence, not executed coverage", "Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class"],
     performance: "Mode-specific limits and graph traversal bounds prevent unbounded output.",
     safety: "Read-only. Analysis never creates tests or edits source.",
     evidence: "Findings derive from brain_* symbols, files, relationships, complexity, and test-file classifications.",
@@ -65,7 +65,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_visualize: {
     returns: ["Canonical nodes and links", "Text, JSON, or self-contained HTML projection", "Provenance and explicit truncation metadata"],
     errors: ["Missing target for a scoped graph", "Unsupported scope or format", "Unavailable index"],
-    limitations: ["The graph reflects static indexed relationships", "Nodes and links beyond configured budgets are omitted and reported"],
+    limitations: ["The graph reflects static indexed relationships", "Nodes and links beyond configured budgets are omitted and reported", "Owner-cascade attribution: member-level relationships are attributed to the owner class, same as bb_graph"],
     performance: "maxNodes, maxLinks, scope, relationshipTypes, and languages constrain graph construction.",
     safety: "Read-only. HTML output contains the same bounded graph as JSON and does not mutate the project.",
     evidence: "Nodes and links resolve to canonical indexed entities; links with omitted endpoints are not emitted.",
@@ -105,7 +105,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_graph: {
     returns: ["Per-symbol dependency graph: callers and callees", "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence", "Declared truncation with a reason when the traversal is bounded"],
     errors: ["Missing symbol", "maxDepth outside the declared 1-10 range", "Symbol not found in the index"],
-    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run"],
+    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run", "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row"],
     performance: "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
     safety: "Read-only. It does not modify source files or index data.",
     evidence: "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence.",
@@ -113,7 +113,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_impact: {
     returns: ["Downstream dependents of the symbol with per-edge evidence tiers and confidence", "Declared-absent result when the symbol is unknown — never an empty guess"],
     errors: ["Missing symbol", "Symbol not found in the index"],
-    limitations: ["Static impact analysis cannot establish runtime behavior", "Reflects the index as of the last index run"],
+    limitations: ["Static impact analysis cannot establish runtime behavior", "Reflects the index as of the last index run", "Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class"],
     performance: "Traversal bounds match the canonical graph engine limits; output scales with the dependents subgraph.",
     safety: "Read-only. It does not modify source files or index data.",
     evidence: "Impact derives from brain_relationship rows via the same engine the editor impact panel uses.",

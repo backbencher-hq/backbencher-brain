@@ -97,10 +97,32 @@ async function main() {
     check(`overview category matches registry: ${d.name}`, seg.includes(`**Category:** ${d.documentation.category}.`), "")
   }
 
+  // Owner-cascade disclosure: the graph engine attributes member-level
+  // relationships to the owner class (M48 post-closure accuracy fix). Every
+  // surface that answers graph questions MUST say so — description, per-tool
+  // doc, and the website doc — or an agent cannot reason about result sets.
+  const CASCADE_TOOLS = ["bb_graph", "bb_analyze", "bb_impact", "bb_visualize"]
+  for (const name of CASCADE_TOOLS) {
+    const d = PUBLIC_TOOL_DESCRIPTORS.find((x: any) => x.name === name)
+    check(`registry description discloses owner-cascade: ${name}`,
+      !!d && /owner-cascade|owner class/i.test(String(d.description ?? "")),
+      String(d?.description ?? "").slice(0, 80))
+    const docPath = path.join(ROOT, "docs/tools", `${name}.md`)
+    check(`per-tool doc discloses owner-cascade: ${name}`,
+      existsSync(docPath) && /owner-cascade|owner class/i.test(readFileSync(docPath, "utf8")))
+    const webPath = path.join(ROOT, "docs/website/TOOLS.md")
+    check(`website doc discloses owner-cascade: ${name}`,
+      existsSync(webPath) && /owner-cascade|owner class/i.test(readFileSync(webPath, "utf8")))
+  }
+  const engineSrc = readFileSync(path.join(ROOT, "src/intelligence/graph/graph-engine.ts"), "utf8")
+  check("graph engine carries the owner-cascade contract comment",
+    /owner-cascade/i.test(engineSrc))
+
   // Negatives: the predicates can fail.
   negative("a missing Relationship section would fail", !/## Relationship to other tools/.test("# x\n\n## Staleness\n\ny"), "")
   negative("a fabricated cross-reference would fail", !toolNames.includes("bb_nonexistent"), "")
   negative("a regressed graph category for bb_annotate would fail", !("graph" === "annotations"), "")
+  negative("a stripped owner-cascade disclosure would fail", !/owner-cascade|owner class/i.test("no disclosure here"), "")
 
   const ok = failed === 0
   console.log(`M48 D1 DOC PARITY: ${ok ? "PASS" : "FAIL"} (${passed} passed, ${failed} failed, ${negatives} negatives)`)

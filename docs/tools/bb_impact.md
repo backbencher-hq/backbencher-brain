@@ -1,6 +1,6 @@
 # `bb_impact`
 
-Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented.
+Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows.
 
 ## Contract
 
@@ -46,6 +46,7 @@ Bounded reverse-dependency impact for one symbol via the same component the edit
 
 - Static impact analysis cannot establish runtime behavior
 - Reflects the index as of the last index run
+- Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class
 
 ## Performance
 

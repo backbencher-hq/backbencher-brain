@@ -1,6 +1,6 @@
 # `bb_visualize`
 
-Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.
+Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. Same owner-cascade semantics as bb_graph: member-level relationships are attributed to the owner class.
 
 ## Contract
 
@@ -89,6 +89,7 @@ Scoped dependency and architecture visualization over the canonical graph engine
 
 - The graph reflects static indexed relationships
 - Nodes and links beyond configured budgets are omitted and reported
+- Owner-cascade attribution: member-level relationships are attributed to the owner class, same as bb_graph
 
 ## Performance
 

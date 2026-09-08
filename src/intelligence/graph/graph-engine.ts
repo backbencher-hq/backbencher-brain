@@ -43,6 +43,17 @@ type EdgeRow = {
   extName: string | null
 }
 
+/** The owner-cascade: a relationship whose stored target is any member of a
+ *  class/struct/etc. (e.g. a call to a method) is attributed to the whole
+ *  owner family — the edge is emitted toward the OWNER symbol, not just the
+ *  exact member. Evidence: `cleanup --calls--> file_already_gone?` (a real
+ *  brain_relationship row) is reported as `cleanup → Cleaner`.
+ *
+ *  This is deliberate class-granularity attribution: every emitted edge still
+ *  traces to a real stored row (rowId), and the member-level target is visible
+ *  in the edge's callSite/metadata — but it means callers/callees sets at any
+ *  depth are a superset of naive exact-target SQL. Tools and docs MUST
+ *  disclose this (M48 post-closure accuracy fix; see docs/tools/bb_graph.md). */
 function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
   const prefix = symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
   return { prefix, upper: prefix + ";" }
