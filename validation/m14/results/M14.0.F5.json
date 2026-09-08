@@ -85,7 +85,7 @@
       "status": "pass"
     },
     {
-      "description": "proxicall: tree-truth vs analyzer diff @2b1616a82d",
+      "description": "proxicall: tree-truth vs analyzer diff @404252c223",
       "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-dart",
       "status": "pass"
@@ -254,8 +254,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "f2c5538edec1eb64142d5ae2bc2045173248f0cb",
-  "committedAt": "2026-09-07T21:25:43+02:00",
+  "commit": "0e2b5d7d6ef794963e8e7a21a92ff7949e492ffc",
+  "committedAt": "2026-09-08T05:35:43+02:00",
   "data": {
     "corpusPins": {
       "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e",
@@ -281,7 +281,7 @@
       "phpmyadmin": "4061095a59e1769128776ad24154cc7058de51aa",
       "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
       "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
-      "proxicall": "2b1616a82d2b43fe92f0b994cdb8170d7ee00b21",
+      "proxicall": "404252c223bf7b0f63ac13061a9f3fe93664fac2",
       "rack": "2c98a0385cca650774a4cabc3f4a112f76c3dacd",
       "rake": "dd5e851d75fd850a730aae4482f6ca59843ac869",
       "requests": "dae7ef63b4df6eded86637f251fc4e3a06c3b479",
@@ -309,9 +309,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 9,
         "perf": {
-          "avgMsPerFile": 123.8,
+          "avgMsPerFile": 107.7,
           "loadAvgRetried": false,
-          "maxMsPerFile": 2774.9,
+          "maxMsPerFile": 2544.7,
           "samplesTimed": 60
         },
         "samples": [
@@ -1232,9 +1232,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 57.1,
+          "avgMsPerFile": 49.6,
           "loadAvgRetried": false,
-          "maxMsPerFile": 588.2,
+          "maxMsPerFile": 477.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1251,9 +1251,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 20.9,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 171.8,
+          "avgMsPerFile": 18,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 230.5,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1261,22 +1261,22 @@
         "unexplainedInAnalyzer": 0
       },
       "dart": {
-        "analyzerEdges": 1562,
+        "analyzerEdges": 1604,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1672,
-        "explainableByTree": 1562,
+        "coveredByAnalyzer": 1720,
+        "explainableByTree": 1604,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 30.3,
+          "avgMsPerFile": 27.9,
           "loadAvgRetried": false,
-          "maxMsPerFile": 846.4,
+          "maxMsPerFile": 895.7,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 1672,
+        "treeTruthEdges": 1720,
         "unexplainedInAnalyzer": 0
       },
       "go": {
@@ -1289,9 +1289,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 11.5,
+          "avgMsPerFile": 18.9,
           "loadAvgRetried": false,
-          "maxMsPerFile": 70.8,
+          "maxMsPerFile": 119.1,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1299,22 +1299,22 @@
         "unexplainedInAnalyzer": 0
       },
       "groovy": {
-        "analyzerEdges": 174,
+        "analyzerEdges": 529,
         "coveragePct": 100,
-        "coveredByAnalyzer": 151,
-        "explainableByTree": 147,
+        "coveredByAnalyzer": 506,
+        "explainableByTree": 502,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 27,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.4,
+          "avgMsPerFile": 6.5,
           "loadAvgRetried": false,
-          "maxMsPerFile": 35.6,
+          "maxMsPerFile": 46.1,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 151,
+        "treeTruthEdges": 506,
         "unexplainedInAnalyzer": 0
       },
       "haskell": {
@@ -1327,9 +1327,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8.9,
+          "avgMsPerFile": 7.8,
           "loadAvgRetried": false,
-          "maxMsPerFile": 238.5,
+          "maxMsPerFile": 205.1,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1337,22 +1337,22 @@
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 204,
+        "analyzerEdges": 811,
         "coveragePct": 100,
-        "coveredByAnalyzer": 132,
-        "explainableByTree": 128,
+        "coveredByAnalyzer": 739,
+        "explainableByTree": 735,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 76,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5,
+          "avgMsPerFile": 5.7,
           "loadAvgRetried": false,
-          "maxMsPerFile": 35.6,
+          "maxMsPerFile": 42.6,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 132,
+        "treeTruthEdges": 739,
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
@@ -1365,9 +1365,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4,
+          "avgMsPerFile": 2.5,
           "loadAvgRetried": false,
-          "maxMsPerFile": 39.6,
+          "maxMsPerFile": 25.5,
           "samplesTimed": 52
         },
         "samples": [],
@@ -1375,22 +1375,22 @@
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
-        "analyzerEdges": 244,
+        "analyzerEdges": 1511,
         "coveragePct": 100,
-        "coveredByAnalyzer": 218,
-        "explainableByTree": 187,
+        "coveredByAnalyzer": 1586,
+        "explainableByTree": 1454,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 57,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 34.3,
+          "avgMsPerFile": 30.3,
           "loadAvgRetried": false,
-          "maxMsPerFile": 212,
+          "maxMsPerFile": 165.5,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 218,
+        "treeTruthEdges": 1586,
         "unexplainedInAnalyzer": 0
       },
       "objc": {
@@ -1403,9 +1403,9 @@
         "heuristicUnexplained": 163,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 36.5,
+          "avgMsPerFile": 8.8,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 79.1,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1422,9 +1422,9 @@
         "heuristicUnexplained": 94,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.5,
+          "avgMsPerFile": 2.6,
           "loadAvgRetried": false,
-          "maxMsPerFile": 49,
+          "maxMsPerFile": 67.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1441,9 +1441,9 @@
         "heuristicUnexplained": 433,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 26.7,
+          "avgMsPerFile": 23.5,
           "loadAvgRetried": false,
-          "maxMsPerFile": 738.1,
+          "maxMsPerFile": 513.8,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1460,9 +1460,9 @@
         "heuristicUnexplained": 382,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 4.5,
+          "avgMsPerFile": 4.6,
           "loadAvgRetried": false,
-          "maxMsPerFile": 45,
+          "maxMsPerFile": 36.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1479,9 +1479,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 15.5,
+          "avgMsPerFile": 13.6,
           "loadAvgRetried": false,
-          "maxMsPerFile": 140.9,
+          "maxMsPerFile": 115.6,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1489,22 +1489,22 @@
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 226,
+        "analyzerEdges": 563,
         "coveragePct": 100,
-        "coveredByAnalyzer": 191,
-        "explainableByTree": 172,
+        "coveredByAnalyzer": 634,
+        "explainableByTree": 508,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 54,
+        "heuristicUnexplained": 55,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 9.2,
+          "avgMsPerFile": 8.2,
           "loadAvgRetried": false,
-          "maxMsPerFile": 170,
+          "maxMsPerFile": 165.8,
           "samplesTimed": 60
         },
         "samples": [],
-        "treeTruthEdges": 191,
+        "treeTruthEdges": 634,
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
@@ -1517,9 +1517,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 2.9,
+          "avgMsPerFile": 2.4,
           "loadAvgRetried": false,
-          "maxMsPerFile": 8.5,
+          "maxMsPerFile": 6.9,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1536,9 +1536,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 54.8,
+          "avgMsPerFile": 42.6,
           "loadAvgRetried": false,
-          "maxMsPerFile": 473.7,
+          "maxMsPerFile": 362.7,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1555,9 +1555,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 35.1,
+          "avgMsPerFile": 39.3,
           "loadAvgRetried": false,
-          "maxMsPerFile": 265.4,
+          "maxMsPerFile": 320.5,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1574,9 +1574,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 10.1,
+          "avgMsPerFile": 8.9,
           "loadAvgRetried": false,
-          "maxMsPerFile": 118.3,
+          "maxMsPerFile": 117.2,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1593,9 +1593,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 21.1,
-          "loadAvgRetried": false,
-          "maxMsPerFile": 378.3,
+          "avgMsPerFile": 17.1,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 357.1,
           "samplesTimed": 60
         },
         "samples": [],
@@ -1639,9 +1639,9 @@
           "heuristicUnexplained": 315,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 9.1,
+            "avgMsPerFile": 7.1,
             "loadAvgRetried": false,
-            "maxMsPerFile": 38.7,
+            "maxMsPerFile": 36.4,
             "samplesTimed": 49
           },
           "samples": [],
@@ -1658,9 +1658,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 67.5,
+            "avgMsPerFile": 55.4,
             "loadAvgRetried": false,
-            "maxMsPerFile": 626.3,
+            "maxMsPerFile": 507.6,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1677,9 +1677,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 8.6,
+            "avgMsPerFile": 8.5,
             "loadAvgRetried": false,
-            "maxMsPerFile": 97.8,
+            "maxMsPerFile": 89,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1687,41 +1687,41 @@
           "unexplainedInAnalyzer": 0
         },
         "cats-effect:scala": {
-          "analyzerEdges": 423,
+          "analyzerEdges": 1216,
           "coveragePct": 100,
-          "coveredByAnalyzer": 510,
-          "explainableByTree": 357,
+          "coveredByAnalyzer": 1515,
+          "explainableByTree": 1132,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 66,
+          "heuristicUnexplained": 84,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 14.1,
+            "avgMsPerFile": 18.2,
             "loadAvgRetried": false,
-            "maxMsPerFile": 201.3,
+            "maxMsPerFile": 309.7,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 510,
+          "treeTruthEdges": 1515,
           "unexplainedInAnalyzer": 0
         },
         "clojure:java": {
-          "analyzerEdges": 304,
+          "analyzerEdges": 1141,
           "coveragePct": 100,
-          "coveredByAnalyzer": 276,
-          "explainableByTree": 246,
+          "coveredByAnalyzer": 1113,
+          "explainableByTree": 1083,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 58,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 14.8,
+            "avgMsPerFile": 14.3,
             "loadAvgRetried": false,
-            "maxMsPerFile": 104.8,
+            "maxMsPerFile": 98.3,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 276,
+          "treeTruthEdges": 1113,
           "unexplainedInAnalyzer": 0
         },
         "dart-http:dart": {
@@ -1734,9 +1734,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 3.5,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 40,
+            "avgMsPerFile": 5.7,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 48.6,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1753,9 +1753,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 9.3,
+            "avgMsPerFile": 11,
             "loadAvgRetried": false,
-            "maxMsPerFile": 80.8,
+            "maxMsPerFile": 129.2,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1772,9 +1772,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 14.2,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 161.6,
+            "avgMsPerFile": 7.7,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 130.6,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1782,22 +1782,22 @@
           "unexplainedInAnalyzer": 0
         },
         "geb:groovy": {
-          "analyzerEdges": 162,
+          "analyzerEdges": 536,
           "coveragePct": 100,
-          "coveredByAnalyzer": 136,
-          "explainableByTree": 132,
+          "coveredByAnalyzer": 510,
+          "explainableByTree": 506,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 30,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 5.6,
+            "avgMsPerFile": 4.9,
             "loadAvgRetried": false,
-            "maxMsPerFile": 55.6,
+            "maxMsPerFile": 97.5,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 136,
+          "treeTruthEdges": 510,
           "unexplainedInAnalyzer": 0
         },
         "hledger:haskell": {
@@ -1810,9 +1810,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 15.3,
+            "avgMsPerFile": 18.1,
             "loadAvgRetried": false,
-            "maxMsPerFile": 88.7,
+            "maxMsPerFile": 115.3,
             "samplesTimed": 60
           },
           "samples": [],
@@ -1829,9 +1829,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 4,
           "perf": {
-            "avgMsPerFile": 65.2,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 805.5,
+            "avgMsPerFile": 61.7,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 1156,
             "samplesTimed": 45
           },
           "samples": [
@@ -2092,22 +2092,22 @@
           "unexplainedInAnalyzer": 28
         },
         "kotlinx-coroutines:kotlin": {
-          "analyzerEdges": 243,
+          "analyzerEdges": 979,
           "coveragePct": 100,
-          "coveredByAnalyzer": 163,
-          "explainableByTree": 159,
+          "coveredByAnalyzer": 1008,
+          "explainableByTree": 895,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 84,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 11,
+            "avgMsPerFile": 11.8,
             "loadAvgRetried": false,
-            "maxMsPerFile": 50.7,
+            "maxMsPerFile": 56.6,
             "samplesTimed": 60
           },
           "samples": [],
-          "treeTruthEdges": 163,
+          "treeTruthEdges": 1008,
           "unexplainedInAnalyzer": 0
         },
         "lodash:javascript": {
@@ -2120,9 +2120,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 129.1,
+            "avgMsPerFile": 106,
             "loadAvgRetried": false,
-            "maxMsPerFile": 1806.1,
+            "maxMsPerFile": 1528.5,
             "samplesTimed": 55
           },
           "samples": [],
@@ -2139,9 +2139,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 57.8,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 916.9,
+            "avgMsPerFile": 13.8,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 635.7,
             "samplesTimed": 17
           },
           "samples": [],
@@ -2158,9 +2158,9 @@
           "heuristicUnexplained": 162,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 3.5,
+            "avgMsPerFile": 3.8,
             "loadAvgRetried": false,
-            "maxMsPerFile": 29,
+            "maxMsPerFile": 23.5,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2177,9 +2177,9 @@
           "heuristicUnexplained": 58,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 6.7,
+            "avgMsPerFile": 8,
             "loadAvgRetried": false,
-            "maxMsPerFile": 65.4,
+            "maxMsPerFile": 64.5,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2196,9 +2196,9 @@
           "heuristicUnexplained": 118,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 28.3,
+            "avgMsPerFile": 22.6,
             "loadAvgRetried": false,
-            "maxMsPerFile": 443.3,
+            "maxMsPerFile": 312.2,
             "samplesTimed": 37
           },
           "samples": [],
@@ -2215,9 +2215,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 6.8,
+            "avgMsPerFile": 5.8,
             "loadAvgRetried": false,
-            "maxMsPerFile": 24.6,
+            "maxMsPerFile": 26.6,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2234,9 +2234,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 29.7,
+            "avgMsPerFile": 41.4,
             "loadAvgRetried": false,
-            "maxMsPerFile": 565.2,
+            "maxMsPerFile": 651.6,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2253,9 +2253,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 8.1,
+            "avgMsPerFile": 6.3,
             "loadAvgRetried": false,
-            "maxMsPerFile": 52.3,
+            "maxMsPerFile": 48.3,
             "samplesTimed": 60
           },
           "samples": [],
@@ -2272,9 +2272,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 28.2,
-            "loadAvgRetried": false,
-            "maxMsPerFile": 274.1,
+            "avgMsPerFile": 28.5,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 428.4,
             "samplesTimed": 60
           },
           "samples": [],
