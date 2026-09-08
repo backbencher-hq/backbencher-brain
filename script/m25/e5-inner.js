@@ -189,6 +189,13 @@ async function run() {
       }
       const errImp = await IP.renderImpactForPanel({ symbol: "definitely-not-a-symbol-xyz" }, { client: clientLike, cspSource: "" })
       assert("E5-H4: impact panel unknown-symbol failure is loud and declared", errImp && !errImp.ok && typeof errImp.error === "string" && errImp.error.startsWith("bb/impact:"), errImp && errImp.error)
+      // M44.U5 (issue #692): a member target the engine's root whitelist
+      // excludes (the seeded constructor) roots through its OWNING
+      // declaration — the panel renders DATA with the declared resolution
+      // note, never the pre-U5 declared error.
+      const u5Imp = await IP.renderImpactForPanel({ symbol: "constructor" }, { client: clientLike, cspSource: "" })
+      assert("E5-U5: constructor impact resolves through the owning declaration (renders DATA)", u5Imp && u5Imp.ok === true && u5Imp.markup.includes("bb-impact"), u5Imp && (u5Imp.ok ? u5Imp.markup.slice(0, 160) : u5Imp.error))
+      assert("E5-U5: the resolution note is declared in the render (owning-declaration + member + owner)", u5Imp && u5Imp.ok === true && u5Imp.markup.includes('data-resolution-through="owning-declaration"') && u5Imp.markup.includes("Greeter"), u5Imp && (u5Imp.ok ? u5Imp.markup.slice(0, 220) : u5Imp.error))
     } catch (e) {
       assert("E5-H4: impact panel leg ran", false, String(e && e.message).slice(0, 200))
     }

@@ -323,8 +323,10 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string }> = [
   },
   {
     name: "definition: wrong position (line off by one)",
-    from: "  const indexPos = mapper.lspToIndex({ line: line, character: character });",
-    to: "  const indexPos = mapper.lspToIndex({ line: line + 1, character: character });",
+    // M44.U5 wrapped the conversion in try/catch (out-of-range is declared
+    // absence) — the mutant plants the same defect at the new anchor.
+    from: "    indexPos = mapper.lspToIndex({ line: line, character: character });",
+    to: "    indexPos = mapper.lspToIndex({ line: line + 1, character: character });",
   },
   {
     name: "truncation: never declare truncated",
@@ -335,6 +337,15 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string }> = [
     name: "honesty: fabricate not-indexed definition",
     from: "  if (symbol === null) {\n    return {\n      found: false,",
     to: "  if (false) {\n    return {\n      found: false,",
+  },
+  {
+    // M44.U5 (permanent, F7 rule): without the PositionError guard an
+    // out-of-range editor position (past EOF) throws instead of returning
+    // declared absence — the wire shows -32603 where the contract (§1)
+    // requires honest emptiness.
+    name: "absence: out-of-range position throws (guard removed)",
+    from: "    if (err instanceof PositionError) return null;",
+    to: "    if (false) return null;",
   },
 ]
 
@@ -406,6 +417,15 @@ async function navMutantOracle(mod: any): Promise<boolean> {
     // Honesty oracle: not-indexed position must not fabricate.
     const notFound = mod.resolveDefinition(raw, { filePath: join(dir, MAIN_REL), line: 9, character: 0 })
     if (notFound.found !== false || notFound.location !== null) return true
+
+    // M44.U5 absence oracle: a position far past EOF is declared absence —
+    // no throw (the guard mutant above survives exactly here).
+    try {
+      const pastEof = mod.resolveDefinition(raw, { filePath: join(dir, MAIN_REL), line: 9999, character: 0 })
+      if (pastEof.found !== false || pastEof.location !== null) return true
+    } catch {
+      return true
+    }
 
     // References oracle: all 3 call sites present, none dropped.
     const refs = mod.resolveReferences(raw, { filePath: join(dir, MAIN_REL), line: 1, character: 2, includeDeclaration: false })

@@ -478,6 +478,20 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
   const layer = dom.root()
   layer.addClass("bb-impact")
   layer.setAttribute("data-impact-root", result.root.id)
+  // M44.U5: the declared resolution rides the render — a member target
+  // rooted through its owning declaration SAYS so (never a silent relabel
+  // of what the user clicked). Machine-readable attr + visible note.
+  const resolution = (result as { resolution?: { through?: string; memberName?: string; ownerName?: string } }).resolution
+  if (resolution && resolution.through === "owning-declaration") {
+    layer.setAttribute("data-resolution-through", "owning-declaration")
+    if (resolution.memberName) layer.setAttribute("data-resolution-member", resolution.memberName)
+    if (resolution.ownerName) layer.setAttribute("data-resolution-owner", resolution.ownerName)
+    const note = dom.create("div")
+    note.addClass("bb-impact-resolution-note")
+    note.setAttribute("data-resolution", "owning-declaration")
+    note.textContent = `"${resolution.memberName ?? "member"}" has no dependencies of its own — showing the impact of its owner ${resolution.ownerName ?? ""}`
+    layer.appendChild(note)
+  }
   for (const dep of result.impact) {
     const el = dom.create("div")
     el.addClass("bb-impact-node")

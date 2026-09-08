@@ -24,14 +24,25 @@
 //                Since M42.H4 the renderer lives in the ONE core
 //                (script/m26/graph-core.ts renderImpact) — this component
 //                owns the DATA; the core owns the DOM. Same law, one home.
+//   resolved:    member-name targets (the hover's server-resolved identity
+//                for a constructor or member symbol) resolve through their
+//                OWNING declaration when the member itself has no stored
+//                reverse edges (M44.U5, issue #692). The resolution is a
+//                first-class field on the result — the UI says what it
+//                rooted at, never silently relabels. A symbol that is
+//                genuinely absent still throws the declared error.
 //
-// Declared guarantees (gated by script/m26/verify-impact-mode.ts):
+// Declared guarantees (gated by script/m26/verify-impact-mode.ts and
+// script/m44/verify-impact-resolution.ts):
 //   G1 bounded:    result size <= declared budget; depth <= declared max
 //   G2 declared:   truncated == true ⟺ a declared reason exists; counts real
 //   G3 consistent: impact count agrees with L3 references on flat fixtures
 //                  (differential, sampling stated in the verifier)
 //   G4 rendered:   the ONE core's renderImpact() emits a visible marker with
 //                  counts when truncated, nothing when complete
+//   G5 resolved:   an indexed member target roots at its owning declaration
+//                  with a declared note; a genuinely unknown symbol still
+//                  errors (never an empty set that would read as "no impact")
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 import type { GraphNode } from "../intelligence/contracts"
@@ -45,7 +56,7 @@ export const IMPACT_BUDGET = {
 
 export interface ImpactResult {
   root: { id: string; name: string; file: string }
-  /** reverse dependencies, bounded, deepest last */
+  /** Reverse dependencies, bounded, deepest last. */
   impact: Array<{ id: string; name: string; file: string; depth: number; relationshipType: string; confidence: number }>
   shownCount: number
   /** Total reverse dependencies if it could be bounded cheaply; null when
@@ -53,14 +64,89 @@ export interface ImpactResult {
   totalCountIfKnown: number | null
   truncated: boolean
   truncationReason: string | null
+  /** M44.U5: how the root was resolved. "direct" = the name resolved to a
+   *  traversable root (the engine's whitelist); "owning-declaration" = the
+   *  name is an indexed member the whitelist excludes (constructor, plain
+   *  members), rooted through its owner with the member named. First-class
+   *  so the UI states what it rooted at — never a silent relabel. */
+  resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string }
 }
 
 export interface ImpactDb {
-  prepare(sql: string): { get(...params: unknown[]): unknown }
+  prepare(sql: string): { get(...params: unknown[]): unknown; all(...params: unknown[]): unknown[] }
 }
 
 export interface ImpactDeps {
   traverse?: typeof graphTraversal
+}
+
+/** The member-resolution fallback (M44.U5, issue #692). The engine's root
+ *  resolver whitelists traversable symbol types ('function','method','class',
+ *  ...); an indexed member the whitelist excludes (a constructor, a plain
+ *  member) must not die at the impact door — it roots through its OWNING
+ *  declaration. Returns the owner row only when ALL of:
+ *    1. the name resolves to exactly one stored symbol (exact, project-
+ *       scoped — never fuzzy here: a member fallback must be certain),
+ *    2. that symbol's type is outside the engine's traversable whitelist
+ *       (otherwise the direct path already handled it),
+ *    3. the member has no stored reverse edges of its own (its own impact
+ *       set would be non-empty — resolving through the owner then would
+ *       DROP real dependencies), and
+ *    4. the owner (via owner_symbol_id) exists and is a traversable type.
+ *  Any other outcome returns null and the caller keeps the declared error —
+ *  a genuinely absent symbol never silently becomes someone else's impact. */
+export function resolveImpactMemberOwner(
+  db: ImpactDb,
+  projectId: string,
+  symbolName: string,
+): { id: string; name: string; file: string } | null {
+  try {
+    const TRAVERSABLE = ["function", "method", "class", "interface", "trait", "struct", "enum", "macro"]
+    const memberRows = db
+      .prepare(
+        `SELECT s.id, s.name, s.symbol_type AS symbolType, s.owner_symbol_id AS ownerId,
+                COALESCE(f.relative_path, f.path, '') AS file
+         FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id
+         WHERE s.project_id = ? AND s.name = ?`,
+      )
+      .all(projectId, symbolName) as Array<{ id: string; name: string; symbolType: string; ownerId: string | null; file: string }>
+    // Rule 1: exactly one exact member match (ambiguous name -> declared
+    // error path, never a guessed owner).
+    if (memberRows.length !== 1) return null
+    const member = memberRows[0]!
+    // Rule 2: the direct path handles traversable types — no fallback here.
+    if (TRAVERSABLE.includes(member.symbolType)) return null
+    // Rule 3: the member's OWN reverse edges exist -> its own impact set is
+    // real; resolving through the owner would drop dependencies. Declared
+    // error (unchanged behavior) is the honest answer for that shape.
+    const inbound = db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM brain_relationship
+         WHERE project_id = ? AND target_symbol_id = ?
+           AND relationship_type IN ('calls','instantiates','extends','implements')`,
+      )
+      .get(projectId, member.id) as { c: number }
+    if (typeof inbound?.c === "number" && inbound.c > 0) return null
+    // Rule 4: the owner must exist and be traversable (the cascade needs a
+    // real root; the owner prefix cascade in the engine does the rest).
+    if (!member.ownerId) return null
+    const ownerRows = db
+      .prepare(
+        `SELECT s.id, s.name, s.symbol_type AS symbolType,
+                COALESCE(f.relative_path, f.path, '') AS file
+         FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id
+         WHERE s.project_id = ? AND s.id = ?`,
+      )
+      .all(projectId, member.ownerId) as Array<{ id: string; name: string; symbolType: string; file: string }>
+    if (ownerRows.length !== 1) return null
+    const owner = ownerRows[0]!
+    if (!TRAVERSABLE.includes(owner.symbolType)) return null
+    return { id: owner.id, name: owner.name, file: owner.file }
+  } catch {
+    // Unreadable index: null -> the caller's declared error stands (never a
+    // crash disguised as resolution).
+    return null
+  }
 }
 
 /** The containment rule the engine's caller traversal uses (owner cascade:
@@ -96,7 +182,14 @@ export function totalImpactCountIfKnown(db: ImpactDb, rootSymbolId: string): num
 
 /** Bounded reverse-dependency impact for one symbol. Throws (declared error)
  *  when the root cannot be resolved — an unknown symbol has no impact set,
- *  and inventing an empty one would read as "no one depends on this". */
+ *  and inventing an empty one would read as "no one depends on this".
+ *
+ *  M44.U5: a member-name target (the hover's server-resolved identity for a
+ *  constructor or member) that the engine's root whitelist excludes is
+ *  re-rooted through its OWNING declaration when the member has no stored
+ *  reverse edges of its own — and the result says so (resolution field).
+ *  A genuinely absent symbol still throws: no silent re-rooting, no empty
+ *  set that would read as "no one depends on this". */
 export async function computeImpact(
   db: ImpactDb,
   projectId: string,
@@ -104,7 +197,33 @@ export async function computeImpact(
   deps: ImpactDeps = {},
 ): Promise<ImpactResult> {
   const traverse = deps.traverse ?? graphTraversal
-  const result = await traverse(projectId, symbolName, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+  let resolution: ImpactResult["resolution"] = { through: "direct" }
+  let result: Awaited<ReturnType<typeof graphTraversal>>
+  try {
+    result = await traverse(projectId, symbolName, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+  } catch (error) {
+    // Member fallback (declared, narrow): only when the direct traversal
+    // could not resolve the name AND the member-resolution rules all hold.
+    const owner = resolveImpactMemberOwner(db, projectId, symbolName)
+    if (owner === null) {
+      // No fallback applies: the declared error stands. The engine's raw
+      // not-found is normalized to the component's declared shape (the wire
+      // layer adds remediation; internal crashes keep propagating raw).
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes("not found")) {
+        throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error; run \`bb index\` or check the name)`)
+      }
+      throw error
+    }
+    result = await traverse(projectId, owner.name, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+    if (!result.root || !result.root.id) {
+      // The owner row exists but the traversal cannot root it (should not
+      // happen — the owner passed the traversable-type rule): the original
+      // declared error stands, never a fabricated set.
+      throw error
+    }
+    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name }
+  }
   if (!result.root || !result.root.id) {
     throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error; run \`bb index\` or check the name)`)
   }
@@ -149,5 +268,6 @@ export async function computeImpact(
     totalCountIfKnown: total,
     truncated,
     truncationReason,
+    resolution,
   }
 }
