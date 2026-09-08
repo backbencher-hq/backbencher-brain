@@ -125,7 +125,7 @@ const descriptors = [
   },
   {
     name: "bb_visualize",
-    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.",
+    description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. Same owner-cascade semantics as bb_graph: member-level relationships are attributed to the owner class.",
     inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target" }, maxNodes: { type: "number", description: "max nodes (default 200)" }, maxLinks: { type: "number", description: "max links (default 5000)" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter" }, languages: { type: "array", items: { type: "string" }, description: "language filter" }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -148,7 +148,7 @@ const descriptors = [
   },
   {
     name: "bb_analyze",
-    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.",
+    description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class.",
     inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "symbol or analysis target" }, filePath: { type: "string", description: "file scope for file-based analysis" }, limit: { type: "number", description: "result limit" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
@@ -202,7 +202,7 @@ const descriptors = [
     // handler reuses the same graph engine the LSP bb/graph handler uses —
     // one truth, two doors (M28 decision D-1/D-2).
     name: "bb_graph",
-    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.",
+    description: "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. Traversal semantics: a relationship stored against any member of a class (a method call, an inherited behavior) is attributed to the owner class, so caller/callee sets include the owner-family level — every edge still traces to a stored relationship row.",
     inputSchema: {
       type: "object",
       properties: {
@@ -223,7 +223,7 @@ const descriptors = [
     // src/lsp/impact.ts (the component the editor graph panel's impact mode
     // uses) so agent and developer see identical totals and truncation.
     name: "bb_impact",
-    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented.",
+    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows.",
     inputSchema: {
       type: "object",
       properties: { symbol: { type: "string", description: "symbol name to compute impact for" } },

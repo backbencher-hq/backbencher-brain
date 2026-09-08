@@ -1,6 +1,6 @@
 # `bb_graph`
 
-Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.
+Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. Traversal semantics: a relationship stored against any member of a class (a method call, an inherited behavior) is attributed to the owner class, so caller/callee sets include the owner-family level — every edge still traces to a stored relationship row.
 
 ## Contract
 
@@ -54,6 +54,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 
 - Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven
 - The graph reflects the index as of the last index run
+- Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row
 
 ## Performance
 

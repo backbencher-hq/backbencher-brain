@@ -481,7 +481,7 @@
     },
     {
       "name": "bb_visualize",
-      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output.",
+      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. Same owner-cascade semantics as bb_graph: member-level relationships are attributed to the owner class.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -579,7 +579,8 @@
       ],
       "limitations": [
         "The graph reflects static indexed relationships",
-        "Nodes and links beyond configured budgets are omitted and reported"
+        "Nodes and links beyond configured budgets are omitted and reported",
+        "Owner-cascade attribution: member-level relationships are attributed to the owner class, same as bb_graph"
       ],
       "performance": "maxNodes, maxLinks, scope, relationshipTypes, and languages constrain graph construction.",
       "safety": "Read-only. HTML output contains the same bounded graph as JSON and does not mutate the project.",
@@ -672,7 +673,7 @@
     },
     {
       "name": "bb_analyze",
-      "description": "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing.",
+      "description": "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -773,7 +774,8 @@
       ],
       "limitations": [
         "Static relationships cannot establish runtime behavior",
-        "Test results describe indexed static evidence, not executed coverage"
+        "Test results describe indexed static evidence, not executed coverage",
+        "Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class"
       ],
       "performance": "Mode-specific limits and graph traversal bounds prevent unbounded output.",
       "safety": "Read-only. Analysis never creates tests or edits source.",
@@ -1120,7 +1122,7 @@
     },
     {
       "name": "bb_graph",
-      "description": "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent.",
+      "description": "Per-symbol dependency graph over the canonical graph engine: callers, callees, per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred), confidence, and cross-language edge count. Same engine and tier rules the editor graph panel uses; truncated traversals are declared with a reason, never silent. Traversal semantics: a relationship stored against any member of a class (a method call, an inherited behavior) is attributed to the owner class, so caller/callee sets include the owner-family level — every edge still traces to a stored relationship row.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1173,7 +1175,8 @@
       ],
       "limitations": [
         "Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven",
-        "The graph reflects the index as of the last index run"
+        "The graph reflects the index as of the last index run",
+        "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row"
       ],
       "performance": "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
       "safety": "Read-only. It does not modify source files or index data.",
@@ -1181,7 +1184,7 @@
     },
     {
       "name": "bb_impact",
-      "description": "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented.",
+      "description": "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1222,7 +1225,8 @@
       ],
       "limitations": [
         "Static impact analysis cannot establish runtime behavior",
-        "Reflects the index as of the last index run"
+        "Reflects the index as of the last index run",
+        "Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class"
       ],
       "performance": "Traversal bounds match the canonical graph engine limits; output scales with the dependents subgraph.",
       "safety": "Read-only. It does not modify source files or index data.",
