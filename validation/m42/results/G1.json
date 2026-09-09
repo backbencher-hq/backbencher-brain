@@ -7,11 +7,11 @@
   "passed": 25,
   "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "bbf9e69e625f4c29becad6860ad2be46c5f774eb",
+  "currentCommit": "d330eb4f34e96e8e3eb46f9e2de67987ec17c442",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-09T21:49:16.638Z",
+  "generatedAt": "2026-09-09T21:59:25.293Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,

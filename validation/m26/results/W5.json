@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "bbf9e69e625f4c29becad6860ad2be46c5f774eb",
+  "currentCommit": "d330eb4f34e96e8e3eb46f9e2de67987ec17c442",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-09-09T21:41:49.728Z",
+  "generatedAt": "2026-09-09T21:56:50.800Z",
   "differential": {
     "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 direction rule accounted (incoming+outgoing by design, one outgoing edge fixture-declared); containment delta verified separately",
     "l3TotalCount": 5,
