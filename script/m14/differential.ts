@@ -339,7 +339,7 @@ const JAVA_STDLIB_ROOTS = new Set([
   "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
   "Connection", "DriverManager", "ResultSet", "Statement",
   "PreparedStatement", "SQLException", "DataSource",
-  "javax", "jakarta", "org", "com",
+  "javax", "jakarta",
   "kotlin", "Unit", "Nothing", "Any", "Int", "String",
   "java", "jdk", "sun",
   "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
@@ -353,7 +353,8 @@ const JAVA_STDLIB_ROOTS = new Set([
 function isJavaBuiltinCall(call: string): boolean {
   if (JAVA_EXACT_BUILTINS.has(call)) return true
   // M37.21 C5 mirror: ROOT segment only (see RealJavaAnalyzer.isJavaBuiltin).
-  const segments = call.split(".")
+  // M49.J3 mirror: org/com removed lockstep (reviewer wave — bare roots
+  // dropped user FQ calls like org.apache.commons.io.FileUtils.readFile).
   if (segments.length > 0 && JAVA_STDLIB_ROOTS.has(segments[0])) return true
   if (JAVA_STDLIB_ROOTS.has(call)) return true
   return false
