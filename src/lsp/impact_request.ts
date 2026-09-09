@@ -40,6 +40,10 @@ export class ImpactRequestError extends Error {
 export interface ImpactRequestParams {
   schemaVersion?: unknown
   symbol?: unknown
+  /** X1 closure: the hover's defining-file identity. Same-name members
+   *  (every real repo's constructors) resolve through it; optional — a bare
+   *  unique name works exactly as before. */
+  file?: unknown
 }
 
 export interface ImpactRequestDeps {
@@ -84,8 +88,15 @@ export async function handleImpactRequest(
   // Symbol resolution is SERVER-SIDE (project-scoped, name → stored symbol).
   // computeImpact throws a declared error when the root cannot be resolved —
   // an unknown symbol has no impact set, and an empty set would lie.
+  // The hover's file identity (optional) disambiguates same-name members.
   try {
-    return await deps.compute(db as Parameters<typeof computeImpact>[0], projectId, params.symbol)
+    return await deps.compute(
+      db as Parameters<typeof computeImpact>[0],
+      projectId,
+      params.symbol,
+      {},
+      typeof params.file === "string" && params.file.length > 0 ? params.file : undefined,
+    )
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("bb/impact:")) throw error
     // Wrap computeImpact's own declared errors with the wire prefix so the

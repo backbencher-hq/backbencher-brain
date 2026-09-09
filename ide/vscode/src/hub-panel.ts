@@ -62,6 +62,10 @@ export async function renderHubForPanel(
       schemaVersion: 2,
       symbol: params.symbol,
       mode: "usages",
+      // X1 closure: the defining-file identity disambiguates same-name
+      // members (constructors) — the server resolves through it when the
+      // name alone is ambiguous.
+      ...(params.file ? { file: params.file } : {}),
     })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
