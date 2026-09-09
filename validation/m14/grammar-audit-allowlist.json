@@ -1,3 +1,6 @@
 {
-  "_comment": "M14 grammar-audit allowlist. Format: { \"<language>\": { \"<literal>\": \"justification (required)\" }, \"<language>#fields\": { ... } }. Waived findings remain visible in evidence. Empty by design: every current finding must be fixed or justified during its M14 wave."
+  "_comment": "M14 grammar-audit allowlist. Format: { \"<language>\": { \"<literal>\": \"justification (required)\" }, \"<language>#fields\": { ... } }. Waived findings remain visible in evidence. Empty by design: every current finding must be fixed or justified during its M14 wave.",
+  "java": {
+    "comment": "M49.K1 cross-wave finding (java R3 argumentCount guard, real-java-analyzer.ts:851): tree-sitter-java declares `comment` as an UNNAMED extra - grammar.nodeTypeForId does not surface it, so the audit's enumeration misses it - but comment nodes demonstrably appear in java named-child lists (the javadoc extraction fixtures depend on block_comment siblings). The guard excludes comment children from call argumentCount. Probe-verified live code, not a dead branch. Kotlin's wasm enumerates `comment` (audit-clean there); java's does not - grammar-enumeration asymmetry, not an analyzer defect."
+  }
 }
