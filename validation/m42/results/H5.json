@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "bbf9e69e625f4c29becad6860ad2be46c5f774eb",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-09-09T19:21:56.219Z",
+  "generatedAt": "2026-09-09T21:44:16.717Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
@@ -34,7 +34,5 @@
     "DOM assertions cover structure/classes/data attributes over a stub DOM; CSS/paint and the webview toggle script's runtime are per-editor presentation (the E5 leg covers the real editor).",
     "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here.",
     "U2/U3 (hub list/tree presentation redesign) extend this DOM contract; U1 pins the grouped data + row-per-group rendering."
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  ]
 }
