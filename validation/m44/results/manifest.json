@@ -209,7 +209,7 @@
       "code": "X1",
       "githubIssue": 694,
       "tool": "m44-closure",
-      "status": "planned",
+      "status": "verified",
       "scope": "M44 closure gate: full-ladder audit M24\u2192M44 at HEAD; in-editor visual leg through E5/E6 with the new hub; launch bar; known gaps fixed or owner-waived with recorded reason",
       "acceptanceCriteria": [
         "gate exits 0 only when the whole ladder M24\u2192M44 is green at HEAD and every M44 ledger item carries evidence; can-fail proven by mutants",
@@ -220,7 +220,21 @@
         "X1 evidence (verified, current HEAD)",
         "closure gate spawns each governance gate bottom-up",
         "launch bar record"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m44/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 48,
+        "failed": 0,
+        "negativeCases": 7,
+        "editorLegs": "E5 88/88 + forks (cursor, antigravity) 88/88 each with the M44 hub legs; windsurf blocked-with-reason",
+        "launchRecord": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows)",
+        "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
+        "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
+        "currentCommit": "see X1.json",
+        "note": "see X1.json currentCommit \u2014 the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs"
+      }
     }
   ]
 }
