@@ -33,6 +33,14 @@
       "title": "Closure: live re-run of R1+R2, no unresolved review claims older than their gate run",
       "status": "pending",
       "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling. Intake issue map: J1=#713 (CLOSED with evidence @1a417c9d), K1=#714, S1=#715. Remaining dual-lens languages get one issue each as reviews land; dual-lens closure (#614) resumes after the board clears; M14's remaining analyzers (from clean) proceed last with the full strict battery."
+    },
+    {
+      "id": "K1",
+      "title": "Kotlin review-intake wave (issue #714): process reviews/kotlin 15 claims",
+      "status": "verified",
+      "evidenceFile": "reviews/kotlin/master-review.md",
+      "verifiedAtCommit": "5f5e0c02",
+      "notes": "15/15 claims resolved (10 fixed, 5 re-pinned to recorded rulings). Override verification with name-keyed declSigs (corpus-proven: BroadcastChannel.kt name-blind pairing fabricated 8 overrides), overrideSig payload, ctor naming, Spring named-arg routes, AST-gated patterns, dead inference deleted. Oracle mirror: kotlin method + anon-object registration, extractSig parameter fallback. 3 new mutants (351/351), 37/37 fixtures, KD21-KD28, R2 register 22->20. Corpus: coroutines + Exposed 100/0/0 @200; java/scala sanity 100/0/0."
     }
   ]
 }
