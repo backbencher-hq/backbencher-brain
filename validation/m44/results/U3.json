@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "0820063f2ba1bfa2805f5275a1f6de9cf7c8168c",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
   "evidenceFile": "U3.json",
   "generatedAt": "2026-09-09T19:22:01.431Z",
@@ -26,5 +26,7 @@
   "limitations": [
     "The traversal recursion (not a cascade fold) produces this fixture's nesting; the cascade fold (depth-0 rows toward root's class members) is asserted at the harness level in V1.",
     "DOM assertions cover structure/classes/data attributes over a stub DOM; the real-editor click/expand leg is E5 (in-editor) over this same DOM contract."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

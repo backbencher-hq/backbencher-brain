@@ -16,7 +16,7 @@
     "node": "v20.19.5",
     "runtime": "vscode-1.85.0-in-editor"
   },
-  "currentCommit": "0820063f2ba1bfa2805f5275a1f6de9cf7c8168c",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "commit": "0820063f2ba1bfa2805f5275a1f6de9cf7c8168c",
   "failed": 0,
   "activation": {
@@ -446,12 +446,12 @@
     {
       "name": "L2: hover renders markdown",
       "ok": true,
-      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(…)\\n```\\n\\n**greet** — method, 1 usage\\n\\nevidence: structural\\n\\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1"
+      "detail": "{\"contents\":{\"value\":\"```\\nmethod greet(\u2026)\\n```\\n\\n**greet** \u2014 method, 1 usage\\n\\nevidence: structural\\n\\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1"
     },
     {
       "name": "L2: hover names greet",
       "ok": true,
-      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(…)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\",\"usagesSection\":\"**usages**\\n1. [main — main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D)\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-4I6dYy/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
+      "detail": "{\"name\":\"greet\",\"qualifiedName\":\"Greeter.greet\",\"symbolType\":\"method\",\"signature\":\"method greet(\u2026)\",\"usageCount\":1,\"evidenceTiers\":[\"structural\"],\"connectedSection\":\"**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1 referring row \u00b7 low criticality (enriched by index)_\",\"usagesSection\":\"**usages**\\n1. [main \u2014 main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D)\",\"definition\":{\"line\":1,\"character\":2},\"actionsSection\":\"**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) \u00b7 [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D) \u00b7 [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A1%2C%22character%22%3A2%7D%5D)\",\"crossLanguageSection\":\"\",\"annotationSection\":\"\",\"stale\":false,\"freshnessStatus\":\"fresh\",\"filePath\":\"/tmp/v1-ws-4I6dYy/main.ts\",\"lineStart\":2,\"lineEnd\":2}"
     },
     {
       "name": "L2: hover usage count matches fixture relationship",
@@ -462,24 +462,24 @@
       "ok": true
     },
     {
-      "name": "L2: hover carries the evidence tier (honesty contract §2)",
+      "name": "L2: hover carries the evidence tier (honesty contract \u00a72)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.o"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.o"
     },
     {
       "name": "H2: rich hover renders the connected summary (called by main)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22"
     },
     {
       "name": "H2: usage link is clickable with an index-backed file:line target",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticali"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1 referring row \u00b7 low criticali"
     },
     {
       "name": "H2: definition footnote is a link (bb.openDefinition)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3"
     },
     {
       "name": "H2: no show-all-usages link for a single-usage symbol",
@@ -489,12 +489,12 @@
     {
       "name": "H3: stored enrichment surfaces on hover (role/layer/frequency)",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%2"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1 referring row \u00b7 low criticality (enriched by index)_\n\n**usages**\n1. [main \u2014 main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%2"
     },
     {
       "name": "H3: enrichment is labeled index-inferred, never parser-fact tier",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%2"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1 referring row \u00b7 low criticality (enriched by index)_\n\n**usages**\n1. [main \u2014 main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%2"
     },
     {
       "name": "H3: enrichment annotation never upgrades the evidence tier",
@@ -504,7 +504,7 @@
     {
       "name": "H4: hover embeds the actions row",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages**\n1. [main — main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D)\n\n**actions**: [Ope"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1 referring row \u00b7 low criticality (enriched by index)_\n\n**usages**\n1. [main \u2014 main.ts:8](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D)\n\n**actions**: [Ope"
     },
     {
       "name": "H4: exactly the three action commands embed parseable args",
@@ -581,7 +581,7 @@
       "detail": "expected 1,9, got 1,9"
     },
     {
-      "name": "H1: items carry staleness metadata in data (§12.2)",
+      "name": "H1: items carry staleness metadata in data (\u00a712.2)",
       "ok": true,
       "detail": "{\"evidenceTier\":\"structural\",\"staleness\":{\"stale\":false,\"freshnessStatus\":\"fresh\"},\"symbol\":{\"id\":\"sym-greet\",\"name\":\"greet\"}}"
     },
@@ -593,12 +593,12 @@
     {
       "name": "E5-H2: real client hover carries the connected summary",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2F"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2F"
     },
     {
       "name": "E5-H2: hover embeds a bb.openUsage link",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticali"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3A7%2C%22character%22%3A9%7D%5D) \u00b7 _role consumer \u00b7 layer core\u2192core \u00b7 1 referring row \u00b7 low criticali"
     },
     {
       "name": "E5-H2: clicking bb.openUsage reveals the index-stored target",
@@ -608,7 +608,7 @@
     {
       "name": "E5-H2: hover embeds a bb.openDefinition link",
       "ok": true,
-      "detail": "```\nmethod greet(…)\n```\n\n**greet** — method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3"
+      "detail": "```\nmethod greet(\u2026)\n```\n\n**greet** \u2014 method, 1 usage\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Ftmp%2Fv1-ws-4I6dYy%2Fmain.ts%22%2C%22line%22%3"
     },
     {
       "name": "E5-H2: clicking bb.openDefinition reveals the declaration",
@@ -693,7 +693,7 @@
     {
       "name": "E5-H4: impact panel unknown-symbol failure is loud and declared",
       "ok": true,
-      "detail": "bb/impact: symbol 'definitely-not-a-symbol-xyz' not found — no impact set exists (declared error; run `bb index` or check the name)"
+      "detail": "bb/impact: symbol 'definitely-not-a-symbol-xyz' not found \u2014 no impact set exists (declared error; run `bb index` or check the name)"
     },
     {
       "name": "E5-U5: constructor impact resolves through the owning declaration (renders DATA)",
@@ -731,7 +731,7 @@
       "detail": "markup=string"
     },
     {
-      "name": "E5-H5: group headers carry their rendered count (§13.4)",
+      "name": "E5-H5: group headers carry their rendered count (\u00a713.4)",
       "ok": true,
       "detail": "<div class=\"bb-hub bb-hub-list bb-hub-view\" data-symbol=\"greet\" data-group=\"file\" data-view=\"list\"><div class=\"bb-hub-summary\" data-callers=\"1\" data-callees=\"0\" data-caller-rows=\"1\" data-callee-rows=\""
     },
@@ -748,12 +748,12 @@
     {
       "name": "E5-H5: tree view ships caller/callee subtrees with declared parent+level+depth attrs",
       "ok": true,
-      "detail": "<div class=\"bb-hub bb-hub-list bb-hub-view\" data-symbol=\"greet\" data-group=\"file\" data-view=\"list\"><div class=\"bb-hub-summary\" data-callers=\"1\" data-callees=\"0\" data-caller-rows=\"1\" data-callee-rows=\"0\" data-file-level-rows=\"0\" data-server-callers=\"1\" data-server-callees=\"0\">1 caller · 0 callees</di"
+      "detail": "<div class=\"bb-hub bb-hub-list bb-hub-view\" data-symbol=\"greet\" data-group=\"file\" data-view=\"list\"><div class=\"bb-hub-summary\" data-callers=\"1\" data-callees=\"0\" data-caller-rows=\"1\" data-callee-rows=\"0\" data-file-level-rows=\"0\" data-server-callers=\"1\" data-server-callees=\"0\">1 caller \u00b7 0 callees</di"
     },
     {
       "name": "E5-H5: tree rows reuse the H6 navigation machine attrs",
       "ok": true,
-      "detail": "<div class=\"bb-hub bb-hub-list bb-hub-view\" data-symbol=\"greet\" data-group=\"file\" data-view=\"list\"><div class=\"bb-hub-summary\" data-callers=\"1\" data-callees=\"0\" data-caller-rows=\"1\" data-callee-rows=\"0\" data-file-level-rows=\"0\" data-server-callers=\"1\" data-server-callees=\"0\">1 caller · 0 callees</di"
+      "detail": "<div class=\"bb-hub bb-hub-list bb-hub-view\" data-symbol=\"greet\" data-group=\"file\" data-view=\"list\"><div class=\"bb-hub-summary\" data-callers=\"1\" data-callees=\"0\" data-caller-rows=\"1\" data-callee-rows=\"0\" data-file-level-rows=\"0\" data-server-callers=\"1\" data-server-callees=\"0\">1 caller \u00b7 0 callees</di"
     },
     {
       "name": "E5-H5: flat fixture tree rows render NO expander (declared absence)",
@@ -773,7 +773,7 @@
     {
       "name": "E5-U4: header text states the rendered group count (never raw rows)",
       "ok": true,
-      "detail": "1 caller · 0 callees"
+      "detail": "1 caller \u00b7 0 callees"
     },
     {
       "name": "E5-U4: the ONE legend renders in the hub panel (5 tiers + enrichment + staleness)",
@@ -803,7 +803,7 @@
     {
       "name": "E5-H6: wrong-version message LOUDLY rejected, cursor untouched",
       "ok": true,
-      "detail": "{\"ack\":{\"schemaVersion\":1,\"type\":\"ack\",\"ok\":false,\"error\":\"bb/webview: schema version mismatch — message carries 99, editor implements 1\"},\"lineBefore\":8,\"lineAfter\":8}"
+      "detail": "{\"ack\":{\"schemaVersion\":1,\"type\":\"ack\",\"ok\":false,\"error\":\"bb/webview: schema version mismatch \u2014 message carries 99, editor implements 1\"},\"lineBefore\":8,\"lineAfter\":8}"
     },
     {
       "name": "E5-H6: stale click reveals and labels (never blocks, never silent)",
@@ -818,7 +818,7 @@
     {
       "name": "E5: stale marker rendered in-editor",
       "ok": true,
-      "detail": "⚠ stale"
+      "detail": "\u26a0 stale"
     },
     {
       "name": "E5: graph panel renders the fixture root graph",
@@ -869,5 +869,7 @@
   "evidenceFile": "E5.json",
   "generatedAt": "2026-09-09T19:20:08.300Z",
   "os": "linux",
-  "limitations": []
+  "limitations": [],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

@@ -7,7 +7,7 @@
   "passed": 18,
   "failed": 0,
   "failures": [],
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
   "evidenceFile": "D1-install.json",
   "generatedAt": "2026-09-07T22:46:08.502Z",
@@ -15,5 +15,7 @@
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
     "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
     "Runs on this machine's Linux only; macOS/Windows install-doc execution is E7 scope."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

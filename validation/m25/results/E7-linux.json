@@ -413,12 +413,14 @@
     "node": "v20.19.5",
     "runtime": "node-dist-stdio"
   },
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-linux.json",
   "generatedAt": "2026-09-07T23:16:44.361Z",
   "limitations": [
     "Native Linux leg executed on this machine (linux); the other two OSes are machine-emitted blocked records (E7-darwin.json, E7-windows.json) \u2014 the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist.",
     "The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY; the native Linux leg itself exercises linux semantics (drive letters, % variables on win32)."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

@@ -2,18 +2,16 @@
   "issue": "M24.G1",
   "code": "G1",
   "milestone": "M24",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 23,
   "passed": 23,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "0820063f2ba1bfa2805f5275a1f6de9cf7c8168c",
-  "workingTreeRelevantChanges": [
-    "package.json"
-  ],
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-09T19:21:41.478Z",
+  "generatedAt": "2026-09-09T19:38:08.624Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",

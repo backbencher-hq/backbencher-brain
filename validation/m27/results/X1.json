@@ -8,7 +8,7 @@
   "failed": 0,
   "failures": 0,
   "negativeCases": 4,
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -18,5 +18,7 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-09-07T22:50:51.512Z"
+  "generatedAt": "2026-09-07T22:50:51.512Z",
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }
