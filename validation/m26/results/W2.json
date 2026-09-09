@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
   "evidenceFile": "W2.json",
   "generatedAt": "2026-09-07T22:49:33.318Z",
@@ -17,5 +17,7 @@
   "limitations": [
     "Real-server leg covers node-source runtime; dist/bun legs are exercised by the standing M24 harness suite.",
     "Legacy callers (no schemaVersion) are rejected by design; advertisement is the discovery mechanism."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }
