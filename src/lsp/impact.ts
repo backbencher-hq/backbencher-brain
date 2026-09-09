@@ -69,7 +69,7 @@ export interface ImpactResult {
    *  name is an indexed member the whitelist excludes (constructor, plain
    *  members), rooted through its owner with the member named. First-class
    *  so the UI states what it rooted at — never a silent relabel. */
-  resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string }
+  resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string; memberFile?: string }
 }
 
 export interface ImpactDb {
@@ -80,13 +80,41 @@ export interface ImpactDeps {
   traverse?: typeof graphTraversal
 }
 
-/** The member-resolution fallback (M44.U5, issue #692). The engine's root
- *  resolver whitelists traversable symbol types ('function','method','class',
- *  ...); an indexed member the whitelist excludes (a constructor, a plain
- *  member) must not die at the impact door — it roots through its OWNING
- *  declaration. Returns the owner row only when ALL of:
- *    1. the name resolves to exactly one stored symbol (exact, project-
- *       scoped — never fuzzy here: a member fallback must be certain),
+/** The hover's server-resolved member identity (X1 closure, 2026-09-09): a
+ *  name plus the DEFINING FILE that disambiguates same-name members. Every
+ *  real repo has several `constructor` rows (one per class) — a name-only
+ *  member fallback cannot resolve them (found live: the owner's demo repo
+ *  has Greeter + Store constructors; rule 1 bailed to the declared error).
+ *  The hover's action args already carry the file; the transports just
+ *  never passed it through. */
+export interface ImpactMemberIdentity {
+  name: string
+  /** Defining file as the hover carries it (absolute or relative). Matched
+   *  against the stored relative_path component-aligned (stored is a suffix
+   *  of the hint). Optional: absent means the name alone must be unique. */
+  file?: string
+}
+
+/** Component-aligned suffix match: the stored relative path must be a
+ *  path-suffix of the hint ("src/greeter.ts" matches
+ *  "/home/u/repo/src/greeter.ts"), never a bare substring. */
+function memberFileMatches(hint: string, stored: string): boolean {
+  const h = hint.replace(/\\/g, "/")
+  const s = stored.replace(/\\/g, "/")
+  if (h === s) return true
+  return h.endsWith("/" + s)
+}
+
+/** The member-resolution fallback (M44.U5, issue #692; disambiguated at the
+ *  X1 closure). The engine's root resolver whitelists traversable symbol
+ *  types ('function','method','class', ...); an indexed member the whitelist
+ *  excludes (a constructor, a plain member) must not die at the impact
+ *  door — it roots through its OWNING declaration. Returns the owner row
+ *  only when ALL of:
+ *    1. the name resolves to stored symbols and the member is UNIQUE —
+ *       exactly one row, or several rows disambiguated to exactly one by the
+ *       file hint (a same-name member without a hint stays ambiguous:
+ *       declared error, never a guessed owner),
  *    2. that symbol's type is outside the engine's traversable whitelist
  *       (otherwise the direct path already handled it),
  *    3. the member has no stored reverse edges of its own (its own impact
@@ -99,6 +127,7 @@ export function resolveImpactMemberOwner(
   db: ImpactDb,
   projectId: string,
   symbolName: string,
+  fileHint?: string,
 ): { id: string; name: string; file: string } | null {
   try {
     const TRAVERSABLE = ["function", "method", "class", "interface", "trait", "struct", "enum", "macro"]
@@ -110,10 +139,20 @@ export function resolveImpactMemberOwner(
          WHERE s.project_id = ? AND s.name = ?`,
       )
       .all(projectId, symbolName) as Array<{ id: string; name: string; symbolType: string; ownerId: string | null; file: string }>
-    // Rule 1: exactly one exact member match (ambiguous name -> declared
-    // error path, never a guessed owner).
-    if (memberRows.length !== 1) return null
-    const member = memberRows[0]!
+    // Rule 1: the member must be UNIQUE. Several same-name members (every
+    // real repo's constructors) resolve ONLY through the hover's file hint;
+    // without a hint the name stays ambiguous — declared error, never a
+    // guessed owner. A hint that matches none of the rows is treated as
+    // stale-index noise: a single-row resolution still stands on the
+    // index's own truth.
+    let member = memberRows[0]
+    if (memberRows.length > 1) {
+      if (!fileHint) return null
+      const narrowed = memberRows.filter((r) => memberFileMatches(fileHint, r.file))
+      if (narrowed.length !== 1) return null
+      member = narrowed[0]
+    }
+    if (!member) return null
     // Rule 2: the direct path handles traversable types — no fallback here.
     if (TRAVERSABLE.includes(member.symbolType)) return null
     // Rule 3: the member's OWN reverse edges exist -> its own impact set is
@@ -195,6 +234,11 @@ export async function computeImpact(
   projectId: string,
   symbolName: string,
   deps: ImpactDeps = {},
+  /** X1 closure: the hover's defining-file identity. Same-name members
+   *  (every real repo's constructors) resolve ONLY through it; without it an
+   *  ambiguous member name keeps the declared error. Positional so existing
+   *  call sites stay source-compatible. */
+  memberFile?: string,
 ): Promise<ImpactResult> {
   const traverse = deps.traverse ?? graphTraversal
   let resolution: ImpactResult["resolution"] = { through: "direct" }
@@ -204,7 +248,7 @@ export async function computeImpact(
   } catch (error) {
     // Member fallback (declared, narrow): only when the direct traversal
     // could not resolve the name AND the member-resolution rules all hold.
-    const owner = resolveImpactMemberOwner(db, projectId, symbolName)
+    const owner = resolveImpactMemberOwner(db, projectId, symbolName, memberFile)
     if (owner === null) {
       // No fallback applies: the declared error stands. The engine's raw
       // not-found is normalized to the component's declared shape (the wire
@@ -222,7 +266,7 @@ export async function computeImpact(
       // declared error stands, never a fabricated set.
       throw error
     }
-    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name }
+    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
   }
   if (!result.root || !result.root.id) {
     throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error; run \`bb index\` or check the name)`)

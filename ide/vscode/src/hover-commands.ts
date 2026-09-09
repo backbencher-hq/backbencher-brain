@@ -238,7 +238,9 @@ function register(ctx: vscode.ExtensionContext, deps: HoverActionDeps): void {
       const { showImpactPanel } = await import("./impact-panel")
       try {
         // Live client at click time (same rule as bb.openGraph above).
-        const opened = await showImpactPanel(args.symbol, { client: deps.getClient(), cspSource: deps.cspSource }, ctx)
+        // The hover's file identity rides along: same-name members
+        // (constructors) resolve through it server-side (X1 closure).
+        const opened = await showImpactPanel(args.symbol, { client: deps.getClient(), cspSource: deps.cspSource }, ctx, args.file)
         const outcome = opened.outcome
         return outcome.ok
           ? { ok: true as const, surface: "impact" as const, symbol: args.symbol, rendered: true as const }
