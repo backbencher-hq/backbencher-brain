@@ -145,8 +145,12 @@ export function actionsSection(symbol: string, filePath: string, line: number, c
   return `**actions**: [Open in graph](${openGraphUri(a)}) · [Impact analysis](${openImpactUri(a)}) · [Call hierarchy](${showCallHierarchyUri(a)})`
 }
 
-export function showAllUsagesUri(file: string, line: number, character: number): string {
-  return `command:${SHOW_ALL_USAGES_COMMAND}?${encodeLocationArgs(file, line, character)}`
+/** M44.U6: the link carries the SERVER-RESOLVED identity — the symbol name
+ *  rides alongside the location so the client fallback can open the hub
+ *  usages surface for the symbol without client-side guessing (issue #693;
+ *  issue #652's no-client-guessing rule applies to the fallback too). */
+export function showAllUsagesUri(a: { file: string; line: number; character: number; symbol: string }): string {
+  return `command:${SHOW_ALL_USAGES_COMMAND}?${encodeURIComponent(JSON.stringify([{ file: a.file, line: a.line, character: a.character, symbol: a.symbol }]))}`
 }
 
 /** Human label: `main — App.java:12` (file base name, 1-based human line).
@@ -310,9 +314,10 @@ export function connectedSummarySection(groups: ConnectedGroup[]): string {
 }
 
 /** Render the usages section: top-MAX_USAGE_LINKS clickable file:line links
- *  plus the "N more" escape hatch to the editor's native references tree.
+ *  plus the "N more" escape hatch — native references view where available,
+ *  our hub usages surface otherwise (M44.U6: never a message-only dead end).
  *  Empty string = declared absence (zero usage sites). */
-export function usagesSection(sites: RichSite[], total: number, forFile: string, forLine: number, forCharacter: number): string {
+export function usagesSection(sites: RichSite[], total: number, forSymbol: string, forFile: string, forLine: number, forCharacter: number): string {
   if (sites.length === 0) return ""
   const lines: string[] = ["**usages**"]
   const shown = sites.slice(0, MAX_USAGE_LINKS)
@@ -323,7 +328,7 @@ export function usagesSection(sites: RichSite[], total: number, forFile: string,
   // truncated count); rest = sites beyond the rendered top-3.
   const rest = total - shown.length
   if (rest > 0) {
-    lines.push(`+${rest} more — [show all usages](${showAllUsagesUri(forFile, forLine, forCharacter)})`)
+    lines.push(`+${rest} more — [show all usages](${showAllUsagesUri({ file: forFile, line: forLine, character: forCharacter, symbol: forSymbol })})`)
   }
   return lines.join("\n")
 }

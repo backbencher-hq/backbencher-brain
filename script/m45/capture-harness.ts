@@ -111,9 +111,11 @@ export const MANIFEST_REQUIRED_KEYS = [
 ] as const
 
 /** Write a sidecar manifest that the G1 schema + the C1 verifier can check. */
-export function writeCaptureManifest(outDir: string, input: CaptureManifestInput): string {
+export function writeCaptureManifest(outDir: string, input: CaptureManifestInput, fileName = "capture-manifest.json"): string {
+  // fileName is optional so scenario runs (money) don't clobber the committed
+  // hero manifest — the C1 checker keeps expecting the default name.
   const manifest = { schemaVersion: MANIFEST_SCHEMA_VERSION, ...input }
-  const p = path.join(outDir, "capture-manifest.json")
+  const p = path.join(outDir, fileName)
   writeFileSync(p, JSON.stringify(manifest, null, 2) + "\n")
   return p
 }

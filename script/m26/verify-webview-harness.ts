@@ -343,7 +343,7 @@ async function main(): Promise<void> {
       { symbolId: "sym:c2", dir: "caller", name: "caller2", file: "caller2.ts", line: 1, rowIds: ["rel-1"], types: [{ type: "calls", occurrences: 1, tier: "structural" }], enriched: false },
       { symbolId: "sym:x", dir: "callee", name: "x", file: "x.ts", line: 1, rowIds: ["rel-2"], types: [{ type: "calls", occurrences: 1, tier: "structural" }], enriched: false },
     ]
-    const hubHarnessModel: H.HubHarnessModel = { rows: HUB_ROWS, truncated: false, totalIfKnown: null }
+    const hubHarnessModel: H.HubHarnessModel = { rows: HUB_ROWS, truncated: false, totalIfKnown: null, headerCounts: { callers: 2, callees: 1 } }
 
     const renderHubOnce = (fn: (r: any, d: any, group?: any) => any, group?: any): H.HarnessNode => {
       const r = new El("div")
@@ -353,13 +353,29 @@ async function main(): Promise<void> {
     }
     const listFile = renderHubOnce(core.renderHubList, "file")
     const findingsListFile = H.runHubHarness(hubHarnessModel, listFile, { sectionClass: "bb-hub-list", group: "file", assertGrouping: true })
-    check("P5: real core list-by-file passes AH1–AH9 clean (grouped)", findingsListFile.every((f) => f.ok), findingsListFile.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core list-by-file passes AH1–AH11 clean (grouped)", findingsListFile.every((f) => f.ok), findingsListFile.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     const listCaller = renderHubOnce(core.renderHubList, "caller")
     const findingsListCaller = H.runHubHarness(hubHarnessModel, listCaller, { sectionClass: "bb-hub-list", group: "caller", assertGrouping: true })
-    check("P5: real core list-by-caller passes AH1–AH9 clean (grouped)", findingsListCaller.every((f) => f.ok), findingsListCaller.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core list-by-caller passes AH1–AH11 clean (grouped)", findingsListCaller.every((f) => f.ok), findingsListCaller.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
     const tree = renderHubOnce(core.renderHubTree)
     const findingsTree = H.runHubHarness(hubHarnessModel, tree, { sectionClass: "bb-hub-tree" })
-    check("P5: real core call tree passes AH1–AH9 clean (grouped)", findingsTree.every((f) => f.ok), findingsTree.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    check("P5: real core call tree passes AH1–AH11 clean (grouped)", findingsTree.every((f) => f.ok), findingsTree.filter((f) => !f.ok).map((f) => `${f.assertion}: ${f.detail}`).join("; "))
+    // U4 positive: the legend ships with every hub render — five tiers +
+    // enrichment + the full staleness section — and the stale fixture law.
+    const legendFindings = H.assertHubLegend(listFile, hubHarnessModel, "hub")
+    check("P5: hub list ships the ONE legend (5 tiers + enrichment + 4 staleness statuses)", legendFindings.ok, legendFindings.detail)
+    // Stale fixture: render the same deterministic document and append the
+    // whole-panel stale marker exactly as the panel core renders it.
+    const staleRoot = new El("div")
+    core.renderHubList(hubModel as never, { create: (t: string) => new El(t), root: () => staleRoot } as never, "file")
+    const staleMarkerEl = new El("div")
+    staleMarkerEl.addClass("bb-stale-marker"); staleMarkerEl.setAttribute("data-stale", "true"); staleMarkerEl.setAttribute("data-status", "stale"); staleMarkerEl.textContent = "⚠️ stale — file changed since indexing (stale)"
+    staleRoot.appendChild(staleMarkerEl)
+    const staleModel: H.HubHarnessModel = { ...hubHarnessModel, staleMarker: { status: "stale" } }
+    const staleFindings = H.assertHubLegend(toHarness(staleRoot), staleModel, "hub")
+    check("P5: stale fixture with marker passes AH11", staleFindings.ok, staleFindings.detail)
+    const freshMarkerFindings = H.assertHubLegend(listFile, staleModel, "hub")
+    check("P5: stale model without a marker fails AH11 (positive-law check)", !freshMarkerFindings.ok)
     check("P5: hub renders are deterministic (tree twice byte-identical)", H.serializeHarnessNode(renderHubOnce(core.renderHubTree)) === H.serializeHarnessNode(renderHubOnce(core.renderHubTree)))
 
     // --- Liars: hand-built hub documents that MUST fail the harness --------
@@ -502,6 +518,7 @@ async function main(): Promise<void> {
       ],
       truncated: false,
       totalIfKnown: null,
+      headerCounts: { callers: 2, callees: 0 },
     }
     const nestedTree = (() => {
       const r = new El("div")
@@ -592,6 +609,49 @@ async function main(): Promise<void> {
       s.appendChild(sub)
       const findings = H.runHubHarness(nestedHarnessModel, toHarness(s), { sectionClass: "bb-hub-tree" })
       check("P5 liar: duplicated tree symbol caught (AH1 dupes)", findings.some((f) => !f.ok && f.assertion.startsWith("AH1")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // --- U4 (M44.U4): header counts + the ONE legend — AH10/AH11 -----------
+    const listSection = (callers: number, callees: number): El => {
+      const s = new El("div"); s.addClass("bb-hub"); s.addClass("bb-hub-list")
+      const sum = new El("div"); sum.addClass("bb-hub-summary"); sum.setAttribute("data-callers", String(callers)); sum.setAttribute("data-callees", String(callees)); sum.textContent = `${callers} callers · ${callees} callees`
+      s.appendChild(sum)
+      return s
+    }
+    const listGroups = (s: El, count: number): El => {
+      const sub = new El("div"); sub.addClass("bb-hub-subtree"); sub.setAttribute("data-dir", "caller")
+      for (let i = 0; i < count; i++) sub.appendChild(rowC1())
+      s.appendChild(sub)
+      return s
+    }
+    // liar 13 (U4 AH10): header trusts a server count while rendering fewer
+    // groups — data-callers=3 over two rendered rows (the eye-verifiable
+    // number is the rendered one, §13.4).
+    {
+      const s = listGroups(listSection(3, 0), 2)
+      const findings = H.runHubHarness(hubHarnessModel, toHarness(s), { sectionClass: "bb-hub-list", group: "file" })
+      check("P5 liar: header count disagrees with rendered groups caught (AH10)", findings.some((f) => !f.ok && f.assertion.startsWith("AH10")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 14 (U4 AH11): a legend MISSING the staleness section — tiers only.
+    {
+      const s = listGroups(listSection(1, 0), 1)
+      const lg = new El("div"); lg.addClass("bb-legend"); lg.setAttribute("data-legend", "edge-evidence-tiers")
+      const item = new El("div"); item.addClass("bb-legend-item")
+      const sw = new El("span"); sw.addClass("bb-legend-swatch"); sw.setAttribute("data-legend-tier", "structural"); item.appendChild(sw)
+      lg.appendChild(item)
+      s.appendChild(lg)
+      const findings = H.runHubHarness(hubHarnessModel, toHarness(s), { sectionClass: "bb-hub-list", group: "file" })
+      check("P5 liar: legend without the staleness section caught (AH11)", findings.some((f) => !f.ok && f.assertion.startsWith("AH11")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
+    }
+    // liar 15 (U4 AH11): a FRESH fixture rendering a stale marker (phantom
+    // staleness — the mirror of hiding one).
+    {
+      const s = listGroups(listSection(1, 0), 1)
+      const lg = new El("div"); lg.addClass("bb-legend")
+      s.appendChild(lg)
+      const mk = new El("div"); mk.addClass("bb-stale-marker"); mk.setAttribute("data-stale", "true"); mk.setAttribute("data-status", "stale")
+      s.appendChild(mk)
+      const findings = H.runHubHarness(hubHarnessModel, toHarness(s), { sectionClass: "bb-hub-list", group: "file" })
+      check("P5 liar: phantom stale marker on a fresh fixture caught (AH11)", findings.some((f) => !f.ok && f.assertion.startsWith("AH11")), findings.map((f) => `${f.assertion}:${f.ok}`).join("; "))
     }
   }
 

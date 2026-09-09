@@ -10,7 +10,7 @@
   "negativeCases": 7,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "489cb8e1",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
   "evidenceFile": "U2.json",
   "generatedAt": "2026-09-07T15:20:00.000Z",
@@ -31,9 +31,6 @@
     "Visual polish (spacing/palette) is CSS-owned and editor-themed; the DOM contract + affordance honesty are what this evidence pins.",
     "darwin/windows editor legs are CI-PENDING per the standing OS matrix (linux runs real)."
   ],
-  "rePinnedAt": "489cb8e1",
-  "rePinNote": {
-    "date": "2026-09-07",
-    "reason": "U3 (issue #690) changed U2-relevant files (graph-core renderHubList row anatomy, webview-harness AH laws, hub CSS owner, e5-inner). All U2-relevant gates re-verified green at this HEAD: V1 35/35, H5 40/40, H6 38/38, E5 76/76, E6 cursor 29/29 + antigravity 64/64."
-  }
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }
