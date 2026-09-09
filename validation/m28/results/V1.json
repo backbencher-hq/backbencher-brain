@@ -18,12 +18,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "d330eb4f34e96e8e3eb46f9e2de67987ec17c442",
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-07T22:51:45.248Z",
-  "claimLevel": "n/a \u2014 this issue produces a generated truth doc, not a claim",
-  "failures": [],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "generatedAt": "2026-09-09T21:57:25.418Z",
+  "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
+  "failures": []
 }
