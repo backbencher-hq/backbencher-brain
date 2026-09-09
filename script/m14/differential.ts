@@ -4611,13 +4611,24 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // the legacy name-only pairing (never a false negative from a missing sig).
   const extractSig = (m: any): string | undefined => {
     const container = m.namedChildren.find((c: any) =>
-      /^(formal_parameters|parameters|parameter_list|parameter_clause|method_parameters)$/.test(c?.type ?? ""))
+      /^(formal_parameters|parameters|parameter_list|parameter_clause|method_parameters|function_value_parameters)$/.test(c?.type ?? ""))
     if (!container) return undefined
     const types: string[] = []
     for (let i = 0; i < container.namedChildCount; i++) {
       const p = container.namedChild(i)
       if (!p) continue
-      const pt = p.childForFieldName?.("type")
+      let pt = p.childForFieldName?.("type")
+      // M49.K1 kotlin: this pinned wasm exposes NO named fields, so
+      // childForFieldName("type") is null on every language — java/cpp get
+      // their types positionally elsewhere, but kotlin `parameter` nodes
+      // carry the type as the LAST named child (name pattern first,
+      // `:` separator is anonymous). Falling back to it restores exact
+      // overload separation to match the analyzer's metadata params
+      // (probe: {name:"x",type:"Int"}); without it every kotlin sig was
+      // undefined and override matching degraded to name-only.
+      if (!pt && lang === "kotlin" && p.type === "parameter") {
+        pt = p.namedChild(p.namedChildCount - 1)
+      }
       if (pt?.text) types.push(pt.text.replace(/\s+/g, ""))
       else return undefined // untyped parameter form — fall back to name-only
     }
@@ -4694,6 +4705,28 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               // disabling override truth for those languages (two-corpus wave
               // 2026-09: clojure:java SubVector.spliterator -> APersistentVector).
               if (!fd && m.type === "field_declaration") continue
+              // M49.K1 kotlin mirror: tree-sitter-kotlin function_declaration
+              // carries its name as a `simple_identifier` child, so the
+              // generic branch below (childForFieldName("name") ??
+              // identifier) never matched — kotlin methods were never
+              // REGISTERED in override truth and every analyzer override
+              // (0.9/structural after the K2 verification fix) would surface
+              // unexplained. Kotlin's name is a direct simple_identifier
+              // child; sigs flow through extractSig (function_value_parameters
+              // now in the container regex).
+              if (!fd && lang === "kotlin" && m.type === "function_declaration") {
+                const kName = m.namedChildren.find((c: any) => c.type === "simple_identifier")
+                if (kName && kName.text !== nm && kName.text !== "constructor") {
+                  decls[nm].methods.add(kName.text)
+                  const sig = extractSig(m)
+                  if (sig) {
+                    let ss = decls[nm].sigs.get(kName.text)
+                    if (!ss) { ss = new Set(); decls[nm].sigs.set(kName.text, ss) }
+                    ss.add(sig)
+                  }
+                }
+                continue // generic branch must not double-register
+              }
               if (fd) {
                 // cpp nests the name: function_declarator has a `declarator`
                 // FIELD holding the method name (field_identifier, possibly
@@ -4838,6 +4871,49 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           }
           if (!decls[jSuper]) decls[jSuper] = { parents: [], methods: new Set(), sigs: new Map() }
           declParents.push({ child: jAnon, parent: jSuper })
+        }
+      }
+    }
+    // M49.K1 kotlin twin: `object : Runnable { override fun run() {...} }`
+    // parses as object_literal + class_body. RealKotlinAnalyzer declares an
+    // anonymous_<Super> class symbol, attributes the body's methods to it,
+    // and its K2 override BFS verifies through metadata.superTypes — the
+    // oracle must register the same synthetic declaration or every verified
+    // anonymous_X.m -> Super.m edge surfaces as unexplained fabrication.
+    // Supertypes resolve through delegation_specifier > user_type >
+    // type_identifier (nested — the analyzer recurses too).
+    if (x.type === "object_literal") {
+      const kbody = x.namedChildren.find((c: any) => c.type === "class_body")
+      const kdeleg = x.namedChildren.find((c: any) => c.type === "delegation_specifier")
+      if (kbody && kdeleg) {
+        const findKType = (nn: any): any => {
+          if (nn.type === "type_identifier") return nn
+          for (let i = 0; i < nn.namedChildCount; i++) { const c = nn.namedChild(i); if (c) { const r = findKType(c); if (r) return r } }
+          return null
+        }
+        const ktn = findKType(kdeleg)
+        if (ktn?.text) {
+          const kSuper = ktn.text
+          const kAnon = `anonymous_${kSuper}`
+          if (!decls[kAnon]) {
+            decls[kAnon] = { parents: [], methods: new Set(), sigs: new Map() }
+            for (let i = 0; i < kbody.namedChildCount; i++) {
+              const m = kbody.namedChild(i)
+              if (m?.type !== "function_declaration") continue
+              const mn = m.namedChildren.find((c: any) => c.type === "simple_identifier")
+              if (mn && mn.text !== "constructor" && mn.text !== kAnon) {
+                decls[kAnon].methods.add(mn.text)
+                const sig = extractSig(m)
+                if (sig) {
+                  let ss = decls[kAnon].sigs.get(mn.text)
+                  if (!ss) { ss = new Set(); decls[kAnon].sigs.set(mn.text, ss) }
+                  ss.add(sig)
+                }
+              }
+            }
+          }
+          if (!decls[kSuper]) decls[kSuper] = { parents: [], methods: new Set(), sigs: new Map() }
+          declParents.push({ child: kAnon, parent: kSuper })
         }
       }
     }
