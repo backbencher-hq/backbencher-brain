@@ -2,7 +2,7 @@
   "issue": "495",
   "code": "V1",
   "status": "verified",
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "sourceFingerprint": "bf484166fefc94ef0cdad664ccd6d0a546fbb53f2bdfcd44ac60e5d0d69ea992",
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
@@ -173,5 +173,7 @@
     "latency measured on this machine only (kernel/CPU/RAM recorded per run); cross-platform budgets are M25 scope",
     "fixture workspace is a single TypeScript file; per-language fixtures follow in M25",
     "cold-start latency not measured in this issue (warm regime only, per contract \u00a73 definition)"
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

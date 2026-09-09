@@ -2,7 +2,7 @@
   "issue": "496",
   "code": "D1",
   "status": "verified",
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "sourceFingerprint": "4f06b8c03e5fa873d341d48fd2e01da6195390f0b94203fb4cf274c70d3d34cd",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
@@ -20,5 +20,7 @@
     "claim levels capped at I1 (protocol-passed) by design \u2014 I3/I4/I5 are M25 scope and declared absent",
     "per-language fixture evidence is M25 scope; the claim table states the language-agnostic protocol claim",
     "vocabulary lint covers docs/m24/ artifacts (tool doc + master plan); the contract and decision records are canonical and outside the lint surface"
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

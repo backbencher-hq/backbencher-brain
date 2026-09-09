@@ -8,7 +8,7 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
   "evidenceFile": "W5.json",
   "generatedAt": "2026-09-08T19:50:04.836Z",
@@ -23,5 +23,7 @@
     "totalCountIfKnown is computed by an independent bounded COUNT under the same containment rule; it counts distinct caller symbols, not call sites.",
     "Impact depth cap mirrors the engine (5); deeper chains exist but are declared out of budget.",
     "Latency measured headless (component + engine); in-editor regime is measured by the editor legs."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

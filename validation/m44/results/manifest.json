@@ -3,7 +3,7 @@
   "milestone": "M44",
   "githubMilestone": 47,
   "title": "The Understandable Hub (IDE v7)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m44/M44-MASTER-PLAN.md (Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a713 Understanding Rules, M44 amendment)",
   "prerequisite": "M29 + M42 completion bars met \u2014 verified at HEAD (re-audited by G1 on every run)",
@@ -236,5 +236,6 @@
         "note": "see X1.json currentCommit \u2014 the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs"
       }
     }
-  ]
+  ],
+  "closedAt": "2026-09-09"
 }

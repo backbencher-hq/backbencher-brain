@@ -2,7 +2,7 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "sourceFingerprint": "bee83c2eb97ecbdca86ef9f7985148ab5ddb4156ad04de58d8e85a8748c3bb4f",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
@@ -23,5 +23,7 @@
     "no completion, diagnostics, or rename (complement stance)",
     "feature handlers land in L2-L5; capabilities advertise only registered handlers",
     "stdio framing is byte-stream based with Content-Length parsing"
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }
