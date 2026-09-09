@@ -936,6 +936,14 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "java/org-com-root-refilter",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "M49.J3 regression: re-applies the bare org/com stdlib roots (the pre-fix behavior the reviewer caught — C5 changed the mechanism to root-only but left org/com in the set, silently dropping every FQ third-party call like org.apache.commons.io.FileUtils.readFile) — fq-third-party-calls pins the emitted edges and dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "calls" && /^\s*(org|com)\./.test(String(x.metadata?.javaCallExpression ?? "")))) }),
+  },
+  {
     id: "kotlin/enum-supertype-drop",
     language: "kotlin",
     defectClass: "relationship-loss",
