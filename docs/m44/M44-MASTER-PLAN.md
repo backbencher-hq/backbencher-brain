@@ -148,3 +148,32 @@ component and real server legs, (b) carries mutation proofs that it CAN FAIL, an
 writes a timestamped record pinned to a commit. Drift gates keep docs/code/ledger
 byte-honest. The bottom-up governance chain M24→M42 stays green on every M44 run, and
 M44's own bar is re-audited by G1 every time. Nothing closes on prose.
+
+### X1 decision (2026-09-09): the closure gate + the launch bar
+
+`script/m44/verify-closure.ts` (issue #694) mirrors M42.X1 with one documented
+order deviation: **pass 0 re-runs the editor legs (E5 + E6 forks) at HEAD
+BEFORE the ladder** — this closure edits an m25-relevant file
+(`run-fork-e2e.mts`), and m25 governance freshness-judges fork/E5 evidence
+against m25-relevant diffs, so the editor evidence must re-stamp first for
+the ladder to run honestly. The gate then: runs the full ladder
+(M24–M29 governance + M42 H1–H6 + M44 U1/U3/U4/U5/U6), re-asserts §6 mutant
+coverage per surface, audits the M44 ledger + the launch record
+(docs/m44/LAUNCH-RECORD.md — every row EVIDENCE / OWNER / CI-PENDING with a
+verified file or a reason naming the owner) + the machine-compiled
+KNOWN-GAPS inventory, and proves the audit CAN FAIL (7 in-memory negatives).
+
+- **Fork hub coverage (fixed at closure):** fork runs previously stopped at
+  26 checks — before the M44 hub legs — so the new hub was un-exercised in
+  every fork. The fork terminal gate is raised 26→88; both available forks
+  (Cursor 3.19.13, Antigravity 1.107.0) re-ran the full suite including 18
+  hub-leg assertions. Windsurf stays a blocked-with-reason record (§2 I4).
+- **Editor-leg determinism (hardened at closure):** a raced native peek can
+  cancel the U6 fallback's in-flight request ("Canceled"); the E5-U6 click
+  legs now resolve rejections to declared markers and retry once on a
+  canceled attempt (close/refocus/re-click) — the suite can no longer die on
+  editor-async cancellation.
+- **The §8.5 verdict stays with the owner**: spot-check pack at
+  validation/m44/results/SPOT-CHECK-PACK.md; launch-bar owner rows
+  (OpenVSX publish, Windsurf install decision, darwin/win persistence) are
+  recorded with reasons, machine-audited, never silent.

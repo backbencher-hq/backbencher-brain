@@ -153,10 +153,27 @@ async function run() {
           // resolves; a stuck widget means the session moves on and the
           // E5-U6 data-surface assertion is judged on the fallback/reveal
           // legs instead).
-          const r = await Promise.race([
-            vscode.commands.executeCommand("bb.showAllUsages", sauArgs),
-            new Promise((resolve) => { const t = setTimeout(() => resolve({ ok: true, surface: "usages-fallback", symbol: sauArgs.symbol, rendered: true, racedTimeout: true }), 12000); if (t.unref) t.unref() }),
+          // X1 hardening (2026-09-09): the raced editor can CANCEL the
+          // handler's in-flight work when the peek widget closes ("Canceled"
+          // CancellationError), which both rejects the raced promise AND
+          // transiently flips the fallback's rendered flag. A rejected race
+          // used to kill the whole inner suite. Now: rejections resolve to a
+          // declared marker, and a canceled attempt gets ONE declared
+          // close/refocus/re-click retry before the assertion judges it.
+          const raceClick = (args, onTimeout) => Promise.race([
+            vscode.commands.executeCommand("bb.showAllUsages", args).catch((e) => ({ ok: false, reason: `click rejected: ${String(e && e.message || e)}`, canceled: /cancel/i.test(String(e && e.message || e)) })),
+            new Promise((resolve) => { const t = setTimeout(() => resolve(onTimeout), 12000); if (t.unref) t.unref() }),
           ])
+          const closeAndRefocus = async () => {
+            try { await vscode.commands.executeCommand("workbench.action.closeAllEditors") } catch (e) {}
+            try { await vscode.window.showTextDocument(vscode.Uri.file(sauArgs.file)) } catch (e) {}
+            await new Promise((r) => setTimeout(r, 500))
+          }
+          let r = await raceClick(sauArgs, { ok: true, surface: "usages-fallback", symbol: sauArgs.symbol, rendered: true, racedTimeout: true })
+          if (r && r.canceled) {
+            await closeAndRefocus()
+            r = await raceClick(sauArgs, { ok: true, surface: "usages-fallback", symbol: sauArgs.symbol, rendered: true, racedTimeout: true })
+          }
           const landedNative = r && r.ok === true && r.surface === "references"
           const landedFallback = r && r.ok === true && (r.surface === "usages-fallback" || r.surface === "reveal")
           const landedData = landedNative || (landedFallback && (r.rendered === undefined || r.rendered === true))
@@ -175,7 +192,7 @@ async function run() {
         const legacy = h2links.find((l) => l.cmd === "bb.openDefinition")
         if (legacy !== undefined) {
           const rl = await Promise.race([
-            vscode.commands.executeCommand("bb.showAllUsages", legacy.args),
+            vscode.commands.executeCommand("bb.showAllUsages", legacy.args).catch((e) => ({ ok: false, reason: `legacy click rejected: ${String(e && e.message || e)}` })),
             new Promise((resolve) => { const t = setTimeout(() => resolve({ ok: false, reason: "legacy-leg timed out" }), 12000); if (t.unref) t.unref() }),
           ])
           assert("E5-U6: legacy location-only args degrade to the declared reveal floor", rl && rl.ok === true && rl.surface === "reveal", JSON.stringify(rl).slice(0, 160))

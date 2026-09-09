@@ -195,11 +195,11 @@ check("G1: all 8 issue entries are unique and structurally sound", (() => {
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   G1: ["script/m44/verify-governance.ts", "docs/IDE-HONESTY-CONTRACT.md", "validation/m44/results/manifest.json"],
   U1: ["src/lsp/graph_request.ts", "src/lsp/graph_usages.ts", "script/m44/verify-usages-groups.ts", "src/lsp/server.ts"],
-  U2: ["script/m26/graph-core.ts", "script/m26/webview-harness.ts", "script/m44/verify-hub-list.ts", "ide/vscode/src/hub-panel.ts"],
+  U2: ["script/m26/graph-core.ts", "script/m26/webview-harness.ts", "script/m44/verify-usages-groups.ts", "ide/vscode/src/hub-panel.ts"],
   U3: ["script/m26/graph-core.ts", "script/m26/webview-harness.ts", "script/m44/verify-hub-tree.ts"],
-  U4: ["script/m26/graph-core.ts", "script/m44/verify-hub-counts.ts", "docs/m44/HUB-LEGEND.md", "ide/vscode/src/hub-panel.ts"],
+  U4: ["script/m26/graph-core.ts", "script/m44/verify-legend.ts", "docs/m44/HUB-LEGEND.md", "ide/vscode/src/hub-panel.ts"],
   U5: ["src/lsp/impact.ts", "src/lsp/impact_request.ts", "src/lsp/hover.ts", "script/m44/verify-impact-resolution.ts"],
-  U6: ["ide/vscode/src/hover-commands.ts", "script/m44/verify-references-fallback.ts"],
+  U6: ["ide/vscode/src/hover-commands.ts", "ide/vscode/src/usage-fallback.ts", "script/m44/verify-usages-fallback.ts", "src/lsp/rich_hover.ts", "src/lsp/hover.ts"],
   X1: ["script/m44/verify-closure.ts"],
 }
 const SHARED_RELEVANT_FILES = [

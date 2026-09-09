@@ -162,8 +162,12 @@ async function main() {
           const crashed = partial.checks?.some((c: any) => c.name === "E5: inner suite completed without crash" && c.ok === false)
           // Terminal: all core feature legs have run (crash marker present, or
           // the full suite count reached). The inner writes incrementally.
+          // M44.X1: the suite now includes the M44 hub legs (E5-H5/E5-U4 and
+          // the graph/staleness closers) — 26 stopped before the hub, which
+          // left the new hub un-exercised in every fork. The inner suite is
+          // 88 checks; the crash marker is the honest early-exit path.
           const names = (partial.checks ?? []).map((c: any) => c.name)
-          const terminal = crashed || names.length >= 26
+          const terminal = crashed || names.length >= 88
           if (terminal) { finished = true; break }
         } catch { /* mid-write — keep waiting */ }
       }
