@@ -355,6 +355,7 @@ function isJavaBuiltinCall(call: string): boolean {
   // M37.21 C5 mirror: ROOT segment only (see RealJavaAnalyzer.isJavaBuiltin).
   // M49.J3 mirror: org/com removed lockstep (reviewer wave — bare roots
   // dropped user FQ calls like org.apache.commons.io.FileUtils.readFile).
+  const segments = call.split(".")
   if (segments.length > 0 && JAVA_STDLIB_ROOTS.has(segments[0])) return true
   if (JAVA_STDLIB_ROOTS.has(call)) return true
   return false
