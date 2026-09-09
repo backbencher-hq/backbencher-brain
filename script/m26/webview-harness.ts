@@ -245,6 +245,13 @@ export interface HubHarnessModel {
   shownCount?: number
   /** null => the honest "unknown" total (never a fabricated number). */
   totalIfKnown?: number | null
+  /** U4 (AH10): the model's own group counts per side — the header must
+   *  equal the RENDERED group count, and both must equal this when given. */
+  headerCounts?: { callers: number; callees: number }
+  /** U4 (AH11): staleness fixture — when set, the document must render the
+   *  whole-panel stale marker with this status; when null/absent on a
+   *  fresh fixture, NO stale marker may render. */
+  staleMarker?: { status: string } | null
 }
 
 function symbolKey(r: HubHarnessRow): string {
@@ -528,6 +535,68 @@ export function assertHubTree(doc: HarnessNode, model: HubHarnessModel, sectionC
   return { assertion: `AH7-9 tree laws (${sectionClass})`, ok: problems.length === 0, detail: problems.slice(0, 6).join("; ") }
 }
 
+/** AH10 (M44.U4 §13.4): header counts are DERIVED FROM THE RENDERED GROUPS
+ *  — data-callers/data-callees on bb-hub-summary equal the number of caller/
+ *  callee groups actually rendered in the document, and equal the model's
+ *  declared counts when it carries them. A header that trusts server counts
+ *  while rendering a different number of groups FAILS (the eye-verifiable
+ *  number is the rendered one). */
+export function assertHubHeaderCounts(doc: HarnessNode, model: HubHarnessModel): Finding {
+  const section = find(doc, "bb-hub")
+  if (section === null) return { assertion: "AH10 header counts", ok: false, detail: "section missing" }
+  const summary = find(section, "bb-hub-summary")
+  if (summary === null) return { assertion: "AH10 header counts", ok: false, detail: "summary missing" }
+  const renderedRows = findAll(section, "bb-hub-row")
+  const renderedCallers = renderedRows.filter((r) => r.attrs["data-dir"] === "caller").length
+  const renderedCallees = renderedRows.filter((r) => r.attrs["data-dir"] === "callee").length
+  const problems: string[] = []
+  const headerCallers = summary.attrs["data-callers"]
+  const headerCallees = summary.attrs["data-callees"]
+  if (headerCallers !== String(renderedCallers)) problems.push(`data-callers=${headerCallers} != rendered=${renderedCallers}`)
+  if (headerCallees !== String(renderedCallees)) problems.push(`data-callees=${headerCallees} != rendered=${renderedCallees}`)
+  const text = summary.textContent ?? ""
+  if (!text.includes(`${renderedCallers} caller`)) problems.push(`summary text misses ${renderedCallers} caller groups`)
+  if (!text.includes(`${renderedCallees} callee`)) problems.push(`summary text misses ${renderedCallees} callee groups`)
+  if (model.headerCounts) {
+    if (Number(headerCallers) !== model.headerCounts.callers) problems.push(`model callers=${model.headerCounts.callers} != header=${headerCallers}`)
+    if (Number(headerCallees) !== model.headerCounts.callees) problems.push(`model callees=${model.headerCounts.callees} != header=${headerCallees}`)
+  }
+  return { assertion: "AH10 header counts == rendered groups", ok: problems.length === 0, detail: problems.join("; ") || `callers=${renderedCallers} callees=${renderedCallees}` }
+}
+
+/** AH11 (M44.U4 §13.9): the ONE legend — every hub/graph/impact render
+ *  carries the legend with all five tier swatches, the enrichment row, AND
+ *  the staleness section (all four declared statuses). Stale fixtures render
+ *  the whole-panel marker with the declared status; fresh fixtures render
+ *  none. A legend missing the staleness section, or a stale document without
+ *  the marker, FAILS. */
+export function assertHubLegend(doc: HarnessNode, model: HubHarnessModel, surface: "hub" | "graph" | "impact"): Finding {
+  const problems: string[] = []
+  const legend = find(doc, "bb-legend")
+  if (legend === null) {
+    problems.push("legend missing")
+  } else {
+    const tiers = findAll(legend, "bb-legend-item").map((i) => find(i, "bb-legend-swatch")?.attrs["data-legend-tier"]).filter(Boolean)
+    if (tiers.length < 5) problems.push(`legend tier swatches=${tiers.length} < 5`)
+    const enrichedItem = findAll(legend, "bb-legend-item").find((i) => i.attrs["data-legend-enrichment"] === "1")
+    if (enrichedItem === undefined) problems.push("enrichment row missing")
+    const statuses = findAll(legend, "bb-legend-item").map((i) => i.attrs["data-legend-status"]).filter(Boolean)
+    for (const s of ["fresh", "stale", "missing", "unknown"]) {
+      if (!statuses.includes(s)) problems.push(`staleness status ${s} missing from legend`)
+    }
+  }
+  const markers = findAll(doc, "bb-stale-marker")
+  if (model.staleMarker) {
+    if (markers.length === 0) problems.push("stale fixture renders no marker")
+    else if (!markers.some((m) => m.attrs["data-stale"] === "true" && m.attrs["data-status"] === model.staleMarker!.status)) {
+      problems.push(`stale marker status mismatch: got [${markers.map((m) => m.attrs["data-status"]).join(",")}] want ${model.staleMarker.status}`)
+    }
+  } else if (markers.length > 0) {
+    problems.push("fresh fixture renders a stale marker")
+  }
+  return { assertion: `AH11 one legend + staleness (${surface})`, ok: problems.length === 0, detail: problems.join("; ") || "legend complete" }
+}
+
 /** Run the full hub assertion set over one section. */
 export function runHubHarness(
   model: HubHarnessModel,
@@ -541,6 +610,8 @@ export function runHubHarness(
   findings.push(assertHubTruncationEmpty(doc, model, opts.sectionClass, opts.group))
   findings.push(assertHubAffordances(doc, model, opts.sectionClass, opts.group))
   findings.push(assertHubTree(doc, model, opts.sectionClass))
+  findings.push(assertHubHeaderCounts(doc, model))
+  findings.push(assertHubLegend(doc, model, "hub"))
   if (opts.assertGrouping && opts.group !== undefined) {
     findings.push(assertHubGrouping(doc, model, opts.group))
   }

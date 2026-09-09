@@ -150,8 +150,12 @@ async function main(): Promise<void> {
     return m ? [m] : []
   })
   const tierMeanings = meanings.filter((m) => Object.values(core.TIER_MEANINGS as Record<string, string>).some((v) => m.endsWith(v)))
-  check("P3: legend meanings are the documented UI terms", tierMeanings.length === 5 && tierMeanings.length === (legendItems.length - 1))
-  check("P3: enrichment annotation row present and distinct (M42.H3)", legendItems.length === 6 && legendItems.some((i) => i.attrs["data-legend-enrichment"] === "1"))
+  // M44.U4: the legend now also carries the staleness section (4 status
+  // rows). Tier meanings stay exactly the five tier rows — matched against
+  // the tier-carrying items, never the total (staleness rows are separate).
+  const tierItems = legendItems.filter((i) => (i.find("bb-legend-swatch")?.attrs["data-legend-tier"] ?? "") !== "")
+  check("P3: legend meanings are the documented UI terms", tierMeanings.length === 5 && tierMeanings.length === tierItems.length)
+  check("P3: enrichment annotation row present and distinct (M42.H3)", legendItems.some((i) => i.attrs["data-legend-enrichment"] === "1") && legendItems.filter((i) => i.attrs["data-legend-status"] !== undefined).length === 4)
 
   // --- P4: hover gloss applies the same rule (threshold drift gate) ------------
   const glossSource = readFileSync(HOVER_GLOSS, "utf8")
@@ -239,13 +243,12 @@ async function main(): Promise<void> {
           })
           break
         case mutant.name.startsWith("M3"):
-          // A tier missing from the legend: with the M42.H3 enrichment row the
-          // legend has 6 items — dropping a tier leaves 5 (4 tier swatches +
-          // the enrichment row). Detect by tier-swatch count, never by total.
-          // NOTE: find() returns null for the swatch-less enrichment row — a
-          // `!== undefined` filter would count it (null !== undefined is true),
-          // so the filter must be truthiness-based.
-          detected = legendItems.filter((i) => i.find("bb-legend-swatch") !== null).length === 4
+          // A tier missing from the legend: with the M42.H3 enrichment row AND
+          // the M44.U4 staleness rows (which carry status swatches, not tier
+          // swatches), the legend has more items — dropping a tier leaves 4
+          // tier swatches. Detect by TIER swatch count (data-legend-tier),
+          // never by total items or bare swatch presence.
+          detected = legendItems.filter((i) => (i.find("bb-legend-swatch")?.attrs["data-legend-tier"] ?? "") !== "").length === 4
           break
         case mutant.name.startsWith("M4"):
           detected = (m.tierForEdge as (e: any) => string)({ relationshipType: "calls", confidence: 0.5, metadata: undefined }) === "structural"

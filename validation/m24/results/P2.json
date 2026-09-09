@@ -36,14 +36,16 @@
       "detail": "caught (1 failures)"
     }
   ],
-  "currentCommit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "sourceFingerprint": "44bdf9f570c8807e4c84d2fda13eee1a64b1b15d8228b1bcefa4060e70223a4a",
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-09-07T19:05:34.711Z",
+  "generatedAt": "2026-09-07T23:25:56.369Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory; platform-specific watcher quirks (inotify limits, macOS FSEvents coalescing) are covered by M25.E7 cross-platform runs.",
     "brain.db interaction exercised through an interface double; the DB-backed freshness path is covered by the upstream freshness verifiers.",
     "Debounce window tested at the declared 300 ms; extreme event bursts (>1000/s) are a scale concern deferred to M29/R3."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

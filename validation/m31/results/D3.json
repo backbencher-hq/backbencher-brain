@@ -30,5 +30,5 @@
   },
   "negativeCases": 4,
   "negativeCasesDescription": "self-test mutations: phantom tool section, wrong mode list, phantom DB artifact, corrupted cross-link row",
-  "currentCommit": "81d2d848b1a2fd14d4b96cc94c10149819a67f06"
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7"
 }

@@ -9,11 +9,11 @@
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "negativeCases": 4,
-  "currentCommit": "489cb8e12bf6631619108a4c1b46998cf5b520f5",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
   "evidenceFile": "E3.json",
   "renderCapture": "validation/m25/results/E3-render-capture.txt",
-  "generatedAt": "2026-09-07T17:58:43.977Z",
+  "generatedAt": "2026-09-07T22:46:43.325Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -22,5 +22,7 @@
     "Rendered states are captured as log evidence here (E3-render-capture.txt); in-editor screenshots of the status bar and panel are E5 editor-verification evidence per the contract's OS-scoped claim rules.",
     "Staleness currently falls back to UNKNOWN (rendered stale) because the M24 server surface has no bb/staleness method yet; when the method lands, the same render path must be re-proven.",
     "The drift gate re-runs on every verifier execution; it pins the extension to the generated docs/m24/TOOL-DOC.md, which is itself machine-generated from evidence."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

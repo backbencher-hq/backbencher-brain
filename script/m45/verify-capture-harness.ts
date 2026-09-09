@@ -63,7 +63,7 @@ function relevantWorkingTreeChanges(): string[] {
         file.startsWith("docs/m45/") ||
         file.startsWith("test/fixtures/m45-demo/") ||
         ["docs/IDE-HONESTY-CONTRACT.md", "package.json"].includes(file) ||
-        (file.startsWith("validation/m45/") && !["C1.json", "G1.json"].includes(file.split("/").pop() ?? ""))
+        (file.startsWith("validation/m45/") && !file.endsWith(".json")) // evidence outputs are not inputs
       )
   } catch {
     return ["git-status-unavailable"]

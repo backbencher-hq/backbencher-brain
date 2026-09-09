@@ -100,7 +100,7 @@ try {
   }
 }
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
-const EXPECTED_ROUTES = ["", "/install", "/docs", "/tools", "/languages", "/faq", "/troubleshooting", "/contact"]
+const EXPECTED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/faq", "/troubleshooting", "/contact"]
 const expectedUrls = EXPECTED_ROUTES.map((r) => `https://backbencher.cc${r}`)
 check("S1: sitemap matches the real route list exactly", JSON.stringify(sitemapUrls.sort()) === JSON.stringify([...expectedUrls].sort()), `sitemap=${sitemapUrls.length} routes=${expectedUrls.length}`)
 check("S1: robots.txt declares the sitemap", read("website/public/robots.txt").includes("Sitemap: https://backbencher.cc/sitemap.xml"))

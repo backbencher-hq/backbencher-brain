@@ -6,7 +6,7 @@
   "checks": 12,
   "passed": 9,
   "failed": 3,
-  "currentCommit": "3d375330d079511a7f88de1b63e91a6a617c0faa",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
   "verifierCommand": "bun run script/m20/diagnose-index-phases.ts",
   "generatedAt": "2026-08-28T01:44:59.195Z",
   "methodology": "Read existing index state, then run a bounded incremental sample with post-processing disabled; await background embeddings separately; hash sampled source files before/after.",

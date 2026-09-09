@@ -28,11 +28,17 @@ import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
-/** The shared fixture — the exact M24 harness fixture text. */
+/** The shared fixture — the exact M24 harness fixture text, EXTENDED for
+ *  M44.U5 (issue #692): an explicit constructor, placed AFTER greet so every
+ *  pre-U5 position (FIXTURE_HOVER_POS, the greet seeds, the highlight
+ *  derivation) stays byte-stable. The constructor is the U5 member target:
+ *  hover it, click Impact analysis, and the panel must RENDER (the impact
+ *  resolves through the owning class) — not the declared not-in-index error. */
 export const FIXTURE_MAIN = `class Greeter {
   greet(): string {
     return "hello"
   }
+  constructor() {}
 }
 
 function main(): void {
@@ -305,7 +311,11 @@ export async function runFeatureAssertions(ctx: AssertionContext, assert: Assert
   const refs = unwrap(await transport.request("textDocument/references", { textDocument: { uri: mainUri }, position: hoverPos, context: { includeDeclaration: true } }))
   const refList = Array.isArray(refs?.locations) ? refs.locations : Array.isArray(refs) ? refs : null
   assert("L3: references returns locations", Array.isArray(refList) && refList.length > 0, JSON.stringify(refs ?? null).slice(0, 200))
-  const defMiss = unwrap(await transport.request("textDocument/definition", { textDocument: { uri: mainUri }, position: { line: 10, character: 0 } }))
+  // Derived past-EOF position (the constructor grew the fixture — a
+  // hand-picked 10 was briefly INSIDE main's range and resolved honestly,
+  // failing the declared-absence check).
+  const _defMissPos = { line: FIXTURE_MAIN.split("\n").length + 5, character: 0 }
+  const defMiss = unwrap(await transport.request("textDocument/definition", { textDocument: { uri: mainUri }, position: _defMissPos }))
   const missEmpty = defMiss == null || defMiss?.found === false || (Array.isArray(defMiss) && defMiss.length === 0) || defMiss?.locations?.length === 0
   assert("L3: definition outside index is honest empty", missEmpty, JSON.stringify(defMiss ?? null))
 
@@ -564,9 +574,18 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
       line_start, line_end, byte_start, byte_end, owner_symbol_id, gravity_score)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
   )
-  symStmt.run("sym-greeter", projectId, fileId, FIXTURE_SYMBOLS.className, null, "class", 1, 3, 7, 2, null, 10)
+  symStmt.run("sym-greeter", projectId, fileId, FIXTURE_SYMBOLS.className, null, "class", 1, 6, 7, 2, null, 10)
   symStmt.run("sym-greet", projectId, fileId, FIXTURE_SYMBOLS.method, "Greeter.greet", "method", 2, 2, 3, 8, "sym-greeter", 7)
-  symStmt.run("sym-main", projectId, fileId, FIXTURE_SYMBOLS.fn, null, "function", 7, 10, 10, 2, null, 5)
+  // M44.U5: the constructor member (the fixture's derived lines — never
+  // hand-picked) with the owner + containment row the REAL indexer writes
+  // (R0-proven in script/m44/verify-impact-resolution.ts). main's row is
+  // derived too: the constructor shifted it down one line, and a stale
+  // stored line would render a usage-site label the text disproves.
+  const _u5Lines = FIXTURE_MAIN.split("\n")
+  const _u5CtorLine = _u5Lines.findIndex((l) => l.includes("constructor()")) + 1
+  const _u5MainLine = _u5Lines.findIndex((l) => l.includes("function main")) + 1
+  symStmt.run("sym-ctor", projectId, fileId, "constructor", "Greeter.constructor", "constructor", _u5CtorLine, _u5CtorLine, 28, 14, "sym-greeter", 6)
+  symStmt.run("sym-main", projectId, fileId, FIXTURE_SYMBOLS.fn, null, "function", _u5MainLine, _u5MainLine + 3, 10, 2, null, 5)
 
   // rel-1 models an ANALYZER + ENRICHMENT row: analyzer evidence fields
   // (evidenceClass in metadata, M24 era) plus the enrichment pass's stored
@@ -596,8 +615,18 @@ export async function buildFixtureWorkspace(baseDir: string): Promise<{ workspac
     1.0,
     relMeta,
   )
+  // M44.U5: the indexer's universal containment row for the constructor
+  // (owner → member) — the ONLY relationship the constructor has.
+  raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`).run(
+    "rel-ctor-contains",
+    projectId,
+    "sym-greeter",
+    "sym-ctor",
+    "contains",
+    1.0,
+  )
 
-  return { workspaceDir, dataDir, stats: { files: 1, symbols: 3, relationships: 1 } }
+  return { workspaceDir, dataDir, stats: { files: 1, symbols: 4, relationships: 2 } }
 }
 
 /**
