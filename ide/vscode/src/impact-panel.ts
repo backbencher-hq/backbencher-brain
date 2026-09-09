@@ -33,7 +33,7 @@ export interface ImpactPanelDeps {
  *  the shell inputs. Declared failures come back as { error } — loud, with
  *  the server's declared reason (bb/impact: prefix preserved verbatim). */
 export async function renderImpactForPanel(
-  params: { symbol: string },
+  params: { symbol: string; file?: string },
   deps: ImpactPanelDeps,
 ): Promise<{ ok: true; markup: string; stateJson: string } | { ok: false; error: string }> {
   if (deps.client === null) {
@@ -44,6 +44,10 @@ export async function renderImpactForPanel(
     raw = await deps.client.sendRequest(IMPACT_METHOD, {
       schemaVersion: 1,
       symbol: params.symbol,
+      // X1 closure: the defining-file identity disambiguates same-name
+      // members (constructors) — the server resolves through it when the
+      // name alone is ambiguous.
+      ...(params.file ? { file: params.file } : {}),
     })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
@@ -83,13 +87,15 @@ export async function showImpactPanel(
   symbol: string,
   deps: ImpactPanelDeps,
   context: ExtensionContext,
+  /** X1 closure: the hover's defining-file identity (same-name members). */
+  file?: string,
 ): Promise<{ panel: WebviewPanel; outcome: { ok: true; markup: string; stateJson: string } | { ok: false; error: string } }> {
   const panel = window.createWebviewPanel("bbImpact", `Backbencher Impact — ${symbol}`, ViewColumn.Beside, {
     enableScripts: false,
     localResourceRoots: [],
   })
   context.subscriptions.push(panel)
-  const outcome = await renderImpactForPanel({ symbol }, deps)
+  const outcome = await renderImpactForPanel({ symbol, file }, deps)
   panel.webview.html = buildHtml(outcome, deps.cspSource)
   return { panel, outcome }
 }
