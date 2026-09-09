@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "e5fbe1dd89e14732ab289d72f8178641c250baa1",
-  "committedAt": "2026-09-08T20:04:19+02:00",
+  "commit": "b0f4ac330f1108acceb62433a342a59ec6fb5399",
+  "committedAt": "2026-09-10T00:01:26+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -399,11 +399,17 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 63,
+        "referencedTypeLiterals": 64,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
-        "waivedFindings": [],
+        "waivedFindings": [
+          {
+            "justification": "M49.K1 cross-wave finding (java R3 argumentCount guard, real-java-analyzer.ts:851): tree-sitter-java declares `comment` as an UNNAMED extra - grammar.nodeTypeForId does not surface it, so the audit's enumeration misses it - but comment nodes demonstrably appear in java named-child lists (the javadoc extraction fixtures depend on block_comment siblings). The guard excludes comment children from call argumentCount. Probe-verified live code, not a dead branch. Kotlin's wasm enumerates `comment` (audit-clean there); java's does not - grammar-enumeration asymmetry, not an analyzer defect.",
+            "line": 851,
+            "literal": "comment"
+          }
+        ],
         "wasm": [
           "tree-sitter-java.wasm"
         ],
@@ -456,7 +462,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 368,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 67,
+        "referencedTypeLiterals": 73,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
