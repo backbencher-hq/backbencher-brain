@@ -8,16 +8,16 @@
   "failed": 0,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "bbf9e69e625f4c29becad6860ad2be46c5f774eb",
   "verifierCommand": "npx tsx script/m44/verify-legend.ts",
   "evidenceFile": "U4.json",
-  "generatedAt": "2026-09-09T19:22:03.452Z",
+  "generatedAt": "2026-09-09T21:40:30.567Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "duplicated": "make -> Widget carries calls + instantiates (3 caller rows, 2 caller groups)"
   },
   "laws": [
-    "R1 header counts from rendered groups (\u00a713.4) with declared data-server-* drift attrs",
+    "R1 header counts from rendered groups (§13.4) with declared data-server-* drift attrs",
     "R2 ONE legend from graph, hub list, tree, impact (4 call sites)",
     "R3 staleness statuses mirror freshness.ts; fresh renders no marker",
     "R3b real server over stdio",
@@ -27,7 +27,5 @@
   "limitations": [
     "The graph surface's legend is W4's own gate (verify-evidence-badges.ts P3), re-run in the standing chain.",
     "The whole-panel stale marker is a hub-panel (vscode-importing) contract: pinned at source level here and asserted live by the E5 in-editor leg."
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  ]
 }
