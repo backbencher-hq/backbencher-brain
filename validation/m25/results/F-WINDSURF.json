@@ -3,7 +3,7 @@
   "code": "E6",
   "fork": "windsurf",
   "status": "blocked",
-  "reason": "windsurf CLI not found on PATH \u2014 install or record the waiver (E6 honest blocked state)",
+  "reason": "windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
   "os": "linux",
   "machine": {
     "kernel": "Linux 7.1.1-76070101-generic",
@@ -12,11 +12,11 @@
     "node": "v20.19.5",
     "runtime": "fork-run"
   },
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "0820063f2ba1bfa2805f5275a1f6de9cf7c8168c",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-WINDSURF.json",
-  "generatedAt": "2026-09-07T22:45:07.979Z",
+  "generatedAt": "2026-09-09T19:20:42.626Z",
   "limitations": [
-    "fork unavailable on this machine \u2014 claim level stays unset; no inheritance from other forks"
+    "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ]
 }

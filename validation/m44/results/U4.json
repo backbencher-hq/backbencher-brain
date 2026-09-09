@@ -8,16 +8,16 @@
   "failed": 0,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "currentCommit": "0820063f2ba1bfa2805f5275a1f6de9cf7c8168c",
   "verifierCommand": "npx tsx script/m44/verify-legend.ts",
   "evidenceFile": "U4.json",
-  "generatedAt": "2026-09-08T04:55:19.552Z",
+  "generatedAt": "2026-09-09T19:22:03.452Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "duplicated": "make -> Widget carries calls + instantiates (3 caller rows, 2 caller groups)"
   },
   "laws": [
-    "R1 header counts from rendered groups (\u00a713.4) with declared data-server-* drift attrs",
+    "R1 header counts from rendered groups (§13.4) with declared data-server-* drift attrs",
     "R2 ONE legend from graph, hub list, tree, impact (4 call sites)",
     "R3 staleness statuses mirror freshness.ts; fresh renders no marker",
     "R3b real server over stdio",
