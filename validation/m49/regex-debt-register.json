@@ -1,140 +1,135 @@
 {
- "schemaVersion": 1,
- "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 22 established 2026-09-08)",
- "baselineTotal": 22,
- "establishedAt": "2026-09-08",
- "entries": [
-  {
-   "file": "real-scala-analyzer.ts",
-   "line": 267,
-   "source": "/\\[[^\\[\\]]*\\]/g",
-   "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
-  },
-  {
-   "file": "real-scala-analyzer.ts",
-   "line": 267,
-   "source": "/<[^<>]*>/g",
-   "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
-  },
-  {
-   "file": "real-scala-analyzer.ts",
-   "line": 350,
-   "source": "/\\s+/g",
-   "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
-  },
-  {
-   "file": "real-scala-analyzer.ts",
-   "line": 1837,
-   "source": "/\\[[^\\[\\]]*\\]/g",
-   "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
-  },
-  {
-   "file": "real-scala-analyzer.ts",
-   "line": 1837,
-   "source": "/<[^<>]*>/g",
-   "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
-  },
-  {
-   "file": "real-scala-analyzer.ts",
-   "line": 1914,
-   "source": "/\\[[^\\[\\]]*\\]/g",
-   "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
-  },
-  {
-   "file": "real-csharp-analyzer.ts",
-   "line": 127,
-   "source": "/^(binary|conditional|prefix_unary|postfix_unary|cast|as_|aw",
-   "note": "M49: node-type tests -> sets; operator/base shapes -> childForFieldName descent"
-  },
-  {
-   "file": "real-csharp-analyzer.ts",
-   "line": 884,
-   "source": "/^(if|for|foreach|while|do|switch|case|else|return|throw|usi",
-   "note": "M49: node-type tests -> sets; operator/base shapes -> childForFieldName descent"
-  },
-  {
-   "file": "real-vue-analyzer.ts",
-   "line": 699,
-   "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-   "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
-  },
-  {
-   "file": "real-vue-analyzer.ts",
-   "line": 726,
-   "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-   "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
-  },
-  {
-   "file": "real-vue-analyzer.ts",
-   "line": 750,
-   "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-   "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
-  },
-  {
-   "file": "real-groovy-analyzer.ts",
-   "line": 841,
-   "source": "/^(method_declaration|constructor_declaration|function_defin",
-   "note": "M49: replace with char walk / node descent"
-  },
-  {
-   "file": "real-cpp-analyzer.ts",
-   "line": 364,
-   "source": "/::|\\s+/",
-   "note": "M49: ::/space split -> char walk"
-  },
-  {
-   "file": "real-cpp-analyzer.ts",
-   "line": 382,
-   "source": "/::|\\s+/",
-   "note": "M49: ::/space split -> char walk"
-  },
-  {
-   "file": "real-javascript-analyzer.ts",
-   "line": 451,
-   "source": "/^module\\.exports\\./",
-   "note": "M49: module.exports/exports./@ prefix strips -> startsWith slices"
-  },
-  {
-   "file": "real-javascript-analyzer.ts",
-   "line": 451,
-   "source": "/^exports\\./",
-   "note": "M49: module.exports/exports./@ prefix strips -> startsWith slices"
-  },
-  {
-   "file": "real-javascript-analyzer.ts",
-   "line": 1039,
-   "source": "/^@/",
-   "note": "M49: module.exports/exports./@ prefix strips -> startsWith slices"
-  },
-  {
-   "file": "real-kotlin-analyzer.ts",
-   "line": 764,
-   "source": "/\"([^\"]*)\"/",
-   "note": "M49: K12 route regexes -> extractKotlinAnnotationArguments (helper already exists, dead)"
-  },
-  {
-   "file": "real-kotlin-analyzer.ts",
-   "line": 767,
-   "source": "/RequestMethod\\.([A-Za-z]+)/",
-   "note": "M49: K12 route regexes -> extractKotlinAnnotationArguments (helper already exists, dead)"
-  },
-  {
-   "file": "real-svelte-analyzer.ts",
-   "line": 720,
-   "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-   "note": "M49: identifier tokenizer -> char walk"
-  },
-  {
-   "file": "real-zig-analyzer.ts",
-   "line": 572,
-   "source": "/[!*\\s\\[\\]\\{\\}]+/g",
-   "note": "M49: char-class strip -> char walk"
-  },
-  {
-   "file": "real-php-analyzer.ts",
-   "line": 1054,
-   "source": "/^\\\\+/",
-   "note": "M49: leading-backslash strip -> startsWith slice"
-  }
- ]
+  "schemaVersion": 1,
+  "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 22 established 2026-09-08)",
+  "baselineTotal": 20,
+  "establishedAt": "2026-09-08",
+  "entries": [
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 267,
+      "source": "/\\[[^\\[\\]]*\\]/g",
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 267,
+      "source": "/<[^<>]*>/g",
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 350,
+      "source": "/\\s+/g",
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 1837,
+      "source": "/\\[[^\\[\\]]*\\]/g",
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 1837,
+      "source": "/<[^<>]*>/g",
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "line": 1914,
+      "source": "/\\[[^\\[\\]]*\\]/g",
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "line": 127,
+      "source": "/^(binary|conditional|prefix_unary|postfix_unary|cast|as_|aw",
+      "note": "M49: node-type tests -> sets; operator/base shapes -> childForFieldName descent"
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "line": 884,
+      "source": "/^(if|for|foreach|while|do|switch|case|else|return|throw|usi",
+      "note": "M49: node-type tests -> sets; operator/base shapes -> childForFieldName descent"
+    },
+    {
+      "file": "real-vue-analyzer.ts",
+      "line": 699,
+      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
+      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
+    },
+    {
+      "file": "real-vue-analyzer.ts",
+      "line": 726,
+      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
+      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
+    },
+    {
+      "file": "real-vue-analyzer.ts",
+      "line": 750,
+      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
+      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
+    },
+    {
+      "file": "real-groovy-analyzer.ts",
+      "line": 841,
+      "source": "/^(method_declaration|constructor_declaration|function_defin",
+      "note": "M49: replace with char walk / node descent"
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "line": 364,
+      "source": "/::|\\s+/",
+      "note": "M49: ::/space split -> char walk"
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "line": 382,
+      "source": "/::|\\s+/",
+      "note": "M49: ::/space split -> char walk"
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "line": 451,
+      "source": "/^module\\.exports\\./",
+      "note": "M49: module.exports/exports./@ prefix strips -> startsWith slices"
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "line": 451,
+      "source": "/^exports\\./",
+      "note": "M49: module.exports/exports./@ prefix strips -> startsWith slices"
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "line": 1039,
+      "source": "/^@/",
+      "note": "M49: module.exports/exports./@ prefix strips -> startsWith slices"
+    },
+    {
+      "file": "real-svelte-analyzer.ts",
+      "line": 720,
+      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
+      "note": "M49: identifier tokenizer -> char walk"
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "line": 572,
+      "source": "/[!*\\s\\[\\]\\{\\}]+/g",
+      "note": "M49: char-class strip -> char walk"
+    },
+    {
+      "file": "real-php-analyzer.ts",
+      "line": 1054,
+      "source": "/^\\\\+/",
+      "note": "M49: leading-backslash strip -> startsWith slice"
+    }
+  ],
+  "shrunkBy": [
+    {
+      "wave": "M49.K1",
+      "removed": 2,
+      "note": "K12 route regexes replaced by the KD24 named-argument walker"
+    }
+  ]
 }

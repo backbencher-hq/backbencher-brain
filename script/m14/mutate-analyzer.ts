@@ -944,6 +944,34 @@ const MUTANTS: Mutant[] = [
       !((x.type === "implements" || x.type === "extends") && (x.source === "Direction" || x.source === "Counted"))) }),
   },
   {
+    id: "kotlin/override-verification-downgrade",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "M49.K1 K2 regression: reverts the in-file BFS verification — every override collapses back to the first-supertype guess at 0.5/inferred/first-supertype-guess — override-fallback-confidence (Impl.render vs in-file Base) requires 0.9/structural/in-file-verified, so the downgrade dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "overrides" && x.metadata?.reasonCode === "in-file-verified"
+        ? { ...x, confidence: 0.5, metadata: { ...x.metadata, reasonCode: "first-supertype-guess", evidenceClass: "inferred", overrideSig: undefined } }
+        : x) }),
+  },
+  {
+    id: "kotlin/override-name-blind-pairing",
+    language: "kotlin",
+    defectClass: "fabrication",
+    description: "M49.K1 K2 regression: injects the name-blind declSigs bug class — SubBroadcastChannel.send verifies against BroadcastChannel (which declares only cancel/sendSuspend, NEVER send) because some member's sig matched — the name-keyed index forbids it; the corpus sample forbids pin ensures zero unexplained overrides on kotlinx-coroutines",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "overrides", source: "SubBroadcastChannel.send", target: "BroadcastChannel.send", fromSymbol: "SubBroadcastChannel.send", toSymbol: "BroadcastChannel.send", confidence: 0.9, metadata: { isOverride: true, overrideParent: "BroadcastChannel", reasonCode: "in-file-verified", evidenceClass: "structural", overrideSig: "(T)" } },
+    ] }),
+  },
+  {
+    id: "kotlin/override-sig-payload-drop",
+    language: "kotlin",
+    defectClass: "payload-corruption",
+    description: "M49.K1 K4 regression: drops the metadata.overrideSig signature payload from override edges — overload disambiguation downstream dies; the K4 claim-probe re-pin and override-fallback-confidence's sig expectations catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "overrides" ? { ...x, metadata: { ...x.metadata, overrideSig: undefined } } : x) }),
+  },
+  {
     id: "java/anonymous-body-scope-leak",
     language: "java",
     defectClass: "payload-corruption",

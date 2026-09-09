@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-08T20:27:07.561Z",
+  "generatedAt": "2026-09-09T21:54:54.827Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 55,
+  "totalRegexUsages": 52,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 30,
-    "needs_review": 22,
+    "unavoidable": 29,
+    "needs_review": 20,
     "normalization": 3
   },
   "byReceiverCategory": {
-    "literal": 30,
-    "identifier": 11,
+    "literal": 29,
+    "identifier": 9,
     "other": 11,
     "node_text": 3
   },
@@ -558,45 +558,6 @@
           "receiver": "nameText",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-kotlin-analyzer.ts",
-      "count": 3,
-      "usages": [
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 764,
-          "column": 38,
-          "source": "/\"([^\"]*)\"/",
-          "operation": "match",
-          "receiver": "afterName",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 767,
-          "column": 41,
-          "source": "/RequestMethod\\.([A-Za-z]+)/",
-          "operation": "match",
-          "receiver": "afterName",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-kotlin-analyzer.ts",
-          "line": 1715,
-          "column": 21,
-          "source": "/identifier|navigation_expression|field_expression/",
-          "operation": "test",
-          "receiver": "/identifier|navigation_expression|field_expression/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
           "justification": ""
         }
       ]
