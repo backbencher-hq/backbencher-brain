@@ -11,9 +11,11 @@
     "mutantsTotal": 4,
     "ok": true
   },
-  "currentCommit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
   "evidenceFile": "R5-verify.json",
-  "generatedAt": "2026-09-07T19:04:05.375Z",
-  "details": []
+  "generatedAt": "2026-09-07T23:24:16.360Z",
+  "details": [],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

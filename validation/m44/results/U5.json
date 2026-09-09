@@ -1,0 +1,31 @@
+{
+  "issue": "M44.U5",
+  "code": "U5",
+  "milestone": "M44",
+  "status": "verified",
+  "checks": 27,
+  "passed": 27,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
+  "evidenceFile": "U5.json",
+  "generatedAt": "2026-09-09T19:22:07.327Z",
+  "fixture": "script/m44/u5-fixture.ts (real indexer + real dist server)",
+  "laws": [
+    "R0 fixture truth from the REAL indexer (seed can never drift)",
+    "R1 component: member roots at the owner, resolution declared",
+    "R2 unknown symbol keeps the declared error",
+    "R3 a member with its own edges does not re-root",
+    "R4 renderer states the resolution; direct renders no note",
+    "R5 real server end to end (the owner-session defect fixed)",
+    "R6 four mutants (fallback dropped, rule-3 broken, silent relabel, note hidden)"
+  ],
+  "limitations": [
+    "The fallback requires an exact single-name member match and a traversable owner; ambiguous names keep the declared error (documented narrowness, never a guess).",
+    "Cross-file owners resolve the same way (owner_symbol_id is workspace-global); the fixture covers the same-file shape the owner session exercised."
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+}

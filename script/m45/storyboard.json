@@ -1,151 +1,63 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "milestone": "M45",
   "issue": "D1 (#710)",
+  "status": "as-shot",
+  "productionModel": "real session recordings (session-driver.ts) + deterministic anchored post pass (post-production.ts); Remotion tried and abandoned per owner decision 2026-09-07 — see M45-MASTER-PLAN.md",
   "corpus": {
-    "path": "test/fixtures/m45-demo",
-    "commit": "efc24ed2",
-    "workspace": "greeter.ts, main.ts, report.ts",
-    "heroSymbol": "Greeter",
-    "relationshipTruth": "Greeter is instantiated by buildGreeter (main.ts) and referenced by describeGreeter (report.ts); 10 symbols / 31 relationships in the pinned index"
+    "path": "test/fixtures/m45-studio",
+    "indexedFrom": "src/",
+    "name": "Ledgerline (authored demo commerce domain)",
+    "stats": { "symbols": 96, "relationships": 297, "files": 17 },
+    "hubSymbol": "Money (class, 41 usages across 6 files — verified via live LSP probe)",
+    "depthSymbol": "OrderService.place (method, 19 usages; connected: called by handleCreateOrder, instantiates via app.ts)"
   },
   "styleContract": {
-    "palette": "warm near-black editor (site-continuity)",
-    "titleFont": "Fraunces",
+    "headlineFont": "Fraunces italic 600 (OFL, pinned in script/m45/film/fonts)",
     "labelFont": "JetBrains Mono",
-    "accent": "ember, used only where it means something",
-    "callouts": "hairline",
-    "audio": "none — silent with on-screen captions"
+    "accent": "ember 0xC9A36B, kickers only",
+    "captions": "long-hold — every caption holds >= 3 s; no synthetic voiceover, films are silent"
   },
   "cameraGrammar": {
-    "easings": ["easeInOutCubic", "easeOutQuart"],
-    "zoom": "scale + focus point over real captured pixels; never alters product pixels",
-    "loopSeam": "hero cut ends on the same wide frame it starts on"
+    "push": "1.0 -> 1.15 over the portal beats, anchored to portal centers MEASURED from the take by frame-diff (never guessed)",
+    "trim": "hard cuts on observed beat boundaries (1 s frame-diff scan); fades through black at film start/end",
+    "loop": "the cut loops through the black fade seam"
   },
-  "cuts": {
+  "films": {
     "hero": {
-      "targetDurationMs": 13500,
-      "allowedRangeMs": [12000, 20000],
+      "id": "hero",
+      "claim": "depth — one symbol's full story: hover portal, go-to-definition, references",
+      "take": "validation/m45/results/demo-session/raw-take.mp4",
+      "cut": "validation/m45/results/demo-session/hero-cut.mp4",
+      "sessionEvidence": "D1-session-raw.json",
+      "postEvidence": "D1-post.json",
+      "seconds": 28.9,
       "beats": [
-        {
-          "id": "H1",
-          "job": "establish — wide editor, greeter.ts open",
-          "captureScene": "editor-wide",
-          "durationMs": 2500,
-          "camera": { "scale": 1.0, "easing": "none" },
-          "caption": null
-        },
-        {
-          "id": "H2",
-          "job": "cursor travels to the Greeter symbol",
-          "captureScene": "editor-wide",
-          "durationMs": 1200,
-          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
-          "caption": null
-        },
-        {
-          "id": "H3",
-          "job": "hover reveal — the rich portal appears over Greeter",
-          "captureScene": "hover-portal",
-          "durationMs": 1800,
-          "camera": { "scale": 1.0, "easing": "easeOutQuart" },
-          "caption": "Hover any symbol"
-        },
-        {
-          "id": "H4",
-          "job": "hold on the payoff — portal headline readable",
-          "captureScene": "hover-portal",
-          "durationMs": 2500,
-          "camera": { "scale": 1.35, "focus": "portal-headline", "easing": "easeInOutCubic" },
-          "caption": "class · 13 usages · evidence tiers"
-        },
-        {
-          "id": "H5",
-          "job": "push into the connected section — cross-file truth",
-          "captureScene": "hover-portal",
-          "durationMs": 2500,
-          "camera": { "scale": 1.8, "focus": "portal-connected", "easing": "easeInOutCubic" },
-          "caption": "Who builds it, who calls it — across files"
-        },
-        {
-          "id": "H6",
-          "job": "pull back to the wide editor",
-          "captureScene": "editor-wide",
-          "durationMs": 1500,
-          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
-          "caption": null
-        },
-        {
-          "id": "H7",
-          "job": "settle on the opening frame — loop seam",
-          "captureScene": "editor-wide",
-          "durationMs": 1500,
-          "camera": { "scale": 1.0, "easing": "none" },
-          "caption": null
-        }
+        { "id": "H1", "job": "establish — orders-router.ts open, explorer visible", "captureScene": "real session", "observedT": "0.0-9.5" },
+        { "id": "H2", "job": "hover portal over place() — method, 19 usages, connected: handleCreateOrder", "captureScene": "real hover", "observedT": "10.0-14.0" },
+        { "id": "H3", "job": "escape, F12 — real go-to-definition into order-service.ts", "captureScene": "real navigation", "observedT": "18.0" },
+        { "id": "H4", "job": "hover portal over cancel() — 9 usages, connected: handleCancelOrder", "captureScene": "real hover", "observedT": "22.0-30.5" },
+        { "id": "H5", "job": "references peek — cross-file usages, settle", "captureScene": "real navigation", "observedT": "31.5-35.8" }
       ]
     },
-    "full": {
-      "targetDurationMs": 45000,
-      "allowedRangeMs": [40000, 60000],
+    "money": {
+      "id": "money",
+      "claim": "breadth — one type, every place it is used",
+      "take": "validation/m45/results/demo-session/raw-take-money.mp4",
+      "cut": "validation/m45/results/demo-session/hero-cut-money.mp4",
+      "sessionEvidence": "D1-session-money.json",
+      "postEvidence": "D1-post-money.json",
+      "seconds": 26.5,
       "beats": [
-        { "$ref": "hero H1..H7 (identical opening)" },
-        {
-          "id": "F1",
-          "job": "go to definition — jump from Greeter to its declaration",
-          "captureScene": "definition-jump",
-          "durationMs": 4000,
-          "camera": { "scale": 1.15, "easing": "easeInOutCubic" },
-          "caption": "Go to definition"
-        },
-        {
-          "id": "F2",
-          "job": "references — every usage of Greeter listed",
-          "captureScene": "references-list",
-          "durationMs": 5000,
-          "camera": { "scale": 1.2, "focus": "references-panel", "easing": "easeInOutCubic" },
-          "caption": "Every usage, with evidence"
-        },
-        {
-          "id": "F3",
-          "job": "call hierarchy — follow main → describeGreeter",
-          "captureScene": "call-hierarchy",
-          "durationMs": 5000,
-          "camera": { "scale": 1.2, "focus": "hierarchy-tree", "easing": "easeInOutCubic" },
-          "caption": "Call hierarchy, from the real index"
-        },
-        {
-          "id": "F4",
-          "job": "GATED on M44 close — Open in hub: graph view of Greeter's neighborhood",
-          "captureScene": "hub-graph",
-          "gatedOn": "M44",
-          "durationMs": 6000,
-          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
-          "caption": "Open in hub — the graph behind the code"
-        },
-        {
-          "id": "F5",
-          "job": "pull back to file, close on the editor",
-          "captureScene": "editor-wide",
-          "durationMs": 3000,
-          "camera": { "scale": 1.0, "easing": "easeInOutCubic" },
-          "caption": null
-        }
+        { "id": "M1", "job": "establish — money.ts open, explorer visible", "captureScene": "real session", "observedT": "0.0-5.4" },
+        { "id": "M2", "job": "hover portal over Money — class, 41 usages across 6 files", "captureScene": "real hover", "observedT": "5.5-14.4" },
+        { "id": "M3", "job": "references peek — every usage in one view, browse the list", "captureScene": "real navigation", "observedT": "15.5-21.5" },
+        { "id": "M4", "job": "settle on the service file", "captureScene": "real session", "observedT": "22.0-27.5" }
       ]
     }
   },
-  "captureScenesRequired": [
-    { "scene": "editor-wide", "status": "captured (C1 frame 01/03)" },
-    { "scene": "hover-portal", "status": "captured (C1 frame 02)" },
-    { "scene": "definition-jump", "status": "to shoot" },
-    { "scene": "references-list", "status": "to shoot" },
-    { "scene": "call-hierarchy", "status": "to shoot" },
-    { "scene": "hub-graph", "status": "GATED — shoot only after M44 closes (rule 3)" }
-  ],
-  "honestyNotes": [
-    "Every beat's pixels come from a captureScene the C1 driver actually produced; the storyboard never invents UI.",
-    "Captions state only what the pinned manifest supports; the version shown in any burn-in comes from the sidecar manifest, never hand-typed.",
-    "The zoom/push-in is a camera move over real pixels (Layer 2); product pixels are never redrawn (two-layer rule).",
-    "Hub beat F4 stays out of every render until M44 closes; the hero cut contains no hub content at all."
-  ]
+  "hubScenes": {
+    "status": "GATED on M44 close (Demo-Media Rule 3)",
+    "note": "neither film contains a hub scene; the M44 open lane (U1-U6) is the co-agent's"
+  }
 }

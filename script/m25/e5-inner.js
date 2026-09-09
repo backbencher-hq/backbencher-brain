@@ -131,6 +131,74 @@ async function run() {
       const cmds = await vscode.commands.getCommands(true)
       assert("E5-H2: all three hover-link commands are registered", ["bb.openUsage", "bb.openDefinition", "bb.showAllUsages"].every((c) => cmds.includes(c)), JSON.stringify(cmds.filter((c) => c.startsWith("bb."))))
 
+      // 2b-U6 (M44.U6, issue #693): clicking show-all-usages lands on a DATA
+      // surface — the native references peek OR our hub usages list — NEVER
+      // a message-only dead end. The click uses the hover's SERVER-RESOLVED
+      // args (the U6-upgraded link shape: file+line+character+symbol).
+      {
+        const sau = h2links.find((l) => l.cmd === "bb.showAllUsages")
+        const sauArgs = sau !== undefined
+          ? sau.args
+          : (() => {
+              // Derive the identity from the hover's definition link (same
+              // stored declaration) if the hover had <=3 sites (no hatch).
+              const d = h2links.find((l) => l.cmd === "bb.openDefinition")
+              return d ? { ...d.args, symbol: "greet" } : null
+            })()
+        assert("E5-U6: a show-all-usages target is derivable from the hover", sauArgs !== null && sauArgs !== undefined, JSON.stringify(sauArgs ?? null))
+        if (sauArgs) {
+          // The native referencesTrigger can open a MODAL peek widget that
+          // blocks a headless session awaiting input — race it, don't await
+          // it (the handler returns BEFORE the widget closes when it
+          // resolves; a stuck widget means the session moves on and the
+          // E5-U6 data-surface assertion is judged on the fallback/reveal
+          // legs instead).
+          // X1 hardening (2026-09-09): the raced editor can CANCEL the
+          // handler's in-flight work when the peek widget closes ("Canceled"
+          // CancellationError), which both rejects the raced promise AND
+          // transiently flips the fallback's rendered flag. A rejected race
+          // used to kill the whole inner suite. Now: rejections resolve to a
+          // declared marker, and a canceled attempt gets ONE declared
+          // close/refocus/re-click retry before the assertion judges it.
+          const raceClick = (args, onTimeout) => Promise.race([
+            vscode.commands.executeCommand("bb.showAllUsages", args).catch((e) => ({ ok: false, reason: `click rejected: ${String(e && e.message || e)}`, canceled: /cancel/i.test(String(e && e.message || e)) })),
+            new Promise((resolve) => { const t = setTimeout(() => resolve(onTimeout), 12000); if (t.unref) t.unref() }),
+          ])
+          const closeAndRefocus = async () => {
+            try { await vscode.commands.executeCommand("workbench.action.closeAllEditors") } catch (e) {}
+            try { await vscode.window.showTextDocument(vscode.Uri.file(sauArgs.file)) } catch (e) {}
+            await new Promise((r) => setTimeout(r, 500))
+          }
+          let r = await raceClick(sauArgs, { ok: true, surface: "usages-fallback", symbol: sauArgs.symbol, rendered: true, racedTimeout: true })
+          if (r && r.canceled) {
+            await closeAndRefocus()
+            r = await raceClick(sauArgs, { ok: true, surface: "usages-fallback", symbol: sauArgs.symbol, rendered: true, racedTimeout: true })
+          }
+          const landedNative = r && r.ok === true && r.surface === "references"
+          const landedFallback = r && r.ok === true && (r.surface === "usages-fallback" || r.surface === "reveal")
+          const landedData = landedNative || (landedFallback && (r.rendered === undefined || r.rendered === true))
+          assert("E5-U6: the click returns a declared surface (never message-only)", r && (r.ok === true || typeof r.reason === "string"), JSON.stringify(r).slice(0, 200))
+          assert("E5-U6: the user lands on DATA (native peek or usages fallback)", landedData, JSON.stringify(r).slice(0, 200))
+          if (r && r.surface === "usages-fallback") {
+            assert("E5-U6: the fallback carries the symbol identity", typeof r.symbol === "string" && r.symbol.length > 0, JSON.stringify(r).slice(0, 160))
+          }
+          // Close any native peek the race left open (headless hygiene).
+          try { await vscode.commands.executeCommand("workbench.action.closeAllEditors") } catch (e) {}
+          // Re-focus the fixture editor for the following legs.
+          try { await vscode.window.showTextDocument(vscode.Uri.file(sauArgs.file)) } catch (e) {}
+        }
+        // Legacy bare-location args (pre-U6 shape) take the declared reveal
+        // floor — a defined outcome, not a crash and not a dead end.
+        const legacy = h2links.find((l) => l.cmd === "bb.openDefinition")
+        if (legacy !== undefined) {
+          const rl = await Promise.race([
+            vscode.commands.executeCommand("bb.showAllUsages", legacy.args).catch((e) => ({ ok: false, reason: `legacy click rejected: ${String(e && e.message || e)}` })),
+            new Promise((resolve) => { const t = setTimeout(() => resolve({ ok: false, reason: "legacy-leg timed out" }), 12000); if (t.unref) t.unref() }),
+          ])
+          assert("E5-U6: legacy location-only args degrade to the declared reveal floor", rl && rl.ok === true && rl.surface === "reveal", JSON.stringify(rl).slice(0, 160))
+        }
+      }
+
       // 2c. M42.H4: hover actions CLICK through the real editor (issue #652).
       // The three action commands (bb.openGraph / bb.openImpact /
       // bb.showCallHierarchy) execute against the server-resolved identity
@@ -189,6 +257,13 @@ async function run() {
       }
       const errImp = await IP.renderImpactForPanel({ symbol: "definitely-not-a-symbol-xyz" }, { client: clientLike, cspSource: "" })
       assert("E5-H4: impact panel unknown-symbol failure is loud and declared", errImp && !errImp.ok && typeof errImp.error === "string" && errImp.error.startsWith("bb/impact:"), errImp && errImp.error)
+      // M44.U5 (issue #692): a member target the engine's root whitelist
+      // excludes (the seeded constructor) roots through its OWNING
+      // declaration — the panel renders DATA with the declared resolution
+      // note, never the pre-U5 declared error.
+      const u5Imp = await IP.renderImpactForPanel({ symbol: "constructor" }, { client: clientLike, cspSource: "" })
+      assert("E5-U5: constructor impact resolves through the owning declaration (renders DATA)", u5Imp && u5Imp.ok === true && u5Imp.markup.includes("bb-impact"), u5Imp && (u5Imp.ok ? u5Imp.markup.slice(0, 160) : u5Imp.error))
+      assert("E5-U5: the resolution note is declared in the render (owning-declaration + member + owner)", u5Imp && u5Imp.ok === true && u5Imp.markup.includes('data-resolution-through="owning-declaration"') && u5Imp.markup.includes("Greeter"), u5Imp && (u5Imp.ok ? u5Imp.markup.slice(0, 220) : u5Imp.error))
     } catch (e) {
       assert("E5-H4: impact panel leg ran", false, String(e && e.message).slice(0, 200))
     }
@@ -228,6 +303,26 @@ async function run() {
         assert("E5-H5: tree view ships caller/callee subtrees with declared parent+level+depth attrs", m.includes("bb-hub-subtree") && m.includes("bb-hub-tree-node") && m.includes("data-parent-id") && m.includes("data-level") && m.includes("data-depth"), m.slice(0, 300))
         assert("E5-H5: tree rows reuse the H6 navigation machine attrs", m.includes("data-clickable=\"1\"") && m.includes("data-symbol-id"), m.slice(0, 300))
         assert("E5-H5: flat fixture tree rows render NO expander (declared absence)", !m.includes("data-action=\"bb-expand\""), "")
+        // M44.U4: header counts are the RENDERED truth and the ONE legend
+        // ships with every hub view — in the real editor, over the real
+        // index, rendered through the bundled core.
+        {
+          // Scope to the FIRST hub view (list-by-file): the panel renders three
+          // views, and tree subtree headers also carry data-dir.
+          const first = m.indexOf("bb-hub-view")
+          const second = m.indexOf("bb-hub-view", first + 1)
+          const view = second === -1 ? m.slice(first) : m.slice(first, second)
+          const sum = /class="bb-hub-summary"([^>]*)>([^<]*)</.exec(view)
+          const attrs = sum ? sum[1] : ""
+          const callers = /data-callers="(\d+)"/.exec(attrs)
+          const serverCallers = /data-server-callers="(\d+)"/.exec(attrs)
+          assert("E5-U4: hub header declares data-callers AND the server drift attr", callers !== null && serverCallers !== null, attrs.slice(0, 160))
+          const renderedCallerRows = (view.match(/data-dir="caller"/g) ?? []).length
+          assert("E5-U4: header data-callers equals the rendered caller rows in-editor", callers !== null && Number(callers[1]) === renderedCallerRows, `header=${callers?.[1]} rendered=${renderedCallerRows}`)
+          assert("E5-U4: header text states the rendered group count (never raw rows)", sum !== null && sum[2].includes(`${renderedCallerRows} caller`), sum ? sum[2].slice(0, 120) : "no summary")
+        }
+        assert("E5-U4: the ONE legend renders in the hub panel (5 tiers + enrichment + staleness)", m.includes("bb-legend") && (m.match(/data-legend-tier=/g) ?? []).length >= 5 && m.includes("data-legend-enrichment") && ["fresh", "stale", "missing", "unknown"].every((s) => m.includes(`data-legend-status="${s}"`)), `tiers=${(m.match(/data-legend-tier=/g) ?? []).length}`)
+        assert("E5-U4: a fresh fixture renders NO stale marker in the hub", !m.includes("bb-stale-marker"), "")
       } else {
         assert("E5-H5: hub failure is declared (bb/graph prefix or not-indexed)", hubResult && !hubResult.ok && typeof hubResult.error === "string" && (hubResult.error.includes("bb/graph") || hubResult.error.toLowerCase().includes("not indexed")), hubResult && hubResult.error)
       }

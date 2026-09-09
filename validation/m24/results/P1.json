@@ -21,7 +21,7 @@
     {
       "name": "missing byte->utf16 conversion",
       "caught": true,
-      "detail": "caught: index(2,6) after café ->lsp(1,4) (got {\"line\":1,\"character\":5}, want {\"line\":1,\"character\":4})"
+      "detail": "caught: index(2,6) after caf\u00e9 ->lsp(1,4) (got {\"line\":1,\"character\":5}, want {\"line\":1,\"character\":4})"
     },
     {
       "name": "lsp->index misses line +1",
@@ -49,14 +49,16 @@
       "detail": "caught: lineCount 3 (phantom) (got 2, want 3)"
     }
   ],
-  "currentCommit": "f619e01549afc115e431c2ce575af7da8fb2c46f",
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
   "sourceFingerprint": "a46a5661517d88abc200a4fcd45e2de5eeb9f438054a01ada2f800a2d555e26a",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-07T19:05:15.690Z",
+  "generatedAt": "2026-09-07T23:25:36.764Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "Tab-width treated as 1 UTF-16 unit (LSP standard); editor tab rendering is a client concern.",
     "Roundtrip property samples code-point boundaries, not every byte of multi-byte sequences."
-  ]
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
 }

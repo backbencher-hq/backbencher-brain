@@ -1,0 +1,34 @@
+{
+  "issue": "693",
+  "code": "U6",
+  "milestone": "M44",
+  "status": "verified",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 2,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
+  "evidenceFile": "U6.json",
+  "generatedAt": "2026-09-09T19:22:09.994Z",
+  "fixture": {
+    "root": "$HOME/backbencher-brain/.tools/m44-u6-fixture",
+    "files": [
+      "src/main/java/com/demo/App.java",
+      "src/main/java/com/demo/Extra1.java",
+      "src/main/java/com/demo/Extra2.java"
+    ],
+    "symbol": "render",
+    "shownLinks": 3,
+    "hiddenMore": 2
+  },
+  "limitations": [
+    "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages \u2192 native peek OR usages fallback, never a bare message).",
+    "The pure core's reveal floor is reachable only for legacy clients that predate the symbol-carrying link; it remains a declared outcome, not a message-only dead end."
+  ],
+  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
+  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+}
