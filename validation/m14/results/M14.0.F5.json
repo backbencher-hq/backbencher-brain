@@ -1,41 +1,66 @@
 {
   "checks": [
     {
-      "description": "clojure: tree-truth vs analyzer diff @2cea69253b",
-      "detail": "190 files; NOT COMPARABLE: baseline sampled 60/lang, run 200/lang",
-      "id": "differential-java",
+      "description": "Exposed: tree-truth vs analyzer diff @1be664715f",
+      "detail": "7 files; NOT COMPARABLE: baseline sampled 60/lang, run 100/lang",
+      "id": "differential-javascript",
+      "status": "fail"
+    },
+    {
+      "description": "Exposed: tree-truth vs analyzer diff @1be664715f",
+      "detail": "100 files; NOT COMPARABLE: baseline sampled 60/lang, run 100/lang",
+      "id": "differential-kotlin",
       "status": "fail"
     }
   ],
   "claimLevel": "L1",
-  "commit": "027b4ec406b68506f5f3dcc95394b26b4445d642",
-  "committedAt": "2026-09-08T22:42:44+02:00",
+  "commit": "be8fdccf2e972d5c8cdc610d13a8afda426cc593",
+  "committedAt": "2026-09-10T03:47:09+02:00",
   "data": {
     "corpusPins": {
-      "clojure": "2cea69253b9ed27436e93632b9a27c2f99088a49"
+      "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e"
     },
     "report": {
-      "java": {
-        "analyzerEdges": 3853,
+      "javascript": {
+        "analyzerEdges": 1384,
         "coveragePct": 100,
-        "coveredByAnalyzer": 4219,
-        "explainableByTree": 3736,
+        "coveredByAnalyzer": 1384,
+        "explainableByTree": 1384,
         "fabricationPct": 0,
-        "filesSampled": 190,
-        "heuristicUnexplained": 117,
+        "filesSampled": 7,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 16.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 939.7,
-          "samplesTimed": 190
+          "avgMsPerFile": 652.6,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 4015.5,
+          "samplesTimed": 7
         },
         "samples": [],
-        "treeTruthEdges": 4219,
+        "treeTruthEdges": 1384,
+        "unexplainedInAnalyzer": 0
+      },
+      "kotlin": {
+        "analyzerEdges": 2230,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 2363,
+        "explainableByTree": 2121,
+        "fabricationPct": 0,
+        "filesSampled": 100,
+        "heuristicUnexplained": 109,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 17.4,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 182.1,
+          "samplesTimed": 100
+        },
+        "samples": [],
+        "treeTruthEdges": 2363,
         "unexplainedInAnalyzer": 0
       }
     },
-    "samplingRule": "seeded 200 files/language (primary + second corpus lanes)",
+    "samplingRule": "seeded 100 files/language (primary + second corpus lanes)",
     "secondCorpus": {
       "mapping": {
         "c": "jq",

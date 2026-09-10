@@ -1,44 +1,44 @@
 {
   "schemaVersion": 1,
   "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 22 established 2026-09-08)",
-  "baselineTotal": 20,
+  "baselineTotal": 19,
   "establishedAt": "2026-09-08",
   "entries": [
     {
       "file": "real-scala-analyzer.ts",
-      "line": 267,
+      "line": 354,
       "source": "/\\[[^\\[\\]]*\\]/g",
-      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape) (line drift after M49.S1 wave edits; same usage, re-pinned)"
     },
     {
       "file": "real-scala-analyzer.ts",
-      "line": 267,
+      "line": 354,
       "source": "/<[^<>]*>/g",
-      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape) (line drift after M49.S1 wave edits; same usage, re-pinned)"
     },
     {
       "file": "real-scala-analyzer.ts",
-      "line": 350,
+      "line": 437,
       "source": "/\\s+/g",
-      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape) (line drift after M49.S1 wave edits; same usage, re-pinned)"
     },
     {
       "file": "real-scala-analyzer.ts",
-      "line": 1837,
+      "line": 2077,
       "source": "/\\[[^\\[\\]]*\\]/g",
-      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape) (line drift after M49.S1 wave edits; same usage, re-pinned)"
     },
     {
       "file": "real-scala-analyzer.ts",
-      "line": 1837,
+      "line": 2077,
       "source": "/<[^<>]*>/g",
-      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape) (line drift after M49.S1 wave edits; same usage, re-pinned)"
     },
     {
       "file": "real-scala-analyzer.ts",
-      "line": 1914,
+      "line": 2185,
       "source": "/\\[[^\\[\\]]*\\]/g",
-      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape)"
+      "note": "M49: replace bracket-strip replaces with char walks (scala review claims 1/10/19 shape) (line drift after M49.S1 wave edits; same usage, re-pinned)"
     },
     {
       "file": "real-csharp-analyzer.ts",
@@ -69,12 +69,6 @@
       "line": 750,
       "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
       "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
-    },
-    {
-      "file": "real-groovy-analyzer.ts",
-      "line": 841,
-      "source": "/^(method_declaration|constructor_declaration|function_defin",
-      "note": "M49: replace with char walk / node descent"
     },
     {
       "file": "real-cpp-analyzer.ts",
