@@ -1013,6 +1013,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           emit(n, kids, "throws", "throws_type")
           break
         }
+        case "catch_formal_parameter": {
+          // Multi-catch union (java JLS 14.20 parity, pinned by java's
+          // overload-arity-varargs-multicatch fixture): the pinned grammar
+          // nests BOTH exception types under one `catch_type` child
+          // (`catch (IOException | SQLException e)` → catch_type with two
+          // type_identifier children). collectTypeNames descends into the
+          // union and emits a declared_type ref for EACH — the pre-fix walk
+          // had no catch case at all, so multi-catch types (and plain
+          // single-type catches) silently vanished from the type-usage
+          // graph. The `e` identifier is not a type_identifier and is
+          // skipped naturally.
+          const catchType = this.findChild(n, (c) => c.type === "catch_type")
+          if (catchType) emit(n, [catchType], "catch_formal_parameter", "declared_type")
+          break
+        }
         case "instanceof_expression": {
           // The pattern type is any type-position child: a type_identifier
           // (`o instanceof String s`), a scoped/generic type, or a

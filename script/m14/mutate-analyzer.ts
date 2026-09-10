@@ -1360,6 +1360,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => String(x.type ?? x.relationshipType) !== "imports") }),
   },
   {
+    id: "typescript/drop-resolved-path",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "strips metadata.resolvedPath from imports (the deterministic-resolution payload) — module-resolution-determinism fixture pins exact values per specifier shape",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => { const md: any = { ...((i as any).metadata ?? {}) }; delete md.resolvedPath; return { ...i, metadata: md } }) }),
+  },
+  {
     id: "typescript/drop-type-alias-refs",
     language: "typescript",
     defectClass: "relationship-loss",
@@ -1926,6 +1933,14 @@ const MUTANTS: Mutant[] = [
     defectClass: "payload-corruption",
     description: "G7 regression: re-emits the class-level anonymous-class noise name as an export — anonymous_Runnable leaks although the family convention says it never enters the index — anon-exports forbidExports pin catches it",
     transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "anonymous_Runnable", isDefault: false }] }),
+  },
+  {
+    id: "groovy/multicatch-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G1-wave regression: removes the catch_formal_parameter case — multi-catch `catch (IOException | SQLException e)` emits zero declared_type refs (the union's catch_type members never reach the type-usage graph) — multicatch-and-varargs fixture expects BOTH IOException and SQLException",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !((x.metadata ?? {}).declaredOn === "catch_formal_parameter")) }),
   },
   {
     id: "csharp/drop-field-access-uses",
