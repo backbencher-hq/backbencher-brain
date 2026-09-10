@@ -295,6 +295,10 @@ CREATE INDEX IF NOT EXISTS brain_embed_entity_idx ON brain_semantic_embedding(en
 CREATE INDEX IF NOT EXISTS brain_embed_type_idx ON brain_semantic_embedding(entity_type);
 CREATE INDEX IF NOT EXISTS brain_embed_model_idx ON brain_semantic_embedding(embedding_model);
 CREATE INDEX IF NOT EXISTS brain_embed_hash_idx ON brain_semantic_embedding(content_hash);
+-- M52.P1 (#721): covering index for the bb_health aggregates (models/dims/
+-- entities). Without it SQLite reads full ~8KB vector BLOB rows to reach four
+-- metadata columns — measured 12.7s per bb_health call at 158k x 2048-dim.
+CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension);
 
       `
 
@@ -337,6 +341,20 @@ export function ensureAnnotationTable(raw: any): void {
 }
 
 /**
+ * M52.P1 (#721): covering index for the bb_health embedding aggregates.
+ * Idempotent, runs on EVERY open (both ensureSchemaIfNew branches and
+ * ensureSchema) because ensureSchemaIfNew skips full DDL for pre-existing
+ * databases — the exact population (large, long-lived indexes) that needs
+ * this index most. try/catch: a read-only or transient open must never fail
+ * because of an index creation.
+ */
+export function ensureHealthIndexes(raw: any): void {
+  try {
+    raw.exec(`CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension)`)
+  } catch {}
+}
+
+/**
  * M22.W2: idempotent column migrations that must run on EVERY open, not just
  * fresh schema creation. Pre-existing brain_index_status tables (created before
  * later columns existed) lack them; the indexer persists complete/partial +
@@ -375,6 +393,7 @@ export function migrateSchemaColumns(raw: any): void {
 
 export function ensureSchema(raw: any): void {
   raw.exec(DDL)
+  ensureHealthIndexes(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}
