@@ -1243,6 +1243,27 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && (x.source.includes("Codec") || x.source.includes("StringCodec")))) }),
   },
   {
+    id: "scala/drop-companion-qualified-instantiates",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "M49.S1 regression: handleInstantiation reverts to dropping qualified constructor targets (TrieMapLike.MangledHashing) — companion-qualified constructions vanish from the graph",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "instantiates" && x.target.includes("."))) }),
+  },
+  {
+    id: "scala/enum-heritage-drop",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "M49.S1 regression: reverts the enum extends_clause heritage fix — enum Color(val hex: Int) extends Serializable loses its extends edge (both sides were blind before; the shared-blind-spot class). heritage-and-qualified-construction expects Color -> Serializable",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "extends" && x.source === "Color" && x.target === "Serializable")) }),
+  },
+  {
+    id: "groovy/heritage-typeargs-revert",
+    language: "groovy",
+    defectClass: "relationship-garbage",
+    description: "M49.S1 regression: heritage targets revert to the grammar's raw folded token text (Cache -> Cache<T>) — bracketed targets can never match bracket-stripped decls keys, so nested-interface override chains die (geb SimpleCache.get -> Cache.get class). heritage-typeargs-strip expects implements Cache from both nested classes",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "implements" && (x.target === "Cache")) ? { ...x, target: "Cache<T>" } : x) }),
+  },
+  {
     id: "typescript/drop-declared-types",
     language: "typescript",
     defectClass: "relationship-loss",
@@ -1861,6 +1882,50 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
       (x.type === "overrides" && x.source === "BlackVal.val") ? { ...x, target: "Black.val", confidence: 0.5 } : x),
     }),
+  },
+  {
+    id: "groovy/as-cast-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G1 regression: drops the mis-parse `as`-cast branch — `o as String` lexes as local_variable_declaration(as, String) with no juxt_function_call, so without the branch the cast_type refs vanish — as-cast fixture expects run->String/run->Set",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).declaredOn === "as_cast")) }),
+  },
+  {
+    id: "groovy/implicit-override-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G2 regression: reverts to @Override-only override tasks — un-annotated Sub.greet redeclaring Base.greet emits nothing — implicit-override fixture expects Sub.greet->Base.greet at exact-in-file",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "overrides" && x.source === "Sub.greet" && x.target === "Base.greet")) }),
+  },
+  {
+    id: "groovy/ctor-name-revert",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G4 regression: restores the 'constructor' literal — Alpha()/Beta() ctors collide under one name (contains Alpha->constructor vs Beta->constructor indistinguishable) — ctor-identity fixture expects class-named ctors and forbids the literal",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) =>
+      (s.kind === "constructor" && s.ownerName) ? { ...s, name: "constructor" } : s) }),
+  },
+  {
+    id: "groovy/export-filter-revert",
+    language: "groovy",
+    defectClass: "payload-loss",
+    description: "G3 regression: restores the Class-only export owner filter — trait/interface/enum members vanish from exports — trait-exports fixture expects Greeter and greet",
+    transform: r => ({ ...r, exports: (r.exports ?? []).filter((e: any) => e.name !== "greet") }),
+  },
+  {
+    id: "groovy/static-flag-drop",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G5 regression: reverts to the named-children text scan — `static` (anonymous token) never matches so static imports record isStatic:false, and isNamespace/isWildcard disagree on wildcards — static-import-flag fixture pins all three flag rows",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ({ ...i, isNamespace: false, metadata: { ...(i.metadata ?? {}), isWildcard: false, isStatic: false } })) }),
+  },
+  {
+    id: "groovy/anon-export-leak",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G7 regression: re-emits the class-level anonymous-class noise name as an export — anonymous_Runnable leaks although the family convention says it never enters the index — anon-exports forbidExports pin catches it",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "anonymous_Runnable", isDefault: false }] }),
   },
   {
     id: "csharp/drop-field-access-uses",

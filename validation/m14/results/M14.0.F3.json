@@ -32,7 +32,7 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "37/37 fixtures pass",
+      "detail": "44/44 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -44,7 +44,7 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "45/45 fixtures pass",
+      "detail": "46/46 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "24beecdec94229b9c08caea94345594b2c33e285",
-  "committedAt": "2026-09-10T01:12:36+02:00",
+  "commit": "be8fdccf2e972d5c8cdc610d13a8afda426cc593",
+  "committedAt": "2026-09-10T03:47:09+02:00",
   "data": {
     "details": [
       {
@@ -908,7 +908,17 @@
         "problems": []
       },
       {
+        "fixture": "groovy/anon-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/array-access-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/as-cast",
         "ok": true,
         "problems": []
       },
@@ -949,6 +959,11 @@
       },
       {
         "fixture": "groovy/ctor-delegation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/ctor-identity",
         "ok": true,
         "problems": []
       },
@@ -999,6 +1014,16 @@
       },
       {
         "fixture": "groovy/gstring-interpolation",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/heritage-typeargs-strip",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/implicit-override",
         "ok": true,
         "problems": []
       },
@@ -1074,6 +1099,16 @@
       },
       {
         "fixture": "groovy/script-methods",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/static-import-flag",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/trait-exports",
         "ok": true,
         "problems": []
       },
@@ -1364,6 +1399,11 @@
       },
       {
         "fixture": "scala/given-refs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/heritage-and-qualified-construction",
         "ok": true,
         "problems": []
       },
@@ -1801,7 +1841,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 37
+        "pass": 44
       },
       "haskell": {
         "fail": 0,
@@ -1841,7 +1881,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 45
+        "pass": 46
       },
       "svelte": {
         "fail": 0,

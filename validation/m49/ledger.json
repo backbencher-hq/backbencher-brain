@@ -41,6 +41,20 @@
       "evidenceFile": "reviews/kotlin/master-review.md",
       "verifiedAtCommit": "5f5e0c02",
       "notes": "15/15 claims resolved (10 fixed, 5 re-pinned to recorded rulings). Override verification with name-keyed declSigs (corpus-proven: BroadcastChannel.kt name-blind pairing fabricated 8 overrides), overrideSig payload, ctor naming, Spring named-arg routes, AST-gated patterns, dead inference deleted. Oracle mirror: kotlin method + anon-object registration, extractSig parameter fallback. 3 new mutants (351/351), 37/37 fixtures, KD21-KD28, R2 register 22->20. Corpus: coroutines + Exposed 100/0/0 @200; java/scala sanity 100/0/0."
+    },
+    {
+      "id": "G2",
+      "title": "Groovy review-intake wave (issue #720): process reviews/groovy 6 confirmed + 1 new claim",
+      "status": "pending",
+      "notes": "Wave executed, all gates green, pending commit/closeout. Fixes: G1 as-cast mis-parse branch, G2 implicit override tasks (explicit keeps tiers), G3/G7 exports filter + anon exclusion, G4 ctor declared names, G5 static/wildcard token scan (+dead helper deleted), G6 suffix-index hoist. Gates: 43/43 groovy fixtures (6 new), 358/358 mutants full-gate (6 new, each caught by its fixture), grails-core 506/506 + geb 510/510 differential 0 unexplained, tsc clean, M49 governance + R1 green. Spec GD20-GD25; forbidExports runner gate added. Census regenerated (scala rows churn under parallel S1 wave — R2 red-with-cause there, not G2). Residual referral: java accidentally excludes its own anon symbols via package visibility (groovy fixed explicitly)."
+    },
+    {
+      "id": "S1",
+      "title": "Scala review wave (#715): 24 claims + 4 wave-added shared-blind-spot defect classes",
+      "status": "verified",
+      "evidenceFile": "validation/m14/results/M14.0.F5.json",
+      "verifiedAtCommit": "18de8206",
+      "notes": "scala3 + cats-effect 100/0/0 @200; F3 46 scala fixtures; F4 361/361; F1 scala PASS; spec ScalaD-J..M; groovy cross-hardening GD26/GD27 (heritage type-args strip + dead wildcard_import disjunct); R1 26/26, R2 6/6 (register re-pinned shrink-only), G1 41/0."
     }
   ]
 }

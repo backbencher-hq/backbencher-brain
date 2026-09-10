@@ -2,30 +2,30 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-09T21:54:54.827Z",
+  "generatedAt": "2026-09-10T03:17:13.165Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 52,
+  "totalRegexUsages": 47,
   "analyzersScanned": 41,
   "byClassification": {
-    "unavoidable": 29,
-    "needs_review": 20,
+    "unavoidable": 25,
+    "needs_review": 19,
     "normalization": 3
   },
   "byReceiverCategory": {
-    "literal": 29,
+    "literal": 25,
     "identifier": 9,
-    "other": 11,
+    "other": 10,
     "node_text": 3
   },
   "perFile": [
     {
       "file": "real-scala-analyzer.ts",
-      "count": 13,
+      "count": 12,
       "usages": [
         {
           "file": "real-scala-analyzer.ts",
-          "line": 267,
+          "line": 354,
           "column": 41,
           "source": "/\\[[^\\[\\]]*\\]/g",
           "operation": "replace",
@@ -36,7 +36,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 267,
+          "line": 354,
           "column": 70,
           "source": "/<[^<>]*>/g",
           "operation": "replace",
@@ -47,7 +47,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 350,
+          "line": 437,
           "column": 75,
           "source": "/\\s+/g",
           "operation": "replace",
@@ -58,18 +58,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 360,
-          "column": 7,
-          "source": "/(^|[(,:|])\\s*[A-Z](\\s|$|\\)|,|:|@|\\+)/",
-          "operation": "test",
-          "receiver": "/(^|[(,:|])\\s*[A-Z](\\s|$|\\)|,|:|@|\\+)/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-scala-analyzer.ts",
-          "line": 747,
+          "line": 866,
           "column": 16,
           "source": "/identifier|type_identifier|_parameter$/",
           "operation": "test",
@@ -80,7 +69,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 885,
+          "line": 1024,
           "column": 23,
           "source": "/type$|_type$/",
           "operation": "test",
@@ -91,7 +80,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 909,
+          "line": 1050,
           "column": 23,
           "source": "/type$|_type$/",
           "operation": "test",
@@ -102,7 +91,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 1627,
+          "line": 1848,
           "column": 27,
           "source": "/_type$|type_identifier/",
           "operation": "test",
@@ -113,7 +102,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 1628,
+          "line": 1849,
           "column": 59,
           "source": "/\\?$/",
           "operation": "replace",
@@ -124,7 +113,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 1637,
+          "line": 1858,
           "column": 13,
           "source": "/^(class|trait|object)_definition$/",
           "operation": "test",
@@ -135,7 +124,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 1837,
+          "line": 2077,
           "column": 35,
           "source": "/\\[[^\\[\\]]*\\]/g",
           "operation": "replace",
@@ -146,7 +135,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 1837,
+          "line": 2077,
           "column": 64,
           "source": "/<[^<>]*>/g",
           "operation": "replace",
@@ -157,7 +146,7 @@
         },
         {
           "file": "real-scala-analyzer.ts",
-          "line": 1914,
+          "line": 2185,
           "column": 43,
           "source": "/\\[[^\\[\\]]*\\]/g",
           "operation": "replace",
@@ -378,56 +367,6 @@
           "source": "/declarator$/",
           "operation": "test",
           "receiver": "/declarator$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-groovy-analyzer.ts",
-      "count": 4,
-      "usages": [
-        {
-          "file": "real-groovy-analyzer.ts",
-          "line": 841,
-          "column": 9,
-          "source": "/^(method_declaration|constructor_declaration|function_definition|class_declaration|trait_declaration|enum_declaration)$/",
-          "operation": "test",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-groovy-analyzer.ts",
-          "line": 891,
-          "column": 17,
-          "source": "/type$/",
-          "operation": "test",
-          "receiver": "/type$/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-groovy-analyzer.ts",
-          "line": 1300,
-          "column": 11,
-          "source": "/identifier|type_identifier/",
-          "operation": "test",
-          "receiver": "/identifier|type_identifier/",
-          "receiverCategory": "literal",
-          "classification": "unavoidable",
-          "justification": ""
-        },
-        {
-          "file": "real-groovy-analyzer.ts",
-          "line": 1306,
-          "column": 21,
-          "source": "/identifier|type_identifier/",
-          "operation": "test",
-          "receiver": "/identifier|type_identifier/",
           "receiverCategory": "literal",
           "classification": "unavoidable",
           "justification": ""
