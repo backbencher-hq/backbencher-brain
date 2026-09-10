@@ -1256,12 +1256,18 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
-      // JAD3: interface methods ARE public API — an interface declares no
-      // access modifiers (JLS 9.4 implicitly public), so ownerKind Interface
-      // must count as exported exactly like Class. The pre-fix filter
-      // exported only Class-owned methods, silently excluding the most
-      // intentional API surface in Java.
-      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class || s.ownerKind === ASTEngine.SymbolKind.Interface || s.ownerKind === ASTEngine.SymbolKind.Enum)) {
+      // JAD3 (REVERSED, M49 JVM-closure exports-family ruling — see
+      // reviews/jvm-closure-audit.md and reviews/regex-policy.md sibling):
+      // exports are **importable units** — top-level types and top-level
+      // functions ONLY. Java imports types and static members, never bare
+      // member names: a member export cannot identify its provider (two
+      // overloads emitted ["Svc","greet","greet"] — probe-pinned), while
+      // membership is already fully carried by Contains edges
+      // (Svc->save). The member-export half of JAD3 is hereby removed;
+      // the interface-member intent lives in Contains, which emits for
+      // interfaces identically. The top-level `!s.ownerName` guard IS the
+      // export set (imports resolve package-qualified top-level types).
+      if (!s.metadata?.isPhantom && !s.ownerName) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }

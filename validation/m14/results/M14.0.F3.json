@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "38/38 fixtures pass",
+      "detail": "49/49 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -20,7 +20,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "47/47 fixtures pass",
+      "detail": "55/55 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "690ce8209ae75dc8bdedeec31b705368596e16b2",
-  "committedAt": "2026-09-10T05:24:25+02:00",
+  "commit": "5e5c52891c604b357274646b075c89f72fee66f3",
+  "committedAt": "2026-09-10T07:33:46+02:00",
   "data": {
     "details": [
       {
@@ -203,12 +203,32 @@
         "problems": []
       },
       {
+        "fixture": "javascript/default-export-expression",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/destructure-symbols",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "javascript/destructured-params",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/destructuring",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/duplicate-method",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/dynamic-import-qualified",
         "ok": true,
         "problems": []
       },
@@ -223,12 +243,27 @@
         "problems": []
       },
       {
+        "fixture": "javascript/export-alias",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/exports-rebind",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/external-override",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "javascript/import-alias-binding",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/import-default-flag",
         "ok": true,
         "problems": []
       },
@@ -258,12 +293,22 @@
         "problems": []
       },
       {
+        "fixture": "javascript/jsx-detection-depth",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/jsx-usage",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "javascript/optional-chaining",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/override-qualification",
         "ok": true,
         "problems": []
       },
@@ -279,6 +324,11 @@
       },
       {
         "fixture": "javascript/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/private-field-visibility",
         "ok": true,
         "problems": []
       },
@@ -299,6 +349,11 @@
       },
       {
         "fixture": "javascript/qualified-call-path",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/require-default-flag",
         "ok": true,
         "problems": []
       },
@@ -533,7 +588,17 @@
         "problems": []
       },
       {
+        "fixture": "typescript/controller-base",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/ctor-overload-single",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/decorator-exact",
         "ok": true,
         "problems": []
       },
@@ -544,6 +609,11 @@
       },
       {
         "fixture": "typescript/destructure-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/dynamic-import-qualified",
         "ok": true,
         "problems": []
       },
@@ -588,12 +658,27 @@
         "problems": []
       },
       {
+        "fixture": "typescript/hook-gate",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/hook-react",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/import-edges",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/index-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/inferred-return",
         "ok": true,
         "problems": []
       },
@@ -694,6 +779,16 @@
       },
       {
         "fixture": "typescript/stdlib-colliding-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/taint-leaf",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/template-uses-singular",
         "ok": true,
         "problems": []
       },
@@ -1863,7 +1958,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 38
+        "pass": 49
       },
       "kotlin": {
         "fail": 0,
@@ -1903,7 +1998,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 47
+        "pass": 55
       },
       "vue": {
         "fail": 0,

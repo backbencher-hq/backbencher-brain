@@ -1,60 +1,72 @@
 {
-  "schemaVersion": 1,
-  "milestone": "M49",
-  "title": "Review-Intake & Gate-Hardening",
-  "purpose": "External reviews keep finding real defects in analyzers declared done. M49 is the standing intake layer: every review claim is verified against code + live parse, fixed with oracle mirror, gated with fixture+mutant+spec in the same session, and the discovered lens is extended family-wide so m37/m14 inherit hardened gates. Cascade: m49 -> m37 -> m14.",
-  "issues": [
-    {
-      "id": "G1",
-      "title": "Governance: ledger, coverage, registry wiring, chain wiring, auto-pass audit",
-      "status": "verified",
-      "evidenceFile": "validation/m49/results/G1.json",
-      "verifiedAtCommit": "bb2c631e",
-      "notes": "Codes G1/R1/R2/X1; board tracks every review folder; verifiers registered; package.json verify runs m49 gates; no auto-pass literals."
-    },
-    {
-      "id": "R1",
-      "title": "Review-intake protocol gate (reviews/<lang> -> protocol -> board)",
-      "status": "verified",
-      "evidenceFile": "validation/m49/results/R1.json",
-      "verifiedAtCommit": "bb2c631e",
-      "notes": "Every review folder tracked on the board; method+verdict tally required; resolutions must cite commits; negatives prove prose-only resolutions fail."
-    },
-    {
-      "id": "R2",
-      "title": "Regex census truth gate (freshness + debt register + shrink-only)",
-      "status": "verified",
-      "evidenceFile": "validation/m49/results/R2.json",
-      "verifiedAtCommit": "bb2c631e",
-      "notes": "User suspicion confirmed: census claimed 0 while analyzers carried 55 (scala 13, csharp 8, vue 6...). Baseline 22 review-class regexes registered; total may only shrink."
-    },
-    {
-      "id": "X1",
-      "title": "Closure: live re-run of R1+R2, no unresolved review claims older than their gate run",
-      "status": "pending",
-      "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling. Intake issue map: J1=#713 (CLOSED with evidence @1a417c9d), K1=#714, S1=#715. Remaining dual-lens languages get one issue each as reviews land; dual-lens closure (#614) resumes after the board clears; M14's remaining analyzers (from clean) proceed last with the full strict battery."
-    },
-    {
-      "id": "K1",
-      "title": "Kotlin review-intake wave (issue #714): process reviews/kotlin 15 claims",
-      "status": "verified",
-      "evidenceFile": "reviews/kotlin/master-review.md",
-      "verifiedAtCommit": "5f5e0c02",
-      "notes": "15/15 claims resolved (10 fixed, 5 re-pinned to recorded rulings). Override verification with name-keyed declSigs (corpus-proven: BroadcastChannel.kt name-blind pairing fabricated 8 overrides), overrideSig payload, ctor naming, Spring named-arg routes, AST-gated patterns, dead inference deleted. Oracle mirror: kotlin method + anon-object registration, extractSig parameter fallback. 3 new mutants (351/351), 37/37 fixtures, KD21-KD28, R2 register 22->20. Corpus: coroutines + Exposed 100/0/0 @200; java/scala sanity 100/0/0."
-    },
-    {
-      "id": "G2",
-      "title": "Groovy review-intake wave (issue #720): process reviews/groovy 6 confirmed + 1 new claim",
-      "status": "pending",
-      "notes": "Wave executed, all gates green, pending commit/closeout. Fixes: G1 as-cast mis-parse branch, G2 implicit override tasks (explicit keeps tiers), G3/G7 exports filter + anon exclusion, G4 ctor declared names, G5 static/wildcard token scan (+dead helper deleted), G6 suffix-index hoist. Gates: 43/43 groovy fixtures (6 new), 358/358 mutants full-gate (6 new, each caught by its fixture), grails-core 506/506 + geb 510/510 differential 0 unexplained, tsc clean, M49 governance + R1 green. Spec GD20-GD25; forbidExports runner gate added. Census regenerated (scala rows churn under parallel S1 wave — R2 red-with-cause there, not G2). Residual referral: java accidentally excludes its own anon symbols via package visibility (groovy fixed explicitly)."
-    },
-    {
-      "id": "S1",
-      "title": "Scala review wave (#715): 24 claims + 4 wave-added shared-blind-spot defect classes",
-      "status": "verified",
-      "evidenceFile": "validation/m14/results/M14.0.F5.json",
-      "verifiedAtCommit": "18de8206",
-      "notes": "scala3 + cats-effect 100/0/0 @200; F3 46 scala fixtures; F4 361/361; F1 scala PASS; spec ScalaD-J..M; groovy cross-hardening GD26/GD27 (heritage type-args strip + dead wildcard_import disjunct); R1 26/26, R2 6/6 (register re-pinned shrink-only), G1 41/0."
-    }
-  ]
+ "schemaVersion": 1,
+ "milestone": "M49",
+ "title": "Review-Intake & Gate-Hardening",
+ "purpose": "External reviews keep finding real defects in analyzers declared done. M49 is the standing intake layer: every review claim is verified against code + live parse, fixed with oracle mirror, gated with fixture+mutant+spec in the same session, and the discovered lens is extended family-wide so m37/m14 inherit hardened gates. Cascade: m49 -> m37 -> m14.",
+ "issues": [
+  {
+   "id": "G1",
+   "title": "Governance: ledger, coverage, registry wiring, chain wiring, auto-pass audit",
+   "status": "verified",
+   "evidenceFile": "validation/m49/results/G1.json",
+   "verifiedAtCommit": "bb2c631e",
+   "notes": "Codes G1/R1/R2/X1; board tracks every review folder; verifiers registered; package.json verify runs m49 gates; no auto-pass literals."
+  },
+  {
+   "id": "R1",
+   "title": "Review-intake protocol gate (reviews/<lang> -> protocol -> board)",
+   "status": "verified",
+   "evidenceFile": "validation/m49/results/R1.json",
+   "verifiedAtCommit": "bb2c631e",
+   "notes": "Every review folder tracked on the board; method+verdict tally required; resolutions must cite commits; negatives prove prose-only resolutions fail."
+  },
+  {
+   "id": "R2",
+   "title": "Regex census truth gate (freshness + debt register + shrink-only)",
+   "status": "verified",
+   "evidenceFile": "validation/m49/results/R2.json",
+   "verifiedAtCommit": "bb2c631e",
+   "notes": "User suspicion confirmed: census claimed 0 while analyzers carried 55 (scala 13, csharp 8, vue 6...). Baseline 22 review-class regexes registered; total may only shrink."
+  },
+  {
+   "id": "X1",
+   "title": "Closure: live re-run of R1+R2, no unresolved review claims older than their gate run",
+   "status": "pending",
+   "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling. Intake issue map: J1=#713 (CLOSED with evidence @1a417c9d), K1=#714, S1=#715. Remaining dual-lens languages get one issue each as reviews land; dual-lens closure (#614) resumes after the board clears; M14's remaining analyzers (from clean) proceed last with the full strict battery."
+  },
+  {
+   "id": "K1",
+   "title": "Kotlin review-intake wave (issue #714): process reviews/kotlin 15 claims",
+   "status": "verified",
+   "evidenceFile": "reviews/kotlin/master-review.md",
+   "verifiedAtCommit": "5f5e0c02",
+   "notes": "15/15 claims resolved (10 fixed, 5 re-pinned to recorded rulings). Override verification with name-keyed declSigs (corpus-proven: BroadcastChannel.kt name-blind pairing fabricated 8 overrides), overrideSig payload, ctor naming, Spring named-arg routes, AST-gated patterns, dead inference deleted. Oracle mirror: kotlin method + anon-object registration, extractSig parameter fallback. 3 new mutants (351/351), 37/37 fixtures, KD21-KD28, R2 register 22->20. Corpus: coroutines + Exposed 100/0/0 @200; java/scala sanity 100/0/0."
+  },
+  {
+   "id": "G2",
+   "title": "Groovy review-intake wave (issue #720): process reviews/groovy 6 confirmed + 1 new claim",
+   "status": "pending",
+   "notes": "Wave executed, all gates green, pending commit/closeout. Fixes: G1 as-cast mis-parse branch, G2 implicit override tasks (explicit keeps tiers), G3/G7 exports filter + anon exclusion, G4 ctor declared names, G5 static/wildcard token scan (+dead helper deleted), G6 suffix-index hoist. Gates: 43/43 groovy fixtures (6 new), 358/358 mutants full-gate (6 new, each caught by its fixture), grails-core 506/506 + geb 510/510 differential 0 unexplained, tsc clean, M49 governance + R1 green. Spec GD20-GD25; forbidExports runner gate added. Census regenerated (scala rows churn under parallel S1 wave \u2014 R2 red-with-cause there, not G2). Residual referral: java accidentally excludes its own anon symbols via package visibility (groovy fixed explicitly)."
+  },
+  {
+   "id": "S1",
+   "title": "Scala review wave (#715): 24 claims + 4 wave-added shared-blind-spot defect classes",
+   "status": "verified",
+   "evidenceFile": "validation/m14/results/M14.0.F5.json",
+   "verifiedAtCommit": "18de8206",
+   "notes": "scala3 + cats-effect 100/0/0 @200; F3 46 scala fixtures; F4 361/361; F1 scala PASS; spec ScalaD-J..M; groovy cross-hardening GD26/GD27 (heritage type-args strip + dead wildcard_import disjunct); R1 26/26, R2 6/6 (register re-pinned shrink-only), G1 41/0."
+  },
+  {
+   "id": "T1",
+   "title": "TypeScript review-intake wave (issue #725): process reviews/typescript 11 confirmed claims",
+   "status": "pending",
+   "notes": "External review: 11 confirmed, 10 rejected; second pass refined T1 scope (gate on React signal, don't remove) with zero fixture contradictions. Fixes: T1 hook React-signal gate, T2 decorator exact-match, T3 return inference (+param lookup), T4 undefined path, T5 controller-base composition, T6 byPos +1, T7 hook range +1, T8 import qualified guard, T9 taint leaf match, T10 pure-lexical module resolution, template-double single emission. Gates: 8 fixtures + forbidErrors/forbidApiContractPaths/expectTaintSources runner extensions, 8 mutants each caught by its fixture, TSD11-TSD19. T6 unassertable (bare-name outputs) documented without fixture/mutant per honesty rule. Flips to verified at closeout with evidence commit."
+  },
+  {
+   "id": "J2",
+   "title": "JavaScript review-intake wave (issue #726): process reviews/javascript 13 confirmed claims",
+   "status": "pending",
+   "notes": "External review: 13 confirmed, 2 rejected (require handling + async-named methods, both fixture-pinned correct); J7 downgraded (dotted heritage pinned by js-member-heritage \u2014 needs cross-family ruling, not code). Fixes: J1 owner-qualified call keys, J2 method-only override pairing + verified reasonCode + in-file-base guess suppression, J3 last-wins replace + dead-span pruning/skipping, J4 clause-shape isDefault (ESM+CJS), J5 default-expression sentinel, J6 alias-first exports, J8 destructured-with-default params, J9 #private visibility, J10 cap removal, T8-analog import guard, exports rebinding. Gates: 12 fixtures, 12 mutants each caught by its fixture, JSD9-JSD19 (JSD19 rules J7 out of scope). Flips to verified at closeout with evidence commit."
+  }
+ ]
 }

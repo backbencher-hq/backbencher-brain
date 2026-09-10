@@ -779,7 +779,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (uri.startsWith("package:angular/")) frameworks["AngularDart"] = true
 
     if (isExport) {
-      exports.push({ name: uri, isDefault: false, range: this.nodeToRange(node) })
+      // M49 exports invariant: `export 'uri.dart' show X` re-exports a FILE,
+      // not a bindable name — the uri is a module path (relationship target
+      // below already carries it), never a resolvable export entry. Exported
+      // BINDINGS (`export 'x.dart' show Alpha` binds Alpha) belong in the
+      // export list; the bare uri does not. Dropping the uri push leaves the
+      // Exports relationship intact.
+      // exports.push({ name: uri, isDefault: false, range: this.nodeToRange(node) })
       relationships.push({
         source: moduleName,
         target: uri,

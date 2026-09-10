@@ -1870,7 +1870,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     let cur: Node | null = node.parent
     while (cur) {
       const t: string = cur.type
-      if (/statement|declaration|definition|declarator|specifier|enumerator|compound/.test(t)) return false
+      // ≡ /statement|declaration|definition|declarator|specifier|enumerator|compound/ — unanchored alternation ≡ includes() per disjunct.
+      if (
+        t.includes("statement") ||
+        t.includes("declaration") ||
+        t.includes("definition") ||
+        t.includes("declarator") ||
+        t.includes("specifier") ||
+        t.includes("enumerator") ||
+        t.includes("compound")
+      ) return false
       if (t.startsWith("preproc_")) return true
       cur = cur.parent
     }
@@ -1904,7 +1913,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         return false
       }
-      if (/statement|declaration|declarator|specifier|enumerator|compound|argument_list|init/.test(t)) return false
+      // ≡ /statement|declaration|declarator|specifier|enumerator|compound|argument_list|init/ — includes() per disjunct ("init" also hits init_declarator, as before).
+      if (
+        t.includes("statement") ||
+        t.includes("declaration") ||
+        t.includes("declarator") ||
+        t.includes("specifier") ||
+        t.includes("enumerator") ||
+        t.includes("compound") ||
+        t.includes("argument_list") ||
+        t.includes("init")
+      ) return false
       cur = cur.parent
     }
     return false
@@ -1921,7 +1940,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Same chain walk as the oracle's isDeclaringIdentifier (one contract).
   private isDeclaringChainLeftmost(node: Node): boolean {
     const p = node.parent
-    if (!p || !/declarator$/.test(p.type)) return false
+    // ≡ /declarator$/ — matches declarator, init_declarator, abstract_declarator, field_declarator, …
+    if (!p || !p.type.endsWith("declarator")) return false
     let cur: Node | null = p
     while (cur) {
       if (cur.type === "identifier" || cur.type === "field_identifier") {
@@ -1972,7 +1992,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // CGD12-mirror: within a declarator-chain parent only the leftmost
     // identifier declares — an initializer value is a READ (see
     // isDeclaringChainLeftmost for the measured defects).
-    if (/declarator$/.test(p.type) || p.type === "init_declarator") {
+    // ≡ /declarator$/ (endsWith — same match set as above).
+    if (p.type.endsWith("declarator") || p.type === "init_declarator") {
       return this.isDeclaringChainLeftmost(node)
     }
     return true

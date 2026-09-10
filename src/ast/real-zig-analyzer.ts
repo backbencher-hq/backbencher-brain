@@ -573,7 +573,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!trim) return
       const base = trim.split("<or>")[0] ?? trim
       const head = base.indexOf("=") !== -1 ? base.slice(0, base.indexOf("=")).trim() : base
-      if (!head || BUILTINS.has(head) || /^\d/.test(head)) return
+      // ≡ /^\d/ — first char is 0-9 (rejects `123abc`-style heads).
+      if (!head || BUILTINS.has(head) || (head.length > 0 && head.charCodeAt(0) >= 48 && head.charCodeAt(0) <= 57)) return
       if (!emitted.has(head)) {
         emitted.add(head)
         relationships.push({
