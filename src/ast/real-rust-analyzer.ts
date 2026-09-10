@@ -747,7 +747,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Module, node, parent, { type: "mod" })
     ctx.symbols.push(symbol)
 
-    if (this.isPublic(node)) {
+    // M49 exports invariant: only TOP-LEVEL modules export (a fn inside
+    // `pub mod network` is imported as network::connect, not bare connect —
+    // the module is the importable unit). Nested-mod members ride Contains.
+    if (this.isPublic(node) && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Module,
@@ -863,7 +866,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     ctx.symbols.push(symbol)
 
-    if (this.isPublic(node) && !isMethod) {
+    // M49 exports invariant: free fns export only at true file top level
+    // (no parent at all). A `pub fn` inside `pub mod network` is imported
+    // as network::connect — the module is the unit; module members ride
+    // Contains. isMethod already excludes impl/trait fns.
+    if (this.isPublic(node) && !isMethod && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Function,
@@ -1162,9 +1169,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (target === "new" && receiver) {
         const recvText = this.stripGenerics(receiver.text)
         const leaf = recvText.split("::").filter(Boolean).pop() ?? ""
-        if (/^[A-Z]/.test(leaf)) instTarget = leaf
+        // ≡ /^[A-Z]/ — first char in A-Z (rust upper-camel types).
+        if (leaf.length > 0 && leaf.charCodeAt(0) >= 65 && leaf.charCodeAt(0) <= 90) instTarget = leaf
       }
-    } else if (/^[A-Z]/.test(target)) {
+    } else if (target.length > 0 && target.charCodeAt(0) >= 65 && target.charCodeAt(0) <= 90) {
       instTarget = target
     }
     // DEFERRED resolution: constructor candidates emit only when the type

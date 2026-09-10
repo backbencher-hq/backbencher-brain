@@ -67,7 +67,56 @@ export async function scanAnalyzers(dir = "src/ast"): Promise<RegexUsage[]> {
         let cursor: any = node.parent
         let receiver = ""
         let operation: RegexUsage["operation"] = "other"
+        // M49 closure-wave fix: the walk ascends from the regex LITERAL, so
+        // the first call_expression it meets is `pattern.test(x)` — the
+        // member_expression's OBJECT is the pattern, not the receiver. The
+        // receiver is the call's ARGUMENT (or, for `x.match(/re/)` chains,
+        // the object of the enclosing member call). Ascend past the pattern
+        // call first; classify from what the regex actually runs against.
+        // Old behavior mislabeled every `pattern.test(x)` as receiver = the
+        // pattern itself ("literal" → unavoidable) — the scala analyzer's 5
+        // node-type predicates carried the wrong label for waves.
         while (cursor) {
+          if (cursor.type === "call_expression" && cursor.childForFieldName?.("function")?.type === "member_expression") {
+            const fn = cursor.childForFieldName("function")
+            const objNode = fn.childForFieldName?.("object")
+            const objText = objNode ? content.slice(objNode.startIndex, objNode.endIndex) : ""
+            if (objText === src || objText.endsWith("g") && objText.includes("/")) {
+              // The object IS the regex literal (or a flag-suffixed form of
+              // it): this is `pattern.test(x)` — descend the ARGUMENT side
+              // instead by continuing upward from the call's arguments.
+              const argsNode = cursor.childForFieldName?.("arguments")
+              const arg0 = argsNode?.namedChild(0)
+              if (arg0) {
+                const argText = content.slice(arg0.startIndex, arg0.endIndex)
+                receiver = argText.length < 120 ? argText : receiver
+                if (arg0.type === "regex") {
+                  // regex against regex — nothing to classify
+                  receiver = "(regex)"
+                } else {
+                  // Walk the argument's own chain for a member call receiver.
+                  let ac: any = arg0
+                  while (ac) {
+                    if (ac.type === "call_expression") {
+                      const afn = ac.childForFieldName?.("function")
+                      if (afn?.type === "member_expression") {
+                        const aobj = afn.childForFieldName?.("object")
+                        if (aobj) {
+                          const at = content.slice(aobj.startIndex, aobj.endIndex)
+                          if (at.length < 120) receiver = at
+                        }
+                        break
+                      }
+                    }
+                    ac = ac.namedChild(0)
+                    if (ac && ac.type !== "member_expression" && ac.type !== "call_expression" && ac.type !== "identifier" && ac.type !== "parenthesized_expression") break
+                  }
+                }
+                operation = operation === "other" ? "test" : operation
+                break
+              }
+            }
+          }
           if (cursor.type === "call_expression") {
             const fnNode = cursor.childForFieldName?.("function")
             if (fnNode?.type === "member_expression") {

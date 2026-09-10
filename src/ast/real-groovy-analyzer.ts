@@ -630,11 +630,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
-      // G3 (review wave, java JAD3 parity): trait/interface members ARE public
-      // API — the old Class-only owner filter silently excluded the most
-      // intentional surface in Groovy service code. G7: anonymous-class noise
-      // names never leak into the export list (family convention).
-      if (!s.metadata?.isAnonymousClass && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class || s.ownerKind === ASTEngine.SymbolKind.Interface || s.ownerKind === ASTEngine.SymbolKind.Enum)) {
+      // G3 (member half REVERSED, M49 JVM-closure exports-family ruling —
+      // java JAD3 reversal is the twin; see reviews/jvm-closure-audit.md):
+      // exports = importable units — top-level types and top-level
+      // functions only. Groovy imports types and static members, never
+      // bare member names; membership rides Contains (Greeter->greet).
+      // G7 (anon exclusion) is unaffected: anonymous classes are never
+      // top-level, so the !s.ownerName guard excludes them structurally —
+      // the explicit isAnonymousClass check stays as belt-and-braces.
+      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }

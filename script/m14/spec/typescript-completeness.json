@@ -356,6 +356,87 @@
       "decision": "Module-leaf fallback on BOTH analyzers (JS probed identical: 'pair -> run') \u2014 family-consistent behavior, not a defect. The object's shorthand methods are the member contract (TSD7); pair-valued arrows are value functions of the property, their calls fall back to the module leaf until a consumer contract needs them. Not gated (ruling without fixture is allowed only for verified no-defect rulings; recorded here for the family ledger).",
       "evidence": "probe ts-iife + js-pairarrow 2026-09-08 (identical fallback)",
       "date": "2026-09-08"
+    },
+    {
+      "id": "TSD11",
+      "node_type": "Rules-of-Hooks lint gating + warning ranges (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T1/T7: hook warnings fired on non-React files as parse errors, and their ranges were 0-based next to 1-based syntax errors (acknowledged in the error-ranges rationale, still shipped).",
+      "decision": "Gate the check on a React signal (react/preact import, require('react'), or any JSX element); non-React files get zero hook errors. Warning ranges +1 to the nodeToRange convention. Fixtures typescript/hook-gate (forbidErrors, new gate) + typescript/hook-react (positive control + 1-based range pin); mutants typescript/hook-gate-off.",
+      "evidence": "ts-claim-probe + ts-t17-probe (React file still warns exactly once, 1-based)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD12",
+      "node_type": "mapping decorator name matching + path-less mappings (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T2/T4: prefix matching turned @PostConstruct into POST / and @Getter into GET; bare @Get() defaulted to root /." ,
+      "decision": "EXACT match after stripping a Mapping suffix (@GetMapping hits; @Getter/@PostConstruct never match), collapsed bare-name form for paren-less/no-call decorators, and no path argument means no path (undefined, never '/'). The scanDecorator return gate keeps method-only results so base composition can see path-less mappings. Fixture typescript/decorator-exact (+forbidApiContractPaths, new gate); mutant typescript/decorator-prefix-revert.",
+      "evidence": "ts-claim-probe (PostConstruct silent, bare Get silent, GetMapping intact)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD13",
+      "node_type": "class-level route bases (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T5: @Controller('users') + @Get('list') reported 'list' — bases never composed, unlike java's basePath+methodRoute.",
+      "decision": "Compose via the nearest enclosing class scope's decorators (@Controller/@RequestMapping/@Path/@Route first string arg) with slash normalization; bare method mappings inherit the base alone (NestJS semantics); method-only paths gain a leading slash (java parity). Fixture typescript/controller-base (three composition shapes); mutant typescript/base-drop.",
+      "evidence": "ts-claim-probe2 (/users/list, /users/solo, /users)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD14",
+      "node_type": "unannotated function return types (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T3: absence of an annotation is not evidence of void — () => 42 reported void. Infer or leave unknown?",
+      "decision": "Fall back to the existing inferFunctionReturnType (literals, unions, and now identifier-returns resolved against declared parameter types via findParameterType); genuinely return-less bodies still yield void, so the default is unchanged where no information exists. Fixture typescript/inferred-return (number/void/number); mutant typescript/return-void-revert.",
+      "evidence": "ts-claim-probe (42, x:number, empty)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD15",
+      "node_type": "positional symbol resolution byPos (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T6: byPos compared 1-based symbol ranges against 0-based node positions — it could never match, so everything fell back to first-name-match.",
+      "decision": "+1 on both axes. No fixture possible (outputs are bare names — same-name collisions are indistinguishable downstream either way), so this is a hygiene fix verified by inspection + typecheck + unchanged green suite, documented here instead of gated. Same ruling class as groovy GD25 (perf, unobservable).",
+      "evidence": "code inspection (0-based vs 1-based provably disjoint); full TS suite green",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD16",
+      "node_type": "dynamic import() in qualified_calls (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T8: the relationship walk skipped the import callee but the qualified-calls payload leaked 'import' into symbol call lists.",
+      "decision": "Port the callee guard (keyword node type or identifier text) into extractQualifiedCalls. Fixture typescript/dynamic-import-qualified (notIncludes absence pattern); mutant typescript/import-guard-revert.",
+      "evidence": "ts-claim-probe (qualified ['import'] before, clean after)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD17",
+      "node_type": "taint source receiver matching (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review T9: substring matching flagged myreq.body (and any *req.body suffix) as user input — the KAD4 text-matching disease.",
+      "decision": "Receiver-leaf match: root req with leaf body/query/params, or root process with leaf env (pure segment walk, no regex). First taint payload coverage family-wide via the new expectTaintSources gate. Fixture typescript/taint-leaf (includes + notIncludes); mutant typescript/taint-substring-revert.",
+      "evidence": "ts-claim-probe2 (myreq.body flagged before, clean after; req.body kept)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD18",
+      "node_type": "template-substitution double emission (M49.T1 wave)",
+      "status": "FIXED",
+      "question": "Review template-double: one template read emitted Uses (template walk) AND References (general identifier walk) for the same target.",
+      "decision": "The template walk owns substitutions: general-walk identifiers inside a template_substitution boundary are skipped (function/class boundaries stop the ancestor scan). Fixture typescript/template-uses-singular (Uses control + forbid on the duplicate); mutant typescript/template-double-revert.",
+      "evidence": "ts-claim-probe2 (Uses+References before, Uses only after)",
+      "date": "2026-09-10"
+    },
+    {
+      "id": "TSD19",
+      "node_type": "import module resolution determinism (M49.T1 wave, M52 analyzer-lane half)",
+      "status": "FIXED",
+      "question": "M52 PLAN: resolveModulePath ran sync statSync/exists probes per import per file (index-time latency) and sniffed local node_modules/package.json entry points (same repo indexed differently per machine).",
+      "decision": "Pure-lexical resolution: relative by path algebra, builtins canonicalized (node: prefix stripped, not doubled), bare packages recorded by logical identity (external:, matching the codebase's own isExternalModule classifier); project-root walk memoized per directory; per-call builtins Set hoisted to module const. metadata.resolvedPath keeps its shape (zero repo-wide consumers). Fixture typescript/module-resolution-determinism (exact machine-independent rows); mutant typescript/drop-resolved-path; determinism proof: all 47 TS fixtures byte-identical in-repo vs a bare dir without node_modules; strace 1,700 synthetic-path probes + 160 package.json stats to zero on identical input.",
+      "evidence": "ts-determinism-proof + strace before/after (720ms to 248ms synthetic-heavy)",
+      "date": "2026-09-10"
     }
   ]
 }
