@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-10T03:17:13.165Z",
+  "generatedAt": "2026-09-10T05:31:47.051Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
   "totalRegexUsages": 47,
@@ -591,7 +591,7 @@
       "usages": [
         {
           "file": "real-typescript-analyzer.ts",
-          "line": 2985,
+          "line": 2868,
           "column": 40,
           "source": "/^:\\s*/",
           "operation": "replace",
