@@ -1933,6 +1933,24 @@ export async function storeResults(
         const containersByStart: { name: string; start: number; end: number }[] = []
         let firstContainerSymbol: any = undefined
 
+        // M51.A1/A3 (#716/#718): the storeable-row replica used by BOTH the
+        // owner-assignment path and the relationship-source path. Must stay an
+        // exact mirror of the insert-time guards below (denylist, name length,
+        // startLine >= 1, artifact-name filter honoring fallback mode).
+        // Computing references against the RAW analyzer list is what produced
+        // 134,073 orphan owner ids on this repo (whole-repo evidence in
+        // docs/m51/PLAN.md): the owner row was skipped by a later filter,
+        // leaving every child pointing at a ghost. Consumers JOIN on
+        // owner_symbol_id, so a phantom value was already invisible — omitting
+        // it removes the lie without changing any read path.
+        const storeableName = (nm: string | undefined, startLine: number): boolean => {
+          if (!nm || SYMBOL_NAME_DENYLIST.has(nm) || nm.length > 500) return false
+          if (startLine < 1) return false
+          return !(isFallbackResult
+            ? isIndexArtifactNameStrict(nm)
+            : isIndexArtifactName(nm))
+        }
+
         if (result.symbols) {
           const insertedSymbolIds = new Set<string>()
           // Names that should NEVER become standalone symbols — language keywords,
@@ -2033,14 +2051,19 @@ export async function storeResults(
             }
 
             const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
-            let ownerSymbolId = null
+            let ownerSymbolId: string | null = null
             const _ownerName = symbol.ownerName || symbol.scope
             if (_ownerName) {
-              ownerSymbolId = `${fileId}:${_ownerName}:0`
               const parentSymbol = nameToSymbol.get(_ownerName)
-              if (parentSymbol) {
+              // M51.A1: the old unconditional `${ownerName}:0` module fallback
+              // wrote ids that can never resolve (no stored row can have line
+              // 0 with an owner), and a same-named parent would self-own. If
+              // the named parent is not a storeable row, leave the owner NULL.
+              if (parentSymbol && parentSymbol.name !== symbol.name) {
                 const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
-                ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
+                if (storeableName(parentSymbol.name, parentStartLine)) {
+                  ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
+                }
               }
             } else {
               // No ownerName/scope — derive from line-range containment.
@@ -2060,6 +2083,9 @@ export async function storeResults(
                 for (const c of containersByStart) {
                   if (c.start >= symbolStartLine) break // sorted: no later container starts earlier
                   if (c.name === symbol.name) continue
+                  // M51.A1: a container the insert filters will skip is not an
+                  // owner — keep searching for an outer storeable container.
+                  if (!storeableName(c.name, c.start)) continue
                   if (c.start > 0 && (c.end >= symbolEndLine || c.end === c.start)) {
                     ownerSymbolId = `${fileId}:${c.name}:${c.start}`
                     break
@@ -2071,6 +2097,7 @@ export async function storeResults(
                     const c = containersByStart[ci]
                     if (c.start >= symbolStartLine) continue
                     if (c.name === symbol.name) continue
+                    if (!storeableName(c.name, c.start)) continue
                     ownerSymbolId = `${fileId}:${c.name}:${c.start}`
                     break
                   }
@@ -2130,11 +2157,16 @@ export async function storeResults(
             )
             batchSymbols++
             insertedSymbolIds.add(symbolId)
-            // Universal contains relationship — only if owner was actually inserted
-            // regardless of whether the language analyzer produced one.
-            // Guarantees owner→owned containment even when analyzers have
-            // scope tracking bugs or when WASM fallback skips the analyzer.
-            if (ownerSymbolId && insertedSymbolIds.has(ownerSymbolId)) {
+            // Universal contains relationship — owner→owned containment even
+            // when analyzers have scope tracking bugs or when WASM fallback
+            // skips the analyzer.
+            // M51.A1 (#716): the storeable-replica guard above already proves
+            // the owner id will exist as a row, so the old
+            // insertedSymbolIds.has() check is gone — it also silently dropped
+            // the edge for forward-declared containers (declared after their
+            // members in the analyzer output). Both endpoints now resolve by
+            // construction: owner via storeableName, child via the insert above.
+            if (ownerSymbolId) {
               // Dedup: skip if the engine already generated a contains for this (owner, child) pair
               const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
@@ -2416,6 +2448,27 @@ export async function storeResults(
                 rel.metadata.originalSource = leafForCheck
               }
               // If no enclosing class found, fall through — this becomes a regular relationship
+            }
+
+            // M51.A3 (#718): a same-file endpoint that names a symbol this file
+            // will NOT store must become an external edge (NULL id + name),
+            // never a dangling id. Previously the id was written because the
+            // raw symbol existed — but insert-time filters (artifact name,
+            // startLine < 1, denylist) could skip the row, leaving dead edges
+            // (observed: 32 anonymous-symbol edges in m14 fixtures). A source
+            // that fails the storeable replica degrades to source_external.
+            const sameFileIdOk = (cand: string | null): boolean => {
+              if (cand === null) return true
+              if (!cand.startsWith(`${fileId}:`)) return true
+              const m = /:(\d+)$/.exec(cand)
+              if (!m) return false
+              const line = Number(m[1])
+              const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
+              return storeableName(leaf, line)
+            }
+            if (!sameFileIdOk(sourceId)) {
+              sourceExternal = sourceExternal ?? sourceName
+              sourceId = null
             }
 
             if (
