@@ -499,7 +499,22 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // usage_contextual (calls, conf >= 0.85) | import_based (import
     // directives) | inferred (confidence < 1 non-call edges).
     this.classifyEvidenceTier(uniqueRelationships)
-    for (let i = 0; i < uniqueSymbols.length; i++) { const s = uniqueSymbols[i]; exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" }); }
+    // M49 JVM-closure exports invariant (F3 gate): export names must be
+    // UNIQUE and top-level-resolvable. The pre-fix pass exported EVERY
+    // symbol — objc selectors (`authorizeAmount:`, `setValue:forKey:`)
+    // duplicated across classes/interfaces/categories and ivars leaked
+    // (`_count`). Selectors are members (membership rides Contains);
+    // only top-level units export, deduped first-wins.
+    {
+      const seenExportNames = new Set<string>()
+      for (let i = 0; i < uniqueSymbols.length; i++) {
+        const s = uniqueSymbols[i]
+        if (s.ownerName) continue
+        if (seenExportNames.has(s.name)) continue
+        seenExportNames.add(s.name)
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      }
+    }
     return {
       language: "objective-c",
       symbols: uniqueSymbols,

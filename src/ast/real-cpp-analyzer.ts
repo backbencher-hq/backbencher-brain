@@ -849,7 +849,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // constructed type is a clean identifier (optionally namespace-
           // qualified before template stripping) — anything else is a
           // recovery artifact and emits no edge (the C-wave CGD19 class).
-          if (/^[A-Za-z_]\w*$/.test(typeName)) {
+          // ≡ /^[A-Za-z_]\w*$/ — full-string identifier shape: first char a
+          // letter/underscore, every later char word-class. \w ≡ [A-Za-z0-9_]
+          // in non-unicode mode, which is how this file's regexes run.
+          if (this.isPlainIdentifier(typeName)) {
             const source = parentContext?.name || "global"
             relationships.push({
               source,
@@ -877,11 +880,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Populate exports for file-scope public symbols
+    // M49 JVM-closure exports invariant (F3 gate in run-fixtures.ts): export
+    // names must be UNIQUE and resolve to top-level symbols. The old
+    // class-scope member branch emitted methods/ctors (duplicate `run`/
+    // `log`/`constructor` across classes; `operator()` payloads) — the
+    // member half is removed; membership rides Contains. Members of anonymous
+    // (unnamed-namespace) constructs are likewise dropped.
+    const seenExportNames = new Set<string>()
     for (const sym of symbols) {
       if (!sym.ownerName && !sym.ownerKind) {
         // File-scope: global namespace
         const isPrivate = sym.visibility === "private" || sym.isStatic
-        if (!isPrivate && !sym.name.startsWith("anonymous")) {
+        if (!isPrivate && !sym.name.startsWith("anonymous") && !seenExportNames.has(sym.name)) {
+          seenExportNames.add(sym.name)
           exports.push({
             name: sym.name,
             kind: sym.kind,
@@ -889,14 +900,6 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility: sym.visibility || "public",
           })
         }
-      } else if (sym.visibility === "public" && !sym.isStatic) {
-        // Class-scope: public non-static members
-        exports.push({
-          name: sym.name,
-          kind: sym.kind,
-          range: sym.range,
-          visibility: sym.visibility,
-        })
       }
     }
 
@@ -1205,6 +1208,23 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     return { name, scope, isDestructor, isOperator }
+  }
+
+  // ≡ /^[A-Za-z_]\w*$/ (zero-regex helper, M49 closure wave) — full-string
+  // identifier shape: letter/underscore head, word-class tail. CGD19 class:
+  // recovery-artifact type names (qualified, templated, mangled) fail this
+  // and emit no edge.
+  private isPlainIdentifier(s: string): boolean {
+    if (s.length === 0) return false
+    const c0 = s.charCodeAt(0)
+    const firstOk = (c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122) || c0 === 95
+    if (!firstOk) return false
+    for (let i = 1; i < s.length; i++) {
+      const c = s.charCodeAt(i)
+      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+      if (!ok) return false
+    }
+    return true
   }
 
   private buildFullName(scopeStack: any[], name: string): string {

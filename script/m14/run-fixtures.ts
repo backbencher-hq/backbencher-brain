@@ -126,12 +126,12 @@ const UNIVERSAL_FORBIDDEN_RELATIONSHIPS: Record<string, any[]> = {
   scala: [],
 }
 
-async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: number; fail: number; details: any[] }> {
-  const cfg = LANGS[lang]
-  const dir = path.join(FIXTURES_DIR, lang)
+async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ pass: number; fail: number; details: any[] }> {
+  const cfg = LANGS[runLangLang]
+  const dir = path.join(FIXTURES_DIR, runLangLang)
   if (!fs.existsSync(dir)) return { pass: 0, fail: 0, details: [{ fixture: "(none)", ok: true }] }
 
-  const parser = await getParser(lang)
+  const parser = await getParser(runLangLang)
   let analyzer: any
   if (overrideAnalyzer) {
     analyzer = overrideAnalyzer
@@ -146,7 +146,7 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
   for (const src of sources.sort()) {
     const base = src.slice(0, -(cfg.ext.length + 1))
     const expPath = path.join(dir, `${base}.expectation.json`)
-    if (!fs.existsSync(expPath)) { fail++; details.push({ fixture: `${lang}/${base}`, ok: false, reason: "missing expectation file" }); continue }
+    if (!fs.existsSync(expPath)) { fail++; details.push({ fixture: `${runLangLang}/${base}`, ok: false, reason: "missing expectation file" }); continue }
     const exp = JSON.parse(fs.readFileSync(expPath, "utf8"))
 
     const content = fs.readFileSync(path.join(dir, src), "utf8")
@@ -155,7 +155,7 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
     // vue/svelte: production parity — engine parseFile performs the SFC
     // script-block pre-parse exactly as real indexing does.
     let result: any
-    if (lang === "vue" || lang === "svelte") {
+    if (runLangLang === "vue" || runLangLang === "svelte") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
       // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
@@ -166,7 +166,7 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         result = (overrideAnalyzer as any).transform(result)
       }
     } else {
-      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${lang}/${src}`)
+      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`)
     }
     const symbols: Entry[] = result.symbols ?? []
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
@@ -222,6 +222,22 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
         const n = qc.filter((c: string) => c === inc || c.endsWith("." + inc)).length
         if (n !== want.countEquals.count) {
           problems.push(`expected ${want.symbol}.qualified_calls to contain "${inc}" exactly ${want.countEquals.count} time(s); got ${n}: ${JSON.stringify(qc)}`)
+        }
+      }
+    }
+    for (const want of exp.expectTaintSources ?? []) {
+      // TS T9 wave: taint payloads had zero fixture coverage family-wide.
+      // { symbol, includes?, notIncludes? } over taintSources snippets.
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const ts: any[] = (sym as any)?.taintSources ?? []
+      for (const tInc of want.includes ?? []) {
+        if (!ts.some((t: any) => (t.snippet ?? t) === tInc)) {
+          problems.push(`expected ${want.symbol}.taintSources to include "${tInc}"; got: ${JSON.stringify(ts)}`)
+        }
+      }
+      for (const tNot of want.notIncludes ?? []) {
+        if (ts.some((t: any) => (t.snippet ?? t) === tNot)) {
+          problems.push(`expected ${want.symbol}.taintSources NOT to include "${tNot}"; got: ${JSON.stringify(ts)}`)
         }
       }
     }
@@ -291,6 +307,17 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       const actualPath = sym?.apiContractPath ?? sym?.api_contract_path
       if (want.equals && actualPath !== want.equals) {
         problems.push(`expected ${want.symbol} apiContractPath ${JSON.stringify(want.equals)}; got ${JSON.stringify(actualPath)}`)
+      }
+    }
+    for (const want of exp.forbidApiContractPaths ?? []) {
+      // TS T2/T4 wave: lifecycle hooks (@PostConstruct) and path-less
+      // mappings must emit NO contract — expectApiContractPaths can only
+      // assert presence. Symbol match mirrors the expect variant.
+      const sym = symbols.find((s: any) => s.name === want.symbol &&
+        (want.ownerName === undefined || (s as any).ownerName === want.ownerName))
+      const actualPath = (sym as any)?.apiContractPath ?? (sym as any)?.api_contract_path
+      if (sym && actualPath !== undefined) {
+        problems.push(`forbidden apiContractPath present: ${want.symbol} has ${JSON.stringify(actualPath)}`)
       }
     }
     for (const want of exp.expectExports ?? []) {
@@ -389,6 +416,16 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       const hit = symbols.find(s => matchConstraints(s, want))
       if (hit) problems.push(`forbidden symbol present: ${JSON.stringify(want)} (found ${hit.name}:${hit.kind})`)
     }
+    for (const want of exp.forbidErrors ?? []) {
+      // TS T1 wave: absence assertions for parse/lint errors (a plain
+      // module must produce zero hook warnings). Matches expectErrors
+      // field-for-field over range ?? top level.
+      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+      const hit = errList.find((e: any) =>
+        Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
+      )
+      if (hit) problems.push(`forbidden error present: ${JSON.stringify(want)} (found ${JSON.stringify(hit.message ?? hit).slice(0, 120)})`)
+    }
     for (const want of exp.expectSymbolCount ?? []) {
       // { name, equals } — pins DEDUPE: overload groups must yield exactly
       // one symbol per name (duplicate constructor symbols violated this).
@@ -429,6 +466,81 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       )
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
+    // M49 JVM-closure exports-family invariant — runs on EVERY fixture, every
+    // language (reviews/jvm-closure-audit.md, exports-fork verdict): the
+    // export list is the index's importable-unit set, so
+    //   1. export names must be UNIQUE — a duplicate cannot identify its
+    //      provider (java/groovy overloads emitted ["Svc","greet","greet"]
+    //      before the JAD3/G3 member-export reversal), and
+    //   2. every export name must resolve to a TOP-LEVEL symbol — bare
+    //      member names are not importable; membership rides Contains.
+    // This kills the exports fork (and its next occurrence) at gate time
+    // instead of audit time.
+    const exportNames = (result.exports ?? []).map((e: any) => e.name)
+    const dupExports = exportNames.filter((n: string, i: number) => exportNames.indexOf(n) !== i)
+    if (dupExports.length) {
+      problems.push(`export invariant violated: duplicate export name(s) ${JSON.stringify([...new Set(dupExports)])}`)
+    }
+    // Top-level resolvability — an export must name an IMPORTABLE UNIT, i.e.
+    // a name an importer can bind. Honest semantics per language family:
+    //   - ownerless symbols (file-scope units: types, fns, consts),
+    //   - csharp namespace symbols AND namespace-owned types (using binds
+    //     the bare name within the namespace scope), plus TS namespace-owned
+    //     exports (`export namespace NS { export class Visible }` — Visible
+    //     is importable as NS.Visible; the export entry is its public name),
+    //   - haskell/ocaml-style MODULE-owned symbols (import Data.User (mkUser)
+    //     binds mkUser directly — the module is the namespace, members are
+    //     importable by name),
+    //   - NOT type-owned members (java/groovy/kotlin/scala/cpp/go methods:
+    //     `import Cls` binds the type, never bare members — membership rides
+    //     Contains). This asymmetry IS the exports-family ruling.
+    //   - JS/TS module-system forms: `default` is THE module's main binding
+    //     (a symbol may not exist for anonymous decls — the export entry is
+    //     the binding), and CJS assignments (`exports.x`, `module.exports.y`,
+    //     `module.exports = {...}`) create live module properties importable
+    //     by name without a corresponding symbol. Both are bindings.
+    const nsNames = new Set(
+      symbols.filter((s: any) => s.metadata?.isCSharpNamespace).map((s: any) => s.name),
+    )
+    const moduleNames = new Set(
+      symbols
+        .filter((s: any) => s.kind === "module" || s.kind === "Module" || s.kind === "namespace" || s.kind === "Namespace")
+        .map((s: any) => s.name),
+    )
+    const topLevelNames = new Set(
+      symbols
+        .filter((s: any) => !s.ownerName || nsNames.has(s.ownerName) || moduleNames.has(s.ownerName))
+        .map((s: any) => s.name),
+    )
+    // JS/TS module-system binding forms — these are importable units even
+    // though no local symbol carries the name:
+    //   `default` — the module's main binding (anon decls have no symbol);
+    //   dotted names — CJS deep paths (`exports.a.b` = live module props);
+    //   `exports`-rebind/object-literal members — live module properties;
+    //   `require`-bound names re-published via `module.exports = { def, a }`;
+    //   local names re-exported under an alias (`export { alpha as beta }` —
+    //   beta is the public binding; alpha is the private local).
+    //   Re-export-from (`export { a } from "./m"`) likewise.
+    // Only type-owned bare members (java/groovy/kotlin/scala/cpp/go methods)
+    // are rejected — membership rides Contains.
+    const lang = result.language ?? runLangLang
+    const isJsFamily = lang === "javascript" || lang === "typescript" || lang === "vue" || lang === "svelte"
+    const hasReExport = (result.imports ?? []).some((i: any) => i.metadata?.reExport)
+    const viaCommonJs = (result.exports ?? []).some((e: any) => e.metadata?.viaCommonJs)
+    const exportedNamesSet = new Set(exportNames)
+    const symbolNames = new Set(symbols.map((s: any) => s.name))
+    const isJsModuleBinding = (n: string) =>
+      n === "default" ||
+      n.includes(".") ||
+      hasReExport ||
+      viaCommonJs ||
+      // aliased re-export of a local: some local symbol exists that is NOT
+      // itself in the export list under its own name (alpha as beta)
+      (isJsFamily && [...symbolNames].some((sn) => !exportedNamesSet.has(sn) && topLevelNames.has(sn)))
+    const unresolvable = [...new Set(exportNames)].filter((n: string) => !topLevelNames.has(n) && !isJsModuleBinding(n))
+    if (unresolvable.length) {
+      problems.push(`export invariant violated: export(s) ${JSON.stringify(unresolvable)} do not resolve to a top-level symbol (membership rides Contains)`)
+    }
     for (const want of exp.expectRelationships ?? []) {
       if (!rels.some(r => matchConstraints(r, want))) {
         problems.push(`expected relationship not found: ${JSON.stringify(want)}; got: ${rels.map((r: any) => r.type + "[" + r.from + "->" + r.target + "]" + (r.confidence != null ? "@" + r.confidence : "")).slice(0, 30).join("; ")}`)
@@ -441,7 +553,7 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
 
     if (problems.length === 0) pass++
     else fail++
-    details.push({ fixture: `${lang}/${base}`, ok: problems.length === 0, problems })
+    details.push({ fixture: `${runLangLang}/${base}`, ok: problems.length === 0, problems })
   }
   return { pass, fail, details }
 }

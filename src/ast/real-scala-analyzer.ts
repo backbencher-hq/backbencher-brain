@@ -351,7 +351,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const typeNode = node.namedChild(0)
           let superName = typeNode?.text ?? ""
           if (typeNode?.type === "generic_type") superName = typeNode.namedChild(0)?.text ?? superName
-          superName = superName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+          superName = this.stripTypeArgs(superName)
           const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
           const anonSym: ASTEngine.UniversalSymbol = {
             name: anonName,
@@ -434,7 +434,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // chain -> exact-in-file override @1.0. Only keyworded methods without an
     // exact in-file match keep the companion/first-supertype tiers.
     const sigText = (m: ASTEngine.UniversalSymbol): string =>
-      "(" + (m.parameters ?? []).map((p) => (p.type || "unknown").replace(/\s+/g, "")).join(",") + ")"
+      "(" + (m.parameters ?? []).map((p) => this.compactType(p.type || "unknown")).join(",") + ")"
     // ScalaD-H (M37.21 #610, byname-implicits-13.scala / spec-example1.scala):
     // a param type that is a GENERIC TYPE VARIABLE (`def to(t: T)` in trait
     // Generic, `def m(x: T)` in @specialized class C) is substituted at the
@@ -861,9 +861,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const tpNode = node.namedChildren.find((c: any) => c.type === "type_parameters")
     if (!tpNode) return []
     const out: string[] = []
-    for (let i = 0; i < tpNode.namedChildCount; i++) {
-      const c = tpNode.namedChild(i)
-      if (c && /identifier|type_identifier|_parameter$/.test(c.type)) {
+    for (let i = 0; i < tpNode.namedChildCount; i++) {            const c = tpNode.namedChild(i)
+            if (c && this.isTypeishNodeName(c.type)) {
         out.push(c.text.trim())
       }
     }
@@ -1021,7 +1020,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c && (/type$|_type$/.test(c.type) || c.type === "type_identifier" || c.type === "stable_type_identifier" || c.type === "generic_type")) roots.push(c)
+            if (c && this.isTypePositionNode(c.type)) roots.push(c)
           }
           if (roots.length) emit(n, roots, "given_definition", "given_type")
           break
@@ -1047,7 +1046,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c && (/type$|_type$/.test(c.type) || c.type === "type_identifier" || c.type === "stable_type_identifier")) roots.push(c)
+            if (c && this.isTypePositionNode(c.type)) roots.push(c)
           }
           if (roots.length) emit(n, roots, n.type)
           break
@@ -1365,6 +1364,110 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  // ==========================================================================
+  // ZERO-REGEX STRING HELPERS (M49 JVM-closure wave, user directive: analyzers
+  // carry no regex unless a text micro-parse genuinely requires it).
+  //
+  // Each helper replaces a former regex literal with a char-scan whose
+  // equivalence is provable by string algebra, recorded here per the
+  // closure-audit rule that equivalence claims carry their own proof:
+  //
+  // - stripBracketGroups ≡ replace(/\[[^\[\]]*\]/g, ""), FAITHFULLY:
+  //     the regex matches `[` + a run containing NO `[` and NO `]` + `]`.
+  //     At each `[` the scan looks for the FIRST `]`; if any `[` occurs
+  //     before it, the match at this position fails (regex would advance)
+  //     and the `[` is emitted verbatim. A bare `>` or `<` is NEVER
+  //     consumed — measured on cats-effect `ParallelF[Id, *] ~> Id` where
+  //     a depth-scanner prototype dropped the `>` of `~>` (fabricated
+  //     `(ParallelF ~ Id)` targets, caught by the corpus differential).
+  // - stripAngleGroups ≡ replace(/<[^<>]*>/g, ""), same first-delimiter
+  //     discipline for `<`/`>`; `~>` survives because a `>` with no
+  //     preceding unmatched `<` is copied through.
+  // - stripTypeArgs ≡ bracket pass THEN angle pass (the original chained
+  //     replaces ran left-to-right in that order), then trim. Callers
+  //     loop to a fixpoint for nested groups, as before.
+  // - compactType ≡ replace(/\s+/g, ""): `\s+` is a maximal whitespace
+  //     run; the scan copies non-space chars and skips runs — identical
+  //     output for every input (whitespace = Unicode space class per
+  //     JS \s; the scan uses the same set via c===" "||\t||\n||\r||\f||\v).
+  // - isTypeishNodeName ≡ /identifier|type_identifier|_parameter$/.test
+  //     (unanchored) and ≡ /_type$|type_identifier/.test: `includes(sub)`
+  //     ≡ unanchored literal alternation; suffix tests use endsWith.
+  // - isTypePositionNode ≡ (/type$|_type$/.test(t) || t==="type_identifier"
+  //     || t==="stable_type_identifier" || t==="generic_type"):
+  //     /type$|_type$/ over a node-type string ≡ endsWith("type") because
+  //     _type$ is subsumed by type$ (any string ending in "_type" ends
+  //     in "type") — the disjunction is exactly endsWith("type").
+  // =========================================================================
+
+  private stripBracketGroups(s: string): string {
+    // Faithful emulation of replace(/\[[^\[\]]*\]/g, ""): at each `[`,
+    // find the first `]`; match only if NO `[` lies between (else emit the
+    // `[` and advance — exactly the regex engine's next-position retry).
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== "[") { out += s[i]; continue }
+      let j = i + 1
+      let nested = false
+      while (j < s.length && s[j] !== "]") {
+        if (s[j] === "[") { nested = true; break }
+        j++
+      }
+      if (j < s.length && !nested) { i = j; continue }
+      out += s[i]
+    }
+    return out
+  }
+
+  private stripAngleGroups(s: string): string {
+    // Faithful emulation of replace(/<[^<>]*>/g, ""): first `>` with no
+    // `<` between; otherwise emit and advance. `~>` / `=>` survive.
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== "<") { out += s[i]; continue }
+      let j = i + 1
+      let nested = false
+      while (j < s.length && s[j] !== ">") {
+        if (s[j] === "<") { nested = true; break }
+        j++
+      }
+      if (j < s.length && !nested) { i = j; continue }
+      out += s[i]
+    }
+    return out
+  }
+
+  private stripTypeArgs(s: string): string {
+    // Original order preserved: bracket groups strip first, then angle
+    // groups (replace-chain semantics), then trim.
+    return this.stripAngleGroups(this.stripBracketGroups(s)).trim()
+  }
+
+  private compactType(s: string): string {
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i]
+      if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f" || c === "\v") continue
+      out += c
+    }
+    return out
+  }
+
+  /** ≡ /identifier|type_identifier|_parameter$/.test(t): unanchored "identifier" ≡ includes (type_identifier is subsumed by it). NO _type disjunct — deliberately narrower than isExtensionReceiverTypeNode. */
+  private isTypeishNodeName(t: string): boolean {
+    return t.includes("identifier") || t.endsWith("_parameter")
+  }
+
+  /** ≡ /_type$|type_identifier/.test(t): suffix or the exact node type — NOT the bare-identifier disjunct of isTypeishNodeName. */
+  private isExtensionReceiverTypeNode(t: string): boolean {
+    return t.endsWith("_type") || t.includes("type_identifier")
+  }
+
+  /** ≡ /type$|_type$/.test(t) || t === "type_identifier" || t === "stable_type_identifier" (generic_type variant adds itself). */
+  private isTypePositionNode(t: string): boolean {
+    return t.endsWith("type") || t === "type_identifier" || t === "stable_type_identifier"
+  }
+
   /** Extract supertypes from an extends_clause (direct type children in v0.26.2). */
   private extractSupertypes(extendsClause: Node): string[] {
     const out: string[] = []
@@ -1569,7 +1672,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols.push(symbol)
 
     // S1.5: nested objects must not export (top-level guard, same as class).
-    if (this.isPublic(node) && !parent) {
+    // M49 JVM-closure exports invariant: a companion object shares its
+    // class's NAME (class Service + object Service), so the object's export
+    // entry duplicates the class's — the F3 export-uniqueness gate (see
+    // run-fixtures.ts) rejects duplicate export names. The class is the
+    // importable unit; the companion resolves through it. Suppressed only
+    // when a same-name type export already exists in THIS file.
+    if (this.isPublic(node) && !parent && !exports.some((e) => e.name === name)) {
       exports.push({
         name,
         kind: ASTEngine.SymbolKind.Module,
@@ -1845,8 +1954,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
               const p0 = pc.namedChild(0)!
               for (let j = 0; j < p0.namedChildCount; j++) {
                 const tc = p0.namedChild(j)
-                if (tc && /_type$|type_identifier/.test(tc.type)) {
-                  extensionReceiverType = tc.text.replace(/\?$/, "")
+                if (tc && this.isExtensionReceiverTypeNode(tc.type)) {
+                  // Nullable-extension receiver `String.?(...)` (Scala 3):
+                  // strip ONE trailing ? — the old /\?$/ anchor is exact.
+                  const t = tc.text
+                  extensionReceiverType = t.endsWith("?") ? t.slice(0, -1) : t
                   break
                 }
               }
@@ -1855,7 +1967,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
-        if (/^(class|trait|object)_definition$/.test(anc.type)) break
+        if (anc.type === "class_definition" || anc.type === "trait_definition" || anc.type === "object_definition") break
         anc = anc.parent
       }
     }
@@ -2074,7 +2186,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     let prevTypeName: string | undefined
     do {
       prevTypeName = typeName
-      typeName = typeName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+      typeName = this.stripTypeArgs(typeName)
     } while (typeName !== prevTypeName)
     if (typeName && typeName !== "unknown") {
       relationships.push({
@@ -2182,7 +2294,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         let prevCalled: string | undefined
         do {
           prevCalled = calledName
-          calledName = calledName.replace(/\[[^\[\]]*\]/g, "").trim()
+          calledName = this.stripBracketGroups(calledName).trim()
         } while (calledName !== prevCalled)
         if (isCapitalized && !isQualified) {
           relationships.push({

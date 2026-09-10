@@ -245,6 +245,94 @@
         "status": "FIXED",
         "question": "Does the javascript lane's truth carry calls?",
         "ruling": "YES after #611: deriveJavaScriptEdges is pushed into the sweep truth for the plain javascript lane (the analyzer-side filter already compared calls; without the push, truth emitted ZERO calls and every analyzer call surfaced unexplained \u2014 294 in the first gated vue-core run; per-file parity on scripts/verify-commit.js was proven during the wave)."
+      },
+      {
+        "id": "JSD9",
+        "node_type": "same-named methods across classes (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J1: bySource keyed qualified_calls by bare method name, so U.save + O.save shared one union payload. How to key without breaking object-literal members (ownerKind Constant)?",
+        "decision": "Owner-qualified keys (Owner::method) for class-owned methods; bare keys everywhere else, mirrored on the symbol-attachment side by the same rule (ownerKind Class qualifies). Prototype assignments resolve Owner::method through the existing prototype branch. Fixture javascript/duplicate-method pins per-owner includes/notIncludes both directions; mutant javascript/dup-first-wins also covers the J3 half.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD10",
+        "node_type": "override pairing qualification (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J2: owner-only matching paired methods against same-named FIELDS (0.95, empty metadata) and emitted constructor overrides; the guess tier fired even for in-file bases that provably lack the method.",
+        "decision": "Pair only against base METHODS (kind-gated both sides); constructors never pair; verified pairs carry reasonCode verified-in-file; the 0.5 guess fires only for bases outside the file (in-file absence is proof of non-override, not an unknown). Fixture javascript/override-qualification (pair + three forbids); mutants javascript/override-field-pair + javascript/override-ctor.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD11",
+        "node_type": "duplicate method redeclaration (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J3: first-wins dedup kept the dead redeclaration while runtime and TS keep the last body.",
+        "decision": "Last-wins replace via owner:name index (shared with prototype assignments, which genuinely overwrite at runtime); superseded body spans recorded so nested symbols prune and relationship passes skip dead subtrees (module helper isNodeInDeadSpans). Fixture javascript/duplicate-method (qualified_calls + dead-call forbid); covered by the dup-first-wins mutant.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD12",
+        "node_type": "import isDefault derivation, ESM + CJS (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J4: the items-count heuristic flagged default imports false and side-effect/named-require imports true.",
+        "decision": "ESM: a direct identifier child of the clause IS the default import. CJS: only bare-identifier bindings are default (destructured patterns are named). Fixtures javascript/import-default-flag + javascript/require-default-flag; mutants javascript/import-flag-flip + javascript/require-flag-flip.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD13",
+        "node_type": "default-exported expressions (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J5: only declarations were kept, so `export default { a: 1 }` vanished (TS has the 'default' sentinel fallback).",
+        "decision": "Track foundNamed through collectExportStatement; default exports matching no branch record under the family sentinel 'default' (TS parity). Fixture javascript/default-export-expression; mutant javascript/default-export-drop (also guards the pre-existing anon-default path).",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD14",
+        "node_type": "export alias naming (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J6: first-identifier lookup recorded the local name (`export { a as b }` exported a), which importers cannot use.",
+        "decision": "Alias-first via grammar fields (alias ?? name ?? first identifier), TS parity. Fixture javascript/export-alias; mutant javascript/export-alias-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD15",
+        "node_type": "destructured-with-default parameters (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J8: the assignment_pattern branch only handled identifier left sides, so `f({a, b} = {})` lost the position (TS keeps a truncated entry).",
+        "decision": "Record pattern left sides like bare destructured parameters (TS parity). Fixture javascript/destructured-params (exact-text pin); mutant javascript/params-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD16",
+        "node_type": "#private field visibility (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J9: hardcoded 'public' contradicted metadata.isPrivate on the same symbol.",
+        "decision": "Derive from the property node type (private_property_identifier), TS parity. Fixture javascript/private-field-visibility (+public control); mutant javascript/visibility-flip (also trips the pre-existing method-visibility pins, confirming shared coverage).",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD17",
+        "node_type": "JSX detection traversal cap (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Review J10: the 500-visit cap combined with order-dependent traversal to miss early JSX past ~300 lines (probe: line-1 JSX + 300 padding lines lost React).",
+        "decision": "Remove the cap — the walk is linear like every other pass here, with no stated reason for the bound. Fixture javascript/jsx-detection-depth (JSX first in a 131-line file, expectFrameworks React); mutant javascript/jsx-cap.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD18",
+        "node_type": "dynamic import() in qualified_calls + exports rebinding (M49.J2 wave)",
+        "status": "FIXED",
+        "question": "Session-later finds, both probe-confirmed: (a) the relationship walk skipped import() but qualified_calls leaked 'import' (TS T8 analog); (b) wholesale `exports = {...}` matched no shape and exported nothing.",
+        "decision": "(a) Port the import-callee guard into qcWalk (keyword node type or identifier text). (b) Handle bare-identifier `exports` left sides through collectModuleExports. Fixtures javascript/dynamic-import-qualified (notIncludes + imports control) and javascript/exports-rebind; mutants javascript/import-guard-revert + javascript/rebind-drop. Spread elements (`...other`) deliberately unhandled — resolving them is constant evaluation, recorded as a boundary.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "JSD19",
+        "node_type": "qualified heritage dotted targets (review downgrade, NOT fixed)",
+        "status": "RULED",
+        "question": "Review J7: `extends Lib.Base` targets the dotted path while TS strips to leaf — fix to leaf?",
+        "decision": "RULED - DO NOT FIX: js-member-heritage explicitly pins the dotted target (identifier-only extraction dropped qualified heritage entirely). The residual is cross-family (TS strips per TSD3) and needs an owner ruling on one convention, like the JVM exports fork. The claim probe now asserts the pinned behavior so a drive-by 'fix' fails loudly.",
+        "date": "2026-09-10"
       }
     ]
   }
