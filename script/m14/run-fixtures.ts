@@ -421,6 +421,14 @@ async function runLang(lang: string, overrideAnalyzer?: any): Promise<{ pass: nu
       )
       if (hit) problems.push(`forbidden import present: ${JSON.stringify(want)} (found ${hit.module})`)
     }
+    for (const want of exp.forbidExports ?? []) {
+      // Groovy G7 wave: anonymous-class noise names must never leak into the
+      // export list. No negation existed (expectExports is >=1 match only).
+      const hit = (result.exports ?? []).find((e: any) =>
+        Object.entries(want).every(([k, v]) => e[k] === v),
+      )
+      if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
+    }
     for (const want of exp.expectRelationships ?? []) {
       if (!rels.some(r => matchConstraints(r, want))) {
         problems.push(`expected relationship not found: ${JSON.stringify(want)}; got: ${rels.map((r: any) => r.type + "[" + r.from + "->" + r.target + "]" + (r.confidence != null ? "@" + r.confidence : "")).slice(0, 30).join("; ")}`)

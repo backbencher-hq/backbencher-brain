@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (33/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (34/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "b0f4ac330f1108acceb62433a342a59ec6fb5399",
-  "committedAt": "2026-09-10T00:01:26+02:00",
+  "commit": "be8fdccf2e972d5c8cdc610d13a8afda426cc593",
+  "committedAt": "2026-09-10T03:47:09+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -321,7 +321,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 352,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 56,
+        "referencedTypeLiterals": 59,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -707,7 +707,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 77,
+        "referencedTypeLiterals": 81,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -835,91 +835,91 @@
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 82,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 (real-swift-analyzer.ts ENUM_RAW_VALUE_TYPES): this is a TYPE-NAME table (Swift raw-value enum types), not a parse-tree node reference. The audit scanner counts string literals in const initializers it treats as node-type sets; every literal in this set is a Swift stdlib type name compared against enum rawType payloads. No grammar conformance claim is made by these literals.",
             "line": 60,
             "literal": "String"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Character"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Int"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Int8"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Int16"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Int32"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Int64"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "UInt"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "UInt8"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "UInt16"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "UInt32"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "UInt64"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Float"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Float32"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Float64"
           },
           {
-            "context": "real-swift-analyzer.ts:const:ENUM_RAW_VALUE_TYPES",
+            "justification": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
             "line": 60,
             "literal": "Double"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-swift.wasm"
         ],
@@ -1032,10 +1032,10 @@
       }
     },
     "summary": {
-      "fail": 8,
+      "fail": 7,
       "languagesAudited": 41,
-      "pass": 33,
-      "totalUnknownReferences": 40
+      "pass": 34,
+      "totalUnknownReferences": 24
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
