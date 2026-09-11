@@ -11,16 +11,14 @@
     "mutantsTotal": 5,
     "ok": true
   },
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "48e9ef8fbe6cb64d4a66365df7e3db9243b8e1ab",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-09-07T23:25:56.521Z",
+  "generatedAt": "2026-09-11T15:31:59.217Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
-    "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact \u2014 the drift gate itself would then fail loudly until regenerated.",
+    "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
     "The wiring proof reads package.json at run time; a chain edit that renames the script keys ('verify', 'verify:fast') would need this gate updated."
   ],
-  "details": [],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "details": []
 }
