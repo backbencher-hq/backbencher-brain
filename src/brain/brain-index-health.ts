@@ -67,8 +67,9 @@ export async function runIndexHealthCheck(projectId: ProjectID): Promise<IndexHe
   // 4. Dangling source relationships (source symbol deleted)
   checks.push(await checkDanglingSources(rawDb, projectId))
 
-  // 5. Orphan owner_symbol_id
-  checks.push(await checkOrphanOwners(rawDb, projectId))
+  // 5. Orphan owner_symbol_id — M51.A2 (#717) splits genuine danglers from
+  // the by-design synthetic container ids (separate informational check).
+  checks.push(...(await checkOrphanOwners(rawDb, projectId)))
 
   // 6. Stale file hashes (file_hash vs actual file content)
   checks.push(await checkHashDrift(rawDb, projectId))
@@ -202,9 +203,13 @@ async function checkOrphanTargets(rawDb: any, projectId: ProjectID): Promise<Hea
 }
 
 async function checkDanglingSources(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
+  // M51.A2 (#717): source_symbol_id IS NULL is the legitimate representation
+  // for external-source edges (source_external carries the name) — counting
+  // NULL as dangling misreported 4,122 of 4,154 edges on this repo's index.
   const row = rawDb.prepare(`
     SELECT COUNT(*) as count FROM brain_relationship r
     WHERE r.project_id = ?
+      AND r.source_symbol_id IS NOT NULL AND r.source_symbol_id != ''
       AND NOT EXISTS (SELECT 1 FROM brain_symbol s WHERE s.id = r.source_symbol_id AND s.project_id = r.project_id)
   `).get(projectId) as any
 
@@ -215,30 +220,76 @@ async function checkDanglingSources(rawDb: any, projectId: ProjectID): Promise<H
     status: danglingCount > 100 ? "error" : danglingCount > 10 ? "warn" : "ok",
     value: danglingCount,
     threshold: { warn: 10, error: 100 },
-    description: `${danglingCount} relationships have a source symbol that no longer exists. These are dead edges in the call graph.`,
-      remediation: danglingCount > 0 ? "Run bb_health with refresh=true and force=true to rebuild the index." : undefined,
+    description: `${danglingCount} relationships have a non-empty source_symbol_id that matches no stored symbol. These are dead edges in the call graph. (External-source edges with a NULL source_symbol_id are legitimate and not counted.)`,
+    remediation: danglingCount > 0
+      ? "Re-index the affected files (`bb index <dir>`) so edges are written against stored symbols. A --force rebuild only helps if the danglers came from an older indexer version; if they persist on a fresh index, this is an indexer bug — report it with the sample ids."
+      : undefined,
   }
 }
 
-async function checkOrphanOwners(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
-  const row = rawDb.prepare(`
+async function checkOrphanOwners(rawDb: any, projectId: ProjectID): Promise<HealthCheck[]> {
+  // M51.A2 (#717): the old single check conflated two populations. Row-level
+  // evidence on this repo: 134,045 orphans were synthetic container ids
+  // (`<file>:<name>:0`) the pre-M51 indexer wrote as an owner fallback — by
+  // design they never resolve (no stored row can have line 0) and every
+  // consumer JOINs on owner_symbol_id, so they were already invisible; only
+  // 28 were genuine danglers. Reporting 134k "errors" trained users to ignore
+  // health (cry-wolf), and the old remediation ("rebuild with --force") was
+  // proven false — a clean rebuild reproduced the identical warning.
+  const genuine = rawDb.prepare(`
     SELECT COUNT(*) as count FROM brain_symbol s
     WHERE s.project_id = ?
       AND s.owner_symbol_id IS NOT NULL
       AND s.owner_symbol_id != ''
+      AND s.owner_symbol_id NOT LIKE '%:0'
       AND NOT EXISTS (SELECT 1 FROM brain_symbol p WHERE p.id = s.owner_symbol_id AND p.project_id = s.project_id)
   `).get(projectId) as any
 
-  const orphanCount = row?.count ?? 0
+  const synthetic = rawDb.prepare(`
+    SELECT COUNT(*) as count FROM brain_symbol s
+    WHERE s.project_id = ?
+      AND s.owner_symbol_id IS NOT NULL
+      AND s.owner_symbol_id != ''
+      AND s.owner_symbol_id LIKE '%:0'
+      AND NOT EXISTS (SELECT 1 FROM brain_symbol p WHERE p.id = s.owner_symbol_id AND p.project_id = s.project_id)
+  `).get(projectId) as any
 
-  return {
-    name: "Orphan Owner References",
-    status: orphanCount > 500 ? "error" : orphanCount > 50 ? "warn" : "ok",
-    value: orphanCount,
-    threshold: { warn: 50, error: 500 },
-    description: `${orphanCount} symbols reference an owner_symbol_id that doesn't exist. This breaks containment chains in bb_trace.`,
-      remediation: orphanCount > 0 ? "Run bb_health with refresh=true and force=true to rebuild the index." : undefined,
-  }
+  const samples = rawDb.prepare(`
+    SELECT s.owner_symbol_id as oid, COUNT(*) as c FROM brain_symbol s
+    WHERE s.project_id = ?
+      AND s.owner_symbol_id IS NOT NULL AND s.owner_symbol_id != ''
+      AND NOT EXISTS (SELECT 1 FROM brain_symbol p WHERE p.id = s.owner_symbol_id AND p.project_id = s.project_id)
+    GROUP BY s.owner_symbol_id ORDER BY c DESC LIMIT 5
+  `).all(projectId) as any[]
+
+  const genuineCount = genuine?.count ?? 0
+  const syntheticCount = synthetic?.count ?? 0
+  const sample = samples.map((r) => `${r.c}x ${String(r.oid).slice(-60)}`)
+
+  return [
+    {
+      name: "Orphan Owner References",
+      status: genuineCount > 100 ? "error" : genuineCount > 10 ? "warn" : "ok",
+      value: genuineCount,
+      threshold: { warn: 10, error: 100 },
+      description: `${genuineCount} symbols reference an owner_symbol_id that is not a synthetic container and matches no stored symbol. This breaks containment chains in bb_trace and the LSP document tree.`,
+      remediation: genuineCount > 0
+        ? "Re-index the affected files (`bb index <dir>`); if the count does not drop to zero on a fresh index, this is an indexer bug — report it with the sample ids. A --force rebuild is NOT guaranteed to fix this."
+        : undefined,
+      sample: sample.length > 0 ? sample : undefined,
+    },
+    {
+      name: "Synthetic Container References",
+      status: "ok",
+      value: syntheticCount,
+      threshold: { warn: 10000000, error: 10000000 },
+      description: `${syntheticCount} symbols carry owner ids of the form <file>:<name>:0 — module/synthetic containers the pre-M51 indexer wrote as an owner fallback. By design they never resolve (no stored row has line 0) and every consumer JOINs on owner_symbol_id, so they are invisible to reads. Informational, not a defect.`,
+      remediation: syntheticCount > 0
+        ? "Optional: re-run `bb index` — rows written by pre-M51 indexers are rewritten with a resolvable owner (or NULL) and this count drops to 0."
+        : undefined,
+      sample: sample.length > 0 ? sample : undefined,
+    },
+  ]
 }
 
 async function checkHashDrift(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {

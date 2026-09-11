@@ -55,8 +55,14 @@ function main() {
   for (const code of REQUIRED_CODES) {
     check(`ledger has ${code}`, ids.includes(code))
   }
-  check("ledger has no extra codes", issues.every((i) => REQUIRED_CODES.includes(String(i.id))),
-    `extras: ${ids.filter((x) => !REQUIRED_CODES.includes(x)).join(",")}`)
+  // M49.J3: wave-code entries (J1/K1/S1/… — the per-reviewer-wave ledger rows
+  // that the intake protocol appends as waves close) are LEGAL alongside the
+  // required G1/R1/R2/X1 scaffold codes. They must still satisfy the same
+  // status/evidence checks below. Anything that is neither a required code nor
+  // a known wave-code shape fails.
+  const WAVE_CODE = /^[JKSCEPGVTRHD][0-9]+$/
+  check("ledger has no extra codes", issues.every((i) => REQUIRED_CODES.includes(String(i.id)) || WAVE_CODE.test(String(i.id))),
+    `extras: ${ids.filter((x) => !REQUIRED_CODES.includes(x) && !WAVE_CODE.test(x)).join(",")}`)
   for (const i of issues) {
     const status = String(i.status)
     check(`${i.id} status legal`, ALLOWED_STATUS.includes(status), status)

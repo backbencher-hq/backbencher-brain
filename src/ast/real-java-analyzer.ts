@@ -1256,12 +1256,18 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
-      // JAD3: interface methods ARE public API — an interface declares no
-      // access modifiers (JLS 9.4 implicitly public), so ownerKind Interface
-      // must count as exported exactly like Class. The pre-fix filter
-      // exported only Class-owned methods, silently excluding the most
-      // intentional API surface in Java.
-      if (!s.metadata?.isPhantom && s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class || s.ownerKind === ASTEngine.SymbolKind.Interface || s.ownerKind === ASTEngine.SymbolKind.Enum)) {
+      // JAD3 (REVERSED, M49 JVM-closure exports-family ruling — see
+      // reviews/jvm-closure-audit.md and reviews/regex-policy.md sibling):
+      // exports are **importable units** — top-level types and top-level
+      // functions ONLY. Java imports types and static members, never bare
+      // member names: a member export cannot identify its provider (two
+      // overloads emitted ["Svc","greet","greet"] — probe-pinned), while
+      // membership is already fully carried by Contains edges
+      // (Svc->save). The member-export half of JAD3 is hereby removed;
+      // the interface-member intent lives in Contains, which emits for
+      // interfaces identically. The top-level `!s.ownerName` guard IS the
+      // export set (imports resolve package-qualified top-level types).
+      if (!s.metadata?.isPhantom && !s.ownerName) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
@@ -2276,7 +2282,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
       "Connection", "DriverManager", "ResultSet", "Statement",
       "PreparedStatement", "SQLException", "DataSource",
-      "javax", "jakarta", "org", "com",
+      "javax", "jakarta",
       // kotlin stdlib
       "kotlin", "Unit", "Nothing", "Any", "Int", "String",
       // Common JDK prefixes
@@ -2295,9 +2301,19 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // M37.21 C5: check the ROOT segment ONLY. The previous per-segment walk
     // dropped user calls like com.mycompany.Service.doWork (segment "com")
     // and foo.Logger.bar (segment "Logger") as stdlib — root-prefix is the
-    // JLS-meaningful resolution key for a qualified name. Under-filtering of
-    // static-imported bare names (assertEquals, println) is a known, accepted
-    // behavior (emitting them as user calls is conservative and honest).
+    // JLS-meaningful resolution key for a qualified name.
+    //
+    // M49.J3 (reviewer wave): "org" and "com" are NOT meaningful roots —
+    // com.sun (JDK) vs com.mycompany (user) differ completely, same for
+    // org.w3c vs org.acme — so they are REMOVED from the root set above.
+    // Fully-qualified calls like org.apache.commons.io.FileUtils.readFile(...)
+    // now emit user-call edges. Over-emission of third-party stdlib FQ calls
+    // is the honest error direction (the differential compares targets, so an
+    // extra edge is truth-covered or honestly heuristic; a DROPPED user call
+    // is silent truth loss). Bare org.slf4j.LoggerFactory calls still filter
+    // via the exact-name roots below. Under-filtering of static-imported bare
+    // names (assertEquals, println) remains a known, accepted behavior
+    // (emitting them as user calls is conservative).
     const segments = call.split(".")
     if (segments.length > 0 && STDLIB_ROOTS.has(segments[0])) return true
     if (STDLIB_ROOTS.has(call)) return true

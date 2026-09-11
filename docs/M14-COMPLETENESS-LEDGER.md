@@ -777,3 +777,25 @@ C17/C23/C25 medium set):
 landed (C5 verified missing a day later). Every fix must end with its probe re-run +
 fixture pin in the same session; the reviewer's 32-claim list is the seed of the
 framework/payload fidelity lens that F5 previously could not see (vacuous-pass class).
+
+## 2026-09-11 — JVM FAMILY CLOSURE (m49 → m37 → m14 cascade complete)
+
+The JVM family — **java, kotlin, scala, groovy** — is formally closed at all three
+milestone layers. Closure verified at HEAD 60a2dc32 with all gates re-run green
+immediately before the flip (not assumed from earlier sessions).
+
+**M49 (review intake — all four waves CLOSED with evidence):**
+- java #713 — 35 claims: 32 fixed, 3 re-pinned to recorded rulings (J3 addendum: org/com removed from STDLIB_ROOTS after reviewer probe).
+- kotlin #714 — 15/15 (10 fixed, 5 re-pinned); override name-keyed pairing corpus-proven; R2 register shrunk 22→20.
+- scala #715 — 24 claims + 4 wave-added shared-blind-spot classes (ScalaD-J–M); oracle generic-substitution + companion-union truth; scala analyzer now ZERO regex (corpus-caught `~>` scanner regression fixed via faithful-emulation rewrite).
+- groovy #720 — 6 + G7; co-agent's landed fixes probe-verified at 5e5c5289 (G3 ctor naming, G4 override-perf hoist O(T·C)→O(T)); GD26/GD27 hardened in S1 wave.
+- **Exports fork RESOLVED family-wide** (reviews/jvm-closure-audit.md): exports = importable units only; JAD3 reversed in writing; obsolete mutant removed + inverse `java/member-export-restore` caught; family-wide F3 export invariant (unique + resolvable per file) live on all 358 fixtures / 21 languages, honestly generalized for haskell module members and JS/TS default/barrel bindings.
+- **All four JVM analyzers carry zero regex** (R2 shrink-only register enforces it permanently).
+
+**M37 (dual-lens #610 JVM master review, 0e2b5d7d):** anonymous class bodies (JD18), multi-hop override resolution (JD19), enum heritage (KD19), companion routing (ScalaD-E…I), four dedicated JVM calls oracles (deriveJavaEdges/deriveKotlinEdges/deriveScalaEdges/deriveGroovyEdges), crash-resume F5 journal. All 8 JVM lanes 100/0/0 (java grails-core+clojure, kotlin Exposed+kotlinx-coroutines, scala scala3+cats-effect, groovy grails-core+geb) at canonical and 200-file depth.
+
+**M14 (foundation):** all four JVM rows ✅ onboarded on reviews/onboarding.md (F1 clean, F5 two-corpus 100/0/0, F3/F4/F6/F9 green), carrying the M49 hardening cascade as standing gates: verify-first protocol, oracle lockstep, fixture+mutant same-session, export invariant, regex shrink-only.
+
+**Certification at closure (HEAD 60a2dc32):** F3 358/358 · F4 383/383 · R1 28/28 · R2 6/6 · F1 green · JVM heuristic-delta baseline re-pinned with classification (all 70 unmatched java heuristic edges = declared-honest 0.5 first-parent-guess overrides on external bases, pre-JD18/JD19 baseline drift — zero otherwise) · full baseline-vs-fresh-F5 consistency check: zero drift across 21 main + 21 second-corpus lanes · C floors reproduce C-D4 exactly (sqlite 9/105, jq 4/28).
+
+**Not blocked by and not blocking:** M37.X1 (#614) stays open for the non-JVM dual-lens remainder; M49.T1 (#725 typescript) and M49.J2 (#726 javascript) are the next review waves — both non-JVM.

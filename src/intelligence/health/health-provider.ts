@@ -128,11 +128,42 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     else { stale++; staleFiles.push(row.relative_path) }
   }
 
-  const languageRows = raw.prepare(
-    "SELECT f.language AS language, COUNT(DISTINCT f.id) files, COUNT(DISTINCT s.id) symbols " +
-      "FROM brain_file f LEFT JOIN brain_symbol s ON s.file_id = f.id AND s.project_id = ? " +
-      "WHERE f.project_id = ? GROUP BY f.language ORDER BY files DESC",
-  ).all(projectId, projectId) as Array<{ language: string; files: number; symbols: number }>
+  // M52.P2 (#722): the joined GROUP BY with two COUNT(DISTINCT) scanned the
+  // whole file×symbol fan-out (measured 3.7s at this repo's size). The
+  // symbol-side DISTINCT was redundant; the file-side one is load-bearing —
+  // so instead of a rewrite, split into two bounded grouped queries and merge
+  // in code. LEFT-JOIN semantics preserved: languages with zero symbols still
+  // appear (from the file-side query) with symbols=0. V1 parity proves
+  // byte-equality against the legacy query on the real index.
+  const fileLangRows = raw.prepare(
+    "SELECT language, COUNT(DISTINCT id) AS files FROM brain_file WHERE project_id = ? GROUP BY language",
+  ).all(projectId) as Array<{ language: string | null; files: number }>
+  const symLangRows = raw.prepare(
+    "SELECT f.language AS language, COUNT(*) AS symbols FROM brain_symbol s " +
+      "JOIN brain_file f ON f.id = s.file_id AND f.project_id = ? " +
+      "WHERE s.project_id = ? GROUP BY f.language",
+  ).all(projectId, projectId) as Array<{ language: string | null; symbols: number }>
+  const langMap = new Map<string, { language: string | null; files: number; symbols: number }>()
+  for (const fr of fileLangRows) langMap.set(String(fr.language), { language: fr.language, files: Number(fr.files), symbols: 0 })
+  for (const sr of symLangRows) {
+    const bucket = langMap.get(String(sr.language))
+    if (bucket) bucket.symbols = Number(sr.symbols)
+  }
+  // Runtime note: `language TEXT` is nullable in the schema, so a null can
+  // reach this row in both the legacy query and this merge — the boundary cast
+  // mirrors the legacy code exactly (no normalization), keeping V1 parity
+  // byte-equal even in the null case.
+  // Sort is a total order: files DESC (the legacy query's only guaranteed
+  // ordering), then language ASC with NULL first — M52 DEFINES the tie order
+  // because legacy left it to SQLite's unspecified sorter behavior (observed
+  // to flip between lexicographic directions), so output is now deterministic.
+  const languageRows = [...langMap.values()].sort((a, b) => {
+    if (b.files !== a.files) return b.files - a.files
+    if (a.language === b.language) return 0
+    if (a.language == null) return -1
+    if (b.language == null) return 1
+    return String(a.language) < String(b.language) ? -1 : 1
+  }) as Array<{ language: string; files: number; symbols: number }>
   const modelRows = raw.prepare("SELECT embedding_model AS model, COUNT(*) c, GROUP_CONCAT(DISTINCT vector_dimension) dims FROM brain_semantic_embedding WHERE project_id=? GROUP BY embedding_model ORDER BY c DESC").all(projectId) as any[]
   const embeddingTotal = modelRows.reduce((sum, row) => sum + Number(row.c ?? 0), 0)
   const embeddedEntities = (raw.prepare("SELECT COUNT(DISTINCT entity_id) c FROM brain_semantic_embedding WHERE project_id=?").get(projectId) as any)?.c ?? 0

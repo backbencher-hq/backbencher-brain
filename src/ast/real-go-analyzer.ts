@@ -172,11 +172,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const patterns = this.detectGoPatterns(rootNode, symbols)
 
     // PHASE 5: Exports — all public (exported) non-variable symbols
+    // M49 JVM-closure exports invariant (F3 gate): export names must be
+    // UNIQUE and top-level-resolvable. Go methods (value + pointer receivers
+    // share the method name; iface impls redeclare it) duplicated `Run`/
+    // `Notify`/`Close` — methods are members, membership rides Contains;
+    // only package-level units export. First occurrence wins the export
+    // slot (identical dedupe to the cpp/scalar fixes).
+    const seenExportNames = new Set<string>()
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
       const isPrivate = s.visibility === "private"
       const isVar = s.kind === ASTEngine.SymbolKind.Variable
-      if (!isPrivate && !isVar) {
+      const isMethod = s.kind === ASTEngine.SymbolKind.Method
+      if (!isPrivate && !isVar && !isMethod && !seenExportNames.has(s.name)) {
+        seenExportNames.add(s.name)
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
       }
     }
