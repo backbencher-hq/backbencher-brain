@@ -9,10 +9,10 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negativeCases": 5,
-  "currentCommit": "48e9ef8fbe6cb64d4a66365df7e3db9243b8e1ab",
+  "currentCommit": "a472f2e4873c0d49a053e3fdcec0076363a7c73a",
   "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
   "evidenceFile": "E2.json",
-  "generatedAt": "2026-09-11T14:11:40.448Z",
+  "generatedAt": "2026-09-11T15:40:04.965Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0

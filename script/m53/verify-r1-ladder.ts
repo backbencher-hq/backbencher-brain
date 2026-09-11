@@ -40,21 +40,6 @@ const GATES: Array<[string, string]> = [
   ["m26-impact-mode", "script/m26/verify-impact-mode.ts"],
   ["m26-webview-harness", "script/m26/verify-webview-harness.ts"],
   ["m26-closure", "script/m26/verify-closure.ts"],
-  // m42 — the interactive hover
-  ["m42-enrichment", "script/m42/verify-enrichment-surface.ts"],
-  ["m42-highlight", "script/m42/verify-highlight.ts"],
-  ["m42-hover-actions", "script/m42/verify-hover-actions.ts"],
-  ["m42-hub", "script/m42/verify-hub.ts"],
-  ["m42-hub-nav", "script/m42/verify-hub-navigation.ts"],
-  ["m42-rich-hover", "script/m42/verify-rich-hover.ts"],
-  ["m42-closure", "script/m42/verify-closure.ts"],
-  // m44 — the understandable hub
-  ["m44-hub-tree", "script/m44/verify-hub-tree.ts"],
-  ["m44-impact-resolution", "script/m44/verify-impact-resolution.ts"],
-  ["m44-legend", "script/m44/verify-legend.ts"],
-  ["m44-usages-fallback", "script/m44/verify-usages-fallback.ts"],
-  ["m44-usages-groups", "script/m44/verify-usages-groups.ts"],
-  ["m44-closure", "script/m44/verify-closure.ts"],
   // m27 — other editors
   ["m27-nvim", "script/m27/verify-nvim.ts"],
   ["m27-zed", "script/m27/verify-zed.ts"],
@@ -66,12 +51,29 @@ const GATES: Array<[string, string]> = [
   ["m28-annotation-store", "script/m28/verify-annotation-store.ts"],
   ["m28-annotation-ui", "script/m28/verify-annotation-ui.ts"],
   ["m28-closure", "script/m28/verify-closure.ts"],
-  // m29 — the wave program
+  // m29 — the wave program (must precede the m42/m44 closures: those spawn
+  // the m29 governance bar, so its evidence must be re-stamped first —
+  // learned empirically when the ladder tripped its own freshness rule)
   ["m29-wave-protocol", "script/m29/verify-wave-protocol.ts"],
   ["m29-precision-ledger", "script/m29/verify-precision-ledger.ts"],
   ["m29-precision-improvements", "script/m29/verify-precision-improvements.ts"],
   ["m29-m29-docs", "script/m29/verify-m29-docs.ts"],
   ["m29-closure", "script/m29/verify-closure.ts"],
+  // m42 — the interactive hover (after m29: spawns the m29 bar)
+  ["m42-enrichment", "script/m42/verify-enrichment-surface.ts"],
+  ["m42-highlight", "script/m42/verify-highlight.ts"],
+  ["m42-hover-actions", "script/m42/verify-hover-actions.ts"],
+  ["m42-hub", "script/m42/verify-hub.ts"],
+  ["m42-hub-nav", "script/m42/verify-hub-navigation.ts"],
+  ["m42-rich-hover", "script/m42/verify-rich-hover.ts"],
+  ["m42-closure", "script/m42/verify-closure.ts"],
+  // m44 — the understandable hub (last: spawns the m42 bar)
+  ["m44-hub-tree", "script/m44/verify-hub-tree.ts"],
+  ["m44-impact-resolution", "script/m44/verify-impact-resolution.ts"],
+  ["m44-legend", "script/m44/verify-legend.ts"],
+  ["m44-usages-fallback", "script/m44/verify-usages-fallback.ts"],
+  ["m44-usages-groups", "script/m44/verify-usages-groups.ts"],
+  ["m44-closure", "script/m44/verify-closure.ts"],
 ]
 
 function gitHead(): string {
