@@ -45,8 +45,10 @@
   {
    "id": "G2",
    "title": "Groovy review-intake wave (issue #720): process reviews/groovy 6 confirmed + 1 new claim",
-   "status": "pending",
-   "notes": "Wave executed, all gates green, pending commit/closeout. Fixes: G1 as-cast mis-parse branch, G2 implicit override tasks (explicit keeps tiers), G3/G7 exports filter + anon exclusion, G4 ctor declared names, G5 static/wildcard token scan (+dead helper deleted), G6 suffix-index hoist. Gates: 43/43 groovy fixtures (6 new), 358/358 mutants full-gate (6 new, each caught by its fixture), grails-core 506/506 + geb 510/510 differential 0 unexplained, tsc clean, M49 governance + R1 green. Spec GD20-GD25; forbidExports runner gate added. Census regenerated (scala rows churn under parallel S1 wave \u2014 R2 red-with-cause there, not G2). Residual referral: java accidentally excludes its own anon symbols via package visibility (groovy fixed explicitly)."
+   "status": "verified",
+   "notes": "Co-agent fixes verified at 5e5c5289 (probe-checked): G3 ctor naming (class-name ctors, collision dead), G4 override-perf hoist (O(T*C) -> O(T)). GD26 heritage folded type args + GD27 dead disjunct hardened in S1 wave. Exports converged to importable-units-only (JAD3 reversed, family F3 invariant live). Groovy regex 0. Certification: F3 45/45 groovy (46 scala), F4 363/363, F1 PASS, R1 28/28, R2 6/6, both groovy F5 lanes 100/0/0 (geb, grails-core @ final-tree canonical sweep). Fixtures re-run + R1/R2 green at 60a2dc32 before close.",
+   "evidenceFile": "reviews/groovy/master-review.md",
+   "verifiedAtCommit": "5e5c5289"
   },
   {
    "id": "S1",
