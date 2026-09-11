@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "verified",
-  "passed": 40,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 35,
+  "failed": 5,
   "gatesTotal": 40,
   "gates": [
     {
@@ -31,9 +31,9 @@
     {
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (37/37 passed, 3 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (36/37 passed, 3 negative)",
+      "ok": false
     },
     {
       "name": "m26-webview-core",
@@ -94,9 +94,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (50/50 passed, 3 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (49/50 passed, 3 negative)",
+      "ok": false
     },
     {
       "name": "m27-nvim",
@@ -192,9 +192,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (27/32 passed, 3 negatives)",
+      "ok": false
     },
     {
       "name": "m42-enrichment",
@@ -241,9 +241,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (24/30 passed, 7 negatives)",
+      "ok": false
     },
     {
       "name": "m44-hub-tree",
@@ -283,12 +283,12 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (42/48 passed, 7 negatives)",
+      "ok": false
     }
   ],
-  "currentCommit": "06a33e03e9def75e883ce534d7b0760e3349d7f4",
+  "currentCommit": "ed9048a5a8a9255aa8bdcd59c23f6b5a8ddcaffb",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-11T17:36:06.965Z"
+  "generatedAt": "2026-09-11T18:28:14.722Z"
 }
