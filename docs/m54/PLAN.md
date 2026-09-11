@@ -43,10 +43,12 @@
 5. **storeResults' per-call `PRAGMA foreign_keys = OFF` leaked.** The happy
    path restored ON, but any exception between OFF and the restore left the
    shared cached connection FK-OFF for its process lifetime. Now wrapped in
-   try/finally that restores the open-time policy on EVERY exit.
-   The historical "compiled binary's SQLite can spuriously reject valid data"
-   comment remains unproven; enabling FK inside storeResults is a deliberate
-   follow-up decision (soak first), not a silent behavior change in M54.
+   try/finally that restores the open-time policy on EVERY exit. The
+   historical "compiled binary's SQLite can spuriously reject valid data"
+   claim was never reproduced — and the post-closure soak
+   (`script/m54/probe-fk-store-soak.ts`, 7/7) proves store-phase enforcement
+   loses no data on a multi-language corpus, so the shipped state runs FK ON
+   through the store as well.
 6. **stdio production shape (M52 leftover, now permanent).** The M52-era
    concern was dev-mode (src under tsx drains the event loop and exits before
    the handshake). Production (`node bin/bb mcp`, compiled dist) serves
@@ -80,13 +82,32 @@
 - Downstream: m21 D2 28/28, m51 A1 10/10, m51 A2 11/11, m13 H3 17/17,
   m21 R2 13/13, m52 V1 10/10 (warm bb_health still 37ms).
 
-## Known limitations / deliberate follow-ups (none hidden)
+## Post-closure hardening (evidence, not memory)
 
-1. `storeResults` still runs FK-OFF during bulk store (restored in finally).
-   Enabling it inside the store is the next hardening step and should soak
-   against a large real repo first — the "spurious rejection" claim that put
-   it there has never been reproduced, but changing it blind risks a
-   mid-index rollback on some analyzer edge case.
+- **Independent latency re-proof** (`script/m54/probe-health-latency.ts`,
+  sharing no harness with m52's verifier): 3 fresh `node bin/bb mcp`
+  launches, strict request→response round-trips, default `bb_health`, real
+  index — **median 413ms per call** (388–415ms) vs the ~37,000ms user-reported
+  baseline. Receipt: `validation/m54/results/LATENCY.json`.
+- **FK-in-store soak** (`script/m54/probe-fk-store-soak.ts`): same corpus
+  directory indexed twice — `BB_FK_ENFORCE=0` (legacy) vs the M54 posture —
+  byte-equal file/symbol/relationship/import inventories (26 symbols, 6
+  files, 44 relationships), zero FK rejections under store-phase enforcement.
+  Receipt: `validation/m54/results/SOAK.json`.
+- **32-row delta (4,154 counted pre-heal → 4,122 measured at heal)**: the
+  earlier explanation ("removed by re-stores between measurements") is
+  plausible but post-hoc and unverifiable now; treat the exact mechanism as
+  unproven. What IS proven: at heal time the true-dangler count was 0 and
+  every counted row was either a by-design NULL-source edge or a resolved
+  non-NULL source.
+
+1. ~~storeResults still runs FK-OFF during bulk store~~ **Resolved
+   post-closure:** the shipped code (from `0d768b2a` on) already ran FK ON
+   through the store (the store-phase OFF pragma was removed when the
+   finally-restore landed; a stale comment claimed otherwise — caught by the
+   soak probe's anchor check and corrected). The soak
+   (`validation/m54/results/SOAK.json`, 7/7) proves byte-equal inventories
+   legacy-vs-M54 on a TS/Python/Go/Rust corpus with zero FK rejections.
 2. The heal is per-process-per-handle; a DB dirtied by an FK-OFF window (the
    escape hatch) is healed at the next open by a NEW handle, not retroactively
    in other live processes.
