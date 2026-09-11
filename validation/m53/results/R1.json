@@ -3,8 +3,8 @@
   "code": "R1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 38,
-  "failed": 2,
+  "passed": 36,
+  "failed": 4,
   "gatesTotal": 40,
   "gates": [
     {
@@ -31,9 +31,9 @@
     {
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (37/37 passed, 3 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (36/37 passed, 3 negative)",
+      "ok": false
     },
     {
       "name": "m26-webview-core",
@@ -97,97 +97,6 @@
       "rc": 0,
       "verdict": "VERIFIED (50/50 passed, 3 negative)",
       "ok": true
-    },
-    {
-      "name": "m42-enrichment",
-      "script": "script/m42/verify-enrichment-surface.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (29/29 passed, 5/5 mutants)",
-      "ok": true
-    },
-    {
-      "name": "m42-highlight",
-      "script": "script/m42/verify-highlight.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (15/15 passed, 4/4 mutants)",
-      "ok": true
-    },
-    {
-      "name": "m42-hover-actions",
-      "script": "script/m42/verify-hover-actions.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (31/31 passed, 5/5 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m42-hub",
-      "script": "script/m42/verify-hub.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (40/40 passed, 5/5 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m42-hub-nav",
-      "script": "script/m42/verify-hub-navigation.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (38/38 passed, 5/5 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m42-rich-hover",
-      "script": "script/m42/verify-rich-hover.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (29/29 passed, 6/6 mutants)",
-      "ok": true
-    },
-    {
-      "name": "m42-closure",
-      "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (28/30 passed, 7 negatives)",
-      "ok": false
-    },
-    {
-      "name": "m44-hub-tree",
-      "script": "script/m44/verify-hub-tree.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (27/27 passed, 5/5 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m44-impact-resolution",
-      "script": "script/m44/verify-impact-resolution.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (33/33 passed, 5/5 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m44-legend",
-      "script": "script/m44/verify-legend.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (25/25 passed, 4/4 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m44-usages-fallback",
-      "script": "script/m44/verify-usages-fallback.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (25/25 passed, 4/4 mutants caught, 2 negative)",
-      "ok": true
-    },
-    {
-      "name": "m44-usages-groups",
-      "script": "script/m44/verify-usages-groups.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (20/20 passed, 6/6 mutants caught)",
-      "ok": true
-    },
-    {
-      "name": "m44-closure",
-      "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (46/48 passed, 7 negatives)",
-      "ok": false
     },
     {
       "name": "m27-nvim",
@@ -283,12 +192,103 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
+      "rc": 1,
+      "verdict": "KNOWN-GAP (28/32 passed, 3 negatives)",
+      "ok": false
+    },
+    {
+      "name": "m42-enrichment",
+      "script": "script/m42/verify-enrichment-surface.ts",
       "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "verdict": "VERIFIED (29/29 passed, 5/5 mutants)",
       "ok": true
+    },
+    {
+      "name": "m42-highlight",
+      "script": "script/m42/verify-highlight.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (15/15 passed, 4/4 mutants)",
+      "ok": true
+    },
+    {
+      "name": "m42-hover-actions",
+      "script": "script/m42/verify-hover-actions.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (31/31 passed, 5/5 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m42-hub",
+      "script": "script/m42/verify-hub.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (40/40 passed, 5/5 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m42-hub-nav",
+      "script": "script/m42/verify-hub-navigation.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (38/38 passed, 5/5 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m42-rich-hover",
+      "script": "script/m42/verify-rich-hover.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (29/29 passed, 6/6 mutants)",
+      "ok": true
+    },
+    {
+      "name": "m42-closure",
+      "script": "script/m42/verify-closure.ts",
+      "rc": 1,
+      "verdict": "KNOWN-GAP (24/30 passed, 7 negatives)",
+      "ok": false
+    },
+    {
+      "name": "m44-hub-tree",
+      "script": "script/m44/verify-hub-tree.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (27/27 passed, 5/5 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m44-impact-resolution",
+      "script": "script/m44/verify-impact-resolution.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (33/33 passed, 5/5 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m44-legend",
+      "script": "script/m44/verify-legend.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (25/25 passed, 4/4 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m44-usages-fallback",
+      "script": "script/m44/verify-usages-fallback.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (25/25 passed, 4/4 mutants caught, 2 negative)",
+      "ok": true
+    },
+    {
+      "name": "m44-usages-groups",
+      "script": "script/m44/verify-usages-groups.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (20/20 passed, 6/6 mutants caught)",
+      "ok": true
+    },
+    {
+      "name": "m44-closure",
+      "script": "script/m44/verify-closure.ts",
+      "rc": 1,
+      "verdict": "KNOWN-GAP (42/48 passed, 7 negatives)",
+      "ok": false
     }
   ],
-  "currentCommit": "a472f2e4873c0d49a053e3fdcec0076363a7c73a",
+  "currentCommit": "42e137160d56ef56ceeea1e2f2571f8f58e6be14",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-11T15:52:38.039Z"
+  "generatedAt": "2026-09-11T16:30:10.203Z"
 }
