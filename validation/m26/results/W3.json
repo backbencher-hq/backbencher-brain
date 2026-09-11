@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "2e9fa293cf68e8cd1c955ad1cde11c399e200a46",
+  "currentCommit": "e194066300dbb0df8b769ad2e785c6e80a7f347b",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-11T04:01:03.898Z",
+  "generatedAt": "2026-09-11T13:55:23.332Z",
   "storedPairs": [
     {
       "source": "kotlin",
