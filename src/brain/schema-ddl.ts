@@ -295,6 +295,10 @@ CREATE INDEX IF NOT EXISTS brain_embed_entity_idx ON brain_semantic_embedding(en
 CREATE INDEX IF NOT EXISTS brain_embed_type_idx ON brain_semantic_embedding(entity_type);
 CREATE INDEX IF NOT EXISTS brain_embed_model_idx ON brain_semantic_embedding(embedding_model);
 CREATE INDEX IF NOT EXISTS brain_embed_hash_idx ON brain_semantic_embedding(content_hash);
+-- M52.P1 (#721): covering index for the bb_health aggregates (models/dims/
+-- entities). Without it SQLite reads full ~8KB vector BLOB rows to reach four
+-- metadata columns — measured 12.7s per bb_health call at 158k x 2048-dim.
+CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension);
 
       `
 
@@ -337,6 +341,75 @@ export function ensureAnnotationTable(raw: any): void {
 }
 
 /**
+ * M52.P1 (#721): covering index for the bb_health embedding aggregates.
+ * Idempotent, runs on EVERY open (both ensureSchemaIfNew branches and
+ * ensureSchema) because ensureSchemaIfNew skips full DDL for pre-existing
+ * databases — the exact population (large, long-lived indexes) that needs
+ * this index most. try/catch: a read-only or transient open must never fail
+ * because of an index creation.
+ */
+export function ensureHealthIndexes(raw: any): void {
+  try {
+    raw.exec(`CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension)`)
+  } catch {}
+}
+
+/**
+ * M54.P1 (#727): one-time healing for rows written while FK enforcement was
+ * OFF under Bun (the runtime asymmetry proven in script/m54/probe-fk.ts A3).
+ * Real-repo measurement at decision time: 4,154 relationship rows LEFT-JOIN
+ * to a missing symbol, but 4,122 of those have source_symbol_id IS NULL with
+ * source_external carrying the name — the BY-DESIGN external-source edge
+ * representation (M51.A3, FK-legal, never touched here). Only 32 were true
+ * danglers (non-NULL missing source), already re-stored away. This cleanup
+ * therefore deletes only rows whose FK value is non-NULL and unresolved:
+ * relationship source/target, symbol file_id, import file_id.
+ * Order matters: relationship orphans first (they reference brain_symbol),
+ * then import and symbol orphans (they reference brain_file).
+ * Idempotent — a conforming DB deletes 0 rows. Per-handle memoization
+ * (WeakSet on the native driver) means the scan runs once per connection per
+ * process even when callers invoke it on every open; a NEW handle (fresh open)
+ * re-scans, which is the correct moment to heal a DB dirtied by an FK-OFF
+ * window. Returns per-table counts so gates can assert outcomes.
+ */
+const fkHealedHandles = new WeakSet<object>()
+export function cleanupOrphanedFkRows(raw: any): { relationships: number; imports: number; symbols: number } {
+  const handle = raw?.native ?? raw
+  if (handle && typeof handle === "object" && fkHealedHandles.has(handle)) {
+    return { relationships: 0, imports: 0, symbols: 0 }
+  }
+  let relationships = 0
+  let imports = 0
+  let symbols = 0
+  try {
+    const r = raw.prepare(`DELETE FROM brain_relationship WHERE source_symbol_id IN (
+      SELECT r.source_symbol_id FROM brain_relationship r
+      LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id
+      WHERE s.id IS NULL
+    )`).run()
+    relationships = r?.changes ?? 0
+  } catch {}
+  try {
+    const i = raw.prepare(`DELETE FROM brain_import WHERE file_id IN (
+      SELECT i.file_id FROM brain_import i
+      LEFT JOIN brain_file f ON f.id = i.file_id
+      WHERE f.id IS NULL
+    )`).run()
+    imports = i?.changes ?? 0
+  } catch {}
+  try {
+    const s = raw.prepare(`DELETE FROM brain_symbol WHERE file_id IN (
+      SELECT sy.file_id FROM brain_symbol sy
+      LEFT JOIN brain_file f ON f.id = sy.file_id
+      WHERE f.id IS NULL
+    )`).run()
+    symbols = s?.changes ?? 0
+  } catch {}
+  if (handle && typeof handle === "object") fkHealedHandles.add(handle)
+  return { relationships, imports, symbols }
+}
+
+/**
  * M22.W2: idempotent column migrations that must run on EVERY open, not just
  * fresh schema creation. Pre-existing brain_index_status tables (created before
  * later columns existed) lack them; the indexer persists complete/partial +
@@ -375,6 +448,7 @@ export function migrateSchemaColumns(raw: any): void {
 
 export function ensureSchema(raw: any): void {
   raw.exec(DDL)
+  ensureHealthIndexes(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}

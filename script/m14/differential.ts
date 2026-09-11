@@ -339,7 +339,7 @@ const JAVA_STDLIB_ROOTS = new Set([
   "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
   "Connection", "DriverManager", "ResultSet", "Statement",
   "PreparedStatement", "SQLException", "DataSource",
-  "javax", "jakarta", "org", "com",
+  "javax", "jakarta",
   "kotlin", "Unit", "Nothing", "Any", "Int", "String",
   "java", "jdk", "sun",
   "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
@@ -353,6 +353,8 @@ const JAVA_STDLIB_ROOTS = new Set([
 function isJavaBuiltinCall(call: string): boolean {
   if (JAVA_EXACT_BUILTINS.has(call)) return true
   // M37.21 C5 mirror: ROOT segment only (see RealJavaAnalyzer.isJavaBuiltin).
+  // M49.J3 mirror: org/com removed lockstep (reviewer wave — bare roots
+  // dropped user FQ calls like org.apache.commons.io.FileUtils.readFile).
   const segments = call.split(".")
   if (segments.length > 0 && JAVA_STDLIB_ROOTS.has(segments[0])) return true
   if (JAVA_STDLIB_ROOTS.has(call)) return true
@@ -535,15 +537,36 @@ export function deriveScalaEdges(root: any): { label: string; from: string; targ
           // Curried wrapper: the INNER call is visited separately; deriving
           // from the wrapper would double-count (SCD7).
           if (fnNode.type !== "call_expression") {
-            let calledName = fnNode.text
-            const isQualified = fnNode.type === "field_expression"
-            if (isQualified) {
+            // M49.S1 #715 lockstep mirror: generic_function callees
+            // (`foo.bar[Baz](1)`) extract the LAST identifier leaf BEFORE the
+            // bracket strip — mirrors RealScalaAnalyzer.handleCall's S1.10
+            // fix. Both sides emitted the dotted "foo.bar" before (shared
+            // blind spot, probe s1-probe3).
+            let calledName = ""
+            let isQualified = false
+            if (fnNode.type === "generic_function") {
               const kids: string[] = []
-              for (let i = 0; i < fnNode.namedChildCount; i++) {
-                const c = fnNode.namedChild(i)
-                if (c && c.type === "identifier") kids.push(c.text)
+              const findLeaves = (nn: any): void => {
+                if (nn.type === "identifier") { kids.push(nn.text); return }
+                if (nn.type === "type_arguments") return
+                for (let i = 0; i < nn.namedChildCount; i++) { const c = nn.namedChild(i); if (c) findLeaves(c) }
               }
-              calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
+              findLeaves(fnNode)
+              if (kids.length > 0) {
+                calledName = kids[kids.length - 1]
+                isQualified = kids.length > 1
+              }
+            } else {
+              calledName = fnNode.text
+              isQualified = fnNode.type === "field_expression"
+              if (isQualified) {
+                const kids: string[] = []
+                for (let i = 0; i < fnNode.namedChildCount; i++) {
+                  const c = fnNode.namedChild(i)
+                  if (c && c.type === "identifier") kids.push(c.text)
+                }
+                calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
+              }
             }
             // Strip bracketed type args iteratively (nested List[(A[B], C)]).
             let prevCalled: string | undefined
@@ -4339,12 +4362,23 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       for (let k = 0; k < x.childCount; k++) collect(x.child(k), label, clsName)
       return
     }
-    if (TYPE.test(x.type)) edges.push({ label, from: clsName, target: x.text })
-    else for (let k = 0; k < x.namedChildCount; k++) collect(x.namedChild(k), label, clsName)
+    if (TYPE.test(x.type)) {
+      // M49.S1: heritage targets must be CLEAN head names. Decl keys are
+      // bracket-stripped at registration (M37.9), so a target like groovy's
+      // `Cache<T>` (the pinned grammar folds type args into the supertype
+      // token text) could never match its interface's decl — the override
+      // chain died silently (geb CachingDriverFactory:
+      // SimpleCache.get -> Cache.get surfaced unexplained). Strip type
+      // arguments; dotted paths keep the full path (M14 #419 kotlin rule).
+      let target = x.text
+      const ltIdx = target.indexOf("<")
+      if (ltIdx !== -1) target = target.slice(0, ltIdx)
+      edges.push({ label, from: clsName, target })
+    } else for (let k = 0; k < x.namedChildCount; k++) collect(x.namedChild(k), label, clsName)
   }
   const walk = (n: any) => {
     const t = n.type
-    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t)) {
+    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t) || (lang === "scala" && t === "enum_definition")) {
       const nameNode =
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
@@ -4428,10 +4462,17 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       }
       // scala extends_clause: first supertype extends, rest implements;
       // on trait_definition all are extends
-      if (t === "class_definition" || t === "trait_definition" || t === "object_definition") {
+      // M49.S1 #715 (J3-class shared blind spot closed): enum_definition
+      // heritage. `enum Color(val hex: Int) extends Serializable` emitted
+      // ZERO extends on BOTH sides before (the oracle never matched
+      // enum_definition, so no differential could ever flag it). The oracle
+      // mirror joins handleEnum's S1-NEW-1 fix: all supertypes are extends
+      // (an enum cannot extend a class in Scala 3).
+      if (t === "class_definition" || t === "trait_definition" || t === "object_definition" || t === "enum_definition") {
         const extClause = n.namedChildren.find((c: any) => c.type === "extends_clause")
         if (extClause) {
-          const isTraitDecl = t === "trait_definition"
+        const isTraitDecl = t === "trait_definition"
+        const isEnumDecl = t === "enum_definition"
           let first = true
           for (let i = 0; i < extClause.namedChildCount; i++) {
             const st = extClause.namedChild(i)
@@ -4449,7 +4490,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               if (lt !== -1) target = target.slice(0, lt)
             }
             if (!target) continue
-            if (isTraitDecl || first) edges.push({ label: "extends", from: clsName, target })
+            if (isTraitDecl || isEnumDecl || first) edges.push({ label: "extends", from: clsName, target })
             else edges.push({ label: "implements", from: clsName, target })
             first = false
           }
@@ -4575,6 +4616,26 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const kids = callee.namedChildren
         const last = kids[kids.length - 1]
         leaf = last && /identifier|_type$/.test(last.type) ? last.text : ""
+      } else if (callee?.type === "generic_function") {
+        // M49.S1 #715 lockstep mirror of deriveScalaEdges's S1.10 handler:
+        // scala3 parses dotted/typed callees as generic_function — the raw
+        // text fell through to the generic fallback, fabricating junk truth
+        // like `instantiates CC.ff()\n + CC.ff("abc")\n + CC.ff` (infix
+        // chains) and `instantiates Comparator.reverseOrder` (dotted factory
+        // calls). Extract the LAST identifier leaf BEFORE the bracket strip,
+        // exactly as deriveScalaEdges does. Shared-blind-spot class: the
+        // dedicated oracle was fixed while the generic oracle (the live scala
+        // sweep path) kept the stale fallback — no differential could flag it
+        // because truth vs truth was never compared.
+        qualified = true
+        const kids: string[] = []
+        const findLeaves = (nn: any): void => {
+          if (nn.type === "identifier") { kids.push(nn.text); return }
+          if (nn.type === "type_arguments") return
+          for (let i = 0; i < nn.namedChildCount; i++) { const c = nn.namedChild(i); if (c) findLeaves(c) }
+        }
+        findLeaves(callee)
+        if (kids.length > 0) leaf = kids[kids.length - 1]
       } else if (callee) {
         leaf = callee.text.split("<")[0]
       }
@@ -4585,7 +4646,16 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       let prevLeaf
       do { prevLeaf = leaf; leaf = leaf.replace(/\[[^\[\]]*\]/g, "") } while (leaf !== prevLeaf)
       leaf = leaf.trim()
-      if (leaf && /^[A-Z]/.test(leaf) && !qualified) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
+      // M49.S1 #715 refinement (scala3 @200: 9 MISSING were exactly this
+      // class): the construction rule is RECEIVER-LESS per the measured
+      // contract — a qualified call whose LEAF is lowercase-style
+      // (`Comparator.reverseOrder()`, `CC.ff()`) is a FACTORY-METHOD call,
+      // not a construction; fabricating `instantiates Comparator.reverseOrder`
+      // produced unmatchable dotted targets the analyzer (correctly emitting
+      // calls -> reverseOrder) could never cover. Construction requires the
+      // leaf itself to be the type (capitalized): `Foo.make(...)`.
+      const leafIsTypeStyle = leaf.length > 0 && leaf[0] >= "A" && leaf[0] <= "Z"
+      if (leaf && leafIsTypeStyle && !qualified) edges.push({ label: "instantiates", from: "(expr)", target: leaf })
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
@@ -4606,18 +4676,43 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // cross-file override resolution is the analyzer's job, not the oracle's.
   const decls: Record<string, { parents: string[]; methods: Set<string>; sigs: Map<string, Set<string>> }> = {}
   const declParents: { child: string; parent: string }[] = []
+  // M49.S1 #715 scala companion-union guard: per-occurrence provenance.
+  // decls[nm] unions methods across same-named declarations (ScalaD-F
+  // companion semantics) but parents arrive per derived extends edge — so
+  // object IsEq inherited the trait IsEq's `toProp` while carrying the
+  // object's own `extends IsEqLowPriorityImplicits` link, fabricating
+  // `IsEq.toProp -> IsEqLowPriorityImplicits.toProp` (cats-effect IsEq.scala;
+  // the analyzer resolves per-symbol and emits nothing). Scala declarations
+  // therefore register per-occurrence method sets and parent links from
+  // their OWN extends_clause; scala override emission (below) verifies the
+  // first hop against the exact occurrence, never the pooled entry.
+  const occMethods = new Map<string, Set<string>>()
+  const occSigs = new Map<string, Map<string, Set<string>>>()
+  const occParents: { childOcc: string; childName: string; parentName: string }[] = []
+  const scalaOccCounter: Record<string, number> = {}
   // Best-effort parameter TYPE signature for a method node (java/kotlin/scala/
   // groovy/csharp/dart style typed params). Empty/unknown -> the language keeps
   // the legacy name-only pairing (never a false negative from a missing sig).
   const extractSig = (m: any): string | undefined => {
     const container = m.namedChildren.find((c: any) =>
-      /^(formal_parameters|parameters|parameter_list|parameter_clause|method_parameters)$/.test(c?.type ?? ""))
+      /^(formal_parameters|parameters|parameter_list|parameter_clause|method_parameters|function_value_parameters)$/.test(c?.type ?? ""))
     if (!container) return undefined
     const types: string[] = []
     for (let i = 0; i < container.namedChildCount; i++) {
       const p = container.namedChild(i)
       if (!p) continue
-      const pt = p.childForFieldName?.("type")
+      let pt = p.childForFieldName?.("type")
+      // M49.K1 kotlin: this pinned wasm exposes NO named fields, so
+      // childForFieldName("type") is null on every language — java/cpp get
+      // their types positionally elsewhere, but kotlin `parameter` nodes
+      // carry the type as the LAST named child (name pattern first,
+      // `:` separator is anonymous). Falling back to it restores exact
+      // overload separation to match the analyzer's metadata params
+      // (probe: {name:"x",type:"Int"}); without it every kotlin sig was
+      // undefined and override matching degraded to name-only.
+      if (!pt && lang === "kotlin" && p.type === "parameter") {
+        pt = p.namedChild(p.namedChildCount - 1)
+      }
       if (pt?.text) types.push(pt.text.replace(/\s+/g, ""))
       else return undefined // untyped parameter form — fall back to name-only
     }
@@ -4633,8 +4728,32 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // fall back to name-only pairing — mirroring the analyzer's own name-based
   // findDeclaringAncestor. Concrete types keep strict sig checks so overloads
   // still never pair.
-  const hasTypeVar = (sig: string | undefined): boolean =>
-    !!sig && /(^|[(,:|])\s*[A-Z](\s|$|\)|,|:|@|\+)/.test(sig)
+  // M49.S1 #715: bracket-aware token scan mirrors the analyzer's
+  // sigHasTypeVar char-scan — the old regex missed bracketed vars
+  // (`def m(x: List[A])` vs `def m(x: List[Int])` never paired).
+  const hasTypeVar = (sig: string | undefined): boolean => {
+    if (!sig) return false
+    const n = sig.length
+    let i = 0
+    while (i < n) {
+      const c = sig[i]
+      if (c === "(" || c === "," || c === ":" || c === "|" || c === "[" || c === "<" || c === "&" || i === 0) {
+        let j = i
+        while (j < n && (sig[j] === "(" || sig[j] === "[" || sig[j] === " " || sig[j] === ":" || sig[j] === ",")) j++
+        if (j < n && sig[j] >= "A" && sig[j] <= "Z") {
+          let end = j + 1
+          while (end < n && ((sig[end] >= "A" && sig[end] <= "Z") || (sig[end] >= "a" && sig[end] <= "z") || (sig[end] >= "0" && sig[end] <= "9") || sig[end] === "_")) end++
+          if (end === j + 1) return true
+          i = end
+          continue
+        }
+        i = j > i ? j : i + 1
+        continue
+      }
+      i++
+    }
+    return false
+  }
   const sigCompatible = (child: any, parent: any, m: string): boolean => {
     const cs = child.sigs?.get(m)
     const ps = parent.sigs?.get(m)
@@ -4694,6 +4813,28 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               // disabling override truth for those languages (two-corpus wave
               // 2026-09: clojure:java SubVector.spliterator -> APersistentVector).
               if (!fd && m.type === "field_declaration") continue
+              // M49.K1 kotlin mirror: tree-sitter-kotlin function_declaration
+              // carries its name as a `simple_identifier` child, so the
+              // generic branch below (childForFieldName("name") ??
+              // identifier) never matched — kotlin methods were never
+              // REGISTERED in override truth and every analyzer override
+              // (0.9/structural after the K2 verification fix) would surface
+              // unexplained. Kotlin's name is a direct simple_identifier
+              // child; sigs flow through extractSig (function_value_parameters
+              // now in the container regex).
+              if (!fd && lang === "kotlin" && m.type === "function_declaration") {
+                const kName = m.namedChildren.find((c: any) => c.type === "simple_identifier")
+                if (kName && kName.text !== nm && kName.text !== "constructor") {
+                  decls[nm].methods.add(kName.text)
+                  const sig = extractSig(m)
+                  if (sig) {
+                    let ss = decls[nm].sigs.get(kName.text)
+                    if (!ss) { ss = new Set(); decls[nm].sigs.set(kName.text, ss) }
+                    ss.add(sig)
+                  }
+                }
+                continue // generic branch must not double-register
+              }
               if (fd) {
                 // cpp nests the name: function_declarator has a `declarator`
                 // FIELD holding the method name (field_identifier, possibly
@@ -4749,6 +4890,51 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             }
           }
         }
+        // M49.S1 #715 scala per-occurrence provenance (companion-union
+        // guard, see occMethods above): register this DECLARATION's own
+        // method set and its OWN extends_clause parents. Scala only — the
+        // pooled path stays truth for every other family.
+        if (lang === "scala") {
+          const occKey = `${nm}#${scalaOccCounter[nm] = (scalaOccCounter[nm] ?? -1) + 1}`
+          const ownMethods = new Set<string>()
+          const ownSigs = new Map<string, Set<string>>()
+          if (body) {
+            for (let i = 0; i < body.namedChildCount; i++) {
+              const m = body.namedChild(i)
+              if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
+              const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
+              if (smn && smn.text !== "constructor" && smn.text !== nm) {
+                ownMethods.add(smn.text)
+                const sig = extractSig(m)
+                if (sig) {
+                  let ss = ownSigs.get(smn.text)
+                  if (!ss) { ss = new Set(); ownSigs.set(smn.text, ss) }
+                  ss.add(sig)
+                }
+              }
+            }
+          }
+          occMethods.set(occKey, ownMethods)
+          if (ownSigs.size > 0) occSigs.set(occKey, ownSigs)
+          // Parents come from this declaration's OWN extends_clause — never
+          // from the pooled extends-edge walk, which is what conflated the
+          // companion's link with the same-named trait. Head names only;
+          // dotted targets are EXTERNAL inheritance (SCALA-D1) and seed no
+          // in-file override chain.
+          const extClause = n.namedChildren.find((c: any) => c.type === "extends_clause")
+          if (extClause) {
+            for (let i = 0; i < extClause.namedChildCount; i++) {
+              const h = extClause.namedChild(i)
+              if (!h) continue
+              let hName = h.type === "generic_type" && h.namedChildCount > 0 ? h.namedChild(0).text : h.text
+              const hBracket = hName.indexOf("[")
+              if (hBracket !== -1) hName = hName.slice(0, hBracket)
+              if (hName && !hName.includes(".")) {
+                occParents.push({ childOcc: occKey, childName: nm, parentName: hName })
+              }
+            }
+          }
+        }
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) collectDecl(n.namedChild(i))
@@ -4787,6 +4973,30 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             ss.add(sig)
           }
         }
+      }
+      // M49.S1 scala per-occurrence registration for the anonymous body —
+      // same provenance discipline as named declarations above.
+      if (lang === "scala" && !superName.includes(".")) {
+        const occKey = `${anonName}#0`
+        const ownMethods = new Set<string>()
+        const ownSigs = new Map<string, Set<string>>()
+        for (let i = 0; i < body.namedChildCount; i++) {
+          const m = body.namedChild(i)
+          if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
+          const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
+          if (smn && smn.text !== "constructor" && smn.text !== anonName) {
+            ownMethods.add(smn.text)
+            const sig = extractSig(m)
+            if (sig) {
+              let ss = ownSigs.get(smn.text)
+              if (!ss) { ss = new Set(); ownSigs.set(smn.text, ss) }
+              ss.add(sig)
+            }
+          }
+        }
+        occMethods.set(occKey, ownMethods)
+        if (ownSigs.size > 0) occSigs.set(occKey, ownSigs)
+        occParents.push({ childOcc: occKey, childName: anonName, parentName: superName })
       }
     }
     if (!decls[superName]) decls[superName] = { parents: [], methods: new Set(), sigs: new Map() }
@@ -4841,6 +5051,49 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         }
       }
     }
+    // M49.K1 kotlin twin: `object : Runnable { override fun run() {...} }`
+    // parses as object_literal + class_body. RealKotlinAnalyzer declares an
+    // anonymous_<Super> class symbol, attributes the body's methods to it,
+    // and its K2 override BFS verifies through metadata.superTypes — the
+    // oracle must register the same synthetic declaration or every verified
+    // anonymous_X.m -> Super.m edge surfaces as unexplained fabrication.
+    // Supertypes resolve through delegation_specifier > user_type >
+    // type_identifier (nested — the analyzer recurses too).
+    if (x.type === "object_literal") {
+      const kbody = x.namedChildren.find((c: any) => c.type === "class_body")
+      const kdeleg = x.namedChildren.find((c: any) => c.type === "delegation_specifier")
+      if (kbody && kdeleg) {
+        const findKType = (nn: any): any => {
+          if (nn.type === "type_identifier") return nn
+          for (let i = 0; i < nn.namedChildCount; i++) { const c = nn.namedChild(i); if (c) { const r = findKType(c); if (r) return r } }
+          return null
+        }
+        const ktn = findKType(kdeleg)
+        if (ktn?.text) {
+          const kSuper = ktn.text
+          const kAnon = `anonymous_${kSuper}`
+          if (!decls[kAnon]) {
+            decls[kAnon] = { parents: [], methods: new Set(), sigs: new Map() }
+            for (let i = 0; i < kbody.namedChildCount; i++) {
+              const m = kbody.namedChild(i)
+              if (m?.type !== "function_declaration") continue
+              const mn = m.namedChildren.find((c: any) => c.type === "simple_identifier")
+              if (mn && mn.text !== "constructor" && mn.text !== kAnon) {
+                decls[kAnon].methods.add(mn.text)
+                const sig = extractSig(m)
+                if (sig) {
+                  let ss = decls[kAnon].sigs.get(mn.text)
+                  if (!ss) { ss = new Set(); decls[kAnon].sigs.set(mn.text, ss) }
+                  ss.add(sig)
+                }
+              }
+            }
+          }
+          if (!decls[kSuper]) decls[kSuper] = { parents: [], methods: new Set(), sigs: new Map() }
+          declParents.push({ child: kAnon, parent: kSuper })
+        }
+      }
+    }
     for (let i = 0; i < x.namedChildCount; i++) { const c = x.namedChild(i); if (c) anonStack.push(c) }
   }
   // hierarchy from already-derived extends edges (head-segment normalized)
@@ -4865,6 +5118,8 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   for (const rel of declParents) {
     if (lang === "cpp") break // CPPD-R1: no cpp overrides truth (see above)
+    // M49.S1: scala never uses pooled emission — per-occurrence loop below.
+    if (lang === "scala") continue
     const childDecl = decls[rel.child]
     if (!childDecl) continue
     // M37.9 cpp: overrides resolve TRANSITIVELY (A->B->C: a method defined
@@ -4889,6 +5144,67 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             edges.push({ label: "overrides", from: `${rel.child}.${m}`, target: `${b.parent}.${m}` })
           }
           if (decls[b.parent]) queue.push(b.parent)
+        }
+      }
+    }
+  }
+  // M49.S1 #715 scala per-occurrence override emission. Same transitive BFS
+  // and sigCompatible gate as the pooled loop, but methods and every hop's
+  // parent links come from ONE declaration occurrence — companion-union
+  // conflation (object IsEq × trait IsEq) can never fabricate again. The
+  // first hop uses the occurrence's OWN sigs; further hops fall back to the
+  // pooled sigs (the union) — signature over-strictness at depth only
+  // suppresses a truth edge in a name-collision case the analyzer's own
+  // name-based BFS would also have paired, never fabricates one.
+  if (lang === "scala") {
+    for (const [occKey, methods] of occMethods) {
+      const occName = occKey.slice(0, occKey.lastIndexOf("#"))
+      const ownSigs = occSigs.get(occKey)
+      for (const m of methods) {
+        const seenOcc = new Set<string>()
+        // Frontier entries are EXACT occurrence keys. Matching parents by
+        // childOcc only (never by name) is the whole point of the guard: a
+        // name fallback would let the trait IsEq#1 inherit the companion
+        // object's extends link (IsEq#0 -> IsEqLowPriorityImplicits) — the
+        // exact conflation this block exists to kill. Every scala
+        // declaration (collectDecl) and anonymous body (anonScalaDecl)
+        // registers an occurrence, so exact-key resolution always closes.
+        let frontier: string[] = [occKey]
+        let depth = 0
+        while (frontier.length && depth < 10) {
+          depth++
+          const next: string[] = []
+          for (const cur of frontier) {
+            if (seenOcc.has(cur)) continue
+            seenOcc.add(cur)
+            for (const op of occParents.filter((p) => p.childOcc === cur)) {
+              if (op.parentName === occName) continue // self-collision guard
+              const parentOccKeys = [...occMethods.keys()].filter((k) => k.startsWith(op.parentName + "#"))
+              if (parentOccKeys.length === 0) {
+                // No per-occurrence registration (defensive only): the
+                // pooled decls entry still carries its methods so a parent
+                // known only through companion sharing stays reachable.
+                const parentDecl = decls[op.parentName]
+                if (parentDecl?.methods.has(m)) {
+                  const cs = ownSigs?.get(m)
+                  const ps = parentDecl.sigs.get(m)
+                  const compat = cs && ps ? [...cs].some((s) => ps.has(s) || hasTypeVar(s) || [...ps].some((p2) => hasTypeVar(p2))) : true
+                  if (compat) edges.push({ label: "overrides", from: `${occName}.${m}`, target: `${op.parentName}.${m}` })
+                }
+              } else {
+                for (const pk of parentOccKeys) {
+                  const pm = occMethods.get(pk)
+                  if (!pm?.has(m)) continue
+                  const cs = ownSigs?.get(m)
+                  const ps = occSigs.get(pk)?.get(m)
+                  const compat = cs && ps ? [...cs].some((s) => ps.has(s) || hasTypeVar(s) || [...ps].some((p2) => hasTypeVar(p2))) : true
+                  if (compat) edges.push({ label: "overrides", from: `${occName}.${m}`, target: `${op.parentName}.${m}` })
+                }
+                next.push(...parentOccKeys)
+              }
+            }
+          }
+          frontier = next
         }
       }
     }

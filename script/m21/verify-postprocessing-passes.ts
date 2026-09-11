@@ -43,7 +43,8 @@ export class Service { run(input: string): string { return query(input) } }
   check("R2 gravity pass is observable as a separate phase", afterGravity.some((row, i) => row.gravity_score !== beforeGravity[i].gravity_score) || afterGravity.length === 0)
 
   const health = await timed(() => runIndexHealthCheck(projectId as any))
-  check("R2 health pass returns a complete report", health.elapsedMs >= 0 && Array.isArray(health.value.checks) && health.value.checks.length === 12)
+  // M51.A2 split orphan owners from synthetic container references: 13 checks.
+  check("R2 health pass returns a complete report", health.elapsedMs >= 0 && Array.isArray(health.value.checks) && health.value.checks.length === 13)
   check("R2 health summary reconciles", health.value.summary.ok + health.value.summary.warn + health.value.summary.error === health.value.checks.length)
   check("R2 health score is bounded", Number.isInteger(health.value.overallHealth) && health.value.overallHealth >= 0 && health.value.overallHealth <= 100)
 
@@ -60,7 +61,7 @@ export class Service { run(input: string): string { return query(input) } }
   negative("R2 non-reconciling health summary is rejected", !summaryReconciles({ ...health.value, summary: { ...health.value.summary, ok: health.value.summary.ok + 1 } }) && summaryReconciles(health.value))
   const missingId = (projectId + "-missing") as any
   const missingHealth = await runIndexHealthCheck(missingId)
-  negative("R2 missing project does not produce malformed empty checks", missingHealth.checks.length === 12 && missingHealth.checks.every((c: any) => typeof c.name === "string" && c.name.length > 0))
+  negative("R2 missing project does not produce malformed empty checks", missingHealth.checks.length === 13 && missingHealth.checks.every((c: any) => typeof c.name === "string" && c.name.length > 0))
   try { rmSync(path.join(process.env.HOME ?? "", ".bb", "projects", String(missingId)), { recursive: true, force: true }) } catch {}
 
   const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout.trim()

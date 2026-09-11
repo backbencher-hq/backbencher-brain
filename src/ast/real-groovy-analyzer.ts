@@ -35,6 +35,7 @@ interface OverrideTask {
   methodName: string
   signature: string
   ownerFqn: string
+  explicit?: boolean
 }
 
 interface StackItem {
@@ -43,8 +44,7 @@ interface StackItem {
   isExit?: boolean
 }
 
-const GROOVY_BUILTINS = new Set([
-  // Groovy language builtins
+const GROOVY_BUILTINS = new Set([  // Groovy language builtins
   "println", "print", "printf", "sprintf",
   "assert", "sleep", "synchronized",
   // JVM Object methods
@@ -56,6 +56,13 @@ const GROOVY_BUILTINS = new Set([
   "System.exit", "System.gc", "System.currentTimeMillis", "System.nanoTime",
   "System.getProperty", "System.getenv", "System.identityHashCode",
   "System.arraycopy", "System.lineSeparator",
+])
+
+// Closed node-type alternation for declaration detection (R2 closure audit:
+// the /^...$/ regex tested exact membership, nothing more).
+const GROOVY_DECLARATION_TYPES = new Set([
+  "method_declaration", "constructor_declaration", "function_definition",
+  "class_declaration", "trait_declaration", "enum_declaration",
 ])
 
 export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -114,14 +121,33 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
         if (nameNode) {
           const moduleName = nameNode.text
-          const isStatic = this.hasDirectChildText(node, "static")
+          // G5 (review wave): `static` and the wildcard marker are ANONYMOUS
+          // children (probe-verified shape: import_declaration >
+          // [import, static?, scoped_identifier, ., asterisk]). The old
+          // named-children text scan never matched `static`, so every static
+          // import was recorded non-static; and isNamespace (module suffix
+          // test) permanently disagreed with isWildcard (raw-text test) on
+          // `.*` imports because the module text never contains `.*`. Both
+          // flags now derive from the same anonymous-token scan.
+          let isStatic = false
+          let isWildcard = false
+          for (let i = 0; i < node.childCount; i++) {
+            const c = node.child(i)
+            if (!c) continue
+            if (c.type === "static") isStatic = true
+            else            // M49.S1 F1 finding: this pinned groovy grammar declares the
+            // wildcard token as `asterisk` (probe s1-groovy-shape) — there
+            // is no `wildcard_import` node type, so the old second disjunct
+            // was dead code that could never fire.
+            if (c.type === "asterisk") isWildcard = true
+          }
           imports.push({
             module: moduleName,
             items: [],
             isDefault: false,
             range: this.nodeToRange(node),
-            isNamespace: moduleName.endsWith(".*"),
-            metadata: { isWildcard: node.text.indexOf(".*") !== -1, isStatic },
+            isNamespace: isWildcard,
+            metadata: { isWildcard, isStatic },
           })
           // DependsOn for imports — source rewritten to the file's primary
           // type after the walk (imports precede type declarations). GAD2:
@@ -132,7 +158,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
-            metadata: { isGroovyImport: true, isWildcard: node.text.indexOf(".*") !== -1 },
+            metadata: { isGroovyImport: true, isWildcard },
           })
         }
       } else if (
@@ -281,7 +307,13 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const rawName = nameNode.type === "string_literal"
             ? this.stripQuotes(nameNode.text)
             : nameNode.text
-          const name = isConstructor ? "constructor" : rawName
+          // G4 (review wave, java C3 parity): ctors keep their DECLARED name
+          // (the class name). The old "constructor" literal collided across
+          // classes (contains:A->constructor vs contains:B->constructor are
+          // indistinguishable; overloads collapsed). Kind still says
+          // Constructor; self-contains (A->A) matches the java/kotlin
+          // reference behavior exactly.
+          const name = rawName
           const modifiers = this.extractModifiers(node)
           const visibility = this.extractVisibility(node)
           const annotations = this.extractAnnotations(node)
@@ -317,12 +349,28 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const hasBody = !!this.findChild(node, (n) => n.type === "block" || n.type === "closure" || n.type === "constructor_body")
           const isAbstract = !hasBody || (!!(newContext?.isInterface) && !hasBody)
 
+          // G2 (review wave, java JAO1 parity): @Override is a CHECK, not a
+          // requirement — un-annotated instance methods with matching
+          // signatures still override. Implicit tasks resolve but emit ONLY
+          // on a verified exact-signature in-file match (pass 1); explicit
+          // tasks keep the companion/guess tiers so overloads never
+          // fabricate an override edge.
           if (annotations.indexOf("Override") !== -1 && newContext) {
             overrideTasks.push({
               fqn,
               methodName: name,
               signature,
               ownerFqn: newContext.fqn,
+              explicit: true,
+            })
+          } else if (newContext && !isConstructor &&
+                     modifiers.indexOf("static") === -1 && visibility !== "private") {
+            overrideTasks.push({
+              fqn,
+              methodName: name,
+              signature,
+              ownerFqn: newContext.fqn,
+              explicit: false,
             })
           }
 
@@ -582,7 +630,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
-      if (s.visibility === "public" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) {
+      // G3 (member half REVERSED, M49 JVM-closure exports-family ruling —
+      // java JAD3 reversal is the twin; see reviews/jvm-closure-audit.md):
+      // exports = importable units — top-level types and top-level
+      // functions only. Groovy imports types and static members, never
+      // bare member names; membership rides Contains (Greeter->greet).
+      // G7 (anon exclusion) is unaffected: anonymous classes are never
+      // top-level, so the !s.ownerName guard excludes them structurally —
+      // the explicit isAnonymousClass check stays as belt-and-braces.
+      if (!s.metadata?.isAnonymousClass && !s.metadata?.isPhantom && !s.ownerName) {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility })
       }
     }
@@ -695,6 +751,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     companion?: Map<string, Set<string>>,
   ) {
+    // PERF (review wave, java C11 parity): the suffix index is built ONCE per
+    // file (O(C)) instead of per task (was O(T·C)); the BFS below uses an
+    // index cursor instead of queue.shift() (O(1) vs O(N) per dequeue).
+    let suffixIndex: Map<string, string[]> | null = null
     for (let ti = 0; ti < tasks.length; ti++) { const task = tasks[ti]
       let targetFqn: string | null = null
       // Confidence reflects EVIDENCE TIER (patterns.ts filters >= 0.7):
@@ -713,12 +773,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // fabricated wrong edges at 0.5 (BlackVal.val -> Black.val with Black
       // declaring no val). Suffix-resolve every bare parent to its FQN
       // candidate(s); symbolMap disambiguates same-named classes.
-      const suffixIndex = new Map<string, string[]>()
-      for (const fqn of classHierarchy.keys()) {
-        const bare = fqn.slice(fqn.lastIndexOf(".") + 1)
-        const arr = suffixIndex.get(bare)
-        if (arr) arr.push(fqn)
-        else suffixIndex.set(bare, [fqn])
+      // PERF (review wave): suffixIndex is hoisted above the task loop.
+      if (!suffixIndex) {
+        suffixIndex = new Map<string, string[]>()
+        for (const fqn of classHierarchy.keys()) {
+          const bare = fqn.slice(fqn.lastIndexOf(".") + 1)
+          const arr = suffixIndex.get(bare)
+          if (arr) arr.push(fqn)
+          else suffixIndex.set(bare, [fqn])
+        }
       }
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
@@ -726,8 +789,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
       }
       const seen: Set<string> = new Set()
-      while (queue.length > 0 && !targetFqn) {
-        const parent = queue.shift()!
+      let head = 0
+      while (head < queue.length && !targetFqn) {
+        const parent = queue[head++]
         if (seen.has(parent)) continue
         seen.add(parent)
         const candidates = suffixIndex.get(parent) ?? [parent]
@@ -753,7 +817,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // Pass 2: declaring-parent via the project companion index (cross-file).
-      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+      // Explicit tasks only — an implicit task without an exact in-file
+      // match is an overload until proven otherwise (java JAO1 parity).
+      if (!targetFqn && task.explicit && companion && ownerH && ownerH.length > 0) {
         const declaring = findDeclaringParent(
           task.methodName,
           ownerH,
@@ -768,7 +834,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // Pass 3: deterministic per-file fallback — first hierarchy parent.
-      if (!targetFqn && ownerH && ownerH.length > 0) {
+      // Explicit tasks only (the @Override annotation asserts intent).
+      if (!targetFqn && task.explicit && ownerH && ownerH.length > 0) {
         targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
         // Below the patterns.ts default threshold (0.7): visible in raw
         // output, never contaminating thresholded analysis.
@@ -837,10 +904,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // through this resolver, which seeded at `.parent` — so `String
       // greet()` inside `class Foo` attributed String to Foo (or Global at
       // top level) instead of greet. Same bug kotlin's KAD6.
-      let p: Node | null =
-        /^(method_declaration|constructor_declaration|function_definition|class_declaration|trait_declaration|enum_declaration)$/.test(start.type)
-          ? start
-          : start.parent
+      // R2 (closure audit): closed type alternation as a Set — the regex
+      // tested exact membership, nothing more.
+      let p: Node | null = GROOVY_DECLARATION_TYPES.has(start.type) ? start : start.parent
       while (p) {
         if (p.type === "method_declaration" || p.type === "constructor_declaration" || p.type === "function_definition") {
           const name = this.findChild(p, (c) => c.type === "identifier")
@@ -882,13 +948,65 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "field_declaration":
         case "formal_parameter":
         case "local_variable_declaration": {
+          // G1 (review wave, probe-verified mis-parse): `def y = o as String`
+          // lexes as local_variable_declaration(type_identifier("as"),
+          // variable_declarator(String)) — there is no juxt_function_call.
+          // The "type" is the `as` keyword itself; the real target sits in
+          // the declarator (lexed as a bare identifier, which
+          // collectTypeNames would never see). Emit it as a cast edge;
+          // the `as` keyword exclusion stays for every other path.
+          if (n.type === "local_variable_declaration") {
+            let asKw: Node | null = null
+            let asDecl: Node | null = null
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (!c) continue
+              if ((c.type === "type_identifier" || c.type === "identifier") && c.text === "as") asKw = c
+              else if (c.type === "variable_declarator") asDecl = c
+            }
+            if (asKw && asDecl) {
+              const names: string[] = []
+              const tstack: Node[] = [asDecl]
+              while (tstack.length > 0) {
+                const m = tstack.pop()!
+                if (m.type === "type_identifier" || m.type === "identifier") {
+                  if (m.text !== "as" && m.text !== "def" && !names.includes(m.text)) names.push(m.text)
+                } else {
+                  for (let i = 0; i < m.namedChildCount; i++) {
+                    const c = m.namedChild(i)
+                    if (c) tstack.push(c)
+                  }
+                }
+              }
+              // Source is the ENCLOSING declaration (the method), matching
+              // the C-cast branch.
+              const source = resolveSource(n)
+              for (const t of names) {
+                const key = `${source}|${t}|as_cast`
+                if (emitted.has(key)) continue
+                emitted.add(key)
+                relationships.push({
+                  source,
+                  target: t,
+                  type: ASTEngine.RelationshipType.References,
+                  confidence: 0.95,
+                  metadata: { relationshipType: "cast_type", declaredOn: "as_cast" },
+                })
+              }
+              break
+            }
+          }
           // Type clause = direct children that are types (generic_type /
           // type_identifier / scoped), before any declarator begins.
+          // R2 (closure audit): /type$/ subsumes the endsWith("_type")
+          // clause, but NOT "type_identifier" (it ends in "identifier") —
+          // that case stays explicit. ("prototype" matches either way, same
+          // as before — the predicate is unchanged, only the spelling.)
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c || TYPE_STOP.has(c.type)) continue
-            if (/type$/.test(c.type) || c.type.endsWith("_type") || c.type === "type_identifier") roots.push(c)
+            if (c.type.endsWith("type") || c.type === "type_identifier") roots.push(c)
           }
           if (roots.length) emit(n, roots, n.type)
           break
@@ -897,6 +1015,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const kids: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) kids.push(c) }
           emit(n, kids, "throws", "throws_type")
+          break
+        }
+        case "catch_formal_parameter": {
+          // Multi-catch union (java JLS 14.20 parity, pinned by java's
+          // overload-arity-varargs-multicatch fixture): the pinned grammar
+          // nests BOTH exception types under one `catch_type` child
+          // (`catch (IOException | SQLException e)` → catch_type with two
+          // type_identifier children). collectTypeNames descends into the
+          // union and emits a declared_type ref for EACH — the pre-fix walk
+          // had no catch case at all, so multi-catch types (and plain
+          // single-type catches) silently vanished from the type-usage
+          // graph. The `e` identifier is not a type_identifier and is
+          // skipped naturally.
+          const catchType = this.findChild(n, (c) => c.type === "catch_type")
+          if (catchType) emit(n, [catchType], "catch_formal_parameter", "declared_type")
           break
         }
         case "instanceof_expression": {
@@ -945,12 +1078,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "juxt_function_call": {
-          // `x as Type` parses as juxt_function_call(as, argument_list).
+          // `x as Type` parses as juxt_function_call(as, argument_list) on
+          // some shapes (the common shape mis-parses as a phantom
+          // local_variable_declaration instead — see the G1 branch above).
+          // Uniform cast_type label either way.
           const first = n.namedChild(0)
           if (first && first.text === "as") {
             for (let i = 0; i < n.namedChildCount; i++) {
               const c = n.namedChild(i)
-              if (c && c.type === "argument_list") emit(n, [c], "as_expression")
+              if (c && c.type === "argument_list") emit(n, [c], "as_expression", "cast_type")
             }
           }
           break
@@ -1297,13 +1433,16 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < tpNode.namedChildCount; i++) {
       const c = tpNode.namedChild(i)
       if (!c) continue
-      if (/identifier|type_identifier/.test(c.type)) {
+      // R2 (closure audit): unanchored /identifier|type_identifier/ matches
+      // iff the type string contains "identifier" ("type_identifier" does
+      // too) — includes() states the actual predicate.
+      if (c.type.includes("identifier")) {
         out.push(c.text.trim())
       } else if (c.type === "type_parameter") {
         // descend into type_parameter to find its name child
         for (let j = 0; j < c.namedChildCount; j++) {
           const gc = c.namedChild(j)
-          if (gc && /identifier|type_identifier/.test(gc.type)) {
+          if (gc && gc.type.includes("identifier")) {
             out.push(gc.text.trim())
             break
           }
@@ -1354,14 +1493,6 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return `${scopeStack[scopeStack.length - 1].fqn}.${name}`
     }
     return currentPackage ? `${currentPackage}.${name}` : name
-  }
-
-  private hasDirectChildText(node: Node, text: string): boolean {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const c = node.namedChild(i)
-      if (c && c.text === text) return true
-    }
-    return false
   }
 
   private findChild(node: Node, predicate: (n: Node) => boolean): Node | null {

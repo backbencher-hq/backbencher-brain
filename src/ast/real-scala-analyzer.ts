@@ -6,10 +6,52 @@ import { findDeclaringParent } from "./override-context"
  * SCD1: compound-assignment operators parse as infix_expression; the LHS of
  * one of THESE ops is a write. `==`/`<=`/`>=` also end in `=` but are
  * comparisons (reads) — excluded on purpose.
+ * S1 hygiene (M49 #715): `++=`, `&&=`, `||=` are NOT Scala operators (no
+ * legal parse produces them) — removed from the gate as dead entries.
  */
-const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=", "++=", "&&=", "||="])
+const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>="])
+
+/**
+ * S1.17 (M49 #715): does this parameter-type signature carry a GENERIC TYPE
+ * VARIABLE (T, A, F — Scala's single-capital type-parameter convention,
+ * possibly compound like `H :: T` or bracketed like `List[A]`)? Char-scan
+ * (R2: no regex literals in analyzers — the register may only shrink). The
+ * old hasTypeVar regex required a preceding `(,:` boundary, so bracketed
+ * args (`List[A]` → "(List[A])") never registered as type variables and the
+ * generic-substitution override fallback never fired for them.
+ */
+function sigHasTypeVar(sig: string): boolean {
+  const n = sig.length
+  let i = 0
+  while (i < n) {
+    const c = sig[i]
+    if (c === "(" || c === "," || c === ":" || c === "|" || c === "[" || c === "<" || c === "&" || i === 0) {
+      // scan forward past separators to the identifier start
+      let j = i
+      while (j < n && (sig[j] === "(" || sig[j] === "[" || sig[j] === " " || sig[j] === ":" || sig[j] === ",")) j++
+      if (j < n && sig[j] >= "A" && sig[j] <= "Z") {
+        let end = j + 1
+        while (end < n && ((sig[end] >= "A" && sig[end] <= "Z") || (sig[end] >= "a" && sig[end] <= "z") || (sig[end] >= "0" && sig[end] <= "9") || sig[end] === "_")) end++
+        // a SINGLE capital letter alone is a type variable (T, F, A);
+        // multi-capital words like Int/List are concrete types. Two-token
+        // compounds (H :: T) are caught when the outer loop reaches `::`.
+        if (end === j + 1) return true
+        i = end
+        continue
+      }
+      i = j > i ? j : i + 1
+      continue
+    }
+    i++
+  }
+  return false
+}
 
 export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
+  // S1.21: stable per-file counter for anonymous given names (see handleGiven).
+  // Reset at the top of every analyze() so each file counts from 1.
+  private givenCounter = 0
+
   public analyze(
     rootNode: Node,
     content: string,
@@ -20,6 +62,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const imports: ASTEngine.ImportInfo[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const exports: ASTEngine.ExportInfo[] = []
+    // S1.21: stable per-file counter for anonymous given names (see handleGiven).
+    this.givenCounter = 0
 
     const patternsObj: Record<string, boolean> = {}
     const frameworksObj: Record<string, boolean> = {}
@@ -39,7 +83,20 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: [],
     }
 
-    if (!rootNode) return { symbols, imports, errors: [] }
+    // S1.8 (M49 scala wave #715): the early return must carry the FULL empty
+    // shape — downstream consumers destructure relationships/exports/metadata
+    // unconditionally; the old { symbols, imports, errors } triage crashed
+    // them on null-root files instead of honestly reporting an empty file.
+    if (!rootNode) {
+      return {
+        symbols,
+        imports,
+        relationships,
+        exports,
+        metadata,
+        errors: [],
+      }
+    }
 
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
@@ -118,6 +175,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "package_clause") {
         // package com.example.service — namespace marker only (no symbol,
         // matching the Java/Kotlin contract where packages are not symbols).
+        // S1.9 (M49 #715): scope the name walk to the package_identifier
+        // child ONLY. The old whole-subtree walk absorbed identifiers from
+        // the `template_body` of `package foo { class Bar }`, producing
+        // packageName "foo.Bar" — the class name is NOT part of the package.
+        const pkgId = this.findChild(node, "package_identifier")
         const pkgChildren: string[] = []
         const walkPkg = (n: Node) => {
           if (n.type === "identifier") pkgChildren.push(n.text)
@@ -126,7 +188,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (ch) walkPkg(ch)
           }
         }
-        walkPkg(node)
+        if (pkgId) walkPkg(pkgId)
         if (pkgChildren.length > 0) {
           metadata.packageName = pkgChildren.join(".")
           patternsObj["Packages"] = true
@@ -156,7 +218,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const en = this.handleEnum(node, symbols, relationships, exports, patternsObj, parent)
         if (en) { currentParent = en; indexType(en) }
       } else if (node.type === "given_definition") {
-        const g = this.handleGiven(node, symbols, relationships, patternsObj, parent)
+        const g = this.handleGiven(node, symbols, relationships, exports, patternsObj, parent)
         if (g) { currentParent = g; indexType(g) }
       } else if (node.type === "extension_definition") {
         // Scala 3 extension: `extension (s: String) { def shout(...) }`.
@@ -219,12 +281,37 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           } else if (thrown.type === "identifier") {
             target = thrown.text
+          } else if (thrown.type === "call_expression") {
+            // S1.14 (M49 #715): `throw Foo("x")` — the thrown EXPRESSION is a
+            // construction whose callee leaf names the exception type. The old
+            // handler only knew instance_expression|identifier, so the
+            // common call-shaped throw was silently unrecorded.
+            const callee = thrown.childForFieldName("function")
+            if (callee) {
+              const kids: string[] = []
+              for (let i = 0; i < callee.namedChildCount; i++) {
+                const c = callee.namedChild(i)
+                if (c && c.type === "identifier") kids.push(c.text)
+              }
+              target = kids.length > 0 ? kids[kids.length - 1] : callee.text.split("[")[0]
+            }
+          } else if (thrown.type === "field_expression") {
+            // `throw a.b` — a pre-constructed value referenced by its dotted
+            // path; the full path is the honest target (leaf-only would lose
+            // the receiver identity).
+            target = thrown.text
           }
           if (target) {
             relationships.push({
-              source: parent?.name || "global",
+              // S1.7: ONE top-level sentinel — throws join calls/refs on
+              // "(script)" (was "global", the third disconnected root node).
+              source: parent?.name || "(script)",
               target,
               type: ASTEngine.RelationshipType.References,
+              // S1.4 (M49 #715): explicit confidence — undefined is treated
+              // as 1 by the classifier but filtered inconsistently by
+              // downstream >= 0.7 consumers. A throw target is structural.
+              confidence: 0.95,
               metadata: { scalaSpecific: true, isThrow: true, relationshipType: "throw_target" },
             })
           }
@@ -264,7 +351,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const typeNode = node.namedChild(0)
           let superName = typeNode?.text ?? ""
           if (typeNode?.type === "generic_type") superName = typeNode.namedChild(0)?.text ?? superName
-          superName = superName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+          superName = this.stripTypeArgs(superName)
           const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
           const anonSym: ASTEngine.UniversalSymbol = {
             name: anonName,
@@ -347,7 +434,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // chain -> exact-in-file override @1.0. Only keyworded methods without an
     // exact in-file match keep the companion/first-supertype tiers.
     const sigText = (m: ASTEngine.UniversalSymbol): string =>
-      "(" + (m.parameters ?? []).map((p) => (p.type || "unknown").replace(/\s+/g, "")).join(",") + ")"
+      "(" + (m.parameters ?? []).map((p) => this.compactType(p.type || "unknown")).join(",") + ")"
     // ScalaD-H (M37.21 #610, byname-implicits-13.scala / spec-example1.scala):
     // a param type that is a GENERIC TYPE VARIABLE (`def to(t: T)` in trait
     // Generic, `def m(x: T)` in @specialized class C) is substituted at the
@@ -356,9 +443,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // if either sig carries a type-variable token (single-capital identifier,
     // possibly compound like `H :: T`), fall back to name-only pairing;
     // concrete-vs-concrete mismatches still never pair (overload guard).
-    const hasTypeVar = (sig: string): boolean =>
-      /(^|[(,:|])\s*[A-Z](\s|$|\)|,|:|@|\+)/.test(sig)
+    // S1.17 (M49 #715): the token test is now sigHasTypeVar (char-scan,
+    // bracket-aware) — the regex missed bracketed vars (`List[A]` params),
+    // so `def m(x: List[A])` vs `def m(x: List[Int])` never paired.
+    const hasTypeVar = (sig: string): boolean => sigHasTypeVar(sig)
     const methodSigsByOwner = new Map<string, Map<string, Set<string>>>()
+    // S1-perf (M49 #715): a name→symbol visibility index replaces the O(S)
+    // symbols.some scan per ancestor hop inside findDeclaringAncestor
+    // (O(hops·S) per method → O(1) lookups; scala3 Setup.scala carries 60+
+    // methods in one file). Built once, reused by every method.
+    const nonPrivateMethodsByOwner = new Map<string, Map<string, ASTEngine.UniversalSymbol[]>>()
+    for (const s of symbols) {
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.visibility === "private") continue
+      let byName = nonPrivateMethodsByOwner.get(s.ownerName)
+      if (!byName) { byName = new Map(); nonPrivateMethodsByOwner.set(s.ownerName, byName) }
+      let arr = byName.get(s.name)
+      if (!arr) { arr = []; byName.set(s.name, arr) }
+      arr.push(s)
+    }
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.isPhantom) continue
       let byName = methodSigsByOwner.get(s.ownerName)
@@ -381,12 +483,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         seen.add(parent)
         const parentMethods = methodSigsByOwner.get(parent)
         const parentSigs = parentMethods?.get(s.name)
+        // S1-perf: O(1) non-private method lookup (name-keyed index built
+        // above) replaces the symbols.some linear scan per hop.
+        const ownerMethods = nonPrivateMethodsByOwner.get(parent)?.get(s.name) ?? []
         if (parentSigs?.has(sig)) {
           // Private members are not inherited (JLS/Scala): a private-only
           // exact-signature match is an independent member — keep searching.
-          const nonPrivate = symbols.some((bm) =>
-            bm.kind === ASTEngine.SymbolKind.Method && bm.ownerName === parent &&
-            bm.name === s.name && sigText(bm) === sig && bm.visibility !== "private")
+          const nonPrivate = ownerMethods.some((bm) => sigText(bm) === sig)
           if (nonPrivate) return parent
         }
         // ScalaD-H generic-substitution fallback: the parent declares the
@@ -395,10 +498,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // members still never pair (checked below only on exact matches).
         if (!parentSigs?.has(sig) && parentSigs && parentSigs.size > 0 &&
             ([...parentSigs].some(hasTypeVar) || hasTypeVar(sig))) {
-          const nonPrivate = symbols.some((bm) =>
-            bm.kind === ASTEngine.SymbolKind.Method && bm.ownerName === parent &&
-            bm.name === s.name && bm.visibility !== "private")
-          if (nonPrivate) return parent
+          if (ownerMethods.length > 0) return parent
         }
         const pSym = typeIndex.get(parent)
         if (pSym?.metadata?.superTypes) {
@@ -434,7 +534,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${declaringInFile}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 1.0,
-            metadata: { isOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file" },
+            // S1.3 (M49 #715): override edges carry the parameter signature
+            // payload — the source/target keep the family convention
+            // (Owner.name → Parent.name), but the SIG travels in metadata so
+            // overloads foo(Int)/foo(String) are distinguishable downstream.
+            metadata: { isOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file", overrideSig: sigText(s) },
           })
           continue
         }
@@ -466,7 +570,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence,
-            metadata: { isOverride: true, overrideParent, reasonCode },
+            metadata: { isOverride: true, overrideParent, reasonCode, overrideSig: sigText(s) },
           })
         }
       }
@@ -489,13 +593,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${declaringInFile}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 1.0,
-          metadata: { isOverride: true, implicitOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file" },
+          metadata: { isOverride: true, implicitOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file", overrideSig: sigText(s) },
         })
       }
     }
     for (const imp of imports) {
       relationships.push({
-        source: "root",
+        // S1.7: ONE top-level sentinel — imports join calls/instantiates on
+        // "(script)" (was "root", a third disconnected file-root node).
+        source: "(script)",
         target: imp.module || "",
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
@@ -507,14 +613,16 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // "root" to the file's primary top-level type so references carry a
     // symbol identity (imports precede declarations in source order) —
     // matching kotlin. Scoped to isImportDep edges only: top-level
-    // declared-type refs also resolve to "root".
+    // declared-type refs also resolve to the file sentinel.
+    // S1.7: the unparented-file sentinel is now "(script)" (one node for the
+    // whole top level), so the rewrite matches against that instead of root.
     const primaryType = symbols.find((s) => {
       if (s.ownerName) return false
       return s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface || s.kind === ASTEngine.SymbolKind.Enum || s.kind === ASTEngine.SymbolKind.Module
     })
     if (primaryType) {
       for (const rel of relationships) {
-        if (rel.type === ASTEngine.RelationshipType.References && rel.source === "root" && rel.metadata?.isImportDep) {
+        if (rel.type === ASTEngine.RelationshipType.References && rel.source === "(script)" && rel.metadata?.isImportDep) {
           rel.source = primaryType.name
         }
       }
@@ -546,6 +654,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (source.indexOf("play.api") !== -1) frameworksObj["Play Framework"] = true
       if (source.indexOf("akka") !== -1) frameworksObj["Akka"] = true
       if (source.indexOf("org.apache.spark") !== -1) frameworksObj["Apache Spark"] = true
+      // S1.23 (M49 #715): the dominant Scala ecosystems were invisible. The
+      // roots below are unambiguous module-path prefixes (no substring
+      // false-positives: indexOf against a root like "cats." cannot match
+      // user code that merely CONTAINS the letters).
+      const isRoot = (root: string): boolean => source === root || source.startsWith(root + ".")
+      if (isRoot("cats")) frameworksObj["Cats Effect"] = true
+      if (isRoot("zio")) frameworksObj["ZIO"] = true
+      if (isRoot("org.http4s")) frameworksObj["http4s"] = true
+      if (isRoot("slick") || isRoot("org.slick")) frameworksObj["Slick"] = true
+      if (isRoot("fs2")) frameworksObj["FS2"] = true
+      if (isRoot("org.scalatest")) frameworksObj["ScalaTest"] = true
     }
   }
 
@@ -742,9 +861,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const tpNode = node.namedChildren.find((c: any) => c.type === "type_parameters")
     if (!tpNode) return []
     const out: string[] = []
-    for (let i = 0; i < tpNode.namedChildCount; i++) {
-      const c = tpNode.namedChild(i)
-      if (c && /identifier|type_identifier|_parameter$/.test(c.type)) {
+    for (let i = 0; i < tpNode.namedChildCount; i++) {            const c = tpNode.namedChild(i)
+            if (c && this.isTypeishNodeName(c.type)) {
         out.push(c.text.trim())
       }
     }
@@ -826,6 +944,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (n.text !== "throws" && !out.includes(n.text)) out.push(n.text)
         return
       }
+      // S1.11 (M49 #715): `stable_type_identifier` — dotted/qualified types
+      // (js.Object, scala.Any, collection.mutable.Map) recursed into plain
+      // `identifier` children that collectTypeNames ignored, so qualified
+      // type positions emitted ZERO references. The FULL dotted text is the
+      // honest target (cross-language convention: kotlin/java keep dotted).
+      if (n.type === "stable_type_identifier") {
+        if (n.text !== "throws" && !out.includes(n.text)) out.push(n.text)
+        return
+      }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) collectTypeNames(c, out)
@@ -847,16 +974,26 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         p = p.parent
       }
-      return "root"
+      // S1.7 (M49 #715): ONE top-level sentinel — "(script)" everywhere
+      // (calls/instantiates/throws/refs/imports). The old split left the
+      // file root as three disconnected graph nodes.
+      return "(script)"
     }
 
-    const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type", sourceOverride?: string): void => {
+    const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type", sourceOverride?: string, leafOnly = false): void => {
       const source = sourceOverride ?? resolveSource(decl)
       for (const r of roots) {
         if (!r) continue
         const names: string[] = []
         collectTypeNames(r, names)
-        for (const t of names) {
+        for (const raw of names) {
+          // S1.11-merge: the G6 recorded contract (derives-refs fixture) is
+          // LEAF targets for derives clauses ("scala.util.hashing.Hashing"
+          // references Hashing — the family lastSegment convention); type
+          // POSITIONS (val/param/return/given) keep the full dotted form per
+          // the M14.1 cross-language convention. surface-specific, recorded.
+          const t = leafOnly ? (raw.includes(".") ? raw.slice(raw.lastIndexOf(".") + 1) : raw) : raw
+          if (!t) continue
           const key = `${source}|${t}|${kind}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -879,10 +1016,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // generic_type/type_identifier child IS that clause (the named
           // identifier child, when present, is the given's own name —
           // excluded). Previously givens emitted zero type references.
+          // S1.11: stable_type_identifier joins (qualified given types).
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c && (/type$|_type$/.test(c.type) || c.type === "type_identifier" || c.type === "generic_type")) roots.push(c)
+            if (c && this.isTypePositionNode(c.type)) roots.push(c)
           }
           if (roots.length) emit(n, roots, "given_definition", "given_type")
           break
@@ -903,10 +1041,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Type clause = direct type children. The name identifier precedes
           // the type in this grammar, so no positional break; initializers
           // are call_expression/literal children and never match type nodes.
+          // S1.11: stable_type_identifier (js.Object) is a type child too —
+          // `val x: js.Object` emitted zero refs without it.
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c && (/type$|_type$/.test(c.type) || c.type === "type_identifier")) roots.push(c)
+            if (c && this.isTypePositionNode(c.type)) roots.push(c)
           }
           if (roots.length) emit(n, roots, n.type)
           break
@@ -923,6 +1063,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "function_definition":
         case "function_declaration": {
           let sawParams = false
+          // S1.12: is there a parameters clause at all? A parameterless def
+          // (`def size: Int`) has none — its type child IS the return type.
+          const hasParamsClause = !!this.findChild(n, "parameters")
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c) continue
@@ -934,7 +1077,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // (probe-verified 2026-09: def pair(): (Int, String) => Int). It
             // was added here once and could never fire, silently dropping
             // arrow-type return references.
-            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "function_type" || c.type === "tuple_type") {
+            // S1.12 (M49 #715): a PARAMETERLESS def (`def size: Int`) never
+            // sets sawParams, so its return type was labeled annotation_type
+            // / declared_type — invisible to return-filtered consumers. A
+            // type child AFTER an empty-but-present parameter list is still a
+            // return; a type child with NO parameters clause at all in a
+            // FUNCTION is the parameterless return form.
+            if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "function_type" || c.type === "tuple_type" || c.type === "stable_type_identifier") {
               // @throws[IO] annotation type parses as generic_type("throws",
               // [IO]) and appears BEFORE parameters; skip "throws" itself,
               // emit its arguments as throws_type edges.
@@ -945,7 +1094,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
               // M14 #419 G5: tuple_type return refs carry declaredOn tuple_type
               // so the mutant pins the fix precisely.
-              emit(n, [c], c.type === "tuple_type" ? "tuple_type" : (sawParams ? "return_type" : "annotation_type"), sawParams ? "return_type" : "declared_type")
+              emit(n, [c], c.type === "tuple_type" ? "tuple_type" : ((sawParams || !hasParamsClause) ? "return_type" : "annotation_type"), sawParams || !hasParamsClause ? "return_type" : "declared_type")
             }
           }
           break
@@ -989,7 +1138,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "derives_clause": {
           // M14 #419 G6: derives Show, Hashing — the clause references the
           // derived typeclasses; source is the enclosing declaration.
-          emit(n, [n], "derives_clause", "derives_type")
+          // S1.11-merge: leafOnly — the G6 recorded contract pins LEAF
+          // targets for qualified derives (see emit()).
+          emit(n, [n], "derives_clause", "derives_type", undefined, true)
           break
         }
         case "type_definition": {
@@ -1086,7 +1237,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         p = p.parent
       }
-      return "root"
+      // S1.7: one top-level sentinel (see collectDeclaredTypeRefs).
+      return "(script)"
     }
     const emitUse = (n: Node, target: string): void => {
       if (!target) return
@@ -1212,6 +1364,110 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  // ==========================================================================
+  // ZERO-REGEX STRING HELPERS (M49 JVM-closure wave, user directive: analyzers
+  // carry no regex unless a text micro-parse genuinely requires it).
+  //
+  // Each helper replaces a former regex literal with a char-scan whose
+  // equivalence is provable by string algebra, recorded here per the
+  // closure-audit rule that equivalence claims carry their own proof:
+  //
+  // - stripBracketGroups ≡ replace(/\[[^\[\]]*\]/g, ""), FAITHFULLY:
+  //     the regex matches `[` + a run containing NO `[` and NO `]` + `]`.
+  //     At each `[` the scan looks for the FIRST `]`; if any `[` occurs
+  //     before it, the match at this position fails (regex would advance)
+  //     and the `[` is emitted verbatim. A bare `>` or `<` is NEVER
+  //     consumed — measured on cats-effect `ParallelF[Id, *] ~> Id` where
+  //     a depth-scanner prototype dropped the `>` of `~>` (fabricated
+  //     `(ParallelF ~ Id)` targets, caught by the corpus differential).
+  // - stripAngleGroups ≡ replace(/<[^<>]*>/g, ""), same first-delimiter
+  //     discipline for `<`/`>`; `~>` survives because a `>` with no
+  //     preceding unmatched `<` is copied through.
+  // - stripTypeArgs ≡ bracket pass THEN angle pass (the original chained
+  //     replaces ran left-to-right in that order), then trim. Callers
+  //     loop to a fixpoint for nested groups, as before.
+  // - compactType ≡ replace(/\s+/g, ""): `\s+` is a maximal whitespace
+  //     run; the scan copies non-space chars and skips runs — identical
+  //     output for every input (whitespace = Unicode space class per
+  //     JS \s; the scan uses the same set via c===" "||\t||\n||\r||\f||\v).
+  // - isTypeishNodeName ≡ /identifier|type_identifier|_parameter$/.test
+  //     (unanchored) and ≡ /_type$|type_identifier/.test: `includes(sub)`
+  //     ≡ unanchored literal alternation; suffix tests use endsWith.
+  // - isTypePositionNode ≡ (/type$|_type$/.test(t) || t==="type_identifier"
+  //     || t==="stable_type_identifier" || t==="generic_type"):
+  //     /type$|_type$/ over a node-type string ≡ endsWith("type") because
+  //     _type$ is subsumed by type$ (any string ending in "_type" ends
+  //     in "type") — the disjunction is exactly endsWith("type").
+  // =========================================================================
+
+  private stripBracketGroups(s: string): string {
+    // Faithful emulation of replace(/\[[^\[\]]*\]/g, ""): at each `[`,
+    // find the first `]`; match only if NO `[` lies between (else emit the
+    // `[` and advance — exactly the regex engine's next-position retry).
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== "[") { out += s[i]; continue }
+      let j = i + 1
+      let nested = false
+      while (j < s.length && s[j] !== "]") {
+        if (s[j] === "[") { nested = true; break }
+        j++
+      }
+      if (j < s.length && !nested) { i = j; continue }
+      out += s[i]
+    }
+    return out
+  }
+
+  private stripAngleGroups(s: string): string {
+    // Faithful emulation of replace(/<[^<>]*>/g, ""): first `>` with no
+    // `<` between; otherwise emit and advance. `~>` / `=>` survive.
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== "<") { out += s[i]; continue }
+      let j = i + 1
+      let nested = false
+      while (j < s.length && s[j] !== ">") {
+        if (s[j] === "<") { nested = true; break }
+        j++
+      }
+      if (j < s.length && !nested) { i = j; continue }
+      out += s[i]
+    }
+    return out
+  }
+
+  private stripTypeArgs(s: string): string {
+    // Original order preserved: bracket groups strip first, then angle
+    // groups (replace-chain semantics), then trim.
+    return this.stripAngleGroups(this.stripBracketGroups(s)).trim()
+  }
+
+  private compactType(s: string): string {
+    let out = ""
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i]
+      if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f" || c === "\v") continue
+      out += c
+    }
+    return out
+  }
+
+  /** ≡ /identifier|type_identifier|_parameter$/.test(t): unanchored "identifier" ≡ includes (type_identifier is subsumed by it). NO _type disjunct — deliberately narrower than isExtensionReceiverTypeNode. */
+  private isTypeishNodeName(t: string): boolean {
+    return t.includes("identifier") || t.endsWith("_parameter")
+  }
+
+  /** ≡ /_type$|type_identifier/.test(t): suffix or the exact node type — NOT the bare-identifier disjunct of isTypeishNodeName. */
+  private isExtensionReceiverTypeNode(t: string): boolean {
+    return t.endsWith("_type") || t.includes("type_identifier")
+  }
+
+  /** ≡ /type$|_type$/.test(t) || t === "type_identifier" || t === "stable_type_identifier" (generic_type variant adds itself). */
+  private isTypePositionNode(t: string): boolean {
+    return t.endsWith("type") || t === "type_identifier" || t === "stable_type_identifier"
+  }
+
   /** Extract supertypes from an extends_clause (direct type children in v0.26.2). */
   private extractSupertypes(extendsClause: Node): string[] {
     const out: string[] = []
@@ -1282,7 +1538,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const classParamsNode = this.findChild(node, "class_parameters")
     const constructorParams: string[] = []
     if (classParamsNode) {
-      const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, classParamsNode, null, {
+      // S1.1 (M49 #715): ctor/property symbols previously created with
+      // parent=null, so createSymbol derived id from the NAME alone — every
+      // class's ctor collapsed to id "constructor" and every val param to
+      // id "x" (probe: two classes → ["constructor","constructor"],["x","x"]).
+      // A stub parent (id = class name, never pushed to symbols) qualifies
+      // the ids: A.constructor / A.x. Same fix in handleEnum.
+      const idStub = { id: name, name } as unknown as ASTEngine.UniversalSymbol
+      const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, classParamsNode, idStub, {
         type: "constructor",
         ownerName: name,
         ownerKind: ASTEngine.SymbolKind.Class,
@@ -1290,6 +1553,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       // ownerName must point at the class so contains resolves
       ctor.ownerName = name
+      // S1.15: the ctor carries its parameter payload (names + types),
+      // mirroring the java convention of copying components into the ctor.
+      const ctorParams: ASTEngine.Parameter[] = []
       symbols.push(ctor)
 
       for (let i = 0; i < classParamsNode.namedChildCount; i++) {
@@ -1298,12 +1564,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const pName = cp.childForFieldName("name")?.text
         if (!pName) continue
         constructorParams.push(pName)
+        const paramType = cp.childForFieldName("type")?.text
+        if (paramType) ctorParams.push({ name: pName, type: paramType, isImplicit: false })
         const pMods = this.collectModifiers(cp)
         const isVal = pMods.has("val")
         const isVar = pMods.has("var")
         if (isVal || isVar || isCase) {
           // val/var constructor params and case class params are real fields
-          const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, null, {
+          const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, idStub, {
             type: isVar ? "var" : "val",
             isConstructorProperty: true,
             ownerName: name,
@@ -1314,6 +1582,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push(prop)
         }
       }
+      if (ctorParams.length > 0) ctor.parameters = ctorParams
     }
 
     if (isSealed) patternsObj["Sealed Types"] = true
@@ -1332,7 +1601,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (isImplicit) patternsObj["Implicit Classes (Extension Methods)"] = true
 
-    if (this.isPublic(node)) {
+    // S1.5 (M49 #715): nested types must NOT export — handleVariable already
+    // guards `!parent`; class/object/trait/enum were missing the guard, so
+    // `class Outer { class Inner }` exported Inner as a top-level API name.
+    if (this.isPublic(node) && !parent) {
       exports.push({
         name,
         kind: ASTEngine.SymbolKind.Class,
@@ -1358,6 +1630,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // extends is the documented convention (parenless class extends is
           // legal, so kotlin's ctor-invocation signal does not transfer).
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          // S1.4: explicit structural confidence (1.0) — undefined is
+          // classifier-defaulted today but downstream >= 0.7 filters read
+          // the field directly.
+          confidence: 1.0,
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
@@ -1395,7 +1671,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     symbols.push(symbol)
 
-    if (this.isPublic(node)) {
+    // S1.5: nested objects must not export (top-level guard, same as class).
+    // M49 JVM-closure exports invariant: a companion object shares its
+    // class's NAME (class Service + object Service), so the object's export
+    // entry duplicates the class's — the F3 export-uniqueness gate (see
+    // run-fixtures.ts) rejects duplicate export names. The class is the
+    // importable unit; the companion resolves through it. Suppressed only
+    // when a same-name type export already exists in THIS file.
+    if (this.isPublic(node) && !parent && !exports.some((e) => e.name === name)) {
       exports.push({
         name,
         kind: ASTEngine.SymbolKind.Module,
@@ -1421,6 +1704,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // extends is the documented convention (parenless class extends is
           // legal, so kotlin's ctor-invocation signal does not transfer).
           type: i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
+          confidence: 1.0,
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
@@ -1453,7 +1737,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     symbols.push(symbol)
 
-    if (this.isPublic(node)) {
+    // S1.5: nested traits must not export (top-level guard, same as class).
+    if (this.isPublic(node) && !parent) {
       exports.push({
         name,
         kind: ASTEngine.SymbolKind.Interface,
@@ -1476,6 +1761,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: symbol.name,
           target: supertypes[i],
           type: ASTEngine.RelationshipType.Extends, // trait supertypes: ALL are extends
+          confidence: 1.0,
           line_number: extendsClause.startPosition.row + 1,
           metadata: { isTrait: i > 0 },
         })
@@ -1500,8 +1786,30 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols.push(symbol)
     patternsObj["Scala 3 Enums"] = true
 
-    if (this.isPublic(node)) {
+    // S1.5: nested enums must not export; S1-NEW-1: enum HERITAGE — the old
+    // handleEnum never looked at extends_clause, so `enum Color(val hex: Int)
+    // extends Serializable` emitted ZERO extends edges and NO superTypes
+    // metadata — and the oracle never derived it either (a J3-class shared
+    // blind spot the differential could never catch; probe s1-probe3). The
+    // extractor + walk mirror handleTrait (all supertypes are extends).
+    if (this.isPublic(node) && !parent) {
       exports.push({ name, kind: ASTEngine.SymbolKind.Enum, range: symbol.range })
+    }
+
+    const enumExtends = this.findChild(node, "extends_clause")
+    if (enumExtends) {
+      const supertypes = this.extractSupertypes(enumExtends)
+      symbol.metadata!.superTypes = supertypes
+      for (const st of supertypes) {
+        relationships.push({
+          source: name,
+          target: st,
+          type: ASTEngine.RelationshipType.Extends,
+          confidence: 1.0,
+          line_number: enumExtends.startPosition.row + 1,
+          metadata: { isTrait: true },
+        })
+      }
     }
 
     // SCD6b: enum constructor params (class_parameters > class_parameter,
@@ -1511,13 +1819,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the enum carries that field.
     const enumParamsNode = this.findChild(node, "class_parameters")
     if (enumParamsNode) {
-      const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, enumParamsNode, null, {
+      // S1.1: stub-parent id qualification (see handleClass).
+      const idStub = { id: name, name } as unknown as ASTEngine.UniversalSymbol
+      const ctor = this.createSymbol("constructor", ASTEngine.SymbolKind.Constructor, enumParamsNode, idStub, {
         type: "constructor",
         ownerName: name,
         ownerKind: ASTEngine.SymbolKind.Enum,
         scalaSpecific: true,
       })
       ctor.ownerName = name
+      // S1.15: ctor parameter payload (enum parity with handleClass).
+      const ctorParams: ASTEngine.Parameter[] = []
       symbols.push(ctor)
 
       for (let i = 0; i < enumParamsNode.namedChildCount; i++) {
@@ -1525,11 +1837,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (cp?.type !== "class_parameter") continue
         const pName = cp.childForFieldName("name")?.text
         if (!pName) continue
+        const paramType = cp.childForFieldName("type")?.text
+        if (paramType) ctorParams.push({ name: pName, type: paramType, isImplicit: false })
         const pMods = this.collectModifiers(cp)
         const isVal = pMods.has("val")
         const isVar = pMods.has("var")
         if (isVal || isVar) {
-          const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, null, {
+          const prop = this.createSymbol(pName, ASTEngine.SymbolKind.Property, cp, idStub, {
             type: isVar ? "var" : "val",
             isConstructorProperty: true,
             ownerName: name,
@@ -1539,6 +1853,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push(prop)
         }
       }
+      if (ctorParams.length > 0) ctor.parameters = ctorParams
     }
 
     // Enum cases: simple_enum_case (`case Red`) and full_enum_case
@@ -1582,6 +1897,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
     patternsObj: Record<string, boolean>,
     parent: ASTEngine.UniversalSymbol | null,
   ): ASTEngine.UniversalSymbol | null {
@@ -1589,7 +1905,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     patternsObj["Contextual Abstractions"] = true
 
     const explicitName = this.findChildIdentifier(node)
-    const name = explicitName || `given_${node.startPosition.row + 1}`
+    // S1.21 (M49 #715): anonymous given names were derived from the SOURCE
+    // ROW (`given_${node.startPosition.row + 1}`), so any edit ABOVE the given
+    // silently renamed the symbol and broke every stored reference. A stable
+    // per-file COUNTER (first-anonymous = 1) is rename-stable under upstream
+    // edits (only intra-file ordering shifts count, which re-analysis
+    // recomputes atomically).
+    if (!explicitName) this.givenCounter += 1
+    const name = explicitName || `given_${this.givenCounter}`
 
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Constant, node, parent, {
       type: "given",
@@ -1598,6 +1921,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       anonymous: !explicitName,
     })
     symbols.push(symbol)
+    // S1.21b: a NAMED given is a public top-level value — it is callable,
+    // importable, and takes part in implicit resolution exactly like a val.
+    // The old handler had no export path at all, so `given myOrd: Ordering[Int]`
+    // vanished from the public API surface.
+    if (explicitName && this.isPublic(node) && !parent) {
+      exports.push({ name, kind: ASTEngine.SymbolKind.Constant, range: symbol.range })
+    }
     return symbol
   }
 
@@ -1624,8 +1954,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
               const p0 = pc.namedChild(0)!
               for (let j = 0; j < p0.namedChildCount; j++) {
                 const tc = p0.namedChild(j)
-                if (tc && /_type$|type_identifier/.test(tc.type)) {
-                  extensionReceiverType = tc.text.replace(/\?$/, "")
+                if (tc && this.isExtensionReceiverTypeNode(tc.type)) {
+                  // Nullable-extension receiver `String.?(...)` (Scala 3):
+                  // strip ONE trailing ? — the old /\?$/ anchor is exact.
+                  const t = tc.text
+                  extensionReceiverType = t.endsWith("?") ? t.slice(0, -1) : t
                   break
                 }
               }
@@ -1634,7 +1967,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
-        if (/^(class|trait|object)_definition$/.test(anc.type)) break
+        if (anc.type === "class_definition" || anc.type === "trait_definition" || anc.type === "object_definition") break
         anc = anc.parent
       }
     }
@@ -1691,9 +2024,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       returnType = returnTypeNode.text
     }
 
+    // S1.5b (M49 #715): enum methods leaked as free `Function` exports — the
+    // isMethod check omits parent.kind === Enum (the enum body container is
+    // the enum symbol but its metadata.type is "enum"), so `def hex` inside
+    // `enum E` both misclassified AND exported at top level. Enum members
+    // are methods of the enum (they need an enum instance).
+    const isEnumMethod = parent?.kind === ASTEngine.SymbolKind.Enum || parent?.metadata?.type === "enum"
+    const methodKind = isMethod || isEnumMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function
+
     const symbol = this.createSymbol(
       name,
-      isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
+      methodKind,
       node,
       parent,
       {
@@ -1731,7 +2072,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    if (this.isPublic(node) && !isMethod) {
+    // S1.5 (family contract): only TOP-LEVEL public functions export — the
+    // old push skipped isMethod but not local functions (`def inner` inside
+    // `def outer` escaped as a top-level export) nor enum methods (5b above).
+    if (this.isPublic(node) && methodKind === ASTEngine.SymbolKind.Function && !parent) {
       exports.push({
         name,
         kind: ASTEngine.SymbolKind.Function,
@@ -1795,6 +2139,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (!patternNode) return
 
+    // S1.19 (M49 #715): tuple destructuring (`val (a, b) = pair`) parses the
+    // name as a tuple_pattern — the old code emitted a literal "(a, b)"
+    // symbol. Destructured fields are a run-time VALUE SHAPE, not declared
+    // API symbols (there is no single symbol to name them); skip instead of
+    // emitting garbage. Each element's USES are still emitted by the
+    // expression collectors (the identifiers are ordinary reads).
+    if (patternNode.type === "tuple_pattern") return
+
     const name = patternNode.text
     const kind = node.type === "val_definition" || node.type === "val_declaration"
       ? ASTEngine.SymbolKind.Constant
@@ -1834,7 +2186,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     let prevTypeName: string | undefined
     do {
       prevTypeName = typeName
-      typeName = typeName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+      typeName = this.stripTypeArgs(typeName)
     } while (typeName !== prevTypeName)
     if (typeName && typeName !== "unknown") {
       relationships.push({
@@ -1874,25 +2226,56 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           parent.qualified_calls.push(this.buildScalaCallPath(fnNode))
         }
         // Curried application wrapper: `self.add(1)(2)` parses as an outer
-      // call_expression whose function is the inner call `self.add(1)`. The
-      // inner call is visited separately by the walker and emits the correct
-      // `calls → add` edge — emitting here too would produce the noise target
-      // `self.add(1)` AND a duplicate `add` edge.
-      if (fnNode.type === "call_expression") return
-      let calledName = fnNode.text
-      const isQualified = fnNode.type === "field_expression"
-      if (isQualified) {
-        // obj.method — the leaf identifier is the method name
-        const kids: string[] = []
-        for (let i = 0; i < fnNode.namedChildCount; i++) {
-          const c = fnNode.namedChild(i)
-          if (c && c.type === "identifier") kids.push(c.text)
+        // call_expression whose function is the inner call `self.add(1)`. The
+        // inner call is visited separately by the walker and emits the correct
+        // `calls → add` edge — emitting here too would produce the noise target
+        // `self.add(1)` AND a duplicate `add` edge.
+        if (fnNode.type === "call_expression") return
+        // S1.10 (M49 #715): a GENERIC function node (`generic_function`, e.g.
+        // `foo.bar[Baz](1)`) is a call whose leaf must be extracted BEFORE the
+        // bracket strip — the old code fell through with fnNode.text
+        // ("foo.bar[Baz]"), left the dotted "foo.bar" as the Calls target, and
+        // the oracle emitted the same dotted shape: a shared blind spot no
+        // differential could catch (probe s1-probe3). Extract the LAST
+        // identifier leaf, mirroring the field_expression path.
+        let calledName = ""
+        let isQualified = false
+        if (fnNode.type === "generic_function") {
+          const kids: string[] = []
+          const findLeaves = (nn: Node): void => {
+            if (nn.type === "identifier") { kids.push(nn.text); return }
+            if (nn.type === "type_arguments") return
+            for (let i = 0; i < nn.namedChildCount; i++) {
+              const c = nn.namedChild(i)
+              if (c) findLeaves(c)
+            }
+          }
+          findLeaves(fnNode)
+          if (kids.length > 0) {
+            calledName = kids[kids.length - 1]
+            isQualified = kids.length > 1
+          }
+        } else {
+          calledName = fnNode.text
+          isQualified = fnNode.type === "field_expression"
+          if (isQualified) {
+            // obj.method — the leaf identifier is the method name
+            const kids: string[] = []
+            for (let i = 0; i < fnNode.namedChildCount; i++) {
+              const c = fnNode.namedChild(i)
+              if (c && c.type === "identifier") kids.push(c.text)
+            }
+            calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
+          }
         }
-        calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
-      }
       // Top-level (script-style) calls have no enclosing symbol. Attributing
       // them to a "(script)" sentinel mirrors handleInstantiation — dropping
       // them silently hollowed out top-level call graphs.
+      // S1.7 (M49 #715): ONE top-level sentinel. The old code split the file
+      // root across THREE nodes — (script) for calls/instantiates, root for
+      // declared refs/imports, global for throws — so one file's top level
+      // was three disconnected graph nodes (cross-language oddity; kotlin/java
+      // each use one). Everything unparented now sources to "(script)".
       const sourceName = parent?.name ?? "(script)"
       if (calledName) {
         // Companion-apply construction idiom (Type(...)): in Scala, PascalCase
@@ -1911,13 +2294,16 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         let prevCalled: string | undefined
         do {
           prevCalled = calledName
-          calledName = calledName.replace(/\[[^\[\]]*\]/g, "").trim()
+          calledName = this.stripBracketGroups(calledName).trim()
         } while (calledName !== prevCalled)
         if (isCapitalized && !isQualified) {
           relationships.push({
             source: sourceName,
             target: calledName,
             type: ASTEngine.RelationshipType.Instantiates,
+            // S1.4: explicit heuristic confidence — a bare PascalCase call is
+            // a companion-apply GUESS (documented 0.7 contract), never an
+            // implicit-1.0 structural edge.
             confidence: 0.7,
             line_number: node.startPosition.row + 1,
             metadata: { isInstantiation: true },
@@ -1927,6 +2313,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             source: sourceName,
             target: calledName,
             type: ASTEngine.RelationshipType.Calls,
+            // S1.4: method calls carry the documented 0.9 confidence (docs
+            // promise 0.9 for calls; the classifier reads it explicitly).
+            confidence: 0.9,
             line_number: node.startPosition.row + 1,
             metadata: {},
           })
@@ -2001,6 +2390,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     imports.push({
       module: pathStr,
+      // S1.25 (M49 #715): family consumers read `items` (engine.ts
+      // ImportInfo.items: string[]) — scala was the ONLY family member
+      // populating the legacy `specifiers` shape, so downstream import
+      // listing silently showed nothing for scala. Both shapes are filled:
+      // items = imported names, specifiers kept for any legacy reader.
+      items: selectors.map((s) => s.imported),
       specifiers: selectors,
       range: {
         startLine: node.startPosition.row + 1,

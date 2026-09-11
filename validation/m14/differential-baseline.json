@@ -20,10 +20,11 @@
     "grails-core:java": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 76,
+      "heuristic": 81,
       "perf": {
         "avgMsPerFile": 2.6
-      }
+      },
+      "note": "Re-pinned 76->81 @M49 exports wave: +5 are overrides@0.5 first-parent-guess (JD18/JD19 anonymous-class + multihop-override wave, baseline predated it). Classified live: 70/81 unmatched heuristic on grails-core are overrides 0.5 external-base edges (ASTTransformation.visit, ConsoleLogger.*) \u2014 the declared-honest class, coverage 100%/0 unexplained unchanged. Probe: script/m14/tmp/java-heuristic-classify.ts"
     },
     "grails-core:groovy": {
       "missing": 0,

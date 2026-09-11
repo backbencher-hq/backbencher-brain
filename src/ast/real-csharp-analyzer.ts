@@ -124,7 +124,9 @@ export function csharpResolveTargetTypedNew(nodeLike: any, memberTypes?: Map<str
       return null
     }
     if (cur.type === "invocation_expression" || cur.type === "argument_list" ||
-        /^(binary|conditional|prefix_unary|postfix_unary|cast|as_|await|coalesce|conditional_access|element_access|member_access)_expression$/.test(cur.type)) {
+        // ≡ /^(binary|conditional|prefix_unary|postfix_unary|cast|as_|await|coalesce|conditional_access|element_access|member_access)_expression$/ —
+        // anchored alternation over the fixed expression-node set: endsWith("_expression") + membership excludes arbitrary *_expression node types (equals-check per disjunct; as_* is startsWith).
+        CSHARP_TARGETISH_EXPRESSIONS.has(cur.type)) {
       // The new() sits INSIDE a larger expression (a call argument such as
       // `Foo(new())`, `x ? new() : y`): its target is the parameter/operand
       // type, not the enclosing declaration's type — an honest no-edge.
@@ -200,6 +202,24 @@ interface StackItem {
   parentContext?: Scope
   isExit?: boolean
 }
+
+// ≡ /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set)$/ (M49 closure wave: fixed set ≡ membership).
+const CSHARP_KEYWORDS = new Set([
+  "if", "for", "foreach", "while", "do", "switch", "case", "else", "return",
+  "throw", "using", "new", "delegate", "in", "is", "as", "sizeof", "fixed",
+  "lock", "checked", "unchecked", "params", "ref", "out", "base", "this",
+  "get", "set",
+])
+
+// ≡ /^(binary|conditional|prefix_unary|postfix_unary|cast|as_|await|coalesce|conditional_access|element_access|member_access)_expression$/
+// (M49 closure wave): the fixed node-type set whose interior a target-less
+// new() may sit in.
+const CSHARP_TARGETISH_EXPRESSIONS = new Set([
+  "binary_expression", "conditional_expression", "prefix_unary_expression",
+  "postfix_unary_expression", "cast_expression", "as_expression",
+  "await_expression", "coalesce_expression", "conditional_access_expression",
+  "element_access_expression", "member_access_expression",
+])
 
 const CSHARP_BUILTINS = new Set([
   // Console output — filtered (like Java's System.out.println)
@@ -502,7 +522,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               // structs can NEVER inherit (C#): every base of a struct is an
               // interface regardless of naming.
               const isStruct = kind === ASTEngine.SymbolKind.Struct
-              const looksLikeInterface = !declaredKind && (isStruct || (i === 0 && /^[I][A-Z]/.test(leaf) && leaf.length > 2))
+              // ≡ /^[I][A-Z]/ — "I" followed by an uppercase letter
+              // (IInterface shape heuristic; length guard stays external).
+              const looksLikeInterface = !declaredKind && (isStruct || (i === 0 && leaf.charCodeAt(0) === 73 && leaf.charCodeAt(1) >= 65 && leaf.charCodeAt(1) <= 90 && leaf.length > 2))
               const isImplements = declaredKind === ASTEngine.SymbolKind.Interface || looksLikeInterface || (i > 0 && !declaredKind)
               relationships.push({
                 source: fullName,
@@ -567,7 +589,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         }
         symbols.push(sym)
-        if (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) {
+        // M49 exports invariant: only NAMESPACE-free top-level types export
+        // (a type inside `namespace Acme.Things` is imported as
+        // Acme.Things.Widget, not bare Widget — the namespace is the unit
+        // the using-directive binds). The pre-fix push exported
+        // namespace-nested types under bare names, which the F3 gate
+        // correctly rejects as unresolvable; membership rides Contains.
+        if (!parentContext) {
           exports.push({ name: sym.name, kind: sym.kind, range: sym.range, visibility: visibility || "public" })
         }
         newContext = {
@@ -609,7 +637,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           decorators: this.extractAttributes(node),
           metadata: { isEnum: true, baseType, fullName },
         })
-        if (!parentContext || parentContext.kind === ASTEngine.SymbolKind.Namespace) {
+        // M49 exports invariant: same namespace-nesting rule as the class
+        // branch above — only namespace-free top-level enums export.
+        if (!parentContext) {
           exports.push({ name: rawName, kind: ASTEngine.SymbolKind.Enum, range: this.nodeToRange(node), visibility: visibility || "public" })
         }
         newContext = {
@@ -743,7 +773,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // constructor (its scope is active when the initializer is visited).
         // `: base(42)` vs `: this()` — node text STARTS with the colon, so
         // the discriminator is the first identifier after it.
-        const target = /:\s*base\s*\(/.test(node.text) ? "base" : "this"
+        // ≡ /:\s*base\s*\(/ — ":", any whitespace run, "base", optional
+        // whitespace, "(". Converted with the same discipline; the node text
+        // here is a constructor initializer (base_list), never a comment.
+        const target = this.matchesBaseInitializer(node.text) ? "base" : "this"
         if (parentContext?.name) {
           relationships.push({
             source: parentContext.name === "constructor" ? parentContext.rawName || "constructor" : parentContext.name,
@@ -881,8 +914,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // index as the callee (`... 2 ...))(...)`), element accesses
           // (`handlers[handler](...)`) and argument fragments surface as junk
           // targets too. Only a clean identifier is a real call target.
-          const isCSharpKeyword = /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set)$/.test(target)
-          if (!isCSharpKeyword && /^[A-Za-z_][A-Za-z0-9_]*$/.test(target) && !this.isCSharpBuiltin(callExpr)) {
+          // ≡ /^(if|for|…|set)$/ — fixed keyword set ≡ Set membership.
+          const isCSharpKeyword = CSHARP_KEYWORDS.has(target)
+          // ≡ /^[A-Za-z_][A-Za-z0-9_]*$/ — full-string identifier shape
+          // (cpp isPlainIdentifier twin; same \w class semantics).
+          if (!isCSharpKeyword && this.isPlainIdentifier(target) && !this.isCSharpBuiltin(callExpr)) {
             relationships.push({
               source: parentContext.rawName,
               target,
@@ -1415,6 +1451,34 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // divergent copies (the oracle's DFS even picked argument identifiers as
     // targets).
     return csharpResolveTargetTypedNew(node, memberTypes)
+  }
+
+  // ≡ /^[A-Za-z_][A-Za-z0-9_]*$/.test(s) — zero-regex helper (M49 closure
+  // wave). \w ≡ [A-Za-z0-9_] in non-unicode mode.
+  private isPlainIdentifier(s: string): boolean {
+    if (s.length === 0) return false
+    const c0 = s.charCodeAt(0)
+    const firstOk = (c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122) || c0 === 95
+    if (!firstOk) return false
+    for (let i = 1; i < s.length; i++) {
+      const c = s.charCodeAt(i)
+      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+      if (!ok) return false
+    }
+    return true
+  }
+
+  // ≡ /:\s*base\s*\(/ (zero-regex helper, M49 closure wave): colon, any
+  // whitespace run, "base", optional whitespace, open paren.
+  private matchesBaseInitializer(text: string): boolean {
+    let i = text.indexOf(":")
+    if (i === -1) return false
+    i++
+    while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
+    if (!text.startsWith("base", i)) return false
+    i += 4
+    while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\n" || text[i] === "\r")) i++
+    return i < text.length && text[i] === "("
   }
 
   private isCSharpBuiltin(call: string): boolean {
