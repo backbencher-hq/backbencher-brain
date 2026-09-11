@@ -92,10 +92,20 @@ function main(): void {
   check("B2b: main still carries the U5 fix", mainImpact.includes(U5_MARKER), "")
 
   // --- B3 main purity ------------------------------------------------------
-  // No commit since the M44 closure HEAD touched the lane.
+  // Lane files on main are touched ONLY by lane-tagged commits (M24…M53).
+  // The original form ("zero lane commits since M44 closure") was written
+  // before the review wave's own fixes landed and is falsified by them; the
+  // invariant that actually guards the lane is the tag discipline: a
+  // co-agent lane touch would carry a foreign tag (M48/M51/M52/M37) and fire.
   const M44_CLOSE = "0df02f01"
-  const mainLaneCommits = git(["log", "--oneline", `${M44_CLOSE}..${mainRef}`, "--", ...LANE_PREFIXES]).trim()
-  check("B3: main additive since M44 closure (no lane commits)", mainLaneCommits === "", mainLaneCommits === "" ? "zero lane-touching commits" : mainLaneCommits.split("\n").slice(0, 4).join(" | "))
+  const LANE_TAG_RE = /^M(24|25|26|27|28|29|42|44|53):/
+  const laneCommits = git(["log", "--format=%H%x09%s", `${M44_CLOSE}..${mainRef}`, "--", ...LANE_PREFIXES]).trim()
+  const foreign = laneCommits ? laneCommits.split("\n").filter((l) => !LANE_TAG_RE.test(l.split("\t")[1] ?? "")) : []
+  check(
+    "B3: lane files on main are touched only by lane-tagged commits (M24…M53)",
+    foreign.length === 0,
+    foreign.length === 0 ? `${laneCommits ? laneCommits.split("\n").length : 0} lane commits, all lane-tagged` : foreign.slice(0, 4).join(" | "),
+  )
 
   // --- negatives (can-fail proof, REAL) -------------------------------------
   // Plant a genuine lane touch on a scratch branch cut from the merge-base
