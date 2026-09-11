@@ -8,7 +8,7 @@
   "failed": 0,
   "failures": 0,
   "negativeCases": 4,
-  "currentCommit": "c67a535ae295f93ebfa6902c4fb405d14b5aef8f",
+  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -18,5 +18,5 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-09-11T20:37:56.506Z"
+  "generatedAt": "2026-09-11T21:17:33.374Z"
 }

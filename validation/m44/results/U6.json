@@ -9,11 +9,11 @@
   "negativeCases": 2,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "752b4a43e1ffcd5185df5adf90c2cd07d8863f52",
+  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-09-11T20:50:21.653Z",
+  "generatedAt": "2026-09-11T21:26:51.314Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/.tools/m44-u6-fixture",
     "files": [
