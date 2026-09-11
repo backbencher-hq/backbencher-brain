@@ -61,14 +61,22 @@
   {
    "id": "T1",
    "title": "TypeScript review-intake wave (issue #725): process reviews/typescript 11 confirmed claims",
-   "status": "pending",
-   "notes": "External review: 11 confirmed, 10 rejected; second pass refined T1 scope (gate on React signal, don't remove) with zero fixture contradictions. Fixes: T1 hook React-signal gate, T2 decorator exact-match, T3 return inference (+param lookup), T4 undefined path, T5 controller-base composition, T6 byPos +1, T7 hook range +1, T8 import qualified guard, T9 taint leaf match, T10 pure-lexical module resolution, template-double single emission. Gates: 8 fixtures + forbidErrors/forbidApiContractPaths/expectTaintSources runner extensions, 8 mutants each caught by its fixture, TSD11-TSD19. T6 unassertable (bare-name outputs) documented without fixture/mutant per honesty rule. Flips to verified at closeout with evidence commit."
+   "status": "verified",
+   "notes": "Co-agent T-wave (analyzer in 977e687e, fixtures in 60a2dc32) independently re-verified claim-by-claim against live parses: T1-T10 all PASS. Gap found+closed by verification: T6 had no fixture/mutant \u2014 added typescript/positional-payload (owner-pinned both symbols, CPPD10 anti-pollution) + mutant typescript/positional-first-name-collision (caught). Spec TSD20-TSD28 recorded (incl. real template-dedup Low-note). Certification @1a9255da: F3 ts 56/56, F4 392/392, F1 ts clean 386 types, R1 31/31, R2 6/6, G1 51/0, F5 vue-core+element-plus 100/0/0. Full analyzer diff co-audited (module-resolver rewrite: resolvedPath claim verified, R2 shrink-only holds).",
+   "evidenceFile": "reviews/typescript/master-review.md",
+   "verifiedAtCommit": "1a9255da"
   },
   {
    "id": "J2",
    "title": "JavaScript review-intake wave (issue #726): process reviews/javascript 13 confirmed claims",
    "status": "pending",
    "notes": "External review: 13 confirmed, 2 rejected (require handling + async-named methods, both fixture-pinned correct); J7 downgraded (dotted heritage pinned by js-member-heritage \u2014 needs cross-family ruling, not code). Fixes: J1 owner-qualified call keys, J2 method-only override pairing + verified reasonCode + in-file-base guess suppression, J3 last-wins replace + dead-span pruning/skipping, J4 clause-shape isDefault (ESM+CJS), J5 default-expression sentinel, J6 alias-first exports, J8 destructured-with-default params, J9 #private visibility, J10 cap removal, T8-analog import guard, exports rebinding. Gates: 12 fixtures, 12 mutants each caught by its fixture, JSD9-JSD19 (JSD19 rules J7 out of scope). Flips to verified at closeout with evidence commit."
+  },
+  {
+   "id": "V1",
+   "title": "Vue review-intake wave (issue #730): process reviews/vue 10 confirmed claims",
+   "status": "pending",
+   "notes": "External review: 10 confirmed (incl. M5 from TS-path expansion), 8 rejected. Fixes: H1 data-state keys, H2 range shifts, H3 byte coherence (+engine sfcScriptStartIndex), M1 receiver-only template tokenizer, M2 quoted/computed keys, M3 serverPrefetch, M4 structural default-export check, M5 Options payload merge. Gates: 9 fixtures + expectSymbolRanges runner gate, 8 mutants each caught by its fixture, VSD11-VSD18, element-plus lane 418/418 0 unexplained. Flips to verified at closeout with evidence commit."
   }
  ]
 }
