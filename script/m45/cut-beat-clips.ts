@@ -12,7 +12,7 @@
 
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
@@ -109,12 +109,13 @@ function parseObserved(observed: string): [number, number] {
 const manifest: Record<string, unknown> = {
   issue: "M45.D1",
   milestone: "M45",
-  purpose: "per-beat source clips for 15s-capped generative editing tools (e.g. Kling)",
+  purpose: "per-beat source clips for generative editing tools with a 3-15s input window (e.g. Kling)",
   generatedAt: new Date().toISOString(),
   clips: [] as Array<Record<string, unknown>>,
 }
 
 const MAX_SECONDS = 15
+const MIN_SECONDS = 3 // Kling rejects inputs below 3s as well as above 15s
 let failures = 0
 
 for (const [scenario, cfg] of Object.entries(SCENARIOS)) {
@@ -125,16 +126,22 @@ for (const [scenario, cfg] of Object.entries(SCENARIOS)) {
   const src = probe(takePath)
   const takeSha = sha256(takePath)
   mkdirSync(cfg.outDir, { recursive: true })
+  // stale clips from earlier runs must not linger — a 1.4s clip that no longer
+  // passes the 3s floor would otherwise survive in the folder
+  for (const f of readdirSync(cfg.outDir)) {
+    if (f.endsWith(".mp4")) unlinkSync(path.join(cfg.outDir, f))
+  }
 
-  // merge beats shorter than 4.5s into neighbors so we never emit a clip so
-  // short it's useless; respect the 15s cap by splitting long beats.
+  // Kling accepts only 3-15s: split long beats, then merge any beat shorter
+  // than 3s into a neighbor (next preferred, else previous) so every emitted
+  // clip fits the tool's window.
   type Plan = { name: string; in: number; out: number }
-  const plans: Plan[] = []
+  const raw: Plan[] = []
   for (const b of beats) {
     const [a, z] = parseObserved(b.observed)
     const dur = z - a
     if (dur <= MAX_SECONDS) {
-      plans.push({ name: b.name, in: a, out: Math.min(z, src.seconds) })
+      raw.push({ name: b.name, in: a, out: Math.min(z, src.seconds) })
       continue
     }
     // split long beats into chunks <= 15s
@@ -142,13 +149,34 @@ for (const [scenario, cfg] of Object.entries(SCENARIOS)) {
     let part = 1
     while (t < z - 0.01) {
       const chunk = Math.min(MAX_SECONDS, z - t)
-      plans.push({ name: `${b.name}-p${part}`, in: t, out: t + chunk })
+      raw.push({ name: `${b.name}-p${part}`, in: t, out: t + chunk })
       t += chunk
       part++
     }
   }
-  // drop plans outside the source or shorter than 1s
-  const good = plans.filter((p) => p.out - p.in >= 1 && p.in >= 0 && p.out <= src.seconds + 0.5)
+  const plans: Plan[] = []
+  for (let i = 0; i < raw.length; i++) {
+    const p = raw[i]
+    if (p.out - p.in >= MIN_SECONDS) {
+      plans.push(p)
+      continue
+    }
+    const next = raw[i + 1]
+    if (next && next.out - p.in <= MAX_SECONDS) {
+      next.in = p.in
+      next.name = `${p.name}+${next.name}`
+      continue
+    }
+    const prev = plans[plans.length - 1]
+    if (prev && p.out - prev.in <= MAX_SECONDS) {
+      prev.out = p.out
+      prev.name = `${prev.name}+${p.name}`
+      continue
+    }
+    plans.push(p) // unmergeable short clip: keep it; the 3s check will flag it
+  }
+  // drop plans outside the source
+  const good = plans.filter((p) => p.in >= 0 && p.out <= src.seconds + 0.5)
   if (good.length === 0) fail(`${scenario}: no valid beat plans derived`)
 
   console.log(`\n=== ${scenario}: ${good.length} clips from ${cfg.take} (${src.seconds.toFixed(1)}s) ===`)
@@ -175,6 +203,7 @@ for (const [scenario, cfg] of Object.entries(SCENARIOS)) {
     const checks: Array<{ name: string; pass: boolean; detail: string }> = []
     const add = (name: string, pass: boolean, detail: string) => checks.push({ name, pass, detail })
     add("duration ±0.15s", Math.abs(c.seconds - dur) <= 0.15, `${c.seconds.toFixed(2)}s vs ${dur.toFixed(2)}s`)
+    add("within 3-15s tool window", c.seconds >= MIN_SECONDS - 0.01 && c.seconds <= MAX_SECONDS + 0.01, `${c.seconds.toFixed(2)}s`)
     add("resolution", c.w === src.w && c.h === src.h, `${c.w}x${c.h}`)
     add("fps", Math.abs(c.fps - src.fps) < 0.01, `${c.fps.toFixed(2)}`)
     add("no audio", c.audio === false, c.audio ? "audio stream present!" : "silent")
