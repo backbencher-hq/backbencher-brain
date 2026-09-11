@@ -54,6 +54,24 @@ export const IMPACT_BUDGET = {
   maxDepth: 5,
 } as const
 
+/** Root symbol types the engine's graph traversal can root (the engine's
+ *  STRUCTURAL whitelist, src/intelligence/graph/graph-engine.ts
+ *  resolveGraphRoot). M53: a DIRECT root outside this set means the engine's
+ *  M48.C1 any-type exact resolve picked a member (constructor, plain field…)
+ *  — those re-root through their OWNING declaration with the U5 rules, never
+ *  silently ride a gravity pick. Exported so the bb/graph door shares the
+ *  ONE list; drift-gated by the U5 gate's mutant suite. */
+export const IMPACT_TRAVERSABLE_ROOT_TYPES: readonly string[] = [
+  "function",
+  "method",
+  "class",
+  "interface",
+  "trait",
+  "struct",
+  "enum",
+  "macro",
+]
+
 export interface ImpactResult {
   root: { id: string; name: string; file: string }
   /** Reverse dependencies, bounded, deepest last. */
@@ -97,8 +115,9 @@ export interface ImpactMemberIdentity {
 
 /** Component-aligned suffix match: the stored relative path must be a
  *  path-suffix of the hint ("src/greeter.ts" matches
- *  "/home/u/repo/src/greeter.ts"), never a bare substring. */
-function memberFileMatches(hint: string, stored: string): boolean {
+ *  "/home/u/repo/src/greeter.ts"), never a bare substring. Exported for the
+ *  bb/graph door — the hint semantics are ONE decision, shared. */
+export function memberFileMatches(hint: string, stored: string): boolean {
   const h = hint.replace(/\\/g, "/")
   const s = stored.replace(/\\/g, "/")
   if (h === s) return true
@@ -267,6 +286,43 @@ export async function computeImpact(
       throw error
     }
     resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
+  }
+  // M53: the hover's server-resolved identity beats the engine's gravity
+  // pick. M48.C1 made the engine resolve exact member names DIRECTLY
+  // (gravity-ordered, any type), which silently bypassed the U5 fallback and
+  // could root a same-name member in the WRONG file (found live: two
+  // `constructor` rows; the hinted greeter.ts request rooted the
+  // higher-gravity one). The hint is a server-resolved identity, so a root
+  // outside it is a silent relabel — re-resolve through the hinted member's
+  // OWNING declaration with the same U5 rules (owner exists, is traversable,
+  // and the member has no reverse edges of its own). A hint-less unique
+  // member the engine whitelist excludes re-roots too (the fallback owns
+  // that decision for BOTH doors). Failures here are never silent: a
+  // mismatched or unresolvable hint keeps the declared error.
+  const rootType = (result.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
+  if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
+    const owner = resolveImpactMemberOwner(db, projectId, symbolName, memberFile)
+    if (owner === null) {
+      throw new Error(
+        `bb/impact: symbol '${symbolName}' is not a traversable root (${rootType}) — no impact set exists` +
+          ` (declared error: the symbol was not found as a traversable root${
+            memberFile
+              ? "; the hinted file does not disambiguate it — hover a symbol that was indexed"
+              : "; run `bb index` or check the name"
+          })`,
+      )
+    }
+    result = await traverse(projectId, owner.name, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+    if (!result.root || !result.root.id) throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error)`)
+    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
+  } else if (memberFile && result.root && rootType && IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
+    // Traversable root WITH a hint: still the hinted identity's truth or the
+    // declared error — gravity never overrules the hover's identity.
+    if (typeof result.root.file !== "string" || !memberFileMatches(memberFile, result.root.file)) {
+      throw new Error(
+        `bb/impact: symbol '${symbolName}' resolves to a member in '${result.root.file}' but the hover's identity is '${memberFile}' — the hinted symbol was not found at that identity; refusing the silent relabel (declared error)`,
+      )
+    }
   }
   if (!result.root || !result.root.id) {
     throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error; run \`bb index\` or check the name)`)
