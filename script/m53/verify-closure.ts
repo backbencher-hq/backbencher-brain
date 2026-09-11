@@ -84,9 +84,10 @@ try {
 } catch {}
 check("G1: R3 zero-touch still holds against the live git state", zeroTouchStill, `merge-base ${mergeBaseNow.slice(0, 8)}`)
 
-// R2's index floor re-asserted against the real dbs (the demo repo's index
-// must still exist at the recorded symbol count — an index wipe or a
-// regression below the floor fires).
+// R2's index floor re-asserted against the real dbs: the demo repo's db is
+// identified by its file rows (paths under the demo root) — not by a symbol
+// count equality (an index that GREW would fail an equality check; the floor
+// is the declared regression bar). Table is brain_symbol (singular).
 let indexFloorHolds = false
 let floorDetail = ""
 try {
@@ -96,16 +97,17 @@ try {
   const floor = Number(r2?.differential?.symbols?.floor ?? 0)
   for (const db of dirs) {
     try {
-      const out = execFileSync("python3", ["-c", `import sqlite3, sys\ntry:\n    print(sqlite3.connect(sys.argv[1]).execute("select count(*) from brain_symbols").fetchone()[0])\nexcept Exception:\n    print(-1)`, db], { encoding: "utf8" }).trim()
+      const out = execFileSync("python3", ["-c", `import sqlite3, sys\nconn = sqlite3.connect(sys.argv[1])\ntry:\n    hits = conn.execute("select count(distinct f.path) from brain_file f where f.path like ?", ("%bb-demo-hub%",)).fetchone()[0]\n    if hits == 0:\n        print("skip")\n    else:\n        print(conn.execute("select count(*) from brain_symbol").fetchone()[0])\nexcept Exception:\n    print("skip")`, db], { encoding: "utf8" }).trim()
+      if (out === "skip" || out === "") continue
       const n = Number(out)
-      if (n === Number(r2?.index?.symbols)) {
+      if (Number.isFinite(n) && n > 0) {
         indexFloorHolds = n >= floor
         floorDetail = `${db.split("/").slice(-2, -1)[0]}: ${n} symbols (floor ${floor})`
         break
       }
     } catch {}
   }
-  if (!indexFloorHolds) floorDetail = `no db matches the recorded ${r2?.index?.symbols} symbols`
+  if (!floorDetail) floorDetail = "no db holds the demo repo's files"
 } catch {
   indexFloorHolds = false
 }
@@ -186,7 +188,7 @@ check("G2: INTEGRATION-RECEIPT.md regenerates byte-identically", onDisk === fres
   negative("G3: a known-gap R1 fires the prerequisite", badR1.status !== "verified")
   const badR2 = { ...r2, differential: { ...r2?.differential, symbols: { now: 1, floor: 30 } } }
   negative("G3: a regressed index floor fires", Number(badR2.differential.symbols.now) < Number(badR2.differential.symbols.floor))
-  const doctored = fresh.replace("do not hurt or break", "have been reviewed and approved by")
+  const doctored = fresh.replace("verified against this lane", "approved without verification by")
   negative("G3: a doctored receipt fact fails byte-identity", doctored !== fresh)
 }
 
