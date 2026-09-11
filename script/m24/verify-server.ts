@@ -291,6 +291,40 @@ const MUTANTS: Mutant[] = [
     from: 'protocolVersion: "3.18",',
     to: "",
   },
+  {
+    // M53 live-session defect (2026-09-12): the hover handler leaked the
+    // component envelope ({contents: null, provenance}) onto the wire. The
+    // stock client converter throws on contents:null ("reading 'kind'") and
+    // VS Code logs "provider FAILED" — the declared-absence contract rendered
+    // as a crash. The wire law: hover answers a PROTOCOL Hover (null when
+    // absent; contents+range+data when present), like every other read
+    // method. The oracle spawns the REAL dist server and hovers a position
+    // with nothing indexed: the mutant leaks the envelope (contents !==
+    // undefined), the honest server answers plain null.
+    name: "hover: leak the component envelope onto the wire",
+    from: "if (r.contents === null || r.range === null || r.data === null) return null",
+    to: "if (false) return null",
+    oracle: async (mod) => {
+      const ws = mkdtempSync(join(tmpdir(), "bblsp-hoverwire-"))
+      try {
+        const server = new mod.BbLspServer(ws)
+        await server.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+        await server.handleMessage({ jsonrpc: "2.0", method: "initialized", params: {} })
+        const uri = "file://" + join(ws, "nothing.ts")
+        const res = await server.handleMessage({
+          jsonrpc: "2.0", id: 2, method: "textDocument/hover",
+          params: { textDocument: { uri }, position: { line: 0, character: 0 } },
+        })
+        const hover = (res as any)?.result
+        // Wire law: absence is null (or undefined) — NEVER an object with
+        // contents (the envelope) and never an object without contents.
+        if (hover === null || hover === undefined) return false // honest
+        return true // envelope leaked OR malformed object
+      } finally {
+        try { rmSync(ws, { recursive: true, force: true }) } catch {}
+      }
+    },
+  },
 ]
 
 async function runMutants(): Promise<number> {

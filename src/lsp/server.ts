@@ -512,10 +512,26 @@ export function wireFeatures(server: BbLspServer): void {
 
   server.register("textDocument/hover", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
-    return hover(raw, {
+    const r = await hover(raw, {
       filePath: uriToPath(params?.textDocument?.uri ?? ""),
       position: params?.position ?? { line: 0, character: 0 },
     })
+    // Wire law (same rule as definition below — LSP 3.18): hover answers a
+    // PROTOCOL Hover, never the component envelope. The envelope's
+    // `contents: null` declared-absence shape is INVALID on the wire — the
+    // stock client converter throws on it ("Cannot read properties of null
+    // (reading 'kind')", live VS Code session 2026-09-12) and VS Code then
+    // logs "provider FAILED" and silently falls back to the native hover:
+    // the absence contract renders as a crash. Presence keeps the honest
+    // markdown; absence is wire `null`. M42/M44 extras (evidence tier,
+    // provenance, action args) ride `Hover.data` — the spec's declared
+    // data slot, which the client passes through untouched.
+    if (r.contents === null || r.range === null || r.data === null) return null
+    return {
+      contents: r.contents,
+      range: { start: r.range.start, end: r.range.end },
+      data: { provenance: r.provenance, symbol: r.data },
+    }
   })
 
   // Wire law (LSP 3.18) — same rule as documentHighlight below. The standard
