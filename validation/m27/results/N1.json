@@ -27,15 +27,13 @@
     }
   ],
   "nvim": "NVIM v0.12.5",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "2e9fa293cf68e8cd1c955ad1cde11c399e200a46",
   "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
   "evidenceFile": "N1.json",
-  "generatedAt": "2026-09-07T22:50:26.275Z",
-  "claimLevel": "I3 \u2014 real editor session, machine-driven, real server over stdio",
+  "generatedAt": "2026-09-11T04:01:57.207Z",
+  "claimLevel": "I3 — real editor session, machine-driven, real server over stdio",
   "limitations": [
-    "Fixture seeded with the shared-core convention (real hash + stat) \u2014 the same shape M25.E5 uses.",
+    "Fixture seeded with the shared-core convention (real hash + stat) — the same shape M25.E5 uses.",
     "Graph webview out of scope in Neovim (D-6); the capability matrix records the delta."
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  ]
 }

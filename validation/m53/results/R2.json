@@ -1,0 +1,36 @@
+{
+  "status": "verified",
+  "head": "0df02f01f25a3c8b003e60a8fad27397f5364174",
+  "repo": "$HOME/bb-demo-hub",
+  "index": {
+    "files": 8,
+    "symbols": 30,
+    "relationships": 85,
+    "m51GuardClean": true
+  },
+  "differential": {
+    "files": {
+      "now": 8,
+      "floor": 8
+    },
+    "symbols": {
+      "now": 30,
+      "floor": 30
+    },
+    "relationships": {
+      "now": 85,
+      "floor": 85
+    },
+    "references": {
+      "now": 6,
+      "floor": 2
+    },
+    "impactRoots": {
+      "now": 2,
+      "floor": 2
+    }
+  },
+  "checks": 13,
+  "failed": 0,
+  "generatedAt": "2026-09-11T03:08:36.254Z"
+}

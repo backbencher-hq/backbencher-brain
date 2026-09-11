@@ -26,10 +26,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "d330eb4f34e96e8e3eb46f9e2de67987ec17c442",
+  "currentCommit": "2e9fa293cf68e8cd1c955ad1cde11c399e200a46",
   "verifierCommand": "npx tsx script/m28/verify-union.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-09T21:57:20.134Z",
+  "generatedAt": "2026-09-11T04:03:07.286Z",
   "claimLevel": "verified — MCP answers and IDE answers are machine-proven identical on the shared fixture",
   "limitations": [
     "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."

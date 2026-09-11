@@ -14,8 +14,15 @@
       "edgeCount": 1,
       "sampleBridge": null,
       "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "origin": "real project index"
     }
   ],
-  "realDbsScanned": 38,
-  "generatedAt": "2026-09-07T22:49:35.681Z"
+  "realDbsScanned": 40,
+  "generatedAt": "2026-09-11T04:01:03.898Z"
 }

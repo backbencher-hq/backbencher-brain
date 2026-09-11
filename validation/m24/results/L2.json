@@ -2,11 +2,11 @@
   "issue": "491",
   "code": "L2",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "sourceFingerprint": "474521fe12cfc31fe411e5380d0009c241e1263a655373ac2f19f3d8dbcee814",
+  "currentCommit": "2e9fa293cf68e8cd1c955ad1cde11c399e200a46",
+  "sourceFingerprint": "40b148a31a5c07d4ba55190c829ca6606a4c94433a1b533e7d3e9a18671726aa",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-09-08T19:41:14.774Z",
+  "generatedAt": "2026-09-11T03:52:07.557Z",
   "passed": 20,
   "failed": 0,
   "failures": [],
@@ -23,7 +23,5 @@
     "evidence tiers describe relationship data quality, not symbol truth",
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  ]
 }
