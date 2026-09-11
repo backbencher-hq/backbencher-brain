@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "42e137160d56ef56ceeea1e2f2571f8f58e6be14",
+  "currentCommit": "06a33e03e9def75e883ce534d7b0760e3349d7f4",
   "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
   "evidenceFile": "U5.json",
-  "generatedAt": "2026-09-11T16:30:08.025Z",
+  "generatedAt": "2026-09-11T17:36:04.567Z",
   "fixture": "script/m44/u5-fixture.ts (real indexer + real dist server)",
   "laws": [
     "R0 fixture truth from the REAL indexer (seed can never drift)",
