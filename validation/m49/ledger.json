@@ -69,8 +69,10 @@
   {
    "id": "J2",
    "title": "JavaScript review-intake wave (issue #726): process reviews/javascript 13 confirmed claims",
-   "status": "pending",
-   "notes": "External review: 13 confirmed, 2 rejected (require handling + async-named methods, both fixture-pinned correct); J7 downgraded (dotted heritage pinned by js-member-heritage \u2014 needs cross-family ruling, not code). Fixes: J1 owner-qualified call keys, J2 method-only override pairing + verified reasonCode + in-file-base guess suppression, J3 last-wins replace + dead-span pruning/skipping, J4 clause-shape isDefault (ESM+CJS), J5 default-expression sentinel, J6 alias-first exports, J8 destructured-with-default params, J9 #private visibility, J10 cap removal, T8-analog import guard, exports rebinding. Gates: 12 fixtures, 12 mutants each caught by its fixture, JSD9-JSD19 (JSD19 rules J7 out of scope). Flips to verified at closeout with evidence commit."
+   "status": "verified",
+   "notes": "Other-agent JS wave (analyzer @977e687e, fixtures @60a2dc32) independently re-verified claim-by-claim against live parses: J1-J10 + J-rebind all PASS (J7 held as JSD19 RULED do-not-fix, pinned). Coverage audit (T6 lesson): every claim cites >=1 fixture (14 J-wave fixtures), 30 JS mutants all caught in the 392/392 battery, spec JSD9-JSD19 recorded. Certification @a602fd01: F3 js 49/49, F4 392/392, F1 pass, F5 grails-core 100/0/0 (7.5ms/file) + lodash 100/0/0, R1 31/31, R2 6/6, G1 51/0.",
+   "evidenceFile": "reviews/javascript/master-review.md",
+   "verifiedAtCommit": "a602fd01"
   },
   {
    "id": "V1",
