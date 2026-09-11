@@ -12,7 +12,7 @@
 //  - any failure exits non-zero; nothing is excused
 
 import { spawnSync, execFileSync } from "node:child_process"
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
@@ -94,7 +94,7 @@ check("X1.downstream-m52-V1", v1.ok, v1.detail)
     console.log(JSON.stringify({ fk: fk.foreign_keys, danglers: danglers.c, nullSource: nullSource.c, withName: withName.c, orphanSyms: orphanSyms.c }))
   `)
   const r = spawnSync("bun", ["run", receiptScript], { cwd: ROOT, encoding: "utf8", timeout: 120_000 })
-  try { require("node:fs").rmSync(receiptScript, { force: true }) } catch {}
+  rmSync(receiptScript, { force: true })
   let rec: any = null
   try { rec = JSON.parse(r.stdout.trim().split("\n").pop() ?? "") } catch {}
   if (!rec) {
