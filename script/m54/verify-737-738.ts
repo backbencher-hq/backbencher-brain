@@ -20,7 +20,7 @@
 //        works on SQLite 3.49.2. Sections not applicable to the current
 //        runtime are printed as explicit SKIPPED lines — never silent.
 
-import { readFileSync, mkdtempSync } from "node:fs"
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -228,6 +228,98 @@ async function main() {
       skip("738 bun-acceptance documentation", "bun-only behavior; covered by the bun gate run")
     }
     if (isBun) skip("738 node-rejection proof", "node-only behavior; covered by the tsx gate run")
+  }
+
+  // ═══════════════════════ #756 section ═══════════════════════
+  {
+    // The captured production hazard (#756): a child symbol's auto-generated
+    // contains edge references its owner row BEFORE that row is inserted
+    // (same CONTAINER_PRIORITY class, raw analyzer order — e.g. namespace
+    // Inner:1 owned by namespace OuterNs:10 declared later in the file).
+    // Under FK-ON the immediate edge insert fails and rolls back the batch.
+
+    // H0: the hazard shape itself, minimal, under THIS runtime's FK-ON policy.
+    {
+      const h = await openFixtureDb(path.join(tmp, "hazard.db"))
+      const hExec = (s: string) => (isBun ? (h as any).run(s) : (h as any).exec(s))
+      const hPrep = (s: string) => (h as any).prepare(s)
+      hExec(`CREATE TABLE brain_file (id TEXT PRIMARY KEY, project_id TEXT, path TEXT, time_updated INTEGER)`)
+      hExec(`CREATE TABLE brain_symbol (
+        id TEXT PRIMARY KEY, project_id TEXT, file_id TEXT, name TEXT, owner_symbol_id TEXT, time_updated INTEGER,
+        FOREIGN KEY (file_id) REFERENCES brain_file(id) ON DELETE CASCADE
+      )`)
+      hExec(`CREATE TABLE brain_relationship (
+        id TEXT PRIMARY KEY, project_id TEXT,
+        source_symbol_id TEXT NOT NULL, target_symbol_id TEXT, target_external TEXT,
+        relationship_type TEXT, time_updated INTEGER,
+        FOREIGN KEY (source_symbol_id) REFERENCES brain_symbol(id) ON DELETE CASCADE,
+        FOREIGN KEY (target_symbol_id) REFERENCES brain_symbol(id) ON DELETE SET NULL
+      )`)
+      hPrep(`INSERT INTO brain_file VALUES ('f1','p','x.ts',1)`).run()
+      hPrep(`INSERT INTO brain_symbol VALUES ('p:f1:Inner:1','p','f1','Inner',null,1)`).run()
+      let rejected = false
+      try {
+        // the OLD interleaved order: edge first (owner row does not exist yet)
+        hPrep(`INSERT INTO brain_relationship VALUES ('r1','p','p:f1:OuterNs:10','p:f1:Inner:1',null,'contains',1)`).run()
+      } catch (e: any) {
+        rejected = /FOREIGN KEY constraint failed/i.test(e.message)
+      }
+      check("756: hazard shape rejected under FK-ON (edge before owner row)", rejected)
+      h.close?.()
+    }
+
+    // H1/H2: the REAL storeResults must store a forward-reference fixture
+    // cleanly now (buffered contains flush after the symbol loop).
+    process.env.BB_DATA_DIR = path.join(tmp, "bb-756-data")
+    const { getProjectId } = await import(path.join(ROOT, "src/cli/index.ts"))
+    const { storeResults } = await import(path.join(ROOT, "src/ast/parallel-indexer.ts"))
+    const proj = path.join(tmp, "proj756")
+    mkdirSync(path.join(proj, "src"), { recursive: true })
+    writeFileSync(path.join(proj, "src", "forward.ts"), "// fixture\n")
+    const pid = (getProjectId as any)(proj)
+    const results: any[] = [
+      {
+        success: true,
+        filePath: path.join(proj, "src", "forward.ts"),
+        language: "typescript",
+        imports: [],
+        symbols: [
+          // child FIRST — its owner row (OuterNs) is inserted after it
+          { name: "Inner", type: "namespace", startLine: 1, endLine: 5, ownerName: "OuterNs" },
+          { name: "OuterNs", type: "namespace", startLine: 10, endLine: 20 },
+        ],
+        relationships: [],
+      },
+    ]
+    let counts: any
+    try {
+      counts = await (storeResults as any)(pid, proj, results, { skipResolution: true })
+      check("756: real storeResults stores forward-reference fixture without rollback", !!counts && counts.symbols === 2 && counts.relationships >= 1, JSON.stringify(counts))
+    } catch (e: any) {
+      check("756: real storeResults stores forward-reference fixture without rollback", false, e.message)
+      counts = null
+    }
+    if (counts) {
+      const bdb: any = await (await import(path.join(ROOT, "src/brain/database.ts"))).BrainDatabase.getRawInstance(pid)
+      const edge = (bdb.prepare(`SELECT source_symbol_id, target_symbol_id FROM brain_relationship WHERE relationship_type='contains'`).all() as any[])[0]
+      const fileRow = (bdb.prepare(`SELECT id FROM brain_file`).all() as any[])[0]
+      const fid = fileRow?.id ?? ""
+      check("756: contains edge endpoints resolved to real rows", !!edge && edge.source_symbol_id === `${fid}:OuterNs:10` && edge.target_symbol_id === `${fid}:Inner:1`, JSON.stringify(edge))
+      bdb.close?.()
+    }
+
+    // H3: source conformance — buffer inside the symbol loop, flush BEFORE the
+    // engine-relationship block, and NO immediate insert left in the contains block.
+    const pi2 = readFileSync(path.join(ROOT, "src/ast/parallel-indexer.ts"), "utf8")
+    const bufPush = pi2.indexOf("bufferedContains.push")
+    const flush = pi2.indexOf("if (bufferedContains.length > 0)")
+    const relBlock = pi2.indexOf("if (result.relationships) {", flush >= 0 ? flush : 0)
+    check("756: buffer declared inside per-file store, flush before relationship block", bufPush > 0 && flush > bufPush && relBlock > flush)
+    const containsBlock = pi2.slice(pi2.indexOf("if (ownerSymbolId) {"), pi2.indexOf("// Process taint sources and sinks"))
+    check("756: no immediate relationship insert left in the contains block", !containsBlock.includes("stmt.insertRelationship.run"))
+    // MUTATION: reverting to interleaved emission must fail the conformance predicate.
+    const mutatedBlock = containsBlock + "\nstmt.insertRelationship.run()"
+    check("756: MUTATION detected (interleaved emission fails conformance)", mutatedBlock.includes("stmt.insertRelationship.run"))
   }
 
   db.close?.()

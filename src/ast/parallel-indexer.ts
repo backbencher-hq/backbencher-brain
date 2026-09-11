@@ -1817,6 +1817,9 @@ export async function storeResults(
  
          let relativePath = path.relative(projectPath, result.filePath)
          const fileId = `${projectId}:${relativePath}`
+         // #756: per-file buffer for auto-generated contains edges (see the
+         // symbol loop below) — flushed after the file's symbol rows exist.
+         const bufferedContains: unknown[][] = []
          // Trace: only log significant files to avoid terminal I/O bottleneck
          const symCount = result.symbols?.length || 0
          const relCount = result.relationships?.length || 0
@@ -2198,9 +2201,16 @@ export async function storeResults(
                if (!alreadyHasContains) {
                  const fileCount = (fileRelCounters.get(fileId) || 0) + 1
                  fileRelCounters.set(fileId, fileCount)
-                 const containsId = `${projectId}:rel:${ownerSymbolId}:${symbol.name}:contains:${fileCount}`
-                 stmt.insertRelationship.run(
-                   containsId,
+                 // #756: BUFFER, do not insert here. This loop may reference a
+                 // container symbol whose row has not been inserted yet (same
+                 // CONTAINER_PRIORITY class, raw analyzer order) — an immediate
+                 // insert is an intra-transaction forward FK reference that
+                 // rolls back the whole batch under FK-ON (22 diagnosed
+                 // rollbacks on a cold repo index; years of FK-OFF hid this).
+                 // All buffered edges flush AFTER the full symbol loop below,
+                 // when every referenced row exists.
+                 bufferedContains.push([
+                   `${projectId}:rel:${ownerSymbolId}:${symbol.name}:contains:${fileCount}`,
                    projectId,
                    ownerSymbolId,
                    symbolId,
@@ -2216,8 +2226,7 @@ export async function storeResults(
                    null,
                    now,
                    now,
-                 )
-                 batchRelationships++
+                 ])
                }
              }
  
@@ -2369,6 +2378,19 @@ export async function storeResults(
            }
          }
  
+         // #756: flush auto-generated contains edges NOW — every symbol row of
+         // this file already exists (the symbol loop above completed), so no
+         // edge can forward-reference a row that is not yet stored. INSERT OR
+         // IGNORE keeps the historical dedup semantics for engine-provided
+         // duplicates.
+         if (bufferedContains.length > 0) {
+           for (const args of bufferedContains) {
+             stmt.insertRelationship.run(...args)
+             batchRelationships++
+           }
+           bufferedContains.length = 0
+         }
+
          if (result.relationships) {
            let fileRelCount = 0
            for (const rel of result.relationships) {
