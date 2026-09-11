@@ -29,6 +29,14 @@ export function openDatabase(path: string, options: { readonly?: boolean } = {})
     db.pragma("journal_mode = WAL")
     db.pragma("busy_timeout = 5000")
     db.pragma("synchronous = NORMAL")
+    // M54.P1 (#727): better-sqlite3 enables FK by default; make it EXPLICIT
+    // and honor the same BB_FK_ENFORCE=0 escape hatch as db.bun.ts so both
+    // runtimes have one policy, not a default they merely happen to share.
+    db.pragma(process.env.BB_FK_ENFORCE === "0" ? "foreign_keys = OFF" : "foreign_keys = ON")
+  } else {
+    // M54.P1: same policy on readonly handles (connection-level pragma,
+    // inert for reads) so every open — rw or ro — carries enforcement.
+    db.pragma(process.env.BB_FK_ENFORCE === "0" ? "foreign_keys = OFF" : "foreign_keys = ON")
   }
   return {
     native: db,

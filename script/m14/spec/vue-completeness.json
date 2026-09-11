@@ -119,6 +119,94 @@
         "status": "FIXED",
         "question": "Can modern HTML (search) or camelCase SVG tags surface as component usages?",
         "ruling": "NO \u2014 analyzer HTML_BUILTIN_TAGS = 134 tags incl. 2023 <search> and SVG camelCase; the F5 oracle's ORACLE_HTML_TAGS carried only 126 and faked MISSING instantiates->search (Navbar.vue). Oracle extended to the identical list; the drift is now pinned by vue/modern-html-svg-builtin-tags (forbids 8 native tags) + mutant vue/reemit-filtered-kebab-tags."
+      },
+      {
+        "id": "VSD11",
+        "node_type": "Options data state keys (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review H1: Vue-2 object-form data and factory return keys never became symbols, so their template refs vanished.",
+        "decision": "One Property symbol per key (pair ranges; string keys unquoted) for both the object form and the first returned object of data() factories (documented approximation; nested functions not descended). Metadata isDataKey. Fixtures vue/data-keys + vue/data-factory-keys (uses controls); mutant vue/data-keys-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD12",
+        "node_type": "script error/export/import ranges (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review H2: sub-analyzer errors/exports/imports pushed raw (script coordinates) while symbols pointed at SFC coordinates.",
+        "decision": "Full shift helper (lines always; first-line columns; single-line end columns): scriptStartLine/Cols behavior for symbols unchanged, errors/exports/imports now share it. Fixture vue/script-error-offset pins the error line; mutant vue/error-offset-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD13",
+        "node_type": "script symbol byte indices (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review H3: ranges carried SFC lines with script-local startIndex, incoherent dimensions for every span consumer.",
+        "decision": "Engine context gains sfcScriptStartIndex (block byte base, from the already-available raw_text node); the analyzer adds it to every script-derived startIndex/endIndex (absent in hand-built contexts it defaults to 0, preserving old behavior exactly). Fixture vue/range-coherence pins byte-exact ground truth via the new expectSymbolRanges gate; mutant vue/index-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD14",
+        "node_type": "template member-chain receivers (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M1: flat tokenizing emitted every identifier, so {{ item.id }} fabricated a Uses edge to a same-named member (family receiver-only rule).",
+        "decision": "Character-walk tokenizer emitting only chain roots (dot/?./#-preceded tokens skipped; shadow set still honored), no regex. Fixture vue/member-chain (uses control + forbid); mutant vue/chain-root-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD15",
+        "node_type": "quoted/computed option keys (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M2: quoted keys dropped entirely; computed [dyn] keys kept raw as unresolvable symbol names.",
+        "decision": "Unquote string keys; skip bracket-led computed keys (variables, statically unknowable). Fixture vue/quoted-keys (presence + forbid); mutant vue/quoted-keys-revert covers both directions.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD16",
+        "node_type": "serverPrefetch lifecycle membership (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M3: the Vue 3 SSR hook was missing from the lifecycle list, leaving such methods invisible.",
+        "decision": "One-line list addition. Fixture vue/lifecycle-server-prefetch; mutant vue/lifecycle-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD17",
+        "node_type": "commented export default detection (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M4: the text-prefix check missed `export /*c*/ default`, so methods surfaced ownerless through the JS fallback (no ownerName, no Contains).",
+        "decision": "Structural check (first two children are the export/default keywords, comments skipped). Fixture vue/commented-default pins ownerName; mutant vue/default-text-revert strips it.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD18",
+        "node_type": "Options-member payloads (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M5 (TS-path expansion finding): Options methods/computed emitted bare signatures, the sub-analyzer versions holding parameters/returns were filtered and replaced.",
+        "decision": "Index filtered method symbols by bare name and copy parameters/returnType/complexity/qualified_calls on re-emission (first wins; collisions pathological). Fixture vue/options-payload (params + returnType); mutant vue/payload-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD19",
+        "node_type": "template string-literal contents (deeper review D1)",
+        "status": "FIXED",
+        "question": "Deeper review D1: @click=\"go('save')\" fabricated Uses(save) \u2014 string contents tokenized as identifiers (the old regex shared the flaw).",
+        "decision": "Stack-machine tokenizer: quote states with escapes, backtick ${...} re-enters code (brace-tracked), chain-root rule preserved. Fixture vue/template-string-args (uses controls + forbid); mutant vue/string-args-revert.",
+        "date": "2026-09-11"
+      },
+      {
+        "id": "VSD20",
+        "node_type": "arrow/pair-function data factories (deeper review D2)",
+        "status": "FIXED",
+        "question": "Deeper review D2: data: () => ({...}) and data: function() {...} never reached the return-object search (method bodies only).",
+        "decision": "Run the search on function-valued pair values too; direct-object rule (ancestors limited to parens/arrow/function) covers expression bodies, return rule covers blocks. Span-compared (KAD2 rule \u2014 wrapper identity never matches). Fixture vue/arrow-data; mutant vue/arrow-data-drop.",
+        "date": "2026-09-11"
+      },
+      {
+        "id": "VSD21",
+        "node_type": "decorated default exports (deeper review D3)",
+        "status": "FIXED",
+        "question": "Deeper review D3: @Dec export default bailed on the leading decorator node, losing component ownership.",
+        "decision": "Skip decorator-type leading siblings in the structural check (same treatment as comments). Fixture vue/decorated-default (ownerName pin); mutant vue/decorated-default-revert.",
+        "date": "2026-09-11"
       }
     ]
   }

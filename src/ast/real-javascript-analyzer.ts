@@ -94,6 +94,19 @@ function stripWhitespace(text: string): string {
     if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") out += ch
   }
   return out
+}
+
+// J3 (review wave): span containment against superseded duplicate bodies.
+// A node is dead when it sits inside a dead span (self or any ancestor).
+function isNodeInDeadSpans(spans: { s: number; e: number }[], n: Node): boolean {
+  let p: Node | null = n
+  while (p) {
+    for (const d of spans) {
+      if (d.s <= p.startIndex && p.endIndex <= d.e) return true
+    }
+    p = p.parent
+  }
+  return false
 }  // ============================================================================
   // SCOPE MANAGEMENT — frames carry an immutable snapshot of the scope chain
   // (iterative DFS: children are processed later from the stack, so scope
@@ -181,7 +194,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const stack: Frame[] = [{ node: rootNode, scopes, inClassBody: false, functionDepth: 0 }]
     let cyclomaticComplexity = 1
-    const seenMethods = new Set<string>() // owner:name — overload/duplicate dedup
+    // owner:name -> symbol index — overload/duplicate dedup, LAST wins (J3).
+    // Superseded body spans: the FIRST body was already descended (stack
+    // discipline), so its nested symbols are pruned and its calls/uses
+    // skipped by span checks in the relationship passes below.
+    const seenMethodIdx = new Map<string, number>()
+    const deadSpans: { s: number; e: number }[] = []
 
     while (stack.length > 0) {
       const { node, scopes: frameScopes, inClassBody, functionDepth } = stack.pop()!
@@ -264,15 +282,20 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const isGenerator = this.hasToken(node, "*")
             const isPrivateMethod = name.startsWith("#")
             const cleanName = isPrivateMethod ? name.slice(1) : name
-            if (!seenMethods.has(dedupKey)) {
-              seenMethods.add(dedupKey)
+            // J3 (review wave): LAST declaration wins — first-wins kept the
+            // dead redeclaration while the runtime (and the TS analyzer)
+            // use the last body. Replace in place so scope push/pop stay
+            // balanced; prototype assignments share the key (a prototype
+            // assignment genuinely overwrites the class method).
+            const seenIdx = seenMethodIdx.get(dedupKey)
+            {
               const params = this.extractParameters(node.childForFieldName("parameters"))
               const comments = this.collectComments(node)
               // Decorators are OWN children of method_definition in the JS
               // grammar (unlike TS where method decorators are class_body
               // siblings).
               const decorators = this.collectOwnDecorators(node)
-              symbols.push({
+              var methodSymbol: ASTEngine.UniversalSymbol = {
                 name: cleanName,
                 kind,
                 range: this.nodeToRange(node),
@@ -287,7 +310,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 comments,
                 complexity: this.methodComplexity(node),
                 metadata: { isAccessor, isAsync, isGenerator },
-              })
+              }
+            }
+            if (seenIdx === undefined) {
+              seenMethodIdx.set(dedupKey, symbols.length)
+              symbols.push(methodSymbol)
+            } else {
+              const oldRange = symbols[seenIdx].range
+              if (oldRange && oldRange.startIndex !== undefined && oldRange.endIndex !== undefined) deadSpans.push({ s: oldRange.startIndex, e: oldRange.endIndex })
+              symbols[seenIdx] = methodSymbol
             }
             scopeStack.push({ name, kind: JSScopeKind.Function })
             nextFunctionDepth = functionDepth + 1
@@ -308,7 +339,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               scope: scopeString(scopeStack),
               ownerName: owner,
               ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
-              visibility: "public",
+              // J9 (review wave, TS parity): `#x` fields are class-private —
+              // the old hardcoded "public" contradicted metadata.isPrivate
+              // on the same symbol.
+              visibility: prop.type === "private_property_identifier" ? "private" : "public",
               metadata: { isPrivate: prop.type === "private_property_identifier" },
             })
           }
@@ -429,6 +463,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const left = node.childForFieldName("left")
           const right = node.childForFieldName("right")
           if (left && right) {
+            // J-rebind (review wave): wholesale `exports = { a: 1 }`
+            // rebinds the module surface — the old member-only shape test
+            // missed it entirely (left is a bare identifier here).
+            if (left.type === "identifier" && left.text === "exports") {
+              patterns["CommonJS Exports"] = true
+              this.collectModuleExports(right, exports, node, false)
+            }
             if (left.type === "member_expression") {
               const obj = left.childForFieldName("object")
               const prop = left.childForFieldName("property")
@@ -450,10 +491,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   objText === "exports" ? [] :
                   objText.replace(/^module\.exports\./, "").replace(/^exports\./, "").split(".")
                 const exportName = [...afterBase, propText].join(".")
-                exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(prop!) })
+                exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(prop!), metadata: { viaCommonJs: true } })
               } else if (objText === "exports") {
                 patterns["CommonJS Exports"] = true
-                if (propText && prop) exports.push({ name: propText, isDefault: false, range: this.nodeToRange(prop) })
+                if (propText && prop) exports.push({ name: propText, isDefault: false, range: this.nodeToRange(prop), metadata: { viaCommonJs: true } })
               }
 
               // Prototype method assignment: X.prototype.method = function () {}
@@ -466,10 +507,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   const className = protoObj.text
                   const methodName = propText
                   const dedupKey = `${className}:${methodName}`
-                  if (!seenMethods.has(dedupKey)) {
-                    seenMethods.add(dedupKey)
+                  // J3: same last-wins map as class methods — a prototype
+                  // assignment overwrites at runtime.
+                  {
                     const params = this.extractParameters(right.childForFieldName("parameters"))
-                    symbols.push({
+                    var protoSymbol: ASTEngine.UniversalSymbol = {
                       name: methodName,
                       kind: ASTEngine.SymbolKind.Method,
                       range: this.nodeToRange(right),
@@ -480,12 +522,21 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                       parameters: params,
                       complexity: this.methodComplexity(right),
                       metadata: { isPrototypeMethod: true, prototypeOwner: className },
-                    })
+                    }
+                  }
+                  const protoIdx = seenMethodIdx.get(dedupKey)
+                  if (protoIdx === undefined) {
+                    seenMethodIdx.set(dedupKey, symbols.length)
+                    symbols.push(protoSymbol)
                     // contains comes from addContainmentRelationships via
                     // ownerName — no duplicate push here.
-                    scopeStack.push({ name: methodName, kind: JSScopeKind.Function })
-                    nextFunctionDepth = functionDepth + 1
+                  } else {
+                    const oldRange = symbols[protoIdx].range
+                    if (oldRange && oldRange.startIndex !== undefined && oldRange.endIndex !== undefined) deadSpans.push({ s: oldRange.startIndex, e: oldRange.endIndex })
+                    symbols[protoIdx] = protoSymbol
                   }
+                  scopeStack.push({ name: methodName, kind: JSScopeKind.Function })
+                  nextFunctionDepth = functionDepth + 1
                 }
               }
             }
@@ -508,10 +559,28 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (arg && (arg.type === "string" || arg.type === "template_string")) {
                 const reqPath = stringContent(arg)
                 const isDynamic = isImportCall
+                // J4 (review wave): `const { a } = require("m")` binds names
+                // (not default); only a bare-identifier binding is the
+                // default export. The old hardcoded true flagged everything.
+                let requireIsDefault = true
+                if (!isDynamic) {
+                  let vp: Node | null = node.parent
+                  while (vp && vp.type !== "variable_declarator" && vp.type !== "lexical_declaration" &&
+                         vp.type !== "variable_declaration" && vp.type !== "export_statement" &&
+                         vp.type !== "expression_statement" && vp.type !== "program") {
+                    vp = vp.parent
+                  }
+                  if (vp && vp.type === "variable_declarator") {
+                    const bindName = vp.childForFieldName("name")
+                    requireIsDefault = !!bindName && bindName.type === "identifier"
+                  } else {
+                    requireIsDefault = false
+                  }
+                }
                 imports.push({
                   module: reqPath,
                   items: ["*"],
-                  isDefault: true,
+                  isDefault: requireIsDefault,
                   range: this.nodeToRange(node),
                   metadata: { type: isDynamic ? "dynamic-import" : "require" },
                 })
@@ -535,12 +604,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const srcPath = srcNode ? stringContent(srcNode) : ""
           const items: string[] = []
           const clause = this.findChildByType(node, "import_clause")
+          // J4 (review wave): isDefault follows the clause shape — a direct
+          // identifier child IS the default import. The old items-count
+          // heuristic flagged `import A` false and side-effect imports true.
+          let hasDefaultImport = false
           if (clause) {
             for (let i = 0; i < clause.namedChildCount; i++) {
               const c = clause.namedChild(i)
               if (!c) continue
               if (c.type === "identifier") {
                 items.push(c.text) // default import
+                hasDefaultImport = true
               } else if (c.type === "named_imports") {
                 for (let j = 0; j < c.namedChildCount; j++) {
                   const spec = c.namedChild(j)
@@ -561,7 +635,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             imports.push({
               module: srcPath,
               items,
-              isDefault: items.length === 1 && items[0] !== "*" ? false : true,
+              isDefault: hasDefaultImport,
               range: this.nodeToRange(node),
               metadata: { type: "import" },
             })
@@ -635,15 +709,48 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Symbol payload: qualified_calls (family contract #383) --------------
     // Dotted call paths WITHOUT argument text, attached to the enclosing
     // function/method symbol — parity with TS/Java/Groovy/Kotlin/Scala.
+    // J1 (review wave): keys are owner-qualified (Owner::method) — bare
+    // method names merged call lists across classes (U.save + O.save shared
+    // one union payload). Object-literal members keep bare keys, matching
+    // their ownerKind-Constant symbols.
+    // J3: drop symbols strictly inside superseded duplicate bodies.
+    if (deadSpans.length > 0) {
+      for (let i = symbols.length - 1; i >= 0; i--) {
+        const r = symbols[i].range
+        if (!r || r.startIndex === undefined || r.endIndex === undefined) continue
+        for (const d of deadSpans) {
+          if (d.s <= r.startIndex && r.endIndex <= d.e && (d.s !== r.startIndex || r.endIndex !== d.e)) {
+            symbols.splice(i, 1)
+            break
+          }
+        }
+      }
+    }
     {
       const bySource = new Map<string, string[]>()
+      const qcOwnerOf = (n: Node): string | undefined => {
+        // Direct class member: nearest enclosing class with no intervening
+        // declarator/object boundary (W1 object-literal members belong to
+        // their declarator, not any outer class).
+        let p: Node | null = n.parent
+        while (p) {
+          if (p.type === "class_declaration") return p.childForFieldName("name")?.text
+          if (p.type === "variable_declarator" || p.type === "object" || p.type === "pair" ||
+              p.type === "function_declaration" || p.type === "function_expression" || p.type === "arrow_function") return undefined
+          p = p.parent
+        }
+        return undefined
+      }
       const qcResolve = (n: Node, current: string | null): string | null => {
         const fnName = n.childForFieldName?.("name")?.text
         if (
           (n.type === "function_declaration" || n.type === "generator_function_declaration" ||
             n.type === "method_definition") &&
           fnName
-        ) return fnName
+        ) {
+          const owner = n.type === "method_definition" ? qcOwnerOf(n) : undefined
+          return owner ? `${owner}::${fnName}` : fnName
+        }
         if (n.type === "variable_declarator") {
           const nameNode = n.childForFieldName("name")
           const valueNode = n.childForFieldName("value")
@@ -662,17 +769,26 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const prop = left.childForFieldName("property")
             if (obj && obj.type === "member_expression" && prop) {
               const protoProp = obj.childForFieldName("property")
-              if (protoProp && protoProp.text === "prototype") return prop.text
+              if (protoProp && protoProp.text === "prototype") {
+                const owner = obj.childForFieldName("object")?.text
+                return owner ? `${owner}::${prop.text}` : prop.text
+              }
             }
           }
         }
         return current
       }
       const qcWalk = (n: Node, current: string | null): void => {
+        // J3: never attribute calls from inside a superseded duplicate body.
+        if (isNodeInDeadSpans(deadSpans, n)) return
         current = qcResolve(n, current)
         if (n.type === "call_expression") {
           const fn = n.childForFieldName("function")
-          if (fn && !(fn.type === "identifier" && fn.text === "require")) {
+          // Dynamic import() is a module dependency, never a call (TS T8
+          // analog — the relationship walk already skips both shapes; the
+          // payload walk only skipped require).
+          const isImportCallee = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
+          if (fn && !(fn.type === "identifier" && fn.text === "require") && !isImportCallee) {
             // dotted path without argument text
             const parts: string[] = []
             let cur: Node | null = fn
@@ -703,7 +819,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       qcWalk(rootNode, null)
       for (const sym of symbols) {
-        const list = bySource.get(sym.name)
+        // Owner-qualified lookup mirrors the keys above: class-owned methods
+        // resolve Owner::method, everything else the bare name.
+        const key = sym.ownerName && sym.ownerKind === ASTEngine.SymbolKind.Class
+          ? `${sym.ownerName}::${sym.name}`
+          : sym.name
+        const list = bySource.get(key)
         if (list && list.length > 0) sym.qualified_calls = [...new Set(list)]
       }
     }
@@ -711,7 +832,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Relationship passes -------------------------------------------------
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
-    this.extractCallRelationships(rootNode, symbols, relationships, moduleName)
+    this.extractCallRelationships(rootNode, symbols, relationships, moduleName, deadSpans)
     this.extractExportRelationships(exports, relationships, moduleName)
 
     // --- Metadata ------------------------------------------------------------
@@ -807,25 +928,39 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     const baseDeclares = (base: string, method: string): boolean => {
-      const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
+      // J2 (review wave): only METHOD declarations count — a same-named
+      // FIELD (Base { foo = 1 }) or constructor is not something a method
+      // overrides. The old owner-only check fabricated Sub.foo->Base.foo
+      // at 0.95 for field/method collisions.
+      const inFile = byName.get(method)?.some((bm) => bm.ownerName === base && bm.kind === ASTEngine.SymbolKind.Method) ?? false
       if (inFile) return true
       const companion = overrideCompanion?.get(base)
       return !!companion && companion.has(method)
-    }
+    };
     for (const s of symbols) {
       if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor) && s.ownerName) {
         const base = baseByClass.get(s.ownerName)
         if (!base) continue
-        const inFileDeclares = byName.get(s.name)?.some((bm) => bm.ownerName === base) ?? false
-        if (inFileDeclares || overrideCompanion?.get(base)?.has(s.name)) {
+        // J2: constructors never override (no virtual dispatch on `new`);
+        // methods pair only against base METHODS (never fields).
+        const isCtor = s.kind === ASTEngine.SymbolKind.Constructor || s.name === "constructor"
+        const inFileDeclares = !isCtor && (byName.get(s.name)?.some((bm) => bm.ownerName === base && bm.kind === ASTEngine.SymbolKind.Method) ?? false)
+        if (inFileDeclares || (!isCtor && overrideCompanion?.get(base)?.has(s.name))) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${base}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.95,
-            metadata: {},
+            metadata: { reasonCode: "verified-in-file" },
           })
-        } else if (!overrideCompanion?.has(base)) {
+        } else if (!isCtor && !overrideCompanion?.has(base)) {
+          // Pass 3 guess — but ONLY for bases outside this file. An in-file
+          // base that declares no same-named method is PROOF of non-override
+          // (closed world), not an unknown: guessing there fabricated
+          // Sub.foo->Base.foo for field/method collisions the verifier
+          // above just rejected.
+          const baseInFile = !isCtor && symbols.some((s) => s.name === base && s.kind === ASTEngine.SymbolKind.Class)
+          if (baseInFile) continue
           // Pass 3 (family parity with java/groovy resolveOverrides): the
           // base is not declared in this file and the companion index gave
           // no opinion (it is never populated in production — see M37.10).
@@ -850,6 +985,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
+    deadSpans: { s: number; e: number }[] = [],
   ): void {
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Current call source = enclosing function/method leaf name
@@ -899,6 +1035,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const processNode = (n: Node, current: string | null): void => {
+      // J3: superseded duplicate bodies contribute no edges.
+      if (isNodeInDeadSpans(deadSpans, n)) return
       current = resolveCurrent(n, current)
       const callSource = current || moduleName
 
@@ -1122,10 +1260,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (p.type === "assignment_pattern") {
         const left = p.childForFieldName("left")
         if (left && left.type === "identifier") out.push({ name: left.text })
+        // J8 (review wave, TS parity): destructured-with-default
+        // (`function f({a, b} = {})`) — the left side is a pattern, not an
+        // identifier. Record it like a bare destructured parameter so the
+        // position is not silently lost.
+        else if (left && (left.type === "object_pattern" || left.type === "array_pattern")) {
+          out.push({ name: p.text.slice(0, 60) })
+        }
       } else if (p.type === "object_pattern" || p.type === "array_pattern") {
         // Destructured parameters are intentionally NOT symbols (family
         // contract); record them as a single parameter entry so the parameter
-        // list is complete.
+        // list is complete (TS parity — J8: dropping them silently lost
+        // parameter positions).
         out.push({ name: p.text.slice(0, 60) })
       } else if (p.type === "rest_pattern") {
         const inner = this.findChildByType(p, "identifier")
@@ -1195,39 +1341,61 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const c = right.namedChild(i)
         if (!c) continue
         if (c.type === "shorthand_property_identifier" || c.type === "identifier") {
-          exports.push({ name: c.text, isDefault: false, range: this.nodeToRange(c) })
+          exports.push({ name: c.text, isDefault: false, range: this.nodeToRange(c), metadata: { viaCommonJs: true } })
         } else if (c.type === "pair") {
           const key = c.childForFieldName("key")
           if (key && (key.type === "property_identifier" || key.type === "identifier")) {
-            exports.push({ name: key.text, isDefault: false, range: this.nodeToRange(key) })
+            exports.push({ name: key.text, isDefault: false, range: this.nodeToRange(key), metadata: { viaCommonJs: true } })
           }
         }
       }
     } else if (right.type === "identifier") {
-      exports.push({ name: right.text, isDefault, range: this.nodeToRange(right) })
+      exports.push({ name: right.text, isDefault, range: this.nodeToRange(right), metadata: { viaCommonJs: true } })
     } else if (right.type === "function_expression" || right.type === "arrow_function" || right.type === "class_declaration" || right.type === "class") {
       const nm = right.type === "class_declaration" || right.type === "class"
         ? right.childForFieldName("name")?.text
         : undefined
-      exports.push({ name: nm ?? "default", isDefault, range: this.nodeToRange(right) })
+      exports.push({ name: nm ?? "default", isDefault, range: this.nodeToRange(right), metadata: { viaCommonJs: true } })
+    }
+    // M49 exports invariant: the CJS surface is a NAME SET — dedupe the
+    // entries this call contributed (first occurrence wins its range).
+    {
+      const seen = new Set<string>()
+      for (let i = exports.length - 1; i >= 0; i--) {
+        if (seen.has(exports[i].name)) exports.splice(i, 1)
+        else seen.add(exports[i].name)
+      }
     }
   }
 
   private collectExportStatement(node: Node, exports: ASTEngine.ExportInfo[]): void {
+    // `default` is an ANONYMOUS token (probe-verified) — the old named-child
+    // scan never saw it, so isDefault was always false: every default export
+    // was misflagged AND the J5 fallback below could never fire.
     let isDefault = false
+    for (let i = 0; i < node.childCount; i++) {
+      const t = node.child(i)
+      if (t && !t.isNamed && t.text === "default") { isDefault = true; break }
+    }
+    let foundNamed = false
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      if (child.type === "default") {
-        isDefault = true
-      } else if (child.type === "identifier") {
+      if (child.type === "identifier") {
+        foundNamed = true
         exports.push({ name: child.text, isDefault, range: this.nodeToRange(child) })
       } else if (child.type === "export_clause") {
         for (let j = 0; j < child.namedChildCount; j++) {
           const spec = child.namedChild(j)
           if (spec && spec.type === "export_specifier") {
-            const n = this.findChildByType(spec, "identifier")
-            if (n) exports.push({ name: n.text, isDefault: false, range: this.nodeToRange(n) })
+            // J6 (review wave, TS parity): the PUBLIC name is the alias when
+            // present (`export { a as b }` exports b) — first-identifier
+            // lookup recorded the local name importers can't use.
+            const exportName = spec.childForFieldName("alias")?.text ?? spec.childForFieldName("name")?.text ?? this.findChildByType(spec, "identifier")?.text
+            if (exportName) {
+              foundNamed = true
+              exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(spec) })
+            }
           }
         }
       } else if (
@@ -1239,6 +1407,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         // have no name node — previously dropped entirely, losing the
         // module's main export. Record under the family sentinel "default".
         const n = child.childForFieldName("name")
+        foundNamed = true
         exports.push({ name: n?.text ?? "default", isDefault, range: this.nodeToRange(child) })
       } else if (child.type === "lexical_declaration" || child.type === "variable_declaration") {
         for (let j = 0; j < child.namedChildCount; j++) {
@@ -1246,10 +1415,41 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (decl && decl.type === "variable_declarator") {
             const nm = decl.childForFieldName("name")
             if (nm && nm.type === "identifier") {
+              foundNamed = true
               exports.push({ name: nm.text, isDefault, range: this.nodeToRange(nm) })
             }
           }
         }
+      }
+    }
+    // J5 (review wave, TS parity): default-exported EXPRESSIONS
+    // (`export default { a: 1 }`, `export default foo()`) match no branch
+    // above — record the module's main export under "default" instead of
+    // dropping it silently.
+    if (isDefault && !foundNamed) {
+      exports.push({ name: "default", isDefault: true, range: this.nodeToRange(node) })
+    }
+    // M49 exports invariant: an ES module has AT MOST ONE default binding —
+    // `export default fn; export default class` in one file dedupes to one
+    // `default` export entry (the second was a fabricated duplicate; both
+    // decl sites are still walked/symbolized normally).
+    {
+      let sawDefault = false
+      for (let i = exports.length - 1; i >= 0; i--) {
+        if (exports[i].name !== "default") continue
+        if (sawDefault) exports.splice(i, 1)
+        else sawDefault = true
+      }
+    }
+    // M49 exports invariant (whole-array pass): a module's export list is a
+    // NAME SET — CJS deep paths (`exports.tag` twice), rebinds, and ESM
+    // clauses all collapse to one entry per public name. Dedupe everywhere,
+    // first occurrence wins its range.
+    {
+      const seenNames = new Set<string>()
+      for (let i = exports.length - 1; i >= 0; i--) {
+        if (seenNames.has(exports[i].name)) exports.splice(i, 1)
+        else seenNames.add(exports[i].name)
       }
     }
   }
@@ -1263,9 +1463,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private detectsJsx(rootNode: Node): boolean {
+    // J10 (review wave): the old 500-iteration cap combined with
+    // forward-order pushes (popped in reverse) to miss JSX early in large
+    // files — React detection silently dropped past ~300 lines. The walk is
+    // linear like every other pass here; no cap.
     const stack: Node[] = [rootNode]
-    let maxIters = 500
-    while (stack.length > 0 && maxIters-- > 0) {
+    while (stack.length > 0) {
       const node = stack.pop()!
       if (node.type === "jsx_element" || node.type === "jsx_self_closing_element") return true
       for (let i = 0; i < node.namedChildCount; i++) {

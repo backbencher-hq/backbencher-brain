@@ -12,6 +12,7 @@ import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+import { createStoreDiagnostics } from "./store-diagnostics"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
 import { readdir, stat } from "fs/promises"
@@ -1712,919 +1713,1043 @@ export async function storeResults(
   let totalImports = 0
 
   const rawDb = await BrainDatabase.getRawInstance(projectId)
-  // Disable FK checks during bulk store — compiled binary's SQLite can spuriously
-  // reject valid data. Pool-worker denylist already validates all symbols/rels.
-  rawDb.run("PRAGMA foreign_keys = OFF")
-  const now = Date.now()
+  // M54.P1 (#727): FK enforcement is ON at every open AND during the bulk
+  // store (the old store-phase "PRAGMA foreign_keys = OFF" was removed when
+  // the finally-restore was added; the historical "compiled binary's SQLite
+  // can spuriously reject valid data" claim was never reproduced and the
+  // full verification suite — P1 parity, m51 A1, m21 R2, m13 H3, m52 V1 —
+  // plus the multi-language soak (script/m54/probe-fk-store-soak.ts) runs
+  // green with store-phase enforcement active). The finally below restores
+  // the open-time policy on every exit; BB_FK_ENFORCE=0 disables enforcement
+  // stack-wide (open AND store) for legacy-posture tooling.
+  try {
+   const now = Date.now()
+ 
+   const semanticBatch: any[] = []
+ 
+   const insertFile = rawDb.prepare(`
+     INSERT OR REPLACE INTO brain_file 
+     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   `)
+ 
+   const insertSymbol = rawDb.prepare(`
+     INSERT OR REPLACE INTO brain_symbol
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   `)
+ 
+   const insertImport = rawDb.prepare(`
+     INSERT OR REPLACE INTO brain_import
+     (id, project_id, file_id, imported_name, import_path, import_type, is_external, line_number, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   `)
+ 
+   const insertRelationship = rawDb.prepare(`
+     INSERT OR IGNORE INTO brain_relationship
+     (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   `)
+ 
+   // We are creating a "placeholder" for taint flows directly on the file if they haven't been resolved across files yet.
+   // Actually, we can store partial taints right now, where the sink is known and the source is known inside the symbol.
+   const insertTaintSource = rawDb.prepare(`
+     INSERT OR REPLACE INTO brain_taint_flow
+     (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   `)
+ 
+   const deleteFileSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
+   const deleteFileImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
+   const deleteFileRelationships = rawDb.prepare(`
+     DELETE FROM brain_relationship 
+     WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+   `)
+   // Also delete relationships from OTHER files that target this file's symbols.
+   // Without this, deleteFileSymbols fails with FK violation when cross-file
+   // relationships (e.g. calls, uses) still reference symbols being deleted.
+   const deleteFileRelationshipsByTarget = rawDb.prepare(`
+     DELETE FROM brain_relationship
+     WHERE target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+   `)
+   const deleteFileTaints = rawDb.prepare(`
+     DELETE FROM brain_taint_flow 
+     WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+        OR sink_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+   `)
+ 
+   const batchSize = ParallelIndexerConfig.dbBatchSize
+ 
+   // Pre-prepare target resolution statement — reused for every relationship.
+   // file_id is needed to compute the honest is_cross_file flag at insert time.
+   const resolveTargetStmt = rawDb.prepare(
+     `SELECT s.id, s.file_id, f.language FROM brain_symbol s
+      LEFT JOIN brain_file f ON f.id = s.file_id
+      WHERE s.project_id = ? AND s.name = ? LIMIT 1`
+   )
 
-  const semanticBatch: any[] = []
-
-  const insertFile = rawDb.prepare(`
-    INSERT OR REPLACE INTO brain_file 
-    (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const insertSymbol = rawDb.prepare(`
-    INSERT OR REPLACE INTO brain_symbol
-    (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, time_created, time_updated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const insertImport = rawDb.prepare(`
-    INSERT OR REPLACE INTO brain_import
-    (id, project_id, file_id, imported_name, import_path, import_type, is_external, line_number, time_created, time_updated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const insertRelationship = rawDb.prepare(`
-    INSERT OR IGNORE INTO brain_relationship
-    (id, project_id, source_symbol_id, target_symbol_id, source_external, target_external, relationship_type, confidence, context, line_number, is_cross_file, is_cross_language, bridge_mechanism, metadata, time_created, time_updated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  // We are creating a "placeholder" for taint flows directly on the file if they haven't been resolved across files yet.
-  // Actually, we can store partial taints right now, where the sink is known and the source is known inside the symbol.
-  const insertTaintSource = rawDb.prepare(`
-    INSERT OR REPLACE INTO brain_taint_flow
-    (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, time_created, time_updated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const deleteFileSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
-  const deleteFileImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
-  const deleteFileRelationships = rawDb.prepare(`
-    DELETE FROM brain_relationship 
-    WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-  `)
-  // Also delete relationships from OTHER files that target this file's symbols.
-  // Without this, deleteFileSymbols fails with FK violation when cross-file
-  // relationships (e.g. calls, uses) still reference symbols being deleted.
-  const deleteFileRelationshipsByTarget = rawDb.prepare(`
-    DELETE FROM brain_relationship
-    WHERE target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-  `)
-  const deleteFileTaints = rawDb.prepare(`
-    DELETE FROM brain_taint_flow 
-    WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-       OR sink_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-  `)
-
-  const batchSize = ParallelIndexerConfig.dbBatchSize
-
-  // Pre-prepare target resolution statement — reused for every relationship.
-  // file_id is needed to compute the honest is_cross_file flag at insert time.
-  const resolveTargetStmt = rawDb.prepare(
-    `SELECT s.id, s.file_id, f.language FROM brain_symbol s
-     LEFT JOIN brain_file f ON f.id = s.file_id
-     WHERE s.project_id = ? AND s.name = ? LIMIT 1`
-  )
+   // #737 diagnostics wiring: every batch call site runs through the `stmt`
+   // map (originals kept in stmtOriginal) so the diagnose pass can swap in
+   // capturing wrappers and restore them afterwards. The per-batch closure is
+   // created inside the loop (it needs that batch's tx).
+   const stmtOriginal = {
+     insertFile,
+     insertSymbol,
+     insertImport,
+     insertRelationship,
+     insertTaintSource,
+     deleteFileSymbols,
+     deleteFileImports,
+     deleteFileRelationships,
+     deleteFileRelationshipsByTarget,
+     deleteFileTaints,
+   }
+   const stmt: Record<string, any> = { ...stmtOriginal }
 
 
-  for (let i: any = 0; i < results.length; i += batchSize) {
-    const batch = results.slice(i, i + batchSize)
-    let batchSymbols = 0, batchRelationships = 0, batchImports = 0
+   for (let i: any = 0; i < results.length; i += batchSize) {
+     const batch = results.slice(i, i + batchSize)
+     let batchSymbols = 0, batchRelationships = 0, batchImports = 0
+ 
+     const tx = rawDb.transaction((batch: any) => {
+       for (const result of batch) {
+         if (!result.success) continue
+ 
+         let relativePath = path.relative(projectPath, result.filePath)
+         const fileId = `${projectId}:${relativePath}`
+         // #756: per-file buffer for auto-generated contains edges (see the
+         // symbol loop below) — flushed after the file's symbol rows exist.
+         const bufferedContains: unknown[][] = []
+         // Trace: only log significant files to avoid terminal I/O bottleneck
+         const symCount = result.symbols?.length || 0
+         const relCount = result.relationships?.length || 0
+         if (relCount > 50 || symCount > 20) {
+           process.stderr.write(`[STORE] ${relativePath.split('/').pop()}: ${symCount}s ${relCount}r\n`)
+         }         // NO per-file savepoint: a mid-file FK violation rolls back the whole
+         // batch (per-batch transaction, skip-and-continue below). The deletes
+         // run before every insert and REPLACE precisely so the batch should
+         // never see one; if it does, diagnoseBatchFailure (#737) names the
+         // exact file and offending statements in the catch.
 
-    const tx = rawDb.transaction((batch: any) => {
-      for (const result of batch) {
-        if (!result.success) continue
+         // Delete this file's prior rows (and edges touching them) BEFORE the
+         // brain_file REPLACE below cascades — keeps REPLACE's ON DELETE
+         // CASCADE reach empty, which is what makes FK-ON safe here.
+         stmt.deleteFileRelationships.run(fileId)
+         stmt.deleteFileRelationshipsByTarget.run(fileId)
+         stmt.deleteFileTaints.run(fileId, fileId)
+         stmt.deleteFileSymbols.run(fileId)
+         stmt.deleteFileImports.run(fileId)
+ 
+         relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         const pathLower = relativePath.toLowerCase()
+ 
+         let fileLayer = "core"
+         if (
+           pathLower.includes("/ui/") ||
+           pathLower.includes("/components/") ||
+           pathLower.includes("/pages/") ||
+           pathLower.includes("/views/")
+         ) {
+           fileLayer = "ui"
+         } else if (
+           pathLower.includes("/db/") ||
+           pathLower.includes("/database/") ||
+           pathLower.includes("/repository/") ||
+           pathLower.includes("/storage/") ||
+           pathLower.includes("/models/") ||
+           pathLower.includes("/schema/")
+         ) {
+           fileLayer = "db"
+         } else if (
+           pathLower.includes("/services/") ||
+           pathLower.includes("/api/") ||
+           pathLower.includes("/controllers/")
+         ) {
+           fileLayer = "service"
+         } else if (pathLower.includes("test") || pathLower.includes("spec")) {
+           fileLayer = "test"
+         }
+ 
+         if (result.imports) {
+           const hasReact = result.imports.some(
+             (i: any) =>
+               typeof i.module === "string" &&
+               (i.module.includes("react") || i.module.includes("vue") || i.module.includes("svelte")),
+           )
+           if (hasReact) fileLayer = "ui"
+         }
+ 
+         const hasSyntaxErrors = result.errors && result.errors.some((e: any) => e.severity === "warning")
+         const errorReport = hasSyntaxErrors ? JSON.stringify(result.errors) : null
+ 
+         const isTestFile = 
+           pathLower.includes("/test/") || pathLower.includes("/tests/") ||
+           pathLower.includes("/__tests__/") || pathLower.includes("/spec/") ||
+           pathLower.includes(".test.") || pathLower.includes(".spec.") ? 1 : 0
+ 
+         // Count lines — use max symbol endLine as estimate, fallback to 0
+         let lineCount = 0
+         if (result.symbols && result.symbols.length > 0) {
+           for (const s of result.symbols) {
+             const end = s.endLine ?? s.range?.endLine ?? 0
+             if (end > lineCount) lineCount = end
+           }
+         }
+ 
+         stmt.insertFile.run(
+           fileId,
+           projectId,
+           result.filePath,
+           relativePath,
+           result.fileHash || "",
+           result.sizeBytes || 0,
+           lineCount,
+           result.lastModified || 0,
+           result.language || "unknown",
+           result.framework || null,
+           hasSyntaxErrors ? 1 : 0,
+           errorReport,
+           isTestFile,
+           fileLayer,
+           now,
+           now,
+         )
+ 
+         // Hoisted per-file index structures — used by both symbol storage and
+         // relationship source resolution (which runs outside the symbols block).
+         const fileLang = (result.language || "").toLowerCase()
+         // JS-global names are only noise for JS-family languages; a Scala
+         // `object Global` or `def process` is a legitimate declaration and
+         // must survive indexing. Universal entries below are keywords and
+         // synthetic tree-sitter artifacts — noise everywhere. Language-literal
+         // words (None/True/False/nil/...) are NOT here: they are legitimate
+         // identifiers in verified analyzer output (e.g. TypeScript/C# enum
+         // members named `None`) and only the regex fallback path can pick
+         // them up as noise (const None = ...), so they are gated on fallback.
+         const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
+         const SYMBOL_NAME_DENYLIST = new Set([
+           "this", "super", "self", "Self", "me", "My",
+           "root", "program", "source_file", "module_declaration",
+           "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
+           "unknown",
+         ])
+         const isFallbackResult = !!result.fallback
+         if (isFallbackResult) {
+           SYMBOL_NAME_DENYLIST.add("true")
+           SYMBOL_NAME_DENYLIST.add("false")
+           SYMBOL_NAME_DENYLIST.add("null")
+           SYMBOL_NAME_DENYLIST.add("nil")
+           SYMBOL_NAME_DENYLIST.add("None")
+           SYMBOL_NAME_DENYLIST.add("True")
+           SYMBOL_NAME_DENYLIST.add("False")
+           SYMBOL_NAME_DENYLIST.add("undefined")
+           SYMBOL_NAME_DENYLIST.add("NaN")
+           SYMBOL_NAME_DENYLIST.add("Infinity")
+         }
+         if (JS_FAMILY.has(fileLang)) {
+           SYMBOL_NAME_DENYLIST.add("global")
+           SYMBOL_NAME_DENYLIST.add("Global")
+           SYMBOL_NAME_DENYLIST.add("window")
+           SYMBOL_NAME_DENYLIST.add("Window")
+           SYMBOL_NAME_DENYLIST.add("document")
+           SYMBOL_NAME_DENYLIST.add("module")
+           SYMBOL_NAME_DENYLIST.add("exports")
+           SYMBOL_NAME_DENYLIST.add("default")
+           SYMBOL_NAME_DENYLIST.add("globalThis")
+         }
+         const nameToSymbol = new Map<string, any>()
+         const containersByStart: { name: string; start: number; end: number }[] = []
+         let firstContainerSymbol: any = undefined
+ 
+         // M51.A1/A3 (#716/#718): the storeable-row replica used by BOTH the
+         // owner-assignment path and the relationship-source path. Must stay an
+         // exact mirror of the insert-time guards below (denylist, name length,
+         // startLine >= 1, artifact-name filter honoring fallback mode).
+         // Computing references against the RAW analyzer list is what produced
+         // 134,073 orphan owner ids on this repo (whole-repo evidence in
+         // docs/m51/PLAN.md): the owner row was skipped by a later filter,
+         // leaving every child pointing at a ghost. Consumers JOIN on
+         // owner_symbol_id, so a phantom value was already invisible — omitting
+         // it removes the lie without changing any read path.
+         const storeableName = (nm: string | undefined, startLine: number): boolean => {
+           if (!nm || SYMBOL_NAME_DENYLIST.has(nm) || nm.length > 500) return false
+           if (startLine < 1) return false
+           return !(isFallbackResult
+             ? isIndexArtifactNameStrict(nm)
+             : isIndexArtifactName(nm))
+         }
+ 
+         if (result.symbols) {
+           const insertedSymbolIds = new Set<string>()
+           // Names that should NEVER become standalone symbols — language keywords,
+           // scope objects, and root-level nodes that are always noise.
+           // Sort symbols: container types first (class, interface, etc.) so FK
+           // references from methods to their containers resolve successfully.
+           const CONTAINER_PRIORITY: Record<string, number> = {
+             class: 0, interface: 0, struct: 0, trait: 0, enum: 0, object: 0,
+             module: 0, namespace: 0, package: 0, impl: 0, type: 0,
+             method: 1, function: 1, constructor: 1, field: 2, property: 2,
+             variable: 2,
+           }
+           result.symbols.sort((a: any, b: any) => {
+             const pa = CONTAINER_PRIORITY[a.type || a.kind] ?? 3
+             const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
+             return pa - pb
+           })
+ 
+           // Pre-build fast lookup structures to eliminate per-symbol O(n) scans.
+           // nameToSymbol: first symbol with each name (mirrors Array.find semantics).
+           // containersByStart: container symbols sorted by startLine ascending for
+           // line-containment lookups (replaces two full-array scans per symbol).
+           const CONTAINER_TYPES_LOOKUP = new Set([
+             "class", "interface", "struct", "trait", "enum", "object", "actor",
+             "module", "namespace", "package", "impl", "type",
+           ])
+           for (const s of result.symbols) {
+             const nm = s.name || ""
+             if (nm && !nameToSymbol.has(nm)) nameToSymbol.set(nm, s)
+             const k = s.type || s.kind || "unknown"
+             if (CONTAINER_TYPES_LOOKUP.has(k)) {
+               const cStart = s.startLine ?? s.range?.startLine ?? 0
+               const cEnd = s.endLine ?? s.range?.endLine ?? cStart
+               containersByStart.push({ name: nm, start: cStart, end: cEnd })
+             }
+           }
+           containersByStart.sort((a, b) => a.start - b.start || b.end - a.end)
+           // First container-kind symbol in sorted order (used for this/self resolution)
+           const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
+           firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
+ 
+           // Pre-build contains-pair set for O(1) dedupe of auto-generated contains
+           // relationships (replaces per-symbol O(rels) scan).
+           const containsPairs = new Set<string>()
+           if (result.relationships) {
+             for (const r of result.relationships) {
+               if ((r.type || r.relationshipType || "") !== "contains") continue
+               const rSrc = r.source || r.sourceId || r.fromSymbol || r.from || ""
+               const rTgt = r.target || r.targetId || r.toSymbol || r.to || ""
+               const srcLeaf = rSrc.replace(/^.*:([^:]+):?\d*$/, "$1")
+               const tgtLeaf = rTgt.replace(/^.*:([^:]+):?\d*$/, "$1")
+               if (srcLeaf && tgtLeaf) {
+                 // Space separator (deliberate): must match the has() lookup
+                 // below. Symbol names containing spaces (e.g. F# backtick
+                 // names) can only cause a benign false-positive dedupe that
+                 // skips a redundant edge — never a missing relationship.
+                 containsPairs.add(`${srcLeaf} ${tgtLeaf}`)
+                 containsPairs.add(`${tgtLeaf} ${srcLeaf}`)
+               }
+             }
+           }
+ 
+           for (const symbol of result.symbols) {
+             // Skip symbols that would cause SQL insert failures
+             const symbolKind = symbol.type || symbol.kind || "unknown"
+             const symbolName = symbol.name || ""
+             // Denylist: filter language keywords and scope artifacts regardless of kind
+             if (SYMBOL_NAME_DENYLIST.has(symbolName)) continue
+             // Skip symbols with empty or extremely long names
+             if (!symbolName || symbolName.length > 500) continue
+             // Skip symbols with invalid start lines
+             const ssLine = symbol.startLine ?? symbol.range?.startLine ?? 0
+             if (ssLine < 0) continue
+             const symbolStartLine = symbol.startLine ?? symbol.range?.startLine ?? 0
+             const symbolEndLine = symbol.endLine ?? symbol.range?.endLine ?? symbolStartLine
+             // Skip import-only symbols — external type references extracted from
+             // import statements. These have line 0, no owner, and are never
+             // project-declared classes. Examples: Boolean, File, PsiModifier, etc.
+             // Top-level declarations (class/interface/enum/trait/struct) with
+             // explicit kind are kept even at line 0 (e.g., Kotlin top-level classes).
+             const TOP_LEVEL_CONTAINER_KINDS = new Set([
+               "class", "interface", "enum", "trait", "struct", "module", "namespace", "type"
+             ])
+             const ownerName = symbol.ownerName || symbol.scope || ""
+             if (symbolStartLine === 0 && !ownerName && !TOP_LEVEL_CONTAINER_KINDS.has(symbolKind)) continue
+             const symbolStartIndex = symbol.startIndex ?? symbol.range?.startIndex ?? null
+             const symbolEndIndex = symbol.endIndex ?? symbol.range?.endIndex ?? null
+ 
+             if (symbol.snippet && symbol.snippet.length > 0) {
+               const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
+               semanticBatch.push({
+                 symbolId,
+                 fileId,
+                 name: symbol.name,
+                 kind: symbolKind,
+                 snippet: symbol.snippet,
+               })
+             }
+ 
+             const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
+             let ownerSymbolId: string | null = null
+             const _ownerName = symbol.ownerName || symbol.scope
+             if (_ownerName) {
+               const parentSymbol = nameToSymbol.get(_ownerName)
+               // M51.A1: the old unconditional `${ownerName}:0` module fallback
+               // wrote ids that can never resolve (no stored row can have line
+               // 0 with an owner), and a same-named parent would self-own. If
+               // the named parent is not a storeable row, leave the owner NULL.
+               if (parentSymbol && parentSymbol.name !== symbol.name) {
+                 const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
+                 if (storeableName(parentSymbol.name, parentStartLine)) {
+                   ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
+                 }
+               }
+             } else {
+               // No ownerName/scope — derive from line-range containment.
+               // Only assign owners to symbols that are typically contained
+               // (methods, functions, constructors, fields). Top-level declarations
+               // like classes, interfaces, enums should NOT get fallback owners.
+               const OWNABLE_TYPES = new Set([
+                 "method", "function", "constructor", "field", "property",
+                 "variable", "prop", "rune", "reactive",
+               ])
+               const symbolType = symbol.type || symbol.kind || "unknown"
+               if (OWNABLE_TYPES.has(symbolType)) {
+                 // Tier 1: Exact line-range containment (tree-sitter parsed results).
+                 // containersByStart is sorted ascending by start; the first
+                 // container whose [start,end] encloses the symbol wins (widest
+                 // container first on equal starts), preserving original scan order.
+                 for (const c of containersByStart) {
+                   if (c.start >= symbolStartLine) break // sorted: no later container starts earlier
+                   if (c.name === symbol.name) continue
+                   // M51.A1: a container the insert filters will skip is not an
+                   // owner — keep searching for an outer storeable container.
+                   if (!storeableName(c.name, c.start)) continue
+                   if (c.start > 0 && (c.end >= symbolEndLine || c.end === c.start)) {
+                     ownerSymbolId = `${fileId}:${c.name}:${c.start}`
+                     break
+                   }
+                 }
+                 // Tier 2: Nearest preceding container (regex fallback — single-line symbols)
+                 if (!ownerSymbolId) {
+                   for (let ci = containersByStart.length - 1; ci >= 0; ci--) {
+                     const c = containersByStart[ci]
+                     if (c.start >= symbolStartLine) continue
+                     if (c.name === symbol.name) continue
+                     if (!storeableName(c.name, c.start)) continue
+                     ownerSymbolId = `${fileId}:${c.name}:${c.start}`
+                     break
+                   }
+                 }
+               }
+             }
+ 
+             // Verified analyzer output gets the narrow (hard-artifact) name
+             // filter only — soft rules (quotes, parentheses, whitespace,
+             // numeric prefixes, punctuation) are legitimate symbol contracts
+             // (CSS selectors, Markdown headings, F# active patterns, YAML
+             // merge keys). The regex fallback path gets the strict filter.
+             const nameIsArtifact = isFallbackResult
+               ? isIndexArtifactNameStrict(symbol.name)
+               : isIndexArtifactName(symbol.name)
+             if (symbolStartLine < 1 || nameIsArtifact) continue
+             stmt.insertSymbol.run(
+               symbolId,
+               projectId,
+               fileId,
+               symbol.name,
+               symbol.qualifiedName || symbol.name,
+               symbolKind,
+               symbolStartLine,
+               symbolEndLine,
+               symbolStartIndex,
+               symbolEndIndex,
+               symbol.visibility || "public",
+               symbol.parameters ? JSON.stringify(symbol.parameters) : null,
+               symbol.returnType || null,
+               symbol.qualifiedCalls ? JSON.stringify(symbol.qualifiedCalls) : null,
+               symbol.complexity || 1,
+               symbol.apiContractPath || null,
+               symbol.gravityScore ||
+                 (symbol.complexity || 1) *
+                   (symbol.visibility === "public" || symbol.visibility === "export" ? 1.5 : 1.0),
+               symbol.layer || fileLayer,
+               ownerSymbolId,
+               // Use metadata in annotations if present, otherwise decorators
+               symbol.metadata
+                 ? JSON.stringify(symbol.metadata)
+                 : symbol.decorators
+                   ? JSON.stringify(symbol.decorators)
+                   : null,
+               symbol.isAsync ? 1 : 0,
+               symbol.isStatic ? 1 : 0,
+               symbol.isAbstract ? 1 : 0,
+               symbol.genericParameters ? JSON.stringify(symbol.genericParameters) : null,
+               // M35 pre-work: persist the analyzer-extracted docstring. The
+               // column existed in the schema but was never bound here, so
+               // every brain_symbol.docstring was NULL — silently disabling
+               // docstring-based evidence matching in bb_doc (feature/api
+               // lexical SQL) and degrading symbol-mode doc facts.
+               symbol.docstring || null,
+               now,
+               now,
+             )
+             batchSymbols++
+             insertedSymbolIds.add(symbolId)
+             // Universal contains relationship — owner→owned containment even
+             // when analyzers have scope tracking bugs or when WASM fallback
+             // skips the analyzer.
+             // M51.A1 (#716): the storeable-replica guard above already proves
+             // the owner id will exist as a row, so the old
+             // insertedSymbolIds.has() check is gone — it also silently dropped
+             // the edge for forward-declared containers (declared after their
+             // members in the analyzer output). Both endpoints now resolve by
+             // construction: owner via storeableName, child via the insert above.
+             if (ownerSymbolId) {
+               // Dedup: skip if the engine already generated a contains for this (owner, child) pair
+               const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
+               const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
+               if (!alreadyHasContains) {
+                 const fileCount = (fileRelCounters.get(fileId) || 0) + 1
+                 fileRelCounters.set(fileId, fileCount)
+                 // #756: BUFFER, do not insert here. This loop may reference a
+                 // container symbol whose row has not been inserted yet (same
+                 // CONTAINER_PRIORITY class, raw analyzer order) — an immediate
+                 // insert is an intra-transaction forward FK reference that
+                 // rolls back the whole batch under FK-ON (22 diagnosed
+                 // rollbacks on a cold repo index; years of FK-OFF hid this).
+                 // All buffered edges flush AFTER the full symbol loop below,
+                 // when every referenced row exists.
+                 bufferedContains.push([
+                   `${projectId}:rel:${ownerSymbolId}:${symbol.name}:contains:${fileCount}`,
+                   projectId,
+                   ownerSymbolId,
+                   symbolId,
+                   null,          // source_external
+                   symbol.name,   // target_external
+                   "contains",
+                   1.0,
+                   null,
+                   0,
+                   0,
+                   0,
+                   null,
+                   null,
+                   now,
+                   now,
+                 ])
+               }
+             }
+ 
+             // Process taint sources and sinks
+             if (symbol.taintSources || symbol.taintSinks) {
+               const sources = symbol.taintSources || []
+               const sinks = symbol.taintSinks || []
+ 
+               // 1. Intra-symbol flows (Both exist)
+               if (sources.length > 0 && sinks.length > 0) {
+                 for (const source of sources) {
+                   for (const sink of sinks) {
+                     const taintId = `taint:${projectId}:${symbolId}:${source.type}:${sink.type}`
+                     const severity =
+                       sink.vulnerability_type === "sql_injection" || sink.vulnerability_type === "command_injection"
+                         ? "critical"
+                         : "high"
+ 
+                     stmt.insertTaintSource.run(
+                       taintId,
+                       projectId,
+                       symbolId, // source_symbol_id
+                       symbolId, // sink_symbol_id
+                       source.type,
+                       sink.type,
+                       sink.vulnerability_type,
+                       severity,
+                       0, // is_mitigated
+                       JSON.stringify([symbolId]), // flow_path
+                       0, // cross_language_boundaries
+                       now,
+                       now,
+                     )
+                   }
+                 }
+               }
+               // 2. Isolated Sources
+               else if (sources.length > 0) {
+                 for (let i: any = 0; i < sources.length; i++) {
+                   const source = sources[i]
+                   const taintId = `taint_src:${projectId}:${symbolId}:${source.type}:${i}`
+                   stmt.insertTaintSource.run(
+                     taintId,
+                     projectId,
+                     symbolId, // source_symbol_id
+                     null, // sink_symbol_id is NULL
+                     source.type,
+                     "unresolved", // sink_type
+                     "unresolved", // vulnerability_type
+                     "unknown", // severity
+                     0,
+                     JSON.stringify([symbolId]),
+                     0,
+                     now,
+                     now,
+                   )
+                 }
+               }
+               // 3. Isolated Sinks
+               else if (sinks.length > 0) {
+                 for (let i: any = 0; i < sinks.length; i++) {
+                   const sink = sinks[i]
+                   const taintId = `taint_snk:${projectId}:${symbolId}:${sink.type}:${i}`
+                   const severity =
+                     sink.vulnerability_type === "sql_injection" || sink.vulnerability_type === "command_injection"
+                       ? "critical"
+                       : "high"
+ 
+                   stmt.insertTaintSource.run(
+                     taintId,
+                     projectId,
+                     null, // source_symbol_id is NULL
+                     symbolId, // sink_symbol_id
+                     "unresolved", // source_type
+                     sink.type,
+                     sink.vulnerability_type,
+                     severity,
+                     0,
+                     JSON.stringify([symbolId]),
+                     0,
+                     now,
+                     now,
+                   )
+                 }
+               }
+             }
+ 
+             // BUG 6 FIX: Heuristic taint detection for languages without explicit taintSources/taintSinks
+             // Only applied to languages that actually have SQL/command/HTML APIs.
+             // XML, HTML, CSS, JSON, YAML, and config languages are excluded.
+             const LANGUAGES_WITH_SQL = new Set([
+               "java", "python", "go", "php", "ruby", "csharp", "kotlin", "scala",
+               "typescript", "javascript", "tsx", "jsx", "rust", "swift", "dart",
+               "perl", "lua", "groovy", "cpp", "c", "elixir", "clojure", "r",
+             ])
+             const fileLang = (result.language || "").toLowerCase()
+ 
+             if (!symbol.taintSources && !symbol.taintSinks && symbolKind === "function" && LANGUAGES_WITH_SQL.has(fileLang)) {
+               const snippet = symbol.snippet || ""
+               const qualifiedCalls = symbol.qualifiedCalls || []
+               const hasStringConcat = snippet.includes("+ ") || snippet.includes("concat")
+               const callsPattern = [...qualifiedCalls, snippet].join(" ")
+ 
+               if (hasStringConcat && /execute|query|find|insert|update|delete.*where|cursor/i.test(callsPattern)) {
+                 const taintId = `taint_h:${projectId}:${symbolId}:sql_injection:0`
+                 stmt.insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "sql_query",
+                   "sql_injection", "high", 0, JSON.stringify([symbolId]), 0, now, now)
+               }
+               if (/innerHTML|dangerouslySetInnerHTML|document\.write|eval\(/.test(callsPattern)) {
+                 const taintId = `taint_h:${projectId}:${symbolId}:xss:0`
+                 stmt.insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved",
+                   callsPattern.includes("innerHTML") ? "innerHTML" : "eval",
+                   "xss", "high", 0, JSON.stringify([symbolId]), 0, now, now)
+               }
+               if (/exec\(|spawn\(|system\(|popen\(|subprocess/i.test(callsPattern)) {
+                 const taintId = `taint_h:${projectId}:${symbolId}:cmd_injection:0`
+                 stmt.insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "command_exec",
+                   "command_injection", "critical", 0, JSON.stringify([symbolId]), 0, now, now)
+               }
+             }
+           }
+         }
+ 
+         if (result.imports) {
+           for (const imp of result.imports) {
+             // ImportInfo canonical fields are module/importType — analyzers
+             // never set name/path/type, so those reads silently produced
+             // undefined bindings and imports were never persisted for ANY
+             // language. Map the real shape (M14.1 fix).
+             const moduleName = imp.module ?? imp.path ?? imp.localName ?? ""
+             if (!moduleName) continue
+             const importType =
+               imp.importType ??
+               (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
+             const importId = `${fileId}:import:${moduleName}:${imp.range?.startLine ?? 0}`
+             stmt.insertImport.run(
+               importId,
+               projectId,
+               fileId,
+               moduleName,
+               imp.path || moduleName,
+               importType,
+               0,
+               imp.range?.startLine ?? 0,
+               now,
+               now,
+             )
+             batchImports++
+           }
+         }
+ 
+         // #756: flush auto-generated contains edges NOW — every symbol row of
+         // this file already exists (the symbol loop above completed), so no
+         // edge can forward-reference a row that is not yet stored. INSERT OR
+         // IGNORE keeps the historical dedup semantics for engine-provided
+         // duplicates.
+         if (bufferedContains.length > 0) {
+           for (const args of bufferedContains) {
+             stmt.insertRelationship.run(...args)
+             batchRelationships++
+           }
+           bufferedContains.length = 0
+         }
 
-        let relativePath = path.relative(projectPath, result.filePath)
-        const fileId = `${projectId}:${relativePath}`
-        // Trace: only log significant files to avoid terminal I/O bottleneck
-        const symCount = result.symbols?.length || 0
-        const relCount = result.relationships?.length || 0
-        if (relCount > 50 || symCount > 20) {
-          process.stderr.write(`[STORE] ${relativePath.split('/').pop()}: ${symCount}s ${relCount}r\n`)
-        }
-
-        // Per-file SAVEPOINT — if this file's data causes an FK violation,
-        // roll back only this file, not the entire batch.
-
-
-        // Only delete file relationships if this is an INCREMENTAL run
-        // We removed this because in a parallel batch insert it can cause racing bugs
-        // If the same project file is processed concurrently, or we accidentally cascade.
-        // Wait, fileId is unique per file... but just to be sure we comment it out temporarily.
-        deleteFileRelationships.run(fileId)
-        deleteFileRelationshipsByTarget.run(fileId)
-        deleteFileTaints.run(fileId, fileId)
-        deleteFileSymbols.run(fileId)
-        deleteFileImports.run(fileId)
-
-        relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
-        const pathLower = relativePath.toLowerCase()
-
-        let fileLayer = "core"
-        if (
-          pathLower.includes("/ui/") ||
-          pathLower.includes("/components/") ||
-          pathLower.includes("/pages/") ||
-          pathLower.includes("/views/")
-        ) {
-          fileLayer = "ui"
-        } else if (
-          pathLower.includes("/db/") ||
-          pathLower.includes("/database/") ||
-          pathLower.includes("/repository/") ||
-          pathLower.includes("/storage/") ||
-          pathLower.includes("/models/") ||
-          pathLower.includes("/schema/")
-        ) {
-          fileLayer = "db"
-        } else if (
-          pathLower.includes("/services/") ||
-          pathLower.includes("/api/") ||
-          pathLower.includes("/controllers/")
-        ) {
-          fileLayer = "service"
-        } else if (pathLower.includes("test") || pathLower.includes("spec")) {
-          fileLayer = "test"
-        }
-
-        if (result.imports) {
-          const hasReact = result.imports.some(
-            (i: any) =>
-              typeof i.module === "string" &&
-              (i.module.includes("react") || i.module.includes("vue") || i.module.includes("svelte")),
-          )
-          if (hasReact) fileLayer = "ui"
-        }
-
-        const hasSyntaxErrors = result.errors && result.errors.some((e: any) => e.severity === "warning")
-        const errorReport = hasSyntaxErrors ? JSON.stringify(result.errors) : null
-
-        const isTestFile = 
-          pathLower.includes("/test/") || pathLower.includes("/tests/") ||
-          pathLower.includes("/__tests__/") || pathLower.includes("/spec/") ||
-          pathLower.includes(".test.") || pathLower.includes(".spec.") ? 1 : 0
-
-        // Count lines — use max symbol endLine as estimate, fallback to 0
-        let lineCount = 0
-        if (result.symbols && result.symbols.length > 0) {
-          for (const s of result.symbols) {
-            const end = s.endLine ?? s.range?.endLine ?? 0
-            if (end > lineCount) lineCount = end
-          }
-        }
-
-        insertFile.run(
-          fileId,
-          projectId,
-          result.filePath,
-          relativePath,
-          result.fileHash || "",
-          result.sizeBytes || 0,
-          lineCount,
-          result.lastModified || 0,
-          result.language || "unknown",
-          result.framework || null,
-          hasSyntaxErrors ? 1 : 0,
-          errorReport,
-          isTestFile,
-          fileLayer,
-          now,
-          now,
-        )
-
-        // Hoisted per-file index structures — used by both symbol storage and
-        // relationship source resolution (which runs outside the symbols block).
-        const fileLang = (result.language || "").toLowerCase()
-        // JS-global names are only noise for JS-family languages; a Scala
-        // `object Global` or `def process` is a legitimate declaration and
-        // must survive indexing. Universal entries below are keywords and
-        // synthetic tree-sitter artifacts — noise everywhere. Language-literal
-        // words (None/True/False/nil/...) are NOT here: they are legitimate
-        // identifiers in verified analyzer output (e.g. TypeScript/C# enum
-        // members named `None`) and only the regex fallback path can pick
-        // them up as noise (const None = ...), so they are gated on fallback.
-        const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-        const SYMBOL_NAME_DENYLIST = new Set([
-          "this", "super", "self", "Self", "me", "My",
-          "root", "program", "source_file", "module_declaration",
-          "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-          "unknown",
-        ])
-        const isFallbackResult = !!result.fallback
-        if (isFallbackResult) {
-          SYMBOL_NAME_DENYLIST.add("true")
-          SYMBOL_NAME_DENYLIST.add("false")
-          SYMBOL_NAME_DENYLIST.add("null")
-          SYMBOL_NAME_DENYLIST.add("nil")
-          SYMBOL_NAME_DENYLIST.add("None")
-          SYMBOL_NAME_DENYLIST.add("True")
-          SYMBOL_NAME_DENYLIST.add("False")
-          SYMBOL_NAME_DENYLIST.add("undefined")
-          SYMBOL_NAME_DENYLIST.add("NaN")
-          SYMBOL_NAME_DENYLIST.add("Infinity")
-        }
-        if (JS_FAMILY.has(fileLang)) {
-          SYMBOL_NAME_DENYLIST.add("global")
-          SYMBOL_NAME_DENYLIST.add("Global")
-          SYMBOL_NAME_DENYLIST.add("window")
-          SYMBOL_NAME_DENYLIST.add("Window")
-          SYMBOL_NAME_DENYLIST.add("document")
-          SYMBOL_NAME_DENYLIST.add("module")
-          SYMBOL_NAME_DENYLIST.add("exports")
-          SYMBOL_NAME_DENYLIST.add("default")
-          SYMBOL_NAME_DENYLIST.add("globalThis")
-        }
-        const nameToSymbol = new Map<string, any>()
-        const containersByStart: { name: string; start: number; end: number }[] = []
-        let firstContainerSymbol: any = undefined
-
-        if (result.symbols) {
-          const insertedSymbolIds = new Set<string>()
-          // Names that should NEVER become standalone symbols — language keywords,
-          // scope objects, and root-level nodes that are always noise.
-          // Sort symbols: container types first (class, interface, etc.) so FK
-          // references from methods to their containers resolve successfully.
-          const CONTAINER_PRIORITY: Record<string, number> = {
-            class: 0, interface: 0, struct: 0, trait: 0, enum: 0, object: 0,
-            module: 0, namespace: 0, package: 0, impl: 0, type: 0,
-            method: 1, function: 1, constructor: 1, field: 2, property: 2,
-            variable: 2,
-          }
-          result.symbols.sort((a: any, b: any) => {
-            const pa = CONTAINER_PRIORITY[a.type || a.kind] ?? 3
-            const pb = CONTAINER_PRIORITY[b.type || b.kind] ?? 3
-            return pa - pb
-          })
-
-          // Pre-build fast lookup structures to eliminate per-symbol O(n) scans.
-          // nameToSymbol: first symbol with each name (mirrors Array.find semantics).
-          // containersByStart: container symbols sorted by startLine ascending for
-          // line-containment lookups (replaces two full-array scans per symbol).
-          const CONTAINER_TYPES_LOOKUP = new Set([
-            "class", "interface", "struct", "trait", "enum", "object", "actor",
-            "module", "namespace", "package", "impl", "type",
-          ])
-          for (const s of result.symbols) {
-            const nm = s.name || ""
-            if (nm && !nameToSymbol.has(nm)) nameToSymbol.set(nm, s)
-            const k = s.type || s.kind || "unknown"
-            if (CONTAINER_TYPES_LOOKUP.has(k)) {
-              const cStart = s.startLine ?? s.range?.startLine ?? 0
-              const cEnd = s.endLine ?? s.range?.endLine ?? cStart
-              containersByStart.push({ name: nm, start: cStart, end: cEnd })
-            }
-          }
-          containersByStart.sort((a, b) => a.start - b.start || b.end - a.end)
-          // First container-kind symbol in sorted order (used for this/self resolution)
-          const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
-          firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
-
-          // Pre-build contains-pair set for O(1) dedupe of auto-generated contains
-          // relationships (replaces per-symbol O(rels) scan).
-          const containsPairs = new Set<string>()
-          if (result.relationships) {
-            for (const r of result.relationships) {
-              if ((r.type || r.relationshipType || "") !== "contains") continue
-              const rSrc = r.source || r.sourceId || r.fromSymbol || r.from || ""
-              const rTgt = r.target || r.targetId || r.toSymbol || r.to || ""
-              const srcLeaf = rSrc.replace(/^.*:([^:]+):?\d*$/, "$1")
-              const tgtLeaf = rTgt.replace(/^.*:([^:]+):?\d*$/, "$1")
-              if (srcLeaf && tgtLeaf) {
-                // Space separator (deliberate): must match the has() lookup
-                // below. Symbol names containing spaces (e.g. F# backtick
-                // names) can only cause a benign false-positive dedupe that
-                // skips a redundant edge — never a missing relationship.
-                containsPairs.add(`${srcLeaf} ${tgtLeaf}`)
-                containsPairs.add(`${tgtLeaf} ${srcLeaf}`)
-              }
-            }
-          }
-
-          for (const symbol of result.symbols) {
-            // Skip symbols that would cause SQL insert failures
-            const symbolKind = symbol.type || symbol.kind || "unknown"
-            const symbolName = symbol.name || ""
-            // Denylist: filter language keywords and scope artifacts regardless of kind
-            if (SYMBOL_NAME_DENYLIST.has(symbolName)) continue
-            // Skip symbols with empty or extremely long names
-            if (!symbolName || symbolName.length > 500) continue
-            // Skip symbols with invalid start lines
-            const ssLine = symbol.startLine ?? symbol.range?.startLine ?? 0
-            if (ssLine < 0) continue
-            const symbolStartLine = symbol.startLine ?? symbol.range?.startLine ?? 0
-            const symbolEndLine = symbol.endLine ?? symbol.range?.endLine ?? symbolStartLine
-            // Skip import-only symbols — external type references extracted from
-            // import statements. These have line 0, no owner, and are never
-            // project-declared classes. Examples: Boolean, File, PsiModifier, etc.
-            // Top-level declarations (class/interface/enum/trait/struct) with
-            // explicit kind are kept even at line 0 (e.g., Kotlin top-level classes).
-            const TOP_LEVEL_CONTAINER_KINDS = new Set([
-              "class", "interface", "enum", "trait", "struct", "module", "namespace", "type"
-            ])
-            const ownerName = symbol.ownerName || symbol.scope || ""
-            if (symbolStartLine === 0 && !ownerName && !TOP_LEVEL_CONTAINER_KINDS.has(symbolKind)) continue
-            const symbolStartIndex = symbol.startIndex ?? symbol.range?.startIndex ?? null
-            const symbolEndIndex = symbol.endIndex ?? symbol.range?.endIndex ?? null
-
-            if (symbol.snippet && symbol.snippet.length > 0) {
-              const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
-              semanticBatch.push({
-                symbolId,
-                fileId,
-                name: symbol.name,
-                kind: symbolKind,
-                snippet: symbol.snippet,
-              })
-            }
-
-            const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
-            let ownerSymbolId = null
-            const _ownerName = symbol.ownerName || symbol.scope
-            if (_ownerName) {
-              ownerSymbolId = `${fileId}:${_ownerName}:0`
-              const parentSymbol = nameToSymbol.get(_ownerName)
-              if (parentSymbol) {
-                const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
-                ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
-              }
-            } else {
-              // No ownerName/scope — derive from line-range containment.
-              // Only assign owners to symbols that are typically contained
-              // (methods, functions, constructors, fields). Top-level declarations
-              // like classes, interfaces, enums should NOT get fallback owners.
-              const OWNABLE_TYPES = new Set([
-                "method", "function", "constructor", "field", "property",
-                "variable", "prop", "rune", "reactive",
-              ])
-              const symbolType = symbol.type || symbol.kind || "unknown"
-              if (OWNABLE_TYPES.has(symbolType)) {
-                // Tier 1: Exact line-range containment (tree-sitter parsed results).
-                // containersByStart is sorted ascending by start; the first
-                // container whose [start,end] encloses the symbol wins (widest
-                // container first on equal starts), preserving original scan order.
-                for (const c of containersByStart) {
-                  if (c.start >= symbolStartLine) break // sorted: no later container starts earlier
-                  if (c.name === symbol.name) continue
-                  if (c.start > 0 && (c.end >= symbolEndLine || c.end === c.start)) {
-                    ownerSymbolId = `${fileId}:${c.name}:${c.start}`
-                    break
-                  }
-                }
-                // Tier 2: Nearest preceding container (regex fallback — single-line symbols)
-                if (!ownerSymbolId) {
-                  for (let ci = containersByStart.length - 1; ci >= 0; ci--) {
-                    const c = containersByStart[ci]
-                    if (c.start >= symbolStartLine) continue
-                    if (c.name === symbol.name) continue
-                    ownerSymbolId = `${fileId}:${c.name}:${c.start}`
-                    break
-                  }
-                }
-              }
-            }
-
-            // Verified analyzer output gets the narrow (hard-artifact) name
-            // filter only — soft rules (quotes, parentheses, whitespace,
-            // numeric prefixes, punctuation) are legitimate symbol contracts
-            // (CSS selectors, Markdown headings, F# active patterns, YAML
-            // merge keys). The regex fallback path gets the strict filter.
-            const nameIsArtifact = isFallbackResult
-              ? isIndexArtifactNameStrict(symbol.name)
-              : isIndexArtifactName(symbol.name)
-            if (symbolStartLine < 1 || nameIsArtifact) continue
-            insertSymbol.run(
-              symbolId,
-              projectId,
-              fileId,
-              symbol.name,
-              symbol.qualifiedName || symbol.name,
-              symbolKind,
-              symbolStartLine,
-              symbolEndLine,
-              symbolStartIndex,
-              symbolEndIndex,
-              symbol.visibility || "public",
-              symbol.parameters ? JSON.stringify(symbol.parameters) : null,
-              symbol.returnType || null,
-              symbol.qualifiedCalls ? JSON.stringify(symbol.qualifiedCalls) : null,
-              symbol.complexity || 1,
-              symbol.apiContractPath || null,
-              symbol.gravityScore ||
-                (symbol.complexity || 1) *
-                  (symbol.visibility === "public" || symbol.visibility === "export" ? 1.5 : 1.0),
-              symbol.layer || fileLayer,
-              ownerSymbolId,
-              // Use metadata in annotations if present, otherwise decorators
-              symbol.metadata
-                ? JSON.stringify(symbol.metadata)
-                : symbol.decorators
-                  ? JSON.stringify(symbol.decorators)
-                  : null,
-              symbol.isAsync ? 1 : 0,
-              symbol.isStatic ? 1 : 0,
-              symbol.isAbstract ? 1 : 0,
-              symbol.genericParameters ? JSON.stringify(symbol.genericParameters) : null,
-              // M35 pre-work: persist the analyzer-extracted docstring. The
-              // column existed in the schema but was never bound here, so
-              // every brain_symbol.docstring was NULL — silently disabling
-              // docstring-based evidence matching in bb_doc (feature/api
-              // lexical SQL) and degrading symbol-mode doc facts.
-              symbol.docstring || null,
-              now,
-              now,
-            )
-            batchSymbols++
-            insertedSymbolIds.add(symbolId)
-            // Universal contains relationship — only if owner was actually inserted
-            // regardless of whether the language analyzer produced one.
-            // Guarantees owner→owned containment even when analyzers have
-            // scope tracking bugs or when WASM fallback skips the analyzer.
-            if (ownerSymbolId && insertedSymbolIds.has(ownerSymbolId)) {
-              // Dedup: skip if the engine already generated a contains for this (owner, child) pair
-              const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
-              const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
-              if (!alreadyHasContains) {
-                const fileCount = (fileRelCounters.get(fileId) || 0) + 1
-                fileRelCounters.set(fileId, fileCount)
-                const containsId = `${projectId}:rel:${ownerSymbolId}:${symbol.name}:contains:${fileCount}`
-                insertRelationship.run(
-                  containsId,
-                  projectId,
-                  ownerSymbolId,
-                  symbolId,
-                  null,          // source_external
-                  symbol.name,   // target_external
-                  "contains",
-                  1.0,
-                  null,
-                  0,
-                  0,
-                  0,
-                  null,
-                  null,
-                  now,
-                  now,
-                )
-                batchRelationships++
-              }
-            }
-
-            // Process taint sources and sinks
-            if (symbol.taintSources || symbol.taintSinks) {
-              const sources = symbol.taintSources || []
-              const sinks = symbol.taintSinks || []
-
-              // 1. Intra-symbol flows (Both exist)
-              if (sources.length > 0 && sinks.length > 0) {
-                for (const source of sources) {
-                  for (const sink of sinks) {
-                    const taintId = `taint:${projectId}:${symbolId}:${source.type}:${sink.type}`
-                    const severity =
-                      sink.vulnerability_type === "sql_injection" || sink.vulnerability_type === "command_injection"
-                        ? "critical"
-                        : "high"
-
-                    insertTaintSource.run(
-                      taintId,
-                      projectId,
-                      symbolId, // source_symbol_id
-                      symbolId, // sink_symbol_id
-                      source.type,
-                      sink.type,
-                      sink.vulnerability_type,
-                      severity,
-                      0, // is_mitigated
-                      JSON.stringify([symbolId]), // flow_path
-                      0, // cross_language_boundaries
-                      now,
-                      now,
-                    )
-                  }
-                }
-              }
-              // 2. Isolated Sources
-              else if (sources.length > 0) {
-                for (let i: any = 0; i < sources.length; i++) {
-                  const source = sources[i]
-                  const taintId = `taint_src:${projectId}:${symbolId}:${source.type}:${i}`
-                  insertTaintSource.run(
-                    taintId,
-                    projectId,
-                    symbolId, // source_symbol_id
-                    null, // sink_symbol_id is NULL
-                    source.type,
-                    "unresolved", // sink_type
-                    "unresolved", // vulnerability_type
-                    "unknown", // severity
-                    0,
-                    JSON.stringify([symbolId]),
-                    0,
-                    now,
-                    now,
-                  )
-                }
-              }
-              // 3. Isolated Sinks
-              else if (sinks.length > 0) {
-                for (let i: any = 0; i < sinks.length; i++) {
-                  const sink = sinks[i]
-                  const taintId = `taint_snk:${projectId}:${symbolId}:${sink.type}:${i}`
-                  const severity =
-                    sink.vulnerability_type === "sql_injection" || sink.vulnerability_type === "command_injection"
-                      ? "critical"
-                      : "high"
-
-                  insertTaintSource.run(
-                    taintId,
-                    projectId,
-                    null, // source_symbol_id is NULL
-                    symbolId, // sink_symbol_id
-                    "unresolved", // source_type
-                    sink.type,
-                    sink.vulnerability_type,
-                    severity,
-                    0,
-                    JSON.stringify([symbolId]),
-                    0,
-                    now,
-                    now,
-                  )
-                }
-              }
-            }
-
-            // BUG 6 FIX: Heuristic taint detection for languages without explicit taintSources/taintSinks
-            // Only applied to languages that actually have SQL/command/HTML APIs.
-            // XML, HTML, CSS, JSON, YAML, and config languages are excluded.
-            const LANGUAGES_WITH_SQL = new Set([
-              "java", "python", "go", "php", "ruby", "csharp", "kotlin", "scala",
-              "typescript", "javascript", "tsx", "jsx", "rust", "swift", "dart",
-              "perl", "lua", "groovy", "cpp", "c", "elixir", "clojure", "r",
-            ])
-            const fileLang = (result.language || "").toLowerCase()
-
-            if (!symbol.taintSources && !symbol.taintSinks && symbolKind === "function" && LANGUAGES_WITH_SQL.has(fileLang)) {
-              const snippet = symbol.snippet || ""
-              const qualifiedCalls = symbol.qualifiedCalls || []
-              const hasStringConcat = snippet.includes("+ ") || snippet.includes("concat")
-              const callsPattern = [...qualifiedCalls, snippet].join(" ")
-
-              if (hasStringConcat && /execute|query|find|insert|update|delete.*where|cursor/i.test(callsPattern)) {
-                const taintId = `taint_h:${projectId}:${symbolId}:sql_injection:0`
-                insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "sql_query",
-                  "sql_injection", "high", 0, JSON.stringify([symbolId]), 0, now, now)
-              }
-              if (/innerHTML|dangerouslySetInnerHTML|document\.write|eval\(/.test(callsPattern)) {
-                const taintId = `taint_h:${projectId}:${symbolId}:xss:0`
-                insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved",
-                  callsPattern.includes("innerHTML") ? "innerHTML" : "eval",
-                  "xss", "high", 0, JSON.stringify([symbolId]), 0, now, now)
-              }
-              if (/exec\(|spawn\(|system\(|popen\(|subprocess/i.test(callsPattern)) {
-                const taintId = `taint_h:${projectId}:${symbolId}:cmd_injection:0`
-                insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "command_exec",
-                  "command_injection", "critical", 0, JSON.stringify([symbolId]), 0, now, now)
-              }
-            }
-          }
-        }
-
-        if (result.imports) {
-          for (const imp of result.imports) {
-            // ImportInfo canonical fields are module/importType — analyzers
-            // never set name/path/type, so those reads silently produced
-            // undefined bindings and imports were never persisted for ANY
-            // language. Map the real shape (M14.1 fix).
-            const moduleName = imp.module ?? imp.path ?? imp.localName ?? ""
-            if (!moduleName) continue
-            const importType =
-              imp.importType ??
-              (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
-            const importId = `${fileId}:import:${moduleName}:${imp.range?.startLine ?? 0}`
-            insertImport.run(
-              importId,
-              projectId,
-              fileId,
-              moduleName,
-              imp.path || moduleName,
-              importType,
-              0,
-              imp.range?.startLine ?? 0,
-              now,
-              now,
-            )
-            batchImports++
-          }
-        }
-
-        if (result.relationships) {
-          let fileRelCount = 0
-          for (const rel of result.relationships) {
-            const sourceName = rel.source || rel.sourceId || rel.fromSymbol || rel.from || "unknown"
-            const targetName = rel.targetExternal || rel.targetId || rel.target || rel.toSymbol || rel.to || "unknown"
-            const relType = rel.type || rel.relationshipType || "references"
-
-            // Extract the leaf name: "file:scope:name:line" → "name", "a.b.c" → "c"
-            const extractLeaf = (name: string) => {
-              // Remove line number suffix ":123"
-              const noLine = name.replace(/:\d+$/, "")
-              // Split by ":" and take last (handles "file:scope:name")
-              const byColon = noLine.split(":")
-              const lastColon = byColon[byColon.length - 1]
-              // Split by "." and take last (handles "a.b.c")
-              const byDot = lastColon.split(".")
-              return byDot[byDot.length - 1]
-            }
-            const sourceLeaf = extractLeaf(sourceName)
-            const targetLeaf = extractLeaf(targetName)
-
-            // Find source symbol: O(1) name match first, then ends-with/qualified
-            // fallbacks over a pre-built list (avoids Array.find closure per rel).
-            let sourceSymbol: any = undefined
-            if (sourceName && sourceName !== "unknown") {
-              sourceSymbol = nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)
-              if (!sourceSymbol) {
-                for (const s of result.symbols) {
-                  if (sourceName.endsWith(`:${s.name}`)) { sourceSymbol = s; break }
-                  if (sourceName.endsWith(`.${s.name}`)) { sourceSymbol = s; break }
-                  if (s.qualifiedName && sourceName === s.qualifiedName) { sourceSymbol = s; break }
-                  if (s.qualifiedName && sourceName.endsWith(`:${s.qualifiedName}`)) { sourceSymbol = s; break }
-                  if (s.qualifiedName && s.qualifiedName.endsWith(`.${sourceLeaf}`)) { sourceSymbol = s; break }
-                }
-              }
-            }
-
-            let sourceId: string | null
-            let sourceExternal: string | null = null
-            if (sourceSymbol) {
-              // Defensive export filter: reject exports of non-public or package-decl symbols
-              if (relType === "exports") {
-                const vis = sourceSymbol.visibility || sourceSymbol.modifiers
-                if (vis === "private" || vis === "protected") continue
-                const name = sourceSymbol.name || ""
-                if (/^[a-z][a-z0-9_.]*$/.test(name) && name.includes(".")) continue
-                if (sourceSymbol.type === "package" || sourceSymbol.kind === "package") continue
-              }
-              sourceId = `${fileId}:${sourceSymbol.name}:${sourceSymbol.startLine || 0}`
-            } else {
-              // Phase 4: No dummy symbols. Use source_external for relationships
-              // where the source symbol isn't in the same file (top-level calls,
-              // cross-file refs). source_symbol_id is nullable.
-              if (relType === "exports") {
-                const dummyName = sourceLeaf || sourceName.replace(/[:.]/g, "_").replace(/:?\d+$/, "")
-                if (/^[a-z][a-z0-9_.]*$/.test(dummyName) && dummyName.includes(".")) continue
-                if (/^[a-z][a-z0-9_.]*$/.test(targetName) && targetName.includes(".")) continue
-              }
-              sourceId = null
-              sourceExternal = sourceName
-            }
-
-            // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later
-            const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf) as any
-            const targetId = resolvedRow?.id || null
-
-            // is_cross_file must be honest: 1 only when the resolved target
-            // lives in a DIFFERENT file than the source (fileId is the current
-            // file's id). Same-file edges must stay 0 — the resolution passes
-            // below recompute this flag only for rows they resolve, so rows
-            // resolved here would otherwise carry the wrong value forever.
-            const relIsCrossFile = sourceId !== null && !!resolvedRow?.file_id && resolvedRow.file_id !== fileId ? 1 : 0
-            // Cross-language: target resolved to a symbol whose file language
-            // differs from the source file's. Previously this flag was only set
-            // when analyzers self-declared it in metadata (only r did), so real
-            // cross-language edges (groovy extends java etc.) stored 0.
-            const targetLang = String(resolvedRow?.language ?? "").toLowerCase()
-            const relIsCrossLanguage =
-              relIsCrossFile && !!targetLang && !!fileLang && targetLang !== fileLang ? 1 : 0
-
-            const MAX_SYMBOL_NAME_LENGTH = 255
-            const GENERIC_SOURCE_NAMES = new Set([
-              "unknown", "SCSS_FILE_SCOPE",
-              "window", "exports", "default", "GlobalScope",
-            ])
-            // Intra-class receiver names that should be resolved to the enclosing class
-            const INTRA_CLASS_RECEIVERS = new Set(["self", "this", "me", "Self"])
-            // Check just the leaf name (after last : and .) for filtering
-            const leafForCheck = extractLeaf(sourceName)
-            const isBlockScopeName = /^[\w]+\.block_\d+/.test(leafForCheck) || /^block_\d+/.test(leafForCheck)
-
-            // BUG 4 FIX: Resolve intra-class receivers (this/self/me) to the enclosing class
-            if (INTRA_CLASS_RECEIVERS.has(leafForCheck)) {
-              // First container-kind symbol in the sorted array — matches original find().
-              const enclosingSymbol = firstContainerSymbol
-              if (enclosingSymbol) {
-                const enclosingStartLine = enclosingSymbol.startLine ?? enclosingSymbol.range?.startLine ?? 0
-                sourceId = `${fileId}:${enclosingSymbol.name}:${enclosingStartLine}`
-                // Also update the relationship source metadata
-                rel.metadata = rel.metadata || {}
-                rel.metadata.resolvedReceiver = true
-                rel.metadata.originalSource = leafForCheck
-              }
-              // If no enclosing class found, fall through — this becomes a regular relationship
-            }
-
-            if (
-              leafForCheck.length > MAX_SYMBOL_NAME_LENGTH ||
-              GENERIC_SOURCE_NAMES.has(leafForCheck) ||
-              isBlockScopeName
-            ) {
-              continue
-            }
-
-            // Deterministic relId — same (source, target, type) shares one row.
-            // INSERT OR IGNORE silently skips duplicates; no more 7× dupes.
-            const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}`
-
-            insertRelationship.run(
-              relId,
-              projectId,
-              sourceId,
-              targetId,
-              sourceExternal,  // source_external — non-null when source not found in file
-              targetName,       // target_external
-              relType,
-              rel.confidence || 1.0,
-              rel.context || null,
-              0,
-              relIsCrossFile,
-              rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
-              rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
-              rel.metadata ? JSON.stringify(rel.metadata) : null,
-              now,
-              now,
-            )
-            totalRelationships++
-            fileRelCount++
-          }
-            if (fileRelCount === 0 && result.relationships.length > 5) {
-              process.stderr.write(`[REL-LOSS] ${relativePath}: engine=${result.relationships.length} rels, stored=0\n`)
-            }
-        }
-      }
-    })
-    try {
-      tx(batch)
-      totalSymbols += batchSymbols
-      totalRelationships += batchRelationships
-      totalImports += batchImports
-    } catch (error) {
-      process.stderr.write(`[storeResults] batch ${i}-${i+batchSize} ROLLED BACK: ${error instanceof Error ? error.message : String(error)}\n`)
-      log.error("batch insert failed", {
-        error: error instanceof Error ? error.message : String(error),
-        batchStart: i,
-        batchSize,
-      })
-      // Transaction rolled back — the counter increments inside it are invalid.
-      // Skip to next batch; don't count these as stored.
-    }
-
-    await new Promise((r) => setTimeout(r, 1))
-  }
-
-  // ========================================================================
-  // ASYNC SEMANTIC EMBEDDINGS (BACKGROUND QUEUE)
-  // Embeddings are non-blocking for indexing: they are queued on a shared,
-  // serialized background drainer and processed after the main indexing
-  // completes, so users get usable code intelligence immediately while
-  // semantic vectors populate lazily. See queueBackgroundEmbeddings above.
-  // ========================================================================
-  if (semanticBatch.length > 0) {
-    // Copy, never reference: semanticBatch is cleared below and must not
-    // take the queued items down with it.
-    const items = [...semanticBatch]
-    semanticBatch.length = 0 // Clear to prevent double-processing
-    queueBackgroundEmbeddings(projectId, projectPath, items)
-  }
-
-  // ========================================================================
-  // MULTI-STRATEGY RELATIONSHIP RESOLUTION (optimized with temp table)
-  // Build a lookup table once, then UPDATE via JOIN — avoids O(N*M)
-  // correlated subqueries that kill performance on 100K+ relationships.
-  // ========================================================================
-  if (!options.skipResolution) {
-    const symbolCount = rawDb
-      .prepare(`SELECT count(*) as c FROM brain_symbol WHERE project_id = ?`)
-      .get(projectId) as any
-    if (symbolCount && symbolCount.c > 0) { // Always run — now fast since most relationships resolved at insert time
-      log.info("resolving external symbol references", { symbolCount: symbolCount.c })
-      try {
-        // Build lookup tables — use individual run() calls (compiled Bun doesn't support exec())
-        rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname (qualified_name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
-        rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_unique (name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
-        rawDb.run(`DELETE FROM _res_qname`)
-        rawDb.run(`DELETE FROM _res_name_unique`)
-        // Dedup on insert: duplicate qualified names across files must not
-        // abort the whole resolution pass (PK conflict).
-        // Deterministic winner for duplicate qualified names (MIN(id)) so
-        // parallel indexing order can't change resolution results.
-        rawDb.run(`INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL GROUP BY qualified_name`)
-        rawDb.run(`INSERT OR IGNORE INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
-
-        // Strategy 1: Qualified name exact match
-        rawDb.run(`
-          UPDATE brain_relationship
-          SET target_symbol_id = _res_qname.symbol_id,
-              is_cross_file = CASE WHEN _res_qname.file_id != (
-                SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1
-              ) THEN 1 ELSE 0 END
-          FROM _res_qname
-          WHERE brain_relationship.target_external = _res_qname.qualified_name
-            AND brain_relationship.target_symbol_id IS NULL
-            AND brain_relationship.target_external IS NOT NULL
-            AND brain_relationship.project_id = '${projectId}'
-        `)
-
-        // Strategy 2: Name-only match with uniqueness
-        rawDb.run(`
-          UPDATE brain_relationship
-          SET target_symbol_id = _res_name_unique.symbol_id,
-              is_cross_file = CASE WHEN _res_name_unique.file_id != (
-                SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1
-              ) THEN 1 ELSE 0 END
-          FROM _res_name_unique
-          WHERE brain_relationship.target_external = _res_name_unique.name
-            AND brain_relationship.target_symbol_id IS NULL
-            AND brain_relationship.target_external IS NOT NULL
-            AND brain_relationship.project_id = '${projectId}'
-        `)
-
-        // Strategy 3: Qualified name partial match for dotted names
-        rawDb.run(`
-          UPDATE brain_relationship
-          SET target_symbol_id = (
-              SELECT sym.id FROM brain_symbol sym
-              WHERE sym.name = SUBSTR(brain_relationship.target_external, INSTR(brain_relationship.target_external, '.') + 1)
-                AND sym.project_id = '${projectId}'
-              LIMIT 1
-          )
-          WHERE brain_relationship.target_symbol_id IS NULL
-            AND brain_relationship.target_external IS NOT NULL
-            AND brain_relationship.project_id = '${projectId}'
-            AND INSTR(brain_relationship.target_external, '.') > 0
-        `)
-
-        // Cross-language normalization (polyglot fixture finding, M26 addendum):
-        // the strategies above recompute is_cross_file but left is_cross_language
-        // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
-        // resolved here stored cross_file=1 but cross_lang=0 with no bridge,
-        // silently hiding it from cross-language hover/graph. One authoritative
-        // pass over every resolved row of the project; UPGRADE-ONLY (a row the
-        // analyzer declared cross-language stays 1; a computed-0 row never
-        // downgrades) and the bridge is filled only when NULL (never overwrites
-        // a declared bridge mechanism).
-        rawDb.run(`
-          UPDATE brain_relationship
-          SET is_cross_language = CASE WHEN EXISTS (
-            SELECT 1 FROM brain_symbol ss
-            LEFT JOIN brain_file sf ON sf.id = ss.file_id
-            JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
-            LEFT JOIN brain_file tf ON tf.id = ts.file_id
-            WHERE ss.id = brain_relationship.source_symbol_id
-              AND COALESCE(sf.language, '') <> ''
-              AND COALESCE(tf.language, '') <> ''
-              AND lower(sf.language) <> lower(tf.language)
-          ) THEN 1 ELSE brain_relationship.is_cross_language END,
-          bridge_mechanism = COALESCE(
-            brain_relationship.bridge_mechanism,
-            CASE WHEN EXISTS (
-              SELECT 1 FROM brain_symbol ss
-              LEFT JOIN brain_file sf ON sf.id = ss.file_id
-              JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
-              LEFT JOIN brain_file tf ON tf.id = ts.file_id
-              WHERE ss.id = brain_relationship.source_symbol_id
-                AND COALESCE(sf.language, '') <> ''
-                AND COALESCE(tf.language, '') <> ''
-                AND lower(sf.language) <> lower(tf.language)
-            ) THEN 'name-resolution' ELSE NULL END
-          )
-          WHERE brain_relationship.project_id = '${projectId}'
-            AND brain_relationship.target_symbol_id IS NOT NULL
-        `)
-
-        // Cleanup temp tables
-        rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
-        rawDb.run(`DROP TABLE IF EXISTS _res_name_unique`)
-      } catch (err) {
-        log.warn("relationship resolution pass failed", { error: err })
-      }
+         if (result.relationships) {
+           let fileRelCount = 0
+           for (const rel of result.relationships) {
+             const sourceName = rel.source || rel.sourceId || rel.fromSymbol || rel.from || "unknown"
+             const targetName = rel.targetExternal || rel.targetId || rel.target || rel.toSymbol || rel.to || "unknown"
+             const relType = rel.type || rel.relationshipType || "references"
+ 
+             // Extract the leaf name: "file:scope:name:line" → "name", "a.b.c" → "c"
+             const extractLeaf = (name: string) => {
+               // Remove line number suffix ":123"
+               const noLine = name.replace(/:\d+$/, "")
+               // Split by ":" and take last (handles "file:scope:name")
+               const byColon = noLine.split(":")
+               const lastColon = byColon[byColon.length - 1]
+               // Split by "." and take last (handles "a.b.c")
+               const byDot = lastColon.split(".")
+               return byDot[byDot.length - 1]
+             }
+             const sourceLeaf = extractLeaf(sourceName)
+             const targetLeaf = extractLeaf(targetName)
+ 
+             // Find source symbol: O(1) name match first, then ends-with/qualified
+             // fallbacks over a pre-built list (avoids Array.find closure per rel).
+             let sourceSymbol: any = undefined
+             if (sourceName && sourceName !== "unknown") {
+               sourceSymbol = nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)
+               if (!sourceSymbol) {
+                 for (const s of result.symbols) {
+                   if (sourceName.endsWith(`:${s.name}`)) { sourceSymbol = s; break }
+                   if (sourceName.endsWith(`.${s.name}`)) { sourceSymbol = s; break }
+                   if (s.qualifiedName && sourceName === s.qualifiedName) { sourceSymbol = s; break }
+                   if (s.qualifiedName && sourceName.endsWith(`:${s.qualifiedName}`)) { sourceSymbol = s; break }
+                   if (s.qualifiedName && s.qualifiedName.endsWith(`.${sourceLeaf}`)) { sourceSymbol = s; break }
+                 }
+               }
+             }
+ 
+             let sourceId: string | null
+             let sourceExternal: string | null = null
+             if (sourceSymbol) {
+               // Defensive export filter: reject exports of non-public or package-decl symbols
+               if (relType === "exports") {
+                 const vis = sourceSymbol.visibility || sourceSymbol.modifiers
+                 if (vis === "private" || vis === "protected") continue
+                 const name = sourceSymbol.name || ""
+                 if (/^[a-z][a-z0-9_.]*$/.test(name) && name.includes(".")) continue
+                 if (sourceSymbol.type === "package" || sourceSymbol.kind === "package") continue
+               }
+               sourceId = `${fileId}:${sourceSymbol.name}:${sourceSymbol.startLine || 0}`
+             } else {
+               // Phase 4: No dummy symbols. Use source_external for relationships
+               // where the source symbol isn't in the same file (top-level calls,
+               // cross-file refs). source_symbol_id is nullable.
+               if (relType === "exports") {
+                 const dummyName = sourceLeaf || sourceName.replace(/[:.]/g, "_").replace(/:?\d+$/, "")
+                 if (/^[a-z][a-z0-9_.]*$/.test(dummyName) && dummyName.includes(".")) continue
+                 if (/^[a-z][a-z0-9_.]*$/.test(targetName) && targetName.includes(".")) continue
+               }
+               sourceId = null
+               sourceExternal = sourceName
+             }
+ 
+             // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later
+             const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf) as any
+             const targetId = resolvedRow?.id || null
+ 
+             // is_cross_file must be honest: 1 only when the resolved target
+             // lives in a DIFFERENT file than the source (fileId is the current
+             // file's id). Same-file edges must stay 0 — the resolution passes
+             // below recompute this flag only for rows they resolve, so rows
+             // resolved here would otherwise carry the wrong value forever.
+             const relIsCrossFile = sourceId !== null && !!resolvedRow?.file_id && resolvedRow.file_id !== fileId ? 1 : 0
+             // Cross-language: target resolved to a symbol whose file language
+             // differs from the source file's. Previously this flag was only set
+             // when analyzers self-declared it in metadata (only r did), so real
+             // cross-language edges (groovy extends java etc.) stored 0.
+             const targetLang = String(resolvedRow?.language ?? "").toLowerCase()
+             const relIsCrossLanguage =
+               relIsCrossFile && !!targetLang && !!fileLang && targetLang !== fileLang ? 1 : 0
+ 
+             const MAX_SYMBOL_NAME_LENGTH = 255
+             const GENERIC_SOURCE_NAMES = new Set([
+               "unknown", "SCSS_FILE_SCOPE",
+               "window", "exports", "default", "GlobalScope",
+             ])
+             // Intra-class receiver names that should be resolved to the enclosing class
+             const INTRA_CLASS_RECEIVERS = new Set(["self", "this", "me", "Self"])
+             // Check just the leaf name (after last : and .) for filtering
+             const leafForCheck = extractLeaf(sourceName)
+             const isBlockScopeName = /^[\w]+\.block_\d+/.test(leafForCheck) || /^block_\d+/.test(leafForCheck)
+ 
+             // BUG 4 FIX: Resolve intra-class receivers (this/self/me) to the enclosing class
+             if (INTRA_CLASS_RECEIVERS.has(leafForCheck)) {
+               // First container-kind symbol in the sorted array — matches original find().
+               const enclosingSymbol = firstContainerSymbol
+               if (enclosingSymbol) {
+                 const enclosingStartLine = enclosingSymbol.startLine ?? enclosingSymbol.range?.startLine ?? 0
+                 sourceId = `${fileId}:${enclosingSymbol.name}:${enclosingStartLine}`
+                 // Also update the relationship source metadata
+                 rel.metadata = rel.metadata || {}
+                 rel.metadata.resolvedReceiver = true
+                 rel.metadata.originalSource = leafForCheck
+               }
+               // If no enclosing class found, fall through — this becomes a regular relationship
+             }
+ 
+             // M51.A3 (#718): a same-file endpoint that names a symbol this file
+             // will NOT store must become an external edge (NULL id + name),
+             // never a dangling id. Previously the id was written because the
+             // raw symbol existed — but insert-time filters (artifact name,
+             // startLine < 1, denylist) could skip the row, leaving dead edges
+             // (observed: 32 anonymous-symbol edges in m14 fixtures). A source
+             // that fails the storeable replica degrades to source_external.
+             const sameFileIdOk = (cand: string | null): boolean => {
+               if (cand === null) return true
+               if (!cand.startsWith(`${fileId}:`)) return true
+               const m = /:(\d+)$/.exec(cand)
+               if (!m) return false
+               const line = Number(m[1])
+               const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
+               return storeableName(leaf, line)
+             }
+             if (!sameFileIdOk(sourceId)) {
+               sourceExternal = sourceExternal ?? sourceName
+               sourceId = null
+             }
+ 
+             if (
+               leafForCheck.length > MAX_SYMBOL_NAME_LENGTH ||
+               GENERIC_SOURCE_NAMES.has(leafForCheck) ||
+               isBlockScopeName
+             ) {
+               continue
+             }
+ 
+             // Deterministic relId — same (source, target, type) shares one row.
+             // INSERT OR IGNORE silently skips duplicates; no more 7× dupes.
+             const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}`
+ 
+             stmt.insertRelationship.run(
+               relId,
+               projectId,
+               sourceId,
+               targetId,
+               sourceExternal,  // source_external — non-null when source not found in file
+               targetName,       // target_external
+               relType,
+               rel.confidence || 1.0,
+               rel.context || null,
+               0,
+               relIsCrossFile,
+               rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
+               rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
+               rel.metadata ? JSON.stringify(rel.metadata) : null,
+               now,
+               now,
+             )
+             totalRelationships++
+             fileRelCount++
+           }
+             if (fileRelCount === 0 && result.relationships.length > 5) {
+               process.stderr.write(`[REL-LOSS] ${relativePath}: engine=${result.relationships.length} rels, stored=0\n`)
+             }
+         }
+       }
+     })
+     // #737: per-batch diagnose closure bound to THIS batch's tx. On an FK
+     // failure it re-runs the batch file-by-file under capturing wrappers
+     // inside a transaction that ALWAYS rolls back (pure diagnostics), then
+     // names the exact offending file + statements on stderr.
+     const diagnoseBatchFailure = createStoreDiagnostics({
+       rawDb,
+       tx: (b: any[]) => tx(b),
+       stmt,
+       stmtOriginal,
+       write: (s: string) => process.stderr.write(s),
+       warn: (m: string, ctx: Record<string, unknown>) => log.warn(m, ctx),
+     })
+     try {
+       tx(batch)
+       totalSymbols += batchSymbols
+       totalRelationships += batchRelationships
+       totalImports += batchImports
+     } catch (error) {
+       // #737: before skipping, re-run the batch file-by-file under capturing
+       // wrappers to identify the exact violating row (previous behavior printed
+       // only the driver message, leaving the rollback undiagnosable).
+       diagnoseBatchFailure(error, batch)
+       process.stderr.write(`[storeResults] batch ${i}-${i+batchSize} ROLLED BACK: ${error instanceof Error ? error.message : String(error)}\n`)
+       log.error("batch insert failed", {
+         error: error instanceof Error ? error.message : String(error),
+         batchStart: i,
+         batchSize,
+       })
+       // Transaction rolled back — the counter increments inside it are invalid.
+       // Skip to next batch; don't count these as stored.
+     }
+ 
+     await new Promise((r) => setTimeout(r, 1))
+   }
+ 
+   // ========================================================================
+   // ASYNC SEMANTIC EMBEDDINGS (BACKGROUND QUEUE)
+   // Embeddings are non-blocking for indexing: they are queued on a shared,
+   // serialized background drainer and processed after the main indexing
+   // completes, so users get usable code intelligence immediately while
+   // semantic vectors populate lazily. See queueBackgroundEmbeddings above.
+   // ========================================================================
+   if (semanticBatch.length > 0) {
+     // Copy, never reference: semanticBatch is cleared below and must not
+     // take the queued items down with it.
+     const items = [...semanticBatch]
+     semanticBatch.length = 0 // Clear to prevent double-processing
+     queueBackgroundEmbeddings(projectId, projectPath, items)
+   }
+ 
+   // ========================================================================
+   // MULTI-STRATEGY RELATIONSHIP RESOLUTION (optimized with temp table)
+   // Build a lookup table once, then UPDATE via JOIN — avoids O(N*M)
+   // correlated subqueries that kill performance on 100K+ relationships.
+   // ========================================================================
+   if (!options.skipResolution) {
+     const symbolCount = rawDb
+       .prepare(`SELECT count(*) as c FROM brain_symbol WHERE project_id = ?`)
+       .get(projectId) as any
+     if (symbolCount && symbolCount.c > 0) { // Always run — now fast since most relationships resolved at insert time
+       log.info("resolving external symbol references", { symbolCount: symbolCount.c })
+       try {
+         // Build lookup tables — use individual run() calls (compiled Bun doesn't support exec())
+         rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_qname (qualified_name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
+         rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _res_name_unique (name TEXT PRIMARY KEY, symbol_id TEXT NOT NULL, file_id TEXT)`)
+         rawDb.run(`DELETE FROM _res_qname`)
+         rawDb.run(`DELETE FROM _res_name_unique`)
+         // Dedup on insert: duplicate qualified names across files must not
+         // abort the whole resolution pass (PK conflict).
+         // Deterministic winner for duplicate qualified names (MIN(id)) so
+         // parallel indexing order can't change resolution results.
+         rawDb.run(`INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' AND qualified_name IS NOT NULL GROUP BY qualified_name`)
+         rawDb.run(`INSERT OR IGNORE INTO _res_name_unique (name, symbol_id, file_id) SELECT name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = '${projectId}' GROUP BY name HAVING COUNT(*) = 1`)
+ 
+         // Strategy 1: Qualified name exact match
+         rawDb.run(`
+           UPDATE brain_relationship
+           SET target_symbol_id = _res_qname.symbol_id,
+               is_cross_file = CASE WHEN _res_qname.file_id != (
+                 SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1
+               ) THEN 1 ELSE 0 END
+           FROM _res_qname
+           WHERE brain_relationship.target_external = _res_qname.qualified_name
+             AND brain_relationship.target_symbol_id IS NULL
+             AND brain_relationship.target_external IS NOT NULL
+             AND brain_relationship.project_id = '${projectId}'
+         `)
+ 
+         // Strategy 2: Name-only match with uniqueness
+         rawDb.run(`
+           UPDATE brain_relationship
+           SET target_symbol_id = _res_name_unique.symbol_id,
+               is_cross_file = CASE WHEN _res_name_unique.file_id != (
+                 SELECT file_id FROM brain_symbol WHERE brain_symbol.id = brain_relationship.source_symbol_id LIMIT 1
+               ) THEN 1 ELSE 0 END
+           FROM _res_name_unique
+           WHERE brain_relationship.target_external = _res_name_unique.name
+             AND brain_relationship.target_symbol_id IS NULL
+             AND brain_relationship.target_external IS NOT NULL
+             AND brain_relationship.project_id = '${projectId}'
+         `)
+ 
+         // Strategy 3: Qualified name partial match for dotted names
+         rawDb.run(`
+           UPDATE brain_relationship
+           SET target_symbol_id = (
+               SELECT sym.id FROM brain_symbol sym
+               WHERE sym.name = SUBSTR(brain_relationship.target_external, INSTR(brain_relationship.target_external, '.') + 1)
+                 AND sym.project_id = '${projectId}'
+               LIMIT 1
+           )
+           WHERE brain_relationship.target_symbol_id IS NULL
+             AND brain_relationship.target_external IS NOT NULL
+             AND brain_relationship.project_id = '${projectId}'
+             AND INSTR(brain_relationship.target_external, '.') > 0
+         `)
+ 
+         // Cross-language normalization (polyglot fixture finding, M26 addendum):
+         // the strategies above recompute is_cross_file but left is_cross_language
+         // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
+         // resolved here stored cross_file=1 but cross_lang=0 with no bridge,
+         // silently hiding it from cross-language hover/graph. One authoritative
+         // pass over every resolved row of the project; UPGRADE-ONLY (a row the
+         // analyzer declared cross-language stays 1; a computed-0 row never
+         // downgrades) and the bridge is filled only when NULL (never overwrites
+         // a declared bridge mechanism).
+         rawDb.run(`
+           UPDATE brain_relationship
+           SET is_cross_language = CASE WHEN EXISTS (
+             SELECT 1 FROM brain_symbol ss
+             LEFT JOIN brain_file sf ON sf.id = ss.file_id
+             JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+             LEFT JOIN brain_file tf ON tf.id = ts.file_id
+             WHERE ss.id = brain_relationship.source_symbol_id
+               AND COALESCE(sf.language, '') <> ''
+               AND COALESCE(tf.language, '') <> ''
+               AND lower(sf.language) <> lower(tf.language)
+           ) THEN 1 ELSE brain_relationship.is_cross_language END,
+           bridge_mechanism = COALESCE(
+             brain_relationship.bridge_mechanism,
+             CASE WHEN EXISTS (
+               SELECT 1 FROM brain_symbol ss
+               LEFT JOIN brain_file sf ON sf.id = ss.file_id
+               JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+               LEFT JOIN brain_file tf ON tf.id = ts.file_id
+               WHERE ss.id = brain_relationship.source_symbol_id
+                 AND COALESCE(sf.language, '') <> ''
+                 AND COALESCE(tf.language, '') <> ''
+                 AND lower(sf.language) <> lower(tf.language)
+             ) THEN 'name-resolution' ELSE NULL END
+           )
+           WHERE brain_relationship.project_id = '${projectId}'
+             AND brain_relationship.target_symbol_id IS NOT NULL
+         `)
+ 
+         // Cleanup temp tables
+         rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
+         rawDb.run(`DROP TABLE IF EXISTS _res_name_unique`)
+       } catch (err) {
+         log.warn("relationship resolution pass failed", { error: err })
+       }
+     } else {
+       log.debug("skipping 2nd-pass relationship resolution for large dataset", { symbolCount: symbolCount?.c })
+     }
+ 
+     // FIX: Add retry for DELETE on locked database
+     const maxRetries = 5
+     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+       try {
+         rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
+         break
+       } catch (err: any) {
+         if (attempt === maxRetries) {
+           log.warn("DELETE brain_query_cache failed after retries", { error: err })
+         } else {
+           const delay = 50 * attempt
+           await new Promise((resolve) => setTimeout(resolve, delay))
+         }
+       }
+     }
+   } // Close the if (!options.skipResolution) block
+ 
+   return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports }
+  } finally {
+    // M54.P1: restore the open-time FK policy on EVERY exit path (success,
+    // throw, early return). The connection is process-cached and shared —
+    // leaving it FK-OFF here would silently disable enforcement everywhere.
+    if (process.env.BB_FK_ENFORCE === "0") {
+      rawDb.run("PRAGMA foreign_keys = OFF")
     } else {
-      log.debug("skipping 2nd-pass relationship resolution for large dataset", { symbolCount: symbolCount?.c })
+      rawDb.run("PRAGMA foreign_keys = ON")
     }
-
-    // FIX: Add retry for DELETE on locked database
-    const maxRetries = 5
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
-        break
-      } catch (err: any) {
-        if (attempt === maxRetries) {
-          log.warn("DELETE brain_query_cache failed after retries", { error: err })
-        } else {
-          const delay = 50 * attempt
-          await new Promise((resolve) => setTimeout(resolve, delay))
-        }
-      }
-    }
-  } // Close the if (!options.skipResolution) block
-
-  rawDb.run("PRAGMA foreign_keys = ON")
-  return { symbols: totalSymbols, relationships: totalRelationships, imports: totalImports }
+  }
 }
 
 // ============================================================================
@@ -3536,6 +3661,9 @@ export interface FileChange {
  * away with no restart needed.
  */
 export function wipeProjectData(rawDb: any): void {
+  // M54.P1: bulk destructive op — FK OFF avoids any dependency-ordering
+  // surprise mid-wipe, then the open-time policy is restored per the
+  // BB_FK_ENFORCE seam (same contract as storeResults' finally).
   rawDb.run("PRAGMA foreign_keys = OFF")
   const tables = [
     "brain_semantic_embedding",
@@ -3558,6 +3686,12 @@ export function wipeProjectData(rawDb: any): void {
     try {
       rawDb.run(`DELETE FROM ${t}`)
     } catch {}
+  }
+  // M54.P1: restore the open-time FK policy (connection is process-cached).
+  if (process.env.BB_FK_ENFORCE === "0") {
+    rawDb.run("PRAGMA foreign_keys = OFF")
+  } else {
+    rawDb.run("PRAGMA foreign_keys = ON")
   }
 }
 
@@ -3945,29 +4079,35 @@ export async function runBoundedPostProcessing(
           const placeholders = chunk.map(() => "?").join(",")
           rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name) SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${placeholders})`).run(projectId, ...chunk)
         }
-        // M40.A4 portable + set-based: SQLite <3.53 (Node's bundled version)
-        // rejects references to the UPDATE target's columns inside the SET
-        // subquery, and per-row JS loops cost ~4ms/row at 12K rows. Two
-        // statements, both portable: (1) correlated INSERT..SELECT into a
-        // match table (correlated subqueries over OTHER tables are allowed in
-        // INSERT..SELECT on every SQLite), (2) UPDATE..FROM join (SQLite
-        // >=3.33; Node 3.49 / bun 3.53 both qualify). O(rows) inside SQLite,
-        // zero JS round-trips.
+        // M40.A4 portable + set-based. #738 root cause: the original single
+        // correlated INSERT..SELECT referenced the outer column r.target_external
+        // inside the subquery's ORDER BY. Bun's SQLite 3.53 accepts that; Node's
+        // better-sqlite3 bundles 3.49.2, which REJECTS it ("no such column:
+        // r.target_external") — and production `bin/bb` runs under Node, so every
+        // CLI index failed this phase and marked itself partial. All verifier
+        // gates ran under bun, which is how it survived. Replacement (proven
+        // equivalent on BOTH runtimes by script/m54/probe-738-sqlite.ts):
+        // two-pass JOIN + INSERT OR IGNORE — pass A matches qualified_name (its
+        // rows win via OR IGNORE), pass B fills bare-name matches; MIN(t.id)
+        // preserves the original's deterministic lowest-id tie-break. No
+        // correlated subquery, no outer-column reference anywhere.
         rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_match (rel_id TEXT PRIMARY KEY, symbol_id TEXT)`)
         rawDb.run(`DELETE FROM _m40_match`)
-        rawDb.prepare(`
-          INSERT INTO _m40_match (rel_id, symbol_id)
-          SELECT r.id, (
-            SELECT t.id FROM _m40_touched t
-            WHERE t.qualified_name = r.target_external OR t.name = r.target_external
-            ORDER BY CASE WHEN t.qualified_name = r.target_external THEN 0 ELSE 1 END, t.id
-            LIMIT 1
-          )
-          FROM brain_relationship r
-          WHERE r.project_id = ?
+        const m40RelFilter = `r.project_id = ?
             AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL AND r.target_external != ''
-            AND r.id LIKE '%:m40'
-        `).run(projectId)
+            AND r.id LIKE '%:m40'`
+        rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+          SELECT j.rel_id, MIN(j.symbol_id) FROM (
+            SELECT r.id AS rel_id, t.id AS symbol_id
+            FROM brain_relationship r JOIN _m40_touched t ON t.qualified_name = r.target_external
+            WHERE ${m40RelFilter}
+          ) j GROUP BY j.rel_id`).run(projectId)
+        rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+          SELECT j.rel_id, MIN(j.symbol_id) FROM (
+            SELECT r.id AS rel_id, t.id AS symbol_id
+            FROM brain_relationship r JOIN _m40_touched t ON t.name = r.target_external
+            WHERE ${m40RelFilter}
+          ) j GROUP BY j.rel_id`).run(projectId)
         rawDb.prepare(`
           UPDATE brain_relationship
           SET target_symbol_id = m.symbol_id,

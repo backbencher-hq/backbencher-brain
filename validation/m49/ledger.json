@@ -33,6 +33,191 @@
       "title": "Closure: live re-run of R1+R2, no unresolved review claims older than their gate run",
       "status": "pending",
       "notes": "Closes only when kotlin+scala waves are processed and the register shrinks or every entry carries a justified ruling. Intake issue map: J1=#713 (CLOSED with evidence @1a417c9d), K1=#714, S1=#715. Remaining dual-lens languages get one issue each as reviews land; dual-lens closure (#614) resumes after the board clears; M14's remaining analyzers (from clean) proceed last with the full strict battery."
+    },
+    {
+      "id": "K1",
+      "title": "Kotlin review-intake wave (issue #714): process reviews/kotlin 15 claims",
+      "status": "verified",
+      "evidenceFile": "reviews/kotlin/master-review.md",
+      "verifiedAtCommit": "5f5e0c02",
+      "notes": "15/15 claims resolved (10 fixed, 5 re-pinned to recorded rulings). Override verification with name-keyed declSigs (corpus-proven: BroadcastChannel.kt name-blind pairing fabricated 8 overrides), overrideSig payload, ctor naming, Spring named-arg routes, AST-gated patterns, dead inference deleted. Oracle mirror: kotlin method + anon-object registration, extractSig parameter fallback. 3 new mutants (351/351), 37/37 fixtures, KD21-KD28, R2 register 22->20. Corpus: coroutines + Exposed 100/0/0 @200; java/scala sanity 100/0/0."
+    },
+    {
+      "id": "G2",
+      "title": "Groovy review-intake wave (issue #720): process reviews/groovy 6 confirmed + 1 new claim",
+      "status": "verified",
+      "notes": "Co-agent fixes verified at 5e5c5289 (probe-checked): G3 ctor naming (class-name ctors, collision dead), G4 override-perf hoist (O(T*C) -> O(T)). GD26 heritage folded type args + GD27 dead disjunct hardened in S1 wave. Exports converged to importable-units-only (JAD3 reversed, family F3 invariant live). Groovy regex 0. Certification: F3 45/45 groovy (46 scala), F4 363/363, F1 PASS, R1 28/28, R2 6/6, both groovy F5 lanes 100/0/0 (geb, grails-core @ final-tree canonical sweep). Fixtures re-run + R1/R2 green at 60a2dc32 before close.",
+      "evidenceFile": "reviews/groovy/master-review.md",
+      "verifiedAtCommit": "5e5c5289"
+    },
+    {
+      "id": "S1",
+      "title": "Scala review wave (#715): 24 claims + 4 wave-added shared-blind-spot defect classes",
+      "status": "verified",
+      "evidenceFile": "validation/m14/results/M14.0.F5.json",
+      "verifiedAtCommit": "18de8206",
+      "notes": "scala3 + cats-effect 100/0/0 @200; F3 46 scala fixtures; F4 361/361; F1 scala PASS; spec ScalaD-J..M; groovy cross-hardening GD26/GD27 (heritage type-args strip + dead wildcard_import disjunct); R1 26/26, R2 6/6 (register re-pinned shrink-only), G1 41/0."
+    },
+    {
+      "id": "T1",
+      "title": "TypeScript review-intake wave (issue #725): process reviews/typescript 11 confirmed claims",
+      "status": "verified",
+      "notes": "Co-agent T-wave (analyzer in 977e687e, fixtures in 60a2dc32) independently re-verified claim-by-claim against live parses: T1-T10 all PASS. Gap found+closed by verification: T6 had no fixture/mutant \u2014 added typescript/positional-payload (owner-pinned both symbols, CPPD10 anti-pollution) + mutant typescript/positional-first-name-collision (caught). Spec TSD20-TSD28 recorded (incl. real template-dedup Low-note). Certification @1a9255da: F3 ts 56/56, F4 392/392, F1 ts clean 386 types, R1 31/31, R2 6/6, G1 51/0, F5 vue-core+element-plus 100/0/0. Full analyzer diff co-audited (module-resolver rewrite: resolvedPath claim verified, R2 shrink-only holds).",
+      "evidenceFile": "reviews/typescript/master-review.md",
+      "verifiedAtCommit": "1a9255da"
+    },
+    {
+      "id": "J2",
+      "title": "JavaScript review-intake wave (issue #726): process reviews/javascript 13 confirmed claims",
+      "status": "verified",
+      "notes": "Other-agent JS wave (analyzer @977e687e, fixtures @60a2dc32) independently re-verified claim-by-claim against live parses: J1-J10 + J-rebind all PASS (J7 held as JSD19 RULED do-not-fix, pinned). Coverage audit (T6 lesson): every claim cites >=1 fixture (14 J-wave fixtures), 30 JS mutants all caught in the 392/392 battery, spec JSD9-JSD19 recorded. Certification @a602fd01: F3 js 49/49, F4 392/392, F1 pass, F5 grails-core 100/0/0 (7.5ms/file) + lodash 100/0/0, R1 31/31, R2 6/6, G1 51/0.",
+      "evidenceFile": "reviews/javascript/master-review.md",
+      "verifiedAtCommit": "a602fd01"
+    },
+    {
+      "id": "V1",
+      "title": "Vue review-intake wave (issue #730): process reviews/vue 10 confirmed claims",
+      "status": "verified",
+      "notes": "Co-agent V1 wave independently re-verified claim-by-claim through the faithful SFC harness: H1a/H1b data keys read, H2 SFC-offset errors (row 5 reports 5), M1 member-chain root-only, M2 quoted keys unquoted, M3 serverPrefetch, M4 commented-default ownership, M5 Options-API TS payload \u2014 8/8 PASS. F3 vue 27/27, F4 395/395, F5 element-plus 100/0/0 @13.8ms/file + vue-element-admin 100/0/0, tsc clean.",
+      "evidenceFile": "reviews/vue/master-review.md",
+      "verifiedAtCommit": "aab61932"
+    },
+    {
+      "id": "V2",
+      "title": "Vue deep-review wave (issue #735): D1 string-literal member reads (High), D2 arrow data keys, D3 decorated defaults",
+      "status": "verified",
+      "notes": "D1-D3 probe-verified ALREADY-FIXED on the tree (the wave landed them after the review text): D1 quote states (go('save') emits only Uses(go)), D2 arrow-data keys read, D3 decorated default ownership kept. Fully gated: fixtures template-string-args/arrow-data/decorated-default, mutants string-args-revert/arrow-data-drop/decorated-default-revert, spec VSD19-VSD21. No uncovered claims.",
+      "evidenceFile": "reviews/vue/master-review.md",
+      "verifiedAtCommit": "aab61932"
+    }
+  ],
+  "waves": [
+    {
+      "id": "M49.CONV",
+      "title": "Convergence sweep: 7-class blind-spot probes across 19/21 analyzers + parse-success census",
+      "date": "2026-09-11",
+      "commit": "see git log (sweep commits eba4a17e..b220ca28+)",
+      "method": "reviews/convergence/blind-spot-checklist.md \u2014 7 proven defect classes probed live against every analyzer; findings registered BEFORE fixing; fixes deferred until the svelte wave lands (tree discipline)",
+      "findings": [
+        {
+          "issue": 739,
+          "lang": "java",
+          "class": "uses-coverage",
+          "severity": "medium"
+        },
+        {
+          "issue": 740,
+          "lang": "kotlin",
+          "class": "uses-coverage",
+          "severity": "medium-high"
+        },
+        {
+          "issue": 741,
+          "lang": "scala",
+          "class": "framework-list",
+          "severity": "medium"
+        },
+        {
+          "issue": 742,
+          "lang": "groovy",
+          "class": "grammar-coverage-58.5pct",
+          "severity": "high"
+        },
+        {
+          "issue": 743,
+          "lang": "cpp+c",
+          "class": "grammar-coverage-73-44pct",
+          "severity": "high"
+        },
+        {
+          "issue": 744,
+          "lang": "javascript",
+          "class": "chain-head-use",
+          "severity": "medium"
+        },
+        {
+          "issue": 745,
+          "lang": "vue",
+          "class": "dup-key-first-wins",
+          "severity": "medium"
+        },
+        {
+          "issue": 746,
+          "lang": "typescript",
+          "class": "dup-key-keep-both",
+          "severity": "medium"
+        },
+        {
+          "issue": 747,
+          "lang": "python",
+          "class": "framework-dead-code",
+          "severity": "medium-high"
+        },
+        {
+          "issue": 748,
+          "lang": "python",
+          "class": "dup-keep-both",
+          "severity": "low-medium"
+        },
+        {
+          "issue": 749,
+          "lang": "ruby",
+          "class": "framework-trigger-surface",
+          "severity": "medium"
+        },
+        {
+          "issue": 750,
+          "lang": "csharp",
+          "class": "uses-coverage",
+          "severity": "medium"
+        },
+        {
+          "issue": 751,
+          "lang": "csharp",
+          "class": "framework-absent",
+          "severity": "medium"
+        },
+        {
+          "issue": 752,
+          "lang": "dart",
+          "class": "uses-coverage-all-reads",
+          "severity": "medium-high"
+        },
+        {
+          "issue": 753,
+          "lang": "dart",
+          "class": "dup-first-wins",
+          "severity": "low"
+        },
+        {
+          "issue": 754,
+          "lang": "swift",
+          "class": "uses-coverage-all-reads",
+          "severity": "medium-high"
+        },
+        {
+          "issue": 755,
+          "lang": "haskell",
+          "class": "value-ref-edges",
+          "severity": "medium"
+        },
+        {
+          "issue": 757,
+          "lang": "typescript",
+          "class": "self-audit-adjacent-gaps",
+          "severity": "low-medium"
+        },
+        {
+          "issue": 758,
+          "lang": "javascript",
+          "class": "self-audit-boundary",
+          "severity": "low-medium"
+        }
+      ],
+      "f9GateProposal": "corpus parse-success census (script/m14/tmp/conv-parse-census.ts) becomes a standing gate: pin per-language ERROR-rate baselines, fail on regression, hard 0% for clean languages; grammar-upgrade waves for cpp/c/groovy tracked in #742/#743",
+      "convergenceStopCondition": "one full round (7-class sweep + wave self-audit) with ZERO new High/Medium findings, recorded in reviews/<lang>/; then issue-driven reviews only",
+      "svelte": "deferred \u2014 co-agent wave in flight; svelte joins the sweep when it lands",
+      "evidence": "reviews/convergence/sweep-verdicts.md"
     }
   ]
 }

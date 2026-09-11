@@ -725,16 +725,6 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
-    id: "java/interface-methods-unexported",
-    language: "java",
-    defectClass: "symbol-loss",
-    description: "regresses JAD3: implicit-public interface members excluded from exports (pre-fix visibility=undefined) — fetch must stay exported",
-    transform: r => ({
-      ...r,
-      exports: (r.exports ?? []).filter((e: any) => !(e.name === "fetch" && e.kind === "method")),
-    }),
-  },
-  {
     id: "java/drop-import-edges",
     language: "java",
     defectClass: "relationship-loss",
@@ -936,12 +926,48 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "java/org-com-root-refilter",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "M49.J3 regression: re-applies the bare org/com stdlib roots (the pre-fix behavior the reviewer caught — C5 changed the mechanism to root-only but left org/com in the set, silently dropping every FQ third-party call like org.apache.commons.io.FileUtils.readFile) — fq-third-party-calls pins the emitted edges and dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "calls" && /^\s*(org|com)\./.test(String(x.metadata?.javaCallExpression ?? "")))) }),
+  },
+  {
     id: "kotlin/enum-supertype-drop",
     language: "kotlin",
     defectClass: "relationship-loss",
     description: "KD19 regression: reverts extractEnumClass superTypes extraction — enum class Direction(...) : Mode silently drops its implements edge (and enum class Counted : Numbered(1) its extends) — enum-supertype-heritage pins catch both",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
       !((x.type === "implements" || x.type === "extends") && (x.source === "Direction" || x.source === "Counted"))) }),
+  },
+  {
+    id: "kotlin/override-verification-downgrade",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "M49.K1 K2 regression: reverts the in-file BFS verification — every override collapses back to the first-supertype guess at 0.5/inferred/first-supertype-guess — override-fallback-confidence (Impl.render vs in-file Base) requires 0.9/structural/in-file-verified, so the downgrade dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "overrides" && x.metadata?.reasonCode === "in-file-verified"
+        ? { ...x, confidence: 0.5, metadata: { ...x.metadata, reasonCode: "first-supertype-guess", evidenceClass: "inferred", overrideSig: undefined } }
+        : x) }),
+  },
+  {
+    id: "kotlin/override-name-blind-pairing",
+    language: "kotlin",
+    defectClass: "fabrication",
+    description: "M49.K1 K2 regression: injects the name-blind declSigs bug class — SubBroadcastChannel.send verifies against BroadcastChannel (which declares only cancel/sendSuspend, NEVER send) because some member's sig matched — the name-keyed index forbids it; the corpus sample forbids pin ensures zero unexplained overrides on kotlinx-coroutines",
+    transform: r => ({ ...r, relationships: [
+      ...(r.relationships ?? []),
+      { type: "overrides", source: "SubBroadcastChannel.send", target: "BroadcastChannel.send", fromSymbol: "SubBroadcastChannel.send", toSymbol: "BroadcastChannel.send", confidence: 0.9, metadata: { isOverride: true, overrideParent: "BroadcastChannel", reasonCode: "in-file-verified", evidenceClass: "structural", overrideSig: "(T)" } },
+    ] }),
+  },
+  {
+    id: "kotlin/override-sig-payload-drop",
+    language: "kotlin",
+    defectClass: "payload-corruption",
+    description: "M49.K1 K4 regression: drops the metadata.overrideSig signature payload from override edges — overload disambiguation downstream dies; the K4 claim-probe re-pin and override-fallback-confidence's sig expectations catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "overrides" ? { ...x, metadata: { ...x.metadata, overrideSig: undefined } } : x) }),
   },
   {
     id: "java/anonymous-body-scope-leak",
@@ -1006,6 +1032,16 @@ const MUTANTS: Mutant[] = [
     description: "M49 R3 regression: breaks the JLS 8.4.1 int.../int[] signature equivalence — drop-arity variant simulates the pre-normalization shape by stripping the spread parameter's array marker so cross-varargs overrides fail the exact-signature BFS — overload-arity-varargs-multicatch overrides pins catch it",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
       !(String(x.type) === "overrides" && (x.source === "VarSub.foo" || x.source === "ArrSub.bar"))) }),
+  },
+  {
+    id: "java/member-export-restore",
+    language: "java",
+    defectClass: "payload-corruption",
+    description: "M49 exports-family regression: restores JAD3 member exports (interface/class members re-enter the export list) — multi-interface-extends fixture now forbids the member shape via the F3 export invariant (member names are not importable units; duplicates like greet/greet kill the uniqueness half)",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), ...(r.relationships ?? [])
+      .filter((x: any) => x.type === "contains")
+      .map((x: any) => ({ name: x.target, isDefault: false }))
+      .filter((e: any, i: number, a: any[]) => a.findIndex((z: any) => z.name === e.name) === i)] }),
   },
   {
     id: "scala/drop-keywordless-abstract-impl",
@@ -1207,6 +1243,34 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "overrides" && (x.source.includes("Codec") || x.source.includes("StringCodec")))) }),
   },
   {
+    id: "scala/companion-export-dedupe-revert",
+    language: "scala",
+    defectClass: "payload-corruption",
+    description: "M49 exports-family regression: companion objects re-enter the export list even when a same-name type export exists (class Service + object Service => exports ['Service','Service']) — companion-object fixture pins the deduped shape via the F3 export-uniqueness gate",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "Service", kind: "module", isDefault: false }] }),
+  },
+  {
+    id: "scala/drop-companion-qualified-instantiates",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "M49.S1 regression: handleInstantiation reverts to dropping qualified constructor targets (TrieMapLike.MangledHashing) — companion-qualified constructions vanish from the graph",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "instantiates" && x.target.includes("."))) }),
+  },
+  {
+    id: "scala/enum-heritage-drop",
+    language: "scala",
+    defectClass: "relationship-loss",
+    description: "M49.S1 regression: reverts the enum extends_clause heritage fix — enum Color(val hex: Int) extends Serializable loses its extends edge (both sides were blind before; the shared-blind-spot class). heritage-and-qualified-construction expects Color -> Serializable",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "extends" && x.source === "Color" && x.target === "Serializable")) }),
+  },
+  {
+    id: "groovy/heritage-typeargs-revert",
+    language: "groovy",
+    defectClass: "relationship-garbage",
+    description: "M49.S1 regression: heritage targets revert to the grammar's raw folded token text (Cache -> Cache<T>) — bracketed targets can never match bracket-stripped decls keys, so nested-interface override chains die (geb SimpleCache.get -> Cache.get class). heritage-typeargs-strip expects implements Cache from both nested classes",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "implements" && (x.target === "Cache")) ? { ...x, target: "Cache<T>" } : x) }),
+  },
+  {
     id: "typescript/drop-declared-types",
     language: "typescript",
     defectClass: "relationship-loss",
@@ -1301,6 +1365,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "drops the imports dependency edges entirely (the T7 bug class: dynamic import('./lazy') landed in the imports array but emitted no edge)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => String(x.type ?? x.relationshipType) !== "imports") }),
+  },
+  {
+    id: "typescript/drop-resolved-path",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "strips metadata.resolvedPath from imports (the deterministic-resolution payload) — module-resolution-determinism fixture pins exact values per specifier shape",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => { const md: any = { ...((i as any).metadata ?? {}) }; delete md.resolvedPath; return { ...i, metadata: md } }) }),
   },
   {
     id: "typescript/drop-type-alias-refs",
@@ -1427,6 +1498,74 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "reverts W3 (J5): static block and property-initializer calls attribute to the module leaf again instead of the class (Service->warm becomes <module>->warm)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "Service" && (x.target === "warm" || x.target === "init")) ? { ...x, source: "object-literal-members" } : x) }),
+  },
+  {
+    id: "typescript/hook-gate-off",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "T1 regression: removes the React-signal gate — Rules-of-Hooks warnings fire on plain modules again — hook-gate forbidErrors pin catches it",
+    transform: r => ({ ...r, errors: [...(r.errors ?? []), { message: "React Hook \"useThing\" is called outside a React component or custom hook.", range: { startLine: 4, startColumn: 2, endLine: 4, endColumn: 12 } }] }),
+  },
+  {
+    id: "typescript/decorator-prefix-revert",
+    language: "typescript",
+    defectClass: "fabrication",
+    description: "T2 regression: restores prefix decorator matching — @PostConstruct resolves to POST / again — decorator-exact forbidApiContractPaths pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.name === "init" ? { ...s, apiContractPath: "/", metadata: { ...((s as any).metadata ?? {}), apiMethod: "POST" } } : s) }),
+  },
+  {
+    id: "typescript/return-void-revert",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "T3 regression: unannotated bodies report void again instead of inferring from returns — inferred-return fixture expects number on fortyTwo/named",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "fortyTwo" || s.name === "named") ? { ...s, returnType: "void" } : s) }),
+  },
+  {
+    id: "typescript/base-drop",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "T5 regression: drops controller-base composition — findAll reports the bare method route again — controller-base equals pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "findAll" || s.name === "solo" || s.name === "root") ? { ...s, apiContractPath: "/list" } : s) }),
+  },
+  {
+    id: "typescript/import-guard-revert",
+    language: "typescript",
+    defectClass: "payload-noise",
+    description: "T8 regression: dynamic import() leaks back into qualified_calls — dynamic-import-qualified notIncludes pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.name === "load" ? { ...s, qualified_calls: [...((s as any).qualified_calls ?? []), "import"] } : s) }),
+  },
+  {
+    id: "typescript/taint-substring-revert",
+    language: "typescript",
+    defectClass: "payload-noise",
+    description: "T9 regression: restores substring taint matching — myreq.body flags again — taint-leaf notIncludes pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.name === "readOther" ? { ...s, taintSources: [...((s as any).taintSources ?? []), { type: "user_input", snippet: "myreq.body" }] } : s) }),
+  },
+  {
+    id: "typescript/template-double-revert",
+    language: "typescript",
+    defectClass: "relationship-noise",
+    description: "T-double regression: the general identifier walk re-emits References for template reads alongside the template walk's Uses — template-uses-singular forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "show", target: "cfg", confidence: 0.8, metadata: {} }] }),
+  },
+  {
+    id: "typescript/positional-first-name-collision",
+    language: "typescript",
+    defectClass: "payload-attribution",
+    description: "T6 regression: restores the dead-positional behavior — both same-named object methods attribute to the first-name-matched handle, so objB's body payload (callB) lands on objA.handle and objB.handle loses its own call — the positional-payload owner-pinned includes/notIncludes pairs catch it",
+    transform: r => {
+      const syms = (r.symbols ?? []).map((s: any) => s)
+      const first = syms.find((s: any) => s.name === "handle" && s.ownerName === "objA")
+      const second = syms.find((s: any) => s.name === "handle" && s.ownerName === "objB")
+      if (!first || !second) return r
+      return { ...r, symbols: syms.map((s: any) =>
+        s === second
+          ? { ...s, qualified_calls: first.qualified_calls }
+          : s === first
+            ? { ...s, qualified_calls: [...(first.qualified_calls ?? []), ...(second.qualified_calls ?? [])] }
+            : s,
+      ) }
+    },
   },
   {
     id: "javascript/reclassify-import-tier",
@@ -1716,6 +1855,83 @@ const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "vue/data-keys-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "H1 regression: drops data-state key symbols again — data-keys + data-factory-keys pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s as any).metadata ?? {}).isDataKey) }),
+  },
+  {
+    id: "vue/error-offset-revert",
+    language: "vue",
+    defectClass: "payload-corruption",
+    description: "H2 regression: pushes script errors raw again (script lines, not SFC) — script-error-offset startLine pin catches it",
+    transform: r => ({ ...r, errors: (r.errors ?? []).map((e: any) => ({ ...e, range: { ...(e.range ?? {}), startLine: 2 } })) }),
+  },
+  {
+    id: "vue/index-revert",
+    language: "vue",
+    defectClass: "payload-corruption",
+    description: "H3 regression: zeroes symbol byte indices again (line/index incoherence) — range-coherence startIndex pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, range: { ...((s as any).range ?? {}), startIndex: 0 } })) }),
+  },
+  {
+    id: "vue/chain-root-revert",
+    language: "vue",
+    defectClass: "relationship-noise",
+    description: "M1 regression: re-emits loop-property reads as member uses again — member-chain forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "member-chain", target: "id", confidence: 0.95, metadata: { isTemplateExpression: true } }] }),
+  },
+  {
+    id: "vue/quoted-keys-revert",
+    language: "vue",
+    defectClass: "payload-corruption",
+    description: "M2 regression: restores quoted names and raw [dyn] symbols — quoted-keys pins catch both",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []).filter((s: any) => s.name !== "save-data"), { name: "\"save-data\"", kind: "method" }, { name: "[dyn]", kind: "method" }] }),
+  },
+  {
+    id: "vue/lifecycle-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "M3 regression: drops serverPrefetch again — lifecycle-server-prefetch pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "serverPrefetch") }),
+  },
+  {
+    id: "vue/default-text-revert",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "M4 regression: restores the text-prefix default-export check — commented defaults lose component ownership again — commented-default ownerName pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "go" ? { ...s, ownerName: undefined } : s)) }),
+  },
+  {
+    id: "vue/payload-drop",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "M5 regression: strips Options-member payloads again (bare signatures) — options-payload parameter pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "save" ? { ...s, parameters: [] } : s)) }),
+  },
+  {
+    id: "vue/string-args-revert",
+    language: "vue",
+    defectClass: "relationship-noise",
+    description: "D1 regression: string-literal contents read as members again — template-string-args forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "template-string-args", target: "save", confidence: 0.95, metadata: { isTemplateExpression: true } }] }),
+  },
+  {
+    id: "vue/arrow-data-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "D2 regression: expression-bodied data factories lose their keys again — arrow-data pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "count" || (s as any).ownerName !== "arrow-data") }),
+  },
+  {
+    id: "vue/decorated-default-revert",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "D3 regression: leading decorators blind the default-export check again — decorated-default ownerName pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "go" ? { ...s, ownerName: undefined } : s)) }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
@@ -1825,6 +2041,58 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
       (x.type === "overrides" && x.source === "BlackVal.val") ? { ...x, target: "Black.val", confidence: 0.5 } : x),
     }),
+  },
+  {
+    id: "groovy/as-cast-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G1 regression: drops the mis-parse `as`-cast branch — `o as String` lexes as local_variable_declaration(as, String) with no juxt_function_call, so without the branch the cast_type refs vanish — as-cast fixture expects run->String/run->Set",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).declaredOn === "as_cast")) }),
+  },
+  {
+    id: "groovy/implicit-override-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G2 regression: reverts to @Override-only override tasks — un-annotated Sub.greet redeclaring Base.greet emits nothing — implicit-override fixture expects Sub.greet->Base.greet at exact-in-file",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "overrides" && x.source === "Sub.greet" && x.target === "Base.greet")) }),
+  },
+  {
+    id: "groovy/ctor-name-revert",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G4 regression: restores the 'constructor' literal — Alpha()/Beta() ctors collide under one name (contains Alpha->constructor vs Beta->constructor indistinguishable) — ctor-identity fixture expects class-named ctors and forbids the literal",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) =>
+      (s.kind === "constructor" && s.ownerName) ? { ...s, name: "constructor" } : s) }),
+  },
+  {
+    id: "groovy/export-filter-revert",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G3-ruling regression: re-emits member exports (trait member greet as an export again, pre-ruling behavior) — trait-exports forbidExports pin catches it",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "greet", isDefault: false }] }),
+  },
+  {
+    id: "groovy/static-flag-drop",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G5 regression: reverts to the named-children text scan — `static` (anonymous token) never matches so static imports record isStatic:false, and isNamespace/isWildcard disagree on wildcards — static-import-flag fixture pins all three flag rows",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ({ ...i, isNamespace: false, metadata: { ...(i.metadata ?? {}), isWildcard: false, isStatic: false } })) }),
+  },
+  {
+    id: "groovy/anon-export-leak",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "G7 regression: re-emits the class-level anonymous-class noise name as an export — anonymous_Runnable leaks although the family convention says it never enters the index — anon-exports forbidExports pin catches it",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "anonymous_Runnable", isDefault: false }] }),
+  },
+  {
+    id: "groovy/multicatch-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G1-wave regression: removes the catch_formal_parameter case — multi-catch `catch (IOException | SQLException e)` emits zero declared_type refs (the union's catch_type members never reach the type-usage graph) — multicatch-and-varargs fixture expects BOTH IOException and SQLException",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !((x.metadata ?? {}).declaredOn === "catch_formal_parameter")) }),
   },
   {
     id: "csharp/drop-field-access-uses",
@@ -2178,6 +2446,90 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — js external-override pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+  },
+  {
+    id: "javascript/override-field-pair",
+    language: "javascript",
+    defectClass: "fabrication",
+    description: "J2 regression: re-pairs methods against same-named base FIELDS (Sub.foo->Base.foo where Base.foo is data) — override-qualification forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.foo", target: "Base.foo", confidence: 0.95, metadata: {} }] }),
+  },
+  {
+    id: "javascript/override-ctor",
+    language: "javascript",
+    defectClass: "fabrication",
+    description: "J2 regression: re-emits constructor override edges (Sub.constructor->Base.constructor) — override-qualification forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Sub.constructor", target: "Base.constructor", confidence: 0.95, metadata: {} }] }),
+  },
+  {
+    id: "javascript/dup-first-wins",
+    language: "javascript",
+    defectClass: "payload-corruption",
+    description: "J3 regression: restores first-wins dedup — dead first body's alpha() call leaks back into A.save's qualified_calls — duplicate-method notIncludes pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "save" && (s as any).ownerName === "A") ? { ...s, qualified_calls: [...((s as any).qualified_calls ?? []), "alpha"] } : s) }),
+  },
+  {
+    id: "javascript/import-flag-flip",
+    language: "javascript",
+    defectClass: "payload-corruption",
+    description: "J4 regression: restores the items-count isDefault heuristic — side-effect import flips back to default — import-default-flag pin catches it",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ((i as any).module === "./side-effect" ? { ...i, isDefault: true } : i)) }),
+  },
+  {
+    id: "javascript/default-export-drop",
+    language: "javascript",
+    defectClass: "payload-loss",
+    description: "J5 regression: drops expression default exports again — default-export-expression pin catches it",
+    transform: r => ({ ...r, exports: (r.exports ?? []).filter((e: any) => e.name !== "default") }),
+  },
+  {
+    id: "javascript/export-alias-revert",
+    language: "javascript",
+    defectClass: "payload-corruption",
+    description: "J6 regression: records the local name instead of the public alias again — export-alias pin catches it",
+    transform: r => ({ ...r, exports: (r.exports ?? []).map((e: any) => (e.name === "beta" ? { ...e, name: "alpha" } : e)) }),
+  },
+  {
+    id: "javascript/params-drop",
+    language: "javascript",
+    defectClass: "payload-loss",
+    description: "J8 regression: destructured-with-default parameters vanish again — destructured-params pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "describe" ? { ...s, parameters: ((s as any).parameters ?? []).slice(0, 1) } : s)) }),
+  },
+  {
+    id: "javascript/visibility-flip",
+    language: "javascript",
+    defectClass: "payload-corruption",
+    description: "J9 regression: #private fields report public again — private-field-visibility pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "secret" ? { ...s, visibility: "public" } : s)) }),
+  },
+  {
+    id: "javascript/jsx-cap",
+    language: "javascript",
+    defectClass: "payload-loss",
+    description: "J10 regression: restores the 500-visit JSX detection cap — early JSX in deep files loses React detection — jsx-detection-depth expectFrameworks pin catches it",
+    transform: r => ({ ...r, metadata: { ...((r as any).metadata ?? {}), detectedFrameworks: ((r as any).metadata?.detectedFrameworks ?? []).filter((f: string) => f !== "React") } }),
+  },
+  {
+    id: "javascript/import-guard-revert",
+    language: "javascript",
+    defectClass: "payload-noise",
+    description: "T8-analog regression: dynamic import() leaks back into qualified_calls — dynamic-import-qualified notIncludes pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "load" ? { ...s, qualified_calls: [...((s as any).qualified_calls ?? []), "import"] } : s)) }),
+  },
+  {
+    id: "javascript/rebind-drop",
+    language: "javascript",
+    defectClass: "payload-loss",
+    description: "J-rebind regression: wholesale exports = {...} assignments export nothing again — exports-rebind pin catches it",
+    transform: r => ({ ...r, exports: (r.exports ?? []).filter((e: any) => e.name !== "alpha" && e.name !== "beta") }),
+  },
+  {
+    id: "javascript/require-flag-flip",
+    language: "javascript",
+    defectClass: "payload-corruption",
+    description: "J4-CJS regression: restores hardcoded isDefault true on every require — require-default-flag pin catches it",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ((i as any).module === "./m2" ? { ...i, isDefault: true } : i)) }),
   },
   {
     id: "swift/guess-at-verified-confidence",

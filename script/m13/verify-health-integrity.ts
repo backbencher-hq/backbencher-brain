@@ -24,13 +24,13 @@ const harness = new Harness({
   title: "bb_health: integrity + schema + embedding coverage",
   layers: ["unit", "integration"],
   decisions: {
-    integrity: "each of the 12 checks reports status computed from the DB; corrupting rows flips the matching check to warn/error",
+    integrity: "each of the 13 checks reports status computed from the DB; corrupting rows flips the matching check to warn/error (13 since M51.A2 split orphan owners from by-design synthetic container references)",
     schema: "report.schema.version must equal the actual brain_schema_version row",
     embeddings: "coverage is stored-row-count / symbol-count — a state report, never a quality claim (label audited)",
   },
   limitations: [
     "The WAL-size and ratio sanity checks are environment-dependent; their status is recorded as computed, not forced.",
-    "Observed indexer-scope defect (M14): calls relationships are stored with empty target_symbol_id, so orphan-target counts are 0 and dangling-source counts are persistently >0 on fresh indexes. The integrity checks report these stored values truthfully; the defect itself lives in the analyzer/indexer, not bb_health.",
+    "M14-observed defect FIXED by M51.A3: the indexer once stored same-file edges with dangling source ids (dangling-source > 0 on fresh indexes). Since M51, a fresh index must report 0 — a nonzero value now means an indexer regression.",
   ],
 })
 
@@ -49,9 +49,9 @@ const raw = await BrainDatabase.getRawInstance(projectId)
 
 // ── 1. Integrity: 12 points, each truthful ────────────────────────────────
 const clean = await runIndexHealthCheck(projectId as any)
-harness.check("integrity: exactly 12 checks reported", clean.checks.length === 12, `got ${clean.checks.length}`)
+harness.check("integrity: exactly 13 checks reported (12 + M51.A2 synthetic-container split)", clean.checks.length === 13, `got ${clean.checks.length}`)
 harness.check("integrity: every check carries a valid status", clean.checks.every((c) => ["ok", "warn", "error"].includes(c.status)), clean.checks.map((c) => c.code).join(","))
-harness.check("integrity: summary matches the checks", clean.summary.ok + clean.summary.warn + clean.summary.error === 12, JSON.stringify(clean.summary))
+harness.check("integrity: summary matches the checks", clean.summary.ok + clean.summary.warn + clean.summary.error === 13, JSON.stringify(clean.summary))
 
 // Clean fixture: byte bounds, line bounds, hash drift must be ok.
 const byName = (name: string) => clean.checks.find((c) => c.name === name)
@@ -74,15 +74,18 @@ harness.check("integrity: hash-drift check ok before modification", byName("Hash
 }
 
 // Honest recording: the relationship-graph checks are computed truthfully from
-// stored data, but the current indexer stores calls edges with EMPTY
-// target_symbol_id (observed: clean orphan-targets=0, dangling-sources=23 on a
-// fresh fixture). The checks report exactly what the data contains; the empty-
-// target defect is an indexer/analyzer-scope finding (M14), recorded here.
+// stored data. Pre-M51, the indexer wrote same-file edges with dangling source
+// ids (anonymous symbols skipped by insert-time filters), so a fresh fixture
+// showed dangling-sources >= 1 and this gate recorded that as observed truth,
+// noting the defect lived in the indexer. M51.A3 (#718) fixed the generator
+// (same-file endpoints are validated against the storeable-row replica and
+// degrade to external edges), so the expectation flips to 0 — a nonzero value
+// now means the indexer regressed.
 {
   const orphan = clean.checks.find((c) => c.name === "Orphan Target Relationships")
   const dangling = clean.checks.find((c) => c.name === "Dangling Source Relationships")
   harness.check("integrity: orphan-target check reports stored truth (0 orphan targets in stored data)", orphan?.status === "ok" && orphan?.value === 0, orphan ? `${orphan.value}` : "missing")
-  harness.check("integrity: dangling-source check reports stored truth (>=1 dangling stored edges)", dangling?.status === "warn" && (dangling?.value ?? 0) >= 1, dangling ? `${dangling.value}` : "missing")
+  harness.check("integrity: dangling-source check reports stored truth (0 after M51.A3 generator fix)", dangling?.status === "ok" && dangling?.value === 0, dangling ? `${dangling.value}` : "missing")
 }
 
 // ── 2. Schema version reflects the actual database ────────────────────────

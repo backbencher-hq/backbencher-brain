@@ -107,6 +107,23 @@ function stripWhitespace(text: string): string {
   return out
 }
 
+// Contract route paths always start with "/": join a controller base with a
+// method route collapsing duplicate slashes (pure string ops, no regex —
+// java composes basePath+methodRoute the same way).
+function joinContractPaths(base: string, route: string | undefined): string {
+  let b = base
+  while (b.length > 1 && b.endsWith("/")) b = b.slice(0, -1)
+  let r = route ?? ""
+  while (r.startsWith("/")) r = r.slice(1)
+  while (r.length > 0 && r.endsWith("/")) r = r.slice(0, -1)
+  if (!b.startsWith("/")) b = "/" + b
+  return r ? b + "/" + r : b
+}
+
+function ensureLeadingSlash(p: string): string {
+  return p.startsWith("/") ? p : "/" + p
+}
+
 // ============================================================================
 // SCOPE MANAGEMENT - Proper scope tracking with push/pop for all scope types
 // ============================================================================
@@ -178,8 +195,7 @@ class ScopeManager {
     return parts.join(".")
   }
 
-  getOwnerInfo(): { ownerName?: string; ownerKind?: ASTEngine.SymbolKind } | undefined {
-    // Find the nearest class/namespace/interface owner
+  getOwnerInfo(): { ownerName?: string; ownerKind?: ASTEngine.SymbolKind } | undefined {    // Find the nearest class/namespace/interface owner
     for (let i = this.stack.length - 1; i >= 0; i--) {
       const scope = this.stack[i]
       switch (scope.kind) {
@@ -194,6 +210,15 @@ class ScopeManager {
       }
     }
     return undefined
+  }
+
+  findEnclosingClassNode(): Node | null {
+    // Nearest Class scope's node (for class-level decorator lookup —
+    // controller base paths). Returns null outside any class.
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      if (this.stack[i].kind === ScopeKind.Class) return this.stack[i].node
+    }
+    return null
   }
 
   registerSymbol(symbol: ASTEngine.UniversalSymbol): void {
@@ -239,207 +264,90 @@ class ScopeManager {
 // ============================================================================
 
 class TypeScriptModuleResolver {
-  private packageJsonCache = new Map<string, any>()
-
   constructor(private baseDir: string) {}
 
   resolveModulePath(specifier: string, fromFile: string): string {
     const fromDir = path.dirname(fromFile)
 
-    // Handle relative imports
+    // Handle relative imports — pure path algebra, no existence probes.
     if (specifier.startsWith("./") || specifier.startsWith("../")) {
-      return this.resolveRelative(specifier, fromDir)
+      return path.resolve(fromDir, specifier)
     }
 
     // Handle absolute imports starting with /
     if (specifier.startsWith("/")) {
-      return this.resolveAbsolute(specifier)
+      return path.join(this.baseDir, specifier)
     }
 
     // Handle Node.js built-ins
-    if (this.isBuiltinModule(specifier)) {
-      return `node:${specifier}`
+    if (isBuiltinModule(specifier)) {
+      return `node:${stripLeading(specifier, "node:")}`
     }
 
-    // Handle package imports
-    return this.resolvePackage(specifier, fromDir)
-  }
-
-  private resolveRelative(specifier: string, fromDir: string): string {
-    const resolved = path.resolve(fromDir, specifier)
-
-    // Try with TypeScript extensions first
-    const extensions = [".ts", ".tsx", ".d.ts", ".js", ".jsx", ".mjs", ".cjs", ""]
-
-    for (const ext of extensions) {
-      const withExt = resolved + ext
-      if (this.fileExists(withExt)) {
-        return withExt
-      }
-    }
-
-    // Try as directory with index file
-    const indexExtensions = ["index.ts", "index.tsx", "index.js", "index.jsx"]
-    for (const indexFile of indexExtensions) {
-      const indexPath = path.join(resolved, indexFile)
-      if (this.fileExists(indexPath)) {
-        return indexPath
-      }
-    }
-
-    // Return normalized path even if file doesn't exist
-    return resolved
-  }
-
-  private resolveAbsolute(specifier: string): string {
-    // Could be baseUrl path or absolute path
-    const fromBaseUrl = path.join(this.baseDir, specifier)
-    if (this.fileExists(fromBaseUrl)) {
-      return fromBaseUrl
-    }
-    return specifier
-  }
-
-  private resolvePackage(specifier: string, fromDir: string): string {
-    // Parse package name (handle scoped packages like @types/node)
-    const parts = specifier.split("/")
-    let packageName: string
-    let subPath: string
-
-    if (specifier.startsWith("@")) {
-      packageName = parts.slice(0, 2).join("/")
-      subPath = parts.slice(2).join("/")
-    } else {
-      packageName = parts[0]
-      subPath = parts.slice(1).join("/")
-    }
-
-    // Search up the directory tree for node_modules
-    let currentDir = fromDir
-    while (currentDir !== path.dirname(currentDir)) {
-      const nodeModulesPath = path.join(currentDir, "node_modules", packageName)
-
-      if (this.directoryExists(nodeModulesPath)) {
-        // Found the package, now resolve the subpath
-        if (subPath) {
-          return this.resolveRelative("./" + subPath, nodeModulesPath)
-        }
-
-        // Read package.json to find entry point
-        const pkgJson = this.readPackageJson(nodeModulesPath)
-        if (pkgJson) {
-          // TypeScript: check types/typings first
-          if (pkgJson.types) {
-            return path.join(nodeModulesPath, pkgJson.types)
-          }
-          if (pkgJson.typings) {
-            return path.join(nodeModulesPath, pkgJson.typings)
-          }
-          // Then check exports, main, module
-          if (pkgJson.main) {
-            return path.join(nodeModulesPath, pkgJson.main)
-          }
-          if (pkgJson.module) {
-            return path.join(nodeModulesPath, pkgJson.module)
-          }
-        }
-
-        // Default to index
-        return path.join(nodeModulesPath, "index.js")
-      }
-
-      currentDir = path.dirname(currentDir)
-    }
-
-    // Package not found locally, return as external reference
+    // Bare package imports are recorded by logical identity
+    // (`external:specifier`). A previous revision walked up to node_modules
+    // and sniffed package.json main/types entry points — every answer it
+    // gave depended on the local machine, so the same repo indexed
+    // differently per machine, at the cost of sync statSync I/O per import
+    // per file. Nothing reads past the specifier (verified: no
+    // metadata.resolvedPath consumers repo-wide; fixtures pin module/items
+    // only), and the codebase's own isExternalModule already classifies
+    // exactly these specifiers as external. Deterministic on every machine.
     return `external:${specifier}`
-  }
-
-  private isBuiltinModule(specifier: string): boolean {
-    const builtins = new Set([
-      "assert",
-      "buffer",
-      "child_process",
-      "cluster",
-      "console",
-      "constants",
-      "crypto",
-      "dgram",
-      "dns",
-      "domain",
-      "events",
-      "fs",
-      "http",
-      "https",
-      "module",
-      "net",
-      "os",
-      "path",
-      "process",
-      "punycode",
-      "querystring",
-      "readline",
-      "repl",
-      "stream",
-      "string_decoder",
-      "sys",
-      "timers",
-      "tls",
-      "tty",
-      "url",
-      "util",
-      "v8",
-      "vm",
-      "zlib",
-      "async_hooks",
-      "inspector",
-      "perf_hooks",
-      "trace_events",
-      "worker_threads",
-      "wasi",
-    ])
-    return builtins.has(stripLeading(specifier, "node:"))
   }
 
   isExternalModule(specifier: string): boolean {
     return !specifier.startsWith(".") && !specifier.startsWith("/") && !specifier.startsWith("node:")
   }
+}
 
-  private readPackageJson(packageDir: string): any | null {
-    const cached = this.packageJsonCache.get(packageDir)
-    if (cached !== undefined) return cached
+// Node.js built-in modules — module-level so every resolution doesn't
+// reallocate the set (the old per-call construction ran per import).
+const NODE_BUILTINS = new Set([
+  "assert",
+  "buffer",
+  "child_process",
+  "cluster",
+  "console",
+  "constants",
+  "crypto",
+  "dgram",
+  "dns",
+  "domain",
+  "events",
+  "fs",
+  "http",
+  "https",
+  "module",
+  "net",
+  "os",
+  "path",
+  "process",
+  "punycode",
+  "querystring",
+  "readline",
+  "repl",
+  "stream",
+  "string_decoder",
+  "sys",
+  "timers",
+  "tls",
+  "tty",
+  "url",
+  "util",
+  "v8",
+  "vm",
+  "zlib",
+  "async_hooks",
+  "inspector",
+  "perf_hooks",
+  "trace_events",
+  "worker_threads",
+  "wasi",
+])
 
-    try {
-      const pkgPath = path.join(packageDir, "package.json")
-      if (this.fileExists(pkgPath)) {
-        const content = fs.readFileSync(pkgPath, "utf-8")
-        const parsed = JSON.parse(content)
-        this.packageJsonCache.set(packageDir, parsed)
-        return parsed
-      }
-    } catch {
-      // Ignore errors
-    }
-
-    this.packageJsonCache.set(packageDir, null)
-    return null
-  }
-
-  private fileExists(filePath: string): boolean {
-    try {
-      return fs.statSync(filePath).isFile()
-    } catch {
-      return false
-    }
-  }
-
-  private directoryExists(dirPath: string): boolean {
-    try {
-      return fs.statSync(dirPath).isDirectory()
-    } catch {
-      return false
-    }
-  }
+function isBuiltinModule(specifier: string): boolean {
+  return NODE_BUILTINS.has(stripLeading(specifier, "node:"))
 }
 
 // ============================================================================
@@ -1110,7 +1018,7 @@ class TypeInferenceEngine {
     return "unknown"
   }
 
-  private inferFunctionReturnType(funcNode: Node): string {
+  public inferFunctionReturnType(funcNode: Node): string {
     // Look for explicit return type
     const returnType = funcNode.childForFieldName("return_type")
     if (returnType) {
@@ -1123,6 +1031,13 @@ class TypeInferenceEngine {
       const types = mapItems(returns, (r) => {
         const arg = r.namedChild(0)
         if (arg) {
+          // T3 wave: `return x` where x is a declared parameter reads the
+          // parameter's type annotation — otherwise every identifier return
+          // degrades to unknown even with full annotations present.
+          if (arg.type === "identifier") {
+            const paramType = this.findParameterType(funcNode, arg.text)
+            if (paramType) return paramType
+          }
           return this.inferFromInitializer(arg).type
         }
         return "void"
@@ -1136,6 +1051,26 @@ class TypeInferenceEngine {
     }
 
     return "void"
+  }
+
+  private findParameterType(funcNode: Node, name: string): string | undefined {
+    const params = funcNode.childForFieldName("parameters") || funcNode.childForFieldName("formal_parameters")
+    if (!params) return undefined
+    for (let i = 0; i < params.namedChildCount; i++) {
+      const p = params.namedChild(i)
+      if (!p) continue
+      const nm = p.childForFieldName("pattern") || p.childForFieldName("name") || p.namedChild(0)
+      const matches = !!nm && (nm.type === "identifier" ? nm.text === name : nm.text === name)
+      if (!matches) continue
+      const t = p.childForFieldName("type")
+      if (t) return stripLeadingColon(t.text)
+      for (let j = 0; j < p.namedChildCount; j++) {
+        const c = p.namedChild(j)
+        if (c && c.type === "type_annotation") return stripLeadingColon(c.text)
+      }
+      return undefined
+    }
+    return undefined
   }
 
   private findReturnStatements(node: Node): Node[] {
@@ -1668,8 +1603,11 @@ class TypeScriptAnalysisRunner {
       collectErrors(rootNode)
     }
 
-    // Skip hook anti-pattern detection for SolidJS files
-    if (!this.content.includes("solid-js") && !this.content.includes("@solidjs")) {
+    // T1 (review wave): the Rules-of-Hooks check only means something in a
+    // React file — in Vue/Svelte/Node codebases every `use*` util warned as
+    // a parse error. Gate on a React signal (react import or JSX); the
+    // SolidJS exclusion stays (different hook rules entirely).
+    if (this.hasReactSignal(rootNode) && !this.content.includes("solid-js") && !this.content.includes("@solidjs")) {
       errors.push(...this.detectReactHookAntiPatterns(rootNode))
     }
 
@@ -2562,6 +2500,19 @@ class TypeScriptAnalysisRunner {
       node,
       decoratorNodes && decoratorNodes.length > 0 ? decoratorNodes : undefined,
     )
+    // T5 (review wave): compose a class-level base path (@Controller("users"),
+    // @RequestMapping("/api")) with the method route, like java's
+    // basePath+methodRoute composition. A bare @Get() under a base still
+    // routes the base itself (NestJS semantics).
+    let apiContractPath = apiContract.path
+    if (apiContract.method) {
+      const basePath = this.extractControllerBasePath()
+      if (basePath !== undefined) {
+        apiContractPath = joinContractPaths(basePath, apiContractPath)
+      } else if (apiContractPath !== undefined) {
+        apiContractPath = ensureLeadingSlash(apiContractPath)
+      }
+    }
 
     const symbol: ASTEngine.UniversalSymbol = {
       name: stripPrivatePrefix(name), // Normalize private field name
@@ -2579,7 +2530,7 @@ class TypeScriptAnalysisRunner {
       complexity: this.calculateComplexity(node),
       comments: this.extractComments(node),
       qualified_calls: this.extractQualifiedCalls(node),
-      apiContractPath: apiContract.path,
+      apiContractPath,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
       ...ownerInfo,
@@ -3627,7 +3578,17 @@ class TypeScriptAnalysisRunner {
       }
 
       // Check identifiers that reference other symbols
+      // (template substitutions are owned by the template walk above —
+      // letting both walks emit produced Uses+References for one read).
       if (n.type === "identifier" && currentSymbol) {
+        let inTemplate = false
+        for (let tp = n.parent; tp; tp = tp.parent) {
+          if (tp.type === "template_substitution") { inTemplate = true; break }
+          if (tp.type === "function_declaration" || tp.type === "method_definition" ||
+              tp.type === "arrow_function" || tp.type === "function_expression" ||
+              tp.type === "class_declaration") break
+        }
+        if (!inTemplate) {
         const name = n.text
 
         // Skip if this is a declaration, not a usage. web-tree-sitter hands
@@ -3687,6 +3648,7 @@ class TypeScriptAnalysisRunner {
             })
           }
         }
+        } // !inTemplate
       }
 
       // Check type references
@@ -4030,14 +3992,18 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
     current: ASTEngine.UniversalSymbol | null,
   ): ASTEngine.UniversalSymbol | null {
+    // T6 (review wave): symbol ranges are 1-based (nodeRange +1) but the
+    // lookup passed raw 0-based rows/columns, so positional resolution never
+    // matched and everything fell back to first-name-match. Overloads and
+    // same-named nested/top-level functions resolved positionally blind.
     const byPos = (name: string, kind: ASTEngine.SymbolKind, line: number, col: number, owner?: string) =>
       findItem(
         symbols,
         (s) =>
           s.name === name &&
           s.kind === kind &&
-          s.range.startLine === line &&
-          s.range.startColumn === col &&
+          s.range.startLine === line + 1 &&
+          s.range.startColumn === col + 1 &&
           (!owner || s.ownerName === owner),
       )
 
@@ -4258,7 +4224,11 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    return "void"
+    // T3 (review wave): absence of an annotation is not evidence of void —
+    // infer from return statements (unannotated `() => 42` is number, not
+    // void). Bodies without returns still yield "void" from the helper,
+    // so the default is unchanged where no information exists.
+    return this.typeInference.inferFunctionReturnType(node)
   }
 
   private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[] } {
@@ -4354,11 +4324,51 @@ class TypeScriptAnalysisRunner {
     return comments.length > 0 ? comments : undefined
   }
 
+  /**
+   * Class-level route base (@Controller("users"), @RequestMapping("/api"),
+   * @Path/@Route equivalents) for T5 composition. Reads the nearest
+   * enclosing class node's decorators; first string/template argument wins.
+   */
+  private extractControllerBasePath(): string | undefined {
+    const classNode = this.scopeManager.findEnclosingClassNode()
+    if (!classNode) return undefined
+    const decorators = collectDecoratorsForClass(classNode)
+    for (const d of decorators) {
+      const stack: Node[] = [d]
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (n.type === "call_expression") {
+          const callee = n.namedChild(0)
+          let base = callee
+          if (callee && callee.type === "member_expression") {
+            base = callee.childForFieldName("property") || callee.namedChild(callee.namedChildCount - 1) || callee
+          }
+          const decName = base?.text || ""
+          if (decName === "Controller" || decName === "RequestMapping" || decName === "Path" || decName === "Route") {
+            const args = n.childForFieldName("arguments")
+            if (args && args.namedChildCount > 0) {
+              const firstArg = args.namedChild(0)
+              if (firstArg && (firstArg.type === "string" || firstArg.type === "template_string")) {
+                return stringContent(firstArg)
+              }
+            }
+            return undefined
+          }
+          break
+        }
+        for (let j = 0; j < n.namedChildCount; j++) {
+          const c = n.namedChild(j)
+          if (c) stack.push(c)
+        }
+      }
+    }
+    return undefined
+  }
+
   private extractApiContract(
     node: any,
     decoratorNodes?: Node[],
-  ): { path?: string; method?: string } {
-    let contractPath: string | undefined = undefined
+  ): { path?: string; method?: string } {    let contractPath: string | undefined = undefined
     let contractMethod: string | undefined = undefined
 
     // Decorator-based routes (@Get("/users"), @PostMapping("/api")). The
@@ -4366,9 +4376,11 @@ class TypeScriptAnalysisRunner {
     // asymmetric: method decorators are class_body siblings, not children
     // of the method_definition.
     const methods = new Set(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
-    const scanDecorator = (child: any): { path: string; method: string } | null => {
+    const scanDecorator = (child: any): { path?: string; method: string } | null => {
       let decName = ""
-      let route = "/"
+      // T4 (review wave): no path argument means no path — the old default
+      // "/" turned every bare @Get() into a phantom root endpoint.
+      let route: string | undefined = undefined
       let sawCall = false
       const scan = (n: any) => {
         if (sawCall) return
@@ -4397,11 +4409,31 @@ class TypeScriptAnalysisRunner {
         }
       }
       scan(child)
-      const upper = decName.toUpperCase()
-      for (const method of methods) {
-        if (upper === method || (upper.length > method.length && upper.startsWith(method))) {
-          return { path: route, method }
+      // Collapsed form: `@Get` / `@Get()` with no call_expression child —
+      // the name rides as a bare identifier/member child. Without this the
+      // match below never runs and base-path composition (T5) can't see
+      // path-less mappings under a controller base.
+      if (!decName) {
+        for (let j = 0; j < child.namedChildCount; j++) {
+          const c = child.namedChild(j)
+          if (!c) continue
+          if (c.type === "identifier") { decName = c.text; break }
+          if (c.type === "member_expression") {
+            const prop = c.childForFieldName("property") || c.namedChild(c.namedChildCount - 1)
+            if (prop) { decName = prop.text; break }
+          }
         }
+      }
+      // T2 (review wave): EXACT match after stripping a Mapping suffix —
+      // the old prefix match turned @Getter into GET and @PostConstruct
+      // (a NestJS lifecycle hook) into POST /. @GetMapping still resolves
+      // (strip → Get); bare lifecycle/helper names match nothing.
+      let upper = decName.toUpperCase()
+      if (upper.endsWith("MAPPING") && upper.length > "MAPPING".length) {
+        upper = upper.slice(0, upper.length - "MAPPING".length)
+      }
+      if (methods.has(upper)) {
+        return { path: route, method: upper }
       }
       return null
     }
@@ -4490,7 +4522,10 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    return contractPath ? { path: contractPath, method: contractMethod } : {}
+    // A method-only result (bare @Get(): method known, path not) must
+    // survive — the old path-only gate discarded the method, which also
+    // blinded T5 base composition (it keys off apiContract.method).
+    return contractPath || contractMethod ? { path: contractPath, method: contractMethod } : {}
   }
 
   private extractQualifiedCalls(node: Node): string[] | undefined {
@@ -4500,6 +4535,12 @@ class TypeScriptAnalysisRunner {
       if (n.type === "call_expression") {
         const callee = n.namedChild(0)
         if (callee) {
+          // T8 (review wave): dynamic import() is a module dependency, not a
+          // call — the relationship walk already skips the `import` callee
+          // (T7 fix); the qualified-calls payload did not, leaking "import"
+          // into symbol call lists.
+          const calleeIsImport = callee.type === "import" || (callee.type === "identifier" && callee.text === "import")
+          if (!calleeIsImport) {
           // Dotted path WITHOUT argument text (family contract with java).
           // Raw callee.text embedded inner-call arguments on chains:
           // `db.list(user).map` was stored as "db.list(user).map".
@@ -4518,6 +4559,7 @@ class TypeScriptAnalysisRunner {
             }
           }
           calls.push(parts.filter(Boolean).join("."))
+          }
         }
       }
 
@@ -4545,14 +4587,20 @@ class TypeScriptAnalysisRunner {
 
     const traverse = (n: Node) => {
       if (n.type === "member_expression") {
-        const text = n.text
-        if (
-          text.indexOf("req.body") !== -1 ||
-          text.indexOf("req.query") !== -1 ||
-          text.indexOf("req.params") !== -1 ||
-          text.indexOf("process.env") !== -1
-        ) {
-          sources.push({ type: "user_input", snippet: text })
+        // T9 (review wave): receiver-leaf match, not substring — indexOf
+        // flagged `myreq.body` (or any `*req.body` suffix) as user input.
+        // Only exact receiver roots with exact sensitive leaves qualify.
+        const segs: string[] = []
+        for (const part of n.text.split(".")) {
+          const t = part.trim()
+          if (t) segs.push(t)
+        }
+        const isReqInput =
+          segs.length >= 2 && segs[0] === "req" &&
+          (segs[1] === "body" || segs[1] === "query" || segs[1] === "params")
+        const isEnvRead = segs.length >= 2 && segs[0] === "process" && segs[1] === "env"
+        if (isReqInput || isEnvRead) {
+          sources.push({ type: "user_input", snippet: n.text })
         }
       } else if (n.type === "identifier") {
         if (n.text === "prompt" || n.text === "readLine") {
@@ -4702,22 +4750,33 @@ class TypeScriptAnalysisRunner {
     return false
   }
 
+  // Project-root lookup, memoized per directory: the walk itself is still
+  // filesystem-backed (baseDir anchors absolute imports), but it now runs
+  // once per directory per process instead of once per analyzed file.
+  private static projectRootCache = new Map<string, string>()
+
   private findProjectRoot(filePath: string): string {
     let dir = path.dirname(filePath)
+    const cache = TypeScriptAnalysisRunner.projectRootCache
+    const cached = cache.get(dir)
+    if (cached !== undefined) return cached
 
-    while (dir !== path.dirname(dir)) {
-      const packageJson = path.join(dir, "package.json")
+    let cur = dir
+    while (cur !== path.dirname(cur)) {
+      const packageJson = path.join(cur, "package.json")
       try {
         if (fs.statSync(packageJson).isFile()) {
-          return dir
+          cache.set(dir, cur)
+          return cur
         }
       } catch {
         // Continue searching
       }
-      dir = path.dirname(dir)
+      cur = path.dirname(cur)
     }
 
-    return path.dirname(filePath)
+    cache.set(dir, dir)
+    return dir
   }
 
   // ========================================================================
@@ -4878,8 +4937,44 @@ class TypeScriptAnalysisRunner {
     return "critical"
   }
 
-  private detectReactHookAntiPatterns(rootNode: Node): ASTEngine.ParseError[] {
-    const errors: ASTEngine.ParseError[] = []
+  /**
+   * React signal for the hooks check: a react (or preact-compat) import, a
+   * require("react") call, or any JSX element. Pure-string matching on
+   * module sources, no regex.
+   */
+  private hasReactSignal(rootNode: Node): boolean {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") return true
+      if (n.type === "import_statement") {
+        const src = n.childForFieldName("source")
+        if (src) {
+          const mod = stringContent(src)
+          if (mod === "react" || mod === "react-dom" || mod === "preact" || mod === "preact/compat" ||
+              mod.startsWith("react/") || mod.startsWith("preact/")) return true
+        }
+      }
+      if (n.type === "call_expression") {
+        const callee = n.namedChild(0)
+        if (callee && callee.text === "require") {
+          const args = n.childForFieldName("arguments")
+          const first = args?.namedChild(0)
+          if (first && (first.type === "string" || first.type === "template_string")) {
+            const mod = stringContent(first)
+            if (mod === "react" || mod.startsWith("react/")) return true
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return false
+  }
+
+  private detectReactHookAntiPatterns(rootNode: Node): ASTEngine.ParseError[] {    const errors: ASTEngine.ParseError[] = []
     const seen: Record<string, boolean> = {}
 
     const warn = (node: Node, callee: string, message: string) => {
@@ -4889,10 +4984,13 @@ class TypeScriptAnalysisRunner {
       errors.push({
         message: `React Hook "${callee}" ${message}`,
         range: {
-          startLine: node.startPosition.row,
-          startColumn: node.startPosition.column,
-          endLine: node.endPosition.row,
-          endColumn: node.endPosition.column,
+          // T7 (review wave): 1-based like every other range in the file
+          // (nodeToRange convention) — raw 0-based rows misplaced every
+          // hook warning by a line next to 1-based syntax errors.
+          startLine: node.startPosition.row + 1,
+          startColumn: node.startPosition.column + 1,
+          endLine: node.endPosition.row + 1,
+          endColumn: node.endPosition.column + 1,
           startIndex: node.startIndex,
           endIndex: node.endIndex,
         },

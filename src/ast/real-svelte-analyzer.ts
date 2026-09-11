@@ -415,7 +415,12 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         imports.push(i)
       }
-      for (const e of sub.exports ?? []) exports.push(e)
+      // M49 exports invariant: component-owned svelte props (export let →
+      // Property, ownerName = component above) are component MEMBERS —
+      // membership rides Contains, they are not module exports. Only
+      // module-block exports (`<script context="module">` — the module's
+      // true importable API) flow into the export list.
+      if (isModuleBlock) for (const e of sub.exports ?? []) exports.push(e)
       for (const er of sub.errors ?? []) errors.push(er)
       scriptDecisions += Math.max(0, ((sub.metadata as any)?.cyclomaticComplexity ?? 1) - 1)
     }

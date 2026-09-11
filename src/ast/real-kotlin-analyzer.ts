@@ -95,7 +95,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Fallback text extraction for parser variations that omit field names
     // PHASE 4: Detect Kotlin frameworks (Android, Spring Boot, Ktor, etc.)
     const frameworks = this.detectKotlinFrameworks(content, symbols, imports)
-    const patterns = this.detectKotlinPatterns(symbols, relationships, content)
+    const patterns = this.detectKotlinPatterns(symbols, relationships, content, rootNode)
 
     // ========================================================================
     // STAGE 3: PHANTOM SYMBOL INJECTION (Framework Heuristics)
@@ -105,9 +105,6 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // exports/override resolution downstream.
     // ========================================================================
     this.injectPhantomSymbols(rootNode, symbols, frameworks, ctx)
-
-    // PHASE 5: Kotlin-specific analysis (nullability, coroutines, etc.)
-    const typeInference = this.performKotlinTypeInference(symbols, relationships)
 
     // --- KOTLIN CALL GRAPH EXTRACTION ---
     // Walks the full AST and extracts caller→callee relationships from
@@ -125,7 +122,16 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         const resolveCallSource = (start: Node | null): string => {
           let p: Node | null = start
           while (p) {
-            if (p.type === "secondary_constructor" || p.type === "primary_constructor") return "constructor"
+            // KAD-MR3 K11: constructor/init calls attribute to the CLASS
+            // NAME — the same string the renamed ctor symbol now carries
+            // (java C3 family convention), so the edge's source always
+            // resolves to a real symbol (the pre-fix bare "constructor"
+            // merged every class's ctor calls into one bucket).
+            if (p.type === "secondary_constructor" || p.type === "primary_constructor") {
+              const cls = p.parent
+              const clsName = cls ? this.findChildByType(cls, ["type_identifier", "simple_identifier"])?.text : undefined
+              return clsName ?? "constructor"
+            }
             if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
               const nameNode = this.findChildByType(p, ["simple_identifier", "type_identifier"])
               if (nameNode) return nameNode.text
@@ -228,11 +234,32 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // self-contain edge.
     // Pre-built type-index so the override parent lookup is O(1) per method
     // (no per-method symbol scans — the hot path stays linear).
+    // KAD-MR3 K15 (M49.K1): enums participate in heritage (KD19), so the
+    // override-lookup map holds Class/Interface/Enum — matching the
+    // enum-supertype heritage pass exactly.
     const typeIndex = new Map<string, ASTEngine.UniversalSymbol>()
     for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface) {
+      if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface || s.kind === ASTEngine.SymbolKind.Enum) {
         if (!typeIndex.has(s.name)) typeIndex.set(s.name, s)
       }
+    }
+    // KAD-MR3 K2: in-file declaration index built ONCE (O(M) total, not
+    // per-method — the java C11 lesson). Keyed owner → METHOD NAME →
+    // Set<"(T1,T2)" sigs>. The name dimension is the load-bearing one
+    // (kotlinx-coroutines BroadcastChannel.kt: SubBroadcastChannel.send must
+    // NOT verify against BroadcastChannel merely because the interface
+    // declares some OTHER generic-signature method — send comes from the
+    // EXTERNAL SendChannel; name-blind sig membership paired it and emitted
+    // 8 fabricated 0.9/structural overrides on the corpus).
+    const declSigs = new Map<string, Map<string, Set<string>>>()
+    for (const t of symbols) {
+      if (t.kind !== ASTEngine.SymbolKind.Method || !t.ownerName || t.metadata?.isPhantom) continue
+      let nameMap = declSigs.get(t.ownerName)
+      if (!nameMap) { nameMap = new Map(); declSigs.set(t.ownerName, nameMap) }
+      let set = nameMap.get(t.name)
+      if (!set) { set = new Set(); nameMap.set(t.name, set) }
+      const tSig = "(" + (t.parameters ?? []).map((p: any) => p.type ?? "").join(",") + ")"
+      set.add(tSig)
     }
     for (const s of symbols) {
       const _owner = s.ownerName
@@ -249,10 +276,29 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       // owner-qualified method name → declaring-parent method name. The
       // parents come from the ENCLOSING CLASS's supertypes (a method symbol
       // does not carry them). Phantom/generated symbols are excluded (their
-      // override targets are stdlib, not project symbols). The target is the
-      // first ancestor in declaration order that actually declares the method
-      // (companion index when provided); without context it falls back to the
-      // first hierarchy parent — the deterministic per-file default.
+      // override targets are stdlib, not project symbols).
+      //
+      // KAD-MR3 K2 (M49.K1 kotlin wave) — override VERIFICATION, closing the
+      // weakest machinery in the JVM family (probe: `Sub : Bar()` where Bar
+      // never declares foo still emitted Sub.foo→Bar.foo at 0.5, and the
+      // GENUINE override could never rise above 0.5 either):
+      //   1. IN-FILE BFS (java JD-anon / scala wave convention): the first
+      //      ancestor in declaration order that DECLARED the method in this
+      //      file verifies at 0.9/evidence structural. Requires a signature
+      //      match (payload c) so overloads never pair; ancestors reached
+      //      through generic supertypes fall back to name-only (the scala
+      //      SCD-E substitution ruling — textual sig comparison is invalid
+      //      across type-variable substitution).
+      //   2. Anonymous objects (object : Runnable {...}) verify through their
+      //      superTypes metadata (already carried by the object_literal
+      //      handler) — the same BFS, reached via typeIndex.
+      //   3. No verifiable in-file declarer → the deterministic per-file
+      //      default (first supertype) stays at 0.5/inferred reasonCode
+      //      "first-supertype-guess" — below the consumer threshold, honestly
+      //      labeled as the guess it is.
+      //   4. Signature payload: metadata.overrideSig carries the normalized
+      //      parameter-type list "(T1,T2)" — downstream can now distinguish
+      //      overloaded targets without a resolution engine.
       if (
         s.kind === ASTEngine.SymbolKind.Method &&
         s.ownerName &&
@@ -261,13 +307,71 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       ) {
         const ownerSym = typeIndex.get(s.ownerName)
         const parents: string[] = ownerSym?.metadata?.superTypes ?? []
+        const overrideSig =
+          s.parameters && s.parameters.length >= 0
+            ? "(" + s.parameters.map((p: any) => p.type ?? "").join(",") + ")"
+            : undefined
         let overrideParent = parents.length > 0 ? parents[0] : ""
         // Confidence reflects EVIDENCE TIER (patterns.ts filters >= 0.7):
-        // companion-resolved targets carry project-level evidence; the
+        // verified in-file targets carry project-level evidence; the
         // per-file fallback is a first-supertype GUESS that may not even
         // declare the method, so it must stay below the consumer threshold.
         let confidence = 0.5
         let reasonCode = "first-supertype-guess"
+        let evidence = "inferred"
+        if (parents.length > 0) {
+          // In-file declaration membership test against the hoisted declSigs
+          // index. Signatures from method symbols so overload resolution is
+          // exact; generic-substituted sigs fall back to name-only.
+          const declared = (typeName: string): boolean => {
+            const nameMap = declSigs.get(typeName)
+            if (!nameMap) return false
+            // The parent must declare a method with the SAME NAME first —
+            // signature compatibility is only consulted after the name
+            // matches (see declSigs comment: name-blind pairing fabricated
+            // cross-member overrides on the corpus).
+            const sigs = nameMap.get(s.name)
+            if (!sigs || sigs.size === 0) return false
+            if (overrideSig && sigs.has(overrideSig)) return true
+            // No signature on a side (extractor gap) OR a generic type
+            // variable in either sig: name-only pairing. A sig carrying a
+            // bare capitalized token (T, R) is a type VARIABLE — concrete
+            // types (Int, String) still require the exact sig so overloads
+            // never pair.
+            const hasTypeVar = (sig: string): boolean => {
+              const inner = sig.slice(1, -1)
+              if (!inner) return false
+              for (const tok of inner.split(",")) {
+                const t2 = tok.trim()
+                if (t2.length === 1 && t2 >= "A" && t2 <= "Z") return true
+              }
+              return false
+            }
+            if (!overrideSig) return true
+            for (const s2 of sigs) if (hasTypeVar(s2) || hasTypeVar(overrideSig)) return true
+            return false
+          }
+          // BFS over the typeIndex hierarchy (companion-free fallback: the
+          // index itself provides getParents from superTypes metadata).
+          const queue: string[] = [...parents]
+          const seen = new Set<string>()
+          let depth = 0
+          while (queue.length > 0 && depth < 10) {
+            depth++
+            const parent = queue.shift()!
+            if (seen.has(parent)) continue
+            seen.add(parent)
+            if (declared(parent)) {
+              overrideParent = parent
+              confidence = 0.9
+              reasonCode = "in-file-verified"
+              evidence = "structural"
+              break
+            }
+            const gp = typeIndex.get(parent)?.metadata?.superTypes ?? []
+            for (const g of gp) if (!seen.has(g)) queue.push(g)
+          }
+        }
         if (context?.overrideCompanion && parents.length > 0) {
           const declaring = findDeclaringParent(
             s.name,
@@ -279,6 +383,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             overrideParent = declaring
             confidence = 0.9
             reasonCode = "companion-index"
+            evidence = "structural"
           }
         }
         if (overrideParent) {
@@ -287,7 +392,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence,
-            metadata: { isOverride: true, overrideParent, reasonCode },
+            metadata: { isOverride: true, overrideParent, reasonCode, evidenceClass: evidence, overrideSig },
           })
         }
       }
@@ -319,7 +424,22 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    for (let i = 0; i < symbols.length; i++) { const s = symbols[i]; if (!s.metadata?.isPhantom && !s.metadata?.isAnonymousObject && s.visibility !== "private" && (!s.ownerName || s.ownerKind === ASTEngine.SymbolKind.Class)) { exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }); } }
+    // KAD-MR3 K1 (M49.K1 kotlin wave): an export is TOP-LEVEL public API.
+    //   - only declarations WITHOUT an owner export (nested classes / methods
+    //     of Outer are members reachable through Outer, not exports — the old
+    //     ownerKind===Class hole exported every member: probe "Outer{Inner;foo}")
+    //   - private AND internal are excluded (Kotlin: internal is a published
+    //     API of the module, not the consumer surface — probe "internal class
+    //     Hidden" leaked)
+    //   - phantoms/anonymous objects stay excluded (unchanged)
+    // Family contract = java JAD3 (public + owner-bearing kinds whitelisted).
+    for (let i = 0; i < symbols.length; i++) {
+      const s = symbols[i]
+      if (s.metadata?.isPhantom || s.metadata?.isAnonymousObject) continue
+      if (s.visibility !== "public" && s.visibility !== undefined) continue
+      if (s.ownerName) continue
+      exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
+    }
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -735,37 +855,96 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       let path = "/"
 
       if (args && args.namedChildCount > 0) {
-        if (mapping === "@RequestMapping") {
-          let methodStr = "ANY"
-          for (let j = 0; j < args.namedChildCount; j++) {
-            const arg = args.namedChild(j)
-            if (!arg) continue
-            if (stringIncludes(arg.text, "method") && stringIncludes(arg.text, "RequestMethod.")) {
-              const parts = arg.text.split(".")
-              methodStr = parts[parts.length - 1]
-            } else if (!stringIncludes(arg.text, "=")) {
-              path = arg.text.split('"').join("")
-            } else if (arg.text.startsWith("value")) {
-              path = arg.text.split("=")[1].split('"').join("").trim()
+        // KAD-MR3 E6 (M49.K1 wave): uniform named-argument walk. The old code
+        // had a value=/method= branch ONLY for @RequestMapping and a raw
+        // first-arg fallback for the typed mappings — `@GetMapping(value =
+        // "/x")` produced apiContractPath "value = /x" (probe-verified),
+        // silently breaking every cross-language route join. Grammar probe:
+        // every argument is a value_argument whose children are [name?,
+        // expression]; paths live in string literals — positional
+        // ("/z"), named (value = "/x"), arrays (value = ["/p","/q"],
+        // arrayOf("/a","/b")), and the RequestMethod.X enum value.
+        let methodStr = "ANY"
+        const paths: string[] = []
+        for (let j = 0; j < args.namedChildCount; j++) {
+          const arg = args.namedChild(j)
+          if (!arg || arg.type !== "value_argument") continue
+          // Split the argument into its name (simple_identifier) and its
+          // value expression (everything after it).
+          let name = ""
+          let expr: Node | null = null
+          for (let k = 0; k < arg.namedChildCount; k++) {
+            const c = arg.namedChild(k)
+            if (!c) continue
+            if (c.type === "simple_identifier" && !expr) name = c.text
+            else if (!expr) expr = c
+          }
+          const isRequestMethod = name === "method" || (!name && stringIncludes(arg.text, "method"))
+          if (isRequestMethod) {
+            // RequestMethod.GET — the enum member is the last identifier
+            // segment of the argument text (navigation_expression leaf).
+            const segs = arg.text.split(".")
+            if (segs.length > 1) methodStr = segs[segs.length - 1].toUpperCase()
+            continue
+          }
+          // Path values: named `value`/`path`, or positional.
+          if (name && name !== "value" && name !== "path") continue
+          if (!expr) continue
+          if (expr.type === "string_literal") {
+            paths.push(expr.text.split('"').join(""))
+          } else if (expr.type === "collection_literal") {
+            for (let k = 0; k < expr.namedChildCount; k++) {
+              const e = expr.namedChild(k)
+              if (e?.type === "string_literal") paths.push(e.text.split('"').join(""))
+            }
+          } else if (expr.type === "call_expression") {
+            // arrayOf("/a", "/b") — string literals among the call's
+            // value_arguments.
+            for (let k = 0; k < expr.namedChildCount; k++) {
+              const inner = expr.namedChild(k)
+              if (inner?.type !== "call_suffix") continue
+              for (let m2 = 0; m2 < inner.namedChildCount; m2++) {
+                const va = inner.namedChild(m2)
+                if (va?.type !== "value_arguments") continue
+                for (let m3 = 0; m3 < va.namedChildCount; m3++) {
+                  const e = va.namedChild(m3)
+                  if (e?.type === "string_literal") paths.push(e.text.split('"').join(""))
+                }
+              }
             }
           }
-          return { path, method: methodStr.toUpperCase() }
         }
-        pathMatch_loop: {
-          const first = args.namedChild(0)?.text?.split('"').join("") || "/"
-          path = first || "/"
-          break pathMatch_loop
+        if (paths.length > 0) path = paths[0]
+        if (methodStr !== "ANY") {
+          return { path, method: methodStr }
         }
         return { path, method }
       }
 
-      // leaf-modifier fallback: parse from raw text
+      // leaf-modifier fallback: parse from raw text (leaf `modifiers` node —
+      // no annotation child exists). KAD-MR3 E6b: the two regexes
+      // (/"([^"]*)"/, /RequestMethod\.([A-Za-z]+)/) are replaced with char
+      // walks — the M12/R2 no-regex census contract.
       const afterName = text.slice(mapping.length)
-      const quoted = afterName.match(/"([^"]*)"/)
-      if (quoted) path = quoted[1]
+      const firstQuote = afterName.indexOf('"')
+      if (firstQuote !== -1) {
+        const close = afterName.indexOf('"', firstQuote + 1)
+        if (close !== -1) path = afterName.slice(firstQuote + 1, close)
+      }
       if (mapping !== "@RequestMapping") return { path, method }
-      const reqMethod = afterName.match(/RequestMethod\.([A-Za-z]+)/)
-      return { path, method: reqMethod ? reqMethod[1].toUpperCase() : "ANY" }
+      const rmIdx = afterName.indexOf("RequestMethod.")
+      if (rmIdx !== -1) {
+        let end = rmIdx + "RequestMethod.".length
+        while (end < afterName.length) {
+          const ch = afterName[end]!
+          const isAlpha = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z")
+          if (!isAlpha) break
+          end++
+        }
+        const mname = afterName.slice(rmIdx + "RequestMethod.".length, end)
+        if (mname) return { path, method: mname.toUpperCase() }
+      }
+      return { path, method: "ANY" }
     }
     return {}
   }
@@ -1053,6 +1232,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     content: string,
+    rootNode?: Node,
   ): string[] {
     const patterns: string[] = []
 
@@ -1072,14 +1252,43 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (hasSealed) patterns.push("Sealed Classes")
     if (hasExtension) patterns.push("Extension Functions")
     if (hasSuspend) patterns.push("Coroutines")
-    if (stringIncludes(content, "?") || stringIncludes(content, "!!") || stringIncludes(content, "?.")) patterns.push("Null Safety")
-    if (stringIncludes(content, "is ") || stringIncludes(content, "as ")) patterns.push("Smart Casts")
-    if (stringIncludes(content, "->") || stringIncludes(content, "let") || stringIncludes(content, "apply")) patterns.push("Higher-Order Functions")
-    if (hasDelegate || stringIncludes(content, "by ")) {
+    // KAD-MR3 K10 (M49.K1 wave): text.includes("?")/"is "/"->"/"let"/"by "
+    // matched COMMENTS, STRINGS and IDENTIFIERS — probe: "// this is a test"
+    // fabricated Smart Casts; a method named `letIt` fabricated Higher-Order
+    // Functions. Every textual flag is now gated on the AST node the pattern
+    // actually means (probed grammar shapes: check_expression = is/!is,
+    // navigation + quest = ?., postfix ! - = !!, elvis_expression = ?:,
+    // lambda_literal/anonymous_function = lambdas, delegation_specifier
+    // text containing " by " = delegation).
+    const astHas = new Map<string, boolean>()
+    const scanAst = (n: Node): void => {
+      switch (n.type) {
+        case "check_expression": astHas.set("is", true); break
+        case "elvis_expression": astHas.set("elvis", true); break
+        case "lambda_literal":
+        case "anonymous_function": astHas.set("lambda", true); break
+      }
+      if (n.type === "navigation_expression") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          if (n.namedChild(i)?.type === "quest") astHas.set("nullsafe", true)
+        }
+      }
+      if (n.type === "postfix_expression" && n.text.endsWith("!!")) astHas.set("notnull", true)
+      if (n.type === "delegation_specifier" && stringIncludes(n.text, " by ")) astHas.set("by", true)
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) scanAst(c)
+      }
+    }
+    if (rootNode) scanAst(rootNode)
+    if (astHas.get("nullsafe") || astHas.get("notnull") || astHas.get("elvis")) patterns.push("Null Safety")
+    if (astHas.get("is")) patterns.push("Smart Casts")
+    if (astHas.get("lambda")) patterns.push("Higher-Order Functions")
+    if (hasDelegate || astHas.get("by")) {
       patterns.push("Delegation")
       patterns.push("Property Delegation")
     }
-    if (stringIncludes(content, "buildString {") || stringIncludes(content, ".() ->")) patterns.push("DSL Patterns")
+    if (stringIncludes(content, "buildString {")) patterns.push("DSL Patterns")
     if (stringIncludes(content, "@GetMapping") || stringIncludes(content, "@PostMapping") || stringIncludes(content, "@RequestMapping")) patterns.push("REST API")
     if (hasCompanion) patterns.push("Companion Objects")
     if (hasOperator) patterns.push("Operator Overloading")
@@ -1092,26 +1301,33 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let paramsNode = this.findChildByType(node, ["function_value_parameters"])
     if (!paramsNode) return parameters
+    // KAD-MR3 K9 (grammar-probe decisive): default expressions are SIBLINGS
+    // of `parameter` nodes inside function_value_parameters — children
+    // ALTERNATE [parameter, default?, parameter, default?...]. A default is
+    // any non-parameter child following a parameter (call_expression,
+    // string_literal, null_literal, prefix_expression, ...). The old fix
+    // (namedChildCount>2 on the parameter) never fired — and the original
+    // 4-literal whitelist silently reported isOptional:false on defaulted
+    // params like `= compute()`, `= null`, `= -1`.
+    const kids: Node[] = []
     for (let i = 0; i < paramsNode.namedChildCount; i++) {
-      const paramNode = paramsNode.namedChild(i)
-      if (paramNode && paramNode.type === "parameter") {
-        const nameNode = this.findChildByType(paramNode, ["simple_identifier"])
-        const typeNode = this.findChildByType(paramNode, ["user_type", "nullable_type", "type_identifier"])
-        const defaultNode = this.findChildByType(paramNode, [
-          "string_literal",
-          "integer_literal",
-          "real_literal",
-          "boolean_literal",
-        ])
-
-        if (nameNode) {
-          parameters.push({
-            name: nameNode.text,
-            type: typeNode ? this.cleanKotlinType(typeNode.text) : undefined,
-            isOptional: !!defaultNode,
-            defaultValue: defaultNode ? defaultNode.text : undefined,
-          })
-        }
+      const c = paramsNode.namedChild(i)
+      if (c) kids.push(c)
+    }
+    for (let i = 0; i < kids.length; i++) {
+      const paramNode = kids[i]!
+      if (paramNode.type !== "parameter") continue
+      const next = kids[i + 1]
+      const defaultNode = next && next.type !== "parameter" ? next : null
+      const nameNode = this.findChildByType(paramNode, ["simple_identifier"])
+      const typeNode = this.findChildByType(paramNode, ["user_type", "nullable_type", "type_identifier"])
+      if (nameNode) {
+        parameters.push({
+          name: nameNode.text,
+          type: typeNode ? this.cleanKotlinType(typeNode.text) : undefined,
+          isOptional: !!defaultNode,
+          defaultValue: defaultNode ? defaultNode.text : undefined,
+        })
       }
     }
     return parameters
@@ -1149,7 +1365,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (md.evidenceClass) continue
       const t = String(r.type ?? r.relationshipType ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
-      if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "contains" || t === "exports") {
+        // KAD-MR3 K18: contains edges whose own emitter labeled them
+        // "heuristic" (the compose PascalCase guess) keep that label — the
+        // old blanket "structural" made a naming heuristic indistinguishable
+        // from verified containment. Verified contains edges still default
+        // to structural.
+        md.evidenceClass = md.relationshipType === "compose_ui_tree" ? "heuristic" : "structural"
+        continue
+      }
       if (t === "references") {
         // isImportDep: kotlin/scala import edges carry this flag (M14 #419
         // K8 — the JVM-family tier bug: the classifier only recognized
@@ -1346,7 +1570,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (parameters[i].defaultValue !== undefined) { hasDefaults = true; break; }
     }
 
-    const constructorName = "constructor"
+    // KAD-MR3 K11 (M49.K1): the symbol KEEPS ITS DECLARED NAME (the class
+    // name) — the java C3 family convention. The pre-fix "constructor"
+    // literal collided across classes (contains:A->constructor and
+    // contains:B->constructor indistinguishable; every ctor overload
+    // collapsed into one symbol per class). The kind field still says
+    // Constructor; overload distinctness comes from the parameters payload.
+    // The self-contains edge A->A is family-normal (java post-C3 emits it
+    // identically).
+    const constructorName = parentClass || "constructor"
     const symbol: ASTEngine.UniversalSymbol = {
       name: constructorName,
       kind: ASTEngine.SymbolKind.Constructor,
@@ -1457,13 +1689,18 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       return this.cleanKotlinType(typeNode.text)
     }
 
-    // Check for lambda return type
-    const functionBody = node.childForFieldName("body")
-    if (stringIncludes(functionBody?.text || "", "->")) {
-      return "() -> Unit" // Lambda type
+    // KAD-MR3 K3 (M49.K1): expression-body return types are NOT inferable —
+    // `fun f() = 42` reports Int only after full type resolution. The old
+    // fallback returned "Unit" for EVERY expression body (probe: f()=42 ->
+    // Unit) and sniffed "->" in body TEXT (misfires on when-arrows/lambdas).
+    // Grammar probe: this pinned wasm exposes NO named fields
+    // (childForFieldName("body") is null) — find the body by TYPE.
+    // Honest contract: expression body without a declared type → undefined
+    // (unknown, never fabricated Unit); block body → Unit (Kotlin semantics).
+    const functionBody = this.findChildByType(node, ["function_body"])
+    if (functionBody && !functionBody.text.startsWith("{")) {
+      return undefined
     }
-
-    // Check for Unit return type (default in Kotlin)
     return "Unit"
   }
 
@@ -1708,12 +1945,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
-  private getCallFunctionName(node: Node): string | undefined {
-    const fn = node.childForFieldName?.("function")
-    if (fn) return fn.text
-    const first = node.namedChild(0)
-    return first && /identifier|navigation_expression|field_expression/.test(first.type) ? first.text : undefined
-  }
+  // KAD-MR3 K13 (M49.K1): getCallFunctionName, extractKotlinAnnotationArguments
+  // and extractKotlinAnnotationTarget were dead (grep-proven zero call sites) —
+  // deleted. extractKotlinAnnotationArguments's arg-walk lives on in the
+  // E6 route extractor as a real consumer.
 
   private extractTypeParameters(node: Node, ctx: KotlinContext): string[] {
     const typeParameters: string[] = []
@@ -1737,69 +1972,63 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     return typeParameters
   }
   /**
-   * Kotlin Method Counting
+   * Kotlin Method Counting — DIRECT members only.
+   * KAD-MR3 K14 (M49.K1): the subtree-wide count misattributed nested
+   * structure — a nested class's members inflated the OUTER class's counts
+   * (class Outer { class Nested { fun nm() } } reported methodCount=2 for
+   * Outer). Probed containers: class/object bodies are class_body, enum
+   * members live in enum_class_body.
    */
   private countMethods(node: Node, ctx: KotlinContext): number {
     let count = 0
-
-    const stack: Node[] = [node]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "function_declaration") {
-        count++
-      }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const child = n.namedChild(i)
-        if (child) stack.push(child)
+    for (const bt of ["class_body", "enum_class_body"]) {
+      const body = this.findChildByType(node, [bt])
+      if (!body) continue
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const m = body.namedChild(i)
+        if (m?.type === "function_declaration") count++
       }
     }
-
     return count
   }
 
   /**
-   * Kotlin Property Counting
+   * Kotlin Property Counting — DIRECT members only (KAD-MR3 K14, see
+   * countMethods). Companion-object properties belong to the companion, not
+   * the outer class.
    */
   private countProperties(node: Node, ctx: KotlinContext): number {
     let count = 0
-    const stack: Node[] = [node]
-
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "property_declaration") {
-        count++
-      }
-
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const child = n.namedChild(i)
-        if (child) stack.push(child)
+    for (const bt of ["class_body", "enum_class_body"]) {
+      const body = this.findChildByType(node, [bt])
+      if (!body) continue
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const m = body.namedChild(i)
+        if (m?.type === "property_declaration") count++
       }
     }
-
     return count
   }
 
   /**
-   * Kotlin Companion Object Detection
+   * Kotlin Companion Object Detection — DIRECT member of THIS type only
+   * (KAD-MR3 K14: the subtree-wide scan credited a nested class's companion
+   * to the outer class).
    */
   private hasCompanionObject(node: Node, ctx: KotlinContext): boolean {
-    const stack: Node[] = [node]
-
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "object_declaration") {
-        const modifiers = this.extractModifiers(n, ctx)
+    for (const bt of ["class_body", "enum_class_body"]) {
+      const body = this.findChildByType(node, [bt])
+      if (!body) continue
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const m = body.namedChild(i)
+        if (m?.type !== "companion_object" && m?.type !== "object_declaration") continue
+        if (m.type === "companion_object") return true
+        const modifiers = this.extractModifiers(m, ctx)
         for (let j = 0; j < modifiers.length; j++) {
           if (modifiers[j] === "companion") return true
         }
       }
-
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const child = n.namedChild(i)
-        if (child) stack.push(child)
-      }
     }
-
     return false
   }
 
@@ -2092,7 +2321,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const resolveSource = (start: Node | null): string => {
       let p: Node | null = start
       while (p) {
-        if (p.type === "secondary_constructor" || p.type === "primary_constructor") return "constructor"
+        // KAD-MR3 K11: same class-name attribution as the call graph — uses
+        // inside ctors/init blocks belong to the class-named ctor symbol.
+        if (p.type === "secondary_constructor" || p.type === "primary_constructor") {
+          const cls = p.parent
+          const clsName = cls ? this.findChildByType(cls, ["type_identifier", "simple_identifier"])?.text : undefined
+          return clsName ?? "constructor"
+        }
         if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
           const name = this.findChildByType(p, ["simple_identifier", "type_identifier"])
           if (name) return name.text
@@ -2514,6 +2749,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                   metadata: {
                     relationshipType: "compose_ui_tree",
                     isUiComponent: true,
+                    // KAD-MR3 K18/K4 (M49.K1): a PascalCase-name heuristic is
+                    // NOT verified containment — the tier classifier stamped
+                    // every contains edge "structural" (probe: Intent(...)
+                    // identical to Text(...)). Honest label: heuristic — same
+                    // tier as a 0.5 override guess. The compose edge keeps
+                    // its 0.8 (patterns.ts filters >=0.7), but consumers can
+                    // now distinguish it from verified containment.
+                    evidenceClass: "heuristic",
                   },
                 })
               }
@@ -2612,16 +2855,24 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           // PLUS a sibling wildcard_import node — the identifier text never
           // contains '.*', so a suffix test can never fire.
           const isWildcard = !!this.findChildByType(n, ["wildcard_import"])
+          // KAD-MR3 K7 (M49.K1): the pinned wasm serializes the alias node's
+          // TEXT as "as Baz" — the keyword is glued to the identifier. The
+          // real alias is the node's LAST named child (type_identifier "Baz",
+          // probe-verified); the raw text leaked "as Baz" into items AND
+          // metadata.alias.
+          const aliasText = aliasNode
+            ? (aliasNode.namedChild(aliasNode.namedChildCount - 1)?.text ?? aliasNode.text)
+            : undefined
 
           imports.push({
             module: importPath,
-            items: isWildcard ? ["*"] : [aliasNode ? aliasNode.text : importPath.split(".").pop() || importPath],
+            items: isWildcard ? ["*"] : [aliasText ?? (importPath.split(".").pop() || importPath)],
             isDefaultImport: false,
             isNamespaceImport: isWildcard,
             range: this.nodeToRange(n),
             metadata: {
               isKotlinImport: true,
-              alias: aliasNode ? aliasNode.text : undefined,
+              alias: aliasText,
             },
           })
         }
@@ -2634,37 +2885,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private performKotlinTypeInference(
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-  ): any {
-    const inferences: Record<string, string> = {}
-    let count = 0
-
-    for (const sym of symbols) {
-      if (sym.kind === ASTEngine.SymbolKind.Variable && !sym.returnType) {
-        if (sym.name.startsWith("is") || sym.name.startsWith("has")) {
-          sym.returnType = "Boolean"
-          inferences[sym.name] = "Boolean"
-          count++
-        } else {
-          let hasState = false
-          if (sym.qualified_calls) {
-            for (let j = 0; j < sym.qualified_calls.length; j++) {
-              const c = sym.qualified_calls[j]
-              if (c === "mutableStateOf" || c === "remember") { hasState = true; break; }
-            }
-          }
-          if (hasState) {
-            sym.returnType = "MutableState"
-            inferences[sym.name] = "MutableState"
-            count++
-          }
-        }
-      }
-    }
-    return { inferred: count > 0, count, details: inferences }
-  }
+  // KAD-MR3 K6 (M49.K1): performKotlinTypeInference was DEAD MACHINERY — it
+  // gated on SymbolKind.Variable, but the extractor emits Property symbols
+  // and no Variable kind, so every branch (is/has→Boolean,
+  // remember/mutableStateOf→MutableState) was unreachable (probe: kinds
+  // [class, method], zero Variables). Deleted rather than fed — fabricating
+  // return types from NAME PREFIXES ("isValid→Boolean") is a guessing
+  // heuristic masquerading as inference. metadata.hasTypeInference stays
+  // (declared-type extraction IS real inference input).
 
   private getKotlinFrameworkPatterns(frameworks: string[], symbols: ASTEngine.UniversalSymbol[]): any[] {
     const patterns: any[] = []
