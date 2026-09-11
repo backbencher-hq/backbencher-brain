@@ -16,6 +16,14 @@ const sha = (s: string) => createHash("sha256").update(s).digest("hex")
 
 process.env.BB_DATA_DIR = mkdtempSync(join(tmpdir(), "bb-m51-a1-mutant-"))
 process.env.BB_LOG_LEVEL = "3"
+// M54.P1: this mutation resurrects the PRE-M51 writer, which also ran with FK
+// enforcement OFF (bun default before M54). Under the M54 policy the phantom-
+// sourced contains edges this mutant writes are rejected at write time (the
+// store batch rolls back — that rejection is exactly what M54's own gate S2
+// proves), so the A1 counting mutation must run under the legacy posture to
+// keep its original contract: without A1's guards, phantom owner ids appear
+// in stored rows.
+process.env.BB_FK_ENFORCE = "0"
 
 let restored = false
 let result: { colonZero: number; orphans: number } | null = null

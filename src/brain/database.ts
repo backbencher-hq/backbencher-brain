@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -74,6 +74,10 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // M52.P1 (#721): the bb_health covering index must exist on pre-existing
       // DBs too — they are exactly the large, long-lived indexes that need it.
       ensureHealthIndexes(raw)
+      // M54.P1 (#727): heal FK-OFF-era orphan rows (bun wrote them for years;
+      // measured 4,154 on the real repo) BEFORE any write path runs under the
+      // now-enabled enforcement. Idempotent; conforming DBs delete 0 rows.
+      cleanupOrphanedFkRows(raw)
       // M28.A1: the annotation store must exist on pre-existing DBs too
       // (additive, idempotent) — bb_annotate writes where every editor reads.
       ensureAnnotationTable(raw)
@@ -133,8 +137,14 @@ export namespace BrainDatabase {
       evictStaleRawHandle(dbPath)
     }
     if (drizzleInstances.has(projectId)) return drizzleInstances.get(projectId)
-    const raw = rawInstances.get(dbPath) ?? openDatabase(dbPath)
+    const cachedRaw = rawInstances.get(dbPath)
+    const raw = cachedRaw ?? openDatabase(dbPath)
     ensureSchemaIfNew(raw)
+    // M54.P1: the FK heal is a join-scan over every symbol/relationship row —
+    // run it only when this process actually OPENED the file, not on every
+    // uncached-drizzle call (M52 lesson: per-call scans are how bb_health hit
+    // 37s). A DB dirtied by a later FK-OFF window is healed at next open.
+    if (!cachedRaw) cleanupOrphanedFkRows(raw)
     rawInstances.set(dbPath, raw)
     const drizzleDb = await buildDrizzle(raw)
     drizzleInstances.set(projectId, drizzleDb)

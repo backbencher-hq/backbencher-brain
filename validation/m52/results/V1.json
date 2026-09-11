@@ -1,8 +1,8 @@
 {
   "gate": "M52.V1",
   "issue": 723,
-  "at": "2026-09-10T03:21:53.830Z",
-  "commit": "3dea797269016a3504eeacef9b8961963295da1b",
+  "at": "2026-09-11T01:53:56.523Z",
+  "commit": "1a9255da6e5521678a384b5f24ef5c5813de4c3c",
   "rig": {
     "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
     "dbBytes": 186888192,
@@ -10,28 +10,28 @@
   },
   "parity": {
     "modelRows": {
-      "legacyMs": 3,
-      "m52Ms": 2,
+      "legacyMs": 2,
+      "m52Ms": 1,
       "equal": true
     },
     "entities": {
-      "legacyMs": 8,
-      "m52Ms": 2,
+      "legacyMs": 11,
+      "m52Ms": 3,
       "equal": true,
       "value": 6907
     },
     "languageRows": {
-      "legacyMs": 20,
-      "m52Ms": 7,
+      "legacyMs": 26,
+      "m52Ms": 6,
       "multisetEqual": true,
       "orderContract": true,
       "rows": 6
     }
   },
   "latency": {
-    "initMs": 397,
-    "coldMs": 74,
-    "warmMs": 51,
+    "initMs": 559,
+    "coldMs": 79,
+    "warmMs": 44,
     "budgetMs": 2000,
     "baselineMs": 37000
   },
