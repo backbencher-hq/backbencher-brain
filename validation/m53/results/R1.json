@@ -3,8 +3,8 @@
   "code": "R1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 35,
-  "failed": 5,
+  "passed": 36,
+  "failed": 4,
   "gatesTotal": 40,
   "gates": [
     {
@@ -32,7 +32,7 @@
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (36/37 passed, 3 negative)",
+      "verdict": "KNOWN-GAP (35/37 passed, 3 negative)",
       "ok": false
     },
     {
@@ -94,9 +94,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (49/50 passed, 3 negative)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (50/50 passed, 3 negative)",
+      "ok": true
     },
     {
       "name": "m27-nvim",
@@ -193,7 +193,7 @@
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (27/32 passed, 3 negatives)",
+      "verdict": "KNOWN-GAP (28/32 passed, 3 negatives)",
       "ok": false
     },
     {
@@ -288,7 +288,7 @@
       "ok": false
     }
   ],
-  "currentCommit": "ed9048a5a8a9255aa8bdcd59c23f6b5a8ddcaffb",
+  "currentCommit": "752b4a43e1ffcd5185df5adf90c2cd07d8863f52",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-11T18:28:14.722Z"
+  "generatedAt": "2026-09-11T20:50:21.755Z"
 }

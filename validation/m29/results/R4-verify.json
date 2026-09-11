@@ -11,9 +11,9 @@
     "mutantsTotal": 6,
     "ok": true
   },
-  "currentCommit": "fe8ace012d436be2248f41e7926c8d9a0ad9f28f",
+  "currentCommit": "752b4a43e1ffcd5185df5adf90c2cd07d8863f52",
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "evidenceFile": "R4-verify.json",
-  "generatedAt": "2026-09-11T20:13:25.980Z",
+  "generatedAt": "2026-09-11T20:44:58.767Z",
   "details": []
 }
