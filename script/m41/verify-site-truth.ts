@@ -10,6 +10,7 @@
 
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -190,7 +191,10 @@ check("T2: notes contain no phantom keys", PHANTOMS.every((p) => !noteKeys.inclu
 // hand-typed claim cannot survive this verifier.
 if (buildOk) {
   const heroPath = path.join(SITE, "src/components/HeroSection.tsx")
-  const heroBackup = `${heroPath}.t2bak`
+  // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
+  // `git commit -a` on the shared checkout once swept the in-repo backup AND
+  // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
+  const heroBackup = path.join(tmpdir(), `hero-t2bak-${process.pid}.tsx`)
   cpSync(heroPath, heroBackup)
   let mutantCaught = false
   let mutantDetail = ""
