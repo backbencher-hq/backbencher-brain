@@ -2,9 +2,10 @@
 //
 // Machine-checks that the verified session films are actually consumed by the
 // website (not just sitting in validation/):
-//   1. Hero embed: HeroFilm exists, references BOTH film files' scenario
-//      contract (poster, muted/loop/playsInline, reduced-motion fallback),
-//      and HeroSection actually renders it.
+//   1. Hero figure: HeroTerminal exists, renders REAL verbatim CLI output,
+//      and HeroSection actually renders it. The hero is VIDEO-FREE by owner
+//      decision (2026-09-12, after five rejected film attempts): the videos
+//      live on /demos only. Reduced-motion reveal disabled via CSS.
 //   2. /demos page: exists, renders both films, captions bind to the capture
 //      manifests (never hand-typed claims), and the page links the evidence.
 //   3. Discovery: /demos is reachable from Navigation and SiteFooter, and the
@@ -12,11 +13,11 @@
 //   4. Assets: both mp4s + posters exist in website/public/demos with size
 //      floors (a zero-byte or truncated copy fails).
 //   5. Gates extended honestly: M41 SEO route list contains /demos; M41 design
-//      gate accepts the film hero.
+//      gate accepts the live terminal hero.
 //   6. Build truth: the Next build output contains the /demos route.
-//   7. Six planted mutations prove the checks can fail (removed poster attr,
-//      hand-typed caption replacing the manifest reference, dropped sitemap
-//      route, deleted mp4, nav link removed, autoplay unmuted).
+//   7. Six planted mutations prove the checks can fail (zero-byte mp4,
+//      verbatim line replaced, hero figure unrendered, dropped sitemap
+//      route, manifest binding removed, nav link removed).
 //
 // Run: npx tsx script/m45/verify-site-embed.ts
 // Evidence: validation/m45/results/T1.json
@@ -44,15 +45,17 @@ function read(p: string): string {
   return existsSync(p) ? readFileSync(p, "utf8") : ""
 }
 
-// --- 1. hero embed ----------------------------------------------------------------
+// --- 1. hero figure (video-free by owner decision) ----------------------------------
 
-const heroFilm = read(path.join(SITE, "src/components/HeroFilm.tsx"))
-check("T1: HeroFilm component exists", heroFilm.length > 200)
-check("T1: hero video uses the poster frame", heroFilm.includes('"/demos/hero-poster.jpg"'))
-check("T1: hero video is muted (no sound, ever)", /muted/.test(heroFilm))
-check("T1: hero video loops and plays inline", heroFilm.includes("loop") && heroFilm.includes("playsInline"))
-check("T1: reduced-motion fallback pauses autoplay", heroFilm.includes("prefers-reduced-motion"))
-check("T1: HeroSection renders the film (static figure replaced)", read(path.join(SITE, "src/components/HeroSection.tsx")).includes("<HeroFilm />"))
+const heroTerminal = read(path.join(SITE, "src/components/HeroTerminal.tsx"))
+const heroSection = read(path.join(SITE, "src/components/HeroSection.tsx"))
+const globals = read(path.join(SITE, "src/app/globals.css"))
+check("T1: HeroTerminal component exists", heroTerminal.length > 200)
+check("T1: hero terminal shows verbatim CLI output (not invented)", heroTerminal.includes('"bb --version"') && heroTerminal.includes("Usage: bb [options] [command]"))
+check("T1: hero figure is video-free (owner decision 2026-09-12)", !heroSection.includes("<video") && !heroSection.includes("HeroFilm"))
+check("T1: HeroSection renders the live terminal", heroSection.includes("<HeroTerminal />"))
+check("T1: reduced-motion reveals all lines instantly (CSS gate)", globals.includes(".hero-line") && /reduce\)/.test(globals))
+check("T1: /demos still consumes the real session films", read(path.join(SITE, "src/app/demos/page.tsx")).includes("hero-cut.mp4"))
 
 // --- 2. /demos page ----------------------------------------------------------------
 
@@ -80,7 +83,7 @@ for (const f of ["hero-cut.mp4", "hero-cut-money.mp4", "hero-poster.jpg", "hero-
 // --- 5. gates extended honestly -----------------------------------------------------
 
 check("T1: M41 SEO gate route list extended with /demos", read(path.join(ROOT, "script/m41/verify-seo.ts")).includes('"/demos"'))
-check("T1: M41 design gate accepts the film hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("HeroFilm"))
+check("T1: M41 design gate accepts the live terminal hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("HeroTerminal"))
 
 // --- 6. build truth -------------------------------------------------------------------
 
@@ -112,7 +115,8 @@ function mutated(mutator: (s: string) => string, source: string, name: string, p
   }
 }
 
-// asset deletion mutant: a missing/zero-byte mp4 must fail the size floor
+// /demos still carries the films; the zero-byte mutant guards against a
+// truncated copy of the REAL evidence reaching the site.
 const mp4 = path.join(SITE, "public/demos/hero-cut.mp4")
 const { unlinkSync } = await import("node:fs")
 const mp4Orig = readFileSync(mp4)
@@ -125,8 +129,8 @@ try {
   if (existsSync(mp4 + ".probe")) unlinkSync(mp4 + ".probe")
 }
 
-mutated((s) => s.replace('"/demos/hero-poster.jpg"', '"/demos/missing-poster.jpg"'), path.join(SITE, "src/components/HeroFilm.tsx"), "T1-mutant: hero poster attr removed fails", (s) => s.includes('"/demos/hero-poster.jpg"'))
-mutated((s) => s.replace("\n        muted", "\n        // muted"), path.join(SITE, "src/components/HeroFilm.tsx"), "T1-mutant: unmuted autoplay fails", (s) => /[^\/]muted/.test(s) && !s.includes("// muted"))
+mutated((s) => s.replace("Usage: bb [options] [command]", "Usage: invented [fake] [lines]"), path.join(SITE, "src/components/HeroTerminal.tsx"), "T1-mutant: verbatim output replaced fails", (s) => s.includes("Usage: bb [options] [command]"))
+mutated((s) => s.replace("<HeroTerminal />", "{null}"), path.join(SITE, "src/components/HeroSection.tsx"), "T1-mutant: unrendered hero figure fails", (s) => s.includes("<HeroTerminal />"))
 mutated((s) => s.replace('"/demos"', '"/demoz"'), path.join(SITE, "src/app/sitemap.ts"), "T1-mutant: sitemap route dropped fails", (s) => s.includes('"/demos"'))
 mutated((s) => s.replace("capture-manifest.json", "captre-manifest.json"), path.join(SITE, "src/app/demos/page.tsx"), "T1-mutant: manifest binding removed fails", (s) => s.includes("capture-manifest.json"))
 mutated((s) => s.replace("'/demos'", "'/demoz'"), path.join(SITE, "src/components/Navigation.tsx"), "T1-mutant: nav link removed fails", (s) => s.includes("'/demos'"))
