@@ -24,6 +24,8 @@ export interface QualityOptions {
   maxFiles?: number
   /** bytes cap per content read to bound cost. default 64KB */
   maxBytes?: number
+  /** Scope the report to test files under this project-relative path prefix. */
+  filePath?: string
 }
 
 type Dim = {
@@ -55,21 +57,28 @@ function clamp01(x: number): number {
 export async function testQuality(projectId: ProjectID, options: QualityOptions = {}): Promise<TestQualityReport> {
   const maxFiles = options.maxFiles ?? 50
   const maxBytes = options.maxBytes ?? 64 * 1024
+  // Optional scope: test files under a project-relative path prefix, applied
+  // at the SQL layer so a scoped call reads less, not post-filtered. Neither
+  // statement here aliases brain_file, so the predicate uses the bare column
+  // (unambiguous — brain_import has no relative_path).
+  const scopeSql = options.filePath ? " AND relative_path LIKE ? ESCAPE '\\'" : ""
+  const scopeParams: string[] = options.filePath ? [options.filePath.replace(/[\\%_]/g, (c) => "\\" + c).replace(/\/+$/, "") + "/%"] : []
 
   const raw = await BrainDatabase.getRawInstance(projectId)
 
   // All test files for this project, with absolute path + language.
   const files = raw.prepare(
     "SELECT id, relative_path AS rel, path, language, COALESCE(line_count,0) AS lines " +
-      "FROM brain_file WHERE project_id = ? AND COALESCE(is_test_file,0) = 1 ORDER BY relative_path",
-  ).all(projectId) as Array<{ id: string; rel: string; path: string; language: string | null; lines: number }>
+      "FROM brain_file WHERE project_id = ? AND COALESCE(is_test_file,0) = 1" + scopeSql + " ORDER BY relative_path",
+  ).all(projectId, ...scopeParams) as Array<{ id: string; rel: string; path: string; language: string | null; lines: number }>
 
   // Import/mock/relationship evidence per test file (from the graph).
+  // Scoped together with the file set so evidence and files always agree.
   const importRows = raw.prepare(
     "SELECT f.id AS fileId, COALESCE(i.import_path, '') AS target " +
       "FROM brain_file f JOIN brain_import i ON i.file_id = f.id AND i.project_id = f.project_id " +
-      "WHERE f.project_id = ? AND COALESCE(f.is_test_file,0) = 1",
-  ).all(projectId) as Array<{ fileId: string; target: string }>
+      "WHERE f.project_id = ? AND COALESCE(f.is_test_file,0) = 1" + scopeSql,
+  ).all(projectId, ...scopeParams) as Array<{ fileId: string; target: string }>
 
   const fileImports = new Map<string, string[]>()
   const fileMockImport = new Set<string>()
