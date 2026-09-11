@@ -1,5 +1,4 @@
 {
-  "language": "python",
   "checks": [
     {
       "ok": true,
@@ -14,7 +13,7 @@
     {
       "ok": true,
       "name": "S6: client initialized",
-      "detail": "table: 0x7295c3f5c3e0"
+      "detail": "table: 0x700e9a306ba8"
     },
     {
       "ok": true,
@@ -53,242 +52,59 @@
     }
   ],
   "session": [],
+  "language": "python",
   "raw": {
-    "documentSymbol": [
-      {
-        "data": {
-          "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:Greeter:5",
-          "notIndexed": false,
-          "evidenceTier": "indexed"
-        },
-        "children": [
-          {
-            "data": {
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:__init__:8",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "children": [],
-            "detail": "__init__",
-            "name": "__init__",
-            "range": {
-              "start": {
-                "line": 7,
-                "character": 4
-              },
-              "end": {
-                "line": 8,
-                "character": 26
-              }
-            },
-            "selectionRange": {
-              "start": {
-                "line": 7,
-                "character": 4
-              },
-              "end": {
-                "line": 8,
-                "character": 26
-              }
-            },
-            "kind": 6
-          },
-          {
-            "data": {
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:items:9",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "children": [],
-            "detail": "items",
-            "name": "items",
-            "range": {
-              "start": {
-                "line": 8,
-                "character": 13
-              },
-              "end": {
-                "line": 8,
-                "character": 18
-              }
-            },
-            "selectionRange": {
-              "start": {
-                "line": 8,
-                "character": 13
-              },
-              "end": {
-                "line": 8,
-                "character": 18
-              }
-            },
-            "kind": 10
-          },
-          {
-            "data": {
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:greet:11",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "children": [],
-            "detail": "greet",
-            "name": "greet",
-            "range": {
-              "start": {
-                "line": 10,
-                "character": 4
-              },
-              "end": {
-                "line": 11,
-                "character": 41
-              }
-            },
-            "selectionRange": {
-              "start": {
-                "line": 10,
-                "character": 4
-              },
-              "end": {
-                "line": 11,
-                "character": 41
-              }
-            },
-            "kind": 6
-          },
-          {
-            "data": {
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:main:15",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "children": [],
-            "detail": "main",
-            "name": "main",
-            "range": {
-              "start": {
-                "line": 14,
-                "character": 0
-              },
-              "end": {
-                "line": 17,
-                "character": 23
-              }
-            },
-            "selectionRange": {
-              "start": {
-                "line": 14,
-                "character": 0
-              },
-              "end": {
-                "line": 17,
-                "character": 23
-              }
-            },
-            "kind": 12
-          },
-          {
-            "data": {
-              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:CONSTANT:21",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "children": [],
-            "detail": "CONSTANT",
-            "name": "CONSTANT",
-            "range": {
-              "start": {
-                "line": 20,
-                "character": 0
-              },
-              "end": {
-                "line": 20,
-                "character": 8
-              }
-            },
-            "selectionRange": {
-              "start": {
-                "line": 20,
-                "character": 0
-              },
-              "end": {
-                "line": 20,
-                "character": 8
-              }
-            },
-            "kind": 13
-          }
-        ],
-        "detail": "Greeter",
-        "name": "Greeter",
-        "range": {
-          "start": {
-            "line": 4,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 41
-          }
-        },
-        "selectionRange": {
-          "start": {
-            "line": 4,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 41
-          }
-        },
-        "kind": 5
-      }
-    ],
     "definition": {
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
       "range": {
-        "start": {
-          "line": 10,
-          "character": 4
-        },
         "end": {
-          "line": 11,
-          "character": 41
+          "character": 41,
+          "line": 11
+        },
+        "start": {
+          "character": 4,
+          "line": 10
         }
-      }
+      },
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py"
     },
-    "workspaceAbsence": [],
     "hover": {
       "contents": {
         "value": "```\npublic method greet([{\"name\":\"self\"}]) → str\n```\n\n**greet** — method, 3 usages\n\nevidence: indexed, structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages**\n1. [Greeter — main.py:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [items — main.py:9](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A8%2C%22character%22%3A13%7D%5D)\n3. [main — main.py:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D))_",
         "kind": "markdown"
       },
-      "range": {
-        "start": {
-          "line": 10,
-          "character": 4
-        },
-        "end": {
-          "line": 11,
-          "character": 41
-        }
-      },
       "provenance": {
-        "source": "bb_index",
-        "stale": false,
-        "engine": "bb_lsp hover@m24.l2",
         "evidenceClass": "indexed",
+        "engine": "bb_lsp hover@m24.l2",
+        "source": "bb_index",
         "limitations": [
           "index-sourced; no compiler-backed types (complement stance)"
-        ]
+        ],
+        "stale": false
+      },
+      "range": {
+        "end": {
+          "character": 41,
+          "line": 11
+        },
+        "start": {
+          "character": 4,
+          "line": 10
+        }
       },
       "data": {
-        "lineStart": 11,
-        "lineEnd": 12,
-        "name": "greet",
+        "usagesSection": "**usages**\n1. [Greeter — main.py:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [items — main.py:9](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A8%2C%22character%22%3A13%7D%5D)\n3. [main — main.py:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)",
+        "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)",
+        "crossLanguageSection": "",
+        "annotationSection": "",
+        "stale": false,
+        "freshnessStatus": "fresh",
         "definition": {
-          "line": 10,
-          "character": 4
+          "character": 4,
+          "line": 10
         },
+        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
+        "lineStart": 11,
+        "name": "greet",
         "qualifiedName": "greet",
         "symbolType": "method",
         "signature": "public method greet([{\"name\":\"self\"}]) → str",
@@ -298,70 +114,254 @@
           "structural"
         ],
         "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
-        "usagesSection": "**usages**\n1. [Greeter — main.py:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [items — main.py:9](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A8%2C%22character%22%3A13%7D%5D)\n3. [main — main.py:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)",
-        "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fpython%2Fmain.py%22%2C%22line%22%3A10%2C%22character%22%3A4%7D%5D)",
-        "crossLanguageSection": "",
-        "annotationSection": "",
-        "stale": false,
-        "freshnessStatus": "fresh",
-        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py"
+        "lineEnd": 12
       }
     },
+    "workspaceAbsence": [],
+    "documentSymbol": [
+      {
+        "range": {
+          "end": {
+            "character": 41,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 4
+          }
+        },
+        "name": "Greeter",
+        "data": {
+          "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:Greeter:5",
+          "evidenceTier": "indexed",
+          "notIndexed": false
+        },
+        "kind": 5,
+        "selectionRange": {
+          "end": {
+            "character": 41,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 4
+          }
+        },
+        "detail": "Greeter",
+        "children": [
+          {
+            "range": {
+              "end": {
+                "character": 26,
+                "line": 8
+              },
+              "start": {
+                "character": 4,
+                "line": 7
+              }
+            },
+            "name": "__init__",
+            "data": {
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:__init__:8",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "kind": 6,
+            "selectionRange": {
+              "end": {
+                "character": 26,
+                "line": 8
+              },
+              "start": {
+                "character": 4,
+                "line": 7
+              }
+            },
+            "detail": "__init__",
+            "children": []
+          },
+          {
+            "range": {
+              "end": {
+                "character": 18,
+                "line": 8
+              },
+              "start": {
+                "character": 13,
+                "line": 8
+              }
+            },
+            "name": "items",
+            "data": {
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:items:9",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "kind": 10,
+            "selectionRange": {
+              "end": {
+                "character": 18,
+                "line": 8
+              },
+              "start": {
+                "character": 13,
+                "line": 8
+              }
+            },
+            "detail": "items",
+            "children": []
+          },
+          {
+            "range": {
+              "end": {
+                "character": 41,
+                "line": 11
+              },
+              "start": {
+                "character": 4,
+                "line": 10
+              }
+            },
+            "name": "greet",
+            "data": {
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:greet:11",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "kind": 6,
+            "selectionRange": {
+              "end": {
+                "character": 41,
+                "line": 11
+              },
+              "start": {
+                "character": 4,
+                "line": 10
+              }
+            },
+            "detail": "greet",
+            "children": []
+          },
+          {
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 17
+              },
+              "start": {
+                "character": 0,
+                "line": 14
+              }
+            },
+            "name": "main",
+            "data": {
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:main:15",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "kind": 12,
+            "selectionRange": {
+              "end": {
+                "character": 23,
+                "line": 17
+              },
+              "start": {
+                "character": 0,
+                "line": 14
+              }
+            },
+            "detail": "main",
+            "children": []
+          },
+          {
+            "range": {
+              "end": {
+                "character": 8,
+                "line": 20
+              },
+              "start": {
+                "character": 0,
+                "line": 20
+              }
+            },
+            "name": "CONSTANT",
+            "data": {
+              "id": "1abd90d83403ff12b318773f0a8fc8c5d0835b28:main.py:CONSTANT:21",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "kind": 13,
+            "selectionRange": {
+              "end": {
+                "character": 8,
+                "line": 20
+              },
+              "start": {
+                "character": 0,
+                "line": 20
+              }
+            },
+            "detail": "CONSTANT",
+            "children": []
+          }
+        ]
+      }
+    ],
     "references": [
       {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
         "range": {
-          "start": {
-            "line": 4,
-            "character": 0
-          },
           "end": {
-            "line": 11,
-            "character": 41
+            "character": 41,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 4
           }
-        }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py"
       },
       {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
         "range": {
-          "start": {
-            "line": 8,
-            "character": 13
-          },
           "end": {
-            "line": 8,
-            "character": 18
+            "character": 18,
+            "line": 8
+          },
+          "start": {
+            "character": 13,
+            "line": 8
           }
-        }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py"
       },
       {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
         "range": {
-          "start": {
-            "line": 14,
-            "character": 0
-          },
           "end": {
-            "line": 17,
-            "character": 23
+            "character": 23,
+            "line": 17
+          },
+          "start": {
+            "character": 0,
+            "line": 14
           }
-        }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py"
       },
       {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py",
         "range": {
-          "start": {
-            "line": 10,
-            "character": 4
-          },
           "end": {
-            "line": 11,
-            "character": 41
+            "character": 41,
+            "line": 11
+          },
+          "start": {
+            "character": 4,
+            "line": 10
           }
-        }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/python/main.py"
       }
     ]
   },
   "status": "verified",
-  "commit": "fe8ace012d436be2248f41e7926c8d9a0ad9f28f"
+  "commit": "752b4a43e1ffcd5185df5adf90c2cd07d8863f52"
 }
