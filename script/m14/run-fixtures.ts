@@ -241,8 +241,21 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
-    for (const want of exp.expectTypeParameters ?? []) {
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+    for (const want of exp.expectSymbolRanges ?? []) {
+      // Vue V1 wave (H3): pin line+byte coherence of a symbol range.
+      // { symbol, ownerName?, startLine?, startColumn?, endLine?, endColumn?,
+      //   startIndex?, endIndex? } — only specified fields are checked.
+      const sym = symbols.find((s: any) => s.name === want.symbol &&
+        (want.ownerName === undefined || (s as any).ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectSymbolRanges: symbol ${want.symbol} not found`); continue }
+      const range: any = (sym as any).range ?? {}
+      for (const k of ["startLine", "startColumn", "endLine", "endColumn", "startIndex", "endIndex"]) {
+        if ((want as any)[k] !== undefined && range[k] !== (want as any)[k]) {
+          problems.push(`expected ${want.symbol} range ${k}=${JSON.stringify((want as any)[k])}; got ${JSON.stringify(range[k])} (full: ${JSON.stringify(range)})`)
+        }
+      }
+    }
+    for (const want of exp.expectTypeParameters ?? []) {      const sym = symbols.find((s: any) => s.name === want.symbol)
       const tps = (sym?.genericParameters ?? sym?.metadata?.typeParameters ?? [])
       for (const inc of (want.includes ?? [])) {
         if (!tps.some((t) => t === inc || t.includes(inc))) {

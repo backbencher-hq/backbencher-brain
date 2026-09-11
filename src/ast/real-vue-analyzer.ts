@@ -211,6 +211,11 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       const scriptTree: Tree = context!.sfcScriptTrees![bi]
       const scriptStartLine: number = context!.sfcScriptLines![bi]
       const scriptStartColumn: number = context!.sfcScriptCols![bi] ?? 0
+      // H3 (review wave): SFC byte base of this script block — added to
+      // every script-relative startIndex/endIndex so ranges are coherent
+      // across the line and index dimensions. Absent (hand-built contexts,
+      // older callers) it defaults to 0, preserving old behavior exactly.
+      const scriptStartIndex: number = context?.sfcScriptStartIndex?.[bi] ?? 0
       const isTs = context?.sfcScriptLangs?.[bi] === "ts"
       {
       const scriptContent = scriptTree.rootNode?.text ?? ""
@@ -251,6 +256,21 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // file-derived module name — parity with class-based frameworks where
       // the component type itself is a first-class symbol (#383 payload
       // family / cross-language consistency).
+      // M5 (review wave): the sub-analyzer's filtered method symbols carry
+      // the full payload (parameters, return types, qualified calls) that
+      // the Options re-emission below would otherwise drop. Index by bare
+      // name (first wins — same-name collisions across sections are
+      // pathological). Built before extractOptionsApi runs.
+      const defaultPayloads = new Map<string, ASTEngine.UniversalSymbol>()
+      if (defaultObject) {
+        for (const s of sub.symbols ?? []) {
+          if ((s.range.startIndex ?? 0) >= defaultObject.startIndex && (s.range.endIndex ?? 0) <= defaultObject.endIndex &&
+            (s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Function) &&
+            !defaultPayloads.has(s.name)) {
+            defaultPayloads.set(s.name, s)
+          }
+        }
+      }
       if (defaultObject) {
         let componentName = moduleName
         const namePair = defaultObject.namedChildren.find(
@@ -268,12 +288,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: componentName,
             kind: ASTEngine.SymbolKind.Class,
-            range: this.offsetRange(this.nodeToRange(defaultObject), lineOffset, colOffset),
+            range: this.offsetRange(this.nodeToRange(defaultObject), lineOffset, colOffset, scriptStartIndex),
             visibility: "public",
             metadata: { nodeType: "vue_options_component", isOptionsComponent: true },
           })
         }
-        this.extractOptionsApi(defaultObject, componentName, symbols, patterns, lineOffset, colOffset)
+        this.extractOptionsApi(defaultObject, componentName, symbols, patterns, lineOffset, colOffset, defaultPayloads, scriptStartIndex)
       }
 
       // 3b. Merge JS analyzer output, offset to SFC lines, filter:
@@ -287,6 +307,8 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         s.range.startLine += lineOffset
         s.range.endLine += lineOffset
         if (s.range.startLine === 1 + lineOffset) s.range.startColumn += colOffset
+        if (scriptStartIndex && s.range.startIndex !== undefined) s.range.startIndex += scriptStartIndex
+        if (scriptStartIndex && s.range.endIndex !== undefined) s.range.endIndex += scriptStartIndex
         symbols.push(s)
       }
       for (const r of sub.relationships ?? []) {
@@ -296,13 +318,40 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const i of sub.imports ?? []) {
         if (i.range) {
-          i.range.startLine += lineOffset
-          i.range.endLine += lineOffset
+          const shifted = this.shiftScriptRange(i.range, lineOffset, colOffset, scriptStartIndex)
+          i.range.startLine = shifted.startLine
+          i.range.endLine = shifted.endLine
+          i.range.startColumn = shifted.startColumn
+          i.range.endColumn = shifted.endColumn
+          if (shifted.startIndex !== undefined) i.range.startIndex = shifted.startIndex
+          if (shifted.endIndex !== undefined) i.range.endIndex = shifted.endIndex
         }
         imports.push(i)
       }
-      for (const e of sub.exports ?? []) exports.push(e)
-      for (const er of sub.errors ?? []) errors.push(er)
+      for (const e of sub.exports ?? []) {
+        if (e.range) {
+          const shifted = this.shiftScriptRange(e.range, lineOffset, colOffset, scriptStartIndex)
+          e.range.startLine = shifted.startLine
+          e.range.endLine = shifted.endLine
+          e.range.startColumn = shifted.startColumn
+          e.range.endColumn = shifted.endColumn
+          if (shifted.startIndex !== undefined) e.range.startIndex = shifted.startIndex
+          if (shifted.endIndex !== undefined) e.range.endIndex = shifted.endIndex
+        }
+        exports.push(e)
+      }
+      for (const er of sub.errors ?? []) {
+        if (er.range) {
+          const shifted = this.shiftScriptRange(er.range as ASTEngine.UniversalSymbol["range"], lineOffset, colOffset, scriptStartIndex)
+          er.range.startLine = shifted.startLine
+          er.range.endLine = shifted.endLine
+          er.range.startColumn = shifted.startColumn
+          er.range.endColumn = shifted.endColumn
+          if (shifted.startIndex !== undefined) er.range.startIndex = shifted.startIndex
+          if (shifted.endIndex !== undefined) er.range.endIndex = shifted.endIndex
+        }
+        errors.push(er)
+      }
 
       // Script-setup compiler macros carry the component's PUBLIC CONTRACT
       // just like Options-API props/emits - but only the binding Constant
@@ -339,7 +388,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
                 symbols.push({
                   name: pn,
                   kind,
-                  range: this.offsetRange(this.nodeToRange(n), lineOffset, colOffset),
+                  range: this.offsetRange(this.nodeToRange(n), lineOffset, colOffset, scriptStartIndex),
                   scope: moduleName,
                   ownerName: moduleName,
                   ownerKind: ASTEngine.SymbolKind.Class,
@@ -457,6 +506,8 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     patterns: Record<string, boolean>,
     lineOffset: number,
     colOffset: number,
+    payloads?: Map<string, ASTEngine.UniversalSymbol>,
+    indexOffset?: number,
   ): void {
     const memberName = (n: Node): string | undefined => {
       const key = n.childForFieldName("key")
@@ -478,22 +529,43 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (key === "methods" && value) {
         patterns["Options API"] = true
-        this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Method, "method", lineOffset, colOffset)
+        this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Method, "method", lineOffset, colOffset, payloads, indexOffset)
       } else if (key === "computed" && value) {
         patterns["Options API"] = true
-        this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Property, "computed", lineOffset, colOffset)
+        this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Property, "computed", lineOffset, colOffset, payloads, indexOffset)
       } else if (key === "data") {
         // data() is the reactive-state factory
         symbols.push({
           name: "data",
           kind: ASTEngine.SymbolKind.Method,
-          range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset),
+          range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
           scope: componentName,
           ownerName: componentName,
           ownerKind: ASTEngine.SymbolKind.Class,
           visibility: "public",
           metadata: { isOptionsData: true },
         })
+        // H1 (review wave): the KEYS are the reactive state the template
+        // reads — without them `{{ count }}` can never resolve. Two shapes:
+        // Vue-2 object form (`data: { count: 0 }`) reads pairs directly;
+        // factory form (`data() { return {...} }`) reads the first returned
+        // object literal's pairs.
+        const dataValue = child.type === "pair" ? child.childForFieldName("value") : undefined
+        if (dataValue && dataValue.type === "object") {
+          this.emitDataKeys(dataValue, componentName, symbols, lineOffset, colOffset, indexOffset)
+        } else if (child.type === "method_definition") {
+          const returned = this.findReturnedObject(child)
+          if (returned) this.emitDataKeys(returned, componentName, symbols, lineOffset, colOffset, indexOffset)
+        } else if (
+          dataValue && (dataValue.type === "arrow_function" || dataValue.type === "function_expression" || dataValue.type === "function")
+        ) {
+          // D2 (deeper review): `data: () => ({...})` and
+          // `data: function() { return {...} }` — same factory contract,
+          // different syntax. findReturnedObject covers both (expression
+          // bodies via the direct-object rule, block bodies via returns).
+          const returned = this.findReturnedObject(dataValue)
+          if (returned) this.emitDataKeys(returned, componentName, symbols, lineOffset, colOffset, indexOffset)
+        }
       } else if (key === "props") {
         // props: array of names OR object of prop declarations
         const names = this.propNames(value ?? child)
@@ -501,7 +573,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: pn,
             kind: ASTEngine.SymbolKind.Property,
-            range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset),
+            range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
             scope: componentName,
             ownerName: componentName,
             ownerKind: ASTEngine.SymbolKind.Class,
@@ -515,7 +587,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: en,
             kind: ASTEngine.SymbolKind.Event,
-            range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset),
+            range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
             scope: componentName,
             ownerName: componentName,
             ownerKind: ASTEngine.SymbolKind.Class,
@@ -529,13 +601,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // source being watched -> Method symbol owned by the component.
         if (value) {
           patterns["Options API"] = true
-          this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Method, "isWatcher", lineOffset, colOffset)
+          this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Method, "isWatcher", lineOffset, colOffset, payloads, indexOffset)
         }
       } else if (this.isLifecycleHook(key)) {
         symbols.push({
           name: key,
           kind: ASTEngine.SymbolKind.Method,
-          range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset),
+          range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
           scope: componentName,
           ownerName: componentName,
           ownerKind: ASTEngine.SymbolKind.Class,
@@ -546,6 +618,89 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * H1 (review wave): emit one Property symbol per key of a data-state
+   * object (pair ranges, so hover lands on the key). String keys unquoted.
+   */
+  private emitDataKeys(
+    objectNode: Node,
+    componentName: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    lineOffset: number,
+    colOffset: number,
+    indexOffset?: number,
+  ): void {
+    const seen = new Set<string>()
+    for (let i = 0; i < objectNode.namedChildCount; i++) {
+      const child = objectNode.namedChild(i)
+      if (!child || child.type !== "pair") continue
+      const keyNode = child.childForFieldName("key")
+      if (!keyNode) continue
+      const name = keyNode.type === "string" ? unquote(keyNode.text) : keyNode.text
+      if (!name || seen.has(name)) continue
+      seen.add(name)
+      symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Property,
+        range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
+        scope: componentName,
+        ownerName: componentName,
+        ownerKind: ASTEngine.SymbolKind.Class,
+        visibility: "public",
+        metadata: { isDataKey: true },
+      })
+    }
+  }
+
+  /**
+   * H1 (review wave): first `return {...}` object literal under a data()
+   * factory body. Conditional/multiple returns: first wins (documented
+   * approximation — branches are not evaluated). D2 (deeper review):
+   * expression-bodied arrows (`() => ({...})`) carry the object as the
+   * direct body — an object reached with only parenthesized wrappers
+   * between it and an arrow/function start is the body's value, not a
+   * nested construction.
+   */
+  private findReturnedObject(methodNode: Node): Node | undefined {
+    // web-tree-sitter returns FRESH wrapper objects per access — node
+    // identity must be compared by span, never by reference (the KAD2
+    // rule: `p !== methodNode` never matches, so the ancestor walk below
+    // blew past the start node up to the pair and rejected every
+    // expression-bodied arrow).
+    const isStart = (p: Node | null): boolean =>
+      !!p && p.startIndex === methodNode.startIndex && p.endIndex === methodNode.endIndex
+    const stack: Node[] = [methodNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "return_statement") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "object") return c
+        }
+      }
+      if (n.type === "object" && !isStart(n)) {
+        let ok = true
+        let p: Node | null = n.parent
+        while (p && !isStart(p)) {
+          if (p.type !== "parenthesized_expression" && p.type !== "arrow_function" &&
+              p.type !== "function_expression" && p.type !== "function" && p.type !== "method_definition") {
+            ok = false
+            break
+          }
+          p = p.parent
+        }
+        if (ok && p) return n
+      }
+      // Do not descend into nested functions — their returns belong to them.
+      if (!isStart(n) && (n.type === "function_expression" || n.type === "arrow_function" || n.type === "function_declaration" || n.type === "method_definition")) continue
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return undefined
+  }
+
   private emitObjectMembers(
     valueNode: Node,
     componentName: string,
@@ -554,6 +709,8 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     meta: string,
     lineOffset: number,
     colOffset: number,
+    payloads?: Map<string, ASTEngine.UniversalSymbol>,
+    indexOffset?: number,
   ): void {
     const seen = new Set<string>()
     for (let i = 0; i < valueNode.namedChildCount; i++) {
@@ -561,20 +718,34 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!child) continue
       let name: string | undefined
       if (child.type === "method_definition" || child.type === "pair") {
-        name = child.childForFieldName("name")?.text || child.childForFieldName("key")?.text
+        const raw = child.childForFieldName("name")?.text || child.childForFieldName("key")?.text
+        if (!raw) continue
+        // M2 (review wave): quoted keys ("save-data") arrive quoted — use
+        // them unquoted; computed keys ([dyn]) are variables, unknowable
+        // statically, so they are skipped, never kept raw.
+        if (raw.startsWith("[")) continue
+        name = unquote(raw)
       } else if (child.type === "property_identifier") {
         name = child.text
       }
       if (!name || seen.has(name)) continue
       seen.add(name)
+      // M5 (review wave): copy the sub-analyzer's payload (parameters,
+      // return type, complexity, qualified calls) instead of emitting a
+      // bare signature — the filtered sub-symbol already computed it.
+      const payload = payloads?.get(name)
       symbols.push({
         name,
         kind,
-        range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset),
+        range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
         scope: componentName,
         ownerName: componentName,
         ownerKind: ASTEngine.SymbolKind.Class,
         visibility: "public",
+        parameters: payload?.parameters,
+        returnType: payload?.returnType,
+        complexity: payload?.complexity,
+        qualified_calls: payload?.qualified_calls,
         metadata: { [meta]: true },
       })
     }
@@ -684,23 +855,73 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * V2 (#419): extract simple identifier tokens from a template expression's
-   * raw text ({{ count }}, :label="label", @click="onSave", v-model="count",
-   * v-if="show"). The vue grammar keeps these as opaque text — no child AST
-   * — so tokenization is by identifier pattern. Member chains (user.name)
-   * yield the root identifier (user); the member-resolution consumer can
-   * recurse. Literals (numbers/strings) and punctuation are dropped.
+   * V2 (#419) + M1 (review wave) + D1 (deeper review): extract simple
+   * identifier tokens from a template expression's raw text ({{ count }},
+   * :label="label", @click="onSave", v-model="count", v-if="show"). The vue
+   * grammar keeps these as opaque text — no child AST — so tokenization is
+   * by character walk (no regex). Only chain ROOTS are uses: in `item.id`,
+   * `id` is a read of the loop variable, never of a same-named member —
+   * emitting it fabricated member edges (family receiver-only rule). An
+   * identifier preceded (modulo whitespace) by `.`, `?.` or `#` is skipped.
+   * String/template-literal CONTENTS are not identifiers either:
+   * `@click="go('save')"` must not read 'save' as a member. Single/double
+   * quotes skip to their closer (backslash escapes honored); backticks
+   * additionally re-enter code inside ${...} (nesting tracked).
    *
    * V4 (#419): identifiers bound by a template-local construct (v-for loop
    * var, slot prop) in the current scope are skipped — they shadow any
    * same-named member.
    */
   private collectIdentifiers(text: string, out: Set<string>, shadowed?: Set<string>): void {
-    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
-    let m: RegExpExecArray | null
-    while ((m = re.exec(text)) !== null) {
-      if (shadowed?.has(m[0])) continue
-      out.add(m[0])
+    const isIdentStart = (ch: string): boolean =>
+      (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_" || ch === "$"
+    const isIdentPart = (ch: string): boolean => isIdentStart(ch) || (ch >= "0" && ch <= "9")
+    const isSpace = (ch: string): boolean => ch === " " || ch === "\t" || ch === "\n" || ch === "\r"
+    // Context stack: quote chars for strings, "${" for interpolations, "{"
+    // for plain braces inside them. Empty stack = code. String contents
+    // (including object keys like {a: 1} — pre-existing acceptance, not
+    // solved here) never emit; template ${...} regions are code again.
+    const stack: string[] = []
+    const emit = (word: string, start: number): void => {
+      let k = start - 1
+      while (k >= 0 && isSpace(text[k])) k--
+      const prev = k >= 0 ? text[k] : ""
+      const prev2 = k - 1 >= 0 ? text[k - 1] : ""
+      // Member access (`a.b`), optional chain (`a?.b`), private (`#x`):
+      // only the root is a use.
+      const chained = prev === "." || (prev2 === "?" && prev === ".") || prev === "#"
+      if (!chained && !shadowed?.has(word)) out.add(word)
+    }
+    let i = 0
+    while (i < text.length) {
+      const ch = text[i]
+      const top = stack.length > 0 ? stack[stack.length - 1] : ""
+      if (top === "'" || top === '"') {
+        if (ch === "\\") { i += 2; continue }
+        if (ch === top) stack.pop()
+        i++
+        continue
+      }
+      if (top === "`") {
+        if (ch === "\\") { i += 2; continue }
+        if (ch === "$" && text[i + 1] === "{") { stack.push("${"); i += 2; continue }
+        if (ch === "`") { stack.pop(); i++; continue }
+        i++
+        continue
+      }
+      // Code context (empty stack, "${", or plain "{").
+      if (ch === "'" || ch === '"' || ch === "`") { stack.push(ch); i++; continue }
+      if (ch === "{") { stack.push(ch); i++; continue }
+      if (ch === "}") {
+        if (top === "{" || top === "${") stack.pop()
+        i++
+        continue
+      }
+      if (!isIdentStart(ch)) { i++; continue }
+      let j = i + 1
+      while (j < text.length && isIdentPart(text[j])) j++
+      emit(text.slice(i, j), i)
+      i = j
     }
   }
 
@@ -758,7 +979,10 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       key === "mounted" || key === "beforeUpdate" || key === "updated" ||
       key === "beforeUnmount" || key === "unmounted" || key === "activated" ||
       key === "deactivated" || key === "errorCaptured" || key === "renderTracked" ||
-      key === "renderTriggered" || key === "beforeDestroy" || key === "destroyed"
+      key === "renderTriggered" || key === "beforeDestroy" || key === "destroyed" ||
+      // M3 (review wave): the Vue 3 SSR hook was missing, so
+      // serverPrefetch() methods were invisible.
+      key === "serverPrefetch"
     )
   }
 
@@ -813,16 +1037,38 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [root]
     while (stack.length > 0) {
       const n = stack.pop()!
-      // Leading whitespace/newline inside <script> made the old
-      // text.startsWith("export default") check MISS every SFC whose
-      // script body began on the next line. Check structurally instead.
-      if (n.type === "export_statement" && n.text.trimStart().startsWith("export default")) return n
+      // M4 (review wave): structural check — the old
+      // text.startsWith("export default") missed `export /*c*/ default`
+      // (methods then surfaced ownerless through the JS fallback). An
+      // export_statement whose first two children are the export/default
+      // keywords is the default export regardless of comments/whitespace.
+      if (n.type === "export_statement" && this.isDefaultExportStatement(n)) return n
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
     return null
+  }
+
+  private isDefaultExportStatement(n: Node): boolean {
+    // Token shape, comments AND leading decorators skipped: `export /*c*/
+    // default` and `@Dec export default` are still the default export (D3:
+    // the first version bailed on any leading named child, keeping
+    // decorated defaults ownerless).
+    let seenExport = false
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (!c || c.type === "comment" || c.type === "decorator") continue
+      if (!seenExport) {
+        if (!c.isNamed && c.text === "export") seenExport = true
+        else if (c.isNamed) return false
+        continue
+      }
+      if (!c.isNamed && c.text === "default") return true
+      if (c.isNamed) return false
+    }
+    return false
   }
 
   private elementTagName(element: Node): string | undefined {
@@ -835,11 +1081,39 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     range: ASTEngine.UniversalSymbol["range"],
     lineOffset: number,
     colOffset: number,
+    indexOffset = 0,
   ): ASTEngine.UniversalSymbol["range"] {
     const out = { ...range }
     out.startLine += lineOffset
     out.endLine += lineOffset
     if (range.startLine === 1) out.startColumn += colOffset
+    if (indexOffset && out.startIndex !== undefined) out.startIndex += indexOffset
+    if (indexOffset && out.endIndex !== undefined) out.endIndex += indexOffset
+    return out
+  }
+
+  /**
+   * H2 (review wave): full script→SFC shift — lines always, columns when on
+   * the script's first line (endColumn only when the range never leaves
+   * it). Errors, exports, and imports were pushed raw, pointing at script
+   * coordinates while symbols pointed at SFC ones.
+   */
+  private shiftScriptRange(
+    range: ASTEngine.UniversalSymbol["range"],
+    lineOffset: number,
+    colOffset: number,
+    indexOffset = 0,
+  ): ASTEngine.UniversalSymbol["range"] {
+    const out = { ...range }
+    const firstLine = out.startLine === 1
+    out.startLine += lineOffset
+    out.endLine += lineOffset
+    if (firstLine && colOffset) {
+      out.startColumn += colOffset
+      if (out.endLine === out.startLine) out.endColumn += colOffset
+    }
+    if (indexOffset && out.startIndex !== undefined) out.startIndex += indexOffset
+    if (indexOffset && out.endIndex !== undefined) out.endIndex += indexOffset
     return out
   }
 

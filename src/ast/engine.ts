@@ -870,8 +870,8 @@ export namespace ASTEngine {
   export function extractSfcScriptBlocks(
     rootNode: Node,
     content: string
-  ): { body: string; lang: string; startLine: number; startColumn: number }[] {
-    const out: { body: string; lang: string; startLine: number; startColumn: number }[] = []
+  ): { body: string; lang: string; startLine: number; startColumn: number; startIndex: number }[] {
+    const out: { body: string; lang: string; startLine: number; startColumn: number; startIndex: number }[] = []
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -903,6 +903,10 @@ export namespace ASTEngine {
               lang,
               startLine: rawText.startPosition.row + 1,
               startColumn: rawText.startPosition.column,
+              // H3 (vue review wave): script-relative symbol indices need
+              // this SFC base to become file-coherent (lines/cols alone
+              // leave index-based consumers misaligned).
+              startIndex: rawText.startIndex,
             })
           }
         }
@@ -1206,6 +1210,7 @@ export namespace ASTEngine {
             const sfcScriptTrees: Tree[] = []
             const sfcScriptLines: number[] = []
             const sfcScriptCols: number[] = []
+            const sfcScriptStartIndex: number[] = []
             for (const block of scriptBlocks) {
               const subLang = block.lang === "ts" ? "typescript" : "javascript"
               const subParser = await getParser(subLang)
@@ -1213,12 +1218,14 @@ export namespace ASTEngine {
               sfcScriptTrees.push(subTree)
               sfcScriptLines.push(block.startLine)
               sfcScriptCols.push(block.startColumn)
+              sfcScriptStartIndex.push(block.startIndex)
             }
             context = {
               ...context,
               sfcScriptTrees,
               sfcScriptLines,
               sfcScriptCols,
+              sfcScriptStartIndex,
               sfcScriptLangs: scriptBlocks.map((b) => b.lang),
             }
           }

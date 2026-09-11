@@ -1549,6 +1549,25 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "show", target: "cfg", confidence: 0.8, metadata: {} }] }),
   },
   {
+    id: "typescript/positional-first-name-collision",
+    language: "typescript",
+    defectClass: "payload-attribution",
+    description: "T6 regression: restores the dead-positional behavior — both same-named object methods attribute to the first-name-matched handle, so objB's body payload (callB) lands on objA.handle and objB.handle loses its own call — the positional-payload owner-pinned includes/notIncludes pairs catch it",
+    transform: r => {
+      const syms = (r.symbols ?? []).map((s: any) => s)
+      const first = syms.find((s: any) => s.name === "handle" && s.ownerName === "objA")
+      const second = syms.find((s: any) => s.name === "handle" && s.ownerName === "objB")
+      if (!first || !second) return r
+      return { ...r, symbols: syms.map((s: any) =>
+        s === second
+          ? { ...s, qualified_calls: first.qualified_calls }
+          : s === first
+            ? { ...s, qualified_calls: [...(first.qualified_calls ?? []), ...(second.qualified_calls ?? [])] }
+            : s,
+      ) }
+    },
+  },
+  {
     id: "javascript/reclassify-import-tier",
     language: "javascript",
     defectClass: "evidence-mislabel",
@@ -1834,6 +1853,83 @@ const MUTANTS: Mutant[] = [
       const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "vue-component-usage"
       return { ...r, relationships: [...rels, { source, target: "search", type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }] }
     },
+  },
+  {
+    id: "vue/data-keys-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "H1 regression: drops data-state key symbols again — data-keys + data-factory-keys pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s as any).metadata ?? {}).isDataKey) }),
+  },
+  {
+    id: "vue/error-offset-revert",
+    language: "vue",
+    defectClass: "payload-corruption",
+    description: "H2 regression: pushes script errors raw again (script lines, not SFC) — script-error-offset startLine pin catches it",
+    transform: r => ({ ...r, errors: (r.errors ?? []).map((e: any) => ({ ...e, range: { ...(e.range ?? {}), startLine: 2 } })) }),
+  },
+  {
+    id: "vue/index-revert",
+    language: "vue",
+    defectClass: "payload-corruption",
+    description: "H3 regression: zeroes symbol byte indices again (line/index incoherence) — range-coherence startIndex pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, range: { ...((s as any).range ?? {}), startIndex: 0 } })) }),
+  },
+  {
+    id: "vue/chain-root-revert",
+    language: "vue",
+    defectClass: "relationship-noise",
+    description: "M1 regression: re-emits loop-property reads as member uses again — member-chain forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "member-chain", target: "id", confidence: 0.95, metadata: { isTemplateExpression: true } }] }),
+  },
+  {
+    id: "vue/quoted-keys-revert",
+    language: "vue",
+    defectClass: "payload-corruption",
+    description: "M2 regression: restores quoted names and raw [dyn] symbols — quoted-keys pins catch both",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []).filter((s: any) => s.name !== "save-data"), { name: "\"save-data\"", kind: "method" }, { name: "[dyn]", kind: "method" }] }),
+  },
+  {
+    id: "vue/lifecycle-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "M3 regression: drops serverPrefetch again — lifecycle-server-prefetch pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "serverPrefetch") }),
+  },
+  {
+    id: "vue/default-text-revert",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "M4 regression: restores the text-prefix default-export check — commented defaults lose component ownership again — commented-default ownerName pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "go" ? { ...s, ownerName: undefined } : s)) }),
+  },
+  {
+    id: "vue/payload-drop",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "M5 regression: strips Options-member payloads again (bare signatures) — options-payload parameter pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "save" ? { ...s, parameters: [] } : s)) }),
+  },
+  {
+    id: "vue/string-args-revert",
+    language: "vue",
+    defectClass: "relationship-noise",
+    description: "D1 regression: string-literal contents read as members again — template-string-args forbid pin catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "template-string-args", target: "save", confidence: 0.95, metadata: { isTemplateExpression: true } }] }),
+  },
+  {
+    id: "vue/arrow-data-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "D2 regression: expression-bodied data factories lose their keys again — arrow-data pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "count" || (s as any).ownerName !== "arrow-data") }),
+  },
+  {
+    id: "vue/decorated-default-revert",
+    language: "vue",
+    defectClass: "payload-loss",
+    description: "D3 regression: leading decorators blind the default-export check again — decorated-default ownerName pin catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "go" ? { ...s, ownerName: undefined } : s)) }),
   },
   {
     id: "groovy/drop-class-symbols",
