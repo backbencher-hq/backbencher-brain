@@ -62,7 +62,7 @@
       "id": "T1",
       "title": "TypeScript review-intake wave (issue #725): process reviews/typescript 11 confirmed claims",
       "status": "verified",
-      "notes": "Co-agent T-wave (analyzer in 977e687e, fixtures in 60a2dc32) independently re-verified claim-by-claim against live parses: T1-T10 all PASS. Gap found+closed by verification: T6 had no fixture/mutant \u2014 added typescript/positional-payload (owner-pinned both symbols, CPPD10 anti-pollution) + mutant typescript/positional-first-name-collision (caught). Spec TSD20-TSD28 recorded (incl. real template-dedup Low-note). Certification @1a9255da: F3 ts 56/56, F4 392/392, F1 ts clean 386 types, R1 31/31, R2 6/6, G1 51/0, F5 vue-core+element-plus 100/0/0. Full analyzer diff co-audited (module-resolver rewrite: resolvedPath claim verified, R2 shrink-only holds).",
+      "notes": "Co-agent T-wave (analyzer in 977e687e, fixtures in 60a2dc32) independently re-verified claim-by-claim against live parses: T1-T10 all PASS. Gap found+closed by verification: T6 had no fixture/mutant — added typescript/positional-payload (owner-pinned both symbols, CPPD10 anti-pollution) + mutant typescript/positional-first-name-collision (caught). Spec TSD20-TSD28 recorded (incl. real template-dedup Low-note). Certification @1a9255da: F3 ts 56/56, F4 392/392, F1 ts clean 386 types, R1 31/31, R2 6/6, G1 51/0, F5 vue-core+element-plus 100/0/0. Full analyzer diff co-audited (module-resolver rewrite: resolvedPath claim verified, R2 shrink-only holds).",
       "evidenceFile": "reviews/typescript/master-review.md",
       "verifiedAtCommit": "1a9255da"
     },
@@ -78,7 +78,7 @@
       "id": "V1",
       "title": "Vue review-intake wave (issue #730): process reviews/vue 10 confirmed claims",
       "status": "verified",
-      "notes": "Co-agent V1 wave independently re-verified claim-by-claim through the faithful SFC harness: H1a/H1b data keys read, H2 SFC-offset errors (row 5 reports 5), M1 member-chain root-only, M2 quoted keys unquoted, M3 serverPrefetch, M4 commented-default ownership, M5 Options-API TS payload \u2014 8/8 PASS. F3 vue 27/27, F4 395/395, F5 element-plus 100/0/0 @13.8ms/file + vue-element-admin 100/0/0, tsc clean.",
+      "notes": "Co-agent V1 wave independently re-verified claim-by-claim through the faithful SFC harness: H1a/H1b data keys read, H2 SFC-offset errors (row 5 reports 5), M1 member-chain root-only, M2 quoted keys unquoted, M3 serverPrefetch, M4 commented-default ownership, M5 Options-API TS payload — 8/8 PASS. F3 vue 27/27, F4 395/395, F5 element-plus 100/0/0 @13.8ms/file + vue-element-admin 100/0/0, tsc clean.",
       "evidenceFile": "reviews/vue/master-review.md",
       "verifiedAtCommit": "aab61932"
     },
@@ -94,10 +94,10 @@
   "waves": [
     {
       "id": "M49.CONV",
-      "title": "Convergence sweep: 7-class blind-spot probes across 19/21 analyzers + parse-success census",
+      "title": "Convergence sweep: 7-class blind-spot probes across 19/21 analyzers + parse-success census + process findings #760/#761",
       "date": "2026-09-11",
       "commit": "see git log (sweep commits eba4a17e..b220ca28+)",
-      "method": "reviews/convergence/blind-spot-checklist.md \u2014 7 proven defect classes probed live against every analyzer; findings registered BEFORE fixing; fixes deferred until the svelte wave lands (tree discipline)",
+      "method": "reviews/convergence/blind-spot-checklist.md — 7 proven defect classes probed live against every analyzer; findings registered BEFORE fixing; fixes deferred until the svelte wave lands (tree discipline)",
       "findings": [
         {
           "issue": 739,
@@ -212,11 +212,25 @@
           "lang": "javascript",
           "class": "self-audit-boundary",
           "severity": "low-medium"
+        },
+        {
+          "issue": 760,
+          "lang": "process",
+          "class": "sampling-blind-spot",
+          "severity": "high",
+          "note": "F5 deterministic 60-file sample froze blind spots (Spring.subscribe hidden for months); cold-pool rotation + cumulative coverage counter proposed"
+        },
+        {
+          "issue": 761,
+          "lang": "process",
+          "class": "shared-evidence-race",
+          "severity": "high",
+          "note": "co-agent mid-edit left differential.ts un-parseable; parse-freeze gate + evidence lineage header + journal-guarded writes proposed"
         }
       ],
       "f9GateProposal": "corpus parse-success census (script/m14/tmp/conv-parse-census.ts) becomes a standing gate: pin per-language ERROR-rate baselines, fail on regression, hard 0% for clean languages; grammar-upgrade waves for cpp/c/groovy tracked in #742/#743",
       "convergenceStopCondition": "one full round (7-class sweep + wave self-audit) with ZERO new High/Medium findings, recorded in reviews/<lang>/; then issue-driven reviews only",
-      "svelte": "deferred \u2014 co-agent wave in flight; svelte joins the sweep when it lands",
+      "svelte": "deferred — co-agent wave in flight; svelte joins the sweep when it lands",
       "evidence": "reviews/convergence/sweep-verdicts.md"
     }
   ]
