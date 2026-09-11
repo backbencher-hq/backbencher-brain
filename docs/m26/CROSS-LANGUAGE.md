@@ -9,6 +9,7 @@ it, and this document declares that absence. Never hand-edit — regenerate.
 | --- | --- | --- | --- | --- |
 | kotlin | typescript | 1 | kotlin-ts interop | fixture (W3 suite, seeded) |
 | typescript | kotlin | 1 | _(row carries no mechanism)_ | fixture (W3 suite, seeded) |
+| typescript | json | 1 | name-resolution | real project index |
 
 ## Declared absence
 
@@ -16,5 +17,5 @@ Launch languages: java, groovy, kotlin, scala, typescript, javascript, python
 (M29 wave-1 extension). Any pair among
 them not in the table above is **declared absent**: no stored rows exist,
 the UI renders no cross-language text for it, and no bridge is claimed.
-Real project dbs scanned: 38.
+Real project dbs scanned: 40.
 

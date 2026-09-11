@@ -16,13 +16,11 @@
   ],
   "mutantsCaught": 2,
   "mutantsTotal": 2,
-  "realDbsScanned": 38,
+  "realDbsScanned": 40,
   "realDbsSkipped": 3,
-  "realCrossLanguagePairs": 0,
+  "realCrossLanguagePairs": 1,
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "2e9fa293cf68e8cd1c955ad1cde11c399e200a46",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-08T19:44:00.499Z",
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "generatedAt": "2026-09-11T04:01:11.513Z"
 }
