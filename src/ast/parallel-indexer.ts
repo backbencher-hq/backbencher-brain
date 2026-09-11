@@ -1712,14 +1712,15 @@ export async function storeResults(
   let totalImports = 0
 
   const rawDb = await BrainDatabase.getRawInstance(projectId)
-  // M54.P1 (#727): FK enforcement is now ON at every open (db.bun.ts / db.node.ts).
-  // This path still disables it for the bulk store — the historical
-  // "compiled binary's SQLite can spuriously reject valid data" claim has
-  // never been reproduced, but the store sequence was proven FK-ON-safe
-  // (script/m54/probe-fk.ts, B) so enabling here is a follow-up decision,
-  // not a silent behavior change. The finally below RESTORES the open-time
-  // policy on every exit — previously an exception between OFF and the
-  // happy-path ON left the shared cached connection FK-OFF for its lifetime.
+  // M54.P1 (#727): FK enforcement is ON at every open AND during the bulk
+  // store (the old store-phase "PRAGMA foreign_keys = OFF" was removed when
+  // the finally-restore was added; the historical "compiled binary's SQLite
+  // can spuriously reject valid data" claim was never reproduced and the
+  // full verification suite — P1 parity, m51 A1, m21 R2, m13 H3, m52 V1 —
+  // plus the multi-language soak (script/m54/probe-fk-store-soak.ts) runs
+  // green with store-phase enforcement active). The finally below restores
+  // the open-time policy on every exit; BB_FK_ENFORCE=0 disables enforcement
+  // stack-wide (open AND store) for legacy-posture tooling.
   try {
    const now = Date.now()
  
