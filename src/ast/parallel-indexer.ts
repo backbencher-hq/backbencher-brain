@@ -12,6 +12,7 @@ import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+import { createStoreDiagnostics } from "./store-diagnostics"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
 import { readdir, stat } from "fs/promises"
@@ -1786,8 +1787,26 @@ export async function storeResults(
       LEFT JOIN brain_file f ON f.id = s.file_id
       WHERE s.project_id = ? AND s.name = ? LIMIT 1`
    )
- 
- 
+
+   // #737 diagnostics wiring: every batch call site runs through the `stmt`
+   // map (originals kept in stmtOriginal) so the diagnose pass can swap in
+   // capturing wrappers and restore them afterwards. The per-batch closure is
+   // created inside the loop (it needs that batch's tx).
+   const stmtOriginal = {
+     insertFile,
+     insertSymbol,
+     insertImport,
+     insertRelationship,
+     insertTaintSource,
+     deleteFileSymbols,
+     deleteFileImports,
+     deleteFileRelationships,
+     deleteFileRelationshipsByTarget,
+     deleteFileTaints,
+   }
+   const stmt: Record<string, any> = { ...stmtOriginal }
+
+
    for (let i: any = 0; i < results.length; i += batchSize) {
      const batch = results.slice(i, i + batchSize)
      let batchSymbols = 0, batchRelationships = 0, batchImports = 0
@@ -1803,21 +1822,20 @@ export async function storeResults(
          const relCount = result.relationships?.length || 0
          if (relCount > 50 || symCount > 20) {
            process.stderr.write(`[STORE] ${relativePath.split('/').pop()}: ${symCount}s ${relCount}r\n`)
-         }
- 
-         // Per-file SAVEPOINT — if this file's data causes an FK violation,
-         // roll back only this file, not the entire batch.
- 
- 
-         // Only delete file relationships if this is an INCREMENTAL run
-         // We removed this because in a parallel batch insert it can cause racing bugs
-         // If the same project file is processed concurrently, or we accidentally cascade.
-         // Wait, fileId is unique per file... but just to be sure we comment it out temporarily.
-         deleteFileRelationships.run(fileId)
-         deleteFileRelationshipsByTarget.run(fileId)
-         deleteFileTaints.run(fileId, fileId)
-         deleteFileSymbols.run(fileId)
-         deleteFileImports.run(fileId)
+         }         // NO per-file savepoint: a mid-file FK violation rolls back the whole
+         // batch (per-batch transaction, skip-and-continue below). The deletes
+         // run before every insert and REPLACE precisely so the batch should
+         // never see one; if it does, diagnoseBatchFailure (#737) names the
+         // exact file and offending statements in the catch.
+
+         // Delete this file's prior rows (and edges touching them) BEFORE the
+         // brain_file REPLACE below cascades — keeps REPLACE's ON DELETE
+         // CASCADE reach empty, which is what makes FK-ON safe here.
+         stmt.deleteFileRelationships.run(fileId)
+         stmt.deleteFileRelationshipsByTarget.run(fileId)
+         stmt.deleteFileTaints.run(fileId, fileId)
+         stmt.deleteFileSymbols.run(fileId)
+         stmt.deleteFileImports.run(fileId)
  
          relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
          const pathLower = relativePath.toLowerCase()
@@ -1875,7 +1893,7 @@ export async function storeResults(
            }
          }
  
-         insertFile.run(
+         stmt.insertFile.run(
            fileId,
            projectId,
            result.filePath,
@@ -2121,7 +2139,7 @@ export async function storeResults(
                ? isIndexArtifactNameStrict(symbol.name)
                : isIndexArtifactName(symbol.name)
              if (symbolStartLine < 1 || nameIsArtifact) continue
-             insertSymbol.run(
+             stmt.insertSymbol.run(
                symbolId,
                projectId,
                fileId,
@@ -2181,7 +2199,7 @@ export async function storeResults(
                  const fileCount = (fileRelCounters.get(fileId) || 0) + 1
                  fileRelCounters.set(fileId, fileCount)
                  const containsId = `${projectId}:rel:${ownerSymbolId}:${symbol.name}:contains:${fileCount}`
-                 insertRelationship.run(
+                 stmt.insertRelationship.run(
                    containsId,
                    projectId,
                    ownerSymbolId,
@@ -2218,7 +2236,7 @@ export async function storeResults(
                          ? "critical"
                          : "high"
  
-                     insertTaintSource.run(
+                     stmt.insertTaintSource.run(
                        taintId,
                        projectId,
                        symbolId, // source_symbol_id
@@ -2241,7 +2259,7 @@ export async function storeResults(
                  for (let i: any = 0; i < sources.length; i++) {
                    const source = sources[i]
                    const taintId = `taint_src:${projectId}:${symbolId}:${source.type}:${i}`
-                   insertTaintSource.run(
+                   stmt.insertTaintSource.run(
                      taintId,
                      projectId,
                      symbolId, // source_symbol_id
@@ -2268,7 +2286,7 @@ export async function storeResults(
                        ? "critical"
                        : "high"
  
-                   insertTaintSource.run(
+                   stmt.insertTaintSource.run(
                      taintId,
                      projectId,
                      null, // source_symbol_id is NULL
@@ -2305,18 +2323,18 @@ export async function storeResults(
  
                if (hasStringConcat && /execute|query|find|insert|update|delete.*where|cursor/i.test(callsPattern)) {
                  const taintId = `taint_h:${projectId}:${symbolId}:sql_injection:0`
-                 insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "sql_query",
+                 stmt.insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "sql_query",
                    "sql_injection", "high", 0, JSON.stringify([symbolId]), 0, now, now)
                }
                if (/innerHTML|dangerouslySetInnerHTML|document\.write|eval\(/.test(callsPattern)) {
                  const taintId = `taint_h:${projectId}:${symbolId}:xss:0`
-                 insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved",
+                 stmt.insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved",
                    callsPattern.includes("innerHTML") ? "innerHTML" : "eval",
                    "xss", "high", 0, JSON.stringify([symbolId]), 0, now, now)
                }
                if (/exec\(|spawn\(|system\(|popen\(|subprocess/i.test(callsPattern)) {
                  const taintId = `taint_h:${projectId}:${symbolId}:cmd_injection:0`
-                 insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "command_exec",
+                 stmt.insertTaintSource.run(taintId, projectId, null, symbolId, "unresolved", "command_exec",
                    "command_injection", "critical", 0, JSON.stringify([symbolId]), 0, now, now)
                }
              }
@@ -2335,7 +2353,7 @@ export async function storeResults(
                imp.importType ??
                (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
              const importId = `${fileId}:import:${moduleName}:${imp.range?.startLine ?? 0}`
-             insertImport.run(
+             stmt.insertImport.run(
                importId,
                projectId,
                fileId,
@@ -2490,7 +2508,7 @@ export async function storeResults(
              // INSERT OR IGNORE silently skips duplicates; no more 7× dupes.
              const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}`
  
-             insertRelationship.run(
+             stmt.insertRelationship.run(
                relId,
                projectId,
                sourceId,
@@ -2517,12 +2535,28 @@ export async function storeResults(
          }
        }
      })
+     // #737: per-batch diagnose closure bound to THIS batch's tx. On an FK
+     // failure it re-runs the batch file-by-file under capturing wrappers
+     // inside a transaction that ALWAYS rolls back (pure diagnostics), then
+     // names the exact offending file + statements on stderr.
+     const diagnoseBatchFailure = createStoreDiagnostics({
+       rawDb,
+       tx: (b: any[]) => tx(b),
+       stmt,
+       stmtOriginal,
+       write: (s: string) => process.stderr.write(s),
+       warn: (m: string, ctx: Record<string, unknown>) => log.warn(m, ctx),
+     })
      try {
        tx(batch)
        totalSymbols += batchSymbols
        totalRelationships += batchRelationships
        totalImports += batchImports
      } catch (error) {
+       // #737: before skipping, re-run the batch file-by-file under capturing
+       // wrappers to identify the exact violating row (previous behavior printed
+       // only the driver message, leaving the rollback undiagnosable).
+       diagnoseBatchFailure(error, batch)
        process.stderr.write(`[storeResults] batch ${i}-${i+batchSize} ROLLED BACK: ${error instanceof Error ? error.message : String(error)}\n`)
        log.error("batch insert failed", {
          error: error instanceof Error ? error.message : String(error),
@@ -4023,29 +4057,35 @@ export async function runBoundedPostProcessing(
           const placeholders = chunk.map(() => "?").join(",")
           rawDb.prepare(`INSERT OR IGNORE INTO _m40_touched (id, name, qualified_name) SELECT id, name, qualified_name FROM brain_symbol WHERE project_id = ? AND file_id IN (${placeholders})`).run(projectId, ...chunk)
         }
-        // M40.A4 portable + set-based: SQLite <3.53 (Node's bundled version)
-        // rejects references to the UPDATE target's columns inside the SET
-        // subquery, and per-row JS loops cost ~4ms/row at 12K rows. Two
-        // statements, both portable: (1) correlated INSERT..SELECT into a
-        // match table (correlated subqueries over OTHER tables are allowed in
-        // INSERT..SELECT on every SQLite), (2) UPDATE..FROM join (SQLite
-        // >=3.33; Node 3.49 / bun 3.53 both qualify). O(rows) inside SQLite,
-        // zero JS round-trips.
+        // M40.A4 portable + set-based. #738 root cause: the original single
+        // correlated INSERT..SELECT referenced the outer column r.target_external
+        // inside the subquery's ORDER BY. Bun's SQLite 3.53 accepts that; Node's
+        // better-sqlite3 bundles 3.49.2, which REJECTS it ("no such column:
+        // r.target_external") — and production `bin/bb` runs under Node, so every
+        // CLI index failed this phase and marked itself partial. All verifier
+        // gates ran under bun, which is how it survived. Replacement (proven
+        // equivalent on BOTH runtimes by script/m54/probe-738-sqlite.ts):
+        // two-pass JOIN + INSERT OR IGNORE — pass A matches qualified_name (its
+        // rows win via OR IGNORE), pass B fills bare-name matches; MIN(t.id)
+        // preserves the original's deterministic lowest-id tie-break. No
+        // correlated subquery, no outer-column reference anywhere.
         rawDb.run(`CREATE TEMP TABLE IF NOT EXISTS _m40_match (rel_id TEXT PRIMARY KEY, symbol_id TEXT)`)
         rawDb.run(`DELETE FROM _m40_match`)
-        rawDb.prepare(`
-          INSERT INTO _m40_match (rel_id, symbol_id)
-          SELECT r.id, (
-            SELECT t.id FROM _m40_touched t
-            WHERE t.qualified_name = r.target_external OR t.name = r.target_external
-            ORDER BY CASE WHEN t.qualified_name = r.target_external THEN 0 ELSE 1 END, t.id
-            LIMIT 1
-          )
-          FROM brain_relationship r
-          WHERE r.project_id = ?
+        const m40RelFilter = `r.project_id = ?
             AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL AND r.target_external != ''
-            AND r.id LIKE '%:m40'
-        `).run(projectId)
+            AND r.id LIKE '%:m40'`
+        rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+          SELECT j.rel_id, MIN(j.symbol_id) FROM (
+            SELECT r.id AS rel_id, t.id AS symbol_id
+            FROM brain_relationship r JOIN _m40_touched t ON t.qualified_name = r.target_external
+            WHERE ${m40RelFilter}
+          ) j GROUP BY j.rel_id`).run(projectId)
+        rawDb.prepare(`INSERT OR IGNORE INTO _m40_match (rel_id, symbol_id)
+          SELECT j.rel_id, MIN(j.symbol_id) FROM (
+            SELECT r.id AS rel_id, t.id AS symbol_id
+            FROM brain_relationship r JOIN _m40_touched t ON t.name = r.target_external
+            WHERE ${m40RelFilter}
+          ) j GROUP BY j.rel_id`).run(projectId)
         rawDb.prepare(`
           UPDATE brain_relationship
           SET target_symbol_id = m.symbol_id,

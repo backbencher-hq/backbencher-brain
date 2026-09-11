@@ -53,7 +53,7 @@
     "verify:m44-closure": "npx tsx script/m44/verify-closure.ts",
     "verify:m51": "npx tsx script/m51/verify-a1-owner-integrity.ts && npx tsx script/m51/verify-a2-health-split.ts && npx tsx script/m51/verify-closure.ts",
     "verify:m52": "npx tsx script/m52/verify-v1-parity-latency.ts && npx tsx script/m52/verify-closure.ts",
-    "verify:m54": "bun run script/m54/verify-p1-fk.ts && npx tsx script/m54/verify-p2-stdio.ts && npx tsx script/m54/verify-closure.ts"
+    "verify:m54": "bun run script/m54/verify-p1-fk.ts && npx tsx script/m54/verify-p2-stdio.ts && bun run script/m54/verify-737-738.ts && npx tsx script/m54/verify-737-738.ts && npx tsx script/m54/verify-closure.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
