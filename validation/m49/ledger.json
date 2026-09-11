@@ -77,8 +77,18 @@
   {
    "id": "V1",
    "title": "Vue review-intake wave (issue #730): process reviews/vue 10 confirmed claims",
-   "status": "pending",
-   "notes": "External review: 10 confirmed (incl. M5 from TS-path expansion), 8 rejected. Fixes: H1 data-state keys, H2 range shifts, H3 byte coherence (+engine sfcScriptStartIndex), M1 receiver-only template tokenizer, M2 quoted/computed keys, M3 serverPrefetch, M4 structural default-export check, M5 Options payload merge. Gates: 9 fixtures + expectSymbolRanges runner gate, 8 mutants each caught by its fixture, VSD11-VSD18, element-plus lane 418/418 0 unexplained. Flips to verified at closeout with evidence commit."
+   "status": "verified",
+   "notes": "Co-agent V1 wave independently re-verified claim-by-claim through the faithful SFC harness: H1a/H1b data keys read, H2 SFC-offset errors (row 5 reports 5), M1 member-chain root-only, M2 quoted keys unquoted, M3 serverPrefetch, M4 commented-default ownership, M5 Options-API TS payload \u2014 8/8 PASS. F3 vue 27/27, F4 395/395, F5 element-plus 100/0/0 @13.8ms/file + vue-element-admin 100/0/0, tsc clean.",
+   "evidenceFile": "reviews/vue/master-review.md",
+   "verifiedAtCommit": "aab61932"
+  },
+  {
+   "id": "V2",
+   "title": "Vue deep-review wave (issue #735): D1 string-literal member reads (High), D2 arrow data keys, D3 decorated defaults",
+   "status": "verified",
+   "notes": "D1-D3 probe-verified ALREADY-FIXED on the tree (the wave landed them after the review text): D1 quote states (go('save') emits only Uses(go)), D2 arrow-data keys read, D3 decorated default ownership kept. Fully gated: fixtures template-string-args/arrow-data/decorated-default, mutants string-args-revert/arrow-data-drop/decorated-default-revert, spec VSD19-VSD21. No uncovered claims.",
+   "evidenceFile": "reviews/vue/master-review.md",
+   "verifiedAtCommit": "aab61932"
   }
  ]
 }
