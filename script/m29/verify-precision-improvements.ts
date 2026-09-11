@@ -32,6 +32,7 @@ import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const R3 = path.join(ROOT, "validation/m29/results/R3.json")
+const LEDGER_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
 const HOVER = path.join(ROOT, "src/lsp/hover.ts")
 
 let passed = 0
@@ -118,7 +119,17 @@ try {
 } catch {}
 check("F2: tier-ratio measurement recorded in R3.json", !!tierRatio && typeof tierRatio.inferredRatioBeforePct === "number")
 check("F2: the improvement is real (inferredAfter < inferredBefore)", !!tierRatio && tierRatio.inferredAfter < tierRatio.inferredBefore, tierRatio ? `${tierRatio.inferredBefore} -> ${tierRatio.inferredAfter} of ${tierRatio.totalRelationships}` : undefined)
-check("F2: before-ratio matches the published ledger motivation (42.5%)", tierRatio?.inferredRatioBeforePct === 42.5, String(tierRatio?.inferredRatioBeforePct))
+// M53: the motivation figure is the GENERATED ledger's recorded value —
+// never a frozen literal (the corpus re-measures when analyzers change; a
+// literal goes stale, a generated record drift-detects via R4's freshness
+// gate). R5 asserts R3's live measurement agrees with what the ledger
+// publishes; regenerating the ledger reconciles them (one owner of truth).
+let ledgerBeforePct: number | null = null
+try {
+  ledgerBeforePct = (JSON.parse(readFileSync(LEDGER_JSON, "utf8")) as any).giantScale.tierRatio.inferredRatioBeforePct
+} catch {}
+check("F2: before-ratio matches the published ledger motivation", typeof ledgerBeforePct === "number" && tierRatio?.inferredRatioBeforePct === ledgerBeforePct, `live=${tierRatio?.inferredRatioBeforePct} ledger=${ledgerBeforePct}`)
+check("F2: the published motivation is in the declared band (>= 40% inferred before the fix)", typeof ledgerBeforePct === "number" && ledgerBeforePct >= 40, String(ledgerBeforePct))
 // F3: replay both rules over the recorded distribution — the delta is attributable.
 {
   const dist = (tierRatio?.distributionAfter ?? {}) as Record<string, number>
