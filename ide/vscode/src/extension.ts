@@ -103,7 +103,26 @@ function buildServerOptions(launch: ServerLaunch): ServerOptions {
 }
 
 function workspaceRoot(): string {
-  return workspace.workspaceFolders?.[0]?.uri.fsPath ?? process.cwd()
+  // Loud invariant, never a guess: activate() refuses before any launch when
+  // there is no workspace folder (workspaceRootOrNull), so reaching here with
+  // null is a programming error — throw, never fall back to process.cwd().
+  const root = workspaceRootOrNull()
+  if (root === null) throw new Error("bb_lsp: no workspace folder — activate() must refuse before resolving a launch")
+  return root
+}
+
+/** Declared-absence guard: a single-file (or untitled) window has NO workspace
+ *  folder. The old fallback silently started the server against
+ *  `process.cwd()` — the extension host's cwd, an arbitrary directory — so the
+ *  server indexed and watched the WRONG project while the status surface
+ *  looked alive (found live, 2026-09-12: hovering a single file showed
+ *  "stale" against the wrong root). Starting against a guessed root is a
+ *  silent misbehavior; refusing is the honest act. Returns null when there is
+ *  no workspace; callers must surface that, never fall back. */
+function workspaceRootOrNull(): string | null {
+  const folders = workspace.workspaceFolders
+  if (!folders || folders.length === 0) return null
+  return folders[0]!.uri.fsPath
 }
 
 /** Format the honest launch line for the status surface (E3 renders it later;
@@ -215,8 +234,20 @@ async function startClient(context: ExtensionContext, report: ActivationReport):
 export async function activate(context: ExtensionContext): Promise<unknown> {
   const startedAt = Date.now()
   const { mode, serverPath, minVersion, budgetMs } = readLaunchConfig()
+  // Declared refusal BEFORE resolution: without a workspace folder there is no
+  // project to index — no silent cwd guess (see workspaceRootOrNull).
+  const wsRoot = workspaceRootOrNull()
+  if (wsRoot === null) {
+    statusItem = window.createStatusBarItem(StatusBarAlignment.Right, 90)
+    statusItem.name = "Backbencher Brain"
+    context.subscriptions.push(statusItem)
+    statusItem.text = "$(info) bb: no workspace"
+    statusItem.tooltip = "bb_lsp is not started: this window has no workspace folder (a single opened file is not a project). Open the project's folder to enable the Backbencher index."
+    statusItem.show()
+    return { activationMs: Date.now() - startedAt, declaredBudgetMs: budgetMs, withinBudget: true, launch: null, serverVersion: undefined, versionOk: false, noWorkspace: true }
+  }
   const launchResult = resolveServerLaunch({
-    workspaceRoot: workspaceRoot(),
+    workspaceRoot: wsRoot,
     extensionRoot: context.extensionUri.fsPath,
     mode,
     explicitServerPath: serverPath,
