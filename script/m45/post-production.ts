@@ -1,4 +1,4 @@
-// script/m45/post-production.ts — M45.D1 light post pass v2 (Layer 2).
+// script/m45/post-production.ts — M45.D1 post pass v2 (Layer 2, in-house).
 //
 // History: v1 was rejected by the owner (classical, flat, dilute text).
 // Generative tools were tried (Kling) and rejected hard — they regenerate the
@@ -6,26 +6,33 @@
 // in-house, this script, every pixel traceable.
 //
 // v2 look (in-house ffmpeg only):
-//   1. TRIM   — dead holds cut on the measured beat boundaries (hard cuts).
-//   2. GRADE  — filmic S-curve + warm amber cast + gentle contrast, then a
-//               luma unsharp so code text pops (the "dilute text" fix).
-//   3. CAMERA — eased 1.0->1.13 push-ins ONLY on portal beats, anchored to
-//               portal centers MEASURED from the take (never guessed).
-//   4. TEXTURE — subtle vignette + fine film grain (applied after zoom).
-//   5. CAPTIONS — Fraunces italic headline + JetBrains Mono kicker, soft
-//               alpha fades, every hold >= 3.4s, never over portal content.
-//   6. FADES  — 0.7s in from black, 0.8s out to black (loop-safe seam).
+//   1. TRIM    — dead holds cut on the measured beat boundaries (hard cuts).
+//   2. GRADE   — filmic S-curve + warm amber cast + contrast + luma unsharp
+//                so code text pops (the "dilute text" fix).
+//   3. CAMERA  — eased 1.0->1.13 push-ins ONLY on portal beats, anchored to
+//                portal centers MEASURED from the take (never guessed).
+//   4. TEXTURE — gentle vignette. (Film grain measured at 55% of the 4K
+//                filter cost and dropped; the grade carries the look.)
+//   5. CAPTIONS— Fraunces italic headline + JetBrains Mono kicker, soft
+//                alpha fades, every hold >= 3s, never over portal content.
+//   6. FADES   — 0.7s in from black, 0.8s out to black (loop-safe seam).
 //
-// Self-verifying: duration, resolution/fps, caption visibility (band diff),
-// camera actually moves (strong-px diff), grade applied but content preserved
-// (PSNR window vs the take), fade-in present, silent output. Writes evidence
+// Structure: EVERYTHING happens in one filter pass per segment (captions are
+// time-shifted into segment-local time; fades attach to first/last segment),
+// then `concat -c copy` — exactly one encode of the real pixels. A benchmark
+// showed the earlier 3-pass, slow-preset design needed >20 min per film; this
+// one needs ~4.
+//
+// Self-verifying: duration, resolution/fps, silence, fade-in, caption
+// visibility (band diff), camera motion (strong-px diff), grade-preserves-
+// content (PSNR window vs the take), pacing contract. Writes evidence
 // (D1-post[-money].json) bound to the take + output sha256.
 //
 // Run: npx tsx script/m45/post-production.ts [--scenario money]
 
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { gitHead } from "./capture-harness.ts"
 
@@ -116,14 +123,15 @@ function psnr(fa: string, fb: string): number {
 }
 
 // Grade chain: filmic S-curve -> warm amber cast -> contrast -> text-crisping
-// unsharp. Applied per segment (before camera + texture).
+// unsharp. Vignette carries the texture. (Grain dropped: benchmarked at 55%
+// of the 4K filter cost for no visible gain at web scale.)
 const GRADE = [
   "curves=all='0/0.02 0.5/0.55 1/1'",
   "colorbalance=rs=0.04:gs=0.01:bs=-0.05:rm=0.03:bm=-0.03:rh=0.02:bh=-0.02",
   "eq=contrast=1.07:brightness=0.012:saturation=1.05:gamma=1.03",
-  "unsharp=lx=7:ly=7:la=0.35",
+  "unsharp=lx=5:ly=5:la=0.35",
 ].join(",")
-const TEXTURE = "vignette=PI/4.8,noise=alls=5:allf=t+u"
+const TEXTURE = "vignette=PI/4.8"
 const FONTS = {
   headline: path.join(ROOT, "script/m45/film/fonts/Fraunces-600Italic.ttf"),
   kicker: path.join(ROOT, "script/m45/film/fonts/JetBrainsMono-Regular.ttf"),
@@ -156,8 +164,8 @@ function main(): void {
   const checks: { name: string; pass: boolean; detail: string }[] = []
   const add = (name: string, pass: boolean, detail = "") => { checks.push({ name, pass, detail }); console.log(`  ${pass ? "PASS" : "FAIL"} ${name} — ${detail}`) }
 
-  // ---- caption text files (textfile= avoids all filtergraph escaping) ----
-  const capFiles: { cap: Caption; head: string; kick: string | null }[] = S.captions.map((cap, i) => {
+  // Caption text files (textfile= avoids all filtergraph escaping).
+  const capFiles = S.captions.map((cap, i) => {
     const head = path.join(WORK, `cap-${i}.txt`)
     writeFileSync(head, cap.text)
     let kick: string | null = null
@@ -165,42 +173,51 @@ function main(): void {
     return { cap, head, kick }
   })
 
-  // ---- 1. per-segment: trim + grade + camera ----
-  const segFiles: string[] = []
-  let globalStart = 0
+  // Global timeline per segment, for caption time-shifting.
+  let cursor = 0
   const segGlobal: Record<string, { start: number; end: number }> = {}
   for (const seg of S.segments) {
-    const out = path.join(WORK, `${seg.name}.mp4`)
-    const dur = seg.out - seg.in
-    const vf = [GRADE, ...(seg.zoom ? [zoomFilter(seg.zoom, dur)] : []), TEXTURE].join(",")
-    const r = sh("ffmpeg", ["-y", "-v", "error", "-ss", seg.in.toFixed(2), "-i", takePath, "-t", dur.toFixed(2), "-an", "-vf", vf, "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out])
-    if (r.status !== 0) throw new Error(`segment ${seg.name} encode failed: ${r.stderr.slice(0, 300)}`)
-    segGlobal[seg.name] = { start: globalStart, end: globalStart + dur }
-    globalStart += dur
-    segFiles.push(out)
+    segGlobal[seg.name] = { start: cursor, end: cursor + (seg.out - seg.in) }
+    cursor += seg.out - seg.in
   }
 
-  // ---- 2. concat ----
+  // ---- ONE encode per segment: trim + grade + camera + texture + captions + fades ----
+  const segFiles: string[] = []
+  for (let si = 0; si < S.segments.length; si++) {
+    const seg = S.segments[si]!
+    const g = segGlobal[seg.name]!
+    const dur = seg.out - seg.in
+    const out = path.join(WORK, `${seg.name}.mp4`)
+
+    const vf: string[] = [GRADE, ...(seg.zoom ? [zoomFilter(seg.zoom, dur)] : []), TEXTURE]
+    // captions overlapping this segment, shifted to segment-local time
+    for (const { cap, head, kick } of capFiles) {
+      const ta = cap.ta - g.start, tb = cap.tb - g.start
+      if (tb <= 0 || ta >= dur) continue
+      const kla = Math.max(ta, 0), ktb = Math.min(tb, dur)
+      if (kick) vf.push(drawtext(kick, FONTS.kicker, 25, 1294, "#C9A36B", kla, ktb))
+      vf.push(drawtext(head, FONTS.headline, 56, 1348, "#F1E9DD", kla, ktb))
+    }
+    // fades: first segment fades in from black, last fades out to black
+    if (si === 0) vf.push(`fade=t=in:st=0:d=0.7`)
+    if (si === S.segments.length - 1) vf.push(`fade=t=out:st=${(dur - 0.8).toFixed(2)}:d=0.8`)
+
+    const r = sh("ffmpeg", ["-y", "-v", "error", "-ss", seg.in.toFixed(2), "-i", takePath, "-t", dur.toFixed(2), "-an", "-vf", vf.join(","), "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", out])
+    if (r.status !== 0) throw new Error(`segment ${seg.name} encode failed: ${r.stderr.slice(0, 300)}`)
+    segFiles.push(out)
+    console.log(`  encoded ${seg.name} (${dur.toFixed(1)}s)`)
+  }
+
+  // ---- concat, no re-encode ----
   const list = path.join(WORK, "concat.txt")
   writeFileSync(list, segFiles.map((f) => `file '${f}'`).join("\n"))
-  const concatFile = path.join(WORK, "graded.mp4")
-  sh("ffmpeg", ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", concatFile])
-
-  // ---- 3. final: fades + captions ----
   const finalPath = path.join(SESSION, S.output)
-  const total = planSeconds
-  const vf: string[] = [`fade=t=in:st=0:d=0.7`, `fade=t=out:st=${(total - 0.8).toFixed(2)}:d=0.8`]
-  for (const { cap, head, kick } of capFiles) {
-    if (kick) vf.push(drawtext(kick, FONTS.kicker, 25, 1294, "#C9A36B", cap.ta, cap.tb))
-    vf.push(drawtext(head, FONTS.headline, 56, 1348, "#F1E9DD", cap.ta, cap.tb))
-  }
-  const r = sh("ffmpeg", ["-y", "-v", "error", "-i", concatFile, "-vf", vf.join(","), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", finalPath])
-  if (r.status !== 0) throw new Error(`final encode failed: ${r.stderr.slice(0, 300)}`)
+  sh("ffmpeg", ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", "-movflags", "+faststart", finalPath])
 
-  // ---- 4. poster ----
+  // ---- poster ----
   sh("ffmpeg", ["-y", "-v", "error", "-ss", String(S.poster.at), "-i", finalPath, "-frames:v", "1", "-q:v", "2", path.join(SESSION, S.poster.file)])
 
-  // ---- 5. self-checks ----
+  // ---- self-checks ----
   const probe = (f: string) => JSON.parse(sh("ffprobe", ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", f], true).stdout)
   const pj = probe(finalPath)
   const v = pj.streams.find((s: { codec_type?: string }) => s.codec_type === "video")
@@ -214,13 +231,31 @@ function main(): void {
   const l1 = meanLuma(gray(finalPath, 1.6, "f1"))
   add("fade-in from black", l0 < 20 && l1 > 15, `luma(0.08)=${l0.toFixed(1)}, luma(1.6)=${l1.toFixed(1)}`)
 
-  // captions visible: band diff between caption-mid frame and post-caption frame
+  // captions visible: DIRECT bright-glyph count in the caption band. A drawn
+  // caption puts thousands of >150-luma text pixels in the band; with the
+  // caption gone the band must have none. (A paired-frame diff was tried and
+  // rejected: background motion pollutes it and per-5th-byte sampling misses
+  // thin glyph strokes — the manual PIL audit showed 14,485 bright px present
+  // while the diff read 1,854.)
   const BAND_Y0 = 1260, BAND_Y1 = H - 60
   for (const cap of S.captions) {
     const mid = (cap.ta + cap.tb) / 2
-    const outside = cap.tb + 0.7 < dur ? cap.tb + 0.7 : Math.max(0.1, cap.ta - 0.7)
-    const d = strongDiff(gray(finalPath, mid, "cm"), gray(finalPath, outside, "co"), BAND_Y0, BAND_Y1)
-    add(`caption visible: "${cap.text.slice(0, 34)}…"`, d > 3000, `${d} band-diff px`)
+    const buf = gray(finalPath, mid, "cm")
+    let bright = 0
+    for (let y = BAND_Y0; y < BAND_Y1; y++) for (let x = 0; x < W; x += 2) { if (buf[y * W + x]! > 150) bright++ }
+    // and prove the caption actually leaves: count the same band after tb
+    const outT = cap.tb + 0.7 < dur ? cap.tb + 0.7 : -1
+    let after = -1
+    if (outT > 0) {
+      const b2 = gray(finalPath, outT, "co")
+      after = 0
+      for (let y = BAND_Y0; y < BAND_Y1; y++) for (let x = 0; x < W; x += 2) { if (b2[y * W + x]! > 150) after++ }
+    }
+    add(
+      `caption visible: "${cap.text.slice(0, 34)}…"`,
+      bright > 2000 && (after < 0 || after < bright * 0.1),
+      `${bright} bright px mid, ${after < 0 ? "n/a" : after + " after"}`,
+    )
   }
 
   // camera actually moves on zoom segments (editor region, excludes caption band)
@@ -234,10 +269,8 @@ function main(): void {
 
   // grade applied but content preserved (PSNR window vs the take, establish seg)
   const a = S.segments[0]!
-  const srcT = a.in + 2.0
-  const outT = 2.0
-  sh("ffmpeg", ["-y", "-v", "error", "-ss", String(outT), "-i", finalPath, "-frames:v", "1", path.join(WORK, "pg.png")])
-  sh("ffmpeg", ["-y", "-v", "error", "-ss", String(srcT), "-i", takePath, "-frames:v", "1", path.join(WORK, "ps.png")])
+  sh("ffmpeg", ["-y", "-v", "error", "-ss", "2.0", "-i", finalPath, "-frames:v", "1", path.join(WORK, "pg.png")])
+  sh("ffmpeg", ["-y", "-v", "error", "-ss", String(a.in + 2.0), "-i", takePath, "-frames:v", "1", path.join(WORK, "ps.png")])
   const pv = psnr(path.join(WORK, "pg.png"), path.join(WORK, "ps.png"))
   add("graded, same content (PSNR window 15-42 dB)", pv >= 15 && pv <= 42, `PSNR ${pv.toFixed(1)} dB`)
 
