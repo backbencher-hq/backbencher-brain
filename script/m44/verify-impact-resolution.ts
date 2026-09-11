@@ -140,7 +140,11 @@ async function makeSeedFixture(): Promise<{ raw: any; projectId: string; dataDir
   // The SECOND class + constructor (X1 closure): real repos have several
   // same-name member rows — the seed mirrors the owner's demo repo shape.
   sym.run("sym-registry", projectId, "file-2", "Registry", "class", 1, 6, 1, 30, null, 9)
-  sym.run("sym-registry-ctor", projectId, "file-2", "constructor", "constructor", 5, 5, 26, 40, "sym-registry", 6)
+  // Gravity 20 > greeter's 6: the M48.C1 engine resolves an exact member name
+  // DIRECTLY (gravity-ordered, any type) — without the file hint it roots the
+  // WRONG constructor here. This fixture makes that masking deterministic:
+  // the hinted request must beat gravity, or the gate fails.
+  sym.run("sym-registry-ctor", projectId, "file-2", "constructor", "constructor", 5, 5, 26, 40, "sym-registry", 20)
   sym.run("sym-register", projectId, "file-2", "register", "function", 8, 11, 50, 90, null, 5)
   // Rule-3 negative at full strength: a NON-traversable member (outside the
   // engine whitelist, like the constructor) that HAS its own reverse edge —
@@ -331,17 +335,26 @@ async function main(): Promise<void> {
       }
     }
 
-    // M1: the fallback is dropped — the member dies at the door again.
+    // M1 (M53 update): the post-traverse re-root gate is dropped — the
+    // M48.C1 gravity pick rides silently. The engine resolves the member
+    // name directly (registry's higher-gravity ctor), the U5 fallback never
+    // runs, and the hint-less ambiguous name RESOLVES instead of keeping
+    // the declared error. Caught because the probe demands the declared
+    // error for the hint-less ambiguous name.
     await withComponent(
-      "fallback dropped (member dies at the door)",
-      "const owner = resolveImpactMemberOwner(db, projectId, symbolName, memberFile)",
-      "const owner = null as null | { id: string; name: string; file: string } // fallback dropped",
+      "post-traverse re-root gate dropped (gravity pick rides silently)",
+      "if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {",
+      "if (false) { // gate dropped: gravity pick allowed over the whitelist",
       async (m) => {
+        // Defect signature: with the gate gone, the engine's M48.C1 direct
+        // resolve hands back a member row (the gravity pick) and the
+        // hint-less AMBIGUOUS name resolves — the declared error the law
+        // demands is gone. Detection = observing that resolve.
         try {
-          await m.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "main.ts")
-          return false // resolved anyway => mutant survived
+          await m.computeImpact(sfx.raw, sfx.projectId, "constructor")
+          return true // ambiguous name resolved => defect observed => caught
         } catch {
-          return true // the owner-session defect reappears => caught
+          return false // still throws => this mutant shape didn't manifest
         }
       },
     )

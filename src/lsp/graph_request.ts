@@ -30,7 +30,7 @@
 //             evidenceClass passes through when stored)
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
-import { resolveImpactMemberOwner } from "./impact"
+import { resolveImpactMemberOwner, memberFileMatches, IMPACT_TRAVERSABLE_ROOT_TYPES } from "./impact"
 import type { GraphTraversalResult } from "../intelligence/contracts"
 import { buildGroupedUsages, classifyFileLevel, type GroupedUsages } from "./graph_usages"
 
@@ -109,22 +109,42 @@ async function resolveTraversalRoot(
   params: GraphRequestParams,
 ): Promise<ReturnType<typeof graphTraversal>> {
   const file = typeof params.file === "string" && params.file.length > 0 ? params.file : undefined
+  const opts = () => ({
+    direction: (params.direction as "callers" | "callees" | "both" | undefined) ?? (params.mode === GRAPH_MODE_USAGES ? "both" : undefined),
+    maxDepth: params.maxDepth as number | undefined,
+    relationshipTypes: params.relationshipTypes as string[] | undefined,
+    includeCrossLanguage: params.includeCrossLanguage as boolean | undefined,
+  })
   try {
-    return await deps.traverse(projectId, params.symbol as string, {
-      direction: (params.direction as "callers" | "callees" | "both" | undefined) ?? (params.mode === GRAPH_MODE_USAGES ? "both" : undefined),
-      maxDepth: params.maxDepth as number | undefined,
-      relationshipTypes: params.relationshipTypes as string[] | undefined,
-      includeCrossLanguage: params.includeCrossLanguage as boolean | undefined,
-    })
+    const r = await deps.traverse(projectId, params.symbol as string, opts())
+    // M53: the hover's server-resolved identity beats the engine's gravity
+    // pick — the SAME post-traverse gate as bb/impact (M48.C1 made the engine
+    // resolve member names directly, silently bypassing the U5 fallback). A
+    // non-traversable root re-resolves through its owning declaration; a
+    // hinted request whose root lands outside the hint is a silent relabel
+    // and is refused (declared error, never a guessed root).
+    const rootType = (r.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
+    if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
+      const owner = (deps.resolveMember ?? resolveImpactMemberOwner)(db, projectId, params.symbol as string, file)
+      if (owner === null) {
+        throw new GraphRequestError(
+          `bb/graph: symbol '${params.symbol}' is not a traversable root (${rootType}) — no graph exists for it (declared error: the symbol was not found as a traversable root)`,
+        )
+      }
+      const rr = await deps.traverse(projectId, owner.name, opts())
+      ;(rr as { resolution?: unknown }).resolution = { through: "owning-declaration", memberName: params.symbol, ownerName: owner.name, ...(file ? { memberFile: file } : {}) }
+      return rr
+    }
+    if (file && typeof r.root?.file === "string" && r.root.file !== "" && !memberFileMatches(file, r.root.file)) {
+      throw new GraphRequestError(
+        `bb/graph: symbol '${params.symbol}' resolves to a member in '${r.root.file}' but the hover's identity is '${file}' — the hinted symbol was not found at that identity; refusing the silent relabel (declared error)`,
+      )
+    }
+    return r
   } catch (error) {
     const owner = (deps.resolveMember ?? resolveImpactMemberOwner)(db, projectId, params.symbol as string, file)
     if (owner === null) throw error
-    const r = await deps.traverse(projectId, owner.name, {
-      direction: (params.direction as "callers" | "callees" | "both" | undefined) ?? (params.mode === GRAPH_MODE_USAGES ? "both" : undefined),
-      maxDepth: params.maxDepth as number | undefined,
-      relationshipTypes: params.relationshipTypes as string[] | undefined,
-      includeCrossLanguage: params.includeCrossLanguage as boolean | undefined,
-    })
+    const r = await deps.traverse(projectId, owner.name, opts())
     // Declare the resolution in the payload (same rule as impact): the UI
     // states what it rooted at — never a silent relabel.
     ;(r as { resolution?: unknown }).resolution = { through: "owning-declaration", memberName: params.symbol, ownerName: owner.name, ...(file ? { memberFile: file } : {}) }

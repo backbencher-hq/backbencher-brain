@@ -182,12 +182,119 @@ export function findIndexedSymbol(
   return best;
 }
 
+/** M53: the identifier under the cursor resolves to the indexed symbol it
+ *  NAMES — reference-first resolution, the same truth hover uses. This is
+ *  the call-site fix (found live during M53.R2): at a call site (`g.greet(`)
+ *  the symbol containing the position is the ENCLOSING function, so the old
+ *  containment-only model navigated to the wrong place (definition on
+ *  `greet` landed on `main`). Resolution order, declared:
+ *    1. exact-name symbol in the SAME FILE (owner of the identifier — this
+ *       includes the identifier's own declaration position),
+ *    2. else exact-name symbol UNIQUE in the workspace (cross-file use of a
+ *       uniquely-named symbol),
+ *    3. else null — declared absence. Ambiguity is NEVER guessed: a
+ *       workspace-ambiguous name falls back to containment (the enclosing
+ *       symbol is still a truthful answer), and callers keep their contract.
+ *  Returns null when the position holds no identifier or the file cannot be
+ *  read (containment remains the only model — honest degradation). */
+export function findNamedSymbolAtPosition(
+  raw: CoreDatabase,
+  filePath: string,
+  line: number,
+  character: number,
+): SymbolRow | null {
+  let sourceText: string;
+  try {
+    sourceText = readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+  const mapper = createPositionMapper(sourceText);
+  let indexPos;
+  try {
+    indexPos = mapper.lspToIndex({ line: line, character: character });
+  } catch (err) {
+    if (err instanceof PositionError) return null;
+    throw err;
+  }
+  // The identifier under the cursor, from the actual file text (per-line
+  // 1-based byte columns, the index convention P1 owns).
+  const lines = sourceText.split("\n");
+  const lineText = lines[indexPos.line - 1] ?? "";
+  // Convert the 1-based byte column to a JS string index (UTF-8 bytes → code
+  // units via a byte-accurate walk; ASCII fast path first).
+  let jsCol = indexPos.column - 1;
+  if (Buffer.byteLength(lineText, "utf8") !== lineText.length) {
+    let bytes = 0;
+    jsCol = 0;
+    for (let i = 0; i < lineText.length; i++) {
+      const b = Buffer.byteLength(lineText[i], "utf8");
+      if (bytes + b > indexPos.column - 1) break;
+      bytes += b;
+      jsCol = i + 1;
+    }
+    if (jsCol > 0) jsCol -= 0; // jsCol = first code unit at/after the byte col
+  }
+  if (jsCol > lineText.length) return null;
+  const isWordChar = (ch: string): boolean => /[A-Za-z0-9_$]/.test(ch);
+  if (jsCol < lineText.length && !isWordChar(lineText[jsCol]!)) {
+    // Cursor on a non-word char (dot, paren): step left onto the identifier.
+    if (jsCol === 0 || !isWordChar(lineText[jsCol - 1]!)) return null;
+    jsCol--;
+  }
+  let start = jsCol;
+  let end = jsCol;
+  while (start > 0 && isWordChar(lineText[start - 1]!)) start--;
+  while (end < lineText.length && isWordChar(lineText[end]!)) end++;
+  const identifier = lineText.slice(start, end);
+  if (!identifier) return null;
+  // 1. same-file exact name — the identifier's owner (declarations included).
+  const sameFile = raw
+    .prepare(
+      `SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.file_id,
+              s.byte_start, s.byte_end, s.line_start, s.line_end,
+              f.path, f.language
+       FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+       WHERE f.path = ? AND s.name = ?`,
+    )
+    .all(filePath, identifier) as SymbolRow[];
+  if (sameFile.length === 1) return sameFile[0]!;
+  if (sameFile.length > 1) {
+    // Several same-file rows share the name (overloads, member + local): the
+    // narrowest span containing the column wins (inner symbol over outer).
+    const hit = sameFile.find(
+      (r) =>
+        r.line_start !== null &&
+        r.line_end !== null &&
+        r.line_start <= indexPos.line &&
+        r.line_end >= indexPos.line,
+    );
+    if (hit) return hit;
+  }
+  // 2. workspace-unique exact name.
+  const rows = raw
+    .prepare(
+      `SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.file_id,
+              s.byte_start, s.byte_end, s.line_start, s.line_end,
+              f.path, f.language
+       FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+       WHERE s.name = ?`,
+    )
+    .all(identifier) as SymbolRow[];
+  if (rows.length === 1) return rows[0]!;
+  return null; // 3. ambiguous or unknown — declared absence (never a guess)
+}
+
 /** Resolve textDocument/definition for a position. */
 export function resolveDefinition(
   raw: CoreDatabase,
   request: DefinitionRequest,
 ): DefinitionResult {
-  const symbol = findIndexedSymbol(raw, request.filePath, request.line, request.character);
+  // M53: reference-first — the identifier the cursor is ON wins over the
+  // symbol that CONTAINS the cursor. Only when the position names nothing
+  // indexed does containment answer (enclosing symbol — the old model).
+  const named = findNamedSymbolAtPosition(raw, request.filePath, request.line, request.character);
+  const symbol = named ?? findIndexedSymbol(raw, request.filePath, request.line, request.character);
   if (symbol === null) {
     return {
       found: false,
