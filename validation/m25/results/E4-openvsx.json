@@ -8,5 +8,5 @@
   "targetRegistry": "https://open-vsx.org",
   "publishCommand": "OVSX_PAT=... npx --yes ovsx publish --pat $OVSX_PAT ide/vscode/bb-lsp-vscode-0.1.0.vsix",
   "listingUrl": null,
-  "generatedAt": "2026-09-11T16:46:26.213Z"
+  "generatedAt": "2026-09-11T17:24:16.348Z"
 }
