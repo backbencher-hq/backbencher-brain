@@ -1244,10 +1244,15 @@ export async function processWithWorkerPool(
               batch.timeout = setTimeout(() => handleWorkerTimeout(worker, msg.batchId), timeoutMs)
             }
           } else if (msg.type === "file_done") {
+            // Keep the DB batch shape AND the accounting shape in sync: the
+            // full parse result (symbols/imports/relationships/…) flows to
+            // both. A historical stub here — `{ filePath, success: true }`
+            // with no symbols — made the M22.V5 summary bucket every parsed
+            // file as symbol-loss on real (worker-pool) runs (3,000+
+            // "symbol-loss" printed next to 168k stored symbols) while
+            // small-fixture gates could not see the inflation.
             const fileResult = { filePath: msg.filePath, ...msg.result }
-            // DEBUG
-            if (!msg.result || !msg.result.symbols) process.stderr.write(`[BB-NO-RESULT] ${msg.filePath}: result=${!!msg.result} symCount=${msg.symCount}\n`)
-            results.push({ filePath: msg.filePath, success: true, timeout: false, error: undefined })
+            results.push({ ...fileResult, success: true, timeout: false, error: undefined })
             pendingDbBatch.push(fileResult)
 
             if (pendingDbBatch.length >= 20) { // Flush smaller batches to avoid blocking event loop

@@ -498,6 +498,8 @@ export interface TestIntelOptions {
   maxResults?: number
   includeMethods?: boolean
   maxDepth?: number
+  /** Scope the report to production symbols under this project-relative path prefix. */
+  filePath?: string
 }
 
 // ============================================================================

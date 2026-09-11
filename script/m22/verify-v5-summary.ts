@@ -39,6 +39,13 @@ async function run() {
   check("V5 summary exists on stats", !!sum1, JSON.stringify(sum1))
   check("V5 fresh run: newlyParsed == candidates", sum1.newlyParsed === sum1.totalCandidates && sum1.totalCandidates === 12, JSON.stringify(sum1))
   check("V5 fresh run: unchanged == 0", sum1.unchanged === 0, `unchanged=${sum1.unchanged}`)
+  // Worker-pool stub regression (post-M54 find): the file_done path used to
+  // push `{filePath, success:true}` WITHOUT symbols into the accounting array,
+  // so every parsed file was bucketed as symbol-loss on real runs (3,000+
+  // "symbol-loss" printed next to 168k stored symbols). Files that genuinely
+  // carry symbols must report ZERO loss on a fresh run — on every parse mode.
+  const parseMode = (s1 as any).phases?.mode ?? "unknown"
+  check(`V5 fresh run (${parseMode}): symbolLoss == 0 for real-symbol files`, sum1.symbolLoss === 0, JSON.stringify(sum1))
 
   // 2. immediate re-run, no changes: everything unchanged
   const s2 = await indexProjectParallel(pid, proj, {})
@@ -95,8 +102,8 @@ async function run() {
     verifierCommand: "bun run script/m22/verify-v5-summary.ts",
     evidenceFile: "V5.json", generatedAt: new Date().toISOString(),
     command: "bun run script/m22/verify-v5-summary.ts",
-    observed: { fresh: sum1, rerun: sum2, edit: sum3, loss: sum4 },
-    limitations: ["symbolLoss counts parse-success-with-zero-symbols (ENGINE_EMPTY bypass class); files whose language yields no symbols by design (e.g. pure text) are also counted here, which is honest — they produced no graph data."],
+    observed: { parseMode, fresh: sum1, rerun: sum2, edit: sum3, loss: sum4 },
+    limitations: ["symbolLoss counts parse-success-with-zero-symbols (ENGINE_EMPTY bypass class); files whose language yields no symbols by design (e.g. pure text) are also counted here, which is honest — they produced no graph data.", "The symbolLoss==0 fresh-run check is only meaningful for the recorded parseMode (phases.mode). The historical worker-pool stub bug (file_done pushed a no-symbols stub into accounting) produced inflated loss ONLY on worker-pool runs; this evidence records which mode was exercised."],
   }
   writeFileSync(path.join(RESULTS, "V5.json"), JSON.stringify(result, null, 2) + "\n")
   try {

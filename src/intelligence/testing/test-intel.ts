@@ -50,6 +50,11 @@ function classify(relType: string): TestEvidenceKind | null {
   return null
 }
 
+/** Escape %/_/\ and append the prefix wildcard for a LIKE path-prefix match. */
+function likePrefix(p: string): string {
+  return p.replace(/[\\%_]/g, (c) => "\\" + c).replace(/\/+$/, "") + "/%"
+}
+
 function strongest(links: TestLink[]): TestEvidenceKind | "none" {
   if (links.some((l) => l.evidence === "direct_call")) return "direct_call"
   if (links.some((l) => l.evidence === "reference")) return "reference"
@@ -57,15 +62,21 @@ function strongest(links: TestLink[]): TestEvidenceKind | "none" {
   return "none"
 }
 
-async function loadGraph(projectId: ProjectID, includeMethods: boolean) {
+async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath?: string) {
   const raw = await BrainDatabase.getRawInstance(projectId)
+
+  // Optional scope: production symbols under a project-relative path prefix.
+  // Applied at the SQL layer (prefix match on brain_file.relative_path) so a
+  // scoped call is cheaper than project-wide, not just a post-filter.
+  const scopeSql = filePath ? " AND f.relative_path LIKE ? ESCAPE '\\'" : ""
+  const scopeParams: string[] = filePath ? [likePrefix(filePath)] : []
 
   const prodRows = raw.prepare(
     "SELECT s.id, s.name, s.symbol_type AS symbolType, f.relative_path AS file, " +
       "COALESCE(s.line_start,0) AS line, COALESCE(s.complexity,0) AS complexity, COALESCE(s.gravity_score,0) AS gravity " +
       "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
-      "WHERE s.project_id = ? AND COALESCE(f.is_test_file,0) = 0 AND s.symbol_type IN " + PROD_SYMBOL_TYPES,
-  ).all(projectId) as ProdRow[]
+      "WHERE s.project_id = ? AND COALESCE(f.is_test_file,0) = 0 AND s.symbol_type IN " + PROD_SYMBOL_TYPES + scopeSql,
+  ).all(projectId, ...scopeParams) as ProdRow[]
 
   const testEdges = raw.prepare(
     "SELECT r.target_symbol_id AS targetId, r.relationship_type AS relType, " +
@@ -93,7 +104,7 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean) {
 export async function testMapping(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestMappingReport> {
   const includeMethods = options.includeMethods ?? true
   const maxResults = options.maxResults ?? 1000
-  const { filtered, testEdges, testFileCount, testSymCount } = await loadGraph(projectId, includeMethods)
+  const { filtered, testEdges, testFileCount, testSymCount } = await loadGraph(projectId, includeMethods, options.filePath)
 
   const linksByTarget = new Map<string, TestLink[]>()
   for (const e of testEdges) {

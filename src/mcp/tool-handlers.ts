@@ -433,7 +433,9 @@ const handlers: Record<string, ToolHandler> = {
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
     const targetModes = new Set(["callers", "callees", "trace", "complexity", "impact", "test_impact"])
-    const fileModes = new Set(["dependencies"])
+    // filePath scopes dependencies plus the three test-intel modes (path
+    // prefix); stats stays project-wide and rejects filePath.
+    const fileModes = new Set(["dependencies", "test_mapping", "test_gaps", "test_quality"])
     if (args.target && !targetModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: target`, true)
     if (args.filePath && !fileModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: filePath`, true)
     if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target) return textResult(`bb_analyze ${mode} requires target`, true)
@@ -577,7 +579,7 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "test_mapping") {
-      const report = await testMapping(projectId as any)
+      const report = await testMapping(projectId as any, { filePath: args.filePath ? String(args.filePath) : undefined })
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.entries.map((e) => ({ fileId: relToFileId().get(e.file) ?? null })),
@@ -585,7 +587,7 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "test_gaps") {
-      const report = await testGaps(projectId as any)
+      const report = await testGaps(projectId as any, { filePath: args.filePath ? String(args.filePath) : undefined })
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.gaps.map((g) => ({ fileId: relToFileId().get(g.file) ?? null })),
@@ -605,7 +607,7 @@ const handlers: Record<string, ToolHandler> = {
       return textResult(JSON.stringify({ ...report, freshness: buildStalenessEnvelope({ fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" }, { kind: "dir" }) }, null, 2))
     }
     if (mode === "test_quality") {
-      const report = await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50) })
+      const report = await testQuality(projectId as any, { maxFiles: Number(args.limit ?? 50), filePath: args.filePath ? String(args.filePath) : undefined })
       // Rows = the files in the report (<= maxFiles, default 50): complete
       // over visible rows; the sample cap still guards pathological limits.
       const relIds = relIdsFor(report.files.map((f) => f.relativePath))
