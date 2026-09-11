@@ -37,6 +37,22 @@ export function openDatabase(path: string, options: { readonly?: boolean } = {})
     db.exec("PRAGMA journal_mode = WAL")
     db.exec("PRAGMA busy_timeout = 5000")
     db.exec("PRAGMA synchronous = NORMAL")
+    // M54.P1 (#727): enforce declared FKs under Bun, matching better-sqlite3's
+    // default (node) — until now the same statement kept data under bun and
+    // cascade-deleted it under node (script/m54/probe-fk.ts A1/A3). Historical
+    // orphan rows are healed by cleanupOrphanedFkRows at every open.
+    // BB_FK_ENFORCE=0 is the documented escape hatch (gate mutation lever).
+    if (process.env.BB_FK_ENFORCE !== "0") {
+      db.exec("PRAGMA foreign_keys = ON")
+    }
+  } else {
+    // M54.P1: readonly handles cannot write, so FK policy is inert there —
+    // set it anyway for ONE uniform policy across every handle. Swallowed
+    // errors here are acceptable ONLY because gate S1c proves the pragma
+    // actually took effect on a readonly bun connection.
+    if (process.env.BB_FK_ENFORCE !== "0") {
+      try { db.exec("PRAGMA foreign_keys = ON") } catch {}
+    }
   }
   return {
     native: db,
