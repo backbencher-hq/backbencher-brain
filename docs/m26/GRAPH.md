@@ -45,9 +45,9 @@ text, no claimed bridge.
 
 | source language | target language | stored edges | bridge (sample) | origin |
 | --- | --- | --- | --- | --- |
-| _(none — no cross-language rows stored anywhere)_ | | | | |
+| typescript | json | 1 | name-resolution | real project index |
 
-Real project dbs scanned: 38 (skipped/unreadable: 3).
+Real project dbs scanned: 40 (skipped/unreadable: 3).
 
 ## Verification status (generated from the M26 evidence ledger)
 

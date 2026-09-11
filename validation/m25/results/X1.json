@@ -37,7 +37,7 @@
       "where": "M24 closure gate: hover 'content: usage count off by one'"
     },
     {
-      "category": "wrong position (\u00b11 line/col)",
+      "category": "wrong position (±1 line/col)",
       "code": "M24-P1",
       "where": "M24 closure gate: positions off-by-one mutants"
     },
@@ -62,15 +62,13 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "2e9fa293cf68e8cd1c955ad1cde11c399e200a46",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-07T22:49:03.469Z",
+  "generatedAt": "2026-09-11T03:59:20.474Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
-    "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason \u2014 the waiver decision stays the owner's).",
-    "The \u00a76 table's M24 rows point at the M24 closure gate's caught mutants (server-side classes); this gate re-proves the extension-surface classes directly."
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+    "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
+    "The §6 table's M24 rows point at the M24 closure gate's caught mutants (server-side classes); this gate re-proves the extension-surface classes directly."
+  ]
 }
