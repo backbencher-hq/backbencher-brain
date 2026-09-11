@@ -28,8 +28,8 @@
       ]
     }
   },
-  "currentCommit": "d330eb4f34e96e8e3eb46f9e2de67987ec17c442",
+  "currentCommit": "fe8ace012d436be2248f41e7926c8d9a0ad9f28f",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-09T21:57:03.946Z"
+  "generatedAt": "2026-09-11T20:00:03.913Z"
 }
