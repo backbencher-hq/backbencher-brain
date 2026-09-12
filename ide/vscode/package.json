@@ -70,6 +70,23 @@
           "default": "ask",
           "description": "Auto-index behavior on workspace open (issue #500). Indexing never starts without explicit consent."
         },
+        "bb.panelPlacement": {
+          "type": "string",
+          "enum": [
+            "activeGroup",
+            "beside",
+            "panel",
+            "secondarySidebar"
+          ],
+          "enumDescriptions": [
+            "Open hub/impact/graph panels as a tab in the current editor group, no split (default; the owner's decision).",
+            "Open panels beside the current editor, splitting the group (the pre-M55 behaviour).",
+            "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing.",
+            "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing."
+          ],
+          "default": "activeGroup",
+          "description": "Where Backbencher hub, impact and graph panels open (issue #776). Panels are reused, never duplicated, and informational panels never move the cursor."
+        },
         "bbLsp.trace.server": {
           "type": "string",
           "enum": [
