@@ -365,6 +365,38 @@
         "question": "M49 #758 B8: name \"default\" with isDefault:false lost the public binding name while export default y worked. Fix or verify co-agent's landed fix?",
         "decision": "RULED - VERIFIED ALREADY-FIXED (independent probe, this wave): the analyzer emits {name:\"default\", isDefault:true, metadata:{viaAliasDefault:true, localName:\"x\"}} — J6's alias contract (public name recorded) plus the default flag. Probe conv-j-b8.ts re-run at HEAD confirms. No new fixture needed: the B8 shape is pinned by the export-uniqueness family gate; the accessor-slot fixture's export surface is unaffected.",
         "date": "2026-09-12"
+      },
+      {
+        "id": "JSD23",
+        "node_type": "binding positions (import bindings, parameters, catch params, destructuring/pattern targets, export specifiers)",
+        "status": "RULED",
+        "question": "M49 W1 (#768): the #744 bare-read walk listed only declaration NAMES as definition sites, so every other binding position fabricated `uses @0.6` edges. Is a binding site a read?",
+        "decision": "RULED - NO. A binding position is a DEFINITION and emits no read edge. Fix landed on the analyzer (real-javascript-analyzer.ts) AND the JS lane oracle (deriveJavaScriptEdges) in the same commit; pinned by fixture javascript/binding-sites-are-not-reads (3 regression mutants: import-binding / param / destructure-target fabrication) and by F9-PROBE-JSD-BINDINGS, which additionally asserts the ORACLE does not derive the forbidden names. The RIGHT side of a pattern default (`value = seed`) stays a read.",
+        "date": "2026-09-12"
+      },
+      {
+        "id": "JSD24",
+        "node_type": "oracle-vs-analyzer collusion (process, not a grammar shape)",
+        "status": "RULED",
+        "question": "M49 W1: the javascript lane reported 100/0/0 while both sides fabricated uses for binding positions. Oracle lockstep (the C5 standing lesson) mirrored a defect instead of catching it. What stops a lane from agreeing on a wrong contract?",
+        "decision": "RULED - a lane cannot independently verify a surface whose truth is mirrored from the same contract. Two guards: (1) F9-PROBE-JSD-BINDINGS runs with oracleForbid enabled, so an oracle that derives a forbidden edge fails the battery as `oracle colludes` (new probeLang capability, reusable by every future probe; self-tested by re-introducing the fabrication and watching it fail); (2) every analyzer behavior change must be pinned by an F3 fixture asserting the SEMANTIC contract (forbidden edges), not only by lane counts.",
+        "date": "2026-09-12"
+      },
+      {
+        "id": "JSD25",
+        "node_type": "member-chain assignment LHS (write) — subtree vs node suppression",
+        "status": "RULED",
+        "question": "M49 W1: `document.getElementById(id).style.display = v` lost the read of `id` and of `style`, and `store.inner.limit = v` lost `store`/`inner`. The suppression used `continue` in a stack walk that pushes children at the loop tail, so the whole STATEMENT SUBTREE was skipped. What does a write suppress?",
+        "decision": "RULED - the write LHS suppresses ONLY its own target node, never the subtree. Reads nested inside the statement (call arguments, intermediate chain segments, the RHS) must survive; the write target itself (`limit`, `display`) must not emit a read. Implemented as a per-node guard (`if (!isWrite)`) so the tail child-push still runs. Pinned by fixture javascript/write-lhs-nested-reads with two mutants (write-lhs-subtree-skip, write-target-read-leak). Found only because the #760 cold-pool rotation sampled never-sampled files (grails-core MISSING=7, lodash MISSING=26) - no fixture had ever covered the shape, and the code comment asserted the opposite of what it did.",
+        "date": "2026-09-12"
+      },
+      {
+        "id": "JSD26",
+        "node_type": "member-chain head in call-rooted chains",
+        "status": "RULED",
+        "question": "M49 W1: for a call-rooted chain the head was emitted as raw node TEXT, so `document.getElementById(id).style = v` produced `uses -> document.getElementById(id)` — a target that is not a symbol. Emit or not?",
+        "decision": "RULED - the chain head is a read only when it IS an identifier (the chain-root contract). A call/literal head carries no symbol; the call already has its `calls` edge. Analyzer + oracle gated identically; pinned by javascript/write-lhs-nested-reads (`targetEndsWith` forbid) and mutant javascript/chain-head-expression-fabrication.",
+        "date": "2026-09-12"
       }
     ]
   }
