@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-12T15:23:43.949Z",
+  "updatedAt": "2026-09-12T15:50:37.588Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -39,10 +39,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "ae9259545775ab98ae880aa3a18394627a197051",
+        "currentCommit": "8b50cdc2066534a0b9337411f5db8c7d1657ffca",
         "verifierCommand": "npx tsx script/m56/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-12T15:07:58.316Z",
+        "generatedAt": "2026-09-12T15:24:05.655Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 13
@@ -64,7 +64,17 @@
       "code": "E1",
       "githubIssue": 780,
       "tool": "site",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "5b1ac195af33bc7e7addf2a858db5f140c4c3399",
+        "verifierCommand": "npx tsx script/m56/verify-editors-page.ts",
+        "evidenceFile": "E1.json",
+        "generatedAt": "2026-09-12T15:40:38.279Z",
+        "passed": 27,
+        "failed": 0,
+        "negativeCases": 5
+      },
       "scope": "editors and IDEs surface: bb_lsp features, four editor integrations, per-language claim matrix, declared exclusions, publishing status, real stills",
       "acceptanceCriteria": [
         "/editors renders every declared LSP feature and exclusion",
@@ -85,10 +95,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "8b50cdc2066534a0b9337411f5db8c7d1657ffca",
+        "currentCommit": "5b1ac195af33bc7e7addf2a858db5f140c4c3399",
         "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-12T15:23:30.504Z",
+        "generatedAt": "2026-09-12T15:41:54.111Z",
         "passed": 28,
         "failed": 0,
         "negativeCases": 6
