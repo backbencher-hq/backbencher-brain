@@ -82,7 +82,16 @@ for (const f of ["hero-cut.mp4", "hero-cut-money.mp4", "hero-poster.jpg", "hero-
 
 // --- 5. gates extended honestly -----------------------------------------------------
 
-check("T1: M41 SEO gate route list extended with /demos", read(path.join(ROOT, "script/m41/verify-seo.ts")).includes('"/demos"'))
+// The SEO gate no longer keeps its own route list: it DISCOVERS routes from
+// website/src/app and demands exact sitemap parity (M41.S1 addendum 2026-09-12).
+// That covers /demos more strongly than a hand-copied entry did — a route added
+// without a sitemap line now fails S1 by construction — so the honest check is
+// that the discovery+parity mechanism is present, and that /demos is still in
+// the sitemap it compares against.
+check(
+  "T1: M41 SEO gate covers /demos by route discovery + sitemap parity",
+  read(path.join(ROOT, "script/m41/verify-seo.ts")).includes("discoverRoutes") && sitemapSrc.includes('"/demos"'),
+)
 check("T1: M41 design gate accepts the live terminal hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("HeroTerminal"))
 
 // --- 6. build truth -------------------------------------------------------------------
