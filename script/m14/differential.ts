@@ -5540,6 +5540,18 @@ async function main() {
   // Only for canonical full sweeps — probe runs (--repo/--sample) always
   // recompute and never read the journal.
   const resume = !REPO && !process.argv.includes("--sample")
+  // One grammar per LANGUAGE, cached and reused by that language's second-corpus
+  // lane, plus a Parser per lane that is freed when the lane ends. Both
+  // allocations live in the fixed-size wasm heap and neither is reclaimed by
+  // JS GC: loading a language module and constructing a Parser for EVERY lane
+  // (42 loads for 21 languages) exhausted the heap and aborted the sweep
+  // mid-run with `RuntimeError: Out of bounds call_indirect` at
+  // `new ParserClass()`, after which no evidence is written at all - which is
+  // why M14.0.F5 is the one artifact still pre-#761 `__LEGACY__` while
+  // everything else acquired lineage: the sweep could not reach its own
+  // evidence write. The zero-truth guard below catches the dead-parser state
+  // this can still produce.
+  const PARSER_CACHE = new Map<string, { grammar: any }>()
   let resumedLanes = 0
   const laneJournal: Record<string, any> = resume && fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
   // Lane sweep: primary + second corpus per gated language (two-corpus gate).
@@ -5590,9 +5602,13 @@ async function main() {
       continue
     }
 
-    const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+    let cached = PARSER_CACHE.get(lang)
+    if (!cached) {
+      cached = { grammar: await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm))) }
+      PARSER_CACHE.set(lang, cached)
+    }
     const parser = new ParserClass()
-    parser.setLanguage(grammar)
+    parser.setLanguage(cached.grammar)
     const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
     const analyzer = new mod[cfg.className]()
 
@@ -6090,6 +6106,19 @@ async function main() {
       // error, never a silent skip).
       throw new Error(`differential: corpus repo ${langRepo} contains no ${lang} files — fix LANG_REPOS/SECOND_CORPUS routing for ${lang}`)
     }
+    if (treeEdgesTotal === 0) {
+      // Parsed-but-empty guard (F5 refresh, 2026-09-12). When the web-tree-sitter
+      // heap dies mid-sweep it does not always throw: it returns EMPTY trees, and
+      // the lane then reports
+      // `files=60 tree-truth=0 covered=0 (null%) MISSING=0 unexplained=0` - a row
+      // that passes while verifying nothing (observed on [ripgrep] rust and
+      // [alamofire] swift, immediately before `Out of bounds call_indirect`).
+      // Worse, the crash-resume journal PERSISTS such a row as a finished lane,
+      // so the fabrication outlives the crash that caused it. A non-empty sample
+      // that derives zero truth edges is a dead parser or a dead oracle, never a
+      // clean lane: re-route the lane or fix the oracle.
+      throw new Error(`differential: ${langRepo}:${lang} parsed ${sample.length} file(s) and derived ZERO truth edges - the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`)
+    }
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
     else report[lang] = row
     console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%)`)
@@ -6101,6 +6130,9 @@ async function main() {
     fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
     const journal = fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
     journal[lane.isSecond ? `${langRepo}:${lang}` : lang] = { row, repo: langRepo, isSecond: !!lane.isSecond }
+    // Release the lane's parser now that its row is durable (the grammar stays
+    // cached for the language's second corpus).
+    try { (parser as any).delete?.() } catch { /* already torn down by a parser abort */ }
     fs.writeFileSync(LANE_JOURNAL, JSON.stringify(journal, null, 2))
   }
 

@@ -1,0 +1,783 @@
+{
+  "javascript": {
+    "row": {
+      "filesSampled": 52,
+      "treeTruthEdges": 558,
+      "coveredByAnalyzer": 558,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 558,
+      "explainableByTree": 558,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 5.7,
+        "maxMsPerFile": 79.1,
+        "samplesTimed": 52,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "32c4318f0f3db775",
+      "samples": []
+    },
+    "repo": "grails-core",
+    "isSecond": false
+  },
+  "lodash:javascript": {
+    "row": {
+      "filesSampled": 55,
+      "treeTruthEdges": 12232,
+      "coveredByAnalyzer": 12232,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 12232,
+      "explainableByTree": 12232,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 548.9,
+        "maxMsPerFile": 10237.5,
+        "samplesTimed": 55,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "494e1b94766e8ade",
+      "samples": []
+    },
+    "repo": "lodash",
+    "isSecond": true
+  },
+  "typescript": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 1001,
+      "coveredByAnalyzer": 1001,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 992,
+      "explainableByTree": 992,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 38,
+        "maxMsPerFile": 228.6,
+        "samplesTimed": 60,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "b89c77ae8d58207b",
+      "samples": []
+    },
+    "repo": "vue-core",
+    "isSecond": false
+  },
+  "element-plus:typescript": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 441,
+      "coveredByAnalyzer": 441,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 440,
+      "explainableByTree": 440,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 17.5,
+        "maxMsPerFile": 583.8,
+        "samplesTimed": 60,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "992ce7e26be955e3",
+      "samples": []
+    },
+    "repo": "element-plus",
+    "isSecond": true
+  },
+  "kotlin": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 1498,
+      "coveredByAnalyzer": 1498,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 1374,
+      "explainableByTree": 1329,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 45,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 38.1,
+        "maxMsPerFile": 239.9,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "77246e9a7d7a46e5",
+      "samples": []
+    },
+    "repo": "Exposed",
+    "isSecond": false
+  },
+  "kotlinx-coroutines:kotlin": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 1148,
+      "coveredByAnalyzer": 1148,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 1076,
+      "explainableByTree": 1007,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 69,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 11,
+        "maxMsPerFile": 45.2,
+        "samplesTimed": 60,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "2e3e5893781d2da9",
+      "samples": []
+    },
+    "repo": "kotlinx-coroutines",
+    "isSecond": true
+  },
+  "scala": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 857,
+      "coveredByAnalyzer": 857,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 672,
+      "explainableByTree": 650,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 22,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 8.7,
+        "maxMsPerFile": 202.5,
+        "samplesTimed": 60,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "c30a6a19c8b6f4bb",
+      "samples": []
+    },
+    "repo": "scala3",
+    "isSecond": false
+  },
+  "cats-effect:scala": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 1253,
+      "coveredByAnalyzer": 1253,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 961,
+      "explainableByTree": 949,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 12,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 12.5,
+        "maxMsPerFile": 114.9,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "ddf7a481f629fa25",
+      "samples": []
+    },
+    "repo": "cats-effect",
+    "isSecond": true
+  },
+  "java": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 1050,
+      "coveredByAnalyzer": 1050,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 1160,
+      "explainableByTree": 1046,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 114,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 8.4,
+        "maxMsPerFile": 76,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "c25c334ab86246df",
+      "samples": []
+    },
+    "repo": "grails-core",
+    "isSecond": false
+  },
+  "clojure:java": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 923,
+      "coveredByAnalyzer": 923,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 849,
+      "explainableByTree": 823,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 26,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 31.3,
+        "maxMsPerFile": 616.6,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "c9d6a3b4b3fb8eb6",
+      "samples": []
+    },
+    "repo": "clojure",
+    "isSecond": true
+  },
+  "groovy": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 678,
+      "coveredByAnalyzer": 678,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 710,
+      "explainableByTree": 674,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 36,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 5,
+        "maxMsPerFile": 51.7,
+        "samplesTimed": 60,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "3a83243494f94bd4",
+      "samples": []
+    },
+    "repo": "grails-core",
+    "isSecond": false
+  },
+  "geb:groovy": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 500,
+      "coveredByAnalyzer": 500,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 525,
+      "explainableByTree": 497,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 28,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 4.1,
+        "maxMsPerFile": 102.5,
+        "samplesTimed": 60,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "9383402168851261",
+      "samples": []
+    },
+    "repo": "geb",
+    "isSecond": true
+  },
+  "vue": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 408,
+      "coveredByAnalyzer": 408,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 408,
+      "explainableByTree": 408,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 17.4,
+        "maxMsPerFile": 287,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "bd8f28da2eef59d2",
+      "samples": []
+    },
+    "repo": "element-plus",
+    "isSecond": false
+  },
+  "vue-element-admin:vue": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 436,
+      "coveredByAnalyzer": 436,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 434,
+      "explainableByTree": 434,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 12.2,
+        "maxMsPerFile": 52.2,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "f7b5dc11259725e2",
+      "samples": []
+    },
+    "repo": "vue-element-admin",
+    "isSecond": true
+  },
+  "svelte": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 29,
+      "coveredByAnalyzer": 29,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 30,
+      "explainableByTree": 29,
+      "unexplainedInAnalyzer": 1,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 3.3,
+      "perf": {
+        "avgMsPerFile": 2.9,
+        "maxMsPerFile": 12.5,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "8b9dc0f432e388c6",
+      "samples": [
+        {
+          "dir": "UNEXPLAINED",
+          "file": "packages/svelte/tests/runtime-legacy/samples/dynamic-component-this/main.svelte",
+          "label": "instantiates",
+          "target": "Test",
+          "line": 0,
+          "confidence": 0.95
+        }
+      ]
+    },
+    "repo": "svelte",
+    "isSecond": false
+  },
+  "shadcn-svelte:svelte": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 537,
+      "coveredByAnalyzer": 537,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 534,
+      "explainableByTree": 534,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 8.7,
+        "maxMsPerFile": 46.9,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "a45282e1f018bd91",
+      "samples": []
+    },
+    "repo": "shadcn-svelte",
+    "isSecond": true
+  },
+  "cpp": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 4184,
+      "coveredByAnalyzer": 4184,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 4034,
+      "explainableByTree": 4034,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 68.9,
+        "maxMsPerFile": 922.5,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "8797063f41dd5263",
+      "samples": []
+    },
+    "repo": "fmt",
+    "isSecond": false
+  },
+  "nlohmann-json:cpp": {
+    "row": {
+      "filesSampled": 17,
+      "treeTruthEdges": 887,
+      "coveredByAnalyzer": 887,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 878,
+      "explainableByTree": 878,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 18.4,
+        "maxMsPerFile": 819.9,
+        "samplesTimed": 17,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "88dc095dd86d8301",
+      "samples": []
+    },
+    "repo": "nlohmann-json",
+    "isSecond": true
+  },
+  "c": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 6716,
+      "coveredByAnalyzer": 6714,
+      "missingInAnalyzer": 2,
+      "analyzerEdges": 6714,
+      "explainableByTree": 6714,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": 100,
+      "fabricationPct": 0,
+      "perf": {
+        "avgMsPerFile": 127.7,
+        "maxMsPerFile": 954.3,
+        "samplesTimed": 60,
+        "loadAvgRetried": false
+      },
+      "sampleSetHash": "a52b58aa994cb6db",
+      "samples": [
+        {
+          "dir": "MISSING",
+          "file": "ext/misc/basexx.c",
+          "label": "uses",
+          "from": "(expr)",
+          "target": "SQLITE_EXTENSION_INIT1"
+        },
+        {
+          "dir": "MISSING",
+          "file": "src/tclsqlite.c",
+          "label": "uses",
+          "from": "(expr)",
+          "target": "SQLITE_TCLAPI"
+        }
+      ]
+    },
+    "repo": "sqlite",
+    "isSecond": false
+  },
+  "jq:c": {
+    "row": {
+      "filesSampled": 45,
+      "treeTruthEdges": 2938,
+      "coveredByAnalyzer": 2934,
+      "missingInAnalyzer": 4,
+      "analyzerEdges": 2967,
+      "explainableByTree": 2939,
+      "unexplainedInAnalyzer": 28,
+      "heuristicUnexplained": 0,
+      "coveragePct": 99.9,
+      "fabricationPct": 0.9,
+      "perf": {
+        "avgMsPerFile": 78.9,
+        "maxMsPerFile": 964.1,
+        "samplesTimed": 45,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "2b743b65d0eac283",
+      "samples": [
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/jv.c",
+          "label": "uses",
+          "target": "ITER_FINISHED",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/parser.c",
+          "label": "uses",
+          "target": "YY_INITIAL_VALUE",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yyscanner",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yylval_param",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yylloc_param",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yyg",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yy_cp",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yy_current_state",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yy_act",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "escapes",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yy_amount_of_matched_text",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "yy_next_state",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/lexer.c",
+          "label": "uses",
+          "target": "offset",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "vendor/decNumber/decNumber.c",
+          "label": "uses",
+          "target": "lhs",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "vendor/decNumber/decNumber.c",
+          "label": "uses",
+          "target": "rhs",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "last_var",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "is_empty_var",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "call_arg",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "if_empty",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "builtin_defs",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "builtin_def_1arg",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "rangestart",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "rangevar",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/builtin.c",
+          "label": "uses",
+          "target": "range",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "MISSING",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "from": "(expr)",
+          "target": "ROUND_BIASED"
+        },
+        {
+          "dir": "MISSING",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "from": "(expr)",
+          "target": "Sudden_Underflow"
+        },
+        {
+          "dir": "MISSING",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "from": "(expr)",
+          "target": "NO_HEX_FP"
+        },
+        {
+          "dir": "MISSING",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "from": "(expr)",
+          "target": "Avoid_Underflow"
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "target": "Round_up",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "target": "Round_down",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "target": "Round_near",
+          "line": 0,
+          "confidence": 1
+        },
+        {
+          "dir": "UNEXPLAINED",
+          "file": "src/jv_dtoa.c",
+          "label": "uses",
+          "target": "Round_zero",
+          "line": 0,
+          "confidence": 1
+        }
+      ]
+    },
+    "repo": "jq",
+    "isSecond": true
+  },
+  "rust": {
+    "row": {
+      "filesSampled": 60,
+      "treeTruthEdges": 0,
+      "coveredByAnalyzer": 0,
+      "missingInAnalyzer": 0,
+      "analyzerEdges": 0,
+      "explainableByTree": 0,
+      "unexplainedInAnalyzer": 0,
+      "heuristicUnexplained": 0,
+      "coveragePct": null,
+      "fabricationPct": null,
+      "perf": {
+        "avgMsPerFile": null,
+        "maxMsPerFile": null,
+        "samplesTimed": 0,
+        "loadAvgRetried": true
+      },
+      "sampleSetHash": "076f8a01febdccf4",
+      "samples": []
+    },
+    "repo": "ripgrep",
+    "isSecond": false
+  }
+}
