@@ -457,5 +457,64 @@
       ],
       "evidence": "reviews/m49-w8-evidence-identity.md, script/m49/verify-evidence-identity.ts, validation/m49/evidence-producer-register.json, script/m14/verify-honesty.ts, script/m14/emit-f2-evidence.ts, script/m14/verify-fixture-coverage.ts, validation/m14/results/M14.0.{F2,F6,F7,F8,F9,PIPE,WC1,SC1}.json, docs/M14-SYSTEMS-DELEGATED-SIGNOFF.md, docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md, docs/M14-COMPLETENESS-LEDGER.md ; reproducibility: F2/F6/F7/F8/F9 regenerated in a clean `git worktree` of 8f4aaec1 (node_modules symlinked) are byte-identical to the committed artifacts once the lineage fields (regeneratedAt/regeneratedAtCommit/commit/committedAt) are removed, so the committed evidence is HEAD-faithful and the F6 verdict reproduces on a clean checkout rather than only in the shared dirty tree"
     }
+,
+{
+    "id": "M49.W9",
+    "title": "F6 dead-literal adjudication closed: all 24 resolved on grammar evidence, the java arity defect repaired and pinned, F6 wired; the zig parameter-binding defect registered, not landed",
+    "date": "2026-09-12",
+    "commit": "54dc2daa (+ 69984c68 evidence regenerated from HEAD, 54f8fbe5 G1 language/document classification)",
+    "method": "W8 had wired F6 for the first time and it promptly failed on 24 analyzer literals across java/javascript/cpp/go/zig that are neither node types in the pinned grammar nor spec-classified - F6 calls that dead code, the class 'the branch can never fire'. Each literal was adjudicated from the grammars themselves, not from reading the analyzer: (1) is it in the grammar's raw symbol enumeration including the underscore-prefixed hidden rules; (2) does it occur anywhere in the language's fixture corpus (all children, anonymous included); (3) can a targeted source that exercises the construct produce it. A separate risk was settled first because it would have invalidated every verdict: WHICH grammar does the analyzer load - the M14 harness and the production path (bbWasmCandidates -> <repo>/wasm/...) both resolve to the vendored wasm/ dir, so the probe grammar is production's grammar. Verdict: all 24 grammar-dead. The deciding question was then whether each dead branch carried weight, and exactly one did: java's argument-count guard skipped a node type named 'comment' that tree-sitter-java does not define (comments are line_comment/block_comment), so the skip never fired and `g(1 /* c */, 2)` reported argumentCount 3 - a live defect in the payload a consumer uses to tell overloads apart. The java annotation-name fallback and the js property_signature disjunct were redundant dead names (removed, doc corrected); the cpp/go/zig removals and re-pointings are provably behaviour-preserving (a name that matches no node type cannot change a branch) and that is measured, not argued: the zig edge set over all 90 .zig files of the zls corpus is byte-identical before and after. One dead literal was a whole no-op function (zig hasZigQualifiedAncestor, whose only true return referenced a type that cannot exist). The zig literal list also exposed a REAL defect - the scope model binds every identifier under a parameter node, so names that appear only in a parameter's TYPE become bindings and suppress genuine reads (probe-verified: zero uses edges where one is required, e.g. a struct type field named FLAG shadowing a file-level const FLAG) - whose fix was written, measured, and HELD: it removes the accidental shadowing and thereby exposes a second pre-existing gap (signature-region names surfacing as bare value reads), and the in-flight oracle DERIVES those reads, so landing the analyzer half alone would leave the two contradicting. The analyzer's behaviour is verified exactly unchanged and the defect is registered. Closing this also exposed a gate bug in F6 itself: it read analyzer source as raw text, so an audit note quoting a removed literal counted as a live one - the gate would keep a removed literal dead forever precisely because it was documented. F6 now scans comment-masked source with a --selftest that proves (positionally, per gated language) that every removed occurrence is inside a comment, that masking never invents a literal, and that the gate can still fail. F6's findings are resolved, so its G8 register row is removed and the producer is wired.",
+    "findings": [
+      {
+        "issue": null,
+        "lang": "java",
+        "class": "payload-drift-argumentCount",
+        "severity": "high",
+        "ledgerId": "W9",
+        "note": "argumentCount skipped a node type the pinned grammar does not define, so a comment inside an argument list counted as an argument: g(1, 2) -> 2 (correct) but g(1 /* inline */, 2) -> 3 and g(/* nothing */) -> 1. Inline comments in argument lists are ordinary formatted Java. Fixed by skipping line_comment/block_comment; pinned by fixture java/argument-count-comment-exclusion (each call its own target so no clean sibling can satisfy the pin) and mutant java/argument-count-inflation, which is CAUGHT by exactly that fixture plus the pre-existing java/overload-arity-varargs-multicatch. Non-vacuity proven by restoring the pre-fix guard in place and re-running the fixture (FAIL on the exact arity assertions)."
+      },
+      {
+        "issue": null,
+        "lang": "zig",
+        "class": "param-type-binding-shadows-real-reads",
+        "severity": "high",
+        "ledgerId": "W9",
+        "note": "bindIdentifiersUnder binds every identifier under a parameter node, so names appearing only in a parameter's TYPE become bindings and suppress genuine reads - probe-verified zero uses edges for a file-level const FLAG shadowed by a struct type field of the same name, and the same class covers `w: io.Writer` binding io. The stop-list meant to bound the damage named composite_literal/func_literal, which cannot occur in tree-sitter-zig, so it bounded nothing. REGISTERED, NOT LANDED: the fix (bind declared NAMES, not subtrees) removes the accidental shadowing correctly and thereby exposes a second pre-existing gap - identifiers in type position were only ever silenced as a side-effect of being wrongly bound - and the in-flight oracle in differential.ts derives those signature-region reads, so landing one half would contradict the other. Measured: the analyzer's edge set over the 90-file zls corpus is byte-identical before and after (218 identifier_usage reads, zero diff). The fix and its full evidence, including the tree-sitter-zig trap that `!` in `if (!enable)` parses as an error_union_type (the same node a real Error!T return type uses, so a node-type-keyed guard silently deletes a genuine body read), are recorded in the review file so the systems-family wave lands analyzer and oracle together."
+      },
+      {
+        "issue": null,
+        "lang": "java,typescript,javascript,cpp,go,zig",
+        "class": "dead-node-type-fallbacks",
+        "severity": "medium",
+        "ledgerId": "W9",
+        "note": "23 further literals across five languages are grammar-dead and not spec-classified: java _reserved_identifier (a hidden rule, so .type can never equal it) in the annotation-name fallback; js property_signature (TypeScript-only, the analyzer loads the JS grammar); cpp template_type_parameter/template_value_parameter/compound_assignment_expression (live siblings exist) and typename_specifier (re-pointed to the real node dependent_type); go field_expression/compound_assignment_statement (go spells these selector_expression/assignment_statement); zig struct_item/enum_item/union_item/type_item/mod_item/package_clause/type_identifier/field_identifier/label_name/continue_label (rust/go names) and a whole no-op function hasZigQualifiedAncestor. W8 registered this as adjudication owed; W9 adjudicated it, resolved it, and measured the removals as behaviour-preserving rather than asserting it."
+      },
+      {
+        "issue": null,
+        "lang": "process",
+        "class": "gate-blind-to-its-own-documentation",
+        "severity": "medium",
+        "ledgerId": "W9",
+        "note": "F6 scanned analyzer source as raw text, so an audit note QUOTING a removed literal counted as a live comparison - the gate would have kept a removed literal dead forever because it was documented, and would have punished the documentation that justified the removal. F6 now scans comment-masked source, with --selftest proving (positionally, per gated language) that every masked occurrence was inside a comment, that masking never invents a literal, and that a synthetic dead literal in CODE still fails while the identical text in a // or /* */ comment does not."
+      },
+      {
+        "issue": null,
+        "lang": "process",
+        "class": "wired-gate-bakes-working-tree-data",
+        "severity": "medium",
+        "ledgerId": "W9",
+        "note": "The F6 artifact first committed with W9 had been produced in the shared tree, so its per-language fixture-type totals baked another wave's uncommitted fixtures (cpp 150 vs 147, rust 162 vs 161, go 116 vs 105) - the exact W7 defect class, evidence derived from the working tree rather than HEAD. Detected by regenerating the gate in a clean worktree of the commit and byte-comparing, not by inspection. 69984c68 replaces the artifact with the HEAD-faithful one."
+      },
+      {
+        "issue": null,
+        "lang": "process",
+        "class": "gate-language-document-misclassification",
+        "severity": "low",
+        "ledgerId": "W9",
+        "note": "M49.G1 classified every entry in reviews/ as a language, so landing a top-level review document (reviews/m49-w9-*.md) made it demand a language row for a file, while R1 already filtered to directories - the two gates disagreed about what a language is. Fixed in 54f8fbe5: languages are directories (board check unchanged, so coverage is not weakened), documents get their own correctly-scoped presence check, and two negatives make the classification non-vacuous and the document rule able to fail (proven end-to-end: a synthetic unboarded document fails G1; removing it restores 100/0/10)."
+      }
+    ],
+    "evidence": "reviews/m49-w9-fixture-coverage-adjudication.md, reviews/onboarding.md, src/ast/real-java-analyzer.ts, src/ast/real-javascript-analyzer.ts, script/m14/verify-fixture-coverage.ts, script/m14/mutate-analyzer.ts (java/argument-count-inflation), script/m49/verify-governance.ts, validation/m14/fixtures/java/argument-count-comment-exclusion.{java,expectation.json}, validation/m14/results/M14.0.F6.json, validation/m49/evidence-producer-register.json ; reproducibility: F6 (21/21 languages PASS, 0 uncovered / 0 dead literals) and its --selftest both pass in a clean `git worktree` of 54dc2daa with node_modules symlinked, the artifact regenerated there is byte-identical to the committed one once lineage fields are stripped, the mutation battery on that clean tree reports all 429 mutants caught with java/argument-count-inflation caught by exactly the two arity fixtures, and G1/G4/G6/G8 + evidence-lineage are green at the same commit"
+  }
   ]
 }
