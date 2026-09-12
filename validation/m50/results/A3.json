@@ -2,13 +2,13 @@
   "gate": "M50.A3",
   "issue": 765,
   "milestone": "M50",
-  "at": "2026-09-12T14:26:41.530Z",
-  "commit": "522966109bea6b2138112021e6ce174e9dea9456",
+  "at": "2026-09-12T14:43:01.720Z",
+  "commit": "bbb8e604ab0acd2e6554bf24721a1d1b84222b39",
   "checks": 33,
-  "passed": 28,
-  "failed": 5,
+  "passed": 33,
+  "failed": 0,
   "verifierCommand": "npx tsx script/m50/verify-a3-guidance-truth.ts",
-  "status": "known-gap",
+  "status": "verified",
   "method": "generation/idempotence/check-semantics/ghost-scan over the real onboard module + the real CLI, with four mutations (ghost injected, row deleted, predicate falsifiability, retired-name discipline)",
   "registryTools": 16
 }
