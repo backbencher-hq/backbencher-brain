@@ -1734,44 +1734,59 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               const lhs = node.parent!.childForFieldName("left") ?? node.parent!.namedChild(0)
               isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
             }
-            if (isWrite) continue
-            // M49 #744 (web fix wave, java #739 family contract): the chain
-            // ROOT identifier is a read too — `config.inner.deeper.leaf`
-            // emitted uses inner/deeper/leaf but dropped `config`, the
-            // identifier the read actually starts from. Emit it with the
-            // same owner/source rules as the segments (this/super excluded:
-            // they are keywords, not symbols).
-            if (head && head !== "this" && head !== "super") {
-              const rootSource = method ?? owner ?? moduleName
-              const rootKey = `${rootSource}.#${head}`
-              if (!seen.has(rootKey)) {
-                seen.add(rootKey)
-                relationships.push({
-                  source: rootSource,
-                  target: head,
-                  type: ASTEngine.RelationshipType.Uses,
-                  confidence: 0.6,
-                  metadata: { isFieldAccess: true, chainRoot: true },
-                })
+            // M49 W1 (#768): a write LHS suppresses only THIS node's own
+            // emission — the subtree MUST still be walked. The pre-fix
+            // `continue` skipped the child-push at the loop tail, so every
+            // read nested inside a member-chain assignment was lost: call
+            // arguments (`document.getElementById(x).style.display = v`
+            // dropped the read of x) and intermediate segments (`.style`).
+            // The comment claimed inner segments stayed reads; the code did
+            // the opposite. Uncovered by any fixture until the #760 cold-pool
+            // rotation surfaced it on grails-core/lodash.
+            if (!isWrite) {
+              // M49 #744 (web fix wave, java #739 family contract): the chain
+              // ROOT identifier is a read too — `config.inner.deeper.leaf`
+              // emitted uses inner/deeper/leaf but dropped `config`, the
+              // identifier the read actually starts from. Emit it with the
+              // same owner/source rules as the segments (this/super excluded:
+              // they are keywords, not symbols).                // M49 W1 (#768): the head is a read only when it IS an
+                // identifier. A call-rooted chain (`document.getElementById(x)
+                // .style = v`) has an expression for a head — emitting its raw
+                // TEXT fabricated a garbage target (`uses -> document.getElement
+                // ById(x)`), a non-symbol in the graph. The call itself already
+                // carries the calls edge.
+                if (head && head !== "this" && head !== "super" && cur?.type === "identifier") {
+                  const rootSource = method ?? owner ?? moduleName
+                const rootKey = `${rootSource}.#${head}`
+                if (!seen.has(rootKey)) {
+                  seen.add(rootKey)
+                  relationships.push({
+                    source: rootSource,
+                    target: head,
+                    type: ASTEngine.RelationshipType.Uses,
+                    confidence: 0.6,
+                    metadata: { isFieldAccess: true, chainRoot: true },
+                  })
+                }
               }
-            }
-            for (const seg of parts) {
-              // JSD2: this/super read the TYPE's member (swift/java JAD2
-              // precedent). Outside a class there IS no type — a bare
-              // function's this is dynamic; pre-M37 the edge leaked with the
-              // literal keyword as source (uses this -> value). Fall back to
-              // the enclosing function (the only static owner that exists).
-              const source = head === "this" || head === "super" ? owner ?? method ?? moduleName : method ?? owner ?? moduleName
-              const key = `${source}.${seg}`
-              if (!seen.has(key)) {
-                seen.add(key)
-                relationships.push({
-                  source,
-                  target: seg,
-                  type: ASTEngine.RelationshipType.Uses,
-                  confidence: 0.6,
-                  metadata: { isFieldAccess: true },
-                })
+              for (const seg of parts) {
+                // JSD2: this/super read the TYPE's member (swift/java JAD2
+                // precedent). Outside a class there IS no type — a bare
+                // function's this is dynamic; pre-M37 the edge leaked with the
+                // literal keyword as source (uses this -> value). Fall back to
+                // the enclosing function (the only static owner that exists).
+                const source = head === "this" || head === "super" ? owner ?? method ?? moduleName : method ?? owner ?? moduleName
+                const key = `${source}.${seg}`
+                if (!seen.has(key)) {
+                  seen.add(key)
+                  relationships.push({
+                    source,
+                    target: seg,
+                    type: ASTEngine.RelationshipType.Uses,
+                    confidence: 0.6,
+                    metadata: { isFieldAccess: true },
+                  })
+                }
               }
             }
           }
@@ -1799,7 +1814,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const isDeclName = (p7?.type === "variable_declarator" && p7.childForFieldName("name")?.id === node.id) ||
             p7?.type === "function_declaration" || p7?.type === "function_expression" ||
-            p7?.type === "generator_function_declaration" || p7?.type === "method_definition" ||
+            p7?.type === "generator_function_declaration" || p7?.type === "generator_function" ||
+            p7?.type === "method_definition" ||
             p7?.type === "class_declaration" || p7?.type === "class"
           const isPropKey = (p7?.type === "pair" || p7?.type === "pair_pattern") && p7.childForFieldName("key")?.id === node.id
           const isMemberPart = p7?.type === "member_expression"
@@ -1812,7 +1828,24 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isJsxName = p7?.type.startsWith("jsx_") ?? false
           const isLabel = p7?.type === "labeled_statement"
           const isShorthandProp = p7?.type === "shorthand_property_identifier"
-          if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isJsxName) {
+          // M49 W1 (#768 binding-site wave): a BINDING site is a DEFINITION,
+          // never a read. The #744 bare-read walk listed declaration NAMES as
+          // the only definition positions, so every other binding position
+          // fabricated a `uses @0.6` edge: import bindings (`import Comp from`),
+          // parameters (`function f(a)` / `(a, b) =>` / `a =>`), catch params,
+          // destructuring targets (`{a: c}`, `[...rest]`) and export aliases
+          // (`export { a as b }` — target `b` is not even a symbol).
+          // Grammar shapes measured on the pinned wasm, not guessed.
+          const isImportBinding = p7?.type === "import_clause" || p7?.type === "import_specifier" || p7?.type === "namespace_import"
+          const isParamBinding = p7?.type === "formal_parameters" || p7?.type === "arrow_function" || p7?.type === "catch_clause"
+          const isPatternBinding =
+            p7?.type === "rest_pattern" || p7?.type === "array_pattern" || p7?.type === "pair_pattern" ||
+            // `a = 1` in a pattern: the LEFT is the binding, the RIGHT is a
+            // genuine read (`function f(a = b)` must still read b).
+            (p7?.type === "assignment_pattern" && (p7.childForFieldName("left") ?? p7.namedChild(0))?.id === node.id)
+          const isExportSpecifier = p7?.type === "export_specifier"
+          const isBindingSite = isImportBinding || isParamBinding || isPatternBinding || isExportSpecifier
+          if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isJsxName && !isBindingSite) {
             const bSource = method ?? owner ?? moduleName
             const bKey = `${bSource}.#${txt}`
             if (!seen.has(bKey)) {

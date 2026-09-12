@@ -832,7 +832,10 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         }
         const head = cur ? cur.text : ""
         for (const seg of parts) push("uses", seg)
-        if (head && head !== "this" && head !== "super") push("uses", head)
+        // M49 W1 (#768) mirror: a head that is not an identifier (a call or a
+        // literal) is not a symbol — the analyzer stopped emitting it as a
+        // target, so the truth must not derive it either (lockstep).
+        if (head && head !== "this" && head !== "super" && cur && cur.type === "identifier") push("uses", head)
       }
     }
     // M49 #744 mirror: BARE identifier reads (return config; / if (flag)) —
@@ -853,14 +856,27 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         }
         const isDeclName = (p7?.type === "variable_declarator" && p7.childForFieldName("name")?.id === n.id) ||
           p7?.type === "function_declaration" || p7?.type === "function_expression" ||
-          p7?.type === "generator_function_declaration" || p7?.type === "method_definition" ||
+          p7?.type === "generator_function_declaration" || p7?.type === "generator_function" ||
+          p7?.type === "method_definition" ||
           p7?.type === "class_declaration" || p7?.type === "class"
         const isPropKey = (p7?.type === "pair" || p7?.type === "pair_pattern") && p7.childForFieldName("key")?.id === n.id
         const isMemberPart = p7?.type === "member_expression"
         const isPropName = p7?.type === "property_signature" || p7?.type === "property_identifier"
         const isLabel = p7?.type === "labeled_statement"
         const isShorthandProp = p7?.type === "shorthand_property_identifier"
-        if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp) {
+        // M49 W1 (#768 binding-site wave) mirror: binding positions are
+        // DEFINITIONS — import bindings, parameters, catch params,
+        // destructuring targets and export specifiers are never reads.
+        // The #744 mirror carried the analyzer's fabrication in lockstep,
+        // so the lane agreed on a wrong contract (collusion blind spot).
+        const isImportBinding = p7?.type === "import_clause" || p7?.type === "import_specifier" || p7?.type === "namespace_import"
+        const isParamBinding = p7?.type === "formal_parameters" || p7?.type === "arrow_function" || p7?.type === "catch_clause"
+        const isPatternBinding =
+          p7?.type === "rest_pattern" || p7?.type === "array_pattern" || p7?.type === "pair_pattern" ||
+          (p7?.type === "assignment_pattern" && (p7.childForFieldName("left") ?? p7.namedChild(0))?.id === n.id)
+        const isExportSpecifier = p7?.type === "export_specifier"
+        const isBindingSite = isImportBinding || isParamBinding || isPatternBinding || isExportSpecifier
+        if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isBindingSite) {
           push("uses", txt)
         }
       }
