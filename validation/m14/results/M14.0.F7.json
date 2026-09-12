@@ -34,5 +34,7 @@
   ],
   "runtime": "node v22.22.1",
   "schemaVersion": 2,
-  "title": "Pipeline end-to-end gate"
+  "title": "Pipeline end-to-end gate",
+  "regeneratedAtCommit": "__LEGACY__",
+  "regeneratedAt": "pre-#761-gate"
 }

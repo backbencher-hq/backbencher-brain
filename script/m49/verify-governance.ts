@@ -88,7 +88,7 @@ function main() {
   // --- 3. Verifier registry wiring ----------------------------------------
   const onDisk = readdirSync(M49_DIR).filter((f) => /^verify-.*\.ts$/.test(f)).sort()
   const governanceSrc = readFileSync(__filename, "utf8")
-  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts"]
+  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts"]
   for (const f of onDisk) {
     check(`verifier ${f} is registered in governance`, registered.includes(f))
   }

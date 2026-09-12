@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "5e5c52891c604b357274646b075c89f72fee66f3",
-  "committedAt": "2026-09-10T07:33:46+02:00",
+  "commit": "1a9255da6e5521678a384b5f24ef5c5813de4c3c",
+  "committedAt": "2026-09-11T02:31:10+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -957,7 +957,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 420,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 22,
+        "referencedTypeLiterals": 27,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1056,5 +1056,7 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Grammar-conformance auditor"
+  "title": "Grammar-conformance auditor",
+  "regeneratedAtCommit": "__LEGACY__",
+  "regeneratedAt": "pre-#761-gate"
 }

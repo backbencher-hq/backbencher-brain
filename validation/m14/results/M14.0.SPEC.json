@@ -2778,5 +2778,7 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Completeness spec (#419) — A–H sections per language"
+  "title": "Completeness spec (#419) — A–H sections per language",
+  "regeneratedAtCommit": "__LEGACY__",
+  "regeneratedAt": "pre-#761-gate"
 }
