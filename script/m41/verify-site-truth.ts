@@ -269,7 +269,7 @@ const evidence = {
   generatedAt: new Date().toISOString(),
   rendered: { version, tools: uniqueTools.length, tables, languages: langCount, dedicatedParsers: dedicated, cliCommands: cliCommands.length },
   limitations: [
-    "Gate covers the seven prerendered routes; adding a route requires updating EXPECTED_ROUTES in the same commit.",
+    "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks.",
     "N2 mutates the hero source and rebuilds twice; a failing site build aborts the mutant proof (build success is checked first).",
     "N3 proves detector sensitivity on synthetic HTML; a full rebuild mutant (N2) covers the end-to-end path.",
     "Editorial fields (features, examples, longDescription) are reviewed against docs/tools/*.md but not machine-diffed; the registry-owned fields are machine-enforced.",
