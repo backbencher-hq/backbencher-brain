@@ -138,6 +138,47 @@
       "verifiedAtCommit": "35ce5f8b",
       "notes": "Second finding of the same rotated-sample probe, surfaced as `MISSING calls .../runtime-browser/test.ts -> text` (line 203 `console[method](message.text());`) once the sample rotated. Probe script/m14/tmp/t3-nested-call-probe.ts: `console[method](m.text())` emitted NOTHING while the oracle derived calls->text, because the subscript-callee branch (and the dynamic-import branch) `return`ed before processNode's child recursion - the EDGE skip swallowed the SUBTREE. `console.log(m.text())` was fine, so only computed callees were hit. FIXED @35ce5f8b: both branches walk the children, then stop (the same defect class as the M49 W1 javascript `continue`-skips-subtree fix). Fixture typescript/subscript-callee-nested-calls (count==2 + computed-target forbids); mutant typescript/subscript-callee-nested-call-drop CAUGHT; corpus lane 0 missing / 0 unexplained."
     }
+,
+    {
+      "id": "C1",
+      "title": "C holy-c review waves (issue #795): HC1 static-prototype visibility, HC2 redeclaration dedupe, HC3 K&R params, HC5 instance-state contamination, HC6 prototype-param pollution (HC4 ruled)",
+      "status": "verified",
+      "notes": "All claims probe-verified before fixing; oracle-checked in-session. Fully gated: fixture c/declaration-identity, 3 mutants, spec HC1-HC6. Lanes: sqlite/jq floors hold. F3 399/399, F4 461/461 at the wave commit.",
+      "evidenceFile": "reviews/c/deepest-review.md",
+      "verifiedAtCommit": "5c71e176"
+    },
+    {
+      "id": "CPP1",
+      "title": "C++ master review wave (issue #797): CP1 bare value reads + oracle mirror, CP2 macro function shapes, CP3 static visibility (CP4 ruled limitations)",
+      "status": "verified",
+      "notes": "CP1 implemented with deriveCppBareUses oracle mirror (17 lane pairs, 6 root causes). Fully gated: fixtures bare-value-reads.cpp + macro-function-shapes.cpp, 4 mutants, spec CP1-CP4. Lanes: fmt 0/0/0 incl. 73-file deep sample, nlohmann-json 0/0/0. F3 399/399, F4 461/461 at the wave commit.",
+      "evidenceFile": "reviews/cpp/master-review.md",
+      "verifiedAtCommit": "5c71e176"
+    },
+    {
+      "id": "RS1",
+      "title": "Rust master + second review waves (issue #798): R1 bare reads, R8 where-bound filter, D2 Self-construction, D3 export privacy (D6/E3 ruled)",
+      "status": "verified",
+      "notes": "uses/references are uncompared labels for rust, so fixtures + mutants gate the read surface (no oracle mirror needed). Fully gated: fixtures rust/bare-value-reads + rust/construction-exports, 5 mutants, spec R1/R8/D2/D3/D6. Lanes: ripgrep + cargo 0/0/0. F3 399/399, F4 461/461 at the wave commit.",
+      "evidenceFile": "reviews/rust/second-review.md",
+      "verifiedAtCommit": "5c71e176"
+    },
+    {
+      "id": "GO1",
+      "title": "Go master review wave (issue #799): GO1 bare reads through GO8 generics + G12 cyclic-interface crash fix",
+      "status": "verified",
+      "notes": "400-file grammar census; uses/references uncompared for go so fixtures + mutants gate reads. Fully gated: fixtures go/bare-value-reads + dot-import-calls + generic-construction, 8 mutants, spec GO1-GO8/G12. Lanes: go-tools + terraform green. F3 399/399, F4 461/461 at the wave commit.",
+      "evidenceFile": "reviews/go/master-review.md",
+      "verifiedAtCommit": "5c71e176"
+    },
+    {
+      "id": "Z1",
+      "title": "Zig deep + extreme review waves (issue #800): Z1 complexity, Z2 error columns, Z3 bare reads + Z5 oracle inventory, Z4 error-member resolution, Z6 switch-arm scope, Z7 param bind-by-name, Z8 blank symbols, Z9 local imports (Z10 ruled)",
+      "status": "verified",
+      "notes": "Hostile synthetic battery + lane replicas at pinned and 2 rotated seeds (60-200 files, zig + zls) all 0/0. Fully gated: fixture zig/bare-value-reads (extended), 11 mutants, spec Z1-Z10. F3 399/399, F4 461/461 at the wave commit.",
+      "evidenceFile": "reviews/zig/master-review.md",
+      "verifiedAtCommit": "5c71e176"
+    }
   ],
   "waves": [
     {
