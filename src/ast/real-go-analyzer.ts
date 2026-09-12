@@ -133,7 +133,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           endLine: 1,
           endColumn: packageName.length + 9,
           startIndex: 0,
-          endIndex: packageName.length + 9,
+          // GO4 (go review): endIndex is an exclusive byte offset —
+          // `package p` is 8 + len bytes (0..8+len), not +9 (the +9 is
+          // correct only for 1-based endColumn).
+          endIndex: packageName.length + 8,
         },
         visibility: "public",
         metadata: {
@@ -184,7 +187,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const isPrivate = s.visibility === "private"
       const isVar = s.kind === ASTEngine.SymbolKind.Variable
       const isMethod = s.kind === ASTEngine.SymbolKind.Method
-      if (!isPrivate && !isVar && !isMethod && !seenExportNames.has(s.name)) {
+      // GO7 (go review): owned members (struct fields with ownerName) are
+      // not top-level units — the old predicate exported every PUBLIC
+      // field (`X int` in any struct), tripping the harness-global
+      // export-uniqueness invariant on the first fixture with an uppercase
+      // field. Membership rides Contains (same rule as methods).
+      if (!isPrivate && !isVar && !isMethod && !s.ownerName && !seenExportNames.has(s.name)) {
         seenExportNames.add(s.name)
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
       }
@@ -209,7 +217,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: this.calculateGoComplexity(symbols, relationships),
+        // GO6 (go review): `complexity` was the synthetic
+        // symbols+relationships heuristic while a real per-file
+        // cyclomaticComplexity sat beside it — the exact disease the
+        // family removed everywhere else. One contract: both report the
+        // real cyclomatic number.
+        complexity: this.calculateCyclomaticComplexity(rootNode),
         linesOfCode: ctx.content.split("\n").length,
         cyclomaticComplexity: this.calculateCyclomaticComplexity(rootNode),
         framework: frameworks[0]?.name, // Primary framework
@@ -695,24 +708,34 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // with only Close() was (wrongly) declared to implement ReadCloser (or
       // not recognized as implementing ReadCloser when it satisfied the
       // promoted Read too). go wave deep-review 2026-08-29.
+      // GO2 (go review): union/tilde constraint members (`int | string`,
+      // `~int`) are NOT embedded interfaces — the old code minted Interface
+      // symbols named `~int | ~string` and extends edges to the whole
+      // operator text. Only plain type references embed; the rest stay
+      // silent (union members as individuals is a wave of its own).
       if (method?.type === "constraint_elem") {
         const embeddedNode = method.namedChildCount > 0 ? method.namedChild(0) : undefined
-        if (embeddedNode) {
+        if (
+          embeddedNode &&
+          (embeddedNode.type === "type_identifier" || embeddedNode.type === "qualified_type")
+        ) {
           const rawText = embeddedNode.text
           const leaf = rawText.lastIndexOf(".") !== -1 ? rawText.slice(rawText.lastIndexOf(".") + 1) : rawText
-          symbols.push({
-            name: leaf,
-            kind: ASTEngine.SymbolKind.Interface,
-            range: this.nodeToRange(method),
-            visibility: "public",
-            ownerName: interfaceName,
-            ownerKind: ASTEngine.SymbolKind.Interface,
-            metadata: {
-              nodeType: method.type,
-              isEmbeddedInterface: true,
-              embeddedInterface: rawText,
-            },
-          })
+          if (leaf && this.isPlainGoIdentifier(leaf)) {
+            symbols.push({
+              name: leaf,
+              kind: ASTEngine.SymbolKind.Interface,
+              range: this.nodeToRange(method),
+              visibility: "public",
+              ownerName: interfaceName,
+              ownerKind: ASTEngine.SymbolKind.Interface,
+              metadata: {
+                nodeType: method.type,
+                isEmbeddedInterface: true,
+                embeddedInterface: rawText,
+              },
+            })
+          }
         }
       }
     }
@@ -729,7 +752,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNodes: Node[] = []
         for (let j = 0; j < spec.namedChildCount; j++) {
           const c = spec.namedChild(j)
-          if (c && c.type === "identifier") nameNodes.push(c)
+          // GO5 (go review): blank `_` is not a declaration — `var _ = f()`
+          // minted a "_" Variable symbol. The grammar types it `identifier`.
+          if (c && c.type === "identifier" && c.text !== "_") nameNodes.push(c)
         }
         if (nameNodes.length > 0) {
           const isConst = spec.type === "const_spec"
@@ -755,6 +780,45 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // HELPER METHODS
+
+  /** GO3: file has a dot-import (`import . "fmt"`) — bare identifiers may
+   *  name dot-imported package members, which no local symbol can resolve.
+   *  Calls resolve leniently (documented); bare READS stay strict. */
+  private hasGoDotImport(rootNode: Node): boolean {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "import_spec") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "dot") return true
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return false
+  }
+
+  /** GO1: identifiers under a qualified_type (`pkg.Foo`) name types, never
+   *  values — the composite-literal and declared-type passes own those. */
+  private hasGoQualifiedAncestor(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "qualified_type") return true
+      if (
+        cur.type === "call_expression" || cur.type === "field_declaration" ||
+        cur.type === "function_declaration" || cur.type === "method_declaration" ||
+        cur.type === "block" || cur.type === "composite_literal" ||
+        cur.type === "var_spec" || cur.type === "const_spec" ||
+        cur.type === "short_var_declaration" || cur.type === "assignment_statement"
+      ) return false
+      cur = cur.parent
+    }
+    return false
+  }
 
   private nodeToRange(node: Node) {
     return {
@@ -1039,10 +1103,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * funcs, NOT declared symbols) so goroutine/defer edges stay consistent
    * with the analyzer's own call resolution and with the differential
    * oracle — which derives only declared-function + qualified leaves.
+   * GO3: with a dot-import in the file, bare names may be dot-imported
+   * members — resolve leniently (besides builtins, filtered by callers).
    */
-  private isGoResolvableCallTarget(target: string | undefined, symbols: ASTEngine.UniversalSymbol[]): boolean {
+  private isGoResolvableCallTarget(target: string | undefined, symbols: ASTEngine.UniversalSymbol[], dotImported = false): boolean {
     if (!target) return false
     if (target.indexOf(".") !== -1) return true // qualified -> leaf kept
+    if (dotImported) return true
     return someSymbol(
       symbols,
       (s) =>
@@ -1198,6 +1265,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // 5. Analyze selector expression Uses (field access)
     this.analyzeGoSelectorUses(rootNode, relationships, symbols)
 
+    // 5.5. Bare-identifier value reads (GO1). The analyzer previously
+    // emitted NO bare-identifier edges at all (`return G` produced zero
+    // relationships) while call args, index/key operands, range values and
+    // return operands all read file-visible values. C-family discipline
+    // with lexical scope stack (params/receiver/locals bind, shadowing
+    // suppresses) and resolvability required (package-scope vars/consts/
+    // funcs only — dot-imported names stay silent, recorded limitation).
+    this.analyzeGoBareIdentifierUses(rootNode, relationships, symbols)
+
     // 6. OwnerName contains pass (Rust M12.18 contract): every symbol with an
     // owner gets ONE `contains owner -> member` edge — covers struct fields,
     // interface methods, and methods uniformly. Replaces the old
@@ -1275,9 +1351,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (!elem || elem.type !== "constraint_elem") continue
               const inner = elem.namedChildCount > 0 ? elem.namedChild(0) : undefined
               if (!inner) continue
+              // GO2: union/tilde members (`int | string`, `~int`) are not
+              // embedded interfaces — only plain type references extend.
+              if (inner.type !== "type_identifier" && inner.type !== "qualified_type") continue
               const raw = inner.text
               const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
-              if (!leaf) continue
+              if (!leaf || !this.isPlainGoIdentifier(leaf)) continue
               relationships.push({
                 source: typeName,
                 target: leaf,
@@ -1506,11 +1585,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       (s) => s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method,
     )
 
+    // GO3: dot-import leniency for bare callees (mirrored by the oracle).
+    const dotImported = this.hasGoDotImport(rootNode)
     forEachSymbol(functions, (func) => {
       const qualifiedCalls = func.qualified_calls || []
       forEachSymbol(qualifiedCalls, (call) => {
         // Handle package-qualified calls (package.Function) — leaf target
-        const targetFunction = this.resolveGoFunctionCall(call, symbols)
+        const targetFunction = this.resolveGoFunctionCall(call, symbols, dotImported)
         // Builtin-leaf guard (deep-review 2026-08-29, go-tools @200): the
         // oracle filters Go builtins by RESOLVED leaf name. findGoFunctionCalls
         // checks the FULL call text (`v.len` -> prefix `v`), so a method call
@@ -1578,6 +1659,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
   ) {
     const declared = new Set<string>()
+    // GO3: dot-import leniency for bare package-scope callees (mirrored).
+    const dotImported = this.hasGoDotImport(rootNode)
     // Instantiates contract (family, mirrored in the differential oracle
     // deriveGoEdges.ctorFns): only PascalCase TOP-LEVEL FUNCTION symbols
     // instantiate — never methods and never unresolved stdlib/external leaves.
@@ -1632,7 +1715,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!leaf) continue
           const qualified = fn.type === "selector_expression"
           const isCtor = leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase()
-          const emit = !this.isGoBuiltin(leaf) && (qualified || declared.has(leaf) || (isCtor && declared.has(leaf)))
+          const emit = !this.isGoBuiltin(leaf) && (qualified || dotImported || declared.has(leaf) || (isCtor && declared.has(leaf)))
           if (emit && !emitted.has("call:" + leaf)) {
             emitted.add("call:" + leaf)
             relationships.push({
@@ -1717,6 +1800,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             const raw = typeNode.text
             const dot = raw.lastIndexOf(".")
             target = dot !== -1 ? raw.slice(dot + 1) : raw
+          } else if (typeNode.type === "generic_type") {
+            // GO8 (go review): generic composite literals (`Box[int]{...}`)
+            // carry a generic_type child — the constructed type is its base
+            // type_identifier. Previously no edge at all.
+            const base = typeNode.namedChildCount > 0 ? typeNode.namedChild(0) : undefined
+            if (base && (base.type === "type_identifier" || base.type === "qualified_type")) {
+              const raw = base.text
+              const dot = raw.lastIndexOf(".")
+              target = dot !== -1 ? raw.slice(dot + 1) : raw
+            }
           }
         }
         // Elided element literal (`[]Foo{{...}}`) and wrapper-type literals
@@ -1753,6 +1846,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ) {
+    // GO3: dot-import leniency for goroutine/defer callees.
+    const dotImported = this.hasGoDotImport(rootNode)
     // Dedup against calls edges already emitted by analyzeGoFunctionCalls
     // (qualified_calls includes call_expressions inside go/defer bodies) —
     // goroutine/defer spawns are calls, one edge per (source, target) pair.
@@ -1773,7 +1868,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Drop unresolvable bare closure-var goroutines (see
         // isGoResolvableCallTarget): `go done()` where done is a local func
         // var is not a static call to a declared symbol.
-        if (functionCall && this.isGoResolvableCallTarget(functionCall, symbols)) {
+        if (functionCall && this.isGoResolvableCallTarget(functionCall, symbols, dotImported)) {
+          // GO3: dot-import leniency must not resurrect builtins (`go len()`
+          // is nonsense) — builtins stay excluded on both sides.
+          if (this.isGoBuiltin(functionCall.split(".").pop() ?? functionCall)) {
+            continue
+          }
           const containingFunction = this.findContainingGoFunction(node)
           if (containingFunction && !emittedCalls.has(`${containingFunction}->${functionCall}`)) {
             emittedCalls.add(`${containingFunction}->${functionCall}`)
@@ -1843,7 +1943,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Drop unresolvable bare closure-var defers (see
         // isGoResolvableCallTarget): `defer release()` where release is a
         // local func var is not a static call to a declared symbol.
-        if (deferredFunction && this.isGoResolvableCallTarget(deferredFunction, symbols) && containingFunction && !emittedCalls.has(`${containingFunction}->${deferredFunction}`)) {
+        // GO3: builtins stay excluded under dot-import leniency.
+        if (deferredFunction && this.isGoResolvableCallTarget(deferredFunction, symbols, dotImported) && !this.isGoBuiltin(deferredFunction.split(".").pop() ?? deferredFunction) && containingFunction && !emittedCalls.has(`${containingFunction}->${deferredFunction}`)) {
           emittedCalls.add(`${containingFunction}->${deferredFunction}`)
           relationships.push({
             source: containingFunction,
@@ -1862,6 +1963,313 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) stack.push(child)
+      }
+    }
+  }
+
+  /**
+   * GO1: bare-identifier value reads. Every bare `identifier` that names a
+   * file-visible VALUE (package-scope var/const/func) is a Uses edge, with:
+   * -walked with a lexical scope stack (function/method/func-literal
+   *  params+receivers bind at entry; block/short-var/var/range/for/if-init/
+   *  select-assign/type-switch-guard bindings bind in walk order, so reads
+   *  before any binding still resolve outward — C-family flow discipline);
+   * - declaration positions never read (entity names via first-identifier
+   *  rule; composite-literal struct keys skipped; labels/package/import
+   *  paths/blank `_` excluded);
+   * - call callees (span-matched; generic/index wrappers climbed),
+   *  member leaves (selector path owns them; objects stay readable),
+   *  qualified non-leaves, channel operands (channel pass owns them),
+   *  assignment/inc/dec LHS writes, go/defer callees all excluded;
+   * - resolvability required: unknown names (std/dot-imported/external)
+   *  stay silent — no junk edges.
+   */
+  private analyzeGoBareIdentifierUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const fileValues = new Set<string>()
+    for (const s of symbols) {
+      if (
+        !s.ownerName &&
+        (s.kind === ASTEngine.SymbolKind.Variable ||
+          s.kind === ASTEngine.SymbolKind.Constant ||
+          s.kind === ASTEngine.SymbolKind.Function)
+      ) {
+        fileValues.add(s.name)
+      }
+    }
+    const emitted = new Set<string>()
+    interface ScopeFrame {
+      names: Set<string>
+    }
+    const scopeStack: ScopeFrame[] = []
+    const isShadowed = (name: string): boolean => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        if (scopeStack[i].names.has(name)) return true
+      }
+      return false
+    }
+    // Bind every bare identifier under `node`, except inside nested calls,
+    // composite literals and func literals (their identifiers read or
+    // belong to inner scopes) and blank `_`.
+    const bindNamesUnder = (node: Node, frame: ScopeFrame): void => {
+      const walk: Node[] = [node]
+      while (walk.length > 0) {
+        const m = walk.pop()!
+        if (m !== node && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal")) {
+          continue
+        }
+        if (m.type === "identifier" && m.text !== "_") frame.names.add(m.text)
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) walk.push(c)
+        }
+      }
+    }
+    // Parameters (and method receivers): bind the identifiers of each
+    // parameter_declaration / variadic_parameter_declaration.
+    const bindParamsOf = (declNode: Node | null, frame: ScopeFrame): void => {
+      if (!declNode) return
+      const seen: Node[] = [declNode]
+      while (seen.length > 0) {
+        const m = seen.pop()!
+        if (m.type === "parameter_declaration" || m.type === "variadic_parameter_declaration") {
+          bindNamesUnder(m, frame)
+          continue
+        }
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) seen.push(c)
+        }
+      }
+    }
+    // Keyed-element struct keys (`Point{X: y}`) never read; map-literal
+    // variable keys are the documented residual (shapes identical).
+    const isCompositeKey = (node: Node): boolean => {
+      let cur: Node | null = node.parent
+      while (cur) {
+        if (cur.type === "keyed_element") {
+          const first = cur.namedChildCount > 0 ? cur.namedChild(0) : null
+          return !!first && node.startIndex >= first.startIndex && node.endIndex <= first.endIndex
+        }
+        if (
+          cur.type === "composite_literal" || cur.type === "call_expression" ||
+          cur.type === "field_declaration" || cur.type === "function_declaration" ||
+          cur.type === "method_declaration" || cur.type === "block"
+        ) return false
+        cur = cur.parent
+      }
+      return false
+    }
+    // Channel operands belong to the channel-op pass (leaf + direction).
+    const isChannelOperand = (node: Node): boolean => {
+      let cur: Node | null = node.parent
+      let steps = 0
+      while (cur && steps < 4) {
+        if (cur.type === "send_statement") {
+          const ch = cur.childForFieldName("channel")
+          return !!ch && node.startIndex >= ch.startIndex && node.endIndex <= ch.endIndex
+        }
+        if (cur.type === "unary_expression") {
+          const op = cur.child(0)
+          if (op && op.type === "<-") return true
+        }
+        if (cur.type === "receive_statement" || cur.type === "communication_case") return true
+        if (
+          cur.type === "call_expression" || cur.type === "field_declaration" ||
+          cur.type === "function_declaration" || cur.type === "method_declaration" ||
+          cur.type === "block" || cur.type === "expression_list"
+        ) return false
+        cur = cur.parent
+        steps++
+      }
+      return false
+    }
+    const isCallCallee = (node: Node): boolean => {
+      let top: Node = node
+      let p: Node | null = node.parent
+      while (p && (p.type === "index_expression" || p.type === "generic_type")) {
+        top = p
+        p = p.parent
+      }
+      if (!p || p.type !== "call_expression") return false
+      const fnField = p.childForFieldName("function")
+      if (fnField) return fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex
+      const first = p.namedChild(0)
+      return !!first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex
+    }
+    const isEntityName = (node: Node): boolean => {
+      const p = node.parent
+      if (!p) return false
+      if (
+        p.type === "function_declaration" || p.type === "method_declaration" ||
+        p.type === "type_spec" || p.type === "field_declaration" ||
+        p.type === "package_clause" || p.type === "label_name"
+      ) {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+            return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+          }
+        }
+      }
+      // var/const specs: an identifier declares iff it is the first
+      // identifier child, or a non-identifier sibling follows it (the
+      // type/value section): `var x, y = f()` (x, y declare), `var G int`
+      // (G declares), `var x = y` (x declares, y reads).
+      if (p.type === "var_spec" || p.type === "const_spec") {
+        let seenIdent = false
+        let isFirstIdent = false
+        let laterNonIdent = false
+        let found = false
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            if (c.startIndex === node.startIndex && c.endIndex === node.endIndex) {
+              if (!seenIdent) isFirstIdent = true
+              found = true
+            }
+            seenIdent = true
+          } else if (found) {
+            laterNonIdent = true
+          }
+        }
+        return isFirstIdent || laterNonIdent
+      }
+      // short_var: names live in the left field (`x, y := ..`).
+      if (p.type === "short_var_declaration" || (p.type === "expression_list" && p.parent && p.parent.type === "short_var_declaration")) {
+        const decl = p.type === "short_var_declaration" ? p : p.parent
+        const left = decl!.childForFieldName("left") ?? decl!.namedChild(0)
+        return !!left && node.startIndex >= left.startIndex && node.endIndex <= left.endIndex
+      }
+      if (
+        p.type === "goto_statement" || p.type === "break_statement" ||
+        p.type === "continue_statement" || p.type === "labeled_statement"
+      ) return true
+      return false
+    }
+    const stack: Array<{ node: Node; exit: boolean; pushed: boolean }> = [{ node: rootNode, exit: false, pushed: false }]
+    while (stack.length > 0) {
+      const { node, exit, pushed } = stack.pop()!
+      if (exit) {
+        if (pushed) scopeStack.pop()
+        continue
+      }
+      const t = node.type
+      let pushedScope = false
+      if (t === "function_declaration" || t === "method_declaration" || t === "func_literal") {
+        const frame: ScopeFrame = { names: new Set<string>() }
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (!c) continue
+          if (c.type === "parameter_list") bindParamsOf(c, frame)
+        }
+        // Method receivers live in the FIRST parameter_list; the loop above
+        // already covers every parameter_list, receiver included.
+        scopeStack.push(frame)
+        pushedScope = true
+      } else if (t === "block") {
+        scopeStack.push({ names: new Set<string>() })
+        pushedScope = true
+      } else if (
+        t === "var_spec" || t === "const_spec" || t === "short_var_declaration" ||
+        t === "range_clause" || t === "type_switch_statement"
+      ) {
+        // Bindings mirror the isEntityName declaring rules exactly (same
+        // predicate family — a name the gate treats as declaring must bind
+        // here, or reads leak; a name it treats as reading must not bind,
+        // or genuine uses vanish).
+        const top = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
+        if (top) {
+          if (t === "range_clause") {
+            // All children except the LAST (the ranged-over value) bind.
+            for (let i = 0; i < node.namedChildCount - 1; i++) {
+              const c = node.namedChild(i)
+              if (c) bindNamesUnder(c, top)
+            }
+          } else if (t === "type_switch_statement") {
+            // `switch t := x.(type)` — first-child expression_list binds
+            // when a scrutinee follows; bare `switch x.(type)` reads.
+            if (node.namedChildCount > 2) {
+              const first = node.namedChild(0)
+              if (first) bindNamesUnder(first, top)
+            }
+          } else {
+            // var/const/short: bind exactly the declaring occurrences.
+            const walk: Node[] = [node]
+            while (walk.length > 0) {
+              const m = walk.pop()!
+              if (m !== node && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal")) {
+                continue
+              }
+              if (m.type === "identifier" && m.text !== "_" && isEntityName(m)) top.names.add(m.text)
+              for (let i = m.namedChildCount - 1; i >= 0; i--) {
+                const c = m.namedChild(i)
+                if (c) walk.push(c)
+              }
+            }
+          }
+        }
+      } else if (t === "receive_statement") {
+        // `case r := <-ch`: expression_list DIRECT children bind (assigned
+        // targets); the `<-` operand reads (channel pass owns it — skipped
+        // at emission, never bound here).
+        const top = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
+        if (top) {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c && c.type === "expression_list") bindNamesUnder(c, top)
+          }
+        }
+      } else if (t === "identifier") {
+        const name = node.text
+        const p = node.parent
+        if (
+          name && name !== "_" &&
+          !isEntityName(node) &&
+          !isCompositeKey(node) &&
+          !isChannelOperand(node) &&
+          !isCallCallee(node) &&
+          // F6 audit: `field_expression` is not a tree-sitter-go type (that is
+          // rust's name for the shape `r.cfg` here — go uses
+          // `selector_expression`), so the old guard could never fire. It is
+          // also not needed: a selector's receiver is a genuine read
+          // (`x := db.cfg` reads db — probe-verified `f->cfg f->db`), and a
+          // selector that is a call callee is already excluded by
+          // isCallCallee above. Removed rather than re-pointed at
+          // selector_expression, which would silently drop the receiver read.
+          !this.hasGoQualifiedAncestor(node) &&
+          // F6 audit: go has no `compound_assignment_statement` node — `a += 1`
+          // and `a = 1` are both `assignment_statement` (operator is an
+          // anonymous token), which this condition already covers.
+          !((p && p.type === "assignment_statement") &&
+            (() => { const lhs = p.namedChild(0); return !!lhs && lhs.startIndex === node.startIndex && (lhs.endIndex ?? 0) >= node.endIndex })()) &&
+          !(p && (p.type === "inc_statement" || p.type === "dec_statement")) &&
+          !(p && (p.type === "goto_statement" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "labeled_statement")) &&
+          !isShadowed(name) &&
+          fileValues.has(name)
+        ) {
+          const src = this.findContainingGoFunction(node) || "global"
+          const key = `${src}::uses::${name}`
+          if (!emitted.has(key)) {
+            emitted.add(key)
+            relationships.push({
+              source: src,
+              target: name,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 1.0,
+              metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+            })
+          }
+        }
+      }
+      stack.push({ node, exit: true, pushed: pushedScope })
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, exit: false, pushed: false })
       }
     }
   }
@@ -2367,6 +2775,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   // ======================== GO HELPER METHODS ========================
 
+  // GO2: plain-identifier shape check (no regex): letter/underscore head,
+  // word-class tail. Recovery-artifact names (qualified, templated,
+  // operator-soup like `~int | ~string`) fail and emit no symbol/edge.
+  private isPlainGoIdentifier(s: string): boolean {
+    if (s.length === 0) return false
+    const c0 = s.charCodeAt(0)
+    const firstOk = (c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122) || c0 === 95
+    if (!firstOk) return false
+    for (let i = 1; i < s.length; i++) {
+      const c = s.charCodeAt(i)
+      const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
+      if (!ok) return false
+    }
+    return true
+  }
+
   // ---- Pure-string helpers (M12.22: no regex in this analyzer) ----
 
   /** Strip surrounding backticks/quote chars from a raw string literal. */
@@ -2659,13 +3083,6 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     return "poor"
   }
 
-  private calculateGoComplexity(
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-  ): number {
-    return symbols.length + relationships.length
-  }
-
   /**
    * Go Cyclomatic Complexity Calculation
    * Calculates complexity for Go code including goroutines, channels, defer, type switches, and Go-specific patterns
@@ -2779,7 +3196,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   private getGoInterfaceMethods(
     interfaceSymbol: ASTEngine.UniversalSymbol,
     symbols: ASTEngine.UniversalSymbol[],
+    visiting?: Set<string>,
   ): Array<{ name: string; signature: string }> {
+    // G12 (go review): cycle guard — `interface A { B }; interface B { A }`
+    // (invalid Go, parseable tree) recursed forever → stack overflow. The
+    // promoted-methods collector already carries a visiting set; this one
+    // did not.
+    const seen = visiting ?? new Set<string>()
+    if (seen.has(interfaceSymbol.name)) return []
+    seen.add(interfaceSymbol.name);
     const interfaceMethods: Array<{ name: string; signature: string }> = []
 
     // Find methods that belong to this interface
@@ -2810,7 +3235,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       )
       if (!target) return
 
-      const inherited = this.getGoInterfaceMethods(target, symbols)
+      const inherited = this.getGoInterfaceMethods(target, symbols, seen)
       forEachSymbol(inherited, (m) => {
         if (!someSymbol(interfaceMethods, (x) => x.name === m.name && x.signature === m.signature)) {
           interfaceMethods.push(m)
@@ -2879,7 +3304,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Resolve Go function call to find target
    */
-  private resolveGoFunctionCall(callExpression: string, symbols: ASTEngine.UniversalSymbol[]): string | undefined {
+  private resolveGoFunctionCall(callExpression: string, symbols: ASTEngine.UniversalSymbol[], dotImported = false): string | undefined {
     // Handle package-qualified calls (package.Function) — always resolve to
     // the LEAF name (Rust M12.18 contract): `strings.ToUpper` -> `ToUpper`,
     // `s.repo.Save` -> `Save`. Stdlib/external leaves are kept as call
@@ -2899,7 +3324,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       return fallback?.name ?? functionName
     }
 
-    // Handle direct function calls
+    // Handle direct function calls. GO3: with a dot-import in the file,
+    // bare names may be dot-imported members (besides builtins, filtered
+    // by callers) — resolve leniently, mirrored by the oracle.
+    if (dotImported) return callExpression || undefined
     const targetFunction = findSymbol(
       symbols,
       (s) =>

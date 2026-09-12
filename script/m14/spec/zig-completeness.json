@@ -161,6 +161,76 @@
         "status": "RULED",
         "question": "Is `usingnamespace @import(\"x.zig\");` an import fact?",
         "resolution": "ZGD4: YES \u2014 first-class import (imports array + references edge, meta.usingnamespace). The walk previously dropped these declarations entirely. Process lesson recorded: an earlier fix draft targeted an assignment-RHS usingnamespace form that is NOT valid Zig (grammar error-recovers it into call_expression + ERROR child); the pinned grammar + probe exposed the invented form before it shipped. Fixture authored from the probed declaration shape."
+      },
+      {
+        "id": "Z1",
+        "node_type": "synthetic per-symbol complexity",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): every symbol reported the synthetic complexity 3 regardless of body \u2014 the removed-everywhere-else disease was still live in zig.",
+        "resolution": "FIXED + GATED: per-symbol complexity is the real zigBodyComplexity (if/for/while/switch/catch/else + and/or/orelse operator tokens). Fixture zig/bare-value-reads pins score=5, guard=4; mutants zig/synthetic-complexity and zig/drop-symbol-complexity CAUGHT."
+      },
+      {
+        "id": "Z2",
+        "node_type": "parse-error ranges",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): parse-error ranges carried raw 0-based startColumn/endColumn (the svelte-wave class) while every other zig range is 1-based.",
+        "resolution": "FIXED + GATED: errors now 1-based like nodeRange. Fixture zig/bare-value-reads pins the stray-brace error at line 103 column 1; mutant zig/error-columns-0based CAUGHT."
+      },
+      {
+        "id": "Z3",
+        "node_type": "bare value reads",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): `return Limit` / `return counter` emitted NOTHING \u2014 the analyzer and the differential oracle were BOTH blind to bare identifier reads of file-scope values.",
+        "resolution": "FIXED + GATED: analyzeZigBareIdentifierUses walks with walk-order lexical scopes (params, blocks, payload captures, var/const bindings only \u2014 C6: assignments write, never bind); resolves only file-scope Constant/Variable/Function/EnumMember names; suppresses defining positions, callees, member leaves, labels, blanks, shadowed names. Fixture zig/bare-value-reads pins the positive surface; mutants zig/drop-bare-uses and zig/reemit-shadowed-reads CAUGHT."
+      },
+      {
+        "id": "Z4",
+        "node_type": "error-set member resolution",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): two error-member defects \u2014 (a) declaration sites read themselves (`pub const Error = error{ WriteFailed, OutOfMemory };` emitted uses WriteFailed at its own declaration; probe-verified on zls src/print_zoir.zig), and (b) the analyzer resolved EVERY enum member by name globally while the oracle only resolved value-position error leaves (`return error.Timeout`), so payload binding names and struct type positions collided with enum members on zls.",
+        "resolution": "FIXED + GATED both sides: error_set_declaration direct identifiers are defining occurrences; enum members resolve ONLY as value-position error-type leaves (parameter/field/container_field error types are declared-type facts, never reads). Fixture zig/bare-value-reads (expects fail->Timeout, handle->Fatal; forbids Unused/Widget/identifier_usage->fast); mutants zig/reemit-error-set-declaration, zig/drop-error-member-uses, zig/global-enum-member-uses CAUGHT. Lane differential zig:zig and zig:zls both 0 missing / 0 unexplained."
+      },
+      {
+        "id": "Z5",
+        "node_type": "oracle name inventory (differential)",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): the Z3 oracle re-derived its own name table (owner-blind pre-pass, kind-dispatch order, container attribution) and diverged from the analyzer by 70+ phantom MISSING edges across the upstream zig corpus.",
+        "resolution": "FIXED: deriveZigBareUses takes the analyzer's OWN symbols as its name inventory (file-scope kinds + global EnumMember set); truth still derives every EDGE independently from tree structure \u2014 only the inventory is shared ground truth, exactly like the grammar. Lane replica script/m14/tmp/zig-lane-pairs.ts: zig 0/0, zls 0/0."
+      },
+      {
+        "id": "Z6",
+        "node_type": "switch-arm capture scope",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): switch-arm captures bound into the enclosing block/function frame (and file-scope switches had no frame at all) \u2014 a global capture name emitted a junk bare read, and an arm capture leaked past its arm and swallowed a post-switch genuine read of a same-named file value (probe-verified: scopeF->K missing).",
+        "resolution": "FIXED + GATED both sides: a scope frame is pushed on switch_case entry (empty at entry, so arm patterns still resolve outward); the payload binds into it and it pops at case exit. Fixture zig/bare-value-reads expects scopeF->K/scopeF->Limit and forbids Clue; mutant zig/switch-payload-scope CAUGHT. Lane replicas (pinned + 2 rotated seeds, zig + zls) 0/0."
+      },
+      {
+        "id": "Z7",
+        "node_type": "parameter binding granularity",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): the function-entry walk bound EVERY identifier under a parameter node, so a name appearing only in a parameter's type, comptime type use, or default value shadowed the real file-level value for the whole function (the registered W9 defect: `s: struct { Flag: u8 }` swallowed `_ = Flag`; `x: T` swallowed the type use; `x: u32 = Def` swallowed the default read \u2014 all probe-verified missing pairs on both sides).",
+        "resolution": "FIXED + GATED both sides: a parameter binds its declared NAME only (first identifier child); payload binding unchanged (payload subtrees carry only capture names, probe-verified). Fixture zig/bare-value-reads expects typeField->Flag, takeT->T, withDefault->Def; mutant zig/param-subtree-bindings CAUGHT."
+      },
+      {
+        "id": "Z8",
+        "node_type": "blank identifier symbols",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): `var _ = 1;` minted a `_` Variable symbol (GO5 class, probe-verified) \u2014 the read discipline already skipped blanks, but extraction did not.",
+        "resolution": "FIXED + GATED: blank names skipped at all three declaration sites (variable, container field, function). Fixture zig/bare-value-reads forbids any `_` symbol; mutant zig/blank-symbol CAUGHT."
+      },
+      {
+        "id": "Z9",
+        "node_type": "function-local @import",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): an @import inside a function body was dropped entirely (locals-are-artifacts overreach) while calls in function bodies are captured \u2014 inconsistent evidence.",
+        "resolution": "FIXED + GATED: the import fact and its reference edge are recorded exactly like the top-level branch, without minting a local symbol. Fixture zig/bare-value-reads expects the helper.zig import; mutant zig/drop-local-import CAUGHT."
+      },
+      {
+        "id": "Z10",
+        "node_type": "if/while payload else-arm scope",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): an if/while capture is bound into the enclosing frame, so a same-named file value read in the ELSE arm is suppressed (probe-verified: else-branch `v` reads nothing though the capture is not in scope there).",
+        "resolution": "DOCUMENTED LIMITATION, not changed: scoping captures out of else-arms needs arm-level frames the single-pass walk cannot place (the capture is bound before the then/else split is known), and pushing a construct-level frame would trade one false negative for another. Both sides behave identically (lane-stable), and the shape needs a file value colliding with a capture name plus a same-named else-arm read to be observable."
       }
     ],
     "description": "Owner rulings \u2014 never silent absence (ZIGD2 added by F6 fixture-coverage gate)"
