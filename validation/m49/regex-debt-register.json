@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 22 established 2026-09-08)",
-  "baselineTotal": 19,
+  "baselineTotal": 18,
   "establishedAt": "2026-09-08",
   "entries": [
     {
       "file": "real-vue-analyzer.ts",
-      "line": 699,
+      "line": 966,
       "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
       "operation": "other",
       "classification": "needs_review",
@@ -14,31 +14,23 @@
     },
     {
       "file": "real-vue-analyzer.ts",
-      "line": 726,
-      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-      "operation": "other",
-      "classification": "needs_review",
-      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "line": 738,
+      "line": 978,
       "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-vue-analyzer.ts",
-      "line": 748,
+      "line": 988,
       "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-vue-analyzer.ts",
-      "line": 750,
+      "line": 990,
       "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
       "operation": "other",
       "classification": "needs_review",
@@ -50,7 +42,7 @@
       "source": "/\\boperator\\s+(implicit|explicit)\\s+([\\w.<>]+)/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-csharp-analyzer.ts",
@@ -58,47 +50,39 @@
       "source": "/\\boperator\\s+(checked\\s+)?([^\\s(]+)/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 492,
+      "line": 557,
       "source": "/^module\\.exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 492,
+      "line": 557,
       "source": "/^exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 1177,
+      "line": 1256,
       "source": "/^@/",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
     },
     {
       "file": "real-svelte-analyzer.ts",
-      "line": 725,
-      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-      "operation": "other",
-      "classification": "needs_review",
-      "note": "M49: identifier tokenizer -> char walk"
-    },
-    {
-      "file": "real-svelte-analyzer.ts",
-      "line": 782,
+      "line": 986,
       "source": "/^(.*?)\\s+(?:then|as)\\s+/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [Sv1 #736: line shifted by wave edits; regex retained for inline then/as split] [Sv2 #736: line shifted by D-wave edits 932->986]"
     },
     {
       "file": "real-cpp-analyzer.ts",
@@ -106,7 +90,7 @@
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained]"
     },
     {
       "file": "real-cpp-analyzer.ts",
@@ -114,7 +98,7 @@
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained]"
     },
     {
       "file": "real-rust-analyzer.ts",
@@ -122,7 +106,7 @@
       "source": "/\\b(Serialize|Deserialize)\\b/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained]"
     },
     {
       "file": "real-rust-analyzer.ts",
@@ -130,7 +114,7 @@
       "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained]"
     },
     {
       "file": "real-php-analyzer.ts",
@@ -154,6 +138,11 @@
       "wave": "M49.K1",
       "removed": 2,
       "note": "K12 route regexes replaced by the KD24 named-argument walker"
+    },
+    {
+      "wave": "M49.W7",
+      "removed": 2,
+      "note": "Two GHOST rows removed (vue /[A-Za-z_$][A-Za-z0-9_$]*/g third copy at 750; svelte identifier-tokenizer at 725) - the census has one fewer review-class usage at each, so the rows named nothing. Positions on the remaining rows corrected to their committed-blob lines. Identity is now (file, source) with multiplicity, so a stale position can no longer create or hide a row."
     }
   ]
 }
