@@ -1,4 +1,11 @@
-// script/m50/verify-a5-verify-chain.ts — M50.A5 (issue UNREGISTERED)
+// script/m50/verify-a5-verify-chain.ts — M50.A5
+//
+// NOT CONCURRENCY-SAFE: this gate temporarily corrupts the frozen baseline
+// (docs/data/m10-baseline.json) and the registry source, then restores them
+// byte-for-byte. Another gate reading those files mid-run — or a second copy of
+// this gate — will transiently see the corrupted world and go red. Always run
+// the M50 gates serially (npm run verify:m50 is sequential by construction; do
+// not launch individual gates in parallel with it). (issue UNREGISTERED)
 //
 // GitHub was unreachable from the delivery machine when A5 was completed
 // (proxyconnect: no route to host; gh keyring token invalid). The issue text is
