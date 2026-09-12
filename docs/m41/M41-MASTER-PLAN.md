@@ -135,3 +135,33 @@ separate deploy pipeline is created; the existing one becomes trustworthy.
 - SEO work describes only what bb verifiably does; no manufactured claims.
 - Search-engine submissions require the owner's accounts; those steps are guided,
   not impersonated.
+
+## Addendum — 2026-09-12: S1 structured data and route parity
+
+Owner request: make the site eligible for search rich results, and fix the legal
+pages being unfindable. Both are technical-SEO deliverables, so S1 was extended in
+place rather than opened as a new issue; nothing here changes a claim the site
+makes.
+
+S1 now also enforces:
+
+- **Route parity against the filesystem.** `website/src/app` is the authority:
+every directory that owns a `page.tsx` (plus the root page) must appear in the
+sitemap, and the sitemap must contain nothing else. The earlier check compared two
+hand-written lists on both sides, which is exactly why `/privacy` and `/terms`
+could sit outside the sitemap without failing anything. They are in it now.
+- **Head coverage for every real route**, replacing a fixed eight-route list. Turned
+on for the first time, it caught `/demos` shipping without a canonical URL — fixed
+in the same change.
+- **`FAQPage` structured data on `/faq`**, built from `src/data/faqs.tsx`: the same
+array the page renders, with each answer's plain text extracted from its React
+nodes. The gate proves source → JSON-LD → rendered page agree, so no answer can be
+published to a search engine that the page does not show. The payload escapes `<`
+so a quoted `bb tool <name>` cannot corrupt the script element.
+- **Negatives that can fail**: the homepage must not satisfy the FAQPage detector; a
+drifted answer and a drifted question must each be rejected; a sitemap missing a
+real page must be rejected; the normalizer must strip React's text separators and
+decode entities.
+
+Evidence limitations were updated accordingly: structured data claims only the two
+types the site actually carries, and route discovery follows the directory layout.

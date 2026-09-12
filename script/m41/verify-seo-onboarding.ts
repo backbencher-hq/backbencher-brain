@@ -3,8 +3,13 @@
 // Proves the search-engine onboarding (S2) from BOTH halves:
 //   machine half  — the live deployed site exposes everything engines need:
 //                   Google verification token live in global DNS, sitemap
-//                   fetchable with exactly the real routes, every URL 200 to
+//                   fetchable with the deployed route set, every URL 200 to
 //                   crawlers, no noindex signals, truth renders live.
+//                   NOTE: this half describes the DEPLOYED build, not the
+//                   working tree. The repository's authoritative route list is
+//                   S1's (discovered from website/src/app); the live set trails
+//                   it until X1 deploys. The lag is recorded as a limitation, so
+//                   the gate never claims more than the deployed site shows.
 //   owner half    — dashboard confirmations (GSC verified, Bing import,
 //                   Brave submit) recorded in S2-OWNER-CONFIRMATIONS.json;
 //                   the verifier fails if any confirmation is missing,
@@ -88,13 +93,17 @@ try {
 check("S2: DNS TXT answer retrieved from dns.google", dnsFetched)
 check("S2: Google site-verification token is live in global DNS", tokenPresent(txtRecords, EXPECTED_TOKEN), `records=${txtRecords.length}`)
 
-// --- 3. sitemap live and exactly the real routes ---------------------------------
+// --- 3. sitemap live and matching the deployed route set --------------------------
 
-const EXPECTED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"].map((r) => `${LIVE}${r}`)
+// The route set the search engines can see TODAY. It trails the repository's
+// list (S1 discovers that from src/app — currently larger) until the next deploy;
+// X1 re-runs this gate against the deployed commit and the lag closes.
+const DEPLOYED_EXPECTED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"].map((r) => `${LIVE}${r}`)
+const EXPECTED = DEPLOYED_EXPECTED
 const sm = await get(`${LIVE}/sitemap.xml`)
 check("S2: live sitemap.xml responds 200", sm.status === 200, `status=${sm.status}`)
 const liveUrls = [...sm.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
-check("S2: live sitemap lists exactly the 7 real routes", JSON.stringify([...liveUrls].sort()) === JSON.stringify([...EXPECTED].sort()), `found=${liveUrls.length}`)
+check("S2: live sitemap lists exactly the deployed route set", JSON.stringify([...liveUrls].sort()) === JSON.stringify([...EXPECTED].sort()), `found=${liveUrls.length} expected=${EXPECTED.length}`)
 
 // --- 4. every sitemap URL serves 200 to a crawler --------------------------------
 
@@ -168,6 +177,7 @@ const evidence = {
   generatedAt: new Date().toISOString(),
   limitations: [
     "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
+    "The live route set describes the deployed build and trails the repository's route list (S1) until the next deploy; X1 re-runs this gate at the deployed commit.",
     "DNS is checked via dns.google (Google's own resolver) — the authoritative path for GSC verification.",
     "Brave has no verification protocol; acceptance of the submit-url form is the only available signal.",
   ],
