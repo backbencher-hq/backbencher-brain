@@ -58,6 +58,21 @@ Search the index (keyword and semantic modes).
 .BI health " [dir]"
 Index health and freshness.
 .TP
+.BI onboard " [dir]"
+Write the bb tools guidance section into
+.I <dir>/AGENTS.md
+so an agent host discovers the bb tools without being told. The section is
+generated from the tool registry (it can never name a tool that does not
+exist), and writing is idempotent: only the block between the
+.B bb:onboard
+markers is replaced, everything else in the file is preserved.
+.B \-\-check
+reports drift or ghost tool names and exits 1 without writing;
+.B \-\-print
+shows the generated section; 
+.B \-\-file
+chooses another guide file.
+.TP
 .B mcp
 Start the MCP server over stdio for Claude Code, Cursor, VS Code, and other
 MCP hosts.

@@ -1,0 +1,23 @@
+{
+  "probe": "M50.A2-ask-parse",
+  "at": "2026-09-12T04:02:08.191Z",
+  "rows": 10535,
+  "dimension": 2048,
+  "vectorTextBytes": 272389205,
+  "vectorTextMB": 259.8,
+  "loadMs": 403,
+  "jsonParsePlusCosineMs": 2368,
+  "scannerPlusCosineMs": 1361,
+  "scannerOnePassMs": 1345,
+  "speedupB": 1.74,
+  "speedupC": 1.76,
+  "sumMatchesA_B": 0,
+  "sumMatchesA_C": 0,
+  "maxAbsDeltaScannerVsJson": 2.909545893103882e-8,
+  "topIdUnchanged": {
+    "via": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.github/workflows/ci.yml:build:10",
+    "queryBuiltFrom": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.github/workflows/ci.yml:build:10"
+  },
+  "cosineIdentityNote": "query vector was built from row[0]; A's argmax should be row[0]",
+  "queryVectorDimParsed": 2048
+}

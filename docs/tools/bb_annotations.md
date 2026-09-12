@@ -19,7 +19,7 @@ Read annotations for a symbol (or all annotations up to the declared limit) with
   "properties": {
     "symbol": {
       "type": "string",
-      "description": "symbol name (omit to list all annotations)"
+      "description": "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases"
     },
     "limit": {
       "type": "number",

@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -95,6 +95,10 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // M28.A1: the annotation store must exist on pre-existing DBs too
       // (additive, idempotent) — bb_annotate writes where every editor reads.
       ensureAnnotationTable(raw)
+      // M50.A2 (#764): dense-vector accelerator column for semantic reads.
+      // Additive metadata-only ALTER (O(1)); reads without it fall back to the
+      // JSON column, so an old DB behaves exactly as before until it is filled.
+      ensureEmbeddingBlobColumn(raw)
     }
   }
 

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index, primaryKey } from "drizzle-orm/sqlite-core"
+import { sqliteTable, text, integer, real, blob, index, primaryKey } from "drizzle-orm/sqlite-core"
 import type { ProjectID } from "../project/schema"
 import { ProjectTable } from "../project/project.sql"
 
@@ -396,7 +396,11 @@ export const BrainSemanticEmbeddingTable = sqliteTable(
     entity_id: text().notNull(), // Can be symbol_id, file_id, or pattern_id
     entity_type: text().notNull(), // "symbol", "file", "pattern", "comment", "documentation"
     embedding_model: text().notNull(), // "openai-ada-002", "sentence-transformers", etc.
-    embedding_vector: text().notNull(), // JSON array of floats
+    embedding_vector: text().notNull(), // JSON array of floats (source of truth)
+    // M50.A2 (#764): little-endian float32 accelerator for dense vectors; NULL
+    // on legacy rows (readers then use embedding_vector). Additive migration:
+    // ensureEmbeddingBlobColumn() in schema-ddl.ts.
+    embedding_blob: blob("embedding_blob", { mode: "buffer" }),
     vector_dimension: integer().notNull(),
     content_hash: text().notNull(), // Hash of content that generated embedding
     semantic_context: text({ mode: "json" }), // Additional context for better search

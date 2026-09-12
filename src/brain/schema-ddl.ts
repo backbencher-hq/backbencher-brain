@@ -282,6 +282,11 @@ CREATE TABLE IF NOT EXISTS brain_semantic_embedding (
               entity_type TEXT NOT NULL,
               embedding_model TEXT NOT NULL,
               embedding_vector TEXT NOT NULL,
+              -- M50.A2 (#764): little-endian float32 accelerator for DENSE
+              -- vectors. embedding_vector (JSON) remains the source of truth;
+              -- this column exists so semantic reads do not re-parse 260MB of
+              -- JSON digits per bb_ask. NULL = no accelerator.
+              embedding_blob BLOB,
               vector_dimension INTEGER NOT NULL,
               content_hash TEXT NOT NULL,
               semantic_context TEXT,
@@ -348,6 +353,21 @@ export function ensureAnnotationTable(raw: any): void {
  * this index most. try/catch: a read-only or transient open must never fail
  * because of an index creation.
  */
+/**
+ * M50.A2 (#764): additive migration for the dense-vector accelerator column.
+ * Additive-only and idempotent: legacy DBs gain a NULL column (reads fall back
+ * to the JSON column, so nothing changes functionally), fresh DBs already have
+ * it from the DDL. Safe on read-only or busy opens (try/catch).
+ */
+export function ensureEmbeddingBlobColumn(raw: any): void {
+  try {
+    const cols = (raw.prepare("PRAGMA table_info(brain_semantic_embedding)").all() as Array<{ name: string }>).map((c) => c.name)
+    if (cols.length === 0) return // table absent (fresh DB handled by DDL)
+    if (cols.includes("embedding_blob")) return
+    raw.exec("ALTER TABLE brain_semantic_embedding ADD COLUMN embedding_blob BLOB")
+  } catch {}
+}
+
 export function ensureHealthIndexes(raw: any): { recreated: number } {
   try {
     raw.exec(`CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension)`)
@@ -504,6 +524,10 @@ export function migrateSchemaColumns(raw: any): void {
 export function ensureSchema(raw: any): void {
   raw.exec(DDL)
   ensureHealthIndexes(raw)
+  // M50.A2 (#764): dense-vector accelerator column (idempotent; the DDL above
+  // already carries it for fresh DBs, this covers re-created tables via paths
+  // that ran an older DDL).
+  ensureEmbeddingBlobColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}

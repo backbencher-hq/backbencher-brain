@@ -21,7 +21,7 @@
 // Runs under bun AND node/tsx.
 
 import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -137,6 +137,38 @@ async function main() {
   check("restore: owner_idx plan returns after heal", planRestored.includes("brain_symbol_owner_idx"), planRestored)
 
   console.log(`\n${pass} passed, ${failed} failed`)
+  // ── evidence stamp (M50 pattern: every gate seals its run with the commit
+  // it ran against, so a stale green is visible as stale).
+  try {
+    const { execFileSync } = await import("node:child_process")
+    const { mkdirSync, writeFileSync } = await import("node:fs")
+    const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+    const dir = path.join(ROOT, "validation/m50/results")
+    mkdirSync(dir, { recursive: true })
+    const prev = JSON.parse(readFileSync(path.join(dir, "A2-planner-stats.json"), "utf8"))
+    writeFileSync(
+      path.join(dir, "A2-planner-stats.json"),
+      JSON.stringify(
+        {
+          ...prev,
+          // G1 evidence contract: numeric issue (the original file carried the
+          // string "M50.A2").
+          issue: 764,
+          milestone: "M50",
+          at: new Date().toISOString(),
+          commit,
+          checks: pass + failed,
+          passed: pass,
+          failed,
+          mutationChecks: ["M1 strip stats + drop owner index -> planner full scan", "restore: heal recreates the index and re-runs ANALYZE", "P3 owner_idx chosen after heal"],
+          verifierCommand: "npx tsx script/m50/verify-planner-stats.ts",
+          status: failed === 0 ? "verified" : "known-gap",
+        },
+        null,
+        2,
+      ) + "\n",
+    )
+  } catch {}
   BrainDatabase.closeAll()
   rmSync(process.env.BB_DATA_DIR!, { recursive: true, force: true })
   rmSync(proj, { recursive: true, force: true })

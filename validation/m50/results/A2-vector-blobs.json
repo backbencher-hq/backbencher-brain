@@ -1,0 +1,17 @@
+{
+  "gate": "M50.A2-vector-blobs",
+  "issue": 764,
+  "milestone": "M50",
+  "at": "2026-09-12T14:26:31.629Z",
+  "commit": "522966109bea6b2138112021e6ce174e9dea9456",
+  "checks": 30,
+  "passed": 25,
+  "failed": 5,
+  "mutationChecks": [
+    "M1 truncated blobs rejected + JSON answers",
+    "M2 column absent -> JSON answers",
+    "restore re-promotes every dense row"
+  ],
+  "verifierCommand": "npx tsx script/m50/verify-vector-blobs.ts",
+  "status": "known-gap"
+}

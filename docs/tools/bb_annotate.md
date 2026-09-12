@@ -19,7 +19,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
   "properties": {
     "symbol": {
       "type": "string",
-      "description": "symbol name to annotate"
+      "description": "symbol name to annotate (`target`/`query` are accepted as aliases)"
     },
     "body": {
       "type": "string",

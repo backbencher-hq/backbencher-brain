@@ -741,6 +741,30 @@ Examples:
       await cmdHealth(dir, { ...opts, sampleSize: parseInt(opts.sampleSize, 10) })
     })
 
+  // M50.A3 (#765): guidance an agent host can read on every turn. Generated
+  // from the tool registry, so it can never name a tool that does not exist.
+  program
+    .command("onboard")
+    .description("write the bb tools guidance section into <dir>/AGENTS.md (generated from the tool registry)")
+    .argument("[dir]", "project directory (default: current directory)")
+    .option("--check", "report drift/ghost tool names without writing (exit 1 when not current)")
+    .option("--print", "print the generated section to stdout without writing")
+    .option("--file <path>", "guide file to write (default: <dir>/AGENTS.md)")
+    .addHelpText("after", `
+Examples:
+  $ bb onboard                # write/refresh AGENTS.md in the current project
+  $ bb onboard ../my-project  # same for another directory
+  $ bb onboard --check        # CI: fail when the guidance drifted or names a ghost tool
+  $ bb onboard --print        # show the generated section
+`)
+    .action(async (dir: string | undefined, opts: any) => {
+      const { onboard, renderOnboardResult } = await import("./onboard")
+      const abs = dir ? requireDir(dir) : process.cwd()
+      const result = onboard(abs, { check: opts.check === true, print: opts.print === true, file: opts.file })
+      console.log(renderOnboardResult(result))
+      if (opts.check === true && result.changed) process.exitCode = 1
+    })
+
   program
     .command("mcp")
     .description("start the MCP server over stdio (for Claude Code, Cursor, VS Code…)")

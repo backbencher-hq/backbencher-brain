@@ -498,7 +498,7 @@
           },
           "target": {
             "type": "string",
-            "description": "file, module, symbol, or feature target"
+            "description": "file, module, symbol, or feature target (`symbol`/`symbolName`/`query` are accepted as aliases)"
           },
           "maxNodes": {
             "type": "number",
@@ -696,7 +696,7 @@
           },
           "target": {
             "type": "string",
-            "description": "symbol or analysis target"
+            "description": "symbol or analysis target (`symbol`/`symbolName`/`query` are accepted as aliases)"
           },
           "filePath": {
             "type": "string",
@@ -802,7 +802,7 @@
           },
           "target": {
             "type": "string",
-            "description": "symbol, file, module, feature, or API target; optional for project and coverage"
+            "description": "symbol, file, module, feature, or API target (`symbol`/`symbolName`/`query` are accepted as aliases); optional for project and coverage"
           },
           "format": {
             "type": "string",
@@ -1128,7 +1128,7 @@
         "properties": {
           "symbol": {
             "type": "string",
-            "description": "symbol name to root the graph at"
+            "description": "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases)"
           },
           "maxDepth": {
             "type": "number",
@@ -1190,7 +1190,7 @@
         "properties": {
           "symbol": {
             "type": "string",
-            "description": "symbol name to compute impact for"
+            "description": "symbol name to compute impact for (`target`/`symbolName`/`query` are accepted as aliases)"
           }
         },
         "required": [
@@ -1240,7 +1240,7 @@
         "properties": {
           "symbol": {
             "type": "string",
-            "description": "symbol name to fetch cross-language facts for"
+            "description": "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)"
           }
         },
         "required": [
@@ -1289,7 +1289,7 @@
         "properties": {
           "symbol": {
             "type": "string",
-            "description": "symbol name to annotate"
+            "description": "symbol name to annotate (`target`/`query` are accepted as aliases)"
           },
           "body": {
             "type": "string",
@@ -1353,7 +1353,7 @@
         "properties": {
           "symbol": {
             "type": "string",
-            "description": "symbol name (omit to list all annotations)"
+            "description": "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases"
           },
           "limit": {
             "type": "number",
