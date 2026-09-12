@@ -184,21 +184,37 @@ async function main() {
 
     mkdirSync(RESULTS, { recursive: true })
     const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-    Object.assign(evidence, {
-      gate: "M50.A4",
-      milestone: "M50",
-      commit,
-      checks: passed + failed,
-      passed,
-      failed,
-      verifierCommand: "npx tsx script/m50/verify-a4-adoption.ts",
-      status: failed === 0 ? "verified" : "known-gap",
-    })
-    writeFileSync(path.join(RESULTS, "A4.json"), JSON.stringify(evidence, null, 2) + "\n")
-    check("P5 evidence written to validation/m50/results/A4.json", existsSync(path.join(RESULTS, "A4.json")))
+    const evidencePath = path.join(RESULTS, "A4.json")
+    // The stamp is a FUNCTION of the run's counters and is written LAST — an
+    // earlier version stamped before the final two checks and under-reported
+    // them (10 vs 12), which is exactly the kind of quietly-wrong number this
+    // milestone exists to remove.
+    const stamp = () => {
+      Object.assign(evidence, {
+        gate: "M50.A4",
+        milestone: "M50",
+        commit,
+        checks: passed + failed,
+        passed,
+        failed,
+        verifierCommand: "npx tsx script/m50/verify-a4-adoption.ts",
+        status: failed === 0 ? "verified" : "known-gap",
+      })
+      writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + "\n")
+    }
 
     // ── P6: guidance covers exactly the registry (A3 contract, re-asserted) ─
     check("P6 guidance mentions every registry tool", PUBLIC_TOOL_DESCRIPTORS.every((d) => body.includes(`\`${d.name}\``)))
+
+    // ── P5: the evidence is written once every check has run ────────────────
+    stamp()
+    const written = JSON.parse(readFileSync(evidencePath, "utf8"))
+    check(
+      "P5 evidence written with the run's true counters",
+      existsSync(evidencePath) && written.passed === passed && written.failed === failed && written.checks === passed + failed,
+      `stamped passed=${written.passed} checks=${written.checks} vs run passed=${passed} checks=${passed + failed}`,
+    )
+    stamp()
   } finally {
     try {
       BrainDatabase.closeAll()

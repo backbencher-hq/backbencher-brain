@@ -171,6 +171,10 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // value} binds value; {:catch err} binds err; {#snippet row(label)}
     // binds label+count. A shadowed name must NOT emit a use.
     const templateExprNames = new Set<string>()
+    // H2 (review wave): `this=` targets on svelte:component/svelte:element
+    // with a bare-identifier value are DYNAMIC component references,
+    // resolved post-merge (imports are unknown until the script pass).
+    const thisTargets = new Set<string>()
     const templateStack: Array<{ node: Node; scope: { shadowed: Set<string> } }> = [
       { node: rootNode, scope: { shadowed: new Set() } },
     ]
@@ -214,7 +218,18 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         const text = n.text.replace("{@render", "").trim()
         let end = 0
         while (end < text.length && (isIdentifier(text.slice(0, end + 1)))) end++
-        const targetName = text.slice(0, end)
+        let targetName = text.slice(0, end)
+        // D4 (second review): dotted render targets (`{@render ns.row(it)}`)
+        // resolved to the FIRST segment while on: handlers resolve dotted
+        // leaves to the LAST (`box.open` -> open) — same shape, opposite
+        // answers. The callable leaf is the last all-identifier segment
+        // (optional-chaining and the trailing call parens stripped); anything
+        // else keeps the leading-identifier fallback (`children?.()` -> children).
+        const afterLead = text.slice(end).trimStart()
+        if (targetName && (afterLead.startsWith(".") || afterLead.startsWith("?."))) {
+          const leaf = this.dottedRenderLeaf(text)
+          if (leaf) targetName = leaf
+        }
         const target = targetName ? { text: targetName } : undefined
         if (target && isIdentifier(target.text)) {
           relationships.push({
@@ -243,6 +258,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // use; then/catch vars are template-LOCAL.
       if (t === "await_statement") {
         this.collectAwaitExpression(n, templateExprNames, childShadowed)
+      }
+      // D5 (second review): {#if cond}, {:else if cond} and {#key exp}
+      // conditions are opaque svelte_raw_text under if_start/else_if_start/
+      // key_start — no `expression` node ever visits them, so conditions
+      // referencing ONLY the condition (masked in every fixture by duplicate
+      // reads elsewhere) emitted nothing. Pure reads, no bindings.
+      if (t === "if_statement" || t === "else_if_block" || t === "key_statement") {
+        this.collectConditionExpression(n, templateExprNames, childShadowed)
       }
       if (t === "expression") {
         // {count}, label={label}, this={Comp}, {@const total}, {@debug x},
@@ -274,6 +297,44 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             confidence: 0.95,
             metadata: { isComponentUsage: true },
           })
+        }
+        // H2: svelte:component/svelte:element `this={X}` — record bare
+        // identifiers for post-merge resolution (below).
+        if (tag === "svelte:component" || tag === "svelte:element") {
+          const thisTag = this.findChildByType(n, "start_tag") || this.findChildByType(n, "self_closing_tag")
+          if (thisTag) {
+            for (let i = 0; i < thisTag.namedChildCount; i++) {
+              const attr = thisTag.namedChild(i)
+              if (!attr || attr.type !== "attribute" || this.attributeName(attr) !== "this") continue
+              const valueNode = this.findChildByType(attr, "expression")
+              if (!valueNode) continue
+              let vt = valueNode.text.trim()
+              if (vt.startsWith("{") && vt.endsWith("}")) vt = vt.slice(1, -1).trim()
+              if (vt && isIdentifier(vt)) thisTargets.add(vt)
+            }
+          }
+        }
+        // H1/H3 (review wave): shorthand {value} and spread {...props}
+        // carry the whole expression in the attribute NAME with no
+        // expression child, so no other walk ever visits them. Named
+        // attributes WITH an expression child (this={Comp}, label={x})
+        // are already covered by the generic expression branch — skip
+        // those here to avoid double collection. (on: handlers keep
+        // their own calls path above and are skipped too.)
+        const startTag2 = this.findChildByType(n, "start_tag") || this.findChildByType(n, "self_closing_tag")
+        if (startTag2) {
+          for (let i = 0; i < startTag2.namedChildCount; i++) {
+            const attr = startTag2.namedChild(i)
+            if (!attr || attr.type !== "attribute") continue
+            const attrName = this.attributeName(attr)
+            if (!attrName || attrName.startsWith("on:")) continue
+            if (this.findChildByType(attr, "expression")) continue
+            if (attrName.startsWith("{") && attrName.endsWith("}")) {
+              const inner = attrName.slice(1, -1).trim()
+              const expr = inner.startsWith("...") ? inner.slice(3) : inner
+              this.collectIdentifiersFromText(expr, templateExprNames, childShadowed)
+            }
+          }
         }
         // on: directives — the handler is the first call-target identifier or
         // bare-identifier leaf of the expression value (`on:click={inc}` →
@@ -315,11 +376,16 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scriptTrees: Tree[] = context?.sfcScriptTrees ?? []
     const scriptLines: number[] = context?.sfcScriptLines ?? []
     const scriptCols: number[] = context?.sfcScriptCols ?? []
+    // H4 (review wave): SFC byte base per block for index coherence (same
+    // engine field the Vue wave added; absent in hand-built contexts it
+    // defaults to 0, preserving old behavior exactly).
+    const scriptStartIdx: number[] = (context as any)?.sfcScriptStartIndex ?? []
     let scriptDecisions = 0
     for (let bi = 0; bi < scriptTrees.length; bi++) {
       const scriptTree = scriptTrees[bi]
       const scriptStartLine = scriptLines[bi]
       const scriptStartColumn = scriptCols[bi]
+      const scriptBlockIndex = scriptStartIdx[bi] ?? 0
       if (!scriptTree || scriptStartLine === undefined) continue
       const scriptContent = scriptTree.rootNode?.text ?? ""
       const lineOffset = scriptStartLine - 1
@@ -345,7 +411,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // 3a. Svelte-specific symbols from the script tree: $props() destructure
       //     → Property; $: reactive declaration targets → Variable.
-      this.extractSvelteDeclarations(scriptTree.rootNode, moduleName, symbols, lineOffset, colOffset)
+      this.extractSvelteDeclarations(scriptTree.rootNode, moduleName, symbols, lineOffset, colOffset, scriptBlockIndex)
 
       // Block-kind: context="module" exports are MODULE API, never
       // component props. Only instance-block export-let/const bindings are
@@ -369,9 +435,17 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const s of sub.symbols ?? []) {
         if (runePropNamesLowered.has((s.name ?? "") as string)) continue
         if (reactiveTargetNames.has((s.name ?? "") as string)) continue
+        // H4: full SFC coherence — lines + first-line cols + byte indices
+        // (same single-line endColumn rule as the Vue wave).
+        const firstLine = s.range.startLine === 1
         s.range.startLine += lineOffset
         s.range.endLine += lineOffset
-        if (s.range.startLine === 1 + lineOffset) s.range.startColumn += colOffset
+        if (firstLine && colOffset) {
+          s.range.startColumn += colOffset
+          if (s.range.endLine === s.range.startLine) s.range.endColumn += colOffset
+        }
+        if (scriptBlockIndex && s.range.startIndex !== undefined) s.range.startIndex += scriptBlockIndex
+        if (scriptBlockIndex && s.range.endIndex !== undefined) s.range.endIndex += scriptBlockIndex
         // Svelte prop: `export let x` — JS analyzer reports Variable + export;
         // reclassify as Property (the component's public prop API). Exported
         // bindings (export let/const/function/class) are component-owned
@@ -410,8 +484,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const i of sub.imports ?? []) {
         if (i.range) {
+          const firstLine = i.range.startLine === 1
           i.range.startLine += lineOffset
           i.range.endLine += lineOffset
+          if (firstLine && colOffset) {
+            i.range.startColumn += colOffset
+            if (i.range.endLine === i.range.startLine) i.range.endColumn += colOffset
+          }
+          if (scriptBlockIndex && i.range.startIndex !== undefined) i.range.startIndex += scriptBlockIndex
+          if (scriptBlockIndex && i.range.endIndex !== undefined) i.range.endIndex += scriptBlockIndex
         }
         imports.push(i)
       }
@@ -420,8 +501,43 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // membership rides Contains, they are not module exports. Only
       // module-block exports (`<script context="module">` — the module's
       // true importable API) flow into the export list.
-      if (isModuleBlock) for (const e of sub.exports ?? []) exports.push(e)
-      for (const er of sub.errors ?? []) errors.push(er)
+      // D1 (second review): these were pushed raw with script-relative
+      // ranges — shift to SFC coherence like every other script artifact.
+      if (isModuleBlock) {
+        for (const e of sub.exports ?? []) {
+          const r = (e as any).range
+          if (r) {
+            const firstLine = r.startLine === 1
+            r.startLine += lineOffset
+            r.endLine += lineOffset
+            if (firstLine && colOffset) {
+              r.startColumn += colOffset
+              if (r.endLine === r.startLine) r.endColumn += colOffset
+            }
+            if (scriptBlockIndex && r.startIndex !== undefined) r.startIndex += scriptBlockIndex
+            if (scriptBlockIndex && r.endIndex !== undefined) r.endIndex += scriptBlockIndex
+          }
+          exports.push(e)
+        }
+      }
+      // H4: sub-errors are script-relative — shift to SFC coherence.
+      for (const er of sub.errors ?? []) {
+        const r = er.range as any
+        if (r) {
+          const firstLine = r.startLine === 1
+          r.startLine += lineOffset
+          r.endLine += lineOffset
+          if (firstLine && typeof r.startColumn === "number") {
+            r.startColumn += colOffset
+            r.endColumn += colOffset
+          }
+          if (typeof r.startIndex === "number") {
+            r.startIndex += scriptBlockIndex
+            r.endIndex += scriptBlockIndex
+          }
+        }
+        errors.push(er)
+      }
       scriptDecisions += Math.max(0, ((sub.metadata as any)?.cyclomaticComplexity ?? 1) - 1)
     }
 
@@ -446,6 +562,31 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           type: ASTEngine.RelationshipType.Uses,
           confidence: 0.95,
           metadata: { isTemplateExpression: true },
+        })
+      }
+    }
+
+    // H2 (review wave): dynamic `this=` targets that did NOT resolve as
+    // member uses. An import-bound bare identifier in component position is
+    // a component usage (the standard dynamic-dispatch pattern); anything
+    // else stays silent per the no-junk rule. Member-resolved targets
+    // already carry a Uses edge above and are skipped (no double emission).
+    if (thisTargets.size > 0) {
+      const memberNames = new Set(symbols.map((s) => s.name))
+      const importBindings = new Set<string>()
+      for (const imp of imports) {
+        for (const item of imp.items ?? []) {
+          if (item && item !== "*") importBindings.add(item)
+        }
+      }
+      for (const name of thisTargets) {
+        if (memberNames.has(name) || !importBindings.has(name)) continue
+        relationships.push({
+          source: moduleName,
+          target: name,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.95,
+          metadata: { isComponentUsage: true },
         })
       }
     }
@@ -596,6 +737,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     lineOffset: number,
     colOffset: number,
+    indexOffset = 0,
   ): void {
     const stack: Node[] = [root]
     // S6 (#419): a `$:` target assigned from MULTIPLE reactive blocks is still
@@ -626,7 +768,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
                 symbols.push({
                   name,
                   kind: ASTEngine.SymbolKind.Property,
-                  range: this.offsetRange(this.nodeToRange(declarator), lineOffset, colOffset),
+                  range: this.offsetRange(this.nodeToRange(declarator), lineOffset, colOffset, indexOffset),
                   scope: componentName,
                   ownerName: componentName,
                   ownerKind: ASTEngine.SymbolKind.Class,
@@ -653,7 +795,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               symbols.push({
                 name: left.text,
                 kind: ASTEngine.SymbolKind.Variable,
-                range: this.offsetRange(this.nodeToRange(assignment), lineOffset, colOffset),
+                range: this.offsetRange(this.nodeToRange(assignment), lineOffset, colOffset, indexOffset),
                 scope: componentName,
                 ownerName: componentName,
                 ownerKind: ASTEngine.SymbolKind.Class,
@@ -722,11 +864,73 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private collectIdentifiersFromText(text: string, out: Set<string>, shadowed: Set<string>): void {
-    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
-    let m: RegExpExecArray | null
-    while ((m = re.exec(text)) !== null) {
-      if (shadowed.has(m[0])) continue
-      out.add(m[0])
+    // M2+M3 (review wave): the flat identifier regex read string contents
+    // (`f("a=b")` -> Uses(a), Uses(b)) and chain leaves (`item.id` -> member
+    // `id`) as member reads. Character walk with quote states (backslash
+    // escapes honored; backtick ${...} re-enters code, brace-tracked) and
+    // receiver-only emission (dot/?./#-preceded tokens skipped) — the same
+    // contract as the Vue D1/M1 machine, implemented here because the two
+    // analyzers share no template code.
+    // D3 (second review): `//` and `/* */` comments are code-skipped — a
+    // `{f(a) /* b */}` comment must not read member b. (Vue's twin machine
+    // has the same hole; flagged as a family follow-up, fixed here where
+    // probe-proven.) Comment detection runs in code context only, so string
+    // contents (URLs, '//' literals) are unaffected.
+    const isIdentStart = (ch: string): boolean =>
+      (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_" || ch === "$"
+    const isIdentPart = (ch: string): boolean => isIdentStart(ch) || (ch >= "0" && ch <= "9")
+    const isSpace = (ch: string): boolean => ch === " " || ch === "\t" || ch === "\n" || ch === "\r"
+    const stack: string[] = []
+    const emit = (word: string, start: number): void => {
+      let k = start - 1
+      while (k >= 0 && isSpace(text[k])) k--
+      const prev = k >= 0 ? text[k] : ""
+      const prev2 = k - 1 >= 0 ? text[k - 1] : ""
+      if (prev === "." || (prev2 === "?" && prev === ".") || prev === "#") return
+      if (shadowed.has(word)) return
+      out.add(word)
+    }
+    let i = 0
+    while (i < text.length) {
+      const ch = text[i]
+      const top = stack.length > 0 ? stack[stack.length - 1] : ""
+      if (top === "'" || top === '"') {
+        if (ch === "\\") { i += 2; continue }
+        if (ch === top) stack.pop()
+        i++
+        continue
+      }
+      if (top === "`") {
+        if (ch === "\\") { i += 2; continue }
+        if (ch === "$" && text[i + 1] === "{") { stack.push("${"); i += 2; continue }
+        if (ch === "`") { stack.pop(); i++; continue }
+        i++
+        continue
+      }
+      if (ch === "'" || ch === '"' || ch === "`") { stack.push(ch); i++; continue }
+      if (ch === "{") { stack.push(ch); i++; continue }
+      if (ch === "}") {
+        if (top === "{" || top === "${") stack.pop()
+        i++
+        continue
+      }
+      // D3: comment skipping (code context only — quote states returned
+      // above, so '//' inside strings/regex-shaped text is literal).
+      if (ch === "/" && (text[i + 1] === "/" || text[i + 1] === "*")) {
+        if (text[i + 1] === "/") {
+          const nl = text.indexOf("\n", i + 2)
+          i = nl >= 0 ? nl + 1 : text.length
+        } else {
+          const end = text.indexOf("*/", i + 2)
+          i = end >= 0 ? end + 2 : text.length
+        }
+        continue
+      }
+      if (!isIdentStart(ch)) { i++; continue }
+      let j = i + 1
+      while (j < text.length && isIdentPart(text[j])) j++
+      emit(text.slice(i, j), i)
+      i = j
     }
   }
 
@@ -782,9 +986,19 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const m = /^(.*?)\s+(?:then|as)\s+/.exec(text)
       const promiseExpr = m ? m[1] : text
       this.collectIdentifiersFromText(promiseExpr, out, shadowed)
+      // M4 (review wave): the INLINE then/as vars (`then value` with no
+      // then_block node) were never registered — {value} later leaked as a
+      // member use. Register the remainder as template-local bindings.
+      if (m) {
+        const rest = text.slice(m[0].length)
+        this.collectIdentifiersFromText(rest, shadowed, new Set())
+      }
     }
-    // then/catch var names shadow members within their block — registered
-    // even if the block is empty.
+    // then/catch var names shadow members within their block.
+    // M1 (review wave): no phantom entries — an earlier revision appended a
+    // literal " x" here, shadowing every member named x in every await block
+    // subtree (probe: real {x} read suppressed). Empty blocks collect
+    // nothing on their own, which is already correct.
     for (const blk of [thenBlk, catchBlk]) {
       if (!blk) continue
       const rawTexts: string[] = []
@@ -797,8 +1011,33 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (c) s.push(c)
         }
       }
-      this.collectIdentifiersFromText(`${rawTexts.join(" ")} x`, shadowed, new Set())
+      this.collectIdentifiersFromText(rawTexts.join(" "), shadowed, new Set())
     }
+  }
+
+  /** D5: {#if cond} / {:else if cond} / {#key exp} — the condition is a
+   *  svelte_raw_text child of if_start/else_if_start/key_start (no
+   *  `expression` wrapper, unlike mustache bodies). Every identifier is a
+   *  member read; these heads bind nothing, so no shadow registration. */
+  private collectConditionExpression(node: Node, out: Set<string>, shadowed: Set<string>): void {
+    const start = this.findDescendant(node, (c) =>
+      c.type === "if_start" || c.type === "else_if_start" || c.type === "key_start")
+    if (!start) return
+    const rawTexts: string[] = []
+    const s: Node[] = [start]
+    while (s.length > 0) {
+      const m = s.pop()!
+      if (m.type === "svelte_raw_text") rawTexts.push(m.text)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) s.push(c)
+      }
+    }
+    // if_start's raw_text INCLUDES the {#if marker text? No — block_start_tag
+    // is a separate child holding `#if`; raw_text holds only the condition.
+    // (Verified against the live grammar: if_start->[block_start_tag,
+    // svelte_raw_text]; the tag child contributes no raw text.)
+    this.collectIdentifiersFromText(rawTexts.join(" "), out, shadowed)
   }
 
   /** {#snippet row(label, count)} heads — params are template-local. */
@@ -822,6 +1061,26 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectExpressionIdentifiers(node: Node, out: Set<string>, shadowed: Set<string>): void {
     const text = this.expressionText(node)
     this.collectIdentifiersFromText(text, out, shadowed)
+  }
+
+  /** D4: last all-identifier segment of a dotted render target
+   *  (`ns.row(it)` -> row; `a . b . c()` -> c). Returns undefined unless
+   *  every segment is a bare identifier — the caller keeps its fallback. */
+  private dottedRenderLeaf(text: string): string | undefined {
+    // cut the trailing `}` and any call arguments `(...)`
+    let body = text.trim()
+    if (body.endsWith("}")) body = body.slice(0, -1)
+    const paren = body.indexOf("(")
+    if (paren >= 0) body = body.slice(0, paren)
+    const parts = body.split(".").map((p) => {
+      // strip whitespace and one optional-chaining marker by hand (no
+      // regex — the R2 census gates every pattern literal in this family)
+      let q = p.trim()
+      if (q.endsWith("?")) q = q.slice(0, -1).trim()
+      return q
+    })
+    if (parts.length < 2 || !parts.every((p) => isIdentifier(p))) return undefined
+    return parts[parts.length - 1]
   }
 
   /** {@html raw} / {@const total = expr} / {@debug expr} — body is a direct
@@ -980,15 +1239,21 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     range: ASTEngine.UniversalSymbol["range"],
     lineOffset: number,
     colOffset: number,
+    indexOffset = 0,
   ): ASTEngine.UniversalSymbol["range"] {
-    return {
-      startLine: range.startLine + lineOffset,
-      endLine: range.endLine + lineOffset,
-      startColumn: range.startLine === 1 ? range.startColumn + colOffset : range.startColumn,
-      endColumn: range.startLine === 1 ? range.endColumn + colOffset : range.endColumn,
-      startIndex: range.startIndex,
-      endIndex: range.endIndex,
+    // H4: mirror the Vue offsetRange — endColumn shifts only when the range
+    // never leaves the script's first line; indices shift when defined.
+    const out = { ...range }
+    const firstLine = out.startLine === 1
+    out.startLine += lineOffset
+    out.endLine += lineOffset
+    if (firstLine && colOffset) {
+      out.startColumn += colOffset
+      if (out.endLine === out.startLine) out.endColumn += colOffset
     }
+    if (indexOffset && out.startIndex !== undefined) out.startIndex += indexOffset
+    if (indexOffset && out.endIndex !== undefined) out.endIndex += indexOffset
+    return out
   }
 
   private findChildByType(node: Node, type: string): Node | null {
