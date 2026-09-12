@@ -340,6 +340,19 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       )
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
+    for (const want of exp.expectExportRanges ?? []) {
+      // Sv2 #736-D1: pin SFC coherence of an export range.
+      // { export, startLine?, startColumn?, endLine?, endColumn?,
+      //   startIndex?, endIndex? } — only specified fields are checked.
+      const ex = (result.exports ?? []).find((e: any) => e.name === want.export)
+      if (!ex) { problems.push(`expectExportRanges: export ${want.export} not found`); continue }
+      const range: any = (ex as any).range ?? {}
+      for (const k of ["startLine", "startColumn", "endLine", "endColumn", "startIndex", "endIndex"]) {
+        if ((want as any)[k] !== undefined && range[k] !== (want as any)[k]) {
+          problems.push(`expected export ${want.export} range ${k}=${JSON.stringify((want as any)[k])}; got ${JSON.stringify(range[k])} (full: ${JSON.stringify(range)})`)
+        }
+      }
+    }
     for (const want of exp.expectImports ?? []) {
       // Each constraint field must match >=1 import (unspecified fields are
       // wildcards; `comment` is documentation, never a constraint — mirrors

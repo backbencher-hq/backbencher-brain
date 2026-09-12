@@ -5744,7 +5744,25 @@ async function main() {
                 const text = n.text.replace("{@render", "").trim()
                 let end = 0
                 while (end < text.length && isIdent(text.slice(0, end + 1))) end++
-                const target = text.slice(0, end)
+                let target = text.slice(0, end)
+                // Sv2 #736-D4 mirror: dotted render targets resolve to the
+                // callable LEAF (`{@render ns.row(it)}` -> row), same as the
+                // on: dotted-leaf rule. All-identifier segments only;
+                // otherwise the leading-identifier fallback stands
+                // (`children?.()` -> children).
+                const afterLead = text.slice(end).trimStart()
+                if (target && (afterLead.startsWith(".") || afterLead.startsWith("?."))) {
+                  let body = text.trim()
+                  if (body.endsWith("}")) body = body.slice(0, -1)
+                  const paren = body.indexOf("(")
+                  if (paren >= 0) body = body.slice(0, paren)
+                  const parts = body.split(".").map((p) => {
+                    let q = p.trim()
+                    if (q.endsWith("?")) q = q.slice(0, -1).trim()
+                    return q
+                  })
+                  if (parts.length >= 2 && parts.every((p) => isIdent(p))) target = parts[parts.length - 1]
+                }
                 if (target && !seenRender.has("r|" + target)) {
                   seenRender.add("r|" + target)
                   ;(truth as any[]).push({ label: "calls", from: "(template)", target })

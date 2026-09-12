@@ -1721,8 +1721,7 @@ const MUTANTS: Mutant[] = [
     description: "re-emits Uses for template-LOCAL identifiers that shadow members (the V4 bug class: v-for loop vars and slot props produced false uses)",
     transform: r => {
       const rels = r.relationships ?? []
-      const comp = rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source
-      const source = typeof comp === "string" ? comp : "template-scope-shadow"
+      const source = "template-scope-shadow" // pinned: first-edge source is unstable across sub-analyzer evolution
       const extra = ["item", "row"].map(name => ({
         source, target: name, type: "uses", confidence: 0.95,
         metadata: { isTemplateExpression: true },
@@ -1751,7 +1750,7 @@ const MUTANTS: Mutant[] = [
     description: "re-emits Uses for template-LOCAL identifiers (the vue V4 bug class: each loop vars and await then/catch vars produced false uses)",
     transform: r => {
       const rels = r.relationships ?? []
-      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "template-member-uses"
+      const source = "template-member-uses" // pinned: first-edge source is unstable across sub-analyzer evolution
       const extra = ["row", "i", "value", "err"].map(name => ({
         source, target: name, type: "uses", confidence: 0.95,
         metadata: { isTemplateExpression: true },
@@ -1808,7 +1807,7 @@ const MUTANTS: Mutant[] = [
     description: "re-emits Uses for each-loop / {@const} bindings that collide with a SAME-NAMED MEMBER (the S5 bug class: {#each rows as row} or {@const total = r.id} leaked fake uses -> member row/item/total)",
     transform: r => {
       const rels = r.relationships || []
-      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "each-shadow-collision"
+      const source = "each-shadow-collision" // pinned: first-edge source is unstable across sub-analyzer evolution
       const extra = ["row", "item", "total"].map(name => ({
         source, target: name, type: "uses", confidence: 0.95,
         metadata: { isTemplateExpression: true },
@@ -1844,13 +1843,130 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context ?? "").startsWith("Svelte {@render}")) }),
   },
   {
+    id: "svelte/drop-attr-shape-uses",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "Sv1 #736 regression (H1/H3): reverts the attribute-name scan — shorthand {value} and spread {...props} (expression in the attribute NAME, no expression child) emit no uses (template-attr-shapes pins value+props)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "uses" && (x.target === "value" || x.target === "props") && (x.metadata ?? {}).isTemplateExpression)) }),
+  },
+  {
+    id: "svelte/drop-dynamic-this-instantiates",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "Sv1 #736 regression (H2): reverts dynamic this= resolution — import-bound bare this={DynComp} emits no instantiates (template-attr-shapes pins DynComp)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "DynComp")) }),
+  },
+  {
+    id: "svelte/reemit-string-content-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "Sv1 #736 regression (M2): reverts the quote-state walk — string contents read as identifiers (f(\"a=b\") emits uses a+b; template-string-safety forbids both)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = "template-string-safety" // pinned: first-edge source is unstable across sub-analyzer evolution
+      const extra = ["a", "b"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "svelte/reemit-chain-leaf-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "Sv1 #736 regression (M3): reverts receiver-only emission — member-chain leaves read as members (user.name emits uses name; template-string-safety forbids it)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = "template-string-safety" // pinned: first-edge source is unstable across sub-analyzer evolution
+      return { ...r, relationships: [...rels, { source, target: "name", type: "uses", confidence: 0.95, metadata: { isTemplateExpression: true } }] }
+    },
+  },
+  {
+    id: "svelte/reemit-inline-await-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "Sv1 #736 regression (M4): reverts inline then/as registration — `{#await data as d}` leaks uses d (await-inline-shadow forbids it; the `value` half is already covered by svelte/reemit-shadowed-uses)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = "await-inline-shadow" // pinned: first-edge source is unstable across sub-analyzer evolution
+      return { ...r, relationships: [...rels, { source, target: "d", type: "uses", confidence: 0.95, metadata: { isTemplateExpression: true } }] }
+    },
+  },
+  {
+    id: "svelte/readd-phantom-x-shadow",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "Sv1 #736 regression (M1): re-adds the phantom await-block shadow — a hardcoded shadow of identifier x suppresses the real member-x read inside every await block (await-inline-shadow expects uses x)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "uses" && x.target === "x" && (x.metadata ?? {}).isTemplateExpression)) }),
+  },
+  {
+    id: "svelte/script-relative-export-ranges",
+    language: "svelte",
+    defectClass: "range-incoherence",
+    description: "Sv2 #736 regression (D1): reverts SFC export-range shifts — module-block export ranges keep script-relative byte indices (module-block-exports pins VERSION at SFC index 39; lines are 2 either way here since the block opens on SFC line 1, so indices are the discriminating fields)",
+    transform: r => ({
+      ...r,
+      exports: (r.exports ?? []).map((e: any) => e.name === "VERSION"
+        ? { ...e, range: { ...((e as any).range ?? {}), startIndex: 14, endIndex: 21 } }
+        : e),
+    }),
+  },
+  {
+    id: "svelte/reemit-comment-uses",
+    language: "svelte",
+    defectClass: "scope-blindness",
+    description: "Sv2 #736 regression (D3): reverts comment skipping — `{f(a) /* b */}` and `{url // pick}` leak uses b/pick (template-comment-safety forbids both)",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = "template-comment-safety" // pinned: first-edge source is unstable across sub-analyzer evolution
+      const extra = ["b", "pick"].map(name => ({
+        source, target: name, type: "uses", confidence: 0.95,
+        metadata: { isTemplateExpression: true },
+      }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "svelte/render-first-segment-calls",
+    language: "svelte",
+    defectClass: "relationship-fabrication",
+    description: "Sv2 #736 regression (D4): reverts the render leaf rule — `{@render helpers.row(1)}` emits calls helpers alongside the plain-site calls row (template-calls forbids helpers; row stays via the plain site, so add-only is the faithful revert)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "template-calls", target: "helpers", type: "calls", confidence: 0.9, metadata: { context: "Svelte {@render} tag" } },
+      ],
+    }),
+  },
+  {
+    id: "svelte/drop-condition-uses",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "Sv2 #736 regression (D5): reverts if/else-if/key condition collection — heads referencing only their condition emit nothing (template-condition-uses pins shown/fallback/k)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "uses" && ["shown", "fallback", "k"].includes(x.target) && (x.metadata ?? {}).isTemplateExpression)) }),
+  },
+  {
+    id: "svelte/script-relative-indices",
+    language: "svelte",
+    defectClass: "range-incoherence",
+    description: "Sv1 #736 regression (H4): reverts SFC index shifts — script-derived ranges keep script-relative byte indices (work startIndex 50->31, endIndex 86->55; script-range-coherence pins SFC-absolute)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => s.name === "work"
+        ? { ...s, range: { ...(s.range ?? {}), startIndex: 31, endIndex: 55 } }
+        : s),
+    }),
+  },
+  {
     id: "vue/reemit-filtered-kebab-tags",
     language: "vue",
     defectClass: "relationship-fabrication",
     description: "M37.21 #611 regression: re-emits modern-HTML/SVG builtin tags as component instantiates — <search> (2023 HTML element) and the camelCase SVG tags (linearGradient, clipPath, mask, pattern, marker, symbol) are filtered by the analyzer's builtin set; re-adding them is the ORACLE_HTML_TAGS drift class that faked a MISSING in vue-element-admin",
     transform: r => {
       const rels = r.relationships ?? []
-      const source = (rels.find((x: any) => x.type === "instantiates" || x.type === "uses")?.source) || "vue-component-usage"
+      const source = "vue-component-usage" // pinned: first-edge source is unstable across sub-analyzer evolution
       return { ...r, relationships: [...rels, { source, target: "search", type: "instantiates", confidence: 0.95, metadata: { isComponentUsage: true } }] }
     },
   },
@@ -3383,7 +3499,13 @@ async function main() {
     return cleanResults.get(lang)!
   }
 
-  for (const m of MUTANTS) {
+  const mutantFilter = process.env.BB_MUTANT_ONLY
+  const selected = MUTANTS.filter((m) => {
+    // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
+    if (!mutantFilter) return true
+    return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
+  })
+  for (const m of selected) {
     const base = await clean(m.language)
     const real = await realAnalyzer(m.language)
     const mutant = {
@@ -3420,14 +3542,14 @@ async function main() {
       { description: "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start" },
     ],
     mutationLog,
-    data: { summary: { mutantsRun: MUTANTS.length, caught: MUTANTS.length - survivors, survived: survivors } },
+    data: { summary: { mutantsRun: selected.length, caught: selected.length - survivors, survived: survivors } },
   })
 
   if (survivors > 0) {
     console.error(`\n${survivors} SURVIVING MUTANT(S) - the suite cannot detect real defects. Fix the suite before trusting any green.`)
     process.exit(2)
   }
-  console.log(`\nall ${MUTANTS.length} mutants caught - the gates can fail`)
+  console.log(`\nall ${selected.length} mutants caught - the gates can fail${mutantFilter ? ` (BB_MUTANT_ONLY="${mutantFilter}" filtered ${MUTANTS.length} -> ${selected.length})` : ""}`)
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
