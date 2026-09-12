@@ -2562,12 +2562,43 @@ const MUTANTS: Mutant[] = [
     description: "M49 #758 B5 regression: resurrects the accessor half a data member replaced — Overwrite.x property reappears (forbidSymbols catches it)",
     transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "x", kind: "property" }] }),
   },
+    {
+    id: "vue/dupkey-revert-first-wins",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "M49 dup-key ruling (#745) regression: reverts Options-API member emission to first-wins — the later save() body is dropped instead of surviving (fixture pins the LAST body's qualified call)",
+    transform: r => {
+      // Simulate first-wins: the surviving save body becomes the FIRST one —
+      // its calls (firstHelper) reappear, the last body's (lastHelper) vanish.
+      const syms = r.symbols ?? []
+      const seen = new Set<string>()
+      const out: any[] = []
+      for (const s of syms) {
+        if (s.name === "save" && s.metadata?.method) {
+          if (seen.has("save")) continue
+          seen.add("save")
+        }
+        out.push(s)
+      }
+      const rels = (r.relationships ?? [])
+        .filter((e: any) => !(String(e.type).toLowerCase() === "calls" && e.target === "lastHelper"))
+      rels.push({ type: "calls", source: "save", target: "firstHelper", confidence: 0.9, metadata: { line: 4 } })
+      return { ...r, symbols: out, relationships: rels }
+    },
+  },
   {
-    id: "javascript/static-override-fabrication",
-    language: "javascript",
+    id: "typescript/dupkey-keep-both",
+    language: "typescript",
     defectClass: "fabrication",
-    description: "M49 #758 B4 regression: re-fabricates static→instance overrides — Sub2.greet2->Base2.greet2 reappears (forbidRelationships catches it)",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", from: "Sub2.greet2", target: "Base2.greet2", source: "Sub2.greet2", confidence: 0.95 }] }),
+    description: "M49 dup-key ruling (#746) regression: re-emits the phantom first save() (keep-both) — symbols and the phantom save->helperOne call reappear (fixture pins 1 save and forbidRelationships catches helperOne)",
+    transform: r => {
+      const syms = r.symbols ?? []
+      const firstSave = syms.find((s: any) => s.name === "save")
+      if (!firstSave) return r
+      const phantom = { ...firstSave, range: { ...firstSave.range, startLine: firstSave.range.startLine - 1, endLine: firstSave.range.endLine - 1 } }
+      const rels = [...(r.relationships ?? []), { type: "calls", source: "save", target: "firstHelper", confidence: 0.9, metadata: { line: 1 } }]
+      return { ...r, symbols: [phantom, ...syms], relationships: rels }
+    },
   },
   {
     id: "typescript/async-promise-void",

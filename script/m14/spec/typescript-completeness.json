@@ -341,6 +341,14 @@
     "question": "interface Spring extends Readable with same-name member emitted ZERO overrides \u2014 the class pass requires metadata.isOverride + a Class-kind parent. Found via the svelte-repo typescript lane (Spring.subscribe -> Readable.subscribe MISSING).",
     "decision": "RULED - FIXED: structural-tier in-file BFS (depth-10, mirroring the oracle's truth walk) over Interface-kind symbols' metadata.extends. Overload abstention: a name declared twice in one interface never pairs (no textual-signature truth in the analyzer \u2014 the oracle's sigCompatible gate owns that distinction). External/unresolved bases emit nothing. ALSO FIXED en route: extends targets strip type-args to the clean head + leaf segment (extends Spring->Readable<T> was bracket-polluted \u2014 groovy S1 heritage class). Parity probe: analyzer and deriveTreeEdges emit IDENTICAL edges on the Spring/Readable shape, plain .ts and .d.ts both. Pinned + mutant typescript/iface-override-drop.",
     "date": "2026-09-12"
+   },
+   {
+    "id": "D10",
+    "node_type": "object-literal duplicate-key members (#746, M49 web-family dup-key ruling)",
+    "status": "RULED",
+    "question": "TS emitted BOTH same-key object-literal members (keep-both: 2 `save` symbols, phantom first body's calls edges intact) while JS at runtime executes the LAST declaration and the JS analyzer's J3 contract is last-wins \u2014 same shape, different graph by file extension. Found via the web-family dup-key convergence sweep (#746).",
+    "ruling": "Option A \u2014 last-wins family-wide. collapseDuplicateObjectMembers walks `object` nodes only (class bodies = overload territory, untouched; get/set pairs coexist on kind-keyed slots per the B5 accessor-slot contract; a plain member kills same-name accessor halves \u2014 data replaces the descriptor). Dead members are spliced from symbols pre-map-build; dead spans tombstoned and phantom calls/uses filtered post-walk by source+line (filterPhantomDupKeyEdges). Pinned by fixtures/typescript/dupkey-last-wins; mutant typescript/dupkey-keep-both dies on it.",
+    "evidence": "dupkey-verify.ts (2->1 symbol, line-of LAST), dupkey-ts-shapes.ts (get/set coexist, class overloads untouched, phantom call dropped), F3 ts 58/58, F4 437/437"
    }
   ]
  },
