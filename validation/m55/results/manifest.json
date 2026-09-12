@@ -5,7 +5,7 @@
   "title": "The Hub That Tells the Truth (IDE v8)",
   "status": "open",
   "authority": "docs/m55/M55-MASTER-PLAN.md (Issue groups table)",
-  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a714 Truth Rules, M55 amendment \u2014 landed by G1)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a715 Truth Rules, M55 amendment \u2014 landed by G1)",
   "prerequisite": "M44 + M53 completion bars met \u2014 re-audited by G1 on every run; blocked (never green) when the external fixture or the display tooling is absent",
   "protocol": "docs/m55/SCREENSHOT-PROTOCOL.md",
   "filingEvidence": {
@@ -21,7 +21,7 @@
       "githubIssue": 773,
       "tool": "m55-governance",
       "status": "planned",
-      "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); \u00a714 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
+      "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); \u00a715 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where the M44 and M53 gates also exit 0; exits non-zero for each planted mutant ledger (missing evidence file, stale commit pin, no acceptance criteria, a closable issue behind a planned prerequisite)",
         "evidence JSON machine-emitted with commit pin + working-tree state; no hand-written status anywhere in the ledger",
@@ -66,6 +66,22 @@
       "githubIssue": 771,
       "tool": "lsp-call-hierarchy-truth",
       "status": "planned",
+      "progress": {
+        "stage": "component + wire legs verified; the in-editor Call-hierarchy leg is still pending V1's rig (closure requirement), so the issue is NOT closable yet",
+        "verifiedAt": "2026-09-12",
+        "fixes": [
+          "src/lsp/positions.ts (M24.P1 owner): a stored byte 0 could not convert (`byte < 1` -> null), so prepareCallHierarchy returned a declared absence for the FIRST symbol of any file whose declaration starts at offset 0 — the live demo's `deep`/`loop`/`Store` were unreachable in call hierarchy. Byte 0 is unambiguous (per-line columns are 1-based), so it now converts to line 1 column 1; a byte 0 on any other line stays declared-unconvertible. Gated by 8 row cases + 3 new mutants in script/m24/verify-positions.ts (P1 21/21, 11/11).",
+          "src/lsp/call_hierarchy.ts: receiver classification read `this.items.get(...)` as `this.` (recursion) because the receiver ended with a separator — the analyzer's name-resolution artifact was therefore kept and the member listed itself as its own caller. Classification now uses the receiver's LAST segment plus the symbol's own names (qualified_name owner), and the receiver text is reported without the trailing separator.",
+          "src/lsp/call_hierarchy.ts: incoming/outgoing rendered the engine's deeper hops (depth > 0) as callers/callees with an approximate position (`top` listed as a caller of `deep` through `mid`; a mutual pair listed each function as its own caller). LSP's lists are DIRECT relations, so a stored `calls` row from an indexed caller whose own source never invokes the name is now DROPPED and declared in droppedEdges.",
+          "script/m24/lsp_harness.ts (M24.V1): four L2 hover legs still asserted the pre-wire-law shape (flat `data.name`, top-level `provenance`, `{contents:null}` absence) and sat KNOWN-GAP while the server was correct; they now assert the declared contract (data.symbol.*, data.provenance.source, wire null) and the L5 leg asserts the reported call site slices back to the invoked name."
+        ],
+        "remaining": [
+          "in-editor leg: hover -> Call hierarchy in a pinned editor, the callers rendered, clicking one landing on the CALL SITE with the correct symbol (frame + machine assertion) — V1's rig"
+        ],
+        "defectsReportedToOtherLanes": [
+          "a file-absolute symbol row whose offset also fits the target line's byte length is still read as a per-line column by resolveRowByteColumns (pre-existing declared ambiguity, now recorded in P1.json's limitations); removing it needs a writer-side convention flag from the indexer lane"
+        ]
+      },
       "scope": "call hierarchy on the same relationship truth as the hub: call-site ranges, no self-references, expand never errors, declared depth/cycle policy",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a mutual pair, a self-recursive method and a 3-deep chain is authored before the change",
@@ -80,9 +96,15 @@
         "the previous -32603 expand error reproduced as a permanent mutant"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
+        "currentCommit": "see T2.json",
         "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
-        "evidenceFile": "T2.json"
+        "evidenceFile": "T2.json",
+        "passed": 39,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5,
+        "scope": "component + wire legs over the real indexer and the real server; the in-editor leg is V1's"
       }
     },
     {

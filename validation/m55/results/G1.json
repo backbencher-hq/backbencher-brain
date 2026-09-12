@@ -1,0 +1,81 @@
+{
+  "issue": "M55.G1",
+  "code": "G1",
+  "milestone": "M55",
+  "status": "known-gap",
+  "checks": 14,
+  "passed": 12,
+  "failed": 0,
+  "realFailed": 2,
+  "negativeCases": 6,
+  "currentCommit": "5988d9578a8a056c30b969b6732329167fd4b339",
+  "workingTreeRelevantChanges": [
+    "docs/m55/M55-MASTER-PLAN.md",
+    "validation/m55/results/manifest.json",
+    "script/m55/lsp-wire.ts",
+    "script/m55/t2-fixture.ts",
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m55/verify-governance.ts",
+    "validation/m55/fixtures/t2-workspace/package.json",
+    "validation/m55/fixtures/t2-workspace/src/chain.ts",
+    "validation/m55/fixtures/t2-workspace/src/deep.ts",
+    "validation/m55/fixtures/t2-workspace/src/loop.ts",
+    "validation/m55/fixtures/t2-workspace/src/mid.ts",
+    "validation/m55/fixtures/t2-workspace/src/multi.ts",
+    "validation/m55/fixtures/t2-workspace/src/mutual.ts",
+    "validation/m55/fixtures/t2-workspace/src/store.ts",
+    "validation/m55/results/G1.json",
+    "validation/m55/results/T2.json"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-09-12T17:25:53.633Z",
+  "ledger": {
+    "issues": 9,
+    "verified": [],
+    "planned": [
+      "G1",
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "P1",
+      "V1",
+      "X1"
+    ],
+    "partial": [
+      "T2"
+    ],
+    "ledgerStatus": "open"
+  },
+  "contract": {
+    "section15": "docs/IDE-HONESTY-CONTRACT.md",
+    "rules": 6
+  },
+  "bar": {
+    "status": "failed",
+    "reason": "m53-ladder exit=1, m53-closure exit=1",
+    "ladder": [
+      {
+        "gate": "m53-ladder",
+        "exit": 1,
+        "lastLine": "  ✓ m29-m29-docs rc=0 :: VERIFIED (13/13 passed, 3 negatives)"
+      },
+      {
+        "gate": "m53-closure",
+        "exit": 1,
+        "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
+      }
+    ]
+  },
+  "failures": [
+    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD —   ✓ m29-m29-docs rc=0 :: VERIFIED (13/13 passed, 3 negatives)",
+    "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
+  ],
+  "limitations": [
+    "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
+    "Relevance-based staleness mirrors M24.G1: a file not listed for an issue does not invalidate its evidence. The list is maintained here; a new component must be added to it when its issue lands.",
+    "The in-editor legs (V1's frames) are out of this gate's reach: it can only assert that the ledger points at evidence files, never that a frame was read by a human."
+  ]
+}

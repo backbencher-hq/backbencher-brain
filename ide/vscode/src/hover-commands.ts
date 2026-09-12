@@ -191,8 +191,13 @@ function register(ctx: vscode.ExtensionContext, deps: HoverActionDeps): void {
           return { ok: true as const, surface: "usages-fallback" as const, symbol: resolved.symbol, rendered: false as const, error: reason }
         }
       }
-      // resolved.surface === "error" (unreachable after the args check;
-      // kept total for the type).
+      // Declared reveal floor (no symbol name to fall back to): the cursor
+      // reveal already ran above — this is a success, not a dead end.
+      if (resolved.surface === "reveal") {
+        return { ok: true as const, surface: "reveal" as const, line: args.line }
+      }
+      // resolved.surface === "error" (unreachable after the args/nav checks;
+      // kept total for the type) — the declared reason, verbatim.
       return { ok: false as const, reason: resolved.reason }
     }),
     // --- M42.H4: the hover actions -------------------------------------------

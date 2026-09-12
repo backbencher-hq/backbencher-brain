@@ -41,6 +41,9 @@ const SERVER = path.join(ROOT, "dist/lsp/server.js")
 const BB = path.join(ROOT, "bin/bb")
 const CORE = path.join(ROOT, "script/m26/graph-core.ts")
 const IMPACT = path.join(ROOT, "src/lsp/impact.ts")
+// M55.T1: the member-resolution rules now live in the ONE identity resolver;
+// affected mutant anchors may sit in either file (see withComponent).
+const IDENTITY = path.join(ROOT, "src/lsp/identity.ts")
 
 let checks = 0
 let passed = 0
@@ -297,25 +300,36 @@ async function main(): Promise<void> {
     // --- R6: mutants (component + core) -------------------------------------------
     console.log("\nR6: the resolution laws CAN FAIL (mutants planted)")
     const componentSource = readFileSync(IMPACT, "utf8")
+    const identitySource = readFileSync(IDENTITY, "utf8")
     const coreSource = readFileSync(CORE, "utf8")
     const importComponent = (src: string): string =>
       src
         .replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`)
         .replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${path.join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+    // M55.T1: an anchor may live in the impact door OR in the identity
+    // resolver it now reads. Both copies are written into one temp dir (the
+    // mutated one where the anchor is, the other verbatim) so `import
+    // "./identity"` inside the impact copy resolves to that sibling — the
+    // mutant is still exercised through the door's own computeImpact.
     const withComponent = async (name: string, from: string, to: string, probe: (m: any) => Promise<boolean> | boolean): Promise<void> => {
-      if (!componentSource.includes(from)) {
+      const anchorInImpact = componentSource.includes(from)
+      const anchorInIdentity = identitySource.includes(from)
+      if (!anchorInImpact && !anchorInIdentity) {
         check(`M: ${name} (SKIP — anchor not found)`, false, from.slice(0, 80))
         return
       }
-      const mutantPath = path.join(ROOT, "validation/m44", `impact.u5mutant.${Date.now()}.${Math.floor(Math.random() * 1e6)}.ts`)
-      writeFileSync(mutantPath, importComponent(componentSource.replace(from, to)))
+      const dir = mkdtempSync(path.join(tmpdir(), "m44-u5-mut-"))
+      const mutantIdentity = path.join(dir, "identity.ts")
+      const mutantImpact = path.join(dir, "impact.ts")
+      writeFileSync(mutantIdentity, anchorInIdentity ? identitySource.replace(from, to) : identitySource)
+      writeFileSync(mutantImpact, importComponent(anchorInImpact ? componentSource.replace(from, to) : componentSource))
       try {
-        const m = await import(mutantPath)
+        const m = await import(mutantImpact)
         mutant(name, await probe(m))
       } catch (e) {
         mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
       } finally {
-        try { rmSync(mutantPath, { force: true }) } catch {}
+        try { rmSync(dir, { recursive: true, force: true }) } catch {}
       }
     }
     const withCore = async (name: string, from: string, to: string, probe: (m: any) => Promise<boolean> | boolean): Promise<void> => {
@@ -403,8 +417,10 @@ async function main(): Promise<void> {
     // M4: the renderer hides the note (silent relabel at the UI layer).
     await withCore(
       "note suppressed (UI hides the resolution)",
-      "    note.addClass(\"bb-impact-resolution-note\")",
-      "    // note suppressed",
+      // Anchor updated 2026-09-12 (M55.T1 refactor renamed the local `note` to
+      // `impactNote` when the append-resolution-note helper was extracted).
+      "  if (impactNote !== null) impactNote.addClass(\"bb-impact-resolution-note\")",
+      "  // note suppressed",
       async (m) => {
         const d = makeDom()
         m.renderImpact({ ...result }, d as never)

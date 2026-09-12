@@ -177,7 +177,12 @@ try {
   const hoverRender = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: renderPos })
   const coldMs = performance.now() - t0
   md = (hoverRender?.contents?.value ?? "") as string
-  check("H2/R3: hover resolves render", hoverRender?.data?.name === "render", hoverRender?.data?.name ?? "null")
+  // Wire law (fixed 2026-09-12, M55.G1 bar re-audit): the component envelope
+  // rides the spec Hover's `data` slot as `{ provenance, symbol }` — identity is
+  // `data.symbol.name`. This gate still read the pre-`5cce610b` flat
+  // `data.name`, so it was red from the wire-law commit on while the server was
+  // correct: the gate asserted a shape the server had stopped answering.
+  check("H2/R3: hover resolves render", hoverRender?.data?.symbol?.name === "render", hoverRender?.data?.symbol?.name ?? "null")
   check("H2/R3: connected section renders called-by", md.includes("**connected**: called by"), md.slice(0, 200))
   check(
     "H2/R3: both same-name callers listed, second disambiguated",
@@ -190,7 +195,7 @@ try {
 
   const hoverGreeter = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: greeterPos })
   const gmd = (hoverGreeter?.contents?.value ?? "") as string
-  check("H2/R3: hover resolves Greeter", hoverGreeter?.data?.name === "Greeter", hoverGreeter?.data?.name ?? "null")
+  check("H2/R3: hover resolves Greeter", hoverGreeter?.data?.symbol?.name === "Greeter", hoverGreeter?.data?.symbol?.name ?? "null")
   check("H2/R3: implements verb names Named (connected)", gmd.includes("implements [Named]"), "")
   check("H2/R3: instantiated-by lists both mains (second disambiguated)", gmd.includes("instantiated by [main]") && gmd.includes("Main2.java:4"), "")
   void greeterPos

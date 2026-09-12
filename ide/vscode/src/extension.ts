@@ -297,7 +297,9 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
       return
     }
     const { showGraphPanel } = await import("./graph-panel")
-    await showGraphPanel(word, { client, cspSource: "" }, context)
+    // M55.T1: the defining file rides the request — same-name members resolve
+    // through the index's own truth, never by guessing (Truth Rule 2).
+    await showGraphPanel(word, { client, cspSource: "" }, context, editor.document.uri.fsPath)
   })
   commands.registerCommand("bbLsp.showServerStatus", () => {
     const r = activationReport
