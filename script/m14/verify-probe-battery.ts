@@ -58,7 +58,7 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm" }
+  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm" }
   const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfgs[lang])))
   const parser = new P()
   parser.setLanguage(langWasm)
@@ -76,6 +76,13 @@ async function probeLang(
   src: string,
   expect: string[],
   forbid: string[],
+  // M49 W1 (JSD24): `oracleForbid` turns on the COLLUSION check. Oracle
+  // lockstep (C5 standing lesson) mirrors analyzer contracts into the truth,
+  // so a lane can agree on a WRONG contract and still report 100/0/0 — the
+  // binding-position fabrication lived through exactly that. Probes that pin
+  // an absence must also assert the oracle does NOT derive it: an oracle that
+  // derives a forbidden edge fails the battery as `oracle colludes`.
+  opts: { oracleForbid?: boolean } = {},
 ) {
   try {
     const res = await analyzeWith(lang, cfg, src)
@@ -92,15 +99,31 @@ async function probeLang(
     if (oracleFn && missing.length === 0 && fabricated.length === 0) {
       const oracle = await oracleFor(lang, oracleFn, src)
       const oracleMiss = expect.filter((e) => {
-        const target = e.split(":")[1]
         const label = e.split(":")[0]
+        const rest = e.slice(label.length + 1)
+        // expectations may be written `label:target` or `label:source->target`;
+        // oracle edges are site-agnostic `label:target` pairs.
+        const target = rest.includes("->") ? rest.split("->")[1] : rest
         return !oracle.has(`${label}:${target}`)
       })
       if (oracleMiss.length > 0) {
         record(id, lang, description, false, `oracle no longer derives: ${oracleMiss.join(", ")} (oracle regression)`)
         return
       }
-      oracleDetail = " (oracle agrees)"
+      if (opts.oracleForbid) {
+        // forbid entries are `label:target` or `label:source->target`; the
+        // oracle's edges are site-agnostic `label:target` pairs.
+        const collusion = forbid.filter((f) => {
+          const [label, rest] = f.split(":")
+          const target = rest.includes("->") ? rest.split("->")[1] : rest
+          return oracle.has(`${label}:${target}`)
+        })
+        if (collusion.length > 0) {
+          record(id, lang, description, false, `oracle colludes: truth also derives ${collusion.join(", ")} (lockstep mirrored a fabrication — lane cannot see it)`)
+          return
+        }
+      }
+      oracleDetail = opts.oracleForbid ? " (oracle agrees, no collusion on the forbidden set)" : " (oracle agrees)"
     }
     if (missing.length > 0) {
       record(id, lang, description, false, `missing: ${missing.join(", ")}`)
@@ -338,6 +361,38 @@ class Host
     } catch (e: any) {
       record(probeId, lang, "external-base override Pass-3 contract", false, e.message)
     }
+  }
+
+  // ── JSD-BINDINGS (M49 W1 #768): a binding position is a DEFINITION ──────
+  // Real defect: the #744 bare-read walk treated every identifier that was
+  // not a declaration NAME as a read, so import bindings, parameters, catch
+  // params, destructuring targets and export aliases all fabricated
+  // `uses @0.6` edges — and the JS lane oracle carried the identical gate
+  // list, so the lane reported 100/0/0 on a wrong contract (JSD24
+  // collusion). This probe pins both sides and lets oracleForbid assert the
+  // ORACLE does not derive a single forbidden name.
+  {
+    const jsCfg = { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: ".js" }
+    const src = [
+      `import Default from "./d";`,
+      `import { named, other as alias } from "./n";`,
+      `import * as ns from "./s";`,
+      `const base = { count: 0 };`,
+      `export function reader(flag) { return base.count + flag; }`,
+      `export function binder(alpha, beta) { return 1; }`,
+      `export function catcher() { try { reader(1); } catch (err) {} return 0; }`,
+      `export const destructured = ({ first, second: renamed, ...third }) => 1;`,
+      `export const [one, two] = [1, 2];`,
+      `export function defaults(seed, value = seed) { return 1; }`,
+      `export { named as reexported };`,
+    ].join("\n") + "\n"
+    await probeLang("F9-PROBE-JSD-BINDINGS", "javascript",
+      "binding positions emit no read edge (import bindings, parameters, catch params, destructuring targets, export aliases); pattern-default RHS still reads; oracle must not derive the forbidden names",
+      jsCfg, "deriveJavaScriptEdges", src,
+      ["uses:reader->base", "uses:reader->count", "uses:reader->flag", "uses:defaults->seed"],
+      ["uses:Default", "uses:named", "uses:alias", "uses:ns", "uses:alpha", "uses:beta", "uses:err", "uses:first", "uses:renamed", "uses:third", "uses:one", "uses:two", "uses:reexported", "uses:value"],
+      { oracleForbid: true },
+    )
   }
 
   // ── F7 detector self-test: regexes regress like any code ────────────────
