@@ -1,7 +1,11 @@
 {
-  "issue": "M50.A1",
+  "issue": 763,
   "milestone": "M50",
-  "at": "2026-09-12T01:16:34.268Z",
+  "status": "measured",
+  "passed": 18,
+  "failed": 1,
+  "commit": "522966109bea6b2138112021e6ce174e9dea9456",
+  "at": "2026-09-12T14:16:11.825Z",
   "runtime": "node bin/bb mcp (production shape), fresh process per launch, warm-up + 3 measured calls x3 launches (per-call timeout 45s unless noted)",
   "repoIndexState": {
     "note": "CRITICAL context discovered during A1: the repo resolves to projectId 1d3d57103be91b8f9716d70199fe28a3f39245d9 whose brain.db is 816MB (3,040 files / 168,705 symbols / 172,869 relationships). A SECOND, EMPTY db (1d3d57103be91b8f9716d70199f0cd63, 0 rows) also existed from earlier probing. All latency numbers below are against the REAL 816MB index — the honest production shape.",
@@ -230,6 +234,6 @@
     "bb_analyze stats (244ms)",
     "bb_analyze test_quality (70ms)"
   ],
-  "acceptanceNote": "This file is the A1 evidence: convictions above are A2's worklist. No fixes are claimed here.",
+  "acceptanceNote": "This file is the A1 evidence: convictions above are A2's worklist. No fixes are claimed here. `passed`/`failed` count probe verdicts that returned vs ERROR/TIMEOUT — for a measurement issue that is the honest axis (the convictions ARE the output).",
   "verifierCommand": "bun run script/m50/probe-a1-latency.ts <caseIdx> (x20) && bun run script/m50/combine-a1.ts"
 }

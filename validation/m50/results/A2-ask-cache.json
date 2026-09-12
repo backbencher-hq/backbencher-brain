@@ -1,0 +1,47 @@
+{
+  "probe": "M50.A2-ask-cache",
+  "at": "2026-09-12T13:57:50.075Z",
+  "method": "SemanticEngine.embed() directly (the provider round-trip inside bb_ask)",
+  "repeated": {
+    "text": "where are foreign keys enforced?",
+    "perCallMs": [
+      300,
+      0,
+      0,
+      1
+    ],
+    "firstCallMs": 300,
+    "warmCallMs": [
+      0,
+      0,
+      1
+    ],
+    "identityBitExact": true,
+    "maxAbsDelta": 0
+  },
+  "distinct": {
+    "texts": 4,
+    "perCallMs": [
+      200,
+      95,
+      89,
+      91
+    ],
+    "totalMs": 475,
+    "note": "uncached provider path — the irreducible cost of a NEW question"
+  },
+  "stats": {
+    "size": 5,
+    "max": 128,
+    "hits": 3,
+    "misses": 5
+  },
+  "verdict": {
+    "uncachedNewQuestionMs": 118.75,
+    "firstEverCallMs": 300,
+    "repeatedQuestionMs": 0.3333333333333333,
+    "cacheSpeedup": 356.25,
+    "claim": "A NEW question still pays the provider round-trip; a REPEATED question (retry/follow-up/re-ask) pays only the cache lookup plus cosine.",
+    "cacheCannotLie": "every repeat was compared bit-for-bit against a fresh computation"
+  }
+}

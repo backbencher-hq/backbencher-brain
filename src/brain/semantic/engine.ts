@@ -126,6 +126,66 @@ export namespace SemanticEngine {
     }
   }
 
+  // ══ M50.A2 (#764): bounded query-embedding cache ════════════════════════════
+  // A1 convicted bb_ask at 4.8s: the provider round-trip for the QUERY text was
+  // the dominant irreducible cost inside the call (measured 0.65-1.27s of the
+  // 1.1s that remained after the vector-blob fix). Agents re-ask identical
+  // questions constantly — retries, warm-ups, follow-ups, "what changed?" — so
+  // the same text is embedded over and over.
+  //
+  // Rules (a cache must never be able to change an answer):
+  //  - key includes the effective model AND the endpoint, so a config change
+  //    can never serve a vector from a different embedding space;
+  //  - only successful, non-empty dense vectors are stored — a failure is
+  //    never cached as a failure, nor as an empty vector;
+  //  - entries are copied in and copied out, so no caller can mutate the cache;
+  //  - LRU-bounded (default 128 texts) — memory stays a few MB at 2048 dims.
+  const EMBED_CACHE_MAX = Number(process.env.BB_EMBEDDING_CACHE_MAX || 128)
+  const _embedCache = new Map<string, number[]>()
+  let _embedCacheHits = 0
+  let _embedCacheMisses = 0
+
+  function embedCacheKey(space: string, text: string): string {
+    return `${space}\u0000${createHash("sha1").update(text).digest("hex")}`
+  }
+
+  function embedCacheGet(key: string): number[] | null {
+    const hit = _embedCache.get(key)
+    if (!hit) {
+      _embedCacheMisses++
+      return null
+    }
+    _embedCacheHits++
+    // LRU touch: re-insert so the oldest key is genuinely the least recent.
+    _embedCache.delete(key)
+    _embedCache.set(key, hit)
+    return hit.slice()
+  }
+
+  function embedCachePut(key: string, vec: number[]): void {
+    if (!Array.isArray(vec) || vec.length === 0) return
+    if (!Number.isFinite(EMBED_CACHE_MAX) || EMBED_CACHE_MAX <= 0) return
+    if (_embedCache.has(key)) _embedCache.delete(key)
+    _embedCache.set(key, vec.slice())
+    while (_embedCache.size > EMBED_CACHE_MAX) {
+      const oldest = _embedCache.keys().next().value
+      if (oldest === undefined) break
+      _embedCache.delete(oldest)
+    }
+  }
+
+  /** Observability for probes/gates: cache size and hit/miss counters. */
+  export function embeddingCacheStats(): { size: number; max: number; hits: number; misses: number } {
+    return { size: _embedCache.size, max: EMBED_CACHE_MAX, hits: _embedCacheHits, misses: _embedCacheMisses }
+  }
+
+  /** Test seam: drop cached query vectors (e.g. between gate phases). */
+  export function clearEmbeddingCache(): void {
+    _embedCache.clear()
+    _embedCacheHits = 0
+    _embedCacheMisses = 0
+  }
+
   export async function embed(text: string): Promise<number[]> {
     if (_checked && !_embeddingAvailable) return []
     // Layer 1: OpenAI-compatible embedding API (Google / NVIDIA NIM / any)
@@ -134,11 +194,20 @@ export namespace SemanticEngine {
       try {
         const cfg = await getEmbeddingConfig()
         if (cfg) {
+          const key = embedCacheKey(`${cfg.model}|${cfg.baseURL}`, text)
+          const cached = embedCacheGet(key)
+          if (cached) {
+            _embeddingAvailable = true
+            _checked = true
+            _lastModel = cfg.model
+            return cached
+          }
           const res = await embedOpenAICompatible([text], cfg)
           if (res.length > 0) {
             _embeddingAvailable = true
             _checked = true
             _lastModel = cfg.model
+            embedCachePut(key, res[0])
             return res[0]
           }
         }
@@ -150,10 +219,18 @@ export namespace SemanticEngine {
     try {
       if (_localAvailable === null) _localAvailable = await initLocalModel()
       if (_localAvailable) {
+        const key = embedCacheKey(LOCAL_MODEL_LABEL, text)
+        const cachedLocal = embedCacheGet(key)
+        if (cachedLocal) {
+          _embeddingAvailable = true; _checked = true
+          _lastModel = LOCAL_MODEL_LABEL
+          return cachedLocal
+        }
         const localResult = await embedLocal([text])
         if (localResult.length > 0 && localResult[0].length > 0) {
           _embeddingAvailable = true; _checked = true
           _lastModel = LOCAL_MODEL_LABEL
+          embedCachePut(key, localResult[0])
           return localResult[0]
         }
       }

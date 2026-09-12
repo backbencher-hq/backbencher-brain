@@ -3,6 +3,7 @@
 // Usage: bun run script/m50/combine-a1.ts
 
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs"
+import { execFileSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve("script/m50", "../..")
@@ -40,8 +41,16 @@ for (const f of readdirSync(R).filter((f) => /^A1-case-\d+\.json$/.test(f)).sort
 }
 
 const A1 = {
-  issue: "M50.A1",
+  // M50.G1 evidence contract: numeric issue, status vocabulary, pass/fail
+  // counters and a commit stamp. A1 is a MEASUREMENT, so its counters are the
+  // number of tools probed and the number that came back ERROR/TIMEOUT — the
+  // honest "failed" axis for an issue whose deliverable is the census itself.
+  issue: 763,
   milestone: "M50",
+  status: "measured",
+  passed: rows.filter((r) => r.verdict !== "ERROR" && r.verdict !== "TIMEOUT (hard fail)").length,
+  failed: rows.filter((r) => r.verdict === "ERROR" || r.verdict === "TIMEOUT (hard fail)").length,
+  commit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(),
   at: new Date().toISOString(),
   runtime: "node bin/bb mcp (production shape), fresh process per launch, warm-up + 3 measured calls x3 launches (per-call timeout 45s unless noted)",
   repoIndexState: {
@@ -58,7 +67,8 @@ const A1 = {
     { tool: "parameter-shape divergence", p50: 0, evidence: "bb_graph + bb_impact + bb_cross_language take `symbol`; bb_analyze takes `target`; bb_search takes `query`. Probe guess-errors recorded verbatim: 'unknown or irrelevant options: target, direction' (bb_graph), 'unknown or irrelevant options: target' (bb_impact), 'unknown or irrelevant options: query' (bb_cross_language). With correct args all three are fast (551/195ms).", rootCause: "graph-family tools use a different parameter vocabulary than analyze/search; every wrong guess is an error round-trip an agent learns from" },
   ],
   fast: rows.filter((r) => r.verdict === "OK").map((r) => `${r.tool} (${r.p50}ms)`),
-  acceptanceNote: "This file is the A1 evidence: convictions above are A2's worklist. No fixes are claimed here.",
+  acceptanceNote:
+    "This file is the A1 evidence: convictions above are A2's worklist. No fixes are claimed here. `passed`/`failed` count probe verdicts that returned vs ERROR/TIMEOUT — for a measurement issue that is the honest axis (the convictions ARE the output).",
   verifierCommand: "bun run script/m50/probe-a1-latency.ts <caseIdx> (x20) && bun run script/m50/combine-a1.ts",
 }
 

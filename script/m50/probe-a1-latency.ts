@@ -138,11 +138,14 @@ async function main() {
   }
   const fs = await import("node:fs")
   fs.mkdirSync("$HOME/mcp/backbencher-brain/validation/m50/results", { recursive: true })
+  // A2 re-runs the SAME harness against the fixed build; the prefix keeps A1
+  // receipts immutable (BB_M50_OUT_PREFIX=A2 -> A2-case-<idx>.json).
+  const prefix = process.env.BB_M50_OUT_PREFIX || "A1"
   const outFile = Number.isInteger(argIdx)
-    ? `$HOME/mcp/backbencher-brain/validation/m50/results/A1-case-${argIdx}.json`
-    : "$HOME/mcp/backbencher-brain/validation/m50/results/A1-latency.json"
+    ? `$HOME/mcp/backbencher-brain/validation/m50/results/${prefix}-case-${argIdx}.json`
+    : `$HOME/mcp/backbencher-brain/validation/m50/results/${prefix}-latency.json`
   fs.writeFileSync(outFile,
-    JSON.stringify({ probe: "M50.A1-latency", at: new Date().toISOString(), repo: REPO, runtime: "node bin/bb mcp (production shape)", launches: 3, measuredPerLaunch: 3, report }, null, 2) + "\n")
+    JSON.stringify({ probe: `M50.${prefix}-latency`, at: new Date().toISOString(), repo: REPO, runtime: "node bin/bb mcp (production shape)", launches: launchesN, measuredPerLaunch: reps, callTimeoutMs, report }, null, 2) + "\n")
   console.log(JSON.stringify(report, null, 2))
 }
 main().catch((e) => { console.error(e?.stack || e); process.exit(1) })

@@ -30,7 +30,7 @@ Scoped dependency and architecture visualization over the canonical graph engine
     },
     "target": {
       "type": "string",
-      "description": "file, module, symbol, or feature target"
+      "description": "file, module, symbol, or feature target (`symbol`/`symbolName`/`query` are accepted as aliases)"
     },
     "maxNodes": {
       "type": "number",

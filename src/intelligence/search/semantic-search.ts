@@ -1,6 +1,8 @@
 import { BrainDatabase } from "../../brain/database"
 import { checkResultsFreshness } from "../../brain/freshness"
 import { SemanticEngine } from "../../brain/semantic/engine"
+import { cosineFloat32, readRowVector } from "../../brain/semantic/vector-binary"
+import { promoteMissingBlobsInBackground } from "../../brain/semantic/vector-promote"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { SemanticResult, SemanticSearchOptions, SemanticSearchResults } from "../contracts"
@@ -16,9 +18,29 @@ const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
 const NON_DENSE_MODELS = new Set(["tfidf-v1"])
 
 type EmbeddingRow = {
+  rowid?: number
   entityId: string
   vector: string
+  /** M50.A2 (#764): little-endian float32 accelerator; null on legacy rows. */
+  blob?: Uint8Array | null
   model: string
+}
+
+// The accelerator column is added at open (ensureSchemaIfNew). A readonly open
+// (doctor/inspection paths) skips that migration, so the column may be absent —
+// detected once per handle and answered from JSON only, never by failing.
+const blobColumnByHandle = new WeakMap<object, boolean>()
+function hasBlobColumn(raw: any): boolean {
+  const cached = blobColumnByHandle.get(raw)
+  if (cached !== undefined) return cached
+  let has = false
+  try {
+    has = (raw.prepare("PRAGMA table_info(brain_semantic_embedding)").all() as Array<{ name: string }>).some((c) => c.name === "embedding_blob")
+  } catch {
+    has = false
+  }
+  blobColumnByHandle.set(raw, has)
+  return has
 }
 
 type SymbolRow = {
@@ -33,9 +55,12 @@ type SymbolRow = {
   language: string
 }
 
-function isDenseNumericVector(value: unknown): value is number[] {
-  return Array.isArray(value) && value.length > 0 && value.every((n) => typeof n === "number" && Number.isFinite(n))
-}
+// NOTE (M50.A2 #764): the old `isDenseNumericVector(JSON.parse(...))` guard is
+// gone on purpose. `readRowVector` (vector-binary.ts) is now the single
+// admission test: it accepts a blob only at the exact byte length and a JSON
+// row only when it scans to exactly `vector_dimension` finite numbers, then
+// `Number.isFinite(similarity)` rejects overflowed/invalid vectors. Same
+// guarantees, without allocating an array per row.
 
 // Vector-backed semantic retrieval with strict model consistency.
 //
@@ -79,29 +104,59 @@ export async function semanticVectorSearch(
   }
 
   // Retrieve only same-model, same-dimension embeddings. Deterministic order so
-  // truncation at the cap is stable, not arbitrary.
-  const rows = raw.prepare(
-    "SELECT entity_id AS entityId, embedding_vector AS vector, embedding_model AS model " +
-      "FROM brain_semantic_embedding " +
-      "WHERE project_id = ? AND embedding_model = ? AND vector_dimension = ? " +
-      "ORDER BY entity_id LIMIT ?",
-  ).all(projectId, queryModel, queryVector.length, VECTOR_SCAN_CAP) as EmbeddingRow[]
+  // truncation at the cap is stable, not arbitrary. The blob column is selected
+  // when present so dense rows skip JSON parsing entirely (M50.A2: measured
+  // 1.75s of JSON.parse+cosine per bb_ask at 10.5k x 2048-dim).
+  const columnsBase =
+    "SELECT rowid AS rowid, entity_id AS entityId, embedding_vector AS vector, "
+  const columnsBlob = columnsBase + "embedding_blob AS blob, embedding_model AS model "
+  const columnsJson = columnsBase + "embedding_model AS model "
+  const fromWhere =
+    "FROM brain_semantic_embedding " +
+    "WHERE project_id = ? AND embedding_model = ? AND vector_dimension = ? " +
+    "ORDER BY entity_id LIMIT ?"
+  const args = [projectId, queryModel, queryVector.length, VECTOR_SCAN_CAP] as const
+  let rows: EmbeddingRow[]
+  const withBlobColumn = hasBlobColumn(raw)
+  if (withBlobColumn) {
+    try {
+      rows = raw.prepare(columnsBlob + fromWhere).all(...args) as EmbeddingRow[]
+    } catch {
+      // The column vanished under a cached handle (manual surgery, a DB
+      // swapped on disk): degrade to the JSON column instead of failing the
+      // query, and remember the answer for this handle.
+      blobColumnByHandle.set(raw, false)
+      rows = raw.prepare(columnsJson + fromWhere).all(...args) as EmbeddingRow[]
+    }
+  } else {
+    rows = raw.prepare(columnsJson + fromWhere).all(...args) as EmbeddingRow[]
+  }
 
   if (rows.length === 0) {
     return await keywordFallback(projectId, query, options, "no-matching-model-embeddings")
   }
 
+  // Same scoring math as before, on float32 buffers: the blob path becomes a
+  // zero-copy view, and the legacy path fills a reused scratch buffer with the
+  // measured fast scanner (bit-faithful to float32, max abs delta 2.9e-8).
+  const dim = queryVector.length
+  const queryF32 = new Float32Array(dim)
+  for (let i = 0; i < dim; i++) queryF32[i] = queryVector[i]
+  const scratch = new Float32Array(dim)
   const scored: Array<{ entityId: string; similarity: number }> = []
+  // M50.A2 (#764): rows read from JSON that lack the accelerator are promoted
+  // in the background AFTER this call returns — a user with a pre-existing
+  // index gets the faster path without re-indexing anything.
+  const needsPromotion: number[] = []
   for (const row of rows) {
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(row.vector)
-    } catch {
-      continue
-    }
-    if (!isDenseNumericVector(parsed)) continue // guards against tfidf/sparse/NaN
-    const similarity = SemanticEngine.cosineSimilarity(queryVector, parsed)
+    const vec = readRowVector(row.blob ?? null, row.vector, dim, scratch)
+    if (!vec) continue // tfidf/sparse/malformed or dimension mismatch
+    if (withBlobColumn && row.blob == null && typeof row.rowid === "number") needsPromotion.push(row.rowid)
+    const similarity = cosineFloat32(queryF32, vec, dim)
     if (Number.isFinite(similarity)) scored.push({ entityId: row.entityId, similarity })
+  }
+  if (needsPromotion.length > 0) {
+    promoteMissingBlobsInBackground(raw, String(projectId), queryModel, needsPromotion)
   }
 
   const isLocalVectors = queryVector.length < 200

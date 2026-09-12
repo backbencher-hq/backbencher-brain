@@ -19,7 +19,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
   "properties": {
     "symbol": {
       "type": "string",
-      "description": "symbol name to root the graph at"
+      "description": "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases)"
     },
     "maxDepth": {
       "type": "number",

@@ -40,7 +40,34 @@ check("compiled CLI version uses package source", compiledVersion === packageJso
 
 const serialized = serializeToolMetadata()
 const parsed = JSON.parse(serialized)
-check("metadata is serializable without handlers", Array.isArray(parsed) && parsed.length === TOOL_DESCRIPTORS.length && !serialized.includes("handler"))
+// M50.A5 (#768): the original form of this check was a substring test —
+// `!serialized.includes("handler")` — which any legitimate prose defeats
+// (bb_search's description says "the handler auto-refreshes …"). It could not
+// pass, so it was ignored, and a red gate is indistinguishable from a green
+// one once people stop reading. The property it MEANS is structural: the
+// advertised metadata carries no executable handler reference. Assert that
+// directly — no handler-ish KEY at any depth, no function values, and the
+// payload must survive a JSON round-trip unchanged.
+function handlerLeaks(node: unknown, at = "$"): string[] {
+  if (typeof node === "function") return [`${at} (function value)`]
+  if (Array.isArray(node)) return node.flatMap((value, index) => handlerLeaks(value, `${at}[${index}]`))
+  if (node && typeof node === "object") {
+    return Object.entries(node as Record<string, unknown>).flatMap(([key, value]) => {
+      const here = /^(handler|handlers|fn|function|implementation)$/i.test(key) ? [`${at}.${key} (handler key)`] : []
+      return [...here, ...handlerLeaks(value, `${at}.${key}`)]
+    })
+  }
+  return []
+}
+const leaks = handlerLeaks(parsed)
+check(
+  "metadata is serializable without handler references",
+  Array.isArray(parsed) &&
+    parsed.length === TOOL_DESCRIPTORS.length &&
+    leaks.length === 0 &&
+    JSON.stringify(JSON.parse(serialized)) === JSON.stringify(parsed),
+  leaks.join(", "),
+)
 check("mutability is explicit", TOOL_DESCRIPTORS.every((descriptor) => ["read", "index", "write"].includes(descriptor.mutability)))
 check("documentation metadata is complete", TOOL_DESCRIPTORS.every((descriptor) => descriptor.documentation.summary && descriptor.documentation.category && Array.isArray(descriptor.documentation.examples)))
 

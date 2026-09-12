@@ -32,6 +32,7 @@ const REQUIRED_COMMANDS = [
   "doctor \\-\\-fix",
   "search",
   "health",
+  "onboard",
   "mcp",
   "version",
   "help",

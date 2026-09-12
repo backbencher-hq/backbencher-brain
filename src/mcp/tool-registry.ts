@@ -126,7 +126,7 @@ const descriptors = [
   {
     name: "bb_visualize",
     description: "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. Same owner-cascade semantics as bb_graph: member-level relationships are attributed to the owner class.",
-    inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target" }, maxNodes: { type: "number", description: "max nodes (default 200)" }, maxLinks: { type: "number", description: "max links (default 5000)" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter" }, languages: { type: "array", items: { type: "string" }, description: "language filter" }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" } } },
+    inputSchema: { type: "object", properties: { scope: { type: "string", enum: ["project", "file", "module", "symbol", "feature"], description: "graph scope (default project)" }, target: { type: "string", description: "file, module, symbol, or feature target (`symbol`/`symbolName`/`query` are accepted as aliases)" }, maxNodes: { type: "number", description: "max nodes (default 200)" }, maxLinks: { type: "number", description: "max links (default 5000)" }, relationshipTypes: { type: "array", items: { type: "string" }, description: "relationship type filter" }, languages: { type: "array", items: { type: "string" }, description: "language filter" }, format: { type: "string", enum: ["text", "json", "html"], description: "output format (default text)" } } },
     mutability: "read",
     requiresIndex: true,
     modes: ["project", "file", "module", "symbol", "feature"],
@@ -149,7 +149,7 @@ const descriptors = [
   {
     name: "bb_analyze",
     description: "Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class. Per-mode parameters: target applies to callers, callees, trace, complexity, impact, and test_impact; filePath scopes dependencies, test_mapping, test_gaps, and test_quality to a project-relative path prefix (others ignore it); stats is always project-wide.",
-    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "symbol or analysis target" }, filePath: { type: "string", description: "file scope for file-based analysis" }, limit: { type: "number", description: "result limit" } }, required: ["mode"] },
+    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], description: "analysis mode" }, target: { type: "string", description: "symbol or analysis target (`symbol`/`symbolName`/`query` are accepted as aliases)" }, filePath: { type: "string", description: "file scope for file-based analysis" }, limit: { type: "number", description: "result limit" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
     modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"],
@@ -163,7 +163,7 @@ const descriptors = [
   {
     name: "bb_doc",
     description: "Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.",
-    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["symbol", "file", "module", "feature", "api", "project", "coverage"], description: "documentation mode" }, target: { type: "string", description: "symbol, file, module, feature, or API target; optional for project and coverage" }, format: { type: "string", enum: ["markdown", "json"], description: "output format (default markdown)" }, audience: { type: "string", enum: ["developer", "maintainer", "user", "website"], description: "documentation audience" }, detail: { type: "string", enum: ["brief", "standard", "deep"], description: "detail level" }, includeExamples: { type: "boolean", description: "include only source-backed examples" }, includeDiagrams: { type: "boolean", description: "include cited diagrams when available" }, includeTests: { type: "boolean", description: "include indexed test evidence" }, limit: { type: "number", description: "maximum evidence items" }, maxTokens: { type: "number", description: "output token budget" } }, required: ["mode"] },
+    inputSchema: { type: "object", properties: { mode: { type: "string", enum: ["symbol", "file", "module", "feature", "api", "project", "coverage"], description: "documentation mode" }, target: { type: "string", description: "symbol, file, module, feature, or API target (`symbol`/`symbolName`/`query` are accepted as aliases); optional for project and coverage" }, format: { type: "string", enum: ["markdown", "json"], description: "output format (default markdown)" }, audience: { type: "string", enum: ["developer", "maintainer", "user", "website"], description: "documentation audience" }, detail: { type: "string", enum: ["brief", "standard", "deep"], description: "detail level" }, includeExamples: { type: "boolean", description: "include only source-backed examples" }, includeDiagrams: { type: "boolean", description: "include cited diagrams when available" }, includeTests: { type: "boolean", description: "include indexed test evidence" }, limit: { type: "number", description: "maximum evidence items" }, maxTokens: { type: "number", description: "output token budget" } }, required: ["mode"] },
     mutability: "read",
     requiresIndex: true,
     modes: ["symbol", "file", "module", "feature", "api", "project", "coverage"],
@@ -206,7 +206,7 @@ const descriptors = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "symbol name to root the graph at" },
+        symbol: { type: "string", description: "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases)" },
         maxDepth: { type: "number", description: "traversal depth bound (default 3)" },
       },
       required: ["symbol"],
@@ -226,7 +226,7 @@ const descriptors = [
     description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows.",
     inputSchema: {
       type: "object",
-      properties: { symbol: { type: "string", description: "symbol name to compute impact for" } },
+      properties: { symbol: { type: "string", description: "symbol name to compute impact for (`target`/`symbolName`/`query` are accepted as aliases)" } },
       required: ["symbol"],
     },
     mutability: "read",
@@ -244,7 +244,7 @@ const descriptors = [
     description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Identical semantics to the editor's cross-language hover section.",
     inputSchema: {
       type: "object",
-      properties: { symbol: { type: "string", description: "symbol name to fetch cross-language facts for" } },
+      properties: { symbol: { type: "string", description: "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)" } },
       required: ["symbol"],
     },
     mutability: "read",
@@ -265,7 +265,7 @@ const descriptors = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "symbol name to annotate" },
+        symbol: { type: "string", description: "symbol name to annotate (`target`/`query` are accepted as aliases)" },
         body: { type: "string", description: "annotation text (max 2000 chars)" },
         path: { type: "string", description: "optional file path to disambiguate same-named symbols" },
         toolIdentity: { type: "string", description: "optional name of the calling agent/tool (recorded verbatim)" },
@@ -288,7 +288,7 @@ const descriptors = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "symbol name (omit to list all annotations)" },
+        symbol: { type: "string", description: "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases" },
         limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
       },
       required: [],

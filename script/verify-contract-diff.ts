@@ -154,10 +154,16 @@ check("no descriptor is marked deprecated",
 
 // 10. Registry self-documents valid shape: every descriptor declares modes,
 //     a category, and at least one example.
+// M50.A5 (#768): the category vocabulary was frozen at M10's four values and
+// rotted when M28 added the graph/annotations families — the gate then failed
+// for five real tools, which is how a gate stops being read. The list below is
+// the DECLARED union (ToolDocumentation.category); a category outside it is
+// still a failure, so the check keeps its teeth.
+const DECLARED_CATEGORIES = ["search", "analysis", "operations", "lifecycle", "graph", "annotations"]
 for (const d of PUBLIC_TOOL_DESCRIPTORS) {
   check(`${d.name} declares modes array`, Array.isArray(d.modes) && d.modes.length > 0)
   check(`${d.name} declares documentation category`,
-    ["search", "analysis", "operations", "lifecycle"].includes(d.documentation.category))
+    DECLARED_CATEGORIES.includes(d.documentation.category))
   check(`${d.name} declares at least one example`, d.documentation.examples.length >= 1)
 }
 

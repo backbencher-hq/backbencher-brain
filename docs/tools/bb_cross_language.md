@@ -19,7 +19,7 @@ Cross-language facts for one symbol from stored brain_relationship rows only (is
   "properties": {
     "symbol": {
       "type": "string",
-      "description": "symbol name to fetch cross-language facts for"
+      "description": "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)"
     }
   },
   "required": [
