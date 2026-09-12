@@ -317,6 +317,30 @@
     "status": "RULED",
     "question": "[key]: value computed names \u2014 recursed generically, symbols emit from the value expression. Recommend: internal_silent (no dedicated symbol for the computed name itself).",
     "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): computed_property_name is recursed generically; no dedicated symbol emission."
+   },
+   {
+    "id": "D7",
+    "node_type": "async arrow-function returnType (#757)",
+    "status": "RULED",
+    "question": "Async arrows reported returnType 'void' (expression bodies have no return statements; the T3 sync-arrow fix wired block-body inference only). Fix by Promise-wrapping inferred inner, undefined, or leave?",
+    "decision": "RULED - FIXED: async ALWAYS returns a Promise (TS semantics). Expression bodies infer via TypeInferenceEngine.inferFromInitializer (literals/binary/ternary/await-unwrap); unknown inner degrades honestly to Promise<void>. Block bodies keep extractReturnType and wrap. Explicit annotations stay authoritative and are NEVER re-wrapped. Bonus: sync expression arrows now infer too (f2: () => 1 is number \u2014 T3's documented precedent is now actually true; pre-fix BOTH expression forms reported void). Pinned by typescript/async-arrow-and-iface-overrides (f1-f5) + mutant typescript/async-promise-void.",
+    "date": "2026-09-12"
+   },
+   {
+    "id": "D8",
+    "node_type": "bracket-form taint sources (#757-2 subscript_expression)",
+    "status": "RULED",
+    "question": "req['body'] produced no taint source \u2014 extractTaintSources matched only dotted member_expression, and never matched subscripts in any earlier form.",
+    "decision": "RULED - FIXED: subscript_expression branch with the SAME receiver-leaf contract as T9 dotted (exact root req/process.env, exact sensitive leaf body/query/params/env, string-literal index only). Snippet is the raw source text req['body']. Pinned by the b1/b2/b3 taint assertions + mutant typescript/bracket-taint-drop.",
+    "date": "2026-09-12"
+   },
+   {
+    "id": "D9",
+    "node_type": "interface-heritage member overrides (#759, incl. .d.ts declare-module)",
+    "status": "RULED",
+    "question": "interface Spring extends Readable with same-name member emitted ZERO overrides \u2014 the class pass requires metadata.isOverride + a Class-kind parent. Found via the svelte-repo typescript lane (Spring.subscribe -> Readable.subscribe MISSING).",
+    "decision": "RULED - FIXED: structural-tier in-file BFS (depth-10, mirroring the oracle's truth walk) over Interface-kind symbols' metadata.extends. Overload abstention: a name declared twice in one interface never pairs (no textual-signature truth in the analyzer \u2014 the oracle's sigCompatible gate owns that distinction). External/unresolved bases emit nothing. ALSO FIXED en route: extends targets strip type-args to the clean head + leaf segment (extends Spring->Readable<T> was bracket-polluted \u2014 groovy S1 heritage class). Parity probe: analyzer and deriveTreeEdges emit IDENTICAL edges on the Spring/Readable shape, plain .ts and .d.ts both. Pinned + mutant typescript/iface-override-drop.",
+    "date": "2026-09-12"
    }
   ]
  },
