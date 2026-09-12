@@ -36,7 +36,7 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
     },
     "target": {
       "type": "string",
-      "description": "symbol or analysis target"
+      "description": "symbol or analysis target (`symbol`/`symbolName`/`query` are accepted as aliases)"
     },
     "filePath": {
       "type": "string",

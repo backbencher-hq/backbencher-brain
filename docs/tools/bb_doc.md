@@ -32,7 +32,7 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
     },
     "target": {
       "type": "string",
-      "description": "symbol, file, module, feature, or API target; optional for project and coverage"
+      "description": "symbol, file, module, feature, or API target (`symbol`/`symbolName`/`query` are accepted as aliases); optional for project and coverage"
     },
     "format": {
       "type": "string",

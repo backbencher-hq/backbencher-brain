@@ -19,7 +19,7 @@ Bounded reverse-dependency impact for one symbol via the same component the edit
   "properties": {
     "symbol": {
       "type": "string",
-      "description": "symbol name to compute impact for"
+      "description": "symbol name to compute impact for (`target`/`symbolName`/`query` are accepted as aliases)"
     }
   },
   "required": [

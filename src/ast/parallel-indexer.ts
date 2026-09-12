@@ -13,6 +13,8 @@ import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
 import { createStoreDiagnostics } from "./store-diagnostics"
+// M50.A2 (#764): dense-vector read accelerator (JSON stays the source of truth).
+import { encodeVectorBlob, scanJsonVectorInto } from "../brain/semantic/vector-binary"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
 import { readdir, stat } from "fs/promises"
@@ -466,7 +468,7 @@ export interface IndexPhaseTimings {
 
 /** M21.I2: one measured post-processing phase with its outcome. */
 export interface PostProcessingPhaseTiming {
-  name: "relationships" | "enrichment" | "gravity" | "taint" | "health" | "integrity" | "analyze"
+  name: "relationships" | "enrichment" | "gravity" | "taint" | "health" | "integrity" | "vectorBlobs" | "analyze"
   ms: number
   outcome: "ok" | "failed" | "skipped"
 }
@@ -1554,10 +1556,12 @@ async function drainBackgroundEmbeddings() {
         const { Instance } = await import("../project/instance")
         const { createHash } = await import("crypto")
         let rawDb = await BrainDatabase.getRawInstance(job.projectId)
+        // M50.A2 (#764): dense vectors are written as JSON (source of truth)
+        // AND as a little-endian float32 blob (read accelerator).
         let insertEmbed = rawDb.prepare(`
           INSERT OR REPLACE INTO brain_semantic_embedding
-          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, embedding_blob, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 
         const maxBatch = 100
@@ -1596,8 +1600,8 @@ async function drainBackgroundEmbeddings() {
           rawDb = await BrainDatabase.getRawInstance(job.projectId)
           insertEmbed = rawDb.prepare(`
             INSERT OR REPLACE INTO brain_semantic_embedding
-            (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, project_id, entity_id, entity_type, embedding_model, embedding_vector, embedding_blob, vector_dimension, content_hash, semantic_context, similarity_threshold, last_updated, time_created, time_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `)
           let missingInChunk = 0
           const txEmbed = rawDb.transaction((rows: any) => {
@@ -1617,6 +1621,9 @@ async function drainBackgroundEmbeddings() {
                 item.kind || "symbol",
                 modelLabel,
                 JSON.stringify(vec),
+                // Dense numeric vectors only; encodeVectorBlob is a byte copy of
+                // the same numbers, so JSON stays the source of truth.
+                encodeVectorBlob(vec),
                 vec.length,
                 contentHash,
                 JSON.stringify({ name: item.name, kind: item.kind }),
@@ -3701,6 +3708,85 @@ export function wipeProjectData(rawDb: any): void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// M50.A2 (#764): dense-vector accelerator backfill.
+//
+// The indexer writes the float32 blob for every dense vector it embeds, so
+// fresh indexes never need this. Legacy rows (written before this column
+// existed, or by writers that INSERT explicit column lists) keep a NULL blob
+// and stay readable through the JSON path — this pass promotes them in place so
+// bb_ask stops re-parsing 260MB of JSON digits per call.
+//
+// Bounded by construction:
+//  - keyset pagination on rowid visits each row at most once per call;
+//  - a wall-clock budget (default 30s, BB_VECTOR_BLOB_BACKFILL_BUDGET_MS)
+//    stops the phase and DECLARES the remaining count instead of blocking a
+//    full index for minutes on a multi-GB embedding table;
+//  - only rows whose JSON scans to exactly vector_dimension dense numbers are
+//    promoted; sparse token lists (tfidf-v1) and malformed rows are skipped
+//    and never marked done, so no data is rewritten with a wrong shape.
+// ═══════════════════════════════════════════════════════════════════════════
+export async function backfillEmbeddingBlobs(
+  projectId: ProjectID,
+  opts: { budgetMs?: number; batch?: number } = {},
+): Promise<{ scanned: number; promoted: number; remaining: number; budgetExhausted: boolean }> {
+  const budgetMs = opts.budgetMs ?? Number(process.env.BB_VECTOR_BLOB_BACKFILL_BUDGET_MS || 30_000)
+  const batch = Math.max(1, opts.batch ?? 500)
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const select = rawDb.prepare(
+    "SELECT rowid AS rowid, embedding_vector AS vector, vector_dimension AS dim FROM brain_semantic_embedding " +
+      "WHERE project_id = ? AND embedding_blob IS NULL AND embedding_model != 'tfidf-v1' AND rowid > ? " +
+      "ORDER BY rowid LIMIT ?",
+  )
+  const update = rawDb.prepare("UPDATE brain_semantic_embedding SET embedding_blob = ? WHERE rowid = ?")
+  const t0 = Date.now()
+  let scanned = 0
+  let promoted = 0
+  let lastRowid = 0
+  let budgetExhausted = false
+  const scratchByDim = new Map<number, Float32Array>()
+
+  for (;;) {
+    if (Date.now() - t0 > budgetMs) {
+      budgetExhausted = true
+      break
+    }
+    const rows = select.all(projectId, lastRowid, batch) as Array<{ rowid: number; vector: string; dim: number }>
+    if (rows.length === 0) break
+    lastRowid = rows[rows.length - 1].rowid
+    scanned += rows.length
+    let promotedInBatch = 0
+    const items: Array<{ rowid: number; blob: Buffer }> = []
+    for (const r of rows) {
+      const dim = Number(r.dim)
+      if (!Number.isInteger(dim) || dim <= 0 || dim > 8192) continue
+      let scratch = scratchByDim.get(dim)
+      if (!scratch) {
+        scratch = new Float32Array(dim)
+        scratchByDim.set(dim, scratch)
+      }
+      const n = scanJsonVectorInto(typeof r.vector === "string" ? r.vector : "", scratch)
+      if (n !== dim) continue
+      items.push({ rowid: r.rowid, blob: encodeVectorBlob(scratch) })
+    }
+    if (items.length > 0) {
+      const tx = rawDb.transaction((batchItems: Array<{ rowid: number; blob: Buffer }>) => {
+        for (const it of batchItems) update.run(it.blob, it.rowid)
+      })
+      tx(items)
+      promotedInBatch = items.length
+    }
+    promoted += promotedInBatch
+    if (rows.length < batch) break
+  }
+
+  const remaining =
+    ((rawDb
+      .prepare("SELECT COUNT(*) c FROM brain_semantic_embedding WHERE project_id = ? AND embedding_blob IS NULL AND embedding_model != 'tfidf-v1'")
+      .get(projectId) as any)?.c as number) ?? 0
+  return { scanned, promoted, remaining, budgetExhausted }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // M40.A1: THE post-processing entry.
 //
 // The five heavy phases (relationship resolution, enrichment, gravity, taints,
@@ -3840,6 +3926,25 @@ export async function runPostProcessing(
     } catch (healthErr) {
       recordPhase("integrity", Date.now() - _t, "failed")
       log.warn("post-index health check failed", { error: healthErr })
+    }
+
+    // M50.A2 (#764): promote legacy dense vectors to their binary form before
+    // ANALYZE (the update is a write, so stats must be refreshed after it).
+    // Bounded by a wall-clock budget: a huge legacy index is completed over
+    // successive post runs instead of blocking this one, and the remaining
+    // count is always declared. Rows whose JSON is not a dense numeric vector
+    // are never touched (they keep working through the JSON path).
+    _t = Date.now()
+    try {
+      const vb = await backfillEmbeddingBlobs(projectId)
+      recordPhase("vectorBlobs", Date.now() - _t, "ok")
+      _log.log(
+        `  ✓ vector blobs: ${vb.promoted.toLocaleString()}/${vb.scanned.toLocaleString()} promoted in ${Date.now()-_t}ms` +
+          (vb.remaining > 0 ? ` (${vb.remaining.toLocaleString()} legacy rows remain${vb.budgetExhausted ? "; budget reached, continues next post run" : ""})` : ""),
+      )
+    } catch (vbErr: any) {
+      recordPhase("vectorBlobs", Date.now() - _t, "failed")
+      log.warn("vector blob backfill failed", { error: vbErr?.message })
     }
 
     // M50.A2 (#764): refresh planner statistics after every full post-pass.

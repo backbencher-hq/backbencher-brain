@@ -15,7 +15,12 @@
       "bb_analyze",
       "bb_doc",
       "bb_edit",
-      "bb_index"
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
     ],
     "descriptors": {
       "bb_search": {
@@ -40,7 +45,8 @@
           "exact",
           "caseSensitive",
           "regex",
-          "offset"
+          "offset",
+          "refresh"
         ],
         "defaults": {
           "mode": "symbols",
@@ -301,7 +307,8 @@
         "modes": [
           "auto",
           "file",
-          "dir"
+          "dir",
+          "post"
         ],
         "required": [
           "path"
@@ -313,21 +320,108 @@
         "defaults": {
           "mode": "auto"
         }
+      },
+      "bb_graph": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "graph"
+        ],
+        "required": [
+          "symbol"
+        ],
+        "properties": [
+          "symbol",
+          "maxDepth"
+        ],
+        "defaults": {
+          "maxDepth": 3
+        }
+      },
+      "bb_impact": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "impact"
+        ],
+        "required": [
+          "symbol"
+        ],
+        "properties": [
+          "symbol"
+        ],
+        "defaults": {}
+      },
+      "bb_cross_language": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "cross-language"
+        ],
+        "required": [
+          "symbol"
+        ],
+        "properties": [
+          "symbol"
+        ],
+        "defaults": {}
+      },
+      "bb_annotate": {
+        "mutability": "write",
+        "requiresIndex": false,
+        "modes": [
+          "annotate"
+        ],
+        "required": [
+          "symbol",
+          "body"
+        ],
+        "properties": [
+          "symbol",
+          "body",
+          "path",
+          "toolIdentity"
+        ],
+        "defaults": {}
+      },
+      "bb_annotations": {
+        "mutability": "read",
+        "requiresIndex": false,
+        "modes": [
+          "annotate"
+        ],
+        "required": [],
+        "properties": [
+          "symbol",
+          "limit"
+        ],
+        "defaults": {
+          "limit": 50
+        }
       }
     },
     "postBaselineRepairs": {
-      "bb_index": "added M22 (8b71297) \u2014 was missing from this frozen baseline until repaired under M35.E1",
-      "bb_visualize.modes": "scope-only since M13.44 (859c0b0) \u2014 baseline had stale pre-M13.44 modes until repaired under M35.E1",
-      "aliases": "bb_reindex alias removed under M35.E1 (zero references, zero-alias policy)"
+      "bb_index": "added M22 (8b71297) — was missing from this frozen baseline until repaired under M35.E1",
+      "bb_visualize.modes": "scope-only since M13.44 (859c0b0) — baseline had stale pre-M13.44 modes until repaired under M35.E1",
+      "aliases": "bb_reindex alias removed under M35.E1 (zero references, zero-alias policy)",
+      "M50.A5 re-freeze (#768)": "re-froze toolNames/descriptors/commands from the live registry so verify-contract-diff + verify-m10-baseline compare against the real surface (M28 graph/impact/cross-language/annotate tools and the M43 bb_search `refresh` option were missing)"
     }
   },
   "cli": {
     "commands": [
+      "tool",
       "index",
+      "setup",
+      "show",
+      "doctor",
+      "stats",
+      "status",
+      "projects",
       "search",
       "health",
+      "onboard",
       "mcp",
-      "tool",
+      "version",
       "--version"
     ],
     "contracts": {
@@ -455,7 +549,7 @@
       "symbol_relationships"
     ],
     "claimsToReview": [
-      "WORLD\u2019S FIRST",
+      "WORLD’S FIRST",
       "revolutionary",
       "No other tool in the world"
     ]

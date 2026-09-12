@@ -1,0 +1,26 @@
+{
+  "probe": "M50.A2-blob-backfill-real",
+  "at": "2026-09-12T04:11:49.392Z",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "budgetMsPerPass": 60000,
+  "passes": 1,
+  "promoted": 11124,
+  "elapsedMs": 3683,
+  "before": {
+    "denseMissingBlobs": 11124,
+    "blobsPresent": 0,
+    "jsonTextBytes": 272924733,
+    "dbFileBytes": 817307648
+  },
+  "after": {
+    "denseMissingBlobs": 0,
+    "blobsPresent": 11124,
+    "blobBytes": 86420520,
+    "dbFileBytes": 903663616
+  },
+  "diskDeltaBytes": 86355968,
+  "jsonTextMB": 260.3,
+  "blobMB": 82.4,
+  "readSavingRatio": 3.16
+}

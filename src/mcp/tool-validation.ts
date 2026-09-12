@@ -1,11 +1,86 @@
 import type { ToolDescriptor, JsonSchemaProperty } from "./tool-registry"
 
+/**
+ * M50.A2 (#764): accepted parameter aliases.
+ *
+ * A1 measured agents failing on vocabulary, not on capability: bb_graph / bb_impact /
+ * bb_cross_language take `symbol` while bb_analyze / bb_doc / bb_visualize take
+ * `target`, so a model that learned one family's spelling gets an error
+ * round-trip on the other (`unknown or irrelevant options: target` — recorded
+ * verbatim in validation/m50/results/A1.json). The alias table removes that
+ * round-trip without changing any canonical name, schema, or default: the
+ * canonical spelling stays the documented one, the other family's spelling is
+ * forgiven, and a request that supplies BOTH with different values is rejected
+ * loudly instead of silently picking one.
+ *
+ * Aliases are resolved before the unknown-option and required checks, so an
+ * alias satisfies a required field — and passing nothing still fails exactly as
+ * before (the "missing symbol rejected" contract is unchanged).
+ *
+ * NOT the same concept as `ToolDescriptor.aliases`, which is about TOOL names
+ * and is deliberately empty everywhere (M48 unification). This table is about
+ * PARAMETER spelling inside one tool.
+ */
+// `query` is in the table on purpose: bb_search and bb_ask — the two tools an
+// agent reaches for first — spell their subject `query`, so `query` is the
+// single most likely wrong guess on every other tool (recorded verbatim: 
+// "bb_cross_language: unknown or irrelevant options: query"). Tools that DO
+// define `query` (bb_search, bb_ask) are absent from this table by design.
+export const PARAMETER_ALIASES: Record<string, Record<string, string>> = {
+  bb_graph: { target: "symbol", symbolName: "symbol", query: "symbol" },
+  bb_impact: { target: "symbol", symbolName: "symbol", query: "symbol" },
+  bb_cross_language: { target: "symbol", symbolName: "symbol", query: "symbol" },
+  bb_annotate: { target: "symbol", query: "symbol" },
+  bb_annotations: { target: "symbol", query: "symbol" },
+  bb_analyze: { symbol: "target", symbolName: "target", query: "target" },
+  bb_doc: { symbol: "target", symbolName: "target", query: "target" },
+  bb_visualize: { symbol: "target", query: "target" },
+}
+
+/** Rewrite alias keys to their canonical names (exported for the M50 gate). */
+export function resolveParameterAliases(tool: string, args: Record<string, unknown>): Record<string, unknown> {
+  const map = PARAMETER_ALIASES[tool]
+  if (!map) return args
+  const out: Record<string, unknown> = { ...args }
+  for (const [alias, canonical] of Object.entries(map)) {
+    if (!(alias in out)) continue
+    const aliasValue = out[alias]
+    delete out[alias]
+    // Blank aliases are treated as absent (not as a satisfies-required value):
+    // `target: "   "` on bb_graph must fail exactly like no target at all.
+    if (aliasValue === undefined || aliasValue === null || (typeof aliasValue === "string" && aliasValue.trim() === "")) continue
+    const canonicalValue = out[canonical]
+    if (canonicalValue === undefined || canonicalValue === null || canonicalValue === "") {
+      out[canonical] = aliasValue
+      continue
+    }
+    if (String(canonicalValue) !== String(aliasValue)) {
+      throw new Error(
+        `${tool}: ${canonical} and ${alias} are aliases with different values ("${canonicalValue}" vs "${aliasValue}") — pass one`,
+      )
+    }
+  }
+  return out
+}
+
 export function validateToolArguments(descriptor: ToolDescriptor, args: unknown): Record<string, unknown> {
   if (!args || typeof args !== "object" || Array.isArray(args)) throw new Error(`${descriptor.name}: arguments must be a JSON object`)
-  const object = args as Record<string, unknown>
+  const object = resolveParameterAliases(descriptor.name, args as Record<string, unknown>)
   const properties = descriptor.inputSchema.properties ?? {}
   const unknown = Object.keys(object).filter((key) => !(key in properties))
-  if (unknown.length) throw new Error(`${descriptor.name}: unknown or irrelevant options: ${unknown.join(", ")}`)
+  if (unknown.length) {
+    // M50.A2 (#764): a rejection must TEACH, not dead-end. A1 recorded agents
+    // burning a round-trip per wrong guess and then giving up on the tool;
+    // naming the accepted options (plus the aliases this tool forgives) turns
+    // the failure into the next correct call. The rejection itself is
+    // unchanged — an unknown option is still an error, never ignored.
+    const aliases = Object.keys(PARAMETER_ALIASES[descriptor.name] ?? {})
+    const accepted = Object.keys(properties)
+    throw new Error(
+      `${descriptor.name}: unknown or irrelevant options: ${unknown.join(", ")} — accepted options: ${accepted.join(", ")}` +
+        (aliases.length ? ` (aliases accepted: ${aliases.join(", ")})` : ""),
+    )
+  }
   for (const required of descriptor.inputSchema.required ?? []) {
     if (!(required in object) || object[required] === undefined || object[required] === null) throw new Error(`${descriptor.name}: missing required option: ${required}`)
   }
