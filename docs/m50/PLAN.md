@@ -91,6 +91,31 @@ silently declared fixed.
   `target`/`symbolName`/`query`, analyze/doc/visualize accept
   `symbol`/`symbolName`/`query`, and a rejection now NAMES the accepted options
   and aliases instead of dead-ending. `verify-a2-param-aliases.ts` 129 checks.
+  **A2 residual (post-closure) — the three A1 convictions that stayed above the
+  one-second line.** All three had the same defect shape: an engine
+  materialized far more than it could ever return.
+  (1) `bb_analyze complexity` (project scope) fetched every joined symbol row
+  (168,629) to average a column and keep 20 — the aggregate is computable in SQL
+  and the breakdown is `LIMIT 20` (2,253ms → 375ms through the production
+  harness; `probe-complexity-phases.ts` proves old and new produce identical
+  metrics and the same top-20).
+  (2) `bb_security` loaded every symbol (168,629 rows / 508ms) into a Map to
+  resolve the 2,692 ids the taint rows actually reference — now flow paths are
+  parsed once and only the referenced ids are fetched, in 500-id chunks
+  (568ms → 94ms engine time; `probe-security-phases.ts` proves the bounded map
+  equals the full map for every referenced id and the report digest is
+  byte-identical to the pre-fix run).
+  (3) `bb_patterns` built and sorted all ~28,602 orphan findings before slicing
+  to `maxResults` (100), and called the pure path predicates once per symbol —
+  now candidates are lightweight sort keys, finding objects are built only for
+  the returned page, and the predicates are memoized per file (digest-identical
+  output, proven by `probe-pattern-phases.ts`).
+  The structural property is gated by `verify-a2-bounded-work.ts` (hermetic
+  fixture: 700 seeded taint flows spanning the chunk boundary, independent SQL
+  derivations, a comparator-ordered pagination oracle, and three falsifiability
+  negatives); the mutation self-test proves the gate can fail. Latency itself
+  stays in the probes and the A2c production-shape sweep — never a ceiling
+  inside a gate.
 **A5 (#unregistered) — Verify-chain truth (found during A2).** Two gates in the repo's
   own chain were RED at HEAD for reasons unrelated to any live defect:
   `verify-contract-diff.ts` (13 failures — the M10.01 frozen baseline still
@@ -128,6 +153,7 @@ silently declared fixed.
 | A2-stats | verify-planner-stats.ts | no |
 | A2-aliases | verify-a2-param-aliases.ts | no |
 | A2-vector-blobs | verify-vector-blobs.ts | no |
+| A2-bounded | verify-a2-bounded-work.ts | no |
 | A3 | verify-a3-guidance-truth.ts | no |
 | A4 | verify-a4-adoption.ts | no |
 | A5 | verify-a5-verify-chain.ts | no |

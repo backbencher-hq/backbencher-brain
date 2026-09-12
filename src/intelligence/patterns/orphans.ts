@@ -79,7 +79,16 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       "WHERE s.project_id = ? AND s.symbol_type IN ('function','method','class','interface','struct','enum')",
   ).all(projectId) as SymRow[]
 
-  const findings: PatternFinding[] = []
+  // M50.A2 residual: the scan collects lightweight sort keys and builds the full
+  // finding objects (evidence + limitations arrays) only for the page that is
+  // actually returned. This repo's index produces ~28,600 orphans while callers
+  // display at most `maxResults` (100 for the MCP handler), so the old code
+  // materialized and sorted ~99.7% findings nobody ever saw. The comparator and
+  // keys are unchanged, so scan output — including `summary.scannedSymbols` and
+  // `scan.findingsBeforeDisplayLimit` — is byte-identical; proven by
+  // script/m50/probe-pattern-phases.ts (digest) on the real index.
+  type OrphanCandidate = { conf: number; file: string; symbol?: SymRow; fileRel?: string }
+  const candidates: OrphanCandidate[] = []
   const scannedFiles = new Set<string>()
 
   // Files referenced from OTHER files via a RESOLVED cross-file usage edge.
@@ -103,10 +112,71 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     scannedFiles.add(sym.fileId)
   }
 
+  const buildSymbolFinding = (sym: SymRow): PatternFinding => {
+    const classLike = ["class", "interface", "struct", "enum"].includes(sym.symbolType)
+    const rule = classLike ? "orphaned_class" : "orphaned_function"
+    return {
+      rule: rule as any,
+      engine: ENGINE,
+      severity: "info",
+      confidence: 0.6,
+      location: { file: sym.file, line: sym.line, symbol: sym.name },
+      linesOfCode: locFor(sym),
+      description: `${classLike ? "Type" : "Function"} '${sym.name}' has no incoming usage edges (calls/instantiates/extends/implements/uses).`,
+      remediation: "Verify it is not referenced dynamically, via reflection, framework registration, or build/test config before considering removal.",
+      evidence: [
+        { kind: "relationship", description: "No resolved incoming usage relationship (target_symbol_id)." },
+        { kind: "reference", description: "No name-matched cross-file reference (target_external)." },
+      ],
+      limitations: [
+        "Name-only matching cannot see dynamic dispatch, reflection, or string-based lookups.",
+        ...(ambiguousNames.has(sym.name) ? [`The name '${sym.name}' is declared multiple times; unresolved name-only references are treated as uncertain and do not suppress candidates.`] : []),
+        "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
+        "Build configs, plugin manifests (XML), and test conventions are not scanned.",
+      ],
+    }
+  }
+
+  const buildFileFinding = (relativePath: string): PatternFinding => ({
+    rule: "orphaned_file",
+    engine: ENGINE,
+    severity: "info",
+    confidence: 0.5,
+    location: { file: relativePath, line: 1 },
+    linesOfCode: 0,
+    description: `File '${relativePath}' has no incoming references from other files (no importing file, no cross-file symbol usage).`,
+    remediation: "Confirm the file is not an entry point, dynamically loaded, or referenced by build/test tooling before removal.",
+    evidence: [
+      { kind: "reference", description: "No cross-file symbol usage resolves into this file." },
+      { kind: "import", description: "No 'imports' edge names this file's module path." },
+    ],
+    limitations: [
+      "Entry points and dynamically loaded files may appear orphaned.",
+      "Build systems and non-code manifests are not scanned.",
+    ],
+  })
+
+  // M50.A2 residual: these path predicates are pure functions of the file path,
+  // but the scan called them once per symbol (~37,200 calls across ~2,700
+  // files on this repo). Memoizing by path keeps behavior identical and
+  // removes ~93% of the regex work.
+  const testPathMemo = new Map<string, boolean>()
+  const noisePathMemo = new Map<string, boolean>()
+  const isTestFile = (p: string): boolean => {
+    let v = testPathMemo.get(p)
+    if (v === undefined) { v = AnalysisExclusions.isTestPath(p); testPathMemo.set(p, v) }
+    return v
+  }
+  const isNoiseFile = (p: string): boolean => {
+    let v = noisePathMemo.get(p)
+    if (v === undefined) { v = AnalysisExclusions.isHardNoisePath(p); noisePathMemo.set(p, v) }
+    return v
+  }
+
   // ---- orphaned functions/methods & classes ----
   for (const sym of symbols) {
-    if (!includeTests && AnalysisExclusions.isTestPath(sym.file)) continue
-    if (AnalysisExclusions.isHardNoisePath(sym.file) || AnalysisExclusions.isNoiseSymbolName(sym.name)) continue
+    if (!includeTests && isTestFile(sym.file)) continue
+    if (isNoiseFile(sym.file) || AnalysisExclusions.isNoiseSymbolName(sym.name)) continue
     if (isEntryPointName(sym.name)) continue
 
     const used = usedIds.has(sym.id) || (usedNames.has(sym.name) && !ambiguousNames.has(sym.name))
@@ -121,26 +191,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     const confidence = 0.6
     if (confidence < minConfidence) continue
 
-    findings.push({
-      rule: rule as any,
-      engine: ENGINE,
-      severity: "info",
-      confidence,
-      location: { file: sym.file, line: sym.line, symbol: sym.name },
-      linesOfCode: locFor(sym),
-      description: `${isClassLike ? "Type" : "Function"} '${sym.name}' has no incoming usage edges (calls/instantiates/extends/implements/uses).`,
-      remediation: "Verify it is not referenced dynamically, via reflection, framework registration, or build/test config before considering removal.",
-      evidence: [
-        { kind: "relationship", description: "No resolved incoming usage relationship (target_symbol_id)." },
-        { kind: "reference", description: "No name-matched cross-file reference (target_external)." },
-      ],
-      limitations: [
-        "Name-only matching cannot see dynamic dispatch, reflection, or string-based lookups.",
-        ...(ambiguousNames.has(sym.name) ? [`The name '${sym.name}' is declared multiple times; unresolved name-only references are treated as uncertain and do not suppress candidates.`] : []),
-        "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
-        "Build configs, plugin manifests (XML), and test conventions are not scanned.",
-      ],
-    })
+    candidates.push({ conf: confidence, file: sym.file, symbol: sym })
   }
 
   // ---- orphaned files ----
@@ -177,30 +228,15 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
 
       const confidence = 0.5
       if (confidence < minConfidence) continue
-      findings.push({
-        rule: "orphaned_file",
-        engine: ENGINE,
-        severity: "info",
-        confidence,
-        location: { file: file.relativePath, line: 1 },
-        linesOfCode: 0,
-        description: `File '${file.relativePath}' has no incoming references from other files (no importing file, no cross-file symbol usage).`,
-        remediation: "Confirm the file is not an entry point, dynamically loaded, or referenced by build/test tooling before removal.",
-        evidence: [
-          { kind: "reference", description: "No cross-file symbol usage resolves into this file." },
-          { kind: "import", description: "No 'imports' edge names this file's module path." },
-        ],
-        limitations: [
-          "Entry points and dynamically loaded files may appear orphaned.",
-          "Build systems and non-code manifests are not scanned.",
-        ],
-      })
+      candidates.push({ conf: confidence, file: file.relativePath, fileRel: file.relativePath })
     }
   }
 
-  findings.sort((a, b) => b.confidence - a.confidence || a.location.file.localeCompare(b.location.file))
-  const truncated = findings.length > maxResults
-  const page = findings.slice(0, maxResults)
+  candidates.sort((a, b) => b.conf - a.conf || a.file.localeCompare(b.file))
+  const truncated = candidates.length > maxResults
+  const page = candidates
+    .slice(0, maxResults)
+    .map((c) => (c.symbol ? buildSymbolFinding(c.symbol) : buildFileFinding(c.fileRel ?? c.file)))
 
   const byRule: Record<string, number> = {}
   for (const f of page) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1

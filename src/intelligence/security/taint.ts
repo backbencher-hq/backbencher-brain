@@ -99,12 +99,37 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
       "WHERE t.project_id = ?",
   ).all(projectId) as TaintRow[]
 
+  // M50.A2 residual: resolution used to load EVERY symbol row of the project
+  // into a Map (168,629 rows / 508ms of a ~568ms engine call on this repo's
+  // own index) to answer lookups for the few thousand ids the taint rows
+  // actually reference (2,692 here). Flow paths are parsed once, the distinct
+  // ids are collected, and only those are fetched — chunked for SQLite's
+  // parameter limit. Output is unchanged by construction (same rows, same
+  // keys); proven by script/m50/probe-security-phases.ts on the real index.
+  const pathCache: string[][] = new Array(rows.length)
+  const neededIds = new Set<string>()
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]!
+    if (r.source_symbol_id) neededIds.add(r.source_symbol_id)
+    if (r.sink_symbol_id) neededIds.add(r.sink_symbol_id)
+    const path = parseFlowPath(r.flow_path)
+    pathCache[i] = path
+    for (const id of path) neededIds.add(id)
+  }
+
   // symbol id -> {name,file,line} for flow-path resolution
   const symById = new Map<string, { name: string; file: string; line: number }>()
-  for (const s of raw.prepare(
-    "SELECT s.id, s.name, s.line_start AS line, f.relative_path AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ?",
-  ).all(projectId) as Array<{ id: string; name: string; line: number; file: string }>) {
-    symById.set(s.id, { name: s.name, file: s.file, line: s.line })
+  const ids = [...neededIds]
+  const CHUNK = 500
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK)
+    const stmt =
+      "SELECT s.id, s.name, s.line_start AS line, f.relative_path AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.id IN (" +
+      chunk.map(() => "?").join(",") +
+      ")"
+    for (const s of raw.prepare(stmt).all(projectId, ...chunk) as Array<{ id: string; name: string; line: number; file: string }>) {
+      symById.set(s.id, { name: s.name, file: s.file, line: s.line })
+    }
   }
 
   const resolveNode = (symbolId: string | null): FlowNode => {
@@ -119,13 +144,14 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
   const findingByKey = new Map<string, SecurityFindingV2>()
   let scannedFlows = 0
 
-  for (const row of rows) {
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex]!
     scannedFlows++
     const vulnerabilityType = normalizeType(row.vulnerability_type)
     const severity = (row.severity as SecurityFindingV2["severity"]) ?? "unknown"
     const source = resolveNode(row.source_symbol_id)
     const sink = resolveNode(row.sink_symbol_id)
-    const path = parseFlowPath(row.flow_path).map(resolveNode)
+    const path = (pathCache[rowIndex] ?? []).map(resolveNode)
 
     const mitigated = !!row.is_mitigated
     // A flow is only "confirmed" when BOTH endpoints resolve to indexed
