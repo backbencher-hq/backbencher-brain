@@ -9,7 +9,7 @@
 // Evidence: validation/m41/results/T2.json
 
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -154,32 +154,39 @@ check("T2: language display union covers the registry exactly (no missing langua
 check("T2: no duplicate registry id across display families", idRefs.length === idSet.length, `refs=${idRefs.length} unique=${idSet.length}`)
 
 // --- 5. data-source hygiene -------------------------------------------------------
+//
+// M56.T1: tool facts are machine-generated into website/src/data/tools.generated.ts
+// (`bun run docs:generate`); the site keeps presentation only (display groups +
+// icons). The generated facts and the display groups must each cover the registry
+// exactly, and the hand-written notes copy must be gone.
+
+const factsSrc = read("website/src/data/tools.generated.ts")
+const factNames = [...factsSrc.matchAll(/^    "name": "(bb_[a-z_]+)",$/gm)].map((m) => m[1]!)
+check("T2: generated tool facts cover the registry exactly", JSON.stringify([...new Set(factNames)].sort()) === JSON.stringify(uniqueTools), `facts=${factNames.length} registry=${uniqueTools.length}`)
+check("T2: generated tool facts contain no phantom tool", PHANTOMS.every((p) => !factNames.includes(p)))
 
 const toolsSrc = read("website/src/data/brain-tools.ts")
-const orderMatch = toolsSrc.match(/TOOL_ORDER = \[([^\]]*)\]/)
-const orderNames = orderMatch ? (orderMatch[1]!.match(/bb_[a-z_]+/g) ?? []) : []
-check("T2: TOOL_ORDER covers the registry exactly", JSON.stringify([...orderNames].sort()) === JSON.stringify(uniqueTools), `order=${orderNames.length} registry=${uniqueTools.length}`)
-
-const notesSrc = read("website/src/data/brain-tool-notes.ts")
-const noteKeys = [...notesSrc.matchAll(/^  (bb_[a-z_]+): \{/gm)].map((m) => m[1]!)
-check("T2: tool notes keys match the registry exactly", JSON.stringify([...noteKeys].sort()) === JSON.stringify(uniqueTools), `keys=${noteKeys.length} registry=${uniqueTools.length}`)
-check("T2: notes contain no phantom keys", PHANTOMS.every((p) => !noteKeys.includes(p)))
+const groupKeys = [...toolsSrc.matchAll(/^  (bb_[a-z_]+): "(Discovery|Analysis|Diagnostics|Operations)",$/gm)].map((m) => m[1]!)
+check("T2: display groups cover the registry exactly", JSON.stringify([...groupKeys].sort()) === JSON.stringify(uniqueTools), `groups=${groupKeys.length} registry=${uniqueTools.length}`)
+check("T2: display groups contain no phantom tool", PHANTOMS.every((p) => !groupKeys.includes(p)))
+check("T2: hand-written tool notes are deleted", !existsSync(path.join(SITE, "src/data/brain-tool-notes.ts")), "website/src/data/brain-tool-notes.ts still exists")
 
 // --- 6. negatives ------------------------------------------------------------------
 
 // N1 (cheap, source-level): plant a hand-typed phantom claim in a data source
-// and prove the source-hygiene checks catch it — without a rebuild.
+// and prove the source-hygiene checks catch it — without a rebuild. The backup
+// lives OUTSIDE the repo tree: an in-repo `.t2bak` was once swept into a commit
+// by a broad `git add` on the shared checkout.
 {
   const target = path.join(SITE, "src/data/brain-tools.ts")
-  const backup = path.join(SITE, "src/data/brain-tools.ts.t2bak")
+  const backup = path.join(tmpdir(), `brain-tools-t2bak-${process.pid}.ts`)
   cpSync(target, backup)
   try {
-    const mutated = read("website/src/data/brain-tools.ts").replace("const TOOL_ORDER = [", 'const TOOL_ORDER = [\n  "bb_select",')
+    const mutated = read("website/src/data/brain-tools.ts").replace("export const TOOL_GROUPS: Record<string, ToolGroup> = {", 'export const TOOL_GROUPS: Record<string, ToolGroup> = {\n  bb_select: "Discovery",')
     writeFileSync(target, mutated)
     const src = read("website/src/data/brain-tools.ts")
-    const m = src.match(/TOOL_ORDER = \[([^\]]*)\]/)
-    const names = m ? (m[1]!.match(/bb_[a-z_]+/g) ?? []) : []
-    negative("T2: planted phantom in TOOL_ORDER breaks registry coverage check", JSON.stringify([...new Set(names)].sort()) !== JSON.stringify(uniqueTools))
+    const names = [...src.matchAll(/^  (bb_[a-z_]+): "(Discovery|Analysis|Diagnostics|Operations)",$/gm)].map((m) => m[1]!)
+    negative("T2: planted phantom display-group tool breaks registry coverage check", JSON.stringify([...new Set(names)].sort()) !== JSON.stringify(uniqueTools))
   } finally {
     cpSync(backup, target)
     rmSync(backup)
@@ -272,7 +279,7 @@ const evidence = {
     "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks.",
     "N2 mutates the hero source and rebuilds twice; a failing site build aborts the mutant proof (build success is checked first).",
     "N3 proves detector sensitivity on synthetic HTML; a full rebuild mutant (N2) covers the end-to-end path.",
-    "Editorial fields (features, examples, longDescription) are reviewed against docs/tools/*.md but not machine-diffed; the registry-owned fields are machine-enforced.",
+    "Since M56.T1 no site field is hand-typed: tool facts are generated into website/src/data/tools.generated.ts and byte-checked by docs:verify, while this gate enforces registry coverage of the generated facts and of the display-only grouping.",
   ],
 }
 writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")

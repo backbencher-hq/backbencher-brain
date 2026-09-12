@@ -84,6 +84,23 @@ Verifier: `verify-tools-truth.ts` — generated file byte-identical to a fresh
 generation, every rendered field traced to the registry or `docs/tools/*.md`, no
 hand-written copy left, mutants caught.
 
+Implementation notes (as built):
+- `script/verify-tool-docs.ts` gained the site artifact, so ONE generator pass
+  writes `docs/data/public-tools.json`, `docs/tools/*.md` and
+  `website/src/data/tools.generated.ts` — 18 artifacts — and already fails on a
+  stale copy, which is what makes byte-identity mechanical.
+- `website/src/data/brain-tools.ts` keeps presentation only: display group,
+  icon and the group blurbs. No fact-shaped keys may appear there.
+- Fields the site renders: `summary`, full registry `description`, `mutability`,
+  `requiresIndex`, `category`, `modes`, `plannedModes`, registry `defaults`,
+  registry `examples`, parameters, `returns`, `errors`, `limitations`,
+  `performance`, `safety`, `evidence`, `relations`, `staleness` (all curated
+  text is the same text rendered into the shipped reference page).
+- Enforced by `npx tsx script/m56/verify-tools-truth.ts` in the local `verify`
+  chain and in CI's `verify-site` job (the job that installs website deps); the
+  path filter now also watches `script/m56/`, `docs/tools/`,
+  `script/verify-tool-docs.ts` and `script/m48/`.
+
 ### L1 — Languages Substance (#782)
 Deliverables: per-family cards on the homepage carrying extensions, depth tier and
 what the analyzer records (data that already exists and is registry-checked);
@@ -136,7 +153,13 @@ confirms dashboards and the live site.
 
 ## Gates & future verifications (permanent)
 
-Every M56 verifier joins the verify chain and CI. The site gates may not weaken:
+Every M56 verifier joins the verify chain and CI, and each one states where it
+is enforced:
+
+- G1 `verify-governance.ts` — `verify:fast` (CI `verify` job, all node matrix legs).
+- T1 `verify-tools-truth.ts` — local `verify` chain and CI `verify-site` job.
+
+The site gates may not weaken:
 M41's T2/T3/S1/S2/D1 continue to run, and any content change re-runs them — a new
 page or a rewritten section that regresses truth fails CI before deploy.
 
