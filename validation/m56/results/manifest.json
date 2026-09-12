@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-12T17:48:48.091Z",
+  "updatedAt": "2026-09-12T18:50:42.214Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -39,10 +39,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "5b1ac195af33bc7e7addf2a858db5f140c4c3399",
+        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
         "verifierCommand": "npx tsx script/m56/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-12T15:50:51.058Z",
+        "generatedAt": "2026-09-12T18:46:33.409Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 13
@@ -67,10 +67,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "55ad94dcf1d51defc01c637d4467e2d63b044325",
+        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
         "verifierCommand": "npx tsx script/m56/verify-editors-page.ts",
         "evidenceFile": "E1.json",
-        "generatedAt": "2026-09-12T17:36:46.595Z",
+        "generatedAt": "2026-09-12T18:40:22.022Z",
         "passed": 27,
         "failed": 0,
         "negativeCases": 5
@@ -95,10 +95,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "55ad94dcf1d51defc01c637d4467e2d63b044325",
+        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
         "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-12T17:36:06.154Z",
+        "generatedAt": "2026-09-12T18:39:39.656Z",
         "passed": 28,
         "failed": 0,
         "negativeCases": 6
@@ -135,10 +135,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "55ad94dcf1d51defc01c637d4467e2d63b044325",
+        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
         "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts",
         "evidenceFile": "L1.json",
-        "generatedAt": "2026-09-12T17:37:30.162Z",
+        "generatedAt": "2026-09-12T18:40:51.843Z",
         "passed": 49,
         "failed": 0,
         "negativeCases": 11
@@ -148,7 +148,7 @@
       "code": "D1",
       "githubIssue": 783,
       "tool": "site",
-      "status": "planned",
+      "status": "verified",
       "scope": "docs completion: indexing internals, keeping the index fresh, data/upgrades/uninstall and the CLI flag table re-homed from website/faq.md",
       "acceptanceCriteria": [
         "each required section and claim renders",
@@ -160,7 +160,17 @@
         "verifier green with mutants caught",
         "evidence at current commit",
         "docs truth claims re-run unchanged"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "verifierCommand": "npx tsx script/m56/verify-docs-completeness.ts",
+        "evidenceFile": "D1.json",
+        "generatedAt": "2026-09-12T18:41:45.336Z",
+        "passed": 53,
+        "failed": 0,
+        "negativeCases": 9
+      }
     },
     {
       "code": "S1",
