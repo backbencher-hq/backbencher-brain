@@ -1,9 +1,10 @@
 # M50: Tool Adoption Truth — used, useful, trusted
 
-> GitHub milestone #54. Issues: #763 (A1), #764 (A2), #765 (A3), #766 (A4),
-> A5 (**unregistered** — GitHub was unreachable at delivery time; the issue text
-> is in `docs/m50/A5-issue.md`, and the number is deliberately left empty rather
-> than invented), #767 (X1).
+> GitHub milestone #54 (CLOSED). Issues: #763 (A1), #764 (A2), #765 (A3), #766 (A4),
+> #788 (A5 — registered after delivery once connectivity returned; the issue text
+> lived in `docs/m50/A5-issue.md` while the network was down, and the number was
+> never invented), #767 (X1). All delivered issues carry an evidence receipt and
+> are closed; the A4 human-session claim remains honestly `pending`.
 
 ## The milestone invariant (verbatim, enforced by X1)
 
@@ -159,7 +160,7 @@ conviction is only withdrawn by a newer receipt that measures OK.
   M13/M15 pattern corpora, so it is filed as a finding with evidence rather than
   changed unilaterally. The structural properties above are gated by
   `verify-a2-test-sources.ts`.
-**A5 (#unregistered) — Verify-chain truth (found during A2).** Two gates in the repo's
+**A5 (#788) — Verify-chain truth (found during A2).** Two gates in the repo's
   own chain were RED at HEAD for reasons unrelated to any live defect:
   `verify-contract-diff.ts` (13 failures — the M10.01 frozen baseline still
   listed 11 tools and a pre-M28 category vocabulary) and
