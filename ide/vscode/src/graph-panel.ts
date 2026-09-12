@@ -21,6 +21,9 @@ import { renderGraph } from "../../../script/m26/graph-core"
 // Type-only import: erased at build time (thin client preserved). The shape is
 // owned by the server's identity resolver (src/lsp/identity.ts).
 import type { MemberResolution } from "../../../src/lsp/identity"
+// M55.T1 (Truth Rule 2): the ONE panel-title rule, vscode-free so the truth
+// gate can execute it (see ./identity-label).
+import { applyResolutionTitle } from "./identity-label"
 
 /** Escaping DOM port over strings (browser Element API, no vscode import).
  *  Exported (M42.H4) so the impact panel shares the SAME port + serializer —
@@ -69,27 +72,13 @@ export interface GraphPanelDeps {
   cspSource: string
 }
 
-/** M55.T1 (Truth Rule 2): the ONE panel-title rule for a declared
- *  substitution. When the server rooted a MEMBER through its owning
- *  declaration, the title states it — a substitution the user cannot see is
- *  the defect this exists to prevent (the filing run: the constructor graph
- *  opened titled `Store` with nothing said). Direct resolutions keep the
- *  plain title. Lives here because every panel module already imports from
- *  graph-panel (one rule, no per-panel fork, no import cycle). */
-export function applyResolutionTitle(
-  panel: { title: string },
-  plainTitle: string,
-  outcome: { ok: true; resolution?: MemberResolution } | { ok: false; error: string },
-  symbol: string,
-  noun: string,
-): void {
-  panel.title = plainTitle
-  if (!outcome.ok) return
-  const r = outcome.resolution
-  if (r?.through === "owning-declaration" && r.ownerName) {
-    panel.title = `Backbencher ${noun} — ${symbol} → ${r.ownerName} (owning declaration)`
-  }
-}
+// M55.T1 (Truth Rule 2): the panel-title rule now lives in the vscode-free
+// module ./identity-label, so the truth gate can EXECUTE it headlessly — a
+// rule that cannot run in a gate cannot be verified, and this one silently
+// failed the user once (a constructor graph titled `Store` with nothing
+// said). Re-exported here because hub-panel and impact-panel already import
+// from this module: one rule, one definition, two import sites.
+export { applyResolutionTitle }
 
 /** Pure, testable core: run bb/graph + render through the ONE core, return
  *  the shell inputs. Declared failures come back as { error } — loud, with
