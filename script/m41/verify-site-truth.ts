@@ -108,7 +108,14 @@ check("T2: docs has no phantom opencode-era commands", ["bb brain", "bb run", "b
 check("T2: docs quotes setup show (fingerprint-only inspection)", docsPage.includes("bb setup show"))
 check("T2: docs quotes real remediation commands", docsPage.includes("bb index --force") && docsPage.includes("bb index --post") && docsPage.includes("bb index --resume"))
 check("T2: docs tool table lists all tools", uniqueTools.every((t) => docsPage.includes(t)))
-check("T2: docs honesty note about upgrade channel present", docsPage.includes("upgrade") && docsPage.includes("Backbencher releases"))
+// M56.D1 corrected this note instead of pinning it: the old text told users to
+// fix `bb upgrade`'s release channel, but `bb upgrade` does not exist in this
+// CLI. The retargeted check is strictly stronger — it pins the real upgrade path
+// AND forbids a phantom upgrade command from returning to the page.
+check(
+  "T2: docs states the real upgrade path and no phantom upgrade command",
+  docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") && !docsPage.includes("bb upgrade"),
+)
 
 // --- 3b. T3 pages: install, faq, troubleshooting, contact ------------------------
 
