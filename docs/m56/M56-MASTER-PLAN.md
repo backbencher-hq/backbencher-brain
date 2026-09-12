@@ -170,6 +170,40 @@ the CLI flag table — all of it re-homed from `website/faq.md`, not re-invented
 Verifier: `verify-docs-completeness.ts` — each required section and claim present;
 every quoted command or flag exists in `bb --help`; phantom flags rejected.
 
+Implementation notes (as built):
+- `/docs` gained three sections — *What gets indexed* (the three exclusion layers,
+  the size tiers, indexing time), *Keeping the index fresh* (the read-path budget,
+  the incremental commands, and the per-phase recompute table) and *Data, upgrades
+  & uninstall* (storage shape, migrations, `--import`, disk management) — and the
+  CLI reference now renders a per-command flag table.
+- Everything numeric or enumerable on those sections is generated. New generator
+  `script/m56/generate-docs-data.ts` writes `website/src/data/docs.generated.ts`
+  from (a) the real CLI help, read from source through `script/m56/cli-probe.ts`,
+  and (b) the source constants: `DIR_WALK_SKIP_DIRS`, `FULL_AST_LIMIT`,
+  `STRUCTURAL_LIMIT`, `DIR_WALK_SIZE_LIMIT`, `structuralExtensions`,
+  `AUTO_REFRESH_DEFAULTS`, `AUTO_REFRESH_ENV_ALLOWLIST`, the `recordPhase()` list,
+  the `derivedPass` union and `bb-data-dir`. The hand-typed CLI cards and the FAQ
+  prose they duplicated are gone.
+- The help text is parsed with two independent instruments: the generator
+  cross-checks its parse against the `.command()`/`.option()` declarations in
+  `src/cli/index.ts` (statement-scoped, so `setup show` is not mistaken for a
+  top-level command) and against `TRUTH.cliCommands`; the verifier then runs the
+  CLI again and parses the help with its own reader.
+- The documented storage shape is proven at runtime with a temp `BB_DATA_DIR`
+  instead of being read out of a comment.
+- Stale documentation found and corrected: the old *Upgrade caveat* advised users
+  to fix `bb upgrade`'s release channel and to set `VERSION` on it — `bb upgrade`
+  does not exist in this CLI. Upgrading is now stated correctly (rerun the
+  installer, which replaces the binary in place; `VERSION` pins a release), and the
+  gate's phantom-command check keeps a nonexistent command from reappearing.
+- Product defect recorded, not published: `bb index --help` still ships the example
+  `bb index import --db <path>`, which uses a flag the command does not declare.
+  The CLI's example lines are therefore kept in the generated data but not rendered
+  on the site; the reference points at `bb --help` for examples, and the gate's
+  phantom-flag scan covers every flag the docs do publish.
+- Enforced by `npx tsx script/m56/verify-docs-completeness.ts` in the local
+  `verify` chain and in CI's `verify-site` job.
+
 ### S1 — Support Consolidation (#784)
 Deliverables: `website/faq.md` is the single FAQ source and the page is generated
 from it; `/support` renders the FAQ then a still-have-questions block
@@ -213,6 +247,7 @@ is enforced:
 - T1 `verify-tools-truth.ts` — local `verify` chain and CI `verify-site` job.
 - E1 `verify-editors-page.ts` — local `verify` chain and CI `verify-site` job.
 - L1 `verify-languages-surface.ts` — local `verify` chain and CI `verify-site` job.
+- D1 `verify-docs-completeness.ts` — local `verify` chain and CI `verify-site` job.
 
 The site gates may not weaken:
 M41's T2/T3/S1/S2/D1 continue to run, and any content change re-runs them — a new
