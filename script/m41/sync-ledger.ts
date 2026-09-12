@@ -42,6 +42,12 @@ const MANIFEST_PATH = path.join(RESULTS, "manifest.json")
 // absent from the ledger entry is left absent (G1 validates the entry's shape).
 const SYNCED_KEYS = ["currentCommit", "generatedAt", "passed", "failed", "realFailed", "negativeCases", "checks", "mutantsCaught", "mutantsTotal"] as const
 
+// Synced for information, but NOT part of the agreement contract — the gate
+// compares commit + counts only, because it rewrites its own artifact in the
+// run that validates the ledger. Keeping the drift report on the same contract
+// means `--check` and the gate can never disagree about what "in sync" means.
+const NON_CONTRACT_KEYS = new Set<string>(["generatedAt"])
+
 type EvidenceFile = Record<string, unknown>
 
 interface Issue {
@@ -79,10 +85,17 @@ for (const issue of ledger.issues) {
     continue
   }
   const next: Record<string, unknown> = { ...issue.evidence }
+  const contractBefore: Record<string, unknown> = {}
+  const contractAfter: Record<string, unknown> = {}
   for (const key of SYNCED_KEYS) {
-    if (issue.evidence[key] !== undefined && e[key] !== undefined) next[key] = e[key]
+    if (issue.evidence[key] === undefined || e[key] === undefined) continue
+    next[key] = e[key]
+    if (!NON_CONTRACT_KEYS.has(key)) {
+      contractBefore[key] = issue.evidence[key]
+      contractAfter[key] = e[key]
+    }
   }
-  if (JSON.stringify(next) !== JSON.stringify(issue.evidence)) changed.push(issue.code)
+  if (JSON.stringify(contractAfter) !== JSON.stringify(contractBefore)) changed.push(issue.code)
   issue.evidence = next
 }
 
