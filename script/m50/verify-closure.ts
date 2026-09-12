@@ -71,6 +71,7 @@ const subordinate: Array<[string, string]> = [
   ["A2-stats", "script/m50/verify-planner-stats.ts"],
   ["A2-aliases", "script/m50/verify-a2-param-aliases.ts"],
   ["A2-vector-blobs", "script/m50/verify-vector-blobs.ts"],
+  ["A2-bounded", "script/m50/verify-a2-bounded-work.ts"],
   ["A3", "script/m50/verify-a3-guidance-truth.ts"],
   ["A4", "script/m50/verify-a4-adoption.ts"],
   ["A5", "script/m50/verify-a5-verify-chain.ts"],
@@ -107,7 +108,7 @@ for (const [label, argv] of downstream) {
 
 // ── 4. evidence conformance (checked, never a substitute for a live run) ───
 {
-  const EVIDENCE = ["A1.json", "A2-planner-stats.json", "A2-vector-blobs.json", "A3.json", "A4.json", "A5.json"]
+  const EVIDENCE = ["A1.json", "A2-planner-stats.json", "A2-vector-blobs.json", "A2-bounded-work.json", "A2-residual.json", "A3.json", "A4.json", "A5.json"]
   for (const file of EVIDENCE) {
     const abs = path.join(RESULTS, file)
     if (!existsSync(abs)) {

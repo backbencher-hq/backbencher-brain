@@ -2,7 +2,7 @@
   "issue": 764,
   "milestone": "M50",
   "githubIssue": 764,
-  "at": "2026-09-12T14:41:43.680Z",
+  "at": "2026-09-12T15:55:34.885Z",
   "title": "Planner-statless SQLite was the root cause of bb_graph 15-20s and bb_patterns 45s+ timeouts",
   "rootCause": {
     "statement": "sqlite_stat1 did not exist in any real brain.db (ANALYZE was never run). SQLite's planner therefore chose brain_symbol_project_idx for the graph owner-cascade member scan (owner_symbol_id >= ? AND < ?), scanning every project symbol per traversal hop.",
@@ -91,7 +91,7 @@
     "Second data dir: the spawned server resolves BB_DATA_DIR to ~/.khushal_file/.bb (env-injected), while ad-hoc probes assumed ~/.bb — a repo had populated DBs in BOTH. The split was environmental (probe/tooling), not a code defect; no work lost, but it cost a day of confusion. Probe scripts must always record the resolved db path in evidence.",
     "The user's live opencode MCP server (PID 466595, started 00:21) still serves the pre-fix dist; it will pick up the fix on its next restart/rebuild."
   ],
-  "commit": "bbb8e604ab0acd2e6554bf24721a1d1b84222b39",
+  "commit": "afbbdd36fd08d9c404720f6ea38e16748c03e1df",
   "checks": 9,
   "passed": 9,
   "failed": 0,

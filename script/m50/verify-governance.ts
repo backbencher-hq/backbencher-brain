@@ -75,6 +75,8 @@ const fullChain = pkg.scripts.verify ?? ""
   const EVIDENCE: Array<{ file: string; issue: number | null }> = [
     { file: "A1.json", issue: issues.A1 },
     { file: "A2-planner-stats.json", issue: issues.A2 },
+    { file: "A2-bounded-work.json", issue: issues.A2 },
+    { file: "A2-residual.json", issue: issues.A2 },
     { file: "A3.json", issue: issues.A3 },
     { file: "A4.json", issue: issues.A4 },
     // A5 is unregistered (GitHub unreachable at delivery): its evidence must

@@ -61,6 +61,15 @@ const MUTATIONS: Mutation[] = [
     replace: "  for (let i = 0; i < n; i++) view.setFloat32(i * 4, vector[i], true)\n  return bytes.subarray(0, Math.max(1, bytes.length - 1)) // MUTANT: one byte short",
   },
   {
+    gate: "A2-bounded",
+    script: "verify-a2-bounded-work.ts",
+    // The gate compares the engine's project-scope aggregate against an
+    // independent SQL derivation, so corrupting that aggregate must fail it.
+    file: "src/intelligence/analysis/complexity.ts",
+    find: '    const locRow = raw.prepare("SELECT COALESCE(SUM(line_count),0) AS lc FROM brain_file WHERE project_id = ?").get(projectId) as { lc: number }',
+    replace: '    const locRow = raw.prepare("SELECT COALESCE(SUM(line_count),0) + 1 AS lc FROM brain_file WHERE project_id = ?").get(projectId) as { lc: number } // MUTANT: off-by-one LOC',
+  },
+  {
     gate: "A3-guidance",
     script: "verify-a3-guidance-truth.ts",
     file: "src/cli/onboard.ts",
