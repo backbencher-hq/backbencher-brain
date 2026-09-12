@@ -82,8 +82,16 @@ function discoverRoutes(): string[] {
 const REAL_ROUTES = buildOk ? discoverRoutes() : []
 const htmlName = (r: string): string => (r === "" ? "index" : r.slice(1))
 
-check("S1: route discovery finds every real page (>= 10 routes)", REAL_ROUTES.length >= 10, REAL_ROUTES.join(" "))
-check("S1: route discovery includes the legal pages", ["/privacy", "/terms"].every((r) => REAL_ROUTES.includes(r)), REAL_ROUTES.join(" "))
+// Discovery is the mechanism; this list is the contract. If discoverRoutes()
+// silently stopped seeing a directory, parity would still "pass" against a
+// shrunken sitemap — this fails instead. And a page added to the site without
+// being onboarded here fails too: a new route gets truth/SEO coverage
+// deliberately, never by accident.
+const REQUIRED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/faq", "/troubleshooting", "/contact", "/privacy", "/terms"]
+const discoveryMissing = REQUIRED_ROUTES.filter((r) => !REAL_ROUTES.includes(r))
+const discoveryExtra = REAL_ROUTES.filter((r) => !REQUIRED_ROUTES.includes(r))
+check("S1: route discovery finds every required page", discoveryMissing.length === 0, discoveryMissing.join(" "))
+check("S1: no route exists outside the required list", discoveryExtra.length === 0, discoveryExtra.join(" "))
 
 // --- rendered <head> extraction (every real route, not a fixed list) --------------
 
@@ -336,6 +344,14 @@ negative("S1: FAQ question-drift detector is sensitive", (() => {
   return !drifted.every((q) => faqRenderedText.includes(q.name ?? "\u0000"))
 })())
 
+// N7a (real data): the required-route contract must fire when discovery loses a
+// page — the failure mode a parity check alone cannot see.
+negative("S1: required-route detector rejects a discovery that lost a page", !REQUIRED_ROUTES.every((r) => REAL_ROUTES.filter((x) => x !== "/demos").includes(r)))
+
+// N7b (real data): a page outside the contract must be flagged, so a new route
+// cannot slip in without being onboarded.
+negative("S1: undeclared-route detector rejects a page outside the contract", ![...REAL_ROUTES, "/undeclared"].every((r) => REQUIRED_ROUTES.includes(r)))
+
 // N7 (real data): route parity must reject a sitemap that omits a real page.
 negative("S1: route-parity detector rejects a missing legal page", (() => {
   const real = [...REAL_ROUTES].sort()
@@ -382,12 +398,13 @@ const evidence = {
   generatedAt: new Date().toISOString(),
   sitemapUrls: sitemapUrls.length,
   realRoutes: REAL_ROUTES.length,
+  requiredRoutes: REQUIRED_ROUTES.length,
   faqQuestions: faqQuestionCount,
   limitations: [
     "Keyword checks verify presence in rendered content; ranking outcomes are S2 (search-engine onboarding) scope and depend on external engines.",
     "The canonical-removal mutant rebuilds the site three times total; a broken build aborts the mutant proof.",
     "Structured data covers SoftwareApplication (/) and FAQPage (/faq); other schema.org types are simply not claimed, not falsified.",
-    "Routes are discovered from website/src/app by directory layout, so a page Next.js would not serve as a static route is still counted as one.",
+    "Routes are discovered from website/src/app by directory layout, so a page Next.js would not serve as a static route is still counted as one; the required-route contract list must name any page added, and that onboarding is a deliberate edit to this verifier.",
   ],
 }
 writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
