@@ -70,6 +70,15 @@ const MUTATIONS: Mutation[] = [
     replace: '    const locRow = raw.prepare("SELECT COALESCE(SUM(line_count),0) + 1 AS lc FROM brain_file WHERE project_id = ?").get(projectId) as { lc: number } // MUTANT: off-by-one LOC',
   },
   {
+    gate: "A2-test-sources",
+    script: "verify-a2-test-sources.ts",
+    // The gate compares the returned gap page against an independent top-K
+    // oracle, so removing the bound must fail it.
+    file: "src/intelligence/testing/test-intel.ts",
+    find: "  const gaps: TestGap[] = candidates.slice(0, maxResults).map((c) => ({",
+    replace: "  const gaps: TestGap[] = candidates.map((c) => ({ // MUTANT: unbounded page",
+  },
+  {
     gate: "A3-guidance",
     script: "verify-a3-guidance-truth.ts",
     file: "src/cli/onboard.ts",
