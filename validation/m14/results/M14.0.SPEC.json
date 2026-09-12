@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "java: 7 ruled, 19 pending owner",
+      "description": "java: 7 ruled, 20 pending owner",
       "id": "design-decisions-tracked",
       "language": "java",
       "status": "pass"
     },
     {
       "description": "every named node type classified (java)",
-      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 26 decisions",
+      "detail": "143 types, 70 handled, 60 silent, 4 gaps, 27 decisions",
       "id": "section-a-structural",
       "language": "java",
       "status": "pass"
@@ -87,14 +87,14 @@
       "status": "pass"
     },
     {
-      "description": "groovy: 5 ruled, 1 pending owner",
+      "description": "groovy: 5 ruled, 11 pending owner",
       "id": "design-decisions-tracked",
       "language": "groovy",
       "status": "pass"
     },
     {
       "description": "every named node type classified (groovy)",
-      "detail": "153 types, 68 handled, 66 silent, 8 gaps, 6 decisions",
+      "detail": "153 types, 68 handled, 66 silent, 8 gaps, 16 decisions",
       "id": "section-a-structural",
       "language": "groovy",
       "status": "pass"
@@ -161,14 +161,14 @@
       "status": "pass"
     },
     {
-      "description": "kotlin: 6 ruled, 2 pending owner",
+      "description": "kotlin: 6 ruled, 10 pending owner",
       "id": "design-decisions-tracked",
       "language": "kotlin",
       "status": "pass"
     },
     {
       "description": "every named node type classified (kotlin)",
-      "detail": "152 types, 67 handled, 44 silent, 8 gaps, 8 decisions",
+      "detail": "152 types, 67 handled, 44 silent, 8 gaps, 16 decisions",
       "id": "section-a-structural",
       "language": "kotlin",
       "status": "pass"
@@ -235,14 +235,14 @@
       "status": "pass"
     },
     {
-      "description": "scala: 10 ruled, 6 pending owner",
+      "description": "scala: 10 ruled, 10 pending owner",
       "id": "design-decisions-tracked",
       "language": "scala",
       "status": "pass"
     },
     {
       "description": "every named node type classified (scala)",
-      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 16 decisions",
+      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 20 decisions",
       "id": "section-a-structural",
       "language": "scala",
       "status": "pass"
@@ -309,14 +309,14 @@
       "status": "pass"
     },
     {
-      "description": "typescript: 6 ruled, 0 pending owner",
+      "description": "typescript: 10 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "typescript",
       "status": "pass"
     },
     {
       "description": "every named node type classified (typescript)",
-      "detail": "191 types, 107 handled, 72 silent, 9 gaps, 6 decisions",
+      "detail": "191 types, 107 handled, 72 silent, 9 gaps, 10 decisions",
       "id": "section-a-structural",
       "language": "typescript",
       "status": "pass"
@@ -377,20 +377,20 @@
       "status": "pass"
     },
     {
-      "description": "javascript: 8 confirmed gaps declared",
+      "description": "javascript: 9 confirmed gaps declared",
       "id": "gap-list-present",
       "language": "javascript",
       "status": "pass"
     },
     {
-      "description": "javascript: 6 ruled, 1 pending owner",
+      "description": "javascript: 16 ruled, 12 pending owner",
       "id": "design-decisions-tracked",
       "language": "javascript",
       "status": "pass"
     },
     {
       "description": "every named node type classified (javascript)",
-      "detail": "125 types, 89 handled, 20 silent, 8 gaps, 7 decisions",
+      "detail": "125 types, 89 handled, 20 silent, 9 gaps, 28 decisions",
       "id": "section-a-structural",
       "language": "javascript",
       "status": "pass"
@@ -457,14 +457,14 @@
       "status": "pass"
     },
     {
-      "description": "vue: 5 ruled, 1 pending owner",
+      "description": "vue: 7 ruled, 12 pending owner",
       "id": "design-decisions-tracked",
       "language": "vue",
       "status": "pass"
     },
     {
       "description": "every named node type classified (vue)",
-      "detail": "37 types, 20 handled, 6 silent, 4 gaps, 6 decisions",
+      "detail": "37 types, 20 handled, 6 silent, 4 gaps, 19 decisions",
       "id": "section-a-structural",
       "language": "vue",
       "status": "pass"
@@ -525,7 +525,7 @@
       "status": "pass"
     },
     {
-      "description": "svelte: 4 confirmed gaps declared",
+      "description": "svelte: 16 confirmed gaps declared",
       "id": "gap-list-present",
       "language": "svelte",
       "status": "pass"
@@ -538,7 +538,7 @@
     },
     {
       "description": "every named node type classified (svelte)",
-      "detail": "74 types, 32 handled, 21 silent, 4 gaps, 9 decisions",
+      "detail": "74 types, 32 handled, 21 silent, 16 gaps, 9 decisions",
       "id": "section-a-structural",
       "language": "svelte",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "f4d3aeb024caf257ea1ea71380e73730730d6199",
-  "committedAt": "2026-09-08T22:09:19+02:00",
+  "commit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
+  "committedAt": "2026-09-12T21:30:35+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1836,7 +1836,17 @@
         ],
         "nodeTypeCount": 153,
         "pendingDecisions": [
-          "GD19"
+          "GD19",
+          "GD20",
+          "GD21",
+          "GD22",
+          "GD23",
+          "GD24",
+          "GD25",
+          "GD26",
+          "GD27",
+          "GD28",
+          "GD29"
         ],
         "ruledDecisions": [
           "S1",
@@ -1847,7 +1857,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "153 types, 68 handled, 66 silent, 8 gaps, 6 decisions",
+            "detail": "153 types, 68 handled, 66 silent, 8 gaps, 16 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1967,7 +1977,8 @@
           "JD34",
           "JD35",
           "JD37",
-          "JD38"
+          "JD38",
+          "JD39"
         ],
         "ruledDecisions": [
           "G5",
@@ -1980,7 +1991,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 26 decisions",
+            "detail": "143 types, 70 handled, 60 silent, 4 gaps, 27 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2022,11 +2033,23 @@
           "J5: calls inside static { } blocks attribute to the MODULE, not the enclosing class — kotlin K7 init-attribution analog",
           "J6: top-level const r = x instanceof T attributes the reference to 'global' instead of r — the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
           "J7: module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols — TS emits them as constants (probe-verified parity gap)",
-          "J8: JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag"
+          "J8: JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
+          "JSD-744: M49 #744 (web fix wave, java #739 family contract): member-chain ROOT identifier dropped (config.inner.deeper.leaf emitted uses inner/deeper/leaf but not config) and BARE identifier reads (return config, if (flag)) emitted nothing — only member chains were scanned. Pre-fix the F5 javascript lane could not see either gap: its analyzer-side filter compared only calls, so uses was differential-invisible."
         ],
         "nodeTypeCount": 125,
         "pendingDecisions": [
-          "JSD-calls-oracle"
+          "JSD-calls-oracle",
+          "JSD9",
+          "JSD10",
+          "JSD11",
+          "JSD12",
+          "JSD13",
+          "JSD14",
+          "JSD15",
+          "JSD16",
+          "JSD17",
+          "JSD18",
+          "JSD29"
         ],
         "ruledDecisions": [
           "D1",
@@ -2034,11 +2057,21 @@
           "D3",
           "D4",
           "D5",
-          "M3710-COMPANION"
+          "M3710-COMPANION",
+          "JSD19",
+          "JSD20",
+          "JSD21",
+          "JSD22",
+          "JSD23",
+          "JSD24",
+          "JSD25",
+          "JSD26",
+          "JSD27",
+          "JSD28"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "125 types, 89 handled, 20 silent, 8 gaps, 7 decisions",
+            "detail": "125 types, 89 handled, 20 silent, 9 gaps, 28 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2085,7 +2118,15 @@
         "nodeTypeCount": 152,
         "pendingDecisions": [
           "KD19",
-          "KD20"
+          "KD20",
+          "KD21",
+          "KD22",
+          "KD23",
+          "KD24",
+          "KD25",
+          "KD26",
+          "KD27",
+          "KD28"
         ],
         "ruledDecisions": [
           "S1",
@@ -2097,7 +2138,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "152 types, 67 handled, 44 silent, 8 gaps, 8 decisions",
+            "detail": "152 types, 67 handled, 44 silent, 8 gaps, 16 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2423,7 +2464,11 @@
           "ScalaD-F",
           "ScalaD-G",
           "ScalaD-H",
-          "ScalaD-I"
+          "ScalaD-I",
+          "ScalaD-J",
+          "ScalaD-K",
+          "ScalaD-L",
+          "ScalaD-M"
         ],
         "ruledDecisions": [
           "D1",
@@ -2439,7 +2484,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 16 decisions",
+            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 20 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2477,7 +2522,19 @@
           "S1: template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
           "S2: let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers.",
           "S5: template-local each-loop and {@const} bindings that collide with same-named component members leaked false template Uses edges. {#each rows as row} and nested {#each ... as item} read local values, not member functions; {@const total = ...} is local to its enclosing block and must shadow the member only after its declaration.",
-          "S6: the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment."
+          "S6: the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment.",
+          "H1: shorthand attributes `<Comp {value} />` parse as attribute with the whole `{value}` as the NAME (no expression child), so no walk ever visited them — the most idiomatic Svelte 5 prop-passing shape emitted no use.",
+          "H2: bare `this={X}` values were never read, so dynamic component targets were invisible. Member-bound targets (this={fn}) already flowed through the generic expression path as Uses; import-bound targets had no edge at all.",
+          "H3: `<Comp {...props} />` carries the whole spread expression in the attribute NAME with no expression child — member use for props was never emitted. Full key expansion would be constant evaluation (out of scope); the spread argument reads as one use.",
+          "H4: script-derived ranges were half-mapped: symbols shifted lines (columns only when starting on the script's first line, indices never); imports shifted lines only; exports and errors were pushed fully raw. Same disease class as Vue H2/H3, wider (all three dimensions on errors).",
+          "M1: the then/catch seeding appended a phantom literal entry shadowing identifier x in EVERY await block subtree, so a real member x read inside any await block emitted nothing — over-shadowing by hardcoded hack.",
+          "M2: the flat identifier regex read string contents as member reads: f(\"a=b\") emitted Uses(a) + Uses(b) alongside the real f (Vue D1 analog, unshared code).",
+          "M3: member-chain leaves misattributed: user.name emitted Uses(name) alongside Uses(user) when a member shared the leaf name (Vue M1 analog). Dotted callee leaves and ?./#-preceded tokens skipped as receivers.",
+          "M4: `{#await promise then value}` / `as d` (no explicit block node) never registered the inline vars as template-locals, so {value}/{d} leaked as false member uses — companion to M1 (block form over-shadowed, inline form under-shadowed).",
+          "D1: module-block exports were pushed raw with script-relative ranges — the H4 wave shifted symbols/imports/errors but missed the export push. Same disease, one loop.",
+          "D3: the template char-walk had no comment states: `{f(a) /* b */}` read member b, multi-line `{url // pick}` read member pick. D2 (aliased this=) probed clean in the same battery — items carry local names.",
+          "D4: `{@render helpers.row(it)}` resolved to the FIRST segment (calls helpers — a namespace object, never callable) while on: dotted handlers resolve to the LAST (`box.open` -> open). Same shape, opposite answers.",
+          "D5: {#if cond}, {:else if cond} and {#key exp} heads carry opaque svelte_raw_text with no `expression` node — nothing ever collected them. Every earlier fixture masked the hole because each condition member was ALSO read elsewhere; isolated conditions emitted zero edges."
         ],
         "nodeTypeCount": 74,
         "pendingDecisions": [
@@ -2495,7 +2552,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "74 types, 32 handled, 21 silent, 4 gaps, 9 decisions",
+            "detail": "74 types, 32 handled, 21 silent, 16 gaps, 9 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2609,11 +2666,15 @@
           "D3",
           "D4",
           "D5",
-          "D6"
+          "D6",
+          "D7",
+          "D8",
+          "D9",
+          "D10"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "191 types, 107 handled, 72 silent, 9 gaps, 6 decisions",
+            "detail": "191 types, 107 handled, 72 silent, 9 gaps, 10 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2655,18 +2716,31 @@
         ],
         "nodeTypeCount": 37,
         "pendingDecisions": [
-          "D10"
+          "D10",
+          "VSD11",
+          "VSD12",
+          "VSD13",
+          "VSD14",
+          "VSD15",
+          "VSD16",
+          "VSD17",
+          "VSD18",
+          "VSD19",
+          "VSD20",
+          "VSD21"
         ],
         "ruledDecisions": [
           "D1",
           "D2",
           "D3",
           "D4",
-          "D5"
+          "D5",
+          "D10",
+          "D11"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "37 types, 20 handled, 6 silent, 4 gaps, 6 decisions",
+            "detail": "37 types, 20 handled, 6 silent, 4 gaps, 19 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2776,9 +2850,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
+  "regeneratedAt": "2026-09-12T19:32:47.782Z",
+  "regeneratedAtCommit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Completeness spec (#419) — A–H sections per language",
-  "regeneratedAtCommit": "__LEGACY__",
-  "regeneratedAt": "pre-#761-gate"
+  "title": "Completeness spec (#419) — A–H sections per language"
 }
