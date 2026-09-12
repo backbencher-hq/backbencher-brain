@@ -151,7 +151,7 @@ analyzer via classifyEvidenceTier() so emission sites cannot forget it.
 | .NET | csharp + fsharp | — | PENDING -> #384 |
 | BEAM | elixir + erlang | — | PENDING -> #384 |
 | Mobile | dart + swift + kotlin + objc | — | PENDING -> #384 |
-| Systems | c + cpp + rust + go + zig | F9 systems-cluster (polyglot c/cpp/rust/go/zig project via real CLI) | GATED (M14.0.F9: symbols, imports, cross-language c→cpp edge verified) |
+| Systems | c + cpp + rust + go + zig | SC1 systems-cluster (polyglot c/cpp/rust/go/zig project via real CLI) | GATED (M14.0.SC1: symbols, imports, cross-language c→cpp edge verified; cited as M14.0.F9 until M49 W8, when a second producer was found to be overwriting this evidence) |
 
 Issue back-references: Matrix 1b payloads -> #383; kotlin wasm fields -> #382;
 cluster fixtures -> #384; overrides/contains/exports pins -> #381.
@@ -226,7 +226,7 @@ self-declaration of "done" is never sufficient (M13 lesson, re-learned).
 
 Delegated JVM/web sign-off (2026-08-28): the owner authorized the agent to sign on the owner's behalf. The tracked record is `docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md`; supporting spot-check packs remain in `.probe/m14/`. This is delegated verification, not a claim of personal owner execution.
 
-Delegated systems sign-off (2026-08-29): the owner authorized the agent to work on the systems-family closure. The tracked record is `docs/M14-SYSTEMS-DELEGATED-SIGNOFF.md` for issues #259–#263 (c/cpp/rust/go/zig). Family gates supporting it: M14.0.F9 systems-cluster e2e, family differential floors (jq/fmt/ripgrep/go-tools/zig all 0/0), completeness A–H 8/8 for all five, CC1 systems consistency. This is delegated verification, not a claim of personal owner execution.
+Delegated systems sign-off (2026-08-29): the owner authorized the agent to work on the systems-family closure. The tracked record is `docs/M14-SYSTEMS-DELEGATED-SIGNOFF.md` for issues #259–#263 (c/cpp/rust/go/zig). Family gates supporting it: M14.0.SC1 systems-cluster e2e, family differential floors (jq/fmt/ripgrep/go-tools/zig all 0/0), completeness A–H 8/8 for all five, CC1 systems consistency. This is delegated verification, not a claim of personal owner execution.
 
 Delegated ManagedOO sign-off (2026-08-31): the owner authorized the agent to work on the ManagedOO-family closure. The tracked record is `docs/M14-OO-DELEGATED-SIGNOFF.md` for issues #264 (csharp + dart), #266 (swift), #267 (objc), #268 (php), and the ruby family tail. Family gates supporting it: six family differential floors (powershell:csharp 1366, proxicall:dart 1620, swift-nio:swift 1935, Clyde:objc 207, phpunit:php 834, rake:ruby 1174 — all 100% covered / 0 missing / 0 unexplained), completeness A–H 8/8 for all six, 38 ManagedOO mutants caught (172/172 total), CC1 OO consistency (ranges/kinds/complexity), F3 fixture evidence restored to full 20-language coverage. The closure deep review found and fixed a REAL family defect: objc + swift emitted 0-based columns (all other gated analyzers are 1-based) — fixed in both analyzers and permanently pinned by the new `oo-ranges-1based` CC1 check. This is delegated verification, not a claim of personal owner execution.
 

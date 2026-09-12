@@ -55,6 +55,11 @@ function main() {
   // Without this, R2 can pass on a census that describes a tree no commit
   // ever contained (verified: the census committed at HEAD was dirty-derived).
   check("G6 census-lineage gate passes live", runGate("script/m49/verify-census-lineage.ts"))
+  // G8: every evidence identity has exactly one producer, and every id the
+  // honesty gate requires is produced by a gate that runs in the battery. An
+  // unwired producer's artifact is overwritten by whoever runs next — which is
+  // how three strengthened gates silently lost their evidence (W8).
+  check("G8 evidence-identity gate passes live", runGate("script/m49/verify-evidence-identity.ts"))
 
   // Every tracked language folder must be fully processed before closure:
   // a folder counts as closed only when its review explicitly states RESOLVED

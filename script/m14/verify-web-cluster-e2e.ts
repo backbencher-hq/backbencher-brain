@@ -77,7 +77,10 @@ async function main() {
   // evidence
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
-    issueId: "M14.0.F8",
+    // M49 W8: this gate used to emit `M14.0.F8`, which belongs to the
+    // corpus-census gate (the ledger's F8 definition and the honesty gate's own
+    // F8 comment). It destroyed that evidence on every battery run. Own id now.
+    issueId: "M14.0.WC1",
     title: "Web-cluster e2e gate",
     claimLevel: "L1",
     layers: ["cluster-e2e"],

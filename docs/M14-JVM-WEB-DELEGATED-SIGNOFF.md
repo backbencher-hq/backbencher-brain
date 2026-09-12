@@ -28,7 +28,11 @@ The delegated review relied on the following passing machine checks and their re
 - `M14.0.F3.json` — fixture evidence.
 - `M14.0.F4.json` — mutation evidence.
 - `M14.0.F5.json` — differential evidence.
-- `M14.0.F8.json` — web-cluster E2E evidence.
+- `M14.0.WC1.json` — web-cluster E2E evidence.
+  *Cited as `M14.0.F8.json` until 2026-09-12: `M14.0.F8` belongs to the
+  corpus-census gate (the ledger's F8 definition and `verify-honesty.ts`'s own
+  F8 comment), so every `audit:cluster` run destroyed the census evidence. It now
+  has its own id (M49 W8; see `script/m49/verify-evidence-identity.ts`).*
 - `M14.0.SPEC.json` — completeness A–H evidence.
 - `M14.CC1.json` — cross-language consistency evidence.
 

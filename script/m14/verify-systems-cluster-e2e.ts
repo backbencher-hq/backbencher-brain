@@ -91,7 +91,13 @@ async function main() {
   // evidence
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
-    issueId: "M14.0.F9",
+    // M49 W8: this gate used to emit `M14.0.F9`, which the ledger's
+    // gate-strengthening section and the honesty gate's F9 comment assign to the
+    // defect-class probe battery. Two files claiming one identity meant the last
+    // runner destroyed the other's evidence, and the systems sign-off cites
+    // "M14.0.F9 systems-cluster e2e" — a claim whose evidence kept vanishing.
+    // That claim moves to M14.0.SC1 (docs updated in the same wave).
+    issueId: "M14.0.SC1",
     title: "Systems-cluster e2e gate",
     claimLevel: "L1",
     layers: ["cluster-e2e"],

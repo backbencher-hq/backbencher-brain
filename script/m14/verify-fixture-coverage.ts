@@ -259,14 +259,24 @@ async function main() {
           if (tt) specTypes.add(tt)
         }
       }
+      // M49 W8 FIX: `specTypes` was constructed above and then NEVER READ — the
+      // documented contract is "a real grammar node/token, OR spec-classified
+      // (handled_verified / internal_silent / gap / design_decision), OR an
+      // allowlisted non-node literal", but the loop below only ever consulted
+      // the grammar set and the allowlist. Every literal the SPEC classifies but
+      // the grammar enumeration does not expose was therefore reported as DEAD
+      // CODE. The gate had been dormant (not wired into the battery), so the
+      // false positives had never been seen — they are why it reported 24 dead
+      // literals across five languages on its first wired run.
       const allow = LITERAL_ALLOWLIST[lang] ?? new Set()
       for (const lit of found) {
         if (grammarTypes.has(lit)) continue
+        if (specTypes.has(lit)) continue
         if (lit === "ERROR" || lit === "MISSING") continue // tree-sitter synthetic nodes (parse-error probes)
         if (allow.has(lit)) continue
-        // Not a grammar node/token, not synthetic, not allowlisted: a
-        // comparison that can never fire against a parse tree — DEAD CODE,
-        // the exact method_elem/relative_scope bug class.
+        // Not a grammar node/token, not spec-classified, not synthetic, not
+        // allowlisted: a comparison that can never fire against a parse tree —
+        // DEAD CODE, the exact method_elem/relative_scope bug class.
         deadLiterals.push(lit)
       }
       deadLiterals.sort()
