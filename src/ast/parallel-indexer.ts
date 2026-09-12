@@ -466,7 +466,7 @@ export interface IndexPhaseTimings {
 
 /** M21.I2: one measured post-processing phase with its outcome. */
 export interface PostProcessingPhaseTiming {
-  name: "relationships" | "enrichment" | "gravity" | "taint" | "health" | "integrity"
+  name: "relationships" | "enrichment" | "gravity" | "taint" | "health" | "integrity" | "analyze"
   ms: number
   outcome: "ok" | "failed" | "skipped"
 }
@@ -3840,6 +3840,23 @@ export async function runPostProcessing(
     } catch (healthErr) {
       recordPhase("integrity", Date.now() - _t, "failed")
       log.warn("post-index health check failed", { error: healthErr })
+    }
+
+    // M50.A2 (#764): refresh planner statistics after every full post-pass.
+    // All bulk writes are done by this point, so the stats describe the final
+    // row counts. Without this, the query planner guesses — and the measured
+    // guess on real DBs was a full brain_symbol scan per graph hop (~15s per
+    // bb_graph call; bb_patterns timed out at 45s). With sqlite_stat1 present
+    // the same hops are sub-millisecond. Measured one-time cost: ~8s on a
+    // 4.8GB/168k-symbol DB, fully covered by the single-flight index lock.
+    _t = Date.now()
+    try {
+      rawDb.exec("ANALYZE")
+      recordPhase("analyze", Date.now() - _t, "ok")
+      _log.log(`  ✓ planner stats (ANALYZE) in ${Date.now()-_t}ms`)
+    } catch (analyzeErr: any) {
+      recordPhase("analyze", Date.now() - _t, "failed")
+      log.warn("planner stats (ANALYZE) failed", { error: analyzeErr?.message })
     }
   } catch (err) {
     log.warn("failed to compute project health or resolve taints", { error: err })

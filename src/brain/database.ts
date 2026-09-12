@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -73,7 +73,21 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       migrateSchemaColumns(raw)
       // M52.P1 (#721): the bb_health covering index must exist on pre-existing
       // DBs too — they are exactly the large, long-lived indexes that need it.
-      ensureHealthIndexes(raw)
+      // M50.A2 (#764): it also self-heals core traversal indexes; if any was
+      // actually recreated, existing planner stats are stale for it, so stats
+      // are rebuilt immediately (repair-path ANALYZE only — steady state
+      // remains absence-only, see ensurePlannerStats).
+      const idxHeal = ensureHealthIndexes(raw)
+      if (idxHeal.recreated > 0) {
+        try {
+          raw.exec("ANALYZE")
+        } catch {}
+      }
+      // M50.A2 (#764): legacy DBs without sqlite_stat1 get planner statistics
+      // built once at open (absence-only; presence costs zero). The measured
+      // alternative was the planner scanning every brain_symbol row per graph
+      // hop on user machines.
+      ensurePlannerStats(raw)
       // M54.P1 (#727): heal FK-OFF-era orphan rows (bun wrote them for years;
       // measured 4,154 on the real repo) BEFORE any write path runs under the
       // now-enabled enforcement. Idempotent; conforming DBs delete 0 rows.

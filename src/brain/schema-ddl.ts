@@ -348,10 +348,65 @@ export function ensureAnnotationTable(raw: any): void {
  * this index most. try/catch: a read-only or transient open must never fail
  * because of an index creation.
  */
-export function ensureHealthIndexes(raw: any): void {
+export function ensureHealthIndexes(raw: any): { recreated: number } {
   try {
     raw.exec(`CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension)`)
   } catch {}
+  // M50.A2 (#764): core traversal indexes are self-healing too. A DB that lost
+  // a structural index (interrupted migration, manual surgery, old-tooling
+  // write) degrades to full scans of brain_symbol per graph hop — the same
+  // symptom class as missing planner stats. IF NOT EXISTS costs one
+  // sqlite_master lookup per name at open; steady state is free.
+  const coreIdx: Array<[string, string]> = [
+    ["brain_symbol_owner_idx", "brain_symbol(owner_symbol_id)"],
+    ["brain_symbol_project_idx", "brain_symbol(project_id)"],
+    ["brain_symbol_name_idx", "brain_symbol(name)"],
+    ["brain_rel_proj_type_target_idx", "brain_relationship(project_id, relationship_type, target_symbol_id)"],
+    ["brain_rel_source_idx", "brain_relationship(source_symbol_id)"],
+    ["brain_rel_target_idx", "brain_relationship(target_symbol_id)"],
+    ["brain_file_project_idx", "brain_file(project_id)"],
+    ["brain_file_path_idx", "brain_file(path)"],
+  ]
+  let recreated = 0
+  for (const [name, cols] of coreIdx) {
+    try {
+      const before = raw.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name=?").get(name)
+      raw.exec(`CREATE INDEX IF NOT EXISTS ${name} ON ${cols}`)
+      if (!before) recreated++
+    } catch {}
+  }
+  return { recreated }
+}
+
+/**
+ * M50.A2 (#764): planner-truth healing. The SQLite query planner only makes
+ * good index choices when sqlite_stat1 exists; on real user DBs that never
+ * saw an ANALYZE, the graph owner-cascade subquery was planned as a
+ * brain_symbol_project_idx scan over every symbol (measured: 117-126ms per
+ * traversal hop; ~15s per bb_graph call; bb_patterns timed out at 45s). With
+ * stats present the same hop is 0.3-0.6ms — a 200-400x error, purely from a
+ * missing planner input, not a missing index.
+ *
+ * Absence-only policy: when sqlite_stat1 is MISSING (legacy DBs, DBs written
+ * by runtimes that skip ANALYZE), run ANALYZE once at open. When it EXISTS we
+ * do nothing — no per-call scans, no re-analyze churn. Fresh statistics for
+ * growing indexes are handled by the `analyze` post-processing phase
+ * (parallel-indexer), which re-runs ANALYZE after every full index. If a real
+ * ANALYZE is undesirable here (huge DB, busy disk), set BB_SKIP_ANALYZE=1.
+ * Idempotent; measured one-time cost ~8s on a 4.8GB/168k-symbol DB, paid on
+ * the first open only.
+ */
+export function ensurePlannerStats(raw: any): { analyzed: boolean } {
+  try {
+    const hasStats = raw.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sqlite_stat1'").get()
+    if (hasStats) return { analyzed: false }
+    if (process.env.BB_SKIP_ANALYZE === "1") return { analyzed: false }
+    raw.exec("ANALYZE")
+    return { analyzed: true }
+  } catch {
+    // Readonly or locked DB: never fail a read because stats are missing.
+    return { analyzed: false }
+  }
 }
 
 /**
