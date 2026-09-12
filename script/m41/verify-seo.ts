@@ -87,7 +87,7 @@ const htmlName = (r: string): string => (r === "" ? "index" : r.slice(1))
 // shrunken sitemap — this fails instead. And a page added to the site without
 // being onboarded here fails too: a new route gets truth/SEO coverage
 // deliberately, never by accident.
-const REQUIRED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/faq", "/troubleshooting", "/contact", "/privacy", "/terms"]
+const REQUIRED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/editors", "/faq", "/troubleshooting", "/contact", "/privacy", "/terms"]
 const discoveryMissing = REQUIRED_ROUTES.filter((r) => !REAL_ROUTES.includes(r))
 const discoveryExtra = REAL_ROUTES.filter((r) => !REQUIRED_ROUTES.includes(r))
 check("S1: route discovery finds every required page", discoveryMissing.length === 0, discoveryMissing.join(" "))
