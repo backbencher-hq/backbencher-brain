@@ -90,11 +90,47 @@ pass("evidence presence/schema/mutation-backing for F1-F6")
   }
 }
 
-// 2c. F7/F8/F9 (strengthened-gate set): same all-green deep-check as F6.
+// 2c. F7/F8/F9 (strengthened-gate set): all-green deep-check AND IDENTITY.
 //   F7 analyzer-hygiene: no dead code classes in any gated analyzer
 //   F8 corpus-census: every real-corpus parse-tree type spec-classified
 //   F9 probe battery: historical defect classes asserted on analyzer AND oracle
-for (const id of ["M14.0.F7", "M14.0.F8", "M14.0.F9"]) {
+//
+// M49 W8 (2026-09-12). The all-green deep-check below was satisfied by the
+// WRONG artifacts for waves. Two other gates per id also emitted
+// `issueId: "M14.0.F7"/"F8"/"F9"` — pipeline e2e, web-cluster e2e and
+// systems-cluster e2e — and those three ARE in the battery while the three
+// strengthened gates were not, so every full run overwrote the hygiene / census
+// / probe-battery evidence with unrelated content. This loop then deep-checked
+// whichever file happened to be there and reported the strengthened gates green.
+// The gate believed it was verifying three gates and was verifying none of them.
+//
+// So identity is asserted, not assumed: each artifact's `layers` is its own
+// statement of which gate produced it. A collision (or any future re-labelling)
+// fails here loudly instead of passing vacuously. The three cluster/pipeline
+// gates now carry their own ids (M14.0.PIPE / WC1 / SC1) and are checked as
+// themselves in 2d.
+const STRENGTHENED_GATES: { id: string; layer: string; what: string }[] = [
+  { id: "M14.0.F7", layer: "hygiene", what: "analyzer-hygiene gate" },
+  { id: "M14.0.F8", layer: "census", what: "corpus-census gate" },
+  { id: "M14.0.F9", layer: "probes", what: "defect-class probe battery" },
+]
+for (const gate of STRENGTHENED_GATES) {
+  const p = path.join(M14, "results", `${gate.id}.json`)
+  if (!fs.existsSync(p)) { fail(`missing evidence file for ${gate.id} (${gate.what})`); continue }
+  const ev = JSON.parse(fs.readFileSync(p, "utf8"))
+  const layers: string[] = ev.layers ?? []
+  if (!layers.includes(gate.layer)) {
+    fail(`${gate.id} was NOT produced by the ${gate.what}: its layers are [${layers.join(", ")}], expected to include "${gate.layer}" — another gate overwrote its evidence (evidence-identity collision)`)
+    continue
+  }
+  const bad = (ev.checks ?? []).filter((c: any) => c.status !== "pass")
+  if (bad.length) fail(`${gate.id} has ${bad.length} non-passing check(s): ${bad.map((c: any) => c.id).join(", ")}`)
+  else if (!ev.checks?.length) fail(`${gate.id} carries zero checks — the gate never ran`)
+  else pass(`${gate.id} all-green (${ev.checks.length} checks)`)
+}
+
+// 2d. Cluster / pipeline e2e gates, on their own identities.
+for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1"]) {
   const p = path.join(M14, "results", `${id}.json`)
   if (!fs.existsSync(p)) { fail(`missing evidence file for ${id}`); continue }
   const ev = JSON.parse(fs.readFileSync(p, "utf8"))

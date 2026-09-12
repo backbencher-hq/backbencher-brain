@@ -32,8 +32,12 @@ recorded limitations:
 - `M14.0.F4.json` — mutation evidence (134/134 caught, incl. 4 zig + family mutants).
 - `M14.0.F5.json` — differential evidence (family floors: jq 1692/1692, fmt 145/145,
   ripgrep 1948/1948, go-tools 822/822, zig 3731/3731 — all 0 missing / 0 unexplained).
-- `M14.0.F9.json` — systems-cluster E2E evidence (polyglot c/cpp/rust/go/zig project
+- `M14.0.SC1.json` — systems-cluster E2E evidence (polyglot c/cpp/rust/go/zig project
   through the real CLI: symbols, imports, cross-language c→cpp edge verified).
+  *Cited as `M14.0.F9.json` until 2026-09-12: that identity had two producers, so
+  every `audit:cluster-systems` run overwrote the defect-class probe battery's
+  evidence and vice versa — this claim's evidence kept vanishing. It now has its
+  own id (M49 W8; see `script/m49/verify-evidence-identity.ts`).*
 - `M14.0.SPEC.json` — completeness A–H evidence (all five systems languages 8/8).
 - `M14.CC1.json` — cross-language consistency evidence (JVM + systems equivalents:
   1-based ranges, kind consistency, per-symbol complexity).

@@ -129,7 +129,13 @@ async function main() {
   // evidence
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
-    issueId: "M14.0.F7",
+    // M49 W8: this gate used to emit `M14.0.F7`, which belongs to the
+    // analyzer-hygiene gate. Because this one IS in the battery and that one was
+    // not, every full run overwrote the hygiene evidence with pipeline content,
+    // and the honesty gate's F7 deep-check then passed against the wrong
+    // artifact. Each evidence identity has exactly one producer (enforced by
+    // script/m49/verify-evidence-identity.ts).
+    issueId: "M14.0.PIPE",
     title: "Pipeline end-to-end gate",
     claimLevel: "L1",
     layers: ["pipeline-e2e"],
