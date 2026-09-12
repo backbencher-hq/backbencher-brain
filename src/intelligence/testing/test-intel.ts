@@ -25,6 +25,46 @@ const EVIDENCE_CONFIDENCE: Record<TestEvidenceKind, number> = {
 
 const PROD_SYMBOL_TYPES = "('function','method','class','interface','struct','enum')"
 
+// M50.A2 residual — what counts as a test SOURCE.
+//
+// The indexer's `is_test_file` flag matches directory segments (…/spec/…) with
+// no regard for file type, so on a real repo data fixtures are flagged as
+// tests: 30 files, every one of them JSON (script/m14/spec/*-completeness.json,
+// validation/m14/results/M14.0.SPEC.json). Trusting the flag alone made this
+// engine report a "30 test files / 5,196 test symbols" corpus that is entirely
+// data, and made every production symbol look "untested" while the engine had
+// classified zero call/reference/import edges (all 4,651 relationships from
+// those files are `contains`).
+//
+// A test source must therefore be code. Non-code flagged files are excluded
+// from the test corpus here, and the exclusion is DECLARED in provenance.unknowns
+// so a smaller corpus is never silent. The indexer-side misclassification is a
+// separate, reported finding (it needs a re-index and touches the pattern/
+// exclusion surfaces owned elsewhere).
+const NON_CODE_TEST_LANGUAGES = [
+  "json", "jsonc", "json5", "yaml", "yml", "toml", "ini", "md", "markdown",
+  "txt", "csv", "tsv", "xml", "svg", "lock", "log", "sql", "graphql", "proto",
+]
+
+/** SQL fragment: exclude non-code languages from a test-corpus predicate. */
+export function codeTestClause(alias: string): { sql: string; params: string[] } {
+  const col = alias ? `${alias}.language` : "language"
+  return {
+    sql: ` AND LOWER(COALESCE(${col}, '')) NOT IN (${NON_CODE_TEST_LANGUAGES.map(() => "?").join(", ")})`,
+    params: [...NON_CODE_TEST_LANGUAGES],
+  }
+}
+
+/** Human-readable provenance token for a corpus that produced no evidence. */
+const NO_EVIDENCE_UNKNOWN =
+  "no-test-evidence-edges: no calls/references/imports relationship originates from a code test file, so every production symbol is reported untested — this is an absence of evidence, not evidence of absence"
+
+export function nonCodeUnknown(nonCodeTestFiles: number): string | null {
+  return nonCodeTestFiles > 0
+    ? `non-code-test-files-excluded: ${nonCodeTestFiles} is_test_file path(s) are data/config formats, not test sources, and were excluded from the test corpus`
+    : null
+}
+
 type ProdRow = {
   id: string
   name: string
@@ -78,25 +118,42 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
       "WHERE s.project_id = ? AND COALESCE(f.is_test_file,0) = 0 AND s.symbol_type IN " + PROD_SYMBOL_TYPES + scopeSql,
   ).all(projectId, ...scopeParams) as ProdRow[]
 
-  const testEdges = raw.prepare(
+  const fileCode = codeTestClause("")
+  const flaggedTestFiles = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=? AND COALESCE(is_test_file,0)=1").get(projectId) as { c: number }).c
+  const testFileCount = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=? AND COALESCE(is_test_file,0)=1" + fileCode.sql).get(projectId, ...fileCode.params) as { c: number }).c
+  const symCode = codeTestClause("f")
+  const testSymCount = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND COALESCE(f.is_test_file,0)=1" + symCode.sql).get(projectId, ...symCode.params) as { c: number }).c
+  const nonCodeTestFiles = Math.max(0, flaggedTestFiles - testFileCount)
+
+  // M50.A2 residual: the edge query scans the whole relationship table to find
+  // rows whose SOURCE symbol lives in a test file. When no code test source
+  // exists the answer is provably empty (same predicate, same definition), so
+  // the scan is skipped entirely instead of paying 370ms to prove zero.
+  const edgeCode = codeTestClause("tf")
+  const testEdges = testFileCount === 0 ? ([] as TestEdgeRow[]) : (raw.prepare(
     "SELECT r.target_symbol_id AS targetId, r.relationship_type AS relType, " +
       "ts.id AS testSymId, ts.name AS testSymName, tf.relative_path AS testFile " +
       "FROM brain_relationship r " +
       "JOIN brain_symbol ts ON ts.id = r.source_symbol_id " +
       "JOIN brain_file tf ON tf.id = ts.file_id AND COALESCE(tf.is_test_file,0) = 1 " +
-      "WHERE r.project_id = ? AND r.target_symbol_id IS NOT NULL",
-  ).all(projectId) as TestEdgeRow[]
+      "WHERE r.project_id = ? AND r.target_symbol_id IS NOT NULL" + edgeCode.sql,
+  ).all(projectId, ...edgeCode.params) as TestEdgeRow[])
 
-  const testFileCount = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=? AND COALESCE(is_test_file,0)=1").get(projectId) as { c: number }).c
-  const testSymCount = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND COALESCE(f.is_test_file,0)=1").get(projectId) as { c: number }).c
-
+  // Path predicates are per FILE, not per symbol (~12 symbols per file here), so
+  // resolve each distinct path once — the same memo the orphan engine uses.
+  const noisePathMemo = new Map<string, boolean>()
+  const isNoisePath = (file: string): boolean => {
+    let v = noisePathMemo.get(file)
+    if (v === undefined) { v = AnalysisExclusions.isHardNoisePath(file); noisePathMemo.set(file, v) }
+    return v
+  }
   const filtered = prodRows.filter(
     (r) =>
-      !AnalysisExclusions.isHardNoisePath(r.file) &&
+      !isNoisePath(r.file) &&
       !AnalysisExclusions.isNoiseSymbolName(r.name) &&
       (includeMethods || r.symbolType !== "method"),
   )
-  return { filtered, testEdges, testFileCount, testSymCount }
+  return { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles }
 }
 
 // MODE: mapping — production symbols -> test evidence, keyed by RESOLVED symbol
@@ -104,12 +161,14 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
 export async function testMapping(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestMappingReport> {
   const includeMethods = options.includeMethods ?? true
   const maxResults = options.maxResults ?? 1000
-  const { filtered, testEdges, testFileCount, testSymCount } = await loadGraph(projectId, includeMethods, options.filePath)
+  const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles } = await loadGraph(projectId, includeMethods, options.filePath)
 
   const linksByTarget = new Map<string, TestLink[]>()
+  let classifiedEdges = 0
   for (const e of testEdges) {
     const kind = classify(e.relType)
     if (!kind) continue
+    classifiedEdges++
     if (!linksByTarget.has(e.targetId)) linksByTarget.set(e.targetId, [])
     linksByTarget.get(e.targetId)!.push({
       testSymbolId: e.testSymId,
@@ -139,9 +198,14 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
   const tested = entries.filter((e) => e.links.length > 0).length
   entries.sort((a, b) => b.links.length - a.links.length || b.complexity - a.complexity)
 
+  const mappingUnknowns: string[] = []
+  if (classifiedEdges === 0) mappingUnknowns.push(NO_EVIDENCE_UNKNOWN)
+  const mappingNonCode = nonCodeUnknown(nonCodeTestFiles)
+  if (mappingNonCode) mappingUnknowns.push(mappingNonCode)
+
   return {
     entries: entries.slice(0, maxResults),
-    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-intel@intelligence", engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Static relationships do not prove runtime execution or line coverage."] }),
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-intel@intelligence", engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Static relationships do not prove runtime execution or line coverage."], unknowns: mappingUnknowns }),
     summary: {
       productionSymbols: entries.length,
       testedSymbols: tested,
@@ -153,44 +217,81 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
 }
 
 // MODE: gaps — untested / weakly-tested production symbols, risk-ranked.
+//
+// M50.A2 residual: this used to call `testMapping(..., {maxResults: 100000})`,
+// which materialized EVERY production symbol with its links array, then built a
+// gap object (with its recommendation string) for every one of them, sorted
+// ~30k of those, and sliced to 200. Same defect shape as bb_patterns/
+// bb_security/bb_analyze complexity: the engine built far more than it can
+// return. Candidates are now lightweight sort keys and the finding objects are
+// built only for the returned page. The two-stage stable sort reproduces the
+// previous ordering exactly (previous first key: links.length desc,
+// complexity desc; second key: riskScore desc, file asc), so the returned page
+// is byte-identical.
 export async function testGaps(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestGapReport> {
   const maxResults = options.maxResults ?? 200
-  const mapping = await testMapping(projectId, { ...options, maxResults: 100000 })
+  const includeMethods = options.includeMethods ?? true
+  const { filtered, testEdges, nonCodeTestFiles } = await loadGraph(projectId, includeMethods, options.filePath)
 
-  const gaps: TestGap[] = []
-  for (const e of mapping.entries) {
-    let category: TestGap["category"] | null = null
-    if (e.strongestEvidence === "none") category = "no_evidence"
-    else if (e.strongestEvidence === "reference" || e.strongestEvidence === "import") category = "weak_evidence"
-    if (!category) continue
-
-    const riskScore = Math.round((e.complexity * 2 + e.gravity * 10) * 100) / 100
-    gaps.push({
-      symbolId: e.symbolId,
-      name: e.name,
-      symbolType: e.symbolType,
-      file: e.file,
-      line: e.line,
-      category,
-      complexity: e.complexity,
-      gravity: e.gravity,
-      riskScore,
-      recommendation:
-        category === "no_evidence"
-          ? "No test references this symbol; add a direct test."
-          : "Only indirect/import evidence; add a direct assertion-bearing test.",
-    })
+  // One pass over the edges: classify once, count per target (the count is the
+  // previous implementation's `links.length`, needed to reproduce its order).
+  const anyEvidence = new Set<string>()
+  const hasDirect = new Set<string>()
+  const linkCount = new Map<string, number>()
+  let classifiedEdges = 0
+  for (const e of testEdges) {
+    const kind = classify(e.relType)
+    if (!kind) continue
+    classifiedEdges++
+    anyEvidence.add(e.targetId)
+    linkCount.set(e.targetId, (linkCount.get(e.targetId) ?? 0) + 1)
+    if (kind === "direct_call") hasDirect.add(e.targetId)
   }
 
-  gaps.sort((a, b) => b.riskScore - a.riskScore || a.file.localeCompare(b.file))
+  const candidates = filtered
+    .filter((s) => !hasDirect.has(s.id))
+    .map((s) => ({
+      s,
+      links: linkCount.get(s.id) ?? 0,
+      category: (anyEvidence.has(s.id) ? "weak_evidence" : "no_evidence") as TestGap["category"],
+      riskScore: Math.round((s.complexity * 2 + s.gravity * 10) * 100) / 100,
+    }))
+  // Stage 1 reproduces testMapping's entries order; stage 2 the gap ranking.
+  candidates.sort((a, b) => b.links - a.links || b.s.complexity - a.s.complexity)
+  candidates.sort((a, b) => b.riskScore - a.riskScore || a.s.file.localeCompare(b.s.file))
+
   const byCategory: Record<string, number> = {}
-  for (const g of gaps) byCategory[g.category] = (byCategory[g.category] ?? 0) + 1
-  const highRisk = gaps.filter((g) => g.riskScore >= 10).length
+  let highRisk = 0
+  for (const c of candidates) {
+    byCategory[c.category] = (byCategory[c.category] ?? 0) + 1
+    if (c.riskScore >= 10) highRisk++
+  }
+
+  const gaps: TestGap[] = candidates.slice(0, maxResults).map((c) => ({
+    symbolId: c.s.id,
+    name: c.s.name,
+    symbolType: c.s.symbolType,
+    file: c.s.file,
+    line: c.s.line,
+    category: c.category,
+    complexity: c.s.complexity,
+    gravity: c.s.gravity,
+    riskScore: c.riskScore,
+    recommendation:
+      c.category === "no_evidence"
+        ? "No test references this symbol; add a direct test."
+        : "Only indirect/import evidence; add a direct assertion-bearing test.",
+  }))
+
+  const gapUnknowns: string[] = []
+  if (classifiedEdges === 0) gapUnknowns.push(NO_EVIDENCE_UNKNOWN)
+  const gapNonCode = nonCodeUnknown(nonCodeTestFiles)
+  if (gapNonCode) gapUnknowns.push(gapNonCode)
 
   return {
-    gaps: gaps.slice(0, maxResults),
-    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-gaps@intelligence", engineVersion: "m10.02", projectId, source: "static-test-mapping", limitations: ["A missing static link does not prove that runtime coverage is absent."], truncated: gaps.length > maxResults }),
-    summary: { total: gaps.length, byCategory, highRisk },
+    gaps,
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-gaps@intelligence", engineVersion: "m10.02", projectId, source: "static-test-mapping", limitations: ["A missing static link does not prove that runtime coverage is absent."], truncated: candidates.length > maxResults, unknowns: gapUnknowns }),
+    summary: { total: candidates.length, byCategory, highRisk },
   }
 }
 

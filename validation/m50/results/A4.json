@@ -1,6 +1,6 @@
 {
   "probe": "M50.A4-adoption",
-  "at": "2026-09-12T15:57:13.789Z",
+  "at": "2026-09-12T17:46:27.078Z",
   "issue": 766,
   "fixture": {
     "dir": true,
@@ -22,7 +22,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"4bca5651e81cd0a3fbf711d06f2b7a5a649414c1:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"5633e7db477a046986a3850a1a608e20a34881c6:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: unknown or irrelevant options: query (bb_cross_language)",
@@ -46,7 +46,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"4bca5651e81cd0a3fbf711d06f2b7a5a649414c1:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"5633e7db477a046986a3850a1a608e20a34881c6:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: unknown or irrelevant options: target, direction (bb_graph)",
@@ -72,7 +72,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"root\": {\n    \"id\": \"4bca5651e81cd0a3fbf711d06f2b7a5a649414c1:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarget\",\n    \"symbolType\": \"function\""
+      "text": "{\n  \"root\": {\n    \"id\": \"5633e7db477a046986a3850a1a608e20a34881c6:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarget\",\n    \"symbolType\": \"function\""
     }
   ],
   "decidability": {
@@ -309,7 +309,7 @@
   },
   "gate": "M50.A4",
   "milestone": "M50",
-  "commit": "afbbdd36fd08d9c404720f6ea38e16748c03e1df",
+  "commit": "8f4aaec16514a956590fb70ff68d87531835b4de",
   "checks": 12,
   "passed": 12,
   "failed": 0,
