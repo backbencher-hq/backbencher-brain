@@ -55,6 +55,155 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const pendingOverrides: Array<{ cls: string; method: string; params: string }> = []
     const classBases = new Map<string, string[]>()
 
+    // CP1 (cpp review) bare-read resolution sets. C++ has no runtime —
+    // every bare `identifier` that names a file-visible VALUE is a Uses
+    // edge (the analyzer previously emitted none at all: `return g;`
+    // produced zero edges). Bounded like the C family: ownerless
+    // file-scope Variable/Function/EnumMember/Constant, namespace members
+    // (visible inside their namespace or via using-directives), class
+    // members (visible inside member functions), and file-scope
+    // using-declarations. Qualified reads (ns::x), types, and anything
+    // locally bound stay silent — recorded limitations, not fabrications.
+    const fileScopeValues = new Set<string>()
+    const namespaceValues = new Map<string, Set<string>>()
+    const classMembers = new Map<string, Set<string>>()
+    const usedNamespaces = new Set<string>()
+    // Out-of-line definitions (`void Foo::bar() {}`) resolve their scope
+    // AFTER the walk: class scope -> member, known namespace -> namespaced
+    // value, unknown (header-defined) scope -> file-visible value.
+    const pendingQualified: Array<{ name: string; scope: string }> = []
+    {
+      const pre: Array<{ n: Node; ns: string[]; inFn: boolean; inClass: string | null }> = [
+        { n: rootNode, ns: [], inFn: false, inClass: null },
+      ]
+      const addValue = (name: string, ns: string[], cls: string | null): void => {
+        if (!name) return
+        if (cls) {
+          let s = classMembers.get(cls)
+          if (!s) { s = new Set(); classMembers.set(cls, s) }
+          s.add(name)
+          return
+        }
+        if (ns.length > 0) {
+          const top = ns[ns.length - 1]
+          let s = namespaceValues.get(top)
+          if (!s) { s = new Set(); namespaceValues.set(top, s) }
+          s.add(name)
+          return
+        }
+        fileScopeValues.add(name)
+      }
+      const leftmostId = (n: Node | null): string | null => {
+        let cur = n
+        while (cur) {
+          if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+          cur = cur.childForFieldName("declarator") || cur.namedChild(0)
+        }
+        return null
+      }
+      while (pre.length > 0) {
+        const { n, ns, inFn, inClass } = pre.pop()!
+        const t = n.type
+        if (t === "namespace_definition") {
+          const nm = this.childText(n, "namespace_identifier")
+          if (nm && nm !== "anonymous") {
+            for (let i = n.namedChildCount - 1; i >= 0; i--) {
+              const c = n.namedChild(i)
+              if (c) pre.push({ n: c, ns: [...ns, nm], inFn, inClass })
+            }
+            continue
+          }
+        } else if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier") {
+          // CPPD1 parity (main walk + oracle): explicit/partial
+          // specialization names live in template_type
+          // (`FlatTupleElemBase<T, I>`), not a bare type_identifier.
+          // Without the fallback the members misattribute to the enclosing
+          // namespace/file scope (fmt differential: oracle-only file-scope
+          // Matcher + swapped generator member sets).
+          const nm =
+            this.childText(n, "type_identifier") ||
+            (() => {
+              const tt = this.findChild(n, "template_type")
+              if (!tt) return null
+              const tn =
+                tt.childForFieldName?.("name") ||
+                this.findChild(tt, "type_identifier") ||
+                this.findChild(tt, "qualified_identifier")
+              if (tn?.text) return tn.text
+              const lt = tt.text.indexOf("<")
+              return lt > 0 ? tt.text.slice(0, lt).trim() : null
+            })()
+          const body = this.findChild(n, "class_body") || this.findChild(n, "field_declaration_list")
+          if (nm && body) {
+            for (let i = n.namedChildCount - 1; i >= 0; i--) {
+              const c = n.namedChild(i)
+              if (c) pre.push({ n: c, ns, inFn, inClass: nm })
+            }
+            continue
+          }
+        } else if (t === "function_definition") {
+          // The defined name is a file-visible VALUE (callbacks read as
+          // values); out-of-line `Foo::bar` defines a MEMBER of Foo.
+          // CP2: macro-function shapes (`TEST(a, b) {...}`) define no real
+          // function — their names must not enter resolution (else the
+          // ERROR-recovered fragments of sibling macro sites read as uses).
+          const det = this.getFunctionDetails(n)
+          if (det && !det.isDestructor && !det.name.startsWith("operator") && !this.isMacroFunctionShape(n, det.name)) {
+            if (det.scope) pendingQualified.push({ name: det.name, scope: det.scope })
+            else if (!inFn) addValue(det.name, ns, inClass)
+          }
+          for (let i = n.namedChildCount - 1; i >= 0; i--) {
+            const c = n.namedChild(i)
+            if (c) pre.push({ n: c, ns, inFn: true, inClass })
+          }
+          continue
+        } else if (!inFn && (t === "declaration" || t === "field_declaration")) {
+          // File/namespace/class-scope value bindings (init_declarator
+          // leftmost + bare declarators). Function prototypes contribute
+          // their NAME (a callable value); their PARAMETERS never do (HC6
+          // class: prototype params are not file-scope declarations).
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "init_declarator" || c.type === "identifier" || c.type === "field_identifier" ||
+                c.type === "pointer_declarator" || c.type === "reference_declarator" || c.type === "array_declarator") {
+              const nm = leftmostId(c)
+              if (nm) addValue(nm, ns, inClass)
+            } else if (c.type === "function_declarator") {
+              const nm = leftmostId(c)
+              if (nm) addValue(nm, ns, inClass)
+            }
+          }
+        } else if (!inFn && t === "enumerator") {
+          const nm = this.childText(n, "identifier")
+          // Enum members are global constants (C parity) — visible anywhere.
+          if (nm) fileScopeValues.add(nm)
+        } else if (t === "using_declaration" && !inFn && !inClass) {
+          const txt = n.text
+          if (txt.indexOf("using namespace") !== -1) {
+            const tgt = this.findChild(n, "qualified_identifier") || this.findChild(n, "identifier")
+            if (tgt) usedNamespaces.add(tgt.text.split("::").filter(Boolean).join("::"))
+          } else {
+            const leaf = this.findChild(n, "qualified_identifier") || this.findChild(n, "identifier")
+            if (leaf) {
+              const segs = leaf.text.split("::").filter(Boolean)
+              if (segs.length > 0) fileScopeValues.add(segs[segs.length - 1])
+            }
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) pre.push({ n: c, ns, inFn, inClass })
+        }
+      }
+      // Flush out-of-line scopes now that every class/namespace is known.
+      for (const q of pendingQualified) {
+        if (classMembers.has(q.scope)) addValue(q.name, [], q.scope)
+        else if (namespaceValues.has(q.scope)) addValue(q.name, [q.scope], null)
+        else fileScopeValues.add(q.name)
+      }
+    }
+
     interface Scope {
       node: Node
       name: string
@@ -64,6 +213,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       isAbstract: boolean
       symbolRef?: ASTEngine.UniversalSymbol
       friends?: string[]
+      // CP1 (cpp review): names bound by this function scope (parameters at
+      // entry + local declaration bindings in walk order) — a shadowing local
+      // suppresses the file/member read. Flow-sensitive like the C family:
+      // reads before any binding still resolve outward.
+      locals?: Set<string>
     }
 
     const scopeStack: Scope[] = []
@@ -75,6 +229,206 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const stack: StackItem[] = [{ node: rootNode }]
+
+    // CP1 helpers (bare-read discipline). All name-level; mirrors the C
+    // family's CGD-gates where they exist, documented where C++ differs.
+    const DECL_PARENT_TYPES = new Set([
+      "declaration", "field_declaration", "parameter_declaration",
+      "init_declarator", "function_declarator", "pointer_declarator",
+      "reference_declarator", "array_declarator", "abstract_pointer_declarator",
+      "abstract_array_declarator", "abstract_function_declarator",
+      "enumerator", "using_declaration", "alias_declaration",
+      "optional_parameter_declaration", "type_parameter_declaration",
+      // F6 audit: `template_type_parameter` / `template_value_parameter` are
+      // NOT types in the pinned tree-sitter-cpp grammar — template parameters
+      // parse as `type_parameter_declaration` (`typename T` / `class T`) and
+      // `parameter_declaration` / `optional_parameter_declaration`
+      // (`int N`, `int N = M`), all live in this set above. Removed.
+    ])
+    // Leftmost-identifier declarator walk (C isDeclaringChainLeftmost
+    // contract): `int x = g;` declares x, reads g.
+    const isDeclaringChainLeftmost = (node: Node): boolean => {
+      const p = node.parent
+      if (!p || !p.type.endsWith("declarator")) return false
+      let cur: Node | null = p
+      while (cur) {
+        if (cur.type === "identifier" || cur.type === "field_identifier") {
+          return cur.startIndex === node.startIndex
+        }
+        let next: Node | null = null
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type.endsWith("declarator") || c.type === "identifier" || c.type === "field_identifier")) {
+            next = c
+            break
+          }
+        }
+        cur = next
+      }
+      return false
+    }
+    const isDeclarationPosition = (node: Node): boolean => {
+      const p = node.parent
+      if (!p) return false
+      // Template value-parameter defaults: only the FIRST identifier child
+      // declares (`template <int N = M>`: N declares, M reads).
+      // F6 audit: only the real template-parameter nodes belong here. The
+      // former `template_type_parameter` / `template_value_parameter` names
+      // never occur in the pinned grammar; `parameter_declaration` (bare
+      // `int N`) is deliberately NOT listed — its single identifier needs no
+      // first-only rule, and `optional_parameter_declaration` (`int N = M`)
+      // gives N-declares / M-reads via the first-identifier rule below.
+      if (p.type === "optional_parameter_declaration" || p.type === "type_parameter_declaration") {
+        for (let k = 0; k < p.namedChildCount; k++) {
+          const c = p.namedChild(k)
+          if (c && (c.type === "identifier" || c.type === "field_identifier")) {
+            return c.startIndex === node.startIndex
+          }
+        }
+        return false
+      }
+      if (!DECL_PARENT_TYPES.has(p.type)) return false
+      if (p.type.endsWith("declarator") || p.type === "init_declarator") {
+        return isDeclaringChainLeftmost(node)
+      }
+      return true
+    }
+    // Directive text (CGD11 contract): identifiers under preproc_* with no
+    // code container between are textual (`#ifdef FEAT`), never reads.
+    // Macro bodies (preproc_arg blob) are likewise never walked as code.
+    const isPreprocText = (node: Node): boolean => {
+      let cur: Node | null = node.parent
+      while (cur) {
+        const t: string = cur.type
+        if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
+            t.includes("specifier") || t.includes("enumerator") || t.includes("compound") ||
+            t.includes("argument_list") || t.includes("init") || t.includes("expression") ||
+            t.includes("function_definition") || t.includes("class_body") || t.includes("field_declaration_list")) return false
+        if (t.startsWith("preproc_")) return true
+        cur = cur.parent
+      }
+      return false
+    }
+    const hasFriendAncestor = (node: Node): boolean => {
+      let cur: Node | null = node.parent
+      while (cur) {
+        if (cur.type === "friend_declaration") return true
+        cur = cur.parent
+      }
+      return false
+    }
+    // Qualified reads (`ns::x`, `Foo::y`) resolve through scopes the
+    // single-TU graph cannot see — recorded limitation, stays silent.
+    const hasQualifiedAncestor = (node: Node): boolean => {
+      let cur: Node | null = node.parent
+      while (cur) {
+        const t: string = cur.type
+        if (t === "qualified_identifier") return true
+        if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
+            t.includes("expression") || t.includes("function_definition") || t.includes("field_declaration_list") ||
+            t.includes("class_body") || t.includes("argument_list")) return false
+        cur = cur.parent
+      }
+      return false
+    }
+    // Attribute names (`[[maybe_unused]]`) never name values.
+    const hasAttributeAncestor = (node: Node): boolean => {
+      let cur: Node | null = node.parent
+      while (cur) {
+        const t: string = cur.type
+        if (t === "attribute" || t === "attribute_declaration" || t === "attribute_specifier") return true
+        if (t.includes("statement") || t.includes("declaration") || t.includes("function_definition") ||
+            t.includes("expression") || t.includes("class_body")) return false
+        cur = cur.parent
+      }
+      return false
+    }
+    // CP1 callee climb: the callee of a call is a call, never a use —
+    // including through template wrappers (`f<T>()`), dependent names
+    // (`x.template m<T>()`) and defense parentheses (`(f)(x)`, the Windows
+    // min/max idiom the calls branch already unwraps). Without the climb,
+    // every explicit-template call emitted calls+uses for one target.
+    const isCallCallee = (node: Node): boolean => {
+      let top: Node = node
+      let p: Node | null = node.parent
+      while (p && (p.type === "template_function" || p.type === "template_method" ||
+          p.type === "dependent_name" || p.type === "parenthesized_expression")) {
+        top = p
+        p = p.parent
+      }
+      if (!p || p.type !== "call_expression") return false
+      const fnField = p.childForFieldName("function")
+      if (fnField) return fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex
+      const first = p.namedChild(0)
+      return !!first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex
+    }
+    // CP1: is this the defined FUNCTION's own declarator name (not a
+    // parameter)? It declares the entity, never a local — binding it
+    // would self-shadow same-named overload reads (oracle parity).
+    const isFunctionOwnName = (node: Node): boolean => {
+      let up: Node | null = node.parent
+      while (up) {
+        if (up.type === "parameter_list" || up.type === "parameter_declaration") return false
+        if (up.type === "function_declarator" && up.parent && up.parent.type === "function_definition") return true
+        up = up.parent
+      }
+      return false
+    }
+    // Enclosing function scope for locals lookup (lambdas have no scope —
+    // their bodies read the enclosing function's bindings, correctly).
+    const enclosingFunctionScope = (): any | null => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        const s = scopeStack[i]
+        if (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method ||
+            s.kind === ASTEngine.SymbolKind.Constructor) return s
+      }
+      return null
+    }
+    // CP1 resolution: file-scope value, enclosing-class member,
+    // enclosing/used-namespace member, or global enum member.
+    const isResolvableRead = (name: string): boolean => {
+      if (fileScopeValues.has(name)) return true
+      const enclosingNs: string[] = []
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        const s = scopeStack[i]
+        if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Struct) {
+          const mm = classMembers.get(s.name)
+          if (mm && mm.has(name)) return true
+        }
+        if (s.kind === ASTEngine.SymbolKind.Namespace && s.name !== "anonymous") enclosingNs.push(s.name)
+      }
+      for (const ns of enclosingNs) {
+        const nm = namespaceValues.get(ns)
+        if (nm && nm.has(name)) return true
+      }
+      for (const used of usedNamespaces) {
+        const nm = namespaceValues.get(used)
+        if (nm && nm.has(name)) return true
+      }
+      return false
+    }
+    // Parameter names of one declarator (K&R n/a in C++).
+    const declaratorParamNames = (decl: Node | null): string[] => {
+      const out: string[] = []
+      if (!decl) return out
+      const walk: Node[] = [decl]
+      while (walk.length > 0) {
+        const m = walk.pop()!
+        if (m.type === "parameter_declaration") {
+          let cur: Node | null = m
+          while (cur) {
+            if (cur.type === "identifier" || cur.type === "field_identifier") { out.push(cur.text); break }
+            cur = cur.childForFieldName("declarator") || cur.namedChild(0)
+          }
+          continue
+        }
+        for (let k = 0; k < m.namedChildCount; k++) {
+          const c = m.namedChild(k)
+          if (c) walk.push(c)
+        }
+      }
+      return out
+    }
 
     while (stack.length > 0) {
       const item = stack.pop()!
@@ -432,6 +786,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "function_definition" || type === "field_declaration" || type === "declaration") {
+        // CP2 (cpp review): friend declarations (`friend void helper();`)
+        // are NOT members — the inner declaration node previously minted a
+        // (private) Method symbol for someone else's function. The subtree
+        // still walks (parameter names bind nothing observable), but no
+        // symbol is emitted.
+        if (hasFriendAncestor(node)) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         const funcDetails = this.getFunctionDetails(node)
 
         let isStatic = this.hasDirectModifier(node, "static")
@@ -441,6 +808,38 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         if (funcDetails) {
           const { name: funcName, scope: explicitScope, isDestructor, isOperator } = funcDetails
+
+          // CP2: macro-function shapes (`TEST(a, b) {...}`) declare no real
+          // function — emit no symbol — BUT the body is real code whose
+          // locals must bind (shadowing) and whose nested declarations must
+          // NOT leak as file-scope symbols. Push an anonymous function scope
+          // (no symbolRef, empty name → relationship sources fall back to
+          // "global", matching the oracle which scopes these bodies as
+          // plain functions). Without the scope, TEST-body locals minted as
+          // file-scope Variables AND shadow-suppression failed (phantom
+          // uses to same-named globals: `copy`, `file`).
+          if (!isDestructor && this.isMacroFunctionShape(node, funcName)) {
+            newContext = {
+              node,
+              name: "",
+              kind: ASTEngine.SymbolKind.Function,
+              visibility: "public",
+              isTemplate: false,
+              isAbstract: false,
+              friends: [],
+              locals: new Set<string>(),
+            }
+            scopeStack.push(newContext)
+            pushedScope = true
+            // The branch continues past the shared exit-record push below,
+            // so record the pop here (else the scope leaks into siblings).
+            stack.push({ node, parentContext: newContext, isExit: true })
+            for (let i = node.namedChildCount - 1; i >= 0; i--) {
+              const child = node.namedChild(i)
+              if (child) stack.push({ node: child, parentContext: newContext })
+            }
+            continue
+          }
 
           // 3. Out-of-Line Method Orphan Fix: Use explicit scope if defined (e.g. MyClass::myMethod)
           const actualOwnerName = explicitScope || parentContext?.name
@@ -495,7 +894,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: kind,
             range: this.nodeToRange(node),
             complexity: this.methodComplexityCpp(node),
-            visibility: parentContext?.visibility || "public",
+            // CP3 (cpp review, HC1 parity): file-scope `static` (internal
+            // linkage) is private. Class-member `static` is NOT internal
+            // linkage — members keep their access-specifier visibility.
+            visibility: (isStatic && actualOwnerKind !== ASTEngine.SymbolKind.Class
+              ? "private"
+              : parentContext?.visibility) || "public",
             isStatic,
             ownerName: actualOwnerName,
             ownerKind: actualOwnerKind,
@@ -577,7 +981,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               isTemplate: false,
               isAbstract: false,
               friends: [],
-              symbolRef: sym
+              symbolRef: sym,
+              // CP1: parameters bind at function entry (flow-sensitive
+              // shadowing like the C family — reads before any local
+              // binding still resolve outward).
+              locals: new Set(declaratorParamNames(this.findChild(node, "function_declarator"))),
             }
             scopeStack.push(newContext)
             pushedScope = true
@@ -614,6 +1022,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               (parentContext.kind === ASTEngine.SymbolKind.Function ||
                 parentContext.kind === ASTEngine.SymbolKind.Method ||
                 parentContext.kind === ASTEngine.SymbolKind.Constructor)
+            // CP1: ...but they DO bind locals (shadowing suppression for
+            // later reads in walk order — C CGD7 contract; the RHS
+            // initializer is never a binding).
+            if (name && insideFunction) {
+              const fnScope = enclosingFunctionScope()
+              if (fnScope) {
+                if (!fnScope.locals) fnScope.locals = new Set<string>()
+                fnScope.locals.add(name)
+              }
+            }
             if (name && !stringIncludes(name, "(") && !insideFunction) {
               // File-scope static (internal linkage) → private, matching the
               // C family contract; class-scope members keep the
@@ -644,6 +1062,24 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "enumerator") {
         const name = this.childText(node, "identifier")
         if (name) {
+          // CP1: function-local enumerators bind locals too (shadow
+          // suppression for later reads — same walk-order discipline as
+          // variable declarations).
+          const fnScope = enclosingFunctionScope()
+          if (fnScope && scopeStack.length > 0) {
+            let inFnBody = false
+            let cur2: Node | null = node.parent
+            while (cur2) {
+              if (cur2.type === "function_definition") { inFnBody = true; break }
+              if (cur2.type === "class_specifier" || cur2.type === "struct_specifier" ||
+                  cur2.type === "union_specifier") break
+              cur2 = cur2.parent
+            }
+            if (inFnBody) {
+              if (!fnScope.locals) fnScope.locals = new Set<string>()
+              fnScope.locals.add(name)
+            }
+          }
           symbols.push({
             name,
             kind: ASTEngine.SymbolKind.EnumMember,
@@ -676,8 +1112,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // contract (C CGD27, SCD1, OO member-read sweep) gates member writes:
         // the LHS of an assignment is a write, never a read-use.
         const pType = node.parent?.type
+        // F6 audit: `compound_assignment_expression` is not a tree-sitter-cpp
+        // type; `a += 1` parses as `assignment_expression` with a compound
+        // operator token, which this condition already covers.
         const lhsAssign =
-          (pType === "assignment_expression" || pType === "compound_assignment_expression") &&
+          pType === "assignment_expression" &&
           node.parent?.namedChild(0) &&
           node.parent!.namedChild(0)!.startIndex === node.startIndex
         if (field && field.text.trim() && pType !== "call_expression" && !lhsAssign) {
@@ -865,6 +1304,88 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
+      } else if (type === "identifier") {
+        // CP1 (cpp review): bare value reads. The analyzer previously
+        // emitted NO bare-identifier edges at all (`return g;` produced
+        // zero relationships) while the oracle only audited calls and
+        // member reads — a both-sides blind spot. Every bare identifier
+        // naming a file-visible VALUE is a Uses edge (C family contract),
+        // with the C family's exclusion discipline:
+        // declaration positions (leftmost-declarator rule), call callees
+        // (calls branch owns them), member leaves (field path owns them),
+        // qualified reads (limitation), preprocessor text (CGD11), labels,
+        // attributes, lambda-capture bindings — and shadowing suppression
+        // via function locals/params. Resolvability is required: unknown
+        // names stay silent (no junk edges to std/external names).
+        const p = node.parent
+        // Lambda capture binding (`[z = g]`: z binds, g reads).
+        if (p && p.type === "lambda_capture_initializer" && p.namedChild(0)?.startIndex === node.startIndex) {
+          const fnScope = enclosingFunctionScope()
+          if (fnScope) {
+            if (!fnScope.locals) fnScope.locals = new Set<string>()
+            fnScope.locals.add(node.text)
+          }
+        } else if (isDeclarationPosition(node) && !isFunctionOwnName(node)) {
+          // Declaring occurrences bind locals in walk order (flow-sensitive
+          // like the C family) — lambda/catch params, local struct members,
+          // enumerators. The defined function NAME itself never binds
+          // (self-shadow would eat same-named overload reads; oracle parity).
+          const fnScope = enclosingFunctionScope()
+          if (fnScope) {
+            let inFnBody = false
+            let cur2: Node | null = p
+            while (cur2) {
+              if (cur2.type === "function_definition") { inFnBody = true; break }
+              if (cur2.type === "class_specifier" || cur2.type === "struct_specifier" ||
+                  cur2.type === "union_specifier") break
+              cur2 = cur2.parent
+            }
+            if (inFnBody) {
+              if (!fnScope.locals) fnScope.locals = new Set<string>()
+              fnScope.locals.add(node.text)
+            }
+          }
+        } else if (
+          node.text &&
+          !isDeclarationPosition(node) &&          !isPreprocText(node) &&
+          // Assignment LHS is a WRITE, never a read (C CGD1 / family
+          // write-is-not-a-use contract — plain and compound assignments
+          // both carry the LHS as first named child).
+          !((p && p.type === "assignment_expression") &&
+            p.namedChild(0)?.startIndex === node.startIndex &&
+            (p.namedChild(0)?.endIndex ?? 0) >= node.endIndex) &&
+          // Call callee (span-matched like C CGD17, climbing through
+          // template/dependent/parenthesized wrappers like the calls
+          // branch's calleeLeaf) — the calls branch owns it.
+          !isCallCallee(node) &&
+          // Member leaves — the field path owns them (both read and call
+          // positions). The OBJECT of a field access is a genuine read and
+          // stays (CGD31 contract): only the field-role leaf is skipped.
+          !(p && p.type === "field_expression" &&
+            p.childForFieldName("field")?.startIndex === node.startIndex) &&
+          // Qualified reads (`ns::x`) — limitation, stays silent.
+          !hasQualifiedAncestor(node) &&
+          // Labels and attributes never name values.
+          !(p && (p.type === "goto_statement" || p.type === "labeled_statement")) &&
+          !hasAttributeAncestor(node)
+        ) {
+          const fnScope = enclosingFunctionScope()
+          const shadowed = !!fnScope?.locals?.has(node.text)
+          if (!shadowed && isResolvableRead(node.text)) {
+            const source = parentContext?.name || "global"
+            const relKey = `${source}::uses::${node.text}`
+            if (!usesSeen.has(relKey)) {
+              usesSeen.add(relKey)
+              relationships.push({
+                source,
+                target: node.text,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 1.0,
+                metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+              })
+            }
+          }
+        }
       }
 
       if (pushedScope) {
@@ -999,6 +1520,76 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         memorySafetyScore,
       },
     }
+  }
+
+  // CP2 (cpp review): test/macro function shapes — `TEST(suite, name)
+  // {...}`, `BOOST_AUTO_TEST_CASE(x) {...}` parse as function_definitions
+  // whose declarator params are BARE identifiers (macro paste-tokens, no
+  // types). Minting a `TEST` Function symbol per site (11 in one file) and
+  // resolving reads against it fabricates API + edges for a preprocessor
+  // fiction (C-D2: no macro expansion). Detection: ALL-CAPS declarator
+  // name + a non-empty parameter list in which NO parameter carries a type
+  // node. Real functions always type their params (`void f()`/`f(void)`
+  // have empty/void lists and are kept); ALL-CAPS real functions with
+  // typed params (`WINAPI Foo(int)`) are kept.
+  private isMacroFunctionShape(node: Node, funcName: string): boolean {
+    if (!this.isAllCapsName(funcName)) return false
+    const decl = this.findChild(node, "function_declarator")
+    if (!decl) return false
+    const params = decl.childForFieldName("parameters")
+    if (!params || params.namedChildCount === 0) return false
+    for (let i = 0; i < params.namedChildCount; i++) {
+      const p = params.namedChild(i)
+      if (!p) continue
+      if (p.type === "comment") continue
+      if (this.paramHasType(p)) return false
+    }
+    return true
+  }
+
+  private isAllCapsName(name: string): boolean {
+    let hasUpper = false
+    for (let i = 0; i < name.length; i++) {
+      const c = name[i]
+      if (c >= "a" && c <= "z") return false
+      if (c >= "A" && c <= "Z") hasUpper = true
+    }
+    return hasUpper
+  }
+
+  private paramHasType(param: Node): boolean {
+    // A parameter is typed iff it carries an unambiguous type node
+    // (primitive/sized/template/qualified/typename/decltype/struct/union/
+    // enum) or a type_identifier BESIDE a distinct declarator identifier
+    // (`MyClass x`). A LONE type_identifier is the grammar's classification
+    // of a bare macro-soup name (`TEST(a, b)` → type_identifier(a)) — NOT a
+    // type. Accepted residual: `void F(T)` (all-caps, single abstract
+    // type_identifier param) misreads as macro — near-nonexistent in real
+    // code, and both sides skip identically so no edge pair can result.
+    let sawHardType = false
+    let sawTypeIdent = false
+    let sawNameIdent = false
+    const stack: Node[] = [param]
+    while (stack.length > 0) {
+      const m = stack.pop()!
+      if (
+        m.type === "primitive_type" || m.type === "sized_type_specifier" ||
+        m.type === "template_type" || m.type === "qualified_identifier" ||
+        m.type === "dependent_type" || m.type === "decltype" ||
+        m.type === "struct_specifier" || m.type === "union_specifier" ||
+        m.type === "enum_specifier"
+      ) {
+        sawHardType = true
+        break
+      }
+      if (m.type === "type_identifier") sawTypeIdent = true
+      if (m.type === "identifier" || m.type === "field_identifier") sawNameIdent = true
+      for (let i = 0; i < m.namedChildCount; i++) {
+        const c = m.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return sawHardType || (sawTypeIdent && sawNameIdent)
   }
 
   private buildParamSig(parametersNode: Node | null): string {

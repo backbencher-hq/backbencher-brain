@@ -11,17 +11,12 @@
  *
  * Target matching tolerates FQN vs last-segment; label matching is exact.
  *
- * CLI: bun run script/m14/differential.ts [--repo <name>] [--sample N] [--no-batch]
- *
- * Canonical full sweeps run the lanes as child processes (fresh wasm module per
- * batch, `--lane-batch=i/n` internally) because one module cannot survive all
- * 42 lanes; `--no-batch` runs them in-process (diagnosis only — it is the mode
- * that aborts).
+ * CLI: bun run script/m14/differential.ts [--repo <name>] [--sample N]
  */
 import * as fs from "fs"
 import * as path from "path"
 import { createHash } from "crypto"
-import { execSync, spawnSync } from "child_process"
+import { execSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -55,31 +50,7 @@ const CORPUS_ROOT = "$HOME/fixtures/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
-//
-// M49 W11: the journal is addressed by SWEEP STATE, not one global path.
-// It used to be the fixed `/tmp/m14-f5-lane-journal.json`, so a lane measured
-// in one checkout (or against a different corpus pin, or different analyzer
-// code) was resumed verbatim into an unrelated run — and the row carried no
-// corpus pin or analyzer revision, so the reuse was undetectable. Combined
-// with the dead-parser failure mode (a lane that derived ZERO truth edges was
-// journaled as a finished 0/0 lane) that let a fabricated row become durable
-// state in FRESH evidence. A lane is only reusable when the state that
-// produced it matches: corpus pins + the analyzer/oracle source that derived
-// it. Different state ⇒ a different journal file ⇒ nothing to resume.
-const LANE_JOURNAL_PREFIX = "/tmp/m14-f5-lane-journal"
-function sweepStateKey(repoPins: Record<string, string>, sampling: string): string {
-  const h = createHash("sha256")
-  for (const repo of Object.keys(repoPins).sort()) h.update(`${repo}@${repoPins[repo]}\n`)
-  // Sampling is part of the state: a 3-file row is NOT a 60-file row. Without
-  // this, a crashed 3-file run's journal would be resumed by the next
-  // canonical 60-file sweep and shrink the measurement silently.
-  h.update(sampling + "\n")
-  const srcDir = path.join(ROOT, "src", "ast")
-  const files = fs.readdirSync(srcDir).filter((f: string) => f.endsWith(".ts")).sort()
-  for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
-  h.update(createHash("sha256").update(fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"))).digest("hex"))
-  return h.digest("hex").slice(0, 16)
-}
+const LANE_JOURNAL = "/tmp/m14-f5-lane-journal.json"
 // Per-language corpus routing: each language runs against a repo that
 // ACTUALLY CONTAINS it. The previous single-repo default (grails-core) gave
 // vacuous 0-file "pass" rows for php/ruby/etc (nothing to verify — logged as
@@ -142,32 +113,6 @@ const SECOND_CORPUS: Record<string, string> = {
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
-// M49 W11 (Defect 3): the sweep cannot finish inside ONE wasm module. Every
-// lane constructs a Parser in the fixed-size web-tree-sitter heap and the
-// module degrades after ~19-31 lanes — then `new ParserClass()` aborts with
-// `RuntimeError: Out of bounds call_indirect`, and BEFORE it aborts it can
-// return empty trees (which is how a dead parser became a clean 0/0 lane).
-// Caching the grammar and freeing the parser per lane (W10) reduced the rate
-// but not the outcome: no full sweep ever reached its evidence write, which is
-// why M14.0.F5 stayed the one pre-#761 `__LEGACY__` artifact.
-//
-// The fix is to give each lane group a FRESH module: canonical sweeps run the
-// lanes as child processes of this same file (`--lane-batch=i/n`), each
-// measuring only its slice and journaling each lane, after which this parent
-// resumes every lane from the state-keyed journal and owns the evidence write
-// and the baseline gate. Batch size is capped well below the measured
-// degradation point, and BB_F5_BATCH_SIZE exists so the cap can be exercised.
-const LANE_BATCH_ARG = process.argv.find(a => a.startsWith("--lane-batch="))
-const CHILD_SLICE = (() => {
-  if (!LANE_BATCH_ARG) return null
-  const [i, n] = LANE_BATCH_ARG.split("=")[1].split("/").map(Number)
-  if (!Number.isInteger(i) || !Number.isInteger(n) || n < 1 || i < 0 || i >= n) {
-    throw new Error(`differential: bad --lane-batch=${LANE_BATCH_ARG.split("=")[1]} (want i/n with 0 <= i < n)`)
-  }
-  return { i, n }
-})()
-const NO_BATCH = process.argv.includes("--no-batch")
-const BATCH_SIZE = process.env.BB_F5_BATCH_SIZE ? parseInt(process.env.BB_F5_BATCH_SIZE) : 8
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
@@ -1159,6 +1104,413 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
   return edges
 }
 
+export function deriveCppBareUses(root: any): { label: string; from: string; target: string }[] {
+  // CP1 mirror (cpp review): bare value reads (`return g;`) — the analyzer
+  // and this oracle were BOTH blind to them (the oracle audited only calls
+  // and member reads). Same contract as the analyzer, rule for rule:
+  // declaration positions (leftmost-declarator), call callees (span),
+  // member leaves (span), qualified reads (limitation), preprocessor text,
+  // labels, attributes, lambda-capture bindings, assignment-LHS writes —
+  // shadowing via walk-order function locals/params, resolvability via
+  // file-scope values / enclosing-class members / namespace rules.
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const fileScopeValues = new Set<string>()
+  const namespaceValues = new Map<string, Set<string>>()
+  const classMembers = new Map<string, Set<string>>()
+  const usedNamespaces = new Set<string>()
+  const pendingQualified: Array<{ name: string; scope: string }> = []
+  const leftmostId = (n: any): string | null => {
+    let cur: any = n
+    while (cur) {
+      if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+      cur = cur.childForFieldName?.("declarator") ?? cur.namedChild(0)
+    }
+    return null
+  }
+  const tname = (n: any): string | null => {
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === "type_identifier") return c.text
+    }
+    return null
+  }
+  {
+    const pre: any[] = [{ n: root, ns: [], inFn: false, inClass: null }]
+    while (pre.length > 0) {
+      const { n, ns, inFn, inClass } = pre.pop()!
+      const t = n.type
+      const addValue = (name: string, nss: string[], cls: string | null): void => {
+        if (!name) return
+        if (cls) {
+          let s = classMembers.get(cls)
+          if (!s) { s = new Set(); classMembers.set(cls, s) }
+          s.add(name)
+          return
+        }
+        if (nss.length > 0) {
+          const top = nss[nss.length - 1]
+          let s = namespaceValues.get(top)
+          if (!s) { s = new Set(); namespaceValues.set(top, s) }
+          s.add(name)
+          return
+        }
+        fileScopeValues.add(name)
+      }
+      if (t === "namespace_definition") {
+        const nm = tname(n) ?? n.namedChildren?.find((c: any) => c.type === "namespace_identifier")?.text
+        if (nm && nm !== "anonymous") {
+          for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns: [...ns, nm], inFn, inClass }) }
+          continue
+        }
+      } else if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier") {
+        // CPPD1 mirror: explicit/partial specialization names live in
+        // template_type (`Matcher<const std::string&>`), not a bare
+        // type_identifier — without the fallback the members (e.g. the
+        // specialization's own ctors) misattribute to file scope and the
+        // class-head name reads as a value use (MISSING uses on truth).
+        const tt = (n.namedChildren ?? []).find((c: any) => c.type === "template_type")
+        const ttn = tt ? (tt.childForFieldName?.("name")?.text ??
+          (tt.namedChildren ?? []).find((c: any) => c.type === "type_identifier" || c.type === "qualified_identifier")?.text ??
+          (() => { const lt = tt.text.indexOf("<"); return lt > 0 ? tt.text.slice(0, lt).trim() : null })()) : null
+        const nm = tname(n) ?? ttn ?? null
+        const hasBody = (n.namedChildren ?? []).some((c: any) => c.type === "class_body" || c.type === "field_declaration_list")
+        if (nm && hasBody) {
+          for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns, inFn, inClass: nm }) }
+          continue
+        }
+      } else if (t === "function_definition") {
+        // Mirror of the analyzer's getFunctionDetails declarator lookup
+        // (CP1): a leading-`::` return type (`static ::std::ostream&
+        // GetDesc(...)`) shatters the declarator — the function_declarator
+        // nests under reference_declarator/pointer_declarator instead of
+        // sitting direct. Direct-only lookup lost the defined name while
+        // the analyzer registered it (unexplained uses on both fmt lanes).
+        let decl = (n.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+        if (!decl) {
+          const ptr = (n.namedChildren ?? []).find((c: any) => c.type === "pointer_declarator" || c.type === "reference_declarator")
+          if (ptr) decl = (ptr.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+        }
+        const qid = decl?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
+        const nm = qid ? qid.namedChild(qid.namedChildCount - 1)?.text : decl?.namedChildren?.find((c: any) => c.type === "identifier" || c.type === "field_identifier")?.text
+        // Scope cleaning (mirrors the analyzer's getFunctionDetails
+        // template_type handling): `FloatingPoint<float>::Max` scopes to
+        // FloatingPoint, not the full argument list — else the flush
+        // misattributes to file scope while the analyzer resolves the
+        // class member (unexplained/file-only truth).
+        const cleanScope = (node: any): string | null => {
+          if (!node) return null
+          if (node.type === "template_type") {
+            const tn = node.childForFieldName?.("name")?.text ??
+              (node.namedChildren ?? []).find((c: any) => c.type === "type_identifier")?.text ??
+              (() => { const lt = node.text.indexOf("<"); return lt > 0 ? node.text.slice(0, lt).trim() : node.text })()
+            return tn ?? null
+          }
+          return node.text?.split("::").filter(Boolean).pop() ?? null
+        }
+        const scNode = qid ? qid.namedChildren?.find((c: any) => c.type !== "identifier" && c.type !== "field_identifier") : null
+        const sc = cleanScope(scNode)
+        // CP2 mirror: macro-function shapes (`TEST(a, b) {...}` — ALL-CAPS
+        // name, params without any type node) define no real function; the
+        // analyzer emits no symbol and registers no name, so neither does
+        // the oracle (else ERROR-recovered sibling fragments read as uses).
+        let isMacroShape = false
+        if (nm && decl) {
+          let allCaps = false
+          for (let k = 0; k < nm.length; k++) {
+            const ch = nm[k]
+            if (ch >= "a" && ch <= "z") { allCaps = false; break }
+            if (ch >= "A" && ch <= "Z") allCaps = true
+          }
+          if (allCaps) {
+            const plist = (decl.namedChildren ?? []).find((c: any) => c.type === "parameter_list")
+            const pnames = plist ? (plist.namedChildren ?? []) : []
+            if (pnames.length > 0) {
+              // Typed iff a hard type node, or a type_identifier BESIDE a
+              // distinct declarator identifier (`MyClass x`). A lone
+              // type_identifier is macro soup (`TEST(a, b)` classifies bare
+              // names as type_identifier) — mirrors the analyzer exactly.
+              const hasType = (m: any): boolean => {
+                let sawHard = false
+                let sawTypeIdent = false
+                let sawNameIdent = false
+                const st: any[] = [m]
+                while (st.length > 0) {
+                  const x = st.pop()!
+                  if (x.type === "primitive_type" || x.type === "sized_type_specifier" ||
+                      x.type === "template_type" || x.type === "qualified_identifier" ||
+                      x.type === "typename_specifier" || x.type === "decltype" ||
+                      x.type === "struct_specifier" || x.type === "union_specifier" ||
+                      x.type === "enum_specifier") { sawHard = true; break }
+                  if (x.type === "type_identifier") sawTypeIdent = true
+                  if (x.type === "identifier" || x.type === "field_identifier") sawNameIdent = true
+                  for (let k = 0; k < (x.namedChildCount ?? 0); k++) {
+                    const c = x.namedChild(k)
+                    if (c) st.push(c)
+                  }
+                }
+                return sawHard || (sawTypeIdent && sawNameIdent)
+              }
+              isMacroShape = !pnames.some((p: any) => p.type !== "comment" && hasType(p))
+            }
+          }
+        }
+        if (nm && !nm.startsWith("~") && !nm.startsWith("operator") && !isMacroShape) {
+          if (sc) pendingQualified.push({ name: nm, scope: sc })
+          else if (!inFn) addValue(nm, ns, inClass)
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns, inFn: true, inClass }) }
+        continue
+      } else if (!inFn && (t === "declaration" || t === "field_declaration")) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "init_declarator" || c.type === "identifier" || c.type === "field_identifier" ||
+              c.type === "pointer_declarator" || c.type === "reference_declarator" || c.type === "array_declarator" ||
+              c.type === "function_declarator") {
+            const id = leftmostId(c)
+            if (id) addValue(id, ns, inClass)
+          }
+        }
+      } else if (!inFn && t === "enumerator") {
+        const nm = n.namedChildren?.find((c: any) => c.type === "identifier")?.text
+        if (nm) fileScopeValues.add(nm)
+      } else if (t === "using_declaration" && !inFn && !inClass) {
+        const txt = n.text
+        const tgt = (n.namedChildren ?? []).find((c: any) => c.type === "qualified_identifier" || c.type === "identifier")
+        if (txt.indexOf("using namespace") !== -1) {
+          if (tgt) usedNamespaces.add(tgt.text.split("::").filter(Boolean).join("::"))
+        } else if (tgt) {
+          const segs = tgt.text.split("::").filter(Boolean)
+          if (segs.length > 0) fileScopeValues.add(segs[segs.length - 1])
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns, inFn, inClass }) }
+    }
+    for (const q of pendingQualified) {
+      if (classMembers.has(q.scope)) {
+        let s = classMembers.get(q.scope)!
+        s.add(q.name)
+      } else if (namespaceValues.has(q.scope)) {
+        let s = namespaceValues.get(q.scope)!
+        s.add(q.name)
+      } else fileScopeValues.add(q.name)
+    }
+  }
+  const DECL_PARENTS = new Set([
+    "declaration", "field_declaration", "parameter_declaration",
+    "init_declarator", "function_declarator", "pointer_declarator",
+    "reference_declarator", "array_declarator", "abstract_pointer_declarator",
+    "abstract_array_declarator", "abstract_function_declarator",
+    "enumerator", "using_declaration", "alias_declaration",
+    "optional_parameter_declaration", "type_parameter_declaration",
+    "template_type_parameter", "template_value_parameter",
+  ])
+  const isDeclaringPos = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    if (p.type === "optional_parameter_declaration" || p.type === "type_parameter_declaration" ||
+        p.type === "template_type_parameter" || p.type === "template_value_parameter") {
+      for (let k = 0; k < p.namedChildCount; k++) {
+        const c = p.namedChild(k)
+        if (c && (c.type === "identifier" || c.type === "field_identifier")) return c.startIndex === n.startIndex
+      }
+      return false
+    }
+    if (!DECL_PARENTS.has(p.type)) return false
+    if (p.type.endsWith("declarator") || p.type === "init_declarator") {
+      let cur: any = p
+      while (cur) {
+        if (cur.type === "identifier" || cur.type === "field_identifier") return cur.startIndex === n.startIndex
+        let next: any = null
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type.endsWith("declarator") || c.type === "identifier" || c.type === "field_identifier")) { next = c; break }
+        }
+        cur = next
+      }
+      return false
+    }
+    return true
+  }
+  const isPreprocText = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
+          t.includes("specifier") || t.includes("enumerator") || t.includes("compound") ||
+          t.includes("argument_list") || t.includes("init") || t.includes("expression") ||
+          t.includes("function_definition") || t.includes("class_body") || t.includes("field_declaration_list")) return false
+      if (t.startsWith("preproc_")) return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const hasQualifiedAncestor = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t === "qualified_identifier") return true
+      if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
+          t.includes("expression") || t.includes("function_definition") || t.includes("field_declaration_list") ||
+          t.includes("class_body") || t.includes("argument_list")) return false
+      cur = cur.parent
+    }
+    return false
+  }
+  const hasAttributeAncestor = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t === "attribute" || t === "attribute_declaration" || t === "attribute_specifier") return true
+      if (t.includes("statement") || t.includes("declaration") || t.includes("function_definition") ||
+          t.includes("expression") || t.includes("class_body")) return false
+      cur = cur.parent
+    }
+    return false
+  }
+  // CP1 callee climb (mirrors the analyzer): template/dependent/
+  // parenthesized wrappers around a call's function child are the callee.
+  const isCallCallee = (n: any): boolean => {
+    let top: any = n
+    let p: any = n.parent
+    while (p && (p.type === "template_function" || p.type === "template_method" ||
+        p.type === "dependent_name" || p.type === "parenthesized_expression")) {
+      top = p
+      p = p.parent
+    }
+    if (!p || p.type !== "call_expression") return false
+    const fnField = p.childForFieldName?.("function")
+    if (fnField) return fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex
+    const first = p.namedChild(0)
+    return !!first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex
+  }
+  // Walk-order function locals (mirrors the analyzer's flow-sensitive
+  // collection: params at entry, bindings in walk order, catch/lambda params).
+  const scopeStack: Array<{ kind: string; name: string; locals: Set<string> }> = []
+  const stack: any[] = [{ n: root, ctx: null as any, exit: false as boolean }]
+  while (stack.length > 0) {
+    const { n, ctx, exit } = stack.pop()!
+    if (exit) {
+      if (ctx && scopeStack.length > 0 && scopeStack[scopeStack.length - 1] === ctx) scopeStack.pop()
+      continue
+    }
+    let cur = ctx
+    const t = n.type
+    if (t === "namespace_definition") {
+      const nm = tname(n) ?? n.namedChildren?.find((c: any) => c.type === "namespace_identifier")?.text ?? "anonymous"
+      cur = { kind: "namespace", name: nm, locals: new Set<string>() }
+      scopeStack.push(cur)
+      stack.push({ n, ctx: cur, exit: true })
+    } else if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier") {
+      // CPPD1 parity (analyzer main walk + oracle pre-pass): partial
+      // specialization names live in template_type — without the fallback
+      // the scope pushes as "anonymous" and member reads in its methods
+      // never resolve (unexplained uses on both fmt lanes).
+      const tt2 = (n.namedChildren ?? []).find((c: any) => c.type === "template_type")
+      const ttn2 = tt2 ? (tt2.childForFieldName?.("name")?.text ??
+        (tt2.namedChildren ?? []).find((c: any) => c.type === "type_identifier" || c.type === "qualified_identifier")?.text ??
+        (() => { const lt = tt2.text.indexOf("<"); return lt > 0 ? tt2.text.slice(0, lt).trim() : null })()) : null
+      const nm = tname(n) ?? ttn2 ?? "anonymous"
+      cur = { kind: "class", name: nm, locals: new Set<string>() }
+      scopeStack.push(cur)
+      stack.push({ n, ctx: cur, exit: true })
+    } else if (t === "function_definition") {
+      const decl = (n.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+      const locals = new Set<string>()
+      const pw: any[] = decl ? [decl] : []
+      while (pw.length > 0) {
+        const m = pw.pop()!
+        if (m.type === "parameter_declaration") {
+          const id = leftmostId(m)
+          if (id) locals.add(id)
+          continue
+        }
+        for (let k = 0; k < m.namedChildCount; k++) { const c = m.namedChild(k); if (c) pw.push(c) }
+      }
+      cur = { kind: "function", name: "", locals }
+      scopeStack.push(cur)
+      stack.push({ n, ctx: cur, exit: true })
+    } else if (t === "identifier") {
+      const p = n.parent
+      let isBinding = false
+      if (p && p.type === "lambda_capture_initializer" && p.namedChild(0)?.startIndex === n.startIndex) {
+        isBinding = true
+        const fn = [...scopeStack].reverse().find((s) => s.kind === "function")
+        if (fn) fn.locals.add(n.text)
+      }
+      const lhsWrite = p && (p.type === "assignment_expression" || p.type === "compound_assignment_expression") &&
+        p.namedChild(0)?.startIndex === n.startIndex && (p.namedChild(0)?.endIndex ?? 0) >= n.endIndex
+      const isCallee = isCallCallee(n)
+      const isFieldLeaf = p && p.type === "field_expression" && p.childForFieldName?.("field")?.startIndex === n.startIndex
+      const isLabel = p && (p.type === "goto_statement" || p.type === "labeled_statement")
+      if (!isBinding && !lhsWrite && !isCallee && !isFieldLeaf && !isLabel &&
+          !isDeclaringPos(n) && !isPreprocText(n) && !hasQualifiedAncestor(n) && !hasAttributeAncestor(n)) {
+        const fn = [...scopeStack].reverse().find((s) => s.kind === "function")
+        if (!fn || !fn.locals.has(n.text)) {
+          let ok = fileScopeValues.has(n.text)
+          if (!ok) {
+            for (let i = scopeStack.length - 1; i >= 0 && !ok; i--) {
+              const s = scopeStack[i]
+              if (s.kind === "class") {
+                const mm = classMembers.get(s.name)
+                if (mm && mm.has(n.text)) ok = true
+              }
+              if (s.kind === "namespace" && s.name !== "anonymous") {
+                const nm = namespaceValues.get(s.name)
+                if (nm && nm.has(n.text)) ok = true
+              }
+            }
+          }
+          if (!ok) {
+            for (const used of usedNamespaces) {
+              const nm = namespaceValues.get(used)
+              if (nm && nm.has(n.text)) { ok = true; break }
+            }
+          }
+          if (ok) {
+            const k = "uses|" + n.text
+            if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: "(expr)", target: n.text }) }
+          }
+        }
+      }
+      // Local bindings bind in walk order (declaration occurrences) —
+      // but NEVER the function definition's OWN declarator name: it is the
+      // defined entity, not a local (CP1: otherwise a same-named
+      // overload/self call `fill_n<T>(...)` inside `fill_n` self-shadows
+      // and the genuine read is suppressed while the analyzer emits it).
+      // Parameter names (inside parameter_lists) still bind.
+      if (!isBinding && isDeclaringPos(n)) {
+        let selfName = false
+        let up: any = n.parent
+        let crossedParams = false
+        while (up) {
+          if (up.type === "parameter_list" || up.type === "parameter_declaration") { crossedParams = true; break }
+          if (up.type === "function_declarator" && up.parent && up.parent.type === "function_definition") break
+          up = up.parent
+        }
+        if (up && !crossedParams) selfName = true
+        if (!selfName) {
+          const fn = [...scopeStack].reverse().find((s) => s.kind === "function")
+        let inFnBody = false
+        let cur2: any = n.parent
+        while (cur2) {
+          if (cur2.type === "function_definition") { inFnBody = true; break }
+          if (cur2.type === "class_specifier" || cur2.type === "struct_specifier") break
+          cur2 = cur2.parent
+        }
+        if (fn && inFnBody) fn.locals.add(n.text)
+        }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, ctx: cur, exit: false })
+    }
+  }
+  return edges
+}
+
 export function deriveCCalls(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -1724,6 +2076,22 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
   }
 
   const stack: any[] = [root]
+  // GO3 mirror: a dot-import (`import . "fmt"`) lets bare identifiers name
+  // dot-imported members — the analyzer resolves bare callees leniently
+  // (besides builtins), so bare leaves are truth here too.
+  let hasDotImport = false
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0 && !hasDotImport) {
+      const m = pre.pop()!
+      if (m.type === "import_spec") {
+        for (let k = 0; k < (m.namedChildCount ?? 0); k++) {
+          if (m.namedChild(k)?.type === "dot") { hasDotImport = true; break }
+        }
+      }
+      for (let k = 0; k < (m.namedChildCount ?? 0); k++) { const c = m.namedChild(k); if (c) pre.push(c) }
+    }
+  }
   const leafOf = (fn: any): { leaf?: string; qualified: boolean } => {
     if (!fn) return { qualified: false }
     if (fn.type === "identifier") return { leaf: fn.text, qualified: false }
@@ -1769,8 +2137,9 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
       // Call truth: qualified leaves unconditionally; bare callees need an
       // in-file declared function/method (string(x), float64(x) conversions
       // and closure vars fn() are type/bare names not in declaredFns -> not
-      // truth, mirroring the analyzer's resolveGoFunctionCall drop).
-      const emit = !!name && !GOBUILTINS.has(name) && (qualified || declaredFns.has(name))
+      // truth, mirroring the analyzer's resolveGoFunctionCall drop). GO3:
+      // with a dot-import, bare names may be dot-imported members.
+      const emit = !!name && !GOBUILTINS.has(name) && (qualified || declaredFns.has(name) || hasDotImport)
       if (emit && !seen.has("call:" + name)) {
         seen.add("call:" + name)
         edges.push({ label: "calls", from: "(expr)", target: name })
@@ -1797,6 +2166,13 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
       } else if (typeN && typeN.type === "qualified_type") {
         const raw = typeN.text
         ctorTarget = lastSegment(raw)
+      } else if (typeN && typeN.type === "generic_type") {
+        // GO8 mirror: generic composite literals (`Box[int]{...}`) —
+        // constructed type is the base type_identifier.
+        const base = typeN.namedChildCount > 0 ? typeN.namedChild(0) : undefined
+        if (base && (base.type === "type_identifier" || base.type === "qualified_type")) {
+          ctorTarget = lastSegment(base.text)
+        }
       }
       if (ctorTarget && !GOBUILTINS.has(ctorTarget) && !seen.has("inst-lit:" + ctorTarget)) {
         seen.add("inst-lit:" + ctorTarget)
@@ -1840,8 +2216,12 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
             if (!elem || elem.type !== "constraint_elem") continue
             const inner = elem.namedChildCount > 0 ? elem.namedChild(0) : undefined
             if (!inner) continue
+            // GO2 mirror: union/tilde members (`int | string`, `~int`) are
+            // not embedded interfaces — only plain type references extend.
+            if (inner.type !== "type_identifier" && inner.type !== "qualified_type") continue
             const raw = inner.text
             const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+            if (!leaf || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf)) continue
             const key = "ext:" + nm.text + "->" + leaf
             if (leaf && !seen.has(key)) {
               seen.add(key)
@@ -2468,14 +2848,14 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       if (callee && callee.type === "navigation_expression") {
         // Member call -> leaf, WITHOUT the builtin filter. The analyzer filters
         // BUILTIN_BARE_CALLS for BARE identifier invocations only ("Member calls
-        // like `users.map` are NOT filtered - only bare identifier invocations
-        // of these names"), so a receiver-qualified leaf that shares a stdlib
-        // name is a REAL call. Filtering here under-derived truth and reported
-        // genuine analyzer edges as fabrications: swift-nio's
-        // `handler.assert(callbackCount: 0, cancelCount: 0)` on the mock handler
-        // (F5 2026-09-12, unexplained=1, while `contains
-        // MockScheduledCallbackHandler -> assert` proves the type DECLARES that
-        // method). The bare branch below keeps the filter.
+        // like `users.map` are NOT filtered — only bare identifier invocations
+        // of these names"), so a receiver-qualified leaf that happens to share a
+        // stdlib name is a REAL call. Applying the filter here under-derived
+        // truth and reported genuine analyzer edges as fabrications: swift-nio's
+        // `handler.assert(callbackCount: 0, cancelCount: 0)` on
+        // NonSendableMockScheduledCallbackHandler (F5 2026-09-12, unexplained=1,
+        // and `contains MockScheduledCallbackHandler -> assert` proves the type
+        // DECLARES that method). The bare branch below keeps the filter.
         const leaf = navLeaf(callee)
         if (leaf && leaf !== "$0") push("calls", leaf)
       } else if (callee) {
@@ -4371,6 +4751,215 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
   return edges
 }
 
+export function deriveZigBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string }[] {
+  // Z3 mirror (zig review): bare value reads (`return MAX`) — the analyzer
+  // and this oracle were BOTH blind to them. Same contract as the analyzer,
+  // rule for rule: file-scope const/var/fn/enum-member resolution (plus the
+  // global error-member set for `error.X` value leaves), declaration
+  // positions (first-identifier rule), call-callee span climb, member
+  // leaves (field path owns them), qualified non-leaves, labels, blank,
+  // LHS writes, shadowing via walk-order lexical scopes.
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const fileValues = new Set<string>()
+  const enumMembers = new Set<string>()
+  // Name inventory comes from the analyzer's own symbols (passed by the
+  // lane): file-scope Constant/Variable/Function/EnumMember kinds plus ALL
+  // EnumMember names globally. Truth still derives every EDGE independently
+  // from tree structure (positions, gates, shadowing) — only the name
+  // inventory is shared ground truth, exactly like the grammar itself. This
+  // permanently closes the pre-pass-divergence class (owner-blindness,
+  // kind-dispatch order, container attribution) that produced 70+ phantom
+  // MISSING edges when the oracle re-derived declarations on its own.
+  for (const s of symbols ?? []) {
+    if (!s || typeof s.name !== "string") continue
+    const k = String(s.kind ?? "");
+    const isEnumMember = k === "EnumMember" || k === "enummember" || k === "enum_member";
+    if (isEnumMember) enumMembers.add(s.name);
+    const isValue = k === "Constant" || k === "constant" || k === "Variable" || k === "variable" || k === "Function" || k === "function" || isEnumMember;
+    if (isValue && !s.ownerName && !s.owner) fileValues.add(s.name);
+  }
+  const scopes: Array<Set<string>> = []
+  const shadowed = (name: string): boolean => {
+    for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].has(name)) return true
+    return false
+  }
+  const bindIds = (node: any, out: Set<string>): void => {
+    const w: any[] = [node]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m !== node && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal" || m.type === "block" || m.type === "block_expression")) continue
+      if (m.type === "identifier" && m.text !== "_") out.add(m.text)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
+    }
+  }
+  // Z7 mirror: a parameter binds its declared NAME only (see the analyzer).
+  const bindFirstIdent = (node: any, out: Set<string>): void => {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "identifier") {
+        if (c.text !== "_") out.add(c.text)
+        return
+      }
+    }
+  }
+  const isDefining = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    // Error sets declare EVERY direct member (mirrors the analyzer).
+    if (p.type === "error_set_declaration" && n.type === "identifier") return true
+    if (p.type === "variable_declaration") {
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (c && c.type === "identifier") return c.startIndex === n.startIndex && c.endIndex === n.endIndex
+      }
+      return false
+    }
+    if (
+      p.type === "function_declaration" || p.type === "test_declaration" ||
+      p.type === "struct_item" || p.type === "enum_item" ||
+      p.type === "union_item" || p.type === "type_item" ||
+      p.type === "mod_item" || p.type === "package_clause" ||
+      p.type === "container_field"
+    ) {
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+          return c.startIndex === n.startIndex && c.endIndex === n.endIndex
+        }
+      }
+    }
+    return false
+  }
+  const isCallee = (n: any): boolean => {
+    let top: any = n
+    let p: any = n.parent
+    while (p && p.type !== "call_expression" && p.type !== "block" && p.type !== "function_declaration") {
+      top = p
+      p = p.parent
+    }
+    if (!p || p.type !== "call_expression") return false
+    const first = p.namedChildCount > 0 ? p.namedChild(0) : null
+    return !!first && top.startIndex >= first.startIndex && top.endIndex <= first.endIndex
+  }
+  const hasToken = (n: any, tok: string): boolean => {
+    for (let i = 0; i < (n.childCount ?? 0); i++) {
+      const c = n.child(i)
+      if (c && !c.isNamed && c.type === tok) return true
+    }
+    return false
+  }
+  const stack: any[] = [{ n: root, exit: false, pushed: false }]
+  while (stack.length > 0) {
+    const { n, exit, pushed } = stack.pop()!
+    if (exit) {
+      if (pushed) scopes.pop()
+      continue
+    }
+    const t = n.type
+    let pushedScope = false
+    if (t === "function_declaration") {
+      const frame = new Set<string>()
+      const pw: any[] = [n]
+      while (pw.length > 0) {
+        const m = pw.pop()!
+        if (m.type !== "function_declaration" || m === n) {
+          if (m.type === "parameter") bindFirstIdent(m, frame)
+          for (let i = m.namedChildCount - 1; i >= 0; i--) {
+            const c = m.namedChild(i)
+            if (c && c.type !== "block" && c.type !== "block_expression" && c.type !== "function_declaration") pw.push(c)
+          }
+        }
+      }
+      scopes.push(frame)
+      pushedScope = true
+    } else if (t === "block" || t === "block_expression") {
+      scopes.push(new Set<string>())
+      pushedScope = true
+    } else if (t === "switch_case") {
+      // Z6 mirror: captures are scoped to their own switch arm (see the
+      // analyzer). Same push/pop mechanics, same empty-at-entry property.
+      scopes.push(new Set<string>())
+      pushedScope = true
+    } else if (t === "payload") {
+      if (scopes.length > 0) bindIds(n, scopes[scopes.length - 1])
+    } else if (t === "variable_declaration") {
+      if (scopes.length > 0 && (hasToken(n, "var") || hasToken(n, "const"))) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            if (c.text !== "_") scopes[scopes.length - 1].add(c.text)
+            break
+          }
+          break
+        }
+      }
+    } else if (t === "identifier") {
+      const name = n.text
+      const p = n.parent
+      let inError = false
+      if (p && p.type === "error_type" && p.namedChildCount > 0) {
+        const last = p.namedChild(p.namedChildCount - 1)
+        if (last && last.startIndex === n.startIndex && last.endIndex === n.endIndex) {
+          let q: any = p.parent
+          let typePos = false
+          while (q) {
+            if (q.type === "parameter" || q.type === "container_field") { typePos = true; break }
+            if (
+              q.type === "variable_declaration" || q.type === "arguments" ||
+              q.type === "return_expression" || q.type === "call_expression" ||
+              q.type === "function_declaration" || q.type === "block" ||
+              q.type === "block_expression"
+            ) break
+            q = q.parent
+          }
+          if (!typePos) inError = true
+        }
+      }
+      const isLabel = p && (p.type === "labeled_statement" || p.type === "label_name" || p.type === "block_label" || p.type === "break_label" || p.type === "continue_label")
+      let qualified = false
+      {
+        let cur: any = n.parent
+        while (cur) {
+          if (cur.type === "qualified_type") { qualified = true; break }
+          if (
+            cur.type === "call_expression" || cur.type === "field_declaration" ||
+            cur.type === "function_declaration" || cur.type === "block" ||
+            cur.type === "block_expression" || cur.type === "composite_literal" ||
+            cur.type === "variable_declaration" || cur.type === "assignment_statement"
+          ) break
+          cur = cur.parent
+        }
+      }
+      let lhsWrite = false
+      if (p && p.type === "field_expression") {
+        lhsWrite = true
+      } else if (p && (p.type === "assignment_statement" || p.type === "compound_assignment_statement")) {
+        const lhs = p.namedChild(0)
+        lhsWrite = !!lhs && lhs.startIndex === n.startIndex && (lhs.endIndex ?? 0) >= n.endIndex
+      }
+      // Field path owns member leaves AND objects (leaf-only contract,
+      // mirroring the analyzer's parent check exactly).
+      const underField = !!p && p.type === "field_expression"
+      if (
+        name && name !== "_" && !name.startsWith("$") &&
+        !isDefining(n) && !isCallee(n) && !underField && !qualified && !isLabel &&
+        !shadowed(name) &&
+        (fileValues.has(name) || (inError && enumMembers.has(name)))
+      ) {
+        const k = "uses|" + name
+        if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: "(expr)", target: name }) }
+      }
+    }
+    stack.push({ n, exit: true, pushed: pushedScope })
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, exit: false, pushed: false })
+    }
+  }
+  return edges
+}
 // Rust truth: call edges (identifier + member-leaf callees), implements
 // (impl <Trait> for Type), extends (supertrait bounds on trait items).
 function deriveRustEdges(root: any): { label: string; from: string; target: string }[] {
@@ -5605,19 +6194,19 @@ async function main() {
   // Only for canonical full sweeps — probe runs (--repo/--sample) always
   // recompute and never read the journal.
   const resume = !REPO && !process.argv.includes("--sample")
-  // One grammar per LANGUAGE, cached and reused by that language's second-corpus
-  // lane, plus a Parser per lane that is freed when the lane ends. Both
-  // allocations live in the fixed-size wasm heap and neither is reclaimed by
-  // JS GC: loading a language module and constructing a Parser for EVERY lane
-  // (42 loads for 21 languages) exhausted the heap and aborted the sweep
-  // mid-run with `RuntimeError: Out of bounds call_indirect` at
-  // `new ParserClass()`, after which no evidence is written at all - which is
-  // why M14.0.F5 is the one artifact still pre-#761 `__LEGACY__` while
-  // everything else acquired lineage: the sweep could not reach its own
-  // evidence write. The zero-truth guard below catches the dead-parser state
+  // One grammar + parser per LANGUAGE, reused by that language's second-corpus
+  // lane. The wasm heap is fixed size: loading a language module and
+  // constructing a Parser for EVERY lane (42 allocations for 21 languages)
+  // exhausted it and aborted the sweep mid-run with
+  // `RuntimeError: Out of bounds call_indirect` at `new ParserClass()` — after
+  // which no evidence is written at all, which is why M14.0.F5 was the one
+  // artifact that stayed pre-#761 `__LEGACY__` while everything else acquired
+  // lineage: it could not be regenerated. Halving the allocations is the cheap
+  // half of the fix; the zero-truth guard below catches the dead-parser state
   // this can still produce.
   const PARSER_CACHE = new Map<string, { grammar: any }>()
   let resumedLanes = 0
+  const laneJournal: Record<string, any> = resume && fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
   // Lane sweep: primary + second corpus per gated language (two-corpus gate).
   // Lanes are (lang, repo) pairs; rows keyed `repo:lang` in the baseline map so
   // regressions on EITHER corpus fail the language's check.
@@ -5630,83 +6219,11 @@ async function main() {
     const second = SECOND_CORPUS[lang]
     if (second && second !== repoFor(lang)) lanes.push({ lang, repo: second, isSecond: true })
   }
-
-  // ---------------------------------------------------------------------
-  // M49 W11: state-addressed journal + batched lanes (Defects 2 and 3).
-  //
-  // The journal is a per-SWEEP-state artifact: same corpus pins and same
-  // analyzer/oracle code ⇒ a lane's row is reusable; anything else ⇒ a
-  // different file, nothing to inherit. A probe run (--repo/--sample without
-  // batching) neither reads nor writes it, so it can no longer inherit rows it
-  // did not measure — nor overwrite the rows a canonical run measured.
-  //
-  // Batched execution is how a full sweep now COMPLETES: each child is a fresh
-  // process with a fresh web-tree-sitter module, so the fixed wasm heap is
-  // never pushed to the abort point (measured: one module dies after ~19-31
-  // lanes), and the parent — which measures nothing itself — resumes every
-  // lane from the journal and owns the evidence write and the baseline gate.
-  // ---------------------------------------------------------------------
-  const stateKey = sweepStateKey(repoPins, `${SAMPLE_PER_LANG}/lang ${lanes.map(l => `${l.repo}:${l.lang}`).sort().join(",")}`)
-  const LANE_JOURNAL = `${LANE_JOURNAL_PREFIX}-${stateKey}.json`
-  // Canonical sweeps only: a --repo probe routes EVERY language at one repo,
-  // where most languages legitimately have no files (`files=0 SKIPPED` — not
-  // measured, so not journaled), which is not a lane the completeness check
-  // below can or should demand. Probes stay single-process, as they always
-  // were; they are interactive diagnosis, and the dead-parser guard still makes
-  // a module abort loud rather than silent.
-  const willBatch = !CHILD_SLICE && !NO_BATCH && !REPO && lanes.length > BATCH_SIZE
-  const useJournal = !!CHILD_SLICE || resume || willBatch
-  const loadJournal = (): Record<string, any> => {
-    if (!useJournal || !fs.existsSync(LANE_JOURNAL)) return {}
-    try {
-      const parsed = JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8"))
-      // Addressed by state (below) AND validated against it, so a hand-copied
-      // or stale file can never be resumed across states.
-      if (parsed?.stateKey !== stateKey) {
-        console.log(`[journal] ignoring ${LANE_JOURNAL}: written for state ${parsed?.stateKey ?? "?"}, this run is ${stateKey}`)
-        return {}
-      }
-      return parsed.lanes ?? {}
-    } catch { return {} }
-  }
-  const saveJournal = (rows: Record<string, any>) => {
-    fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
-    fs.writeFileSync(LANE_JOURNAL, JSON.stringify({ stateKey, corpusPins: repoPins, lanes: rows }, null, 2))
-  }
-  const laneJournal: Record<string, any> = loadJournal()
-  const jKeyOf = (l: { lang: string; repo: string; isSecond: boolean }) => (l.isSecond ? `${l.repo}:${l.lang}` : l.lang)
-  if (willBatch) {
-    const missing = lanes.filter(l => !laneJournal[jKeyOf(l)]).length
-    const batches = Math.ceil(lanes.length / BATCH_SIZE)
-    if (missing > 0) {
-      console.log(`[batch] ${lanes.length} lane(s), ${missing} to measure, ${batches} batch(es) of <=${BATCH_SIZE} — one fresh wasm module per batch (state ${stateKey})`)
-      for (let b = 0; b < batches; b++) {
-        const args = [...process.argv.slice(2), `--lane-batch=${b}/${batches}`]
-        const r = spawnSync(process.execPath, [process.argv[1], ...args], { stdio: "inherit", cwd: ROOT, env: process.env })
-        if (r.error) throw new Error(`differential: batch ${b}/${batches} could not start: ${r.error.message}`)
-        if (r.status !== 0) throw new Error(`differential: batch ${b}/${batches} exited ${r.status} — a lane in it failed (log above); NOT writing evidence from an incomplete sweep`)
-      }
-    } else {
-      console.log(`[batch] all ${lanes.length} lane(s) already journaled for state ${stateKey} — resuming, no child spawned`)
-    }
-    // Pick up what the children measured, then verify completeness: the parent
-    // must never emit evidence from a partial sweep.
-    Object.assign(laneJournal, loadJournal())
-    const stillMissing = lanes.filter(l => !laneJournal[jKeyOf(l)])
-    if (stillMissing.length > 0) {
-      throw new Error(`differential: ${stillMissing.length} lane(s) unmeasured after batching (${stillMissing.map(jKeyOf).join(", ")}) — no evidence written`)
-    }
-  }
-  for (let laneIndex = 0; laneIndex < lanes.length; laneIndex++) {
-    const lane = lanes[laneIndex]
-    // This child owns exactly one slice of the lanes; the rest belong to its
-    // siblings (lane order is deterministic, so every child agrees on it).
-    if (CHILD_SLICE && laneIndex % CHILD_SLICE.n !== CHILD_SLICE.i) continue
+  for (const lane of lanes) {
     const { lang, repo: langRepo } = lane
-    // Crash-resume: a lane already in the journal — measured in THIS state — is
-    // trusted verbatim.
+    // Crash-resume: a lane already in the journal is trusted verbatim.
     const jKey = lane.isSecond ? `${langRepo}:${lang}` : lang
-    if (useJournal && laneJournal[jKey]) {
+    if (resume && laneJournal[jKey]) {
       const jRow = laneJournal[jKey].row
       if (lane.isSecond) reportSecond[jKey] = jRow
       else report[lang] = jRow
@@ -5738,6 +6255,10 @@ async function main() {
       continue
     }
 
+    // The grammar is cached per language (21 loads for 42 lanes) and the Parser
+    // is per-lane, freed when the lane ends: both allocations live in the
+    // fixed-size wasm heap and neither is reclaimed by JS GC. With the grammar
+    // cached and the parser freed, only 21 grammar modules are ever live.
     let cached = PARSER_CACHE.get(lang)
     if (!cached) {
       cached = { grammar: await Language.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm))) }
@@ -6071,6 +6592,14 @@ async function main() {
         for (const e of deriveCppEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // CP1 (cpp review): bare value-read uses truth — mirrors the
+        // analyzer's identifier-read contract rule for rule (declaration
+        // positions, callees, member leaves, qualified limitation,
+        // preprocessor text, labels, attributes, capture bindings, LHS
+        // writes, shadowing, resolvability).
+        for (const e of deriveCppBareUses(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "rust") {
         for (const e of deriveRustEdges(root)) {
@@ -6087,6 +6616,15 @@ async function main() {
       }
       if (lang === "zig") {
         for (const e of deriveZigEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // Z3 (zig review): bare value-read uses truth — mirrors the
+        // analyzer's identifier-read contract rule for rule (declaration
+        // positions, callees, member leaves, qualified non-leaves, labels,
+        // blank, preprocessor-free, LHS writes, shadowing, resolvability
+        // incl. the error-type leaf rule). Name inventory comes from the
+        // analyzer's own symbols (shared ground truth, not re-derived).
+        for (const e of deriveZigBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
       }
@@ -6243,17 +6781,17 @@ async function main() {
       throw new Error(`differential: corpus repo ${langRepo} contains no ${lang} files — fix LANG_REPOS/SECOND_CORPUS routing for ${lang}`)
     }
     if (treeEdgesTotal === 0) {
-      // Parsed-but-empty guard (F5 refresh, 2026-09-12). When the web-tree-sitter
-      // heap dies mid-sweep it does not always throw: it returns EMPTY trees, and
-      // the lane then reports
-      // `files=60 tree-truth=0 covered=0 (null%) MISSING=0 unexplained=0` - a row
-      // that passes while verifying nothing (observed on [ripgrep] rust and
-      // [alamofire] swift, immediately before `Out of bounds call_indirect`).
-      // Worse, the crash-resume journal PERSISTS such a row as a finished lane,
-      // so the fabrication outlives the crash that caused it. A non-empty sample
-      // that derives zero truth edges is a dead parser or a dead oracle, never a
-      // clean lane: re-route the lane or fix the oracle.
-      throw new Error(`differential: ${langRepo}:${lang} parsed ${sample.length} file(s) and derived ZERO truth edges - the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`)
+      // Parsed-but-empty guard (F5 refresh, 2026-09-12). When the
+      // web-tree-sitter heap dies mid-sweep it does not always throw: it
+      // returns EMPTY trees, and the lane then reports
+      // `files=60 tree-truth=0 covered=0 (null%) MISSING=0 unexplained=0` — a
+      // row that passes while verifying nothing (observed on [ripgrep] rust
+      // immediately before `Out of bounds call_indirect`). Worse, the
+      // crash-resume journal PERSISTS that row as a finished lane, so the
+      // fabrication survives the crash that caused it. A non-empty sample that
+      // derives zero truth edges is a dead parser or a dead oracle, never a
+      // clean lane: either re-route the lane or fix the oracle.
+      throw new Error(`differential: ${langRepo}:${lang} parsed ${sample.length} file(s) and derived ZERO truth edges — the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`)
     }
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
     else report[lang] = row
@@ -6263,18 +6801,16 @@ async function main() {
     // lane immediately so a crash never loses finished lanes again. The
     // final emitEvidence still writes the complete artifact; this is a
     // crash-resume journal keyed by lane, re-read on startup.
-    laneJournal[lane.isSecond ? `${langRepo}:${lang}` : lang] = { row, repo: langRepo, isSecond: !!lane.isSecond }
-    // Release the lane's parser now that its row is durable (the grammar stays
-    // cached for the language's second corpus).
+    fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
+    const journal = fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
+    journal[lane.isSecond ? `${langRepo}:${lang}` : lang] = { row, repo: langRepo, isSecond: !!lane.isSecond }
+    // Release the lane's parser now that its row is durable. Measured without
+    // this: the fixed wasm heap aborts `new ParserClass()` after roughly 21-31
+    // lanes with `RuntimeError: Out of bounds call_indirect`, which is why
+    // M14.0.F5 (the only artifact still pre-#761 `__LEGACY__`) had never been
+    // regenerated — the sweep cannot reach its own evidence write.
     try { (parser as any).delete?.() } catch { /* already torn down by a parser abort */ }
-    if (useJournal) saveJournal(laneJournal)
-  }
-
-  // A lane-batch child measures its slice and exits here: it must NOT evaluate
-  // the baseline or emit evidence (the parent owns both, from the journal).
-  if (CHILD_SLICE) {
-    console.log(`[batch ${CHILD_SLICE.i}/${CHILD_SLICE.n}] slice done — journal holds ${Object.keys(laneJournal).length} lane(s) for state ${stateKey}`)
-    process.exit(0)
+    fs.writeFileSync(LANE_JOURNAL, JSON.stringify(journal, null, 2))
   }
 
   // Evaluate against the pinned baseline BEFORE emitting F5 evidence. The
@@ -6351,9 +6887,8 @@ async function main() {
     },
   })
   console.log(`evidence written: validation/m14/results/M14.0.F5.json (resumed ${resumedLanes} lane(s) from journal)`)
-  // Full sweep completed: the crash-resume journal served its purpose (only for
-  // the journals this run actually used — a probe run never touched one).
-  if (useJournal) { try { fs.rmSync(LANE_JOURNAL, { force: true }) } catch { /* already gone */ } }
+  // Full sweep completed: the crash-resume journal served its purpose.
+  try { fs.rmSync(LANE_JOURNAL, { force: true }) } catch { /* already gone */ }
 
   // Improvement-forcing gate: missing/unexplained counts may never grow.
   // Baseline updates are explicit and are not silently treated as validation.
