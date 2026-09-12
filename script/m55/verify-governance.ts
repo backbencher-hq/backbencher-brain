@@ -66,7 +66,15 @@ const PROTOCOL_FACTS: Array<{ label: string; needle: string }> = [
  *  since the evidence commit. Mirrors the M24.G1 relevance rule. */
 const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   G1: ["script/m55/verify-governance.ts", "docs/m55/M55-MASTER-PLAN.md", "docs/m55/SCREENSHOT-PROTOCOL.md"],
-  T1: ["src/lsp/identity.ts", "script/m55/verify-identity.ts"],
+  T1: [
+    "src/lsp/identity.ts",
+    "src/lsp/impact.ts",
+    "src/lsp/graph_request.ts",
+    "ide/vscode/src/identity-label.ts",
+    "ide/vscode/src/graph-panel.ts",
+    "script/m55/verify-identity.ts",
+    "script/m55/t1-fixture.ts",
+  ],
   T2: ["src/lsp/call_hierarchy.ts", "src/lsp/positions.ts", "script/m55/verify-call-hierarchy.ts", "script/m55/t2-fixture.ts"],
   T3: ["src/lsp/usage_vocabulary.ts", "script/m55/verify-usage-vocabulary.ts"],
   T4: ["src/lsp/signature.ts", "script/m55/verify-signatures.ts"],

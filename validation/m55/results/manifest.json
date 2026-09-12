@@ -43,6 +43,25 @@
       "githubIssue": 770,
       "tool": "lsp-identity-resolver",
       "status": "planned",
+      "progress": {
+        "stage": "resolver + both doors + every naming surface verified over the real index and the real server; the constructor case still needs V1's fresh-install frame showing the label, so the issue is NOT closable yet",
+        "verifiedAt": "2026-09-12",
+        "fixes": [
+          "src/lsp/identity.ts (new, the ONE owner): the member-resolution rules moved out of the impact door, where the graph door had re-implemented its own call. Both doors read this module now (impact.ts delegates, graph_request.ts imports the resolver + the record builder), so a rule change cannot land on one surface only.",
+          "src/lsp/graph_request.ts: a member target the engine whitelist excludes no longer travels as an unlabeled root — the substitution rides the payload as a declared `resolution` record (memberName/ownerName/through), and a hinted request whose root lands outside the hint is refused instead of silently relabeled.",
+          "src/lsp/graph_request.ts (declared-error half): a genuinely absent symbol used to escape as the engine's bare \"Symbol '<name>' not found\", contradicting GRAPH-TRANSPORT.md's own prefix contract (clients match `bb/graph:` to tell a declared error from a bug). It is wrapped into a declared `bb/graph:` reason; any OTHER engine failure is still thrown untouched, because prefixing a real bug would mislabel it as expected behaviour. The doc row was corrected to match the code.",
+          "ide/vscode/src/identity-label.ts (new): the panel-title rule was extracted out of graph-panel.ts (which imports `vscode`) into a vscode-free module, because a rule that cannot run in a gate cannot be verified — and this one had silently failed the owner (a constructor graph opening titled `Store` with nothing said). graph-panel re-exports it, so hub/impact/graph all render through ONE rule.",
+          "script/m55/t1-fixture.ts + script/m55/verify-identity.ts (new): the fixture (member target, a SECOND constructor for the ambiguity case, an accessor, an absent name, a direct root) and the suite over the REAL indexer, the REAL server and the REAL renderer — 38 checks, 5 mutants."
+        ],
+        "findings": [
+          "a TypeScript getter is stored as `property`, which is outside the traversal whitelist — so an accessor is a member target too and is now labeled rather than silently relabeled (asserted from the stored type, not assumed)",
+          "the accessor invariant is derived at run time from the stored symbol_type, so the gate cannot pass vacuously if a future analyzer starts storing getters as traversable methods"
+        ],
+        "remaining": [
+          "V1's fresh-install frame reproducing the constructor case with the label visible (closure requirement)",
+          "T3 owns the \"which edges are usages\" half; T1 only owns identity"
+        ]
+      },
       "scope": "ONE identity resolver used by hover, graph, impact, references and call hierarchy; a member target resolves through its owning declaration AND the substitution is labeled; the wire carries the resolution as declared data",
       "acceptanceCriteria": [
         "fixture-first: a fixture pins a member target, an accessor target and an absent target; expectations authored before the change",
@@ -56,9 +75,16 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
+        "currentCommit": "see T1.json",
         "verifierCommand": "npx tsx script/m55/verify-identity.ts",
-        "evidenceFile": "T1.json"
+        "evidenceFile": "T1.json",
+        "passed": 38,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "scope": "resolver rules over the real index + boundary rules over a real sqlite seed + both doors over the real dist server + the title/label and render surfaces, with 5 planted defects"
       }
     },
     {
