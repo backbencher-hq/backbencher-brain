@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-12T14:54:24.078Z",
+  "updatedAt": "2026-09-12T15:23:43.949Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -39,10 +39,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "6e7e924f62d4c6152492ad1f43f8d1a9c44d8e6c",
+        "currentCommit": "ae9259545775ab98ae880aa3a18394627a197051",
         "verifierCommand": "npx tsx script/m56/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-12T14:53:29.093Z",
+        "generatedAt": "2026-09-12T15:07:58.316Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 13
@@ -82,7 +82,17 @@
       "code": "T1",
       "githubIssue": 781,
       "tool": "site",
-      "status": "planned",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "8b50cdc2066534a0b9337411f5db8c7d1657ffca",
+        "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
+        "evidenceFile": "T1.json",
+        "generatedAt": "2026-09-12T15:23:30.504Z",
+        "passed": 28,
+        "failed": 0,
+        "negativeCases": 6
+      },
       "scope": "tool reference single-sourced: website data generated from the registry and docs/tools/*.md, hand-written notes deleted, full descriptions, homepage accounts for all 16",
       "acceptanceCriteria": [
         "generated tool data is byte-identical to a fresh generation",
