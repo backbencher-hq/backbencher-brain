@@ -500,6 +500,18 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
     el.textContent = `${dep.name} (${dep.file || "external"})`
     layer.appendChild(el)
   }
+  // Declared empty-state (owner live test, 2026-09-12): a resolved root with
+  // zero stored reverse dependencies renders a visible note — never
+  // legend-only silence, which reads as a broken panel. Absence is declared,
+  // not assumed: the note states what absence means and how to refresh.
+  if (result.impact.length === 0) {
+    const emptyNote = dom.create("div")
+    emptyNote.addClass("bb-impact-empty")
+    emptyNote.setAttribute("data-empty", "impact")
+    emptyNote.textContent =
+      "No reverse dependencies stored for this symbol — nothing in the index calls or references it (declared absence; re-index if the code recently changed)."
+    layer.appendChild(emptyNote)
+  }
   // U4: the ONE badge legend ships with the impact surface too (§13.9).
   layer.appendChild(renderLegend(dom))
   let marker: GraphDomElement | null = null
