@@ -1833,7 +1833,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             p7?.type === "class_declaration" || p7?.type === "class"
           const isPropKey = (p7?.type === "pair" || p7?.type === "pair_pattern") && p7.childForFieldName("key")?.id === node.id
           const isMemberPart = p7?.type === "member_expression"
-          const isPropName = p7?.type === "property_signature" || p7?.type === "property_identifier"
+          // F6 audit: `property_signature` is a TypeScript-only node (this
+          // analyzer is loaded with the tree-sitter-javascript grammar, whose
+          // 259 types do not include it — probe-verified), so the old
+          // disjunct could never be true. `property_identifier` is the JS
+          // object/class member-name node.
+          const isPropName = p7?.type === "property_identifier"
           // JSX element names (J8 contract: capitalized components emit the
           // jsxElement Uses from the dedicated walk; lowercase intrinsics
           // must NOT surface as bare identifier reads — the jsx-usage

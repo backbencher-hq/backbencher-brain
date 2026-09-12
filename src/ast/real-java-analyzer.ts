@@ -848,7 +848,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 argumentCount = 0
                 for (let ai = 0; ai < argsNode.namedChildCount; ai++) {
                   const ac = argsNode.namedChild(ai)
-                  if (ac && ac.type !== "comment") argumentCount!++
+                  // tree-sitter-java serializes comments as `line_comment` /
+                  // `block_comment` — there is no `comment` node type in the
+                  // pinned grammar (F6 audit). The old `!== "comment"` guard
+                  // could never fire, so a comment inside an argument list was
+                  // counted as an argument: `g(1 /* c */, 2)` reported
+                  // argumentCount 3 (probe-verified). Comments are not
+                  // arguments — counting skips both real comment node types.
+                  if (ac && ac.type !== "line_comment" && ac.type !== "block_comment") argumentCount!++
                 }
               }
               relationships.push({
@@ -1922,17 +1929,20 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * Short annotation name from an annotation/marker_annotation node's name
-   * child. The grammar serializes the name as $._name = choice(identifier,
-   * _reserved_identifier, scoped_identifier) — fully-qualified annotations
-   * (@org.springframework.stereotype.Service) have a scoped_identifier, NOT a
-   * direct identifier. The short name is the last dotted segment; bare names
+   * child. The pinned grammar serializes the name as $._name =
+   * choice(identifier, scoped_identifier) — probe-verified: `@Override` has a
+   * direct identifier, `@org.springframework.stereotype.Service` has a
+   * scoped_identifier. The short name is the last dotted segment; bare names
    * pass through unchanged.
+   *
+   * F6 audit: a third `_reserved_identifier` fallback had been added here on
+   * the claim that the grammar's `_name` was a triple choice including it.
+   * That name is an underscore-prefixed HIDDEN rule, so `.type` can never
+   * equal it and `findChildByType` can never match it — a branch that could
+   * not fire. Removed; the two real shapes cover every annotation name.
    */
   private getJavaAnnotationShortName(ann: Node): string | null {
-    // _reserved_identifier (var, record, sealed, yield are contextual
-    // keywords the grammar wraps) is a legal annotation NAME shape — the
-    // claimed triple-choice in the doc comment below was missing it.
-    const nameNode = this.findChildByType(ann, "identifier") || this.findChildByType(ann, "scoped_identifier") || this.findChildByType(ann, "_reserved_identifier")
+    const nameNode = this.findChildByType(ann, "identifier") || this.findChildByType(ann, "scoped_identifier")
     if (!nameNode) return null
     const text = nameNode.text
     const lastDot = text.lastIndexOf(".")

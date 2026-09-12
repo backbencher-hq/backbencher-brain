@@ -122,19 +122,153 @@ const LITERAL_ALLOWLIST: Record<string, Set<string>> = {
   svelte: new Set([]),
 }
 
+/**
+ * Mask `//` line comments and `/* … *​/` block comments, preserving string
+ * literals (the findings ARE string literals) and byte offsets.
+ *
+ * Why this is not cosmetic: the literal scan reads a whole analyzer file as
+ * text, so an ANALYZER COMMENT that quotes a node-type comparison — e.g. an
+ * audit note explaining that `cur.type === "qualified_type"` was removed
+ * because the grammar has no such node — was itself matched and reported as
+ * dead code. A gate that punishes documenting a removal is worse than blind:
+ * it forces the reasoning out of the code. String-aware, so a `//` inside a
+ * string is not treated as a comment.
+ */
+function maskComments(src: string): string {
+  const out = src.split("")
+  const n = src.length
+  let i = 0
+  let state: "code" | "line" | "block" | "sq" | "dq" | "tpl" = "code"
+  while (i < n) {
+    const c = src[i]
+    const c2 = src[i + 1]
+    if (state === "code") {
+      if (c === "/" && c2 === "/") {
+        out[i] = " "; out[i + 1] = " "; state = "line"; i += 2; continue
+      }
+      if (c === "/" && c2 === "*") {
+        out[i] = " "; out[i + 1] = " "; state = "block"; i += 2; continue
+      }
+      if (c === "'") state = "sq"
+      else if (c === '"') state = "dq"
+      else if (c === "`") state = "tpl"
+      i++
+      continue
+    }
+    if (state === "line") {
+      if (c === "\n") { state = "code"; i++; continue }
+      out[i] = " "; i++; continue
+    }
+    if (state === "block") {
+      if (c === "*" && c2 === "/") {
+        out[i] = " "; out[i + 1] = " "; state = "code"; i += 2; continue
+      }
+      if (c !== "\n") out[i] = " "
+      i++
+      continue
+    }
+    // Inside a string: preserve content (findings live there), honor escapes.
+    if (c === "\\") { i += 2; continue }
+    const closer = state === "sq" ? "'" : state === "dq" ? '"' : "`"
+    if (c === closer) state = "code"
+    i++
+  }
+  return out.join("")
+}
+
 interface LangResult {
   language: string
   specHandled: number
   fixtureTypes: number
   uncovered: string[]        // spec-handled types no fixture exercises
   deadLiterals: string[]     // analyzer literals that are neither grammar types nor spec-classified
+  deadLiteralSites?: Array<{ literal: string; line: number }>  // first-occurrence line per dead literal
   pass: boolean
+}
+
+const LITERAL_PATTERNS = [
+  /\.[tT]ype\s*===\s*"([A-Za-z_][A-Za-z0-9_]*)"/g,
+  /\.[tT]ype\s*!==\s*"([A-Za-z_][A-Za-z0-9_]*)"/g,
+  /findChildByType\([^,]+,\s*"([A-Za-z_][A-Za-z0-9_]*)"/g,
+  /hasChildType\([^,]+,\s*"([A-Za-z_][A-Za-z0-9_]*)"/g,
+]
+
+function literalSet(source: string): Set<string> {
+  const out = new Set<string>()
+  for (const re of LITERAL_PATTERNS) for (const m of source.matchAll(re)) out.add(m[1])
+  return out
+}
+
+/**
+ * M49 W9 self-test. The comment-masker narrows what this gate can see, so
+ * "masking narrowed too much" is the failure mode that would make the whole
+ * audit vacuous. Two assertions, both computed:
+ *
+ *   1. For every gated analyzer: masked-literal-set ⊆ raw-literal-set, and
+ *      EVERY removed literal's first raw occurrence is inside a comment. That
+ *      is the proof that masking removes documentation, never a comparison.
+ *   2. Masking is still able to fail: a synthetic dead literal in code is
+ *      found; the identical text inside a line comment / block comment is not.
+ */
+function runSelfTest(): number {
+  let failures = 0
+  const fail = (msg: string) => { console.log(`SELFTEST FAIL ${msg}`); failures++ }
+
+  const synthetic = [
+    'function f(n: any) {',
+    '  // audit note: the old cur.type === "ghost_from_line_comment" was removed',
+    '  /* block note: n.type === "ghost_from_block" was removed */',
+    '  if (n.type === "real_dead_literal") return 1',
+    '  return 0',
+    '}',
+  ].join("\n")
+  const sy = literalSet(maskComments(synthetic))
+  if (!sy.has("real_dead_literal")) fail("a real comparison in code must be visible after masking")
+  if (sy.has("ghost_from_line_comment")) fail("a comparison inside a // comment must NOT be visible")
+  if (sy.has("ghost_from_block")) fail("a comparison inside a /* */ comment must NOT be visible")
+
+  // proof: masking only ever REMOVES comment-derived occurrences
+  for (const [lang, cfg] of Object.entries(GATED_LANGS)) {
+    const p = path.join(ROOT, "src", "ast", cfg.analyzer)
+    if (!fs.existsSync(p)) continue
+    const src = fs.readFileSync(p, "utf8")
+    const raw = literalSet(src)
+    const masked = literalSet(maskComments(src))
+    for (const lit of masked) {
+      if (!raw.has(lit)) fail(`${lang}: masking INVENTED literal ${lit}`)
+    }
+    for (const lit of raw) {
+      if (masked.has(lit)) continue
+      // removed: prove every raw occurrence sits inside a comment
+      const maskedSrc = maskComments(src)
+      const inCode = LITERAL_PATTERNS.some((re) => re.test(maskedSrc))
+      for (const re of LITERAL_PATTERNS) {
+        re.lastIndex = 0
+        for (const m of src.matchAll(re)) {
+          if (m[1] !== lit || m.index === undefined) continue
+          // index in raw vs masked: if the masked char at that offset is a
+          // space where raw had non-space, the occurrence was inside a comment
+          const rawChunk = src.slice(m.index, m.index + m[0].length)
+          const maskedChunk = maskedSrc.slice(m.index, m.index + m[0].length)
+          if (maskedChunk === rawChunk) fail(`${lang}: masking removed a LIVE occurrence of ${lit} (offset ${m.index})`)
+        }
+      }
+      void inCode
+    }
+  }
+
+  console.log(failures === 0 ? "F6 selftest: PASS (masking is comment-only; gate can still fail)" : `F6 selftest: ${failures} failure(s)`)
+  return failures
 }
 
 async function main() {
   const langArgIdx = process.argv.indexOf("--lang")
   const langArg = langArgIdx >= 0 ? process.argv[langArgIdx + 1] : undefined
   const updateBaseline = process.argv.includes("--update-baseline")
+
+  if (process.argv.includes("--selftest")) {
+    process.exit(runSelfTest() === 0 ? 0 : 1)
+  }
 
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
@@ -203,8 +337,14 @@ async function main() {
     // --- dead-literal audit over the analyzer source ---
     const analyzerPath = path.join(ROOT, "src", "ast", cfg.analyzer)
     const deadLiterals: string[] = []
+    const deadLiteralSitesLine = new Map<string, number>()
     if (fs.existsSync(analyzerPath)) {
       const src = fs.readFileSync(analyzerPath, "utf8")
+      // M49 W9 FIX: scan the COMMENT-MASKED source. Reading the raw file made
+      // the audit comment-blind — an analyzer's own audit note quoting a
+      // comparison was counted as a live comparison, so the very comments that
+      // document a removed literal kept it "dead" forever.
+      const masked = maskComments(src)
       // node-type-looking literals: ONLY comparisons against a node's .type
       // (dotted receiver) or findChildByType/hasChildType helpers. The broad
       // `type === "x"` form is excluded on purpose: it also matches
@@ -218,8 +358,15 @@ async function main() {
         /hasChildType\([^,]+,\s*"([A-Za-z_][A-Za-z0-9_]*)"/g,
       ]
       const found = new Set<string>()
+      // line of first occurrence, so a finding is directly reviewable
+      const foundLine = new Map<string, number>()
       for (const re of patterns) {
-        for (const m of src.matchAll(re)) found.add(m[1])
+        for (const m of masked.matchAll(re)) {
+          found.add(m[1])
+          if (!foundLine.has(m[1]) && m.index !== undefined) {
+            foundLine.set(m[1], masked.slice(0, m.index).split("\n").length)
+          }
+        }
       }
       // grammar node types for the dead-literal audit: named AND anonymous.
       // Analyzers legitimately compare against anonymous keyword tokens
@@ -278,16 +425,21 @@ async function main() {
         // allowlisted: a comparison that can never fire against a parse tree —
         // DEAD CODE, the exact method_elem/relative_scope bug class.
         deadLiterals.push(lit)
+        deadLiteralSitesLine.set(lit, foundLine.get(lit) ?? 0)
       }
       deadLiterals.sort()
     }
 
     const pass = uncovered.length === 0 && deadLiterals.length === 0
-    results.push({ language: lang, specHandled: handled.length, fixtureTypes: occurring.size, uncovered, deadLiterals, pass })
+    const deadLiteralSites = deadLiterals.map((lit) => ({ literal: lit, line: deadLiteralSitesLine.get(lit) ?? 0 }))
+    results.push({ language: lang, specHandled: handled.length, fixtureTypes: occurring.size, uncovered, deadLiterals, deadLiteralSites, pass })
     const flag = pass ? "PASS" : "FAIL"
     console.log(`${lang.padEnd(12)} ${flag}  handled=${handled.length} fixtureTypes=${occurring.size} uncovered=${uncovered.length} deadLiterals=${deadLiterals.length}`)
     if (uncovered.length > 0) console.log(`    uncovered: ${uncovered.join(", ")}`)
-    if (deadLiterals.length > 0) console.log(`    deadLiterals: ${deadLiterals.join(", ")}`)
+    if (deadLiterals.length > 0) {
+      console.log(`    deadLiterals: ${deadLiterals.join(", ")}`)
+      console.log(`    at: ${deadLiteralSites.map((s) => `${s.literal}:${s.line}`).join(", ")}`)
+    }
   }
 
   // --- baseline regression check ---

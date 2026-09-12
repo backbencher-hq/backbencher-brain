@@ -520,6 +520,19 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "java/argument-count-inflation",
+    language: "java",
+    defectClass: "payload-drift",
+    description: "M49 W9 regression: inflates every calls-edge argumentCount by 1 — the class 'a non-argument node is counted as an argument'. The pre-fix guard skipped a node type the grammar does not define (comments are line_comment/block_comment, not 'comment'), so a comment inside an argument list was counted. The two arity fixtures pin exact per-target counts (a2/b2/c2=2, d1=1, e0=0), so systematic inflation cannot survive",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x =>
+        x.type === "calls" && typeof (x.metadata ?? {}).argumentCount === "number"
+          ? { ...x, metadata: { ...x.metadata, argumentCount: x.metadata.argumentCount + 1 } }
+          : x),
+    }),
+  },
+  {
     id: "java/mislabel-inheritance",
     language: "java",
     defectClass: "relationship-mislabel",
