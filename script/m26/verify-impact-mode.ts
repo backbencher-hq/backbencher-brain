@@ -211,6 +211,18 @@ async function main(): Promise<void> {
     const markerU = domU.el.find("bb-impact-truncation-marker") as El | null
     check("G4: unknown total renders 'unknown', never a fabricated number", markerU !== null && markerU!.attrs["data-total-if-known"] === "unknown" && markerU!.textContent.includes("total unknown"))
 
+    // Declared empty-state (owner live test, 2026-09-12): a resolved root with
+    // zero reverse dependencies renders the visible absence note — never
+    // legend-only silence.
+    const domE = makeDom()
+    const renderedE = core.renderImpact({ ...result, impact: [], shownCount: 0, totalCountIfKnown: 0, truncated: false, truncationReason: null }, domE as never)
+    const emptyEl = domE.el.find("bb-impact-empty") as El | null
+    check("G4: empty impact set renders the declared absence note (never legend-only)", renderedE.nodesRendered === 0 && emptyEl !== null && emptyEl!.attrs["data-empty"] === "impact" && emptyEl!.textContent.includes("No reverse dependencies"))
+    // ...and a non-empty set must NOT carry the empty note (no false absence).
+    const domNE = makeDom()
+    core.renderImpact(result, domNE as never)
+    check("G4: non-empty impact set renders no absence note", domNE.el.find("bb-impact-empty") === null)
+
     // --- Latency (contract §3 render budget, headless regime) --------------------
     const samples: number[] = []
     for (let i = 0; i < 20; i++) {
@@ -235,6 +247,17 @@ async function main(): Promise<void> {
           const d = makeDom()
           const r = m.renderImpact({ ...result, impact: result.impact.slice(0, 2), shownCount: 2, totalCountIfKnown: 4, truncated: true, truncationReason: "x" }, d as never)
           return d.el.find("bb-impact-truncation-marker") === null // marker gone => defect visible
+        },
+      },
+      {
+        name: "M1b empty-state dropped",
+        home: "core",
+        from: "if (result.impact.length === 0) {",
+        to: "if (false) {",
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact({ ...result, impact: [], shownCount: 0, totalCountIfKnown: 0, truncated: false, truncationReason: null }, d as never)
+          return d.el.find("bb-impact-empty") === null // note gone => defect visible
         },
       },
       {
