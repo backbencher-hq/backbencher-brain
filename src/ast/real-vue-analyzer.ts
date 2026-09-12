@@ -630,16 +630,18 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     colOffset: number,
     indexOffset?: number,
   ): void {
-    const seen = new Set<string>()
+    // M49 dup-key ruling (Option A): last-wins — a duplicate data key
+    // replaces the earlier symbol (JS semantics: later property wins).
+    const seen = new Map<string, number>()
     for (let i = 0; i < objectNode.namedChildCount; i++) {
       const child = objectNode.namedChild(i)
       if (!child || child.type !== "pair") continue
       const keyNode = child.childForFieldName("key")
       if (!keyNode) continue
       const name = keyNode.type === "string" ? unquote(keyNode.text) : keyNode.text
-      if (!name || seen.has(name)) continue
-      seen.add(name)
-      symbols.push({
+      if (!name) continue
+      const prevIdx = seen.get(name)
+      const sym = {
         name,
         kind: ASTEngine.SymbolKind.Property,
         range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
@@ -648,7 +650,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerKind: ASTEngine.SymbolKind.Class,
         visibility: "public",
         metadata: { isDataKey: true },
-      })
+      }
+      if (prevIdx !== undefined) {
+        symbols[prevIdx] = sym
+      } else {
+        seen.set(name, symbols.length)
+        symbols.push(sym)
+      }
     }
   }
 
@@ -712,7 +720,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     payloads?: Map<string, ASTEngine.UniversalSymbol>,
     indexOffset?: number,
   ): void {
-    const seen = new Set<string>()
+    // M49 dup-key ruling (Option A, #745): last-wins — JS executes the
+    // LAST same-key declaration, and the family contract is one symbol per
+    // key keyed to the surviving declaration. The seen-set only records
+    // AFTER emitting, so a later duplicate REPLACES the earlier symbol
+    // (pre-fix: `seen.has(name)` skipped the later one — first-wins).
+    const seen = new Map<string, number>()
     for (let i = 0; i < valueNode.namedChildCount; i++) {
       const child = valueNode.namedChild(i)
       if (!child) continue
@@ -728,13 +741,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (child.type === "property_identifier") {
         name = child.text
       }
-      if (!name || seen.has(name)) continue
-      seen.add(name)
+      if (!name) continue
+      const prevIdx = seen.get(name)
       // M5 (review wave): copy the sub-analyzer's payload (parameters,
       // return type, complexity, qualified calls) instead of emitting a
       // bare signature — the filtered sub-symbol already computed it.
       const payload = payloads?.get(name)
-      symbols.push({
+      const sym = {
         name,
         kind,
         range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
@@ -747,7 +760,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: payload?.complexity,
         qualified_calls: payload?.qualified_calls,
         metadata: { [meta]: true },
-      })
+      }
+      if (prevIdx !== undefined) {
+        symbols[prevIdx] = sym
+      } else {
+        seen.set(name, symbols.length)
+        symbols.push(sym)
+      }
     }
   }
 

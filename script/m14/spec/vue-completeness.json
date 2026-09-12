@@ -215,6 +215,14 @@
         "question": "vue-element-admin MarkdownEditor deep-diff MISSING: member calls inside prop default() factory bodies (Math.random(), .toFixed(0)) emitted no calls edges. Fix the walk or verify already-fixed?",
         "decision": "RULED - VERIFIED ALREADY-FIXED at HEAD (V1/V2 embedded-script walk broadening covers the factory body): probe of the exact corpus expression emits default->toFixed + default->random; control method call (ping->helper) unchanged. Pinned by vue/prop-default-factory-calls so the contract cannot silently regress; mutant vue/prop-default-call-drop re-drops the edges and is caught.",
         "date": "2026-09-12"
+      },
+      {
+        "id": "D11",
+        "node_type": "Options-API object member duplicate keys (#745, M49 web-family dup-key ruling)",
+        "status": "RULED",
+        "question": "emitObjectMembers/emitDataKeys were first-wins (`seen.has(name)` skipped later declarations) while JS at runtime executes the LAST same-key declaration and the JS analyzer's J3 contract is last-wins \u2014 vue's graph disagreed with both runtime and its own embedded-JS sub-analyzer. Found via the web-family dup-key convergence sweep (#745).",
+        "ruling": "Option A \u2014 last-wins family-wide. emitObjectMembers and emitDataKeys record the symbol index per key; a later duplicate REPLACES the earlier symbol in place (one symbol per key, keyed to the surviving LAST declaration). Pinned by fixtures/vue/dupkey-last-wins; mutant vue/dupkey-revert-first-wins dies on it.",
+        "evidence": "dupkey-verify.ts (line-of surviving symbol moved first->last), F3 vue 29/29, F4 437/437"
       }
     ]
   }

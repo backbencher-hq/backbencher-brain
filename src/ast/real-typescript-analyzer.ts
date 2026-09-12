@@ -1517,6 +1517,9 @@ class TypeScriptAnalysisRunner {
   private typeInference: TypeInferenceEngine
   private symbolsById = new Map<string, ASTEngine.UniversalSymbol>()
   private _pendingReExportImports: ASTEngine.ImportInfo[] = []
+  // M49 dup-key ruling (#746): dead spans returned by the Phase-2.5
+  // collapse, consumed by the post-walk phantom-edge filter.
+  private _dupKeyDeadSpans: { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[] | null = null
   // Depth of nested function bodies being walked for symbol extraction.
   // Locals/params/lambda-params inside a function body are NOT symbols
   // (C#-family contract); only module/namespace/class-level declarations are.
@@ -1620,6 +1623,14 @@ class TypeScriptAnalysisRunner {
     // PHASE 2: Extract all symbols with proper scoping
     this.extractSymbols(rootNode, symbols)
 
+    // PHASE 2.5 (M49 dup-key ruling, Option A — #746): object-literal
+    // members collapse last-wins (family contract with the JS analyzer).
+    // Runs before the symbol-map build and every relationship phase so
+    // exports/calls/contains all derive from the collapsed array.
+    this.collapseDuplicateObjectMembers(rootNode, symbols)
+    this._dupKeyDeadSpans =
+      this.collapseDuplicateObjectMembers(rootNode, symbols)
+
     // Build symbol lookup map
     for (const symbol of symbols) {
       const id = this.generateSymbolId(symbol)
@@ -1664,6 +1675,14 @@ class TypeScriptAnalysisRunner {
     this.extractDeclaredTypeRefs(rootNode, relationships)
 
     this.classifyEvidenceTier(relationships)
+
+    // M49 dup-key ruling (#746) post-walk half: all relationship phases
+    // (calls/uses/contains/references) have run — now drop the phantom
+    // edges sourced from collapsed members' dead bodies.
+    if (this._dupKeyDeadSpans && this._dupKeyDeadSpans.length > 0) {
+      this.filterPhantomDupKeyEdges(relationships, this._dupKeyDeadSpans)
+    }
+    this._dupKeyDeadSpans = null
 
     return {
       language: "typescript",
@@ -3952,6 +3971,119 @@ class TypeScriptAnalysisRunner {
         if (baseBases) queue.push(...baseBases)
       }
     }
+  }
+
+
+  /**
+   * M49 dup-key ruling (Option A — #746): object-literal members collapse
+   * last-wins. JS executes the LAST same-key declaration; the TS analyzer
+   * must match (web-family contract: same shape, same graph regardless of
+   * file extension). Slot model mirrors the JS analyzer's ruled
+   * accessor-slot-semantics contract exactly:
+   *   - get/set accessor members occupy kind-keyed slots (`x#get`, `x#set`)
+   *     and COEXIST (B5 family contract);
+   *   - a later PLAIN member (method or data pair) takes the plain slot and
+   *     KILLS all accessor slots of that name (data replaces the descriptor);
+   *   - class bodies are OVERLOAD territory — never collapsed (this pass
+   *     only descends `object` nodes).
+   * Dead members are spliced from the symbols array (before the symbol map
+   * build); the dead-span list is RETURNED so phantom calls/uses emitted in
+   * later phases can be dropped by a post-walk filter
+   * (filterPhantomDupKeyEdges) — the calls/uses phases run AFTER this pass,
+   * so filtering here would see an empty relationship array.
+   */
+  private collapseDuplicateObjectMembers(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[] {
+    type Dead = { name: string; startRow: number; endRow: number; startCol: number; endCol: number }
+    const dead: Dead[] = []
+    const accessorKind = (m: Node): "get" | "set" | undefined => {
+      for (let i = 0; i < m.childCount; i++) {
+        const c = m.child(i)
+        if (c && !c.isNamed && (c.text === "get" || c.text === "set")) return c.text as "get" | "set"
+      }
+      for (let i = 0; i < m.namedChildCount; i++) {
+        const c = m.namedChild(i)
+        if (c && (c.type === "get" || c.type === "set")) return c.type as "get" | "set"
+      }
+      return undefined
+    }
+    const visit = (n: Node): void => {
+      if (n.type === "object") {
+        const slots = new Map<string, { node: Node; plain: boolean; name: string }>()
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const m = n.namedChild(i)
+          if (!m || (m.type !== "method_definition" && m.type !== "pair")) continue
+          const raw = m.childForFieldName("name")?.text ?? m.childForFieldName("key")?.text
+          if (!raw) continue
+          const acc = m.type === "method_definition" ? accessorKind(m) : undefined
+          const slot = acc ? `${raw}#${acc}` : raw
+          const prev = slots.get(slot)
+          if (prev) {
+            // Later same-slot declaration wins; earlier one dies.
+            dead.push({ name: prev.name, startRow: prev.node.startPosition.row, endRow: prev.node.endPosition.row, startCol: prev.node.startPosition.column, endCol: prev.node.endPosition.column })
+          }
+          slots.set(slot, { node: m, plain: !acc, name: raw })
+          // A plain member replaces the whole descriptor: kill accessor
+          // halves of the same name regardless of position order.
+          if (!acc) {
+            for (const kind of ["get", "set"] as const) {
+              const half = slots.get(`${raw}#${kind}`)
+              if (half) {
+                dead.push({ name: half.name, startRow: half.node.startPosition.row, endRow: half.node.endPosition.row, startCol: half.node.startPosition.column, endCol: half.node.endPosition.column })
+                slots.delete(`${raw}#${kind}`)
+              }
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) visit(c)
+      }
+    }
+    visit(rootNode)
+    if (dead.length === 0) return []
+
+    // Splice dead member symbols (positional match on 1-based range).
+    for (let i = symbols.length - 1; i >= 0; i--) {
+      const s = symbols[i]
+      if (!s.range) continue
+      const dl = dead.find(
+        (d) =>
+          d.name === s.name &&
+          s.range.startLine === d.startRow + 1 &&
+          s.range.startColumn === d.startCol + 1,
+      )
+      if (dl) symbols.splice(i, 1)
+    }
+    return dead
+  }
+
+  /**
+   * M49 dup-key ruling (#746) post-walk half: drop phantom edges sourced
+   * from a collapsed (dead) object member's body. Calls/uses/references
+   * carry metadata.line (0-based row of the site); an edge whose source is
+   * the dead member's name AND whose site lies inside the dead span
+   * belonged to the body runtime never executes.
+   */
+  private filterPhantomDupKeyEdges(
+    relationships: ASTEngine.UniversalRelationship[],
+    dead: { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[],
+  ): void {
+    if (dead.length === 0) return
+    const inDead = (name: string, line: unknown): boolean => {
+      if (typeof line !== "number") return false
+      return dead.some((d) => d.name === name && line >= d.startRow && line <= d.endRow)
+    }
+    const kept = relationships.filter((r) => {
+      const meta = r.metadata as { line?: unknown } | undefined
+      if (!meta || typeof meta.line !== "number" || typeof r.source !== "string") return true
+      return !inDead(r.source, meta.line)
+    })
+    relationships.length = 0
+    relationships.push(...kept)
   }
 
   private extractImportRelationships(
