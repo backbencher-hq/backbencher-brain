@@ -87,13 +87,29 @@ const htmlName = (r: string): string => (r === "" ? "index" : r.slice(1))
 // shrunken sitemap — this fails instead. And a page added to the site without
 // being onboarded here fails too: a new route gets truth/SEO coverage
 // deliberately, never by accident.
-const REQUIRED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/editors", "/faq", "/troubleshooting", "/contact", "/privacy", "/terms"]
+const REQUIRED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/editors", "/support", "/troubleshooting", "/privacy", "/terms"]
+// M56.S1: /faq and /contact are permanent redirects to /support — known routes
+// with their own onboarding rules (they must redirect; they are excluded from
+// the sitemap and from head-completeness). Any OTHER new route still fails here.
+const REDIRECT_ROUTES = ["/faq", "/contact"]
 const discoveryMissing = REQUIRED_ROUTES.filter((r) => !REAL_ROUTES.includes(r))
-const discoveryExtra = REAL_ROUTES.filter((r) => !REQUIRED_ROUTES.includes(r))
+const discoveryExtra = REAL_ROUTES.filter((r) => !REQUIRED_ROUTES.includes(r) && !REDIRECT_ROUTES.includes(r))
 check("S1: route discovery finds every required page", discoveryMissing.length === 0, discoveryMissing.join(" "))
 check("S1: no route exists outside the required list", discoveryExtra.length === 0, discoveryExtra.join(" "))
 
-// --- rendered <head> extraction (every real route, not a fixed list) --------------
+// --- rendered <head> extraction ------------------------------------------------------
+// M56.S1: /faq and /contact are permanent redirects to /support (their pages
+// are stubs with no title/description/canonical — that is CORRECT for a
+// redirect: a redirecting URL is not an indexable document). Head completeness
+// and uniqueness apply to the INDEXABLE routes; the redirects are verified to
+// redirect below.
+
+// --- rendered <head> extraction ------------------------------------------------------
+// M56.S1: /faq and /contact are permanent redirects to /support (their pages
+// are stubs with no title/description/canonical — that is CORRECT for a
+// redirect: a redirecting URL is not an indexable document). Head completeness
+// and uniqueness apply to the INDEXABLE routes; the redirects are verified to
+// redirect below. REDIRECT_ROUTES is declared with REQUIRED_ROUTES above.
 
 function heads(): Record<string, string> {
   const out: Record<string, string> = {}
@@ -107,24 +123,30 @@ function heads(): Record<string, string> {
 }
 
 const H = heads()
+const indexable = Object.entries(H).filter(([r]) => !REDIRECT_ROUTES.includes(`/${r}`))
 
-// --- uniqueness + completeness ---------------------------------------------------
+// Every redirect stub really is a redirect (source of truth: the page module).
+for (const rr of REDIRECT_ROUTES) {
+  check(`S1: /${rr} is a permanent redirect to /support`, read(`website/src/app/${rr}/page.tsx`).includes('redirect("/support")'))
+}
 
-const titles = Object.values(H).map((h) => h.match(/<title>([^<]*)<\/title>/)?.[1] ?? "")
-const descriptions = Object.values(H).map((h) => h.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? "")
-check("S1: every route renders a <title>", titles.every((t) => t.length > 0), titles.join(" | "))
-check("S1: every route renders a meta description", descriptions.every((d) => d.length > 0), descriptions.join(" | ").slice(0, 120))
+// --- uniqueness + completeness (indexable routes only) -------------------------------
+
+const titles = indexable.map(([, h]) => h.match(/<title>([^<]*)<\/title>/)?.[1] ?? "")
+const descriptions = indexable.map(([, h]) => h.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? "")
+check("S1: every indexable route renders a <title>", titles.every((t) => t.length > 0), titles.join(" | "))
+check("S1: every indexable route renders a meta description", descriptions.every((d) => d.length > 0), descriptions.join(" | ").slice(0, 120))
 check("S1: titles are unique across routes", new Set(titles).size === titles.length, titles.join(" | "))
 check("S1: descriptions are unique across routes", new Set(descriptions).size === descriptions.length)
 
-const canonicals = Object.entries(H).map(([r, h]) => ({ r, c: h.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "" }))
-check("S1: every route renders a canonical URL", canonicals.every((x) => x.c.startsWith("https://backbencher.cc")), canonicals.map((x) => `${x.r}=${x.c}`).join(" | "))
+const canonicals = indexable.map(([r, h]) => ({ r, c: h.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "" }))
+check("S1: every indexable route renders a canonical URL", canonicals.every((x) => x.c.startsWith("https://backbencher.cc")), canonicals.map((x) => `${x.r}=${x.c}`).join(" | "))
 
-const ogOk = Object.entries(H).map(([r, h]) => ({ r, ok: h.includes('property="og:title"') && h.includes('property="og:description"') && h.includes('property="og:image"') }))
-check("S1: every route renders OG tags (title, description, image)", ogOk.every((x) => x.ok), ogOk.filter((x) => !x.ok).map((x) => x.r).join(","))
+const ogOk = indexable.map(([r, h]) => ({ r, ok: h.includes('property="og:title"') && h.includes('property="og:description"') && h.includes('property="og:image"') }))
+check("S1: every indexable route renders OG tags (title, description, image)", ogOk.every((x) => x.ok), ogOk.filter((x) => !x.ok).map((x) => x.r).join(","))
 
-const twitterOk = Object.entries(H).map(([r, h]) => ({ r, ok: h.includes('name="twitter:card"') && h.includes("summary_large_image") }))
-check("S1: every route renders a Twitter card", twitterOk.every((x) => x.ok), twitterOk.filter((x) => !x.ok).map((x) => x.r).join(","))
+const twitterOk = indexable.map(([r, h]) => ({ r, ok: h.includes('name="twitter:card"') && h.includes("summary_large_image") }))
+check("S1: every indexable route renders a Twitter card", twitterOk.every((x) => x.ok), twitterOk.filter((x) => !x.ok).map((x) => x.r).join(","))
 
 check("S1: robots meta allows indexing on every route", Object.values(H).every((h) => !/<meta name="robots" content="noindex/.test(h)))
 
@@ -141,8 +163,13 @@ try {
   }
 }
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
-const expectedUrls = REAL_ROUTES.map((r) => `https://backbencher.cc${r}`)
-check("S1: sitemap matches the discovered route list exactly", JSON.stringify([...sitemapUrls].sort()) === JSON.stringify([...expectedUrls].sort()), `sitemap=${sitemapUrls.length} routes=${expectedUrls.length}`)
+// The sitemap lists the INDEXABLE routes exactly — M56.S1's redirect sources
+// (/faq, /contact) are deliberately absent (a sitemap lists canonical URLs),
+// and their absence is itself checked: a redirect URL in the sitemap fails.
+const indexableRoutes = REAL_ROUTES.filter((r) => !REDIRECT_ROUTES.includes(r))
+const expectedUrls = indexableRoutes.map((r) => `https://backbencher.cc${r}`)
+check("S1: sitemap matches the indexable route list exactly", JSON.stringify([...sitemapUrls].sort()) === JSON.stringify([...expectedUrls].sort()), `sitemap=${sitemapUrls.length} routes=${expectedUrls.length}`)
+check("S1: sitemap excludes redirect sources (canonical URLs only)", REDIRECT_ROUTES.every((r) => !sitemapUrls.includes(`https://backbencher.cc${r}`)))
 check("S1: sitemap lists the legal pages (privacy, terms)", ["/privacy", "/terms"].every((r) => sitemapUrls.includes(`https://backbencher.cc${r}`)), sitemapUrls.join(" "))
 check("S1: robots.txt declares the sitemap", read("website/public/robots.txt").includes("Sitemap: https://backbencher.cc/sitemap.xml"))
 check("S1: robots.txt allows crawlers and disallows nothing phantom", read("website/public/robots.txt").includes("Allow: /") && !read("website/public/robots.txt").includes("/s/"))
@@ -168,13 +195,16 @@ if (ldMatch) {
   }
 }
 
-// --- FAQPage structured data (/faq) ------------------------------------------------
+// --- FAQPage structured data (/support) --------------------------------------------
 //
-// The FAQ rich result. Three links are chained, and each is checked separately
-// so a break is named precisely:
-//   1. website/src/data/faqs.tsx — the source (one array; the page renders it)
-//   2. the FAQPage JSON-LD       — what a search engine reads
-//   3. the rendered /faq page    — what a human reads
+// The FAQ rich result. M56.S1 moved the FAQ to /support (single surface,
+// website/faq.md as the single source — the page data is GENERATED from it).
+// Three links are chained, and each is checked separately so a break is named
+// precisely:
+//   1. website/faq.md                  — the source of record (parsed by the
+//                                        generator into support.generated.ts)
+//   2. the FAQPage JSON-LD             — what a search engine reads
+//   3. the rendered /support page      — what a human reads
 // Link 2 must be a faithful copy of both 1 and 3: no answer may be published to
 // engines that the page does not show.
 //
@@ -222,21 +252,24 @@ function ldBlocks(html: string): { type: string; payload: unknown }[] {
 
 type FaqQ = { "@type"?: string; name?: string; acceptedAnswer?: { "@type"?: string; text?: string } }
 
-const faqHtmlRaw = buildOk ? read("website/.next/server/app/faq.html") : ""
-const faqRenderedText = pageText(faqHtmlRaw)
-const faqLdRaw = [...faqHtmlRaw.matchAll(LD_SCRIPT)].map((m) => m[1]!)[0] ?? ""
-const faqLd = ldBlocks(faqHtmlRaw).find((b) => b.type === "FAQPage")?.payload as { mainEntity?: FaqQ[] } | undefined
+const supportHtmlRaw = buildOk ? read("website/.next/server/app/support.html") : ""
+const faqRenderedText = pageText(supportHtmlRaw)
+const faqLdRaw = [...supportHtmlRaw.matchAll(LD_SCRIPT)].map((m) => m[1]!)[0] ?? ""
+const faqLd = ldBlocks(supportHtmlRaw).find((b) => b.type === "FAQPage")?.payload as { mainEntity?: FaqQ[] } | undefined
 let faqQuestionCount = 0
 
-check("S1: FAQ page carries FAQPage JSON-LD", Boolean(faqLd))
+check("S1: /support carries FAQPage JSON-LD", Boolean(faqLd))
 if (faqLd) {
   const qs = faqLd.mainEntity ?? []
   faqQuestionCount = qs.length
-  const sourceQuestions = [...read("website/src/data/faqs.tsx").matchAll(/q:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => JSON.parse(`"${m[1]}"`) as string)
-  const detailsCount = (faqHtmlRaw.match(/<details/g) ?? []).length
+  // Source of record: website/faq.md (### headings, in order). The generator
+  // parses the same file; here the gate parses it INDEPENDENTLY so a generator
+  // bug cannot validate itself.
+  const sourceQuestions = [...read("website/faq.md").matchAll(/^### (.+)$/gm)].map((m) => m[1]!.trim())
+  const detailsCount = (supportHtmlRaw.match(/<details/g) ?? []).length
   const missingAnswers = qs.filter((q) => !q.acceptedAnswer?.text || !faqRenderedText.includes(q.acceptedAnswer.text))
-  check("S1: FAQPage lists exactly the questions in data/faqs.tsx", JSON.stringify(qs.map((q) => q.name)) === JSON.stringify(sourceQuestions), `ld=${qs.length} source=${sourceQuestions.length}`)
-  check("S1: FAQ page renders one <details> per question", detailsCount === qs.length, `details=${detailsCount} questions=${qs.length}`)
+  check("S1: FAQPage lists exactly the questions in website/faq.md", JSON.stringify(qs.map((q) => q.name)) === JSON.stringify(sourceQuestions), `ld=${qs.length} source=${sourceQuestions.length}`)
+  check("S1: support page renders one <details> per question", detailsCount === qs.length, `details=${detailsCount} questions=${qs.length}`)
   check("S1: every FAQ question is rendered on the page", qs.every((q) => Boolean(q.name) && faqRenderedText.includes(q.name!)))
   check("S1: every FAQ answer is rendered verbatim on the page", missingAnswers.length === 0, missingAnswers.map((q) => (q.name ?? "?").slice(0, 30)).join(","))
   check("S1: FAQ answers are substantive (>= 80 chars)", qs.every((q) => (q.acceptedAnswer?.text ?? "").length >= 80))
@@ -244,6 +277,13 @@ if (faqLd) {
   check("S1: FAQ answers are typed as schema.org Answers", qs.every((q) => q.acceptedAnswer?.["@type"] === "Answer"))
   check("S1: FAQPage payload escapes '<' (script-safe)", !faqLdRaw.includes("<"), "raw JSON-LD contains a literal <")
 }
+
+// The consolidated surface must also carry the still-have-questions block with
+// the real inboxes (M56.S1), and the FAQ/contact paths must redirect to it.
+check("S1: /support offers the real inboxes", supportHtmlRaw.includes("support@backbencher.cc") && supportHtmlRaw.includes("info@backbencher.cc"))
+check("S1: /support has a still-have-questions block", faqRenderedText.includes("Still have questions"))
+check("S1: /faq redirects to /support", buildOk && read("website/src/app/faq/page.tsx").includes('redirect("/support")'))
+check("S1: /contact redirects to /support", buildOk && read("website/src/app/contact/page.tsx").includes('redirect("/support")'))
 
 // --- keyword presence (woven into real content, verified) --------------------------
 
@@ -364,7 +404,7 @@ negative("S1: route-parity detector rejects a missing legal page", (() => {
 negative("S1: rendered-text normalizer strips separators and decodes entities", stripTags("<b>x</b><!-- -->y") === "xy" && decodeEntities("&#x27;&amp;&lt;") === "'&<")
 
 // Restore proof: committed sources must render complete heads again.
-check("S1: restore-proof — committed sources render canonicals again", Object.values(H).every((h) => (h.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "").startsWith("https://backbencher.cc")))
+check("S1: restore-proof — committed sources render canonicals again", indexable.every(([, h]) => (h.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? "").startsWith("https://backbencher.cc")))
 
 // --- verdict + evidence ---------------------------------------------------------------
 

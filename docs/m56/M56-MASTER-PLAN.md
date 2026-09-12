@@ -205,14 +205,39 @@ Implementation notes (as built):
   `verify` chain and in CI's `verify-site` job.
 
 ### S1 — Support Consolidation (#784)
-Deliverables: `website/faq.md` is the single FAQ source and the page is generated
-from it; `/support` renders the FAQ then a still-have-questions block
-(`support@backbencher.cc`, `info@backbencher.cc`, bug reports, feedback, general
-and press); `/faq` and `/contact` redirect; `FAQPage` structured data moves here
-and is derived from the same source.
-Verifier: `verify-support-page.ts` — every FAQ.md question and answer rendered,
-JSON-LD matches the rendered text, redirects exist, emails are the real ones, and a
-planted drifted answer fails.
+Deliverables: `website/faq.md` is the single FAQ source and the support page is
+generated from it; `/support` renders the FAQ then a still-have-questions block
+(`support@backbencher.cc`, `info@backbencher.cc` — the four real channels);
+`/faq` and `/contact` redirect (bookmarks stay valid, sitemap lists canonical
+URLs only); `FAQPage` structured data is derived from the same generated array
+the page renders. The old TSX FAQ array (8 thin answers) was folded INTO
+faq.md (19 questions across 5 sections) and deleted; its CLI quick-reference
+table was NOT copied (D1's generated CLI reference owns that now — single
+sourcing in the other direction).
+Verifier: `verify-support-page.ts` — independent faq.md parse (not the
+generator's code) vs the generated data; every question and answer rendered
+verbatim on /support; JSON-LD equals the rendered text; truth numbers
+(15 tables / 16 tools / 49+46 languages) cross-checked into faq.md at
+generation time; redirects exist; no rendered link targets a retired path;
+sitemap excludes redirect sources. Mutants: drifted answer, dropped question,
+wrong inbox, redirect-source in sitemap, stale generated file (generator
+`--check` refuses), FAQPage detector rejecting a non-FAQ page, and the
+multiline-anchor mechanism (a non-`m` heading scan must find 0 questions).
+
+Implementation notes (as built):
+- `script/m56/generate-support-data.ts` parses `## Section` / `### Question`
+  structure from faq.md, normalizes answers to plain text (markdown stripped,
+  links kept as `label (href)`), and refuses to generate when a count in
+  faq.md disagrees with `truth.generated.ts` — drift fails at generation,
+  before any page can publish it.
+- The M41 SEO gate's FAQ chain rebinds to `/support` and now parses faq.md
+  INDEPENDENTLY of the generator, so the two instruments can never share a bug.
+- The route contract learned the redirect rule: `REDIRECT_ROUTES` are known,
+  excluded from head-completeness and the sitemap, and verified to redirect;
+  any other new route still fails discovery.
+- The redirect stubs broke M41.T3's page-content checks by design — they were
+  rebound to the support surface, and the nav set check now expects the
+  consolidated links (redirect paths excluded).
 
 ### I1 — IA, Redirects and Sitemap (#785)
 Deliverables: nav and footer become Install · Docs · Tools · Languages · Editors ·
