@@ -117,18 +117,26 @@
     {
       "id": "J6",
       "title": "JS template-substitution reads include call callees \u2014 5 over-emitted uses edges",
-      "status": "pending",
+      "status": "verified",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
-      "verifiedAtCommit": "0533251e",
-      "notes": "All five svelte-repo javascript-lane unexplained edges carry confidence 0.85 = the template_substitution rule (`real-javascript-analyzer.ts` ~L1881): `${escape_markdown_cell(key)}`, `${format_markdown_value(value)}`, `${escape_markdown_cell(String(id))}`, `${lines.join('\\n')}` (benchmarking/utils.js), `${escape_html(value, true)}` (transform-template/template.js). The rule emits Uses for every identifier in the substitution subtree, including call callees \u2014 while the analyzer's own bare-read rule excludes callees (`!isCallee`) because the calls edge already covers them. Same defect class as M49 W1's chain-head fabrication; needs a fixture + mutant pair before the fix lands. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change."
+      "verifiedAtCommit": "35ce5f8b",
+      "notes": "All five svelte-repo javascript-lane unexplained edges carry confidence 0.85 = the template_substitution rule (`real-javascript-analyzer.ts` ~L1881): `${escape_markdown_cell(key)}`, `${format_markdown_value(value)}`, `${escape_markdown_cell(String(id))}`, `${lines.join('\\n')}` (benchmarking/utils.js), `${escape_html(value, true)}` (transform-template/template.js). The rule emits Uses for every identifier in the substitution subtree, including call callees \u2014 while the analyzer's own bare-read rule excludes callees (`!isCallee`) because the calls edge already covers them. Same defect class as M49 W1's chain-head fabrication; needs a fixture + mutant pair before the fix lands. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change. FIXED @35ce5f8b: the template walk gates on call-callee / assignment-left ancestry and owns the substitution read alone (one 0.85 isTemplateInterpolation edge; the #744 bare-read duplicate is suppressed, TS TSD28 family contract). The typescript twin carried the same over-emission and was fixed with it. Fixture javascript/template-substitution-reads; mutants javascript/template-callee-uses + javascript/template-read-duplicate CAUGHT; F3 js 55/55; F4 449/449; corpus: svelte-repo javascript lane 0 unexplained (was 5)."
     },
     {
       "id": "T2",
       "title": "TS .d.ts interface-member redeclaration overrides have no oracle mirror \u2014 19 unexplained",
-      "status": "pending",
+      "status": "verified",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
-      "verifiedAtCommit": "0533251e",
-      "notes": "All 19 svelte-repo typescript-lane unexplained edges are `overrides` on .d.ts interface members (HTMLAttributes.ontoggle/ph? vs DOMAttributes.ontoggle at elements.d.ts; BaseNode.type/BaseElement.name in legacy-nodes.d.ts; Analysis.runes/tracing; Reaction.fn). The analyzer's interface-heritage redeclaration rule is intentional (the same contract kotlin/scala/java carry), so the likely defect is the F5 truth side: no interface-membership rule for .d.ts heritage. Triage owed: prove which side is wrong with a minimal .d.ts probe, then mirror the oracle (M37.21 lockstep) rather than weakening the analyzer. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change."
+      "verifiedAtCommit": "35ce5f8b",
+      "notes": "All 19 svelte-repo typescript-lane unexplained edges are `overrides` on .d.ts interface members (HTMLAttributes.ontoggle/ph? vs DOMAttributes.ontoggle at elements.d.ts; BaseNode.type/BaseElement.name in legacy-nodes.d.ts; Analysis.runes/tracing; Reaction.fn). The analyzer's interface-heritage redeclaration rule is intentional (the same contract kotlin/scala/java carry), so the likely defect is the F5 truth side: no interface-membership rule for .d.ts heritage. Triage owed: prove which side is wrong with a minimal .d.ts probe, then mirror the oracle (M37.21 lockstep) rather than weakening the analyzer. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change. FIXED @35ce5f8b (oracle side, M37.21 lockstep): `property_signature` joins the override member set; class FIELDS stay out (probe: the analyzer emits no class-field overrides). Fixture typescript/dts-interface-property-overrides (count==2); mutant typescript/property-override-drop CAUGHT; corpus: svelte-repo typescript lane 0 unexplained (was 19). NOTE: this corrects the earlier #759 disposition ('oracle already models truth') - it modelled METHOD redeclarations only."
+    },
+    {
+      "id": "T3",
+      "title": "TS subscript-callee / dynamic-import early return skipped the whole argument subtree (1 corpus MISSING)",
+      "status": "verified",
+      "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
+      "verifiedAtCommit": "35ce5f8b",
+      "notes": "Second finding of the same rotated-sample probe, surfaced as `MISSING calls .../runtime-browser/test.ts -> text` (line 203 `console[method](message.text());`) once the sample rotated. Probe script/m14/tmp/t3-nested-call-probe.ts: `console[method](m.text())` emitted NOTHING while the oracle derived calls->text, because the subscript-callee branch (and the dynamic-import branch) `return`ed before processNode's child recursion - the EDGE skip swallowed the SUBTREE. `console.log(m.text())` was fine, so only computed callees were hit. FIXED @35ce5f8b: both branches walk the children, then stop (the same defect class as the M49 W1 javascript `continue`-skips-subtree fix). Fixture typescript/subscript-callee-nested-calls (count==2 + computed-target forbids); mutant typescript/subscript-callee-nested-call-drop CAUGHT; corpus lane 0 missing / 0 unexplained."
     }
   ],
   "waves": [
@@ -287,18 +295,28 @@
           "severity": "medium-high"
         },
         {
-          "issue": 770,
+          "issue": null,
           "lang": "javascript",
           "class": "template-substitution-callee-uses",
           "severity": "medium",
-          "note": "found by the rotated sample; registered as ledger J6, GitHub unreachable"
+          "ledgerId": "J6",
+          "note": "NO GitHub issue: creation was blocked by the proxy at registration time and remained blocked at fix time (verified 2026-09-12, three POST attempts). CORRECTION: an earlier revision of this row recorded \"issue\": 770 as the reserved number \u2014 that number was taken by the co-agent's M55.T1 (\"One identity resolver\") in the meantime, so the row asserted a false mapping. The ledger id J6 is the reference; file an issue and backfill this field when GitHub writes return. Fix landed @35ce5f8b with fixture + 2 mutants; evidence reviews/web-family/rotated-sample-findings.md \u00a75."
         },
         {
-          "issue": 771,
+          "issue": null,
           "lang": "typescript",
           "class": "dts-interface-redeclaration-oracle-blind",
           "severity": "medium",
-          "note": "registered as ledger T2, GitHub unreachable"
+          "ledgerId": "T2",
+          "note": "NO GitHub issue (same proxy block; CORRECTION: \"issue\": 771 was a false reservation \u2014 #771 is the co-agent's M55.T2). Ledger id T2 is the reference. Fix landed @35ce5f8b (oracle side, M37.21 lockstep); evidence reviews/web-family/rotated-sample-findings.md \u00a75."
+        },
+        {
+          "issue": null,
+          "lang": "typescript",
+          "class": "subscript-callee-subtree-skip",
+          "severity": "medium",
+          "ledgerId": "T3",
+          "note": "NO GitHub issue (same proxy block). Third finding of the rotated-sample probe: the subscript-callee and dynamic-import branches `return`ed before processNode's child recursion, so `console[method](m.text())` emitted nothing (1 corpus MISSING). Fix landed @35ce5f8b; evidence reviews/web-family/rotated-sample-findings.md \u00a75."
         }
       ],
       "evidence": "reviews/svelte/third-verification.md, reviews/web-family/rotated-sample-findings.md"
