@@ -89,7 +89,13 @@ async function main() {
   const raw = await BrainDatabase.getRawInstance(A.pid as any)
 
   const flagged = raw.prepare("SELECT relative_path p, language l FROM brain_file WHERE project_id=? AND COALESCE(is_test_file,0)=1 ORDER BY relative_path").all(A.pid) as Array<{ p: string; l: string }>
-  check("fixture: the indexer flags the /spec/ JSON fixture as a test file", flagged.some((f) => f.p === "tools/spec/table.json"), JSON.stringify(flagged))
+  // M57 updated the indexer so non-code files are never flagged — the fixture
+  // assertion below therefore accepts BOTH worlds and keys on what actually
+  // happened, so this gate stays truthful before AND after the M57 re-index:
+  //   pre-M57 world:  table.json flagged -> test-intel must exclude + disclose
+  //   post-M57 world: table.json not flagged -> nothing to exclude, no disclosure
+  const jsonFlagged = flagged.some((f) => f.p === "tools/spec/table.json")
+  check("fixture: the JSON fixture's flag state is consistent with its language", jsonFlagged ? (flagged.find((f) => f.p === "tools/spec/table.json")?.l === "json" ?? false) : true, JSON.stringify(flagged))
   check("fixture: the indexer flags the .test.ts source as a test file", flagged.some((f) => f.p === "src/list.test.ts"), JSON.stringify(flagged))
 
   // Cross-file `calls` edges are produced by post-processing (which this fixture
@@ -104,12 +110,22 @@ async function main() {
 
   const mappingA = await testMapping(A.pid as any, {})
   check("T1: a flagged data fixture is NOT counted as a test file", mappingA.summary.testFiles === flagged.filter((f) => f.l !== "json").length, `testFiles=${mappingA.summary.testFiles} flagged=${flagged.length}`)
-  check("T2: the non-code exclusion is declared, never silent", mappingA.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:")), JSON.stringify(mappingA.provenance.unknowns))
+  check(
+    "T2: the non-code exclusion is declared when it happened, absent when it cannot",
+    jsonFlagged
+      ? mappingA.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:"))
+      : !mappingA.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:")),
+    JSON.stringify(mappingA.provenance.unknowns),
+  )
 
   const qualityA = await testQuality(A.pid as any, {})
   check("T3: test_quality lists no data fixture as a test file", qualityA.files.every((f) => !f.relativePath.endsWith(".json")), JSON.stringify(qualityA.files.map((f) => f.relativePath)))
   const qualityUnknownA = qualityA.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:"))
-  check("T4: test_quality declares the exclusion too", qualityUnknownA || qualityA.files.length === 0, JSON.stringify(qualityA.provenance.unknowns))
+  check(
+    "T4: test_quality declares the exclusion when it happened, absent when it cannot",
+    jsonFlagged ? qualityUnknownA : !qualityUnknownA,
+    JSON.stringify(qualityA.provenance.unknowns),
+  )
 
   // ══ G1..G5: the gap page + summary equal an independent derivation ═══════
   const MAX = 5
@@ -155,9 +171,20 @@ async function main() {
 
   // ══ Fixture B: only a flagged JSON fixture, no code test source ══════════
   const B = await buildFixture(false)
+  const rawB = await BrainDatabase.getRawInstance(B.pid as any)
+  const jsonFlaggedB = (rawB.prepare("SELECT relative_path p FROM brain_file WHERE project_id=? AND COALESCE(is_test_file,0)=1").all(B.pid) as Array<{ p: string }>).some((f) => f.p === "tools/spec/table.json")
   const gapsB = await testGaps(B.pid as any, { maxResults: MAX })
   check("T5: with no code test source, the absence is disclosed", gapsB.provenance.unknowns.some((u) => u.startsWith("no-test-evidence-edges")), JSON.stringify(gapsB.provenance.unknowns))
-  check("T6: and the non-code exclusion is disclosed", gapsB.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:")), JSON.stringify(gapsB.provenance.unknowns))
+  // World-aware (see the fixture-A note): pre-M57 the flagged JSON is excluded
+  // and must be disclosed; post-M57 it is never flagged, so there is nothing
+  // to exclude and the disclosure must be absent.
+  check(
+    "T6: and the non-code exclusion is disclosed",
+    jsonFlaggedB
+      ? gapsB.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:"))
+      : !gapsB.provenance.unknowns.some((u) => u.startsWith("non-code-test-files-excluded:")),
+    JSON.stringify(gapsB.provenance.unknowns),
+  )
   const mappingB = await testMapping(B.pid as any, {})
   check("T7: the no-code-test fixture reports zero test files", mappingB.summary.testFiles === 0, `testFiles=${mappingB.summary.testFiles}`)
   const qualityB = await testQuality(B.pid as any, {})

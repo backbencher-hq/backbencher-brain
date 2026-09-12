@@ -4,6 +4,10 @@
 
 import { ASTEngine } from "./engine"
 import { CrossLanguageIntelligence } from "./cross-language-intelligence"
+// M57.T5 (#793): ONE test-file definition (test-classification.ts) — the private
+// detector below matched raw substrings ("contest.ts" contains "test") and had
+// no file-type gate, so JSON fixtures under a /spec/ dir counted as testers.
+import { isTestFileCandidate } from "./test-classification"
 import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "api-coverage-analyzer" })
@@ -417,7 +421,7 @@ export namespace APICoverageAnalyzer {
       const endpointName = endpoint.path.replace(/[^\w]/g, '_')
 
       for (const [filePath, result] of fileResults) {
-        if (this.isTestFile(filePath)) {
+        if (isTestFileCandidate(filePath)) {
           if (result.rawContent?.includes(endpoint.path) ||
               result.rawContent?.includes(endpointName) ||
               result.symbols.some(s => s.name.toLowerCase().includes(endpointName.toLowerCase()))) {
@@ -430,8 +434,9 @@ export namespace APICoverageAnalyzer {
     }
 
     private isTestFile(filePath: string): boolean {
-      return /test|spec|__tests__/.test(filePath) ||
-             /\.(test|spec)\.(js|ts|py|java|go|rs)$/.test(filePath)
+      // M57.T5: canonical predicate — kept as a thin delegate so the private
+      // call sites in identifyTestTypes stay untouched.
+      return isTestFileCandidate(filePath)
     }
 
     async identifyTestTypes(fileResults: Map<string, ASTEngine.ParseResult>): Promise<string[]> {

@@ -12,6 +12,10 @@ import type {
   TestMappingReport,
 } from "../contracts"
 import { makeProvenance } from "../evidence"
+// M57.T5 (#793): ONE non-code vocabulary, shared with the indexer's classifier
+// (src/ast/test-classification.ts). The private copy this module used to own is
+// exactly the drift the canonical definition exists to prevent.
+import { NON_CODE_TEST_LANGUAGES } from "../../ast/test-classification"
 
 const DIRECT_TYPES = new Set(["calls", "instantiates"])
 const REFERENCE_TYPES = new Set(["references", "uses", "extends", "implements"])
@@ -38,13 +42,12 @@ const PROD_SYMBOL_TYPES = "('function','method','class','interface','struct','en
 //
 // A test source must therefore be code. Non-code flagged files are excluded
 // from the test corpus here, and the exclusion is DECLARED in provenance.unknowns
-// so a smaller corpus is never silent. The indexer-side misclassification is a
-// separate, reported finding (it needs a re-index and touches the pattern/
-// exclusion surfaces owned elsewhere).
-const NON_CODE_TEST_LANGUAGES = [
-  "json", "jsonc", "json5", "yaml", "yml", "toml", "ini", "md", "markdown",
-  "txt", "csv", "tsv", "xml", "svg", "lock", "log", "sql", "graphql", "proto",
-]
+// so a smaller corpus is never silent.
+// M57.T5 (#793): the indexer-side misclassification is now FIXED at the source
+// (test-classification.ts gates the flag on file type). The non-code vocabulary
+// below is no longer a private copy — it is imported from the ONE definition
+// so the indexer and this engine can never drift apart again.
+
 
 /** SQL fragment: exclude non-code languages from a test-corpus predicate. */
 export function codeTestClause(alias: string): { sql: string; params: string[] } {
@@ -58,6 +61,11 @@ export function codeTestClause(alias: string): { sql: string; params: string[] }
 /** Human-readable provenance token for a corpus that produced no evidence. */
 const NO_EVIDENCE_UNKNOWN =
   "no-test-evidence-edges: no calls/references/imports relationship originates from a code test file, so every production symbol is reported untested — this is an absence of evidence, not evidence of absence"
+
+/** M57.T2: shared disclosure helper — a zero test corpus must say WHY it is zero. */
+export function noEvidenceUnknown(): string {
+  return NO_EVIDENCE_UNKNOWN
+}
 
 export function nonCodeUnknown(nonCodeTestFiles: number): string | null {
   return nonCodeTestFiles > 0

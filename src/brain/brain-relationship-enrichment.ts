@@ -23,6 +23,8 @@
 
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "./database"
+// M57.T5 (#793): isTestCode metadata must use the ONE test-file definition.
+import { isTestFileCandidate } from "../ast/test-classification"
 
 // ─── Enrichment Types ──────────────────────────────────────────────────────
 
@@ -117,9 +119,8 @@ export async function enrichRelationships(
         const freq = inDegreeMap.get(row.target_symbol_id) ?? 0
         const frequency = `one_of_${freq}`
 
-        const sourceFile = (row.source_file || "").toLowerCase()
-        const isTestCode = sourceFile.includes("/test/") || sourceFile.includes("/tests/") ||
-          sourceFile.includes("/spec/") || sourceFile.includes(".test.") || sourceFile.includes(".spec.")
+        const sourceFile = (row.source_file || "")
+        const isTestCode = isTestFileCandidate(sourceFile)
         const isGeneratedCode = sourceFile.includes("/generated/") || sourceFile.includes("/build/generated/") ||
           sourceFile.includes(".pb.") || sourceFile.includes(".g.dart") || sourceFile.includes(".g.cs") ||
           sourceFile.includes("/gen/")
