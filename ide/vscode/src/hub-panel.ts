@@ -22,7 +22,9 @@ import type { LanguageClient } from "vscode-languageclient/node"
 
 // Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
 import { renderHubList, renderHubTree } from "../../../script/m26/graph-core"
-import { serialize, StringElement, applyResolutionTitle } from "./graph-panel"
+import { serialize, StringElement, applyResolutionTitle, resolvePlacementFromSettings } from "./graph-panel"
+// M55.P1 (Truth Rule 6): the reuse registry — one hub panel per symbol+file.
+import { panelKey, PanelRegistry } from "./panel-placement"
 import { buildWebviewHtml } from "../../../script/m26/webview-html"
 // M42.H6 (issue #654): the ONE protocol owner + the extension-side handler.
 import { buildBridgeScript } from "../../../src/lsp/hub_protocol"
@@ -166,19 +168,41 @@ function serializeAttr(v: string): string {
  *  panel rendered DATA or a declared failure (owner test, 2026-09-06: a
  *  click whose panel only ever renders the stale-null not-running banner is
  *  a wiring failure, not a success). */
+/** The live hub panels, one per symbol+file (M55.P1 reuse rule). */
+const HUB_PANELS = new PanelRegistry<WebviewPanel>()
+
 export async function showHubPanel(
   params: { symbol: string; file?: string },
   deps: HubPanelDeps,
   context: ExtensionContext,
 ): Promise<{ panel: WebviewPanel; outcome: HubRenderOutcome }> {
-  const panel = window.createWebviewPanel("bbHub", `Backbencher Hub — ${params.symbol}`, ViewColumn.Beside, {
-    // The toggle needs a script; the W6 shell ships nonce-bound and CSP-locked
-    // (default-src 'none'): enableScripts only makes the nonce-bound local
-    // toggle possible — no remote code can run (H6 adds postMessage on top).
-    enableScripts: true,
-    localResourceRoots: [],
-  })
+  const key = panelKey("hub", params.symbol, params.file)
+  const existing = HUB_PANELS.get(key)
+  if (existing !== null) {
+    // Reuse: same panel, fresh render — a second click on the same symbol must
+    // not open a second column (M55.P1; the filing run reached four columns).
+    const outcome = await renderHubForPanel(params, deps)
+    applyResolutionTitle(existing, `Backbencher Hub — ${params.symbol}`, outcome, params.symbol, "Hub")
+    existing.webview.html = buildHubHtml(outcome, deps.cspSource)
+    existing.reveal(undefined, true)
+    return { panel: existing, outcome }
+  }
+  const placement = resolvePlacementFromSettings()
+  const panel = window.createWebviewPanel(
+    "bbHub",
+    `Backbencher Hub — ${params.symbol}`,
+    { viewColumn: placement.viewColumn, preserveFocus: placement.preserveFocus },
+    {
+      // The toggle needs a script; the W6 shell ships nonce-bound and CSP-locked
+      // (default-src 'none'): enableScripts only makes the nonce-bound local
+      // toggle possible — no remote code can run (H6 adds postMessage on top).
+      enableScripts: true,
+      localResourceRoots: [],
+    },
+  )
   context.subscriptions.push(panel)
+  HUB_PANELS.set(key, panel)
+  panel.onDidDispose(() => HUB_PANELS.delete(key))
   // M42.H6: the webview→editor door. One message channel per panel, wired to
   // the shared handler (version validation, fabricated-path guard, stale
   // labeling); requestRefresh re-renders THIS panel from its stored query.

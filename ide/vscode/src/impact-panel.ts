@@ -18,7 +18,12 @@ import type { LanguageClient } from "vscode-languageclient/node"
 // Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
 // Same structural one-renderer rule as graph-panel's renderGraph import.
 import { renderImpact } from "../../../script/m26/graph-core"
-import { serialize, StringElement, applyResolutionTitle } from "./graph-panel"
+import { serialize, StringElement, applyResolutionTitle, resolvePlacementFromSettings } from "./graph-panel"
+// M55.P1 (Truth Rule 6): the reuse registry — one impact panel per symbol+file.
+import { panelKey, PanelRegistry } from "./panel-placement"
+
+/** The live impact panels (M55.P1 reuse rule). */
+const IMPACT_PANELS = new PanelRegistry<WebviewPanel>()
 import { buildWebviewHtml } from "../../../script/m26/webview-html"
 // Type-only import: erased at build time, so this stays a thin client — the
 // SHAPE is owned by the server's identity resolver (src/lsp/identity.ts).
@@ -98,11 +103,30 @@ export async function showImpactPanel(
   /** X1 closure: the hover's defining-file identity (same-name members). */
   file?: string,
 ): Promise<{ panel: WebviewPanel; outcome: Awaited<ReturnType<typeof renderImpactForPanel>> }> {
-  const panel = window.createWebviewPanel("bbImpact", `Backbencher Impact — ${symbol}`, ViewColumn.Beside, {
-    enableScripts: false,
-    localResourceRoots: [],
-  })
+  const key = panelKey("impact", symbol, file)
+  const existing = IMPACT_PANELS.get(key)
+  if (existing !== null) {
+    // Reuse, never duplicate (M55.P1): the same symbol is the same panel, and
+    // a repeat click must not widen the layout or steal the cursor.
+    const outcome = await renderImpactForPanel({ symbol, file }, deps)
+    applyResolutionTitle(existing, `Backbencher Impact — ${symbol}`, outcome, symbol, "Impact")
+    existing.webview.html = buildHtml(outcome, deps.cspSource)
+    existing.reveal(undefined, true)
+    return { panel: existing, outcome }
+  }
+  const placement = resolvePlacementFromSettings()
+  const panel = window.createWebviewPanel(
+    "bbImpact",
+    `Backbencher Impact — ${symbol}`,
+    { viewColumn: placement.viewColumn, preserveFocus: placement.preserveFocus },
+    {
+      enableScripts: false,
+      localResourceRoots: [],
+    },
+  )
   context.subscriptions.push(panel)
+  IMPACT_PANELS.set(key, panel)
+  panel.onDidDispose(() => IMPACT_PANELS.delete(key))
   const outcome = await renderImpactForPanel({ symbol, file }, deps)
   applyResolutionTitle(panel, `Backbencher Impact — ${symbol}`, outcome, symbol, "Impact")
   panel.webview.html = buildHtml(outcome, deps.cspSource)

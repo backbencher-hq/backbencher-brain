@@ -208,6 +208,20 @@
       "githubIssue": 776,
       "tool": "vscode-panel-placement",
       "status": "planned",
+      "progress": {
+        "stage": "the decision, the reuse rule, the structural lint and the setting contribution are verified headlessly; the in-editor column/focus leg is V1's rig, so the issue is NOT closable yet",
+        "verifiedAt": "2026-09-12",
+        "fixes": [
+          "ide/vscode/src/panel-placement.ts (new, the ONE owner): the placement decision moved out of three panel files that each hardcoded `ViewColumn.Beside` and set no focus policy. vscode-free so the gate can execute it — the column numbers are injected. `activeGroup` is the default (owner decision); `beside` is honored; `panel`/`secondarySidebar` are NOT implementable for webview panels (createWebviewPanel takes an editor-area column only), so they resolve to the default WITH a declared warning instead of silently doing nothing.",
+          "ide/vscode/src/panel-placement.ts: the reuse registry + key rules (one panel per symbol+file; the same click twice is the same panel; a disposed panel leaves no stale handle) and a declared preserveFocus policy (informational panels never move the cursor; a future input-taking panel must opt out explicitly).",
+          "hub/impact/graph panels: each now resolves its placement through the one rule, reuses its own registry entry, and reveals with preserveFocus. The graph panel hosts the single `resolvePlacementFromSettings()` helper the other two import — no panel names a column.",
+          "ide/vscode/package.json: `bb.panelPlacement` is now CONTRIBUTED (enum + default + descriptions). Without the contribution the setting could not be set at all, so 'remembered' would have been a claim about a setting that did not exist."
+        ],
+        "remaining": [
+          "V1's in-editor leg: the editor column count unchanged and the active editor still the source file after hub/impact/graph opens in one session",
+          "the setting surviving a window reload (needs the in-editor leg)"
+        ]
+      },
       "scope": "panels open as a preview tab in the current editor group by default (owner decision 2026-09-12); one panel per kind, reused and updated; preserveFocus; bb.panelPlacement setting honored and remembered",
       "acceptanceCriteria": [
         "in-editor leg: the editor column count is unchanged after opening hub, impact and graph from three hover actions in one session",
@@ -222,9 +236,16 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
+        "currentCommit": "see P1.json",
         "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
-        "evidenceFile": "P1.json"
+        "evidenceFile": "P1.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "scope": "the placement decision matrix + the reuse registry + a structural lint over the three panel files and the extension manifest, with 4 planted defects"
       }
     },
     {
