@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-12T15:50:37.588Z",
+  "updatedAt": "2026-09-12T17:48:48.091Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -39,10 +39,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "8b50cdc2066534a0b9337411f5db8c7d1657ffca",
+        "currentCommit": "5b1ac195af33bc7e7addf2a858db5f140c4c3399",
         "verifierCommand": "npx tsx script/m56/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-12T15:24:05.655Z",
+        "generatedAt": "2026-09-12T15:50:51.058Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 13
@@ -67,10 +67,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "5b1ac195af33bc7e7addf2a858db5f140c4c3399",
+        "currentCommit": "55ad94dcf1d51defc01c637d4467e2d63b044325",
         "verifierCommand": "npx tsx script/m56/verify-editors-page.ts",
         "evidenceFile": "E1.json",
-        "generatedAt": "2026-09-12T15:40:38.279Z",
+        "generatedAt": "2026-09-12T17:36:46.595Z",
         "passed": 27,
         "failed": 0,
         "negativeCases": 5
@@ -95,10 +95,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "5b1ac195af33bc7e7addf2a858db5f140c4c3399",
+        "currentCommit": "55ad94dcf1d51defc01c637d4467e2d63b044325",
         "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-12T15:41:54.111Z",
+        "generatedAt": "2026-09-12T17:36:06.154Z",
         "passed": 28,
         "failed": 0,
         "negativeCases": 6
@@ -120,7 +120,7 @@
       "code": "L1",
       "githubIssue": 782,
       "tool": "site",
-      "status": "planned",
+      "status": "verified",
       "scope": "languages substance: per-family homepage cards with extensions, depth tier and analyzer extracts; /languages retitled Languages & analyzers",
       "acceptanceCriteria": [
         "union of family ids equals the registry exactly",
@@ -132,7 +132,17 @@
         "verifier green with mutants caught",
         "evidence at current commit",
         "M41 T2 language claims still green"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "55ad94dcf1d51defc01c637d4467e2d63b044325",
+        "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts",
+        "evidenceFile": "L1.json",
+        "generatedAt": "2026-09-12T17:37:30.162Z",
+        "passed": 49,
+        "failed": 0,
+        "negativeCases": 11
+      }
     },
     {
       "code": "D1",
