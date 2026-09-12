@@ -210,6 +210,12 @@ chain. Measured probes (`probe-*.ts`) are registered separately in
 ## Ground rules
 
 - No fix without an A1-measured conviction (issue #764 explicitly says so).
+- **Run the M50 gates serially.** The mutation seams (frozen baseline,
+  registry source) are temporarily corrupted and restored byte-for-byte during
+  a gate run; a gate reading that file mid-mutation — or a second copy of the
+  same gate — will transiently see the corrupted world and go red. Found while
+  verifying A5 (a parallel closure run red-flipped it 9/10; serial 10/10).
+  `npm run verify:m50` is sequential by construction.
 - Every verdict carries numbers; no prose-only claims.
 - The co-agent's analyzer lane (M49) is untouched by this milestone.
 - Every gate seals its own run (commit stamp + pass/fail counters) so a stale
