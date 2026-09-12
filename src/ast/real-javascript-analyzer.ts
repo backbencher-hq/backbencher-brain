@@ -200,6 +200,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // skipped by span checks in the relationship passes below.
     const seenMethodIdx = new Map<string, number>()
     const deadSpans: { s: number; e: number }[] = []
+    // B5 cross-kind zombies: accessor symbols killed by a data-member
+    // replacement are removed AFTER the walk — a mid-walk splice would
+    // shift every later seenMethodIdx index and corrupt J3 last-wins.
+    const b5Zombies: number[] = []
 
     while (stack.length > 0) {
       const { node, scopes: frameScopes, inClassBody, functionDepth } = stack.pop()!
@@ -268,10 +272,20 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_definition": {
           const name = node.childForFieldName("name")?.text
           if (name) {
-            const owner = scopeOwnerName(scopeStack)
-            const isConstructor = name === "constructor"
-            const dedupKey = `${owner ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}`
-            const isAccessor = this.hasToken(node, "get") || this.hasToken(node, "set")
+          const owner = scopeOwnerName(scopeStack)
+          const isConstructor = name === "constructor"
+          const isAccessor = this.hasToken(node, "get") || this.hasToken(node, "set")
+          // B5 (M49 #758, self-audit wave): get/set on the SAME name are
+          // DISTINCT descriptor slots (Object.getOwnPropertyDescriptor
+          // returns {get, set} — both survive; the J3 last-wins pin below
+          // targets true duplicates, and the pre-fix owner:name key ate the
+          // pair, deadSpanned the getter's body, and dropped its calls).
+          // Runtime slot semantics kept honest: a DATA member replaces the
+          // whole slot (`get x` then `x()` → x is data), while accessors
+          // MERGE (get+set coexist). Keys: plain for data, :get/:set for
+          // accessors; the cross-kind checks below implement replace-on-val.
+          const kindSlot = isAccessor ? (this.hasToken(node, "get") ? ":get" : ":set") : ""
+          const dedupKey = `${owner ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}${kindSlot}`
             const kind = isConstructor
               ? ASTEngine.SymbolKind.Constructor
               : isAccessor
@@ -287,7 +301,25 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // use the last body. Replace in place so scope push/pop stay
             // balanced; prototype assignments share the key (a prototype
             // assignment genuinely overwrites the class method).
-            const seenIdx = seenMethodIdx.get(dedupKey)
+            let seenIdx = seenMethodIdx.get(dedupKey)
+            let seenKey: string | undefined = seenIdx === undefined ? undefined : dedupKey
+            if (seenIdx === undefined) {
+              // B5 cross-kind resolution (M49 #758): a data member and an
+              // accessor share the runtime descriptor slot. Data kills the
+              // whole slot (find either accessor half); an accessor takes
+              // over a data member's slot.
+              if (kindSlot === "") {
+                for (const opp of [":get", ":set"]) {
+                  const k2 = dedupKey + opp
+                  const i2 = seenMethodIdx.get(k2)
+                  if (i2 !== undefined) { seenIdx = i2; seenKey = k2; break }
+                }
+              } else {
+                const k2 = dedupKey.slice(0, dedupKey.length - kindSlot.length)
+                const i2 = seenMethodIdx.get(k2)
+                if (i2 !== undefined) { seenIdx = i2; seenKey = k2 }
+              }
+            }
             {
               const params = this.extractParameters(node.childForFieldName("parameters"))
               const comments = this.collectComments(node)
@@ -295,22 +327,22 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // grammar (unlike TS where method decorators are class_body
               // siblings).
               const decorators = this.collectOwnDecorators(node)
-              var methodSymbol: ASTEngine.UniversalSymbol = {
-                name: cleanName,
-                kind,
-                range: this.nodeToRange(node),
-                scope: scopeString(scopeStack),
-                ownerName: owner,
-                ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
-                // '#' members are class-private regardless of other tokens.
-                visibility: isPrivateMethod ? "private" : "public",
-                isStatic,
-                parameters: params,
-                decorators: decorators.length > 0 ? decorators : undefined,
-                comments,
-                complexity: this.methodComplexity(node),
-                metadata: { isAccessor, isAsync, isGenerator },
-              }
+            var methodSymbol: ASTEngine.UniversalSymbol = {
+              name: cleanName,
+              kind,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              ownerName: owner,
+              ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
+              // '#' members are class-private regardless of other tokens.
+              visibility: isPrivateMethod ? "private" : "public",
+              isStatic,
+              parameters: params,
+              decorators: decorators.length > 0 ? decorators : undefined,
+              comments,
+              complexity: this.methodComplexity(node),
+              metadata: { isAccessor, isAsync, isGenerator, ...((kindSlot ? { accessorKind: kindSlot === ":get" ? "get" : "set" } : {}) as Record<string, unknown>) },
+            }
             }
             if (seenIdx === undefined) {
               seenMethodIdx.set(dedupKey, symbols.length)
@@ -318,7 +350,27 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else {
               const oldRange = symbols[seenIdx].range
               if (oldRange && oldRange.startIndex !== undefined && oldRange.endIndex !== undefined) deadSpans.push({ s: oldRange.startIndex, e: oldRange.endIndex })
+              // B5: a data member kills BOTH accessor halves of the slot —
+              // the replaced half via seenKey below, any sibling half here
+              // (zombied for post-walk removal + deadSpanned so its body's
+              // nested symbols/calls die with it).
+              if (kindSlot === "") {
+                for (let j = 0; j < symbols.length; j++) {
+                  if (j === seenIdx) continue
+                  const sj = symbols[j]
+                  if (sj.ownerName === owner && sj.name === cleanName && sj.kind === ASTEngine.SymbolKind.Property && sj.metadata?.isAccessor) {
+                    const rj = sj.range
+                    if (rj && rj.startIndex !== undefined && rj.endIndex !== undefined) deadSpans.push({ s: rj.startIndex, e: rj.endIndex })
+                    b5Zombies.push(j)
+                  }
+                }
+              }
               symbols[seenIdx] = methodSymbol
+              // Re-key: the incoming slot owns future lookups; the old key
+              // dies (a stale bare key would wrongly route the next accessor
+              // into replace- instead of merge-semantics).
+              if (seenKey) seenMethodIdx.delete(seenKey)
+              seenMethodIdx.set(dedupKey, seenIdx)
             }
             scopeStack.push({ name, kind: JSScopeKind.Function })
             nextFunctionDepth = functionDepth + 1
@@ -726,6 +778,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+    // B5 (M49 #758): remove accessor halves killed by data-member slot
+    // replacement. Post-walk so mid-walk seenMethodIdx indices stayed valid.
+    if (b5Zombies.length > 0) {
+      const dead = new Set(b5Zombies)
+      for (let i = symbols.length - 1; i >= 0; i--) {
+        if (dead.has(i)) symbols.splice(i, 1)
+      }
+    }
     {
       const bySource = new Map<string, string[]>()
       const qcOwnerOf = (n: Node): string | undefined => {
@@ -939,6 +999,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     };
     for (const s of symbols) {
       if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor) && s.ownerName) {
+        // B4 (M49 #758, self-audit wave): STATIC methods never virtually
+        // dispatch — `static create()` in a subclass SHADOWS the base static,
+        // it does not override it (no prototype-chain link between the two;
+        // the pre-fix rule fabricated Sub.create->Base.create at 0.95 for
+        // every static/same-name pair). Instance methods only.
+        if (s.isStatic) continue
         const base = baseByClass.get(s.ownerName)
         if (!base) continue
         // J2: constructors never override (no virtual dispatch on `new`);
@@ -1392,9 +1458,21 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // present (`export { a as b }` exports b) — first-identifier
             // lookup recorded the local name importers can't use.
             const exportName = spec.childForFieldName("alias")?.text ?? spec.childForFieldName("name")?.text ?? this.findChildByType(spec, "identifier")?.text
+            // B8 (M49 #758, self-audit wave): `export { x as default }` is a
+            // DEFAULT export — the alias IS the literal "default" keyword
+            // and the emitted row must say so (pre-fix: name "default",
+            // isDefault:false — the public binding name was lost AND the
+            // default flag wrong, while `export default y` worked).
+            const aliasNode = spec.childForFieldName("alias")
+            const isAsDefault = !!aliasNode && aliasNode.text === "default"
             if (exportName) {
               foundNamed = true
-              exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(spec) })
+              exports.push({
+                name: isAsDefault ? "default" : exportName,
+                isDefault: isAsDefault,
+                range: this.nodeToRange(spec),
+                metadata: isAsDefault ? { viaAliasDefault: true, localName: spec.childForFieldName("name")?.text } : undefined,
+              })
             }
           }
         }
@@ -1657,6 +1735,26 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
             }
             if (isWrite) continue
+            // M49 #744 (web fix wave, java #739 family contract): the chain
+            // ROOT identifier is a read too — `config.inner.deeper.leaf`
+            // emitted uses inner/deeper/leaf but dropped `config`, the
+            // identifier the read actually starts from. Emit it with the
+            // same owner/source rules as the segments (this/super excluded:
+            // they are keywords, not symbols).
+            if (head && head !== "this" && head !== "super") {
+              const rootSource = method ?? owner ?? moduleName
+              const rootKey = `${rootSource}.#${head}`
+              if (!seen.has(rootKey)) {
+                seen.add(rootKey)
+                relationships.push({
+                  source: rootSource,
+                  target: head,
+                  type: ASTEngine.RelationshipType.Uses,
+                  confidence: 0.6,
+                  metadata: { isFieldAccess: true, chainRoot: true },
+                })
+              }
+            }
             for (const seg of parts) {
               // JSD2: this/super read the TYPE's member (swift/java JAD2
               // precedent). Outside a class there IS no type — a bare
@@ -1675,6 +1773,57 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   metadata: { isFieldAccess: true },
                 })
               }
+            }
+          }
+        }
+      }
+
+      // M49 #744 (web fix wave): BARE identifier reads — `return config;`,
+      // `if (flag)`, argument positions. Pre-fix only member_expression
+      // chains were scanned, so every plain identifier read was invisible
+      // (java #739/CONV-J-1 family class). Gates mirror the chain rule:
+      // not a call callee (calls covers it), not an assignment LHS (write,
+      // JSD1), not a declaration's own name node (the declarator walk owns
+      // those), not this/super (JSD2), and not shorthand object keys
+      // ({value} pairs — the KEY is a definition site, not a read).
+      if (node.type === "identifier") {
+        const txt = node.text
+        if (txt !== "this" && txt !== "super" && txt !== "undefined" && txt !== "arguments") {
+          const p7 = node.parent
+          const calleeFn = p7?.type === "call_expression" ? p7.childForFieldName("function") : null
+          const isCallee = !!calleeFn && calleeFn.id === node.id
+          let isWrite2 = false
+          if (p7?.type === "assignment_expression" || p7?.type === "augmented_assignment_expression") {
+            const lhs2 = p7.childForFieldName("left") ?? p7.namedChild(0)
+            isWrite2 = !!lhs2 && lhs2.id === node.id
+          }
+          const isDeclName = (p7?.type === "variable_declarator" && p7.childForFieldName("name")?.id === node.id) ||
+            p7?.type === "function_declaration" || p7?.type === "function_expression" ||
+            p7?.type === "generator_function_declaration" || p7?.type === "method_definition" ||
+            p7?.type === "class_declaration" || p7?.type === "class"
+          const isPropKey = (p7?.type === "pair" || p7?.type === "pair_pattern") && p7.childForFieldName("key")?.id === node.id
+          const isMemberPart = p7?.type === "member_expression"
+          const isPropName = p7?.type === "property_signature" || p7?.type === "property_identifier"
+          // JSX element names (J8 contract: capitalized components emit the
+          // jsxElement Uses from the dedicated walk; lowercase intrinsics
+          // must NOT surface as bare identifier reads — the jsx-usage
+          // fixture forbids uses App->div/span). An identifier whose parent
+          // is a JSX element node is a tag name, never a symbol read.
+          const isJsxName = p7?.type.startsWith("jsx_") ?? false
+          const isLabel = p7?.type === "labeled_statement"
+          const isShorthandProp = p7?.type === "shorthand_property_identifier"
+          if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isJsxName) {
+            const bSource = method ?? owner ?? moduleName
+            const bKey = `${bSource}.#${txt}`
+            if (!seen.has(bKey)) {
+              seen.add(bKey)
+              relationships.push({
+                source: bSource,
+                target: txt,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.6,
+                metadata: { isFieldAccess: true, bareRead: true },
+              })
             }
           }
         }
