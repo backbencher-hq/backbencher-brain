@@ -1,5 +1,6 @@
 import { notLike, sql, type SQL } from "drizzle-orm"
 import { BrainFileTable, BrainSymbolTable } from "../brain/brain.sql"
+import { isTestFileCandidate } from "./test-classification"
 
 // Directory segments that hold generated reference output or third-party code.
 // Files under these paths must never surface in analysis results.
@@ -19,6 +20,9 @@ const NOISE_DIR_SEGMENTS = new Set([
   "__pycache__",
 ])
 
+// M57.T5: the test-dir segment set and the name-shape rules now live in
+// test-classification.ts (ONE definition). TEST_DIR_SEGMENTS is kept only for
+// the exclusion-SQL builders below, which need the raw segment list.
 const TEST_DIR_SEGMENTS = new Set(["test", "tests", "__tests__", "spec", "specs", "e2e"])
 
 const NOISE_FILE_PATTERNS = [
@@ -52,6 +56,7 @@ function allExcludedSegments(): string[] {
   return Array.from(new Set([...NOISE_DIR_SEGMENTS, ...TEST_DIR_SEGMENTS]))
 }
 
+/** Kept for the SQL LIKE builders; the predicate itself is test-classification.isTestFileCandidate. */
 function isTestFileName(base: string): boolean {
   const lower = base.toLowerCase()
   if (lower.includes(".test.") || lower.includes(".spec.")) return true
@@ -69,10 +74,13 @@ export function isHardNoisePath(relativePath: string): boolean {
 }
 
 export function isTestPath(relativePath: string): boolean {
-  const segments = relativePath.split("/")
-  const base = segments[segments.length - 1]
-  if (segments.slice(0, -1).some((segment) => TEST_DIR_SEGMENTS.has(segment.toLowerCase()))) return true
-  return isTestFileName(base)
+  // M57.T5 (#793): delegate to the ONE canonical predicate. The path-shape
+  // rules are identical; the file-type gate inside the predicate treats a
+  // missing language as "unknown, decide by extension" — for extension-based
+  // callers this is exactly the old behavior PLUS the gate, so *.json under a
+  // /spec/ dir is no longer "test" here either (it was excluded downstream by
+  // isHardNoisePath orderings before; now the predicate says so directly).
+  return isTestFileCandidate(relativePath)
 }
 
 export function isAnalysisExcluded(relativePath: string): boolean {

@@ -107,12 +107,27 @@ export namespace PatternBrainTools {
     }
 
     const patterns: Array<any> = []
+    // M57.T3: full-set aggregates for the orphan branch (see the comment below).
+    let orphanCandidates = 0
+    const orphanByType: Record<string, number> = {}
+    let orphanConfidenceSum = 0
 
     // 1. Orphan detection — canonical, provenance-bearing, evidence-aware.
+    // M57.T3 (#791): the orphan page is BOUNDED at the scan (the old call used
+    // maxResults: Number.MAX_SAFE_INTEGER, which materialized every finding
+    // object — ~28.6k with evidence arrays on this repo — for a display of at
+    // most maxResults items). The full census now comes from the summary
+    // aggregates, so statistics.meaning is unchanged:
+    //   - candidatesEvaluated: orphan candidates + rule findings
+    //   - averageConfidence: same weighted mean as before
+    //   - byType/bySeverity: counts over the full pre-slice set (orphan
+    //     contributions derived from the candidates census, which reproduces
+    //     the old counts exactly because candidate confidence equals the
+    //     finding's confidence constant).
     if (opts.includeOrphaned) {
       const orphanReport = await detectOrphans(projectId, {
         minConfidence: opts.confidenceThreshold,
-        maxResults: Number.MAX_SAFE_INTEGER,
+        maxResults: opts.maxResults,
       })
       for (const finding of orphanReport.findings) {
         patterns.push({
@@ -125,6 +140,9 @@ export namespace PatternBrainTools {
           evidence: finding.evidence.map((ev: PatternFinding["evidence"][number]) => ({ type: ev.kind, description: ev.description })),
         })
       }
+      orphanCandidates = orphanReport.summary.candidatesTotal
+      for (const [k, v] of Object.entries(orphanReport.summary.candidatesByRule)) orphanByType[k] = (orphanByType[k] ?? 0) + v
+      orphanConfidenceSum = orphanReport.summary.candidatesAverageConfidence * orphanCandidates
     }
 
     // 2. Framework + anti-pattern rules — real, index-backed, evidence-bearing
@@ -139,11 +157,19 @@ export namespace PatternBrainTools {
     })
     for (const finding of ruleFindings) patterns.push(finding)
 
-    // 3. Statistics mapping (canonical-safe aggregation).
-    const byType: Record<string, number> = {}
+    // 3. Statistics mapping (canonical-safe aggregation). M57.T3: the orphan
+    // contribution comes from the candidate census (identical numbers to the
+    // old materialize-everything path — same constants, same mean). The orphan
+    // page entries in `patterns` are census-covered, so the loop below must
+    // count ONLY non-orphan (rule) findings — otherwise the page double-counts.
+    const byType: Record<string, number> = { ...orphanByType }
     const bySeverity: Record<string, number> = {}
-    let confidenceSum = 0
+    for (const k of Object.keys(orphanByType)) bySeverity["info"] = (bySeverity["info"] ?? 0) + orphanByType[k]
+    let confidenceSum = orphanConfidenceSum
+    let ruleFindingCount = 0
     for (const pattern of patterns) {
+      if (String(pattern.type).startsWith("orphaned_")) continue
+      ruleFindingCount++
       byType[pattern.type] = (byType[pattern.type] || 0) + 1
       bySeverity[pattern.severity] = (bySeverity[pattern.severity] || 0) + 1
       confidenceSum += pattern.confidence
@@ -156,14 +182,14 @@ export namespace PatternBrainTools {
         totalFound: displayedPatterns.length,
         byType,
         bySeverity,
-        averageConfidence: patterns.length ? confidenceSum / patterns.length : 0,
+        averageConfidence: orphanCandidates + ruleFindingCount > 0 ? confidenceSum / (orphanCandidates + ruleFindingCount) : 0,
       },
       recommendations: [],
       scan: {
-        candidatesEvaluated: patterns.length,
-        findingsBeforeDisplayLimit: patterns.length,
+        candidatesEvaluated: orphanCandidates + ruleFindingCount,
+        findingsBeforeDisplayLimit: orphanCandidates + ruleFindingCount,
         displayed: displayedPatterns.length,
-        truncated: patterns.length > displayedPatterns.length,
+        truncated: orphanCandidates + ruleFindingCount > displayedPatterns.length,
       },
     }
   }

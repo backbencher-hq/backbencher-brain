@@ -78,3 +78,23 @@ gate, per the M31/M35/M40/M50 pattern.)
 - Anything a scripted gate cannot observe is declared `pending`, never inferred.
 - Co-agent lanes untouched; shared surfaces (parallel-indexer,
   analysis-exclusions) get a coordination note in the commit body.
+
+## Results (delivered — receipts in validation/m57/results/)
+
+| Gate | Receipt | Result |
+|---|---|---|
+| T1 | T1-classifier.json + T1-before/after-census.json | C1–C5 green; re-index proof: flagged 30→0 (all 30 were non-code; repo has zero test-shaped code files), flag == predicate on all 3,338 rows |
+| T2 | T2-consumers.json | 12/12 on the corrected real DB; found + fixed one honesty gap (testQuality lacked the zero-corpus disclosure) |
+| T3 | T3-scope-all.json | 17/17 on both runtimes; orphan page bounded (census preserved), long-parameter-list counted by SQLite (json_each), dist freshness asserted |
+| T4 | T4-corpus-identity.json | comparator falsifiable; both real-DB receipts carry corpus identity + classifier epoch and match the live world |
+| T5 | T5-predicate-unity.json | battery 13/13, delegation proofs, allowlist census (2 duplicate detectors converted), P5 real-DB unity |
+| G2 | G2-selftest.json | 5/5: control passes, mutation fails, restore byte-identical |
+| X1 | X1-closure.json | 16/16 at the closing commit, incl. 5 downstream gates and the declared foreign red |
+
+Re-index: `node bin/bb index <repo> --force` — 3,338 files, 180,772 symbols, 189,499 relationships, 0 errors, full derived re-processing (746.8s under co-agent load).
+
+Latency context (honest): scope=all min 4.85s / p50 15.8s / max 20.3s through `node bin/bb mcp` while machine load was ~15 (co-agent builds). Structural gates (bounding + parity) are the load-independent proof; the M50-era 1.3s numbers were taken on an idle box and a smaller corpus.
+
+Closure command: `BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> bun run script/m57/verify-closure.ts`
+
+Concurrency ground rule (M50 lesson): M57 gates tamper shared mutation seams; run them serially — never two at once (closure's first run failed exactly this way while G2 ran).
