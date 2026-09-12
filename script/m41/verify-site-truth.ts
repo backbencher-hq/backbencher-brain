@@ -117,17 +117,23 @@ check(
   docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") && !docsPage.includes("bb upgrade"),
 )
 
-// --- 3b. T3 pages: install, faq, troubleshooting, contact ------------------------
+// --- 3b. T3 pages: install, support, troubleshooting (+ the /faq, /contact redirects) ---
+// M56.S1: FAQ and Contact consolidated into /support. The redirect stubs still
+// build (bookmarks stay valid); their content checks now bind to the support
+// page, which carries the merged surface.
 
-const EXPECTED_ROUTES = ["index", "docs", "tools", "languages", "install", "faq", "troubleshooting", "contact"]
+const EXPECTED_ROUTES = ["index", "docs", "tools", "languages", "install", "support", "troubleshooting", "faq", "contact"]
 for (const route of EXPECTED_ROUTES) {
   check(`T3: route rendered (${route}.html exists in build output)`, buildOk && read(`website/.next/server/app/${route}.html`).length > 0)
 }
 
 const installHtml = buildOk ? normalize(read("website/.next/server/app/install.html")) : ""
-const faqHtml = buildOk ? normalize(read("website/.next/server/app/faq.html")) : ""
+const faqHtml = buildOk ? normalize(read("website/.next/server/app/support.html")) : "" // the consolidated FAQ surface
 const troubleshootHtml = buildOk ? normalize(read("website/.next/server/app/troubleshooting.html")) : ""
-const contactHtml = buildOk ? normalize(read("website/.next/server/app/contact.html")) : ""
+const contactHtml = buildOk ? normalize(read("website/.next/server/app/support.html")) : "" // the consolidated contact surface
+
+check("T3: /faq redirects to /support (bookmark-safe)", read("website/src/app/faq/page.tsx").includes('redirect("/support")'))
+check("T3: /contact redirects to /support (bookmark-safe)", read("website/src/app/contact/page.tsx").includes('redirect("/support")'))
 
 const installVersion = read("website/src/data/truth.generated.ts").match(/install: \{[\s\S]*?version: "([^"]+)"/)?.[1] ?? ""
 const installRepo = read("website/src/data/truth.generated.ts").match(/repo: "([^"]+)"/)?.[1] ?? ""
@@ -146,7 +152,7 @@ check("T3: contact offers only the real support channel", contactHtml.includes("
 check("T3: shared footer renders on all T3 pages", [installHtml, faqHtml, troubleshootHtml, contactHtml].every((h) => h.includes("independent, local-first code intelligence engine")))
 
 const navSrc = read("website/src/components/Navigation.tsx")
-check("T3: navigation links every route", EXPECTED_ROUTES.every((r) => r === "index" || navSrc.includes(`href: '/${r}'`)), EXPECTED_ROUTES.filter((r) => r !== "index" && !navSrc.includes(`href: '/${r}'`)).join(","))
+check("T3: navigation links every public route (redirects excluded)", ["install", "tools", "languages", "editors", "docs", "demos", "support", "troubleshooting"].every((r) => navSrc.includes(`href: '/${r}'`)), ["install", "tools", "languages", "editors", "docs", "demos", "support", "troubleshooting"].filter((r) => !navSrc.includes(`href: '/${r}'`)).join(","))
 check("T3: no phantom command renders on any T3 page", PHANTOMS.every((p) => ![installHtml, faqHtml, troubleshootHtml, contactHtml].some((h) => h.includes(p))))
 
 // --- 4. language display coverage (source-level) --------------------------------
