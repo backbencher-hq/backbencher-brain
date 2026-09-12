@@ -82,9 +82,27 @@ check("precision 1 across sweep", audit.perAnalyzerEvidence.precision === 1)
 check("recall 1 across sweep", audit.perAnalyzerEvidence.recall === 1)
 
 // ── Regex census ─────────────────────────────────────────────────────────────
+// M49.R2 CORRECTION (2026-09-12). These two checks used to assert that the
+// census reported ZERO regex usages and zero `needs_review` entries. That was
+// not true when M12 closed and is not true now: it was the VACUOUS census
+// state — the committed census claimed 0 usages while the analyzers carried
+// 55 — and nothing caught it because the census gate was not in the battery.
+// So this audit was pinning the lie, and any run of it failed forever on a
+// claim nobody could honestly satisfy. It now pins what is actually owed:
+// the census must be NON-VACUOUS, every usage must be classified, and the
+// `needs_review` count must live inside the shrink-only debt-register budget.
+// Exact census-vs-source agreement (and register-vs-scan agreement) is the job
+// of script/m12/verify-regex-census.ts and script/m49/verify-r2-regex.ts.
 const census = JSON.parse(readFileSync(resolve(resultsDir, "regex-census.json"), "utf8"))
-check("regex census reports zero usages", census.totalRegexUsages === 0)
-check("regex census zero unclassified", (census.byClassification ?? {})["needs_review"] === undefined)
+const debtRegisterPath = resolve(root, "validation/m49/regex-debt-register.json")
+const debtRegister = existsSync(debtRegisterPath)
+  ? (JSON.parse(readFileSync(debtRegisterPath, "utf8")) as { baselineTotal?: number })
+  : {}
+const needsReview = (census.byClassification ?? {})["needs_review"] ?? 0
+check("regex census is non-vacuous (the M12 zero-usage claim was false)", census.totalRegexUsages > 0)
+check("regex census classifies every usage", (census.byClassification ?? {})["unclassified"] === undefined && (census.byClassification ?? {})["unknown"] === undefined)
+check("regex census needs_review total is within the shrink-only debt budget",
+  typeof debtRegister.baselineTotal === "number" && needsReview <= debtRegister.baselineTotal)
 check("regex census scans 41 analyzers", census.analyzersScanned === 41)
 check("regex census gate script exists", existsSync(resolve(root, "script/m12/verify-regex-census.ts")))
 check("census gate wired into npm run verify", packageJson.scripts.verify.includes("m12/verify-regex-census.ts") || packageJson.scripts.verify.includes("regex-census"))

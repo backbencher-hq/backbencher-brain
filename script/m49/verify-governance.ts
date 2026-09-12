@@ -88,7 +88,7 @@ function main() {
   // --- 3. Verifier registry wiring ----------------------------------------
   const onDisk = readdirSync(M49_DIR).filter((f) => /^verify-.*\.ts$/.test(f)).sort()
   const governanceSrc = readFileSync(__filename, "utf8")
-  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts"]
+  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts", "verify-census-lineage.ts"]
   for (const f of onDisk) {
     check(`verifier ${f} is registered in governance`, registered.includes(f))
   }
@@ -99,6 +99,7 @@ function main() {
   check("package.json verify runs M49 governance", verifyScript.includes("script/m49/verify-governance.ts"))
   check("package.json verify runs M49 R1", verifyScript.includes("script/m49/verify-r1-intake.ts"))
   check("package.json verify runs M49 R2", verifyScript.includes("script/m49/verify-r2-regex.ts"))
+  check("package.json verify runs M49 G6 census lineage", verifyScript.includes("script/m49/verify-census-lineage.ts"))
 
   // --- 5. Auto-pass audit ----------------------------------------------------
   for (const f of onDisk) {
