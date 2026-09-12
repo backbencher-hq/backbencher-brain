@@ -111,6 +111,11 @@ jobs:
         if: steps.sitechanged.outputs.changed == 'true'
         run: npx tsx script/m56/verify-languages-surface.ts
 
+      # M56.D1 — the docs page's CLI reference and indexing facts.
+      - name: Verify docs completeness (M56.D1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-docs-completeness.ts
+
   # M36.S2 — enforcement of the verification discipline on every push/PR.
   # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
   # certified; the full `npm run verify` chain includes machine-specific
