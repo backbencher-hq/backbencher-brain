@@ -40,10 +40,16 @@ const check = (name: string, ok: boolean, detail: string) => {
   }
 }
 
+// argv is passed through verbatim. (An earlier version built `npx run <script>`,
+// which made npm exit non-zero without ever running the gate — a false failure
+// this gate's own first run exposed. A runner that cannot distinguish "gate
+// failed" from "gate never ran" is not a verifier.)
 const runGate = (cmd: string, args: string[], label: string, timeoutMs = 900_000) => {
   const r = spawnSync(cmd, args, { cwd: ROOT, encoding: "utf8", timeout: timeoutMs })
-  const tail = ((r.stdout ?? "") + (r.stderr ?? "")).trim().split("\n").slice(-1).join(" ").slice(0, 180)
-  return { ok: r.status === 0, detail: `${label}: exit=${r.status} ${tail}` }
+  const combined = ((r.stdout ?? "") + (r.stderr ?? "")).trim()
+  const tail = combined.split("\n").slice(-1).join(" ").slice(0, 180)
+  const neverRan = /npm error|Missing script|not found/i.test(tail) && r.status !== 0
+  return { ok: r.status === 0, detail: `${label}: exit=${r.status}${neverRan ? " (GATE DID NOT RUN)" : ""} ${tail}` }
 }
 
 console.log("M50.X1 closure gate")
@@ -77,24 +83,24 @@ for (const [label, script] of subordinate) {
 }
 
 // ── 3. live re-run of the downstream gates this milestone touched ──────────
-const downstream: Array<[string, string, string]> = [
-  ["m13.ask-contract", "npx", "script/m13/verify-ask-contract.ts"],
-  ["m13.ask-provenance", "npx", "script/m13/verify-ask-provenance.ts"],
-  ["m21.embedding-queue", "npx", "script/m21/verify-embedding-queue.ts"],
-  ["m21.post-passes", "bun", "script/m21/verify-postprocessing-passes.ts"],
-  ["m33.man-page", "npx", "script/m33/verify-man-page.ts"],
-  ["m33.help-parity", "npx", "script/m33/verify-help-parity.ts"],
-  ["m40.post-entry", "bun", "script/m40/verify-a1-post-entry.ts"],
-  ["m48.h1-ghosts", "bun", "script/m48/verify-h1-ghosts.ts"],
-  ["m48.p4-param-matrix", "bun", "script/m48/verify-p4-param-matrix.ts"],
-  ["verify-embed", "bun", "script/verify-embed.ts"],
-  ["verify-semantic", "bun", "script/verify-semantic.ts"],
-  ["verify-contract-diff", "npx", "script/verify-contract-diff.ts"],
-  ["verify-tool-registry", "npx", "script/verify-tool-registry.ts"],
+const downstream: Array<[string, string[]]> = [
+  ["m13.ask-contract", ["npx", "tsx", "script/m13/verify-ask-contract.ts"]],
+  ["m13.ask-provenance", ["npx", "tsx", "script/m13/verify-ask-provenance.ts"]],
+  ["m21.embedding-queue", ["npx", "tsx", "script/m21/verify-embedding-queue.ts"]],
+  ["m21.post-passes", ["bun", "run", "script/m21/verify-postprocessing-passes.ts"]],
+  ["m33.man-page", ["npx", "tsx", "script/m33/verify-man-page.ts"]],
+  ["m33.help-parity", ["npx", "tsx", "script/m33/verify-help-parity.ts"]],
+  ["m40.post-entry", ["bun", "run", "script/m40/verify-a1-post-entry.ts"]],
+  ["m48.h1-ghosts", ["bun", "run", "script/m48/verify-h1-ghosts.ts"]],
+  ["m48.p4-param-matrix", ["bun", "run", "script/m48/verify-p4-param-matrix.ts"]],
+  ["verify-embed", ["bun", "run", "script/verify-embed.ts"]],
+  ["verify-semantic", ["bun", "run", "script/verify-semantic.ts"]],
+  ["verify-contract-diff", ["npx", "tsx", "script/verify-contract-diff.ts"]],
+  ["verify-tool-registry", ["npx", "tsx", "script/verify-tool-registry.ts"]],
 ]
 const downstreamResults: Record<string, boolean> = {}
-for (const [label, cmd, script] of downstream) {
-  const r = runGate(cmd, ["run", script], label)
+for (const [label, argv] of downstream) {
+  const r = runGate(argv[0], argv.slice(1), label)
   downstreamResults[label] = r.ok
   check(`X1.downstream-${label}`, r.ok, r.detail)
 }
@@ -109,9 +115,12 @@ for (const [label, cmd, script] of downstream) {
       continue
     }
     const ev = JSON.parse(readFileSync(abs, "utf8"))
+    // A MEASUREMENT issue (A1) legitimately records failures — its convictions
+    // ARE the failures it found. A `verified` delivery must record zero.
+    const conformant = ev.status === "verified" ? (ev.failed ?? 0) === 0 : ev.status === "measured" && typeof ev.passed === "number"
     check(
       `X1.evidence-${file}`,
-      ["verified", "measured"].includes(ev.status) && (ev.failed ?? 0) === 0,
+      conformant,
       `status=${ev.status} passed=${ev.passed} failed=${ev.failed} commit=${String(ev.commit).slice(0, 8)}`,
     )
   }
