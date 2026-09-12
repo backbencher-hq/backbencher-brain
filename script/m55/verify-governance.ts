@@ -79,7 +79,14 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   T3: ["src/lsp/usage_vocabulary.ts", "script/m55/verify-usage-vocabulary.ts"],
   T4: ["src/lsp/signature.ts", "script/m55/verify-signatures.ts"],
   T5: ["src/lsp/tiers.ts", "script/m55/verify-tiers.ts"],
-  P1: ["ide/vscode/src/panel-placement.ts", "script/m55/verify-panel-placement.ts"],
+  P1: [
+    "ide/vscode/src/panel-placement.ts",
+    "ide/vscode/src/hub-panel.ts",
+    "ide/vscode/src/impact-panel.ts",
+    "ide/vscode/src/graph-panel.ts",
+    "ide/vscode/package.json",
+    "script/m55/verify-panel-placement.ts",
+  ],
   V1: ["script/m55/verify-live-surface.ts", "script/m55/screenshot-protocol.ts"],
   X1: ["script/m55/verify-closure.ts"],
 };

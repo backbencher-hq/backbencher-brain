@@ -11,7 +11,7 @@
 // Loud errors on declared failure modes (not indexed, schema mismatch) are a
 // contract §1 requirement: the panel renders the declared reason, never an
 // empty graph that would read as "no connections".
-import { window, ViewColumn, type ExtensionContext, type WebviewPanel, type Uri } from "vscode"
+import { window, workspace, ViewColumn, type ExtensionContext, type WebviewPanel, type Uri } from "vscode"
 import type { LanguageClient } from "vscode-languageclient/node"
 
 // Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
@@ -24,6 +24,15 @@ import type { MemberResolution } from "../../../src/lsp/identity"
 // M55.T1 (Truth Rule 2): the ONE panel-title rule, vscode-free so the truth
 // gate can execute it (see ./identity-label).
 import { applyResolutionTitle } from "./identity-label"
+// M55.P1 (Truth Rule 6): the ONE panel-placement decision, likewise vscode-free.
+// This module only injects the editor's column numbers and reads the setting.
+import {
+  PANEL_PLACEMENT_SETTING,
+  panelKey,
+  PanelRegistry,
+  resolvePanelPlacement,
+  type PanelPlacement,
+} from "./panel-placement"
 
 /** Escaping DOM port over strings (browser Element API, no vscode import).
  *  Exported (M42.H4) so the impact panel shares the SAME port + serializer —
@@ -134,13 +143,55 @@ export async function renderGraphForPanel(
   return { ok: true, markup, stateJson, ...(resolution ? { resolution } : {}) }
 }
 
+// M55.P1: the placement decision (vscode-free, in ./panel-placement) needs the
+// editor's own column numbers, and the setting is read from the workspace. This
+// is the ONLY place a panel asks for a column — no panel file names one.
+export function resolvePlacementFromSettings(): {
+  viewColumn: ViewColumn
+  preserveFocus: boolean
+  mode: PanelPlacement
+  warning?: string
+} {
+  const decision = resolvePanelPlacement(workspace.getConfiguration().get(PANEL_PLACEMENT_SETTING), {
+    Active: ViewColumn.Active,
+    Beside: ViewColumn.Beside,
+  })
+  return {
+    viewColumn: decision.viewColumn as ViewColumn,
+    preserveFocus: decision.preserveFocus,
+    mode: decision.mode,
+    ...(decision.warning ? { warning: decision.warning } : {}),
+  }
+}
+
+/** The live graph panels, one per symbol+file (M55.P1 reuse rule). */
+const GRAPH_PANELS = new PanelRegistry<WebviewPanel>()
+
 /** Open (or reuse) the graph panel for a symbol. */
 export async function showGraphPanel(symbol: string, deps: GraphPanelDeps, context: ExtensionContext, file?: string): Promise<WebviewPanel> {
-  const panel = window.createWebviewPanel("bbGraph", `Backbencher Graph — ${symbol}`, ViewColumn.Beside, {
-    enableScripts: false,
-    localResourceRoots: [],
-  })
+  const key = panelKey("graph", symbol, file)
+  const existing = GRAPH_PANELS.get(key)
+  if (existing !== null) {
+    // Reuse: same panel, fresh render — never a second column (M55.P1).
+    const outcome = await renderGraphForPanel({ symbol, ...(file ? { file } : {}) }, deps)
+    applyResolutionTitle(existing, `Backbencher Graph — ${symbol}`, outcome, symbol, "Graph")
+    existing.webview.html = buildHtml(outcome, deps.cspSource, existing)
+    existing.reveal(undefined, true)
+    return existing
+  }
+  const placement = resolvePlacementFromSettings()
+  const panel = window.createWebviewPanel(
+    "bbGraph",
+    `Backbencher Graph — ${symbol}`,
+    { viewColumn: placement.viewColumn, preserveFocus: placement.preserveFocus },
+    {
+      enableScripts: false,
+      localResourceRoots: [],
+    },
+  )
   context.subscriptions.push(panel)
+  GRAPH_PANELS.set(key, panel)
+  panel.onDidDispose(() => GRAPH_PANELS.delete(key))
   const outcome = await renderGraphForPanel({ symbol, ...(file ? { file } : {}) }, deps)
   applyResolutionTitle(panel, `Backbencher Graph — ${symbol}`, outcome, symbol, "Graph")
   const html = buildHtml(outcome, deps.cspSource, panel)
