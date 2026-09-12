@@ -4,7 +4,7 @@ Status: `open` (filed on GitHub)
 GitHub milestone: `55` (free slot confirmed against the live board, 2026-09-12; the co-agent
 lanes M45 / M49 / M50 / M37 / M14 are untouched)
 Parent program: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md)
-Governing contract: [IDE Honesty Contract](../IDE-HONESTY-CONTRACT.md) (§14 Truth Rules,
+Governing contract: [IDE Honesty Contract](../IDE-HONESTY-CONTRACT.md) (§15 Truth Rules,
 M55 amendment — landed by G1)
 Prerequisite: M44 + M53 completion bars met — re-audited by G1 on every run.
 
@@ -92,7 +92,7 @@ honestly as `inferred`.
 
 | Code | Issue | Deliverable |
 |------|-------|-------------|
-| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) Governance + v7-bar check | M55 ledger; closure gate (`script/m55/verify-governance.ts`); §14 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run |
+| G1 | [#773](https://github.com/backbencher-hq/backbencher-brain/issues/773) Governance + v7-bar check | M55 ledger; closure gate (`script/m55/verify-governance.ts`); §15 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run |
 | T1 | [#770](https://github.com/backbencher-hq/backbencher-brain/issues/770) One identity resolver | member targets resolve through the owning declaration **and say so** on every surface; the wire carries the substitution; absent symbols stay loud declared errors |
 | T2 | [#771](https://github.com/backbencher-hq/backbencher-brain/issues/771) Call hierarchy truth | call-site ranges; no self-loops in incoming/outgoing; expand never errors; declared depth/cycle policy |
 | T3 | [#772](https://github.com/backbencher-hq/backbencher-brain/issues/772) One usage count, one list | "usages" means stored usage sites; hover / graph / references agree or state their declared filter |

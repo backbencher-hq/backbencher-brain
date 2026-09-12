@@ -363,3 +363,42 @@ hero embed and `/demos` route, and every frame that ships as product media.
 7. **The director's layer never touches product pixels.** Camera moves,
    cuts, captions, and grade act over real captures only — a zoom into real
    pixels is honest, a generated UI is not (rule 2).
+
+## 15. Truth Rules (M55 amendment, ratified 2026-09-12)
+
+M55 ("The Hub That Tells the Truth", IDE v8) closes the gap between what the
+IDE *renders* and what the index *knows*. The owner's 2026-09-12 report was
+made against a six-day-old installed bundle; re-shooting it on a fresh install
+cleared part of the report and exposed six live defects, four of which were
+presentation lies rather than missing features. These rules are contract,
+gated from M55.G1 onward. Scope: `src/lsp/`, `ide/vscode/`, `script/m55/`,
+`validation/m55/`, `docs/m55/`, and every surface an editor user reads.
+
+1. **One surface, one answer.** A fact rendered on two surfaces either
+   agrees, or carries the declared reason it differs. Counts of the same
+   thing never differ: if hover says three callers, the graph says three,
+   `textDocument/references` says three, and any surface that filters
+   differently states its filter.
+2. **Identity is stated.** When a target is resolved through a substitute — a
+   member through its owning declaration, an alias through its declaration —
+   the substitution is labeled wherever the target is named (panel title,
+   hover identity line, wire payload, tool result). Silent relabeling is a
+   defect: a graph that opens on `Store` after the user asked for its
+   `constructor` must say so.
+3. **Positions are where the thing is.** A range handed to the editor points
+   at the call site it names, never at a declaration, never at a body, never
+   at a fabricated line. A stored position that cannot be resolved from the
+   source is a declared approximation, and an unresolvable relation is
+   omitted and declared — never emitted with a plausible-looking range.
+4. **Human text is human.** No machine shapes (JSON blobs, serialized
+   parameter lists, escaped payloads) in anything a developer reads. A
+   signature reads `greetAll(names: string[]) -> string[]`; unresolved types
+   render a declared unknown marker, never a guessed type.
+5. **The editor is the gate.** A visual claim closes on a fresh-install frame
+   at the evidence HEAD, captured and read through the pinned protocol
+   (`docs/m55/SCREENSHOT-PROTOCOL.md`) — never on a DOM assertion alone, and
+   never against a bundle that is not the HEAD build. An unread frame is not
+   evidence.
+6. **Space is the user's.** A panel never silently splits the editor and
+   never takes focus without a reason it can state; the same panel is reused
+   rather than duplicated.

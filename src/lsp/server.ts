@@ -57,6 +57,19 @@ export const ErrorCodes = {
   ServerNotInitialized: -32002,
 } as const
 
+/** A declared, machine-readable client-input error (M55.T2). Handlers throw
+ *  this when a request cannot be answered for a reason IN THE REQUEST (a
+ *  missing item, a malformed position): the wire answer is InvalidParams with
+ *  a `bb/callHierarchy:` reason, never the InternalError an unhandled crash
+ *  produces. `Cannot read properties of undefined` is not an error message. */
+export class DeclaredParamsError extends Error {
+  readonly code = ErrorCodes.InvalidParams
+  constructor(message: string) {
+    super(message)
+    this.name = "DeclaredParamsError"
+  }
+}
+
 export interface LspContext {
   /** absolute workspace root (single-root scope; declared limitation) */
   root: string
@@ -240,8 +253,12 @@ export class BbLspServer {
         this.record("out", method)
         return { jsonrpc: JSONRPC, id: message.id, result }
       } catch (error: any) {
-        this.record("out", method, ErrorCodes.InternalError)
-        return this.errorResponse(message.id, ErrorCodes.InternalError, error?.message ?? String(error))
+        // The distinction is by TYPE, never by a duck-typed `.code` (Node's own
+        // errors carry codes too). A declared input error is the client's to
+        // fix; anything else is an internal failure and is reported as one.
+        const code = error instanceof DeclaredParamsError ? ErrorCodes.InvalidParams : ErrorCodes.InternalError
+        this.record("out", method, code)
+        return this.errorResponse(message.id, code, error?.message ?? String(error))
       }
     }
 
@@ -398,6 +415,7 @@ import {
   prepareCallHierarchy,
   expandCalls,
   symbolKindFor,
+  type CallHierarchyItem,
   type CallHierarchyIncomingCall,
   type CallHierarchyOutgoingCall,
 } from "./call_hierarchy"
@@ -631,11 +649,22 @@ export function wireFeatures(server: BbLspServer): void {
   })
 
   server.register("textDocument/prepareCallHierarchy", async (params: any) => {
+    // M55.T2: a malformed request is a declared client error, never a
+    // silently-defaulted position that answers about the wrong symbol.
+    const p = requireObject(params, "params")
+    const doc = requireObject(p.textDocument, "params.textDocument")
+    if (typeof doc.uri !== "string" || doc.uri.length === 0) {
+      throw new DeclaredParamsError("bb/callHierarchy: params.textDocument.uri must be a non-empty string")
+    }
+    const pos = requireObject(p.position, "params.position")
+    if (typeof pos.line !== "number" || typeof pos.character !== "number") {
+      throw new DeclaredParamsError("bb/callHierarchy: params.position must carry numeric line and character")
+    }
     const raw = await BrainDatabase.getRawInstance(projectId)
     const r = await prepareCallHierarchy(raw, {
-      filePath: uriToPath(params?.textDocument?.uri ?? ""),
-      line: params?.position?.line ?? 0,
-      character: params?.position?.character ?? 0,
+      filePath: uriToPath(doc.uri as string),
+      line: pos.line as number,
+      character: pos.character as number,
     })
     // Wire: CallHierarchyItem[] | null. The item's `data` (symbolId) is what
     // expand requests echo back — the client converter preserves it.
@@ -645,7 +674,7 @@ export function wireFeatures(server: BbLspServer): void {
   server.register("callHierarchy/incomingCalls", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
     const r = await expandCalls(raw, projectId, {
-      item: params?.item,
+      item: requireCallHierarchyItem(params),
       direction: "incoming",
     })
     // Wire: CallHierarchyIncomingCall[] (plain array; the envelope's
@@ -656,11 +685,44 @@ export function wireFeatures(server: BbLspServer): void {
   server.register("callHierarchy/outgoingCalls", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
     const r = await expandCalls(raw, projectId, {
-      item: params?.item,
+      item: requireCallHierarchyItem(params),
       direction: "outgoing",
     })
     return r.calls as CallHierarchyOutgoingCall[]
   })
+}
+
+// ---------------------------------------------------------------------------
+// M55.T2: request validation for the call-hierarchy surface. A missing or
+// malformed item is the CLIENT's error and is answered as InvalidParams with
+// the exact field named — an unhandled property read is a defect, not a
+// message.
+// ---------------------------------------------------------------------------
+
+function requireObject(value: unknown, what: string, shape?: string): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    // The reason names the field AND (when the door knows it) the shape the
+    // client must send, so a malformed expand teaches the contract instead of
+    // only rejecting it (M55.T2).
+    throw new DeclaredParamsError(
+      `bb/callHierarchy: ${what} must be an object${shape === undefined ? "" : ` carrying { ${shape} }`}`,
+    )
+  }
+  return value as Record<string, unknown>
+}
+
+/** The item echoed back by the client on expand, validated field by field. */
+function requireCallHierarchyItem(params: unknown): CallHierarchyItem {
+  const p = requireObject(params, "params")
+  const item = requireObject(p.item, "params.item", "symbolId: string, isExternal: boolean")
+  const data = requireObject(item.data, "params.item.data", "symbolId: string, isExternal: boolean")
+  if (typeof data.symbolId !== "string" || data.symbolId.length === 0) {
+    throw new DeclaredParamsError("bb/callHierarchy: params.item.data.symbolId must be a non-empty string")
+  }
+  if (typeof data.isExternal !== "boolean") {
+    throw new DeclaredParamsError("bb/callHierarchy: params.item.data.isExternal must be a boolean")
+  }
+  return item as unknown as CallHierarchyItem
 }
 
 /** Wire helper: a NavigationLocation (component) -> LSP Location. */

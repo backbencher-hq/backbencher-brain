@@ -18,8 +18,11 @@ import type { LanguageClient } from "vscode-languageclient/node"
 // Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
 // Same structural one-renderer rule as graph-panel's renderGraph import.
 import { renderImpact } from "../../../script/m26/graph-core"
-import { serialize, StringElement } from "./graph-panel"
+import { serialize, StringElement, applyResolutionTitle } from "./graph-panel"
 import { buildWebviewHtml } from "../../../script/m26/webview-html"
+// Type-only import: erased at build time, so this stays a thin client — the
+// SHAPE is owned by the server's identity resolver (src/lsp/identity.ts).
+import type { MemberResolution } from "../../../src/lsp/identity"
 
 /** bb/impact request — schemaVersion-pinned per src/lsp/impact_request.ts. */
 const IMPACT_METHOD = "bb/impact"
@@ -35,7 +38,7 @@ export interface ImpactPanelDeps {
 export async function renderImpactForPanel(
   params: { symbol: string; file?: string },
   deps: ImpactPanelDeps,
-): Promise<{ ok: true; markup: string; stateJson: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; markup: string; stateJson: string; resolution?: MemberResolution } | { ok: false; error: string }> {
   if (deps.client === null) {
     return { ok: false, error: "bb_lsp is not running — restart the server (command: Backbencher: Restart server)." }
   }
@@ -75,7 +78,12 @@ export async function renderImpactForPanel(
     symbol: params.symbol,
     nodesRendered: rendered.nodesRendered,
   })
-  return { ok: true, markup, stateJson }
+  // M55.T1 (Truth Rule 2): the declared substitution rides the outcome so the
+  // panel TITLE states it too — the renderer's note is not the only place a
+  // user learns what was actually shown (the filing defect: a member graph
+  // titled with the member after the server had rooted at its owner).
+  const resolution = (raw as { resolution?: MemberResolution }).resolution
+  return { ok: true, markup, stateJson, ...(resolution ? { resolution } : {}) }
 }
 
 /** Open (or reuse) the impact panel for a symbol. Returns the panel AND the
@@ -89,13 +97,14 @@ export async function showImpactPanel(
   context: ExtensionContext,
   /** X1 closure: the hover's defining-file identity (same-name members). */
   file?: string,
-): Promise<{ panel: WebviewPanel; outcome: { ok: true; markup: string; stateJson: string } | { ok: false; error: string } }> {
+): Promise<{ panel: WebviewPanel; outcome: Awaited<ReturnType<typeof renderImpactForPanel>> }> {
   const panel = window.createWebviewPanel("bbImpact", `Backbencher Impact — ${symbol}`, ViewColumn.Beside, {
     enableScripts: false,
     localResourceRoots: [],
   })
   context.subscriptions.push(panel)
   const outcome = await renderImpactForPanel({ symbol, file }, deps)
+  applyResolutionTitle(panel, `Backbencher Impact — ${symbol}`, outcome, symbol, "Impact")
   panel.webview.html = buildHtml(outcome, deps.cspSource)
   return { panel, outcome }
 }

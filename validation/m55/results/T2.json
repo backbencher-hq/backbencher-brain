@@ -1,0 +1,51 @@
+{
+  "issue": "M55.T2",
+  "code": "T2",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 39,
+  "passed": 39,
+  "failed": 0,
+  "realFailed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "8bafeb4fc0d5bd007b0222d82c135e07f340645f",
+  "workingTreeRelevantChanges": [
+    "script/m24/verify-call-hierarchy.ts",
+    "script/m24/verify-positions.ts",
+    "src/lsp/call_hierarchy.ts",
+    "src/lsp/positions.ts",
+    "src/lsp/server.ts",
+    "validation/m24/results/L5.json",
+    "validation/m24/results/P1.json",
+    "script/m55/",
+    "validation/m55/fixtures/"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
+  "evidenceFile": "T2.json",
+  "generatedAt": "2026-09-12T15:28:23.231Z",
+  "fixture": {
+    "root": "$HOME/backbencher-brain/validation/m55/fixtures/t2-workspace",
+    "files": [
+      "src/store.ts",
+      "src/loop.ts",
+      "src/mutual.ts",
+      "src/chain.ts",
+      "src/mid.ts",
+      "src/deep.ts",
+      "src/multi.ts"
+    ],
+    "shapes": [
+      "receiver-qualified same-name call (this.items.get inside Store.get) — artifact, must be dropped and declared",
+      "genuine recursion (loop → loop) — must be kept and labeled recursive",
+      "mutual pair (a ↔ b) — must not error",
+      "3-deep chain (top → mid → deep) — must expand without error",
+      "one caller with two call sites (many → deep ×2) — both ranges reported"
+    ]
+  },
+  "failures": [],
+  "limitations": [
+    "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
+    "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range."
+  ]
+}
