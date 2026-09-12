@@ -75,6 +75,31 @@ Verifier: `verify-editors-page.ts` — claim matrix equals `ide/vscode/README.md
 no marketplace-availability claim, stills present with size floors, exclusions and
 publishing status rendered. Mutation-tested.
 
+Implementation notes (as built):
+- The page is generated into `website/src/data/editors.generated.ts` by
+  `script/m56/generate-editors.ts` (`--write` / verify). Sources: the extension
+  README and status model, `docs/m24/TOOL-DOC.md`, the M29 precision ledger, the
+  M25 editor/OS/packaging evidence, the four integration configs, the extension
+  manifest, and the verified M45 capture corpus.
+- Two claim ladders are published side by side because two artifacts define
+  them (the extension README's protocol/runtime/in-editor/cross-editor ladder
+  and the status model's protocol/index/harness/editor/precision ladder). The
+  gate parses all three claim sources independently and requires agreement with
+  what the page renders; any documented drift between a doc row and its evidence
+  is declared on the page (today: the Cursor pinned version) rather than
+  resolved quietly.
+- Proof images are four stills copied byte-for-byte from
+  `validation/m45/results/demo-session/probes/`, sha-pinned in the generated
+  data, captioned from the recorded observed beats, and re-hashed by the gate at
+  every run.
+- Publishing is stated as blocked with its reason, target registry and publish
+  command from the M25 packaging record; the gate forbids any
+  marketplace-availability phrase while that record says blocked.
+- `/editors` joined the sitemap (M41.S1 requires exact route parity) and the
+  main navigation; M56.I1 still owns the final nav set and the footer.
+- Enforced by `npx tsx script/m56/verify-editors-page.ts` in the local `verify`
+  chain and in CI's `verify-site` job.
+
 ### T1 — Tool Reference Single-Sourced (#781)
 Deliverables: the tool-docs generator also emits
 `website/src/data/tools.generated.ts`; `brain-tool-notes.ts` is deleted and the
@@ -158,6 +183,7 @@ is enforced:
 
 - G1 `verify-governance.ts` — `verify:fast` (CI `verify` job, all node matrix legs).
 - T1 `verify-tools-truth.ts` — local `verify` chain and CI `verify-site` job.
+- E1 `verify-editors-page.ts` — local `verify` chain and CI `verify-site` job.
 
 The site gates may not weaken:
 M41's T2/T3/S1/S2/D1 continue to run, and any content change re-runs them — a new
