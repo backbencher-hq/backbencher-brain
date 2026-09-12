@@ -60,7 +60,7 @@ jobs:
             BASE=$(git merge-base HEAD "origin/main" 2>/dev/null || echo "origin/main")
             CHANGED=$(git diff --name-only "$BASE"...HEAD || true)
           fi
-          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|docs/tools/|script/m41/|script/m56/|script/m48/|script/verify-tool-docs.ts|package-lock.json)'; then
+          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|docs/tools/|script/m41/|script/m56/|script/m48/|script/verify-tool-docs.ts|ide/|validation/m25/|validation/m29/|validation/m45/|package-lock.json)'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -99,6 +99,12 @@ jobs:
       - name: Verify tool-reference single-sourcing (M56.T1)
         if: steps.sitechanged.outputs.changed == 'true'
         run: npx tsx script/m56/verify-tools-truth.ts
+
+      # M56.E1 — the editors/IDEs surface. Same dependency shape as T1
+      # (website deps + a rebuild when .next is stale), so it also lives here.
+      - name: Verify editors-page claims (M56.E1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-editors-page.ts
 
   # M36.S2 — enforcement of the verification discipline on every push/PR.
   # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
