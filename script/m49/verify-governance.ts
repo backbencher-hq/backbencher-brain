@@ -21,7 +21,7 @@
 //      boolean-or-true escapes anywhere in M49 verifiers.
 //
 // Run: bun script/m49/verify-governance.ts
-import { readFileSync, existsSync, readdirSync } from "node:fs"
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 
@@ -74,14 +74,36 @@ function main() {
   }
 
   // --- 2. Coverage ---------------------------------------------------------
-  const langDirs = existsSync(REVIEWS)
+  // A LANGUAGE is a directory under reviews/. The unfiltered readdir used to
+  // treat the top-level review DOCUMENTS (`reviews/<wave>-<topic>.md`) as
+  // languages too, so adding one made G1 demand a language row for a document
+  // (probe 2026-09-12: reviews/m49-w9-*.md failed G1 until a row was written;
+  // R1 already filtered to directories, so the two gates disagreed). G1 now
+  // agrees with R1 on languages and gives documents their own, correctly-scoped
+  // presence check — coverage is unchanged, the misclassification is gone.
+  const reviewEntries = existsSync(REVIEWS)
     ? readdirSync(REVIEWS).filter((f) => f !== "onboarding.md" && !f.startsWith("."))
     : []
+  const isDir = (f: string) => {
+    try { return statSync(path.join(REVIEWS, f)).isDirectory() } catch { return false }
+  }
+  const langDirs = reviewEntries.filter(isDir)
+  const reviewDocs = reviewEntries.filter((f) => !isDir(f) && f.endsWith(".md"))
   const board = existsSync(path.join(REVIEWS, "onboarding.md"))
     ? readFileSync(path.join(REVIEWS, "onboarding.md"), "utf8") : ""
   for (const lang of langDirs) {
     check(`onboarding board tracks ${lang}`, board.includes(`reviews/${lang}`))
   }
+  for (const doc of reviewDocs) {
+    check(`onboarding board documents ${doc}`, board.includes(doc))
+  }
+  // The classification above is only meaningful if it discriminates, and the
+  // document rule is only meaningful if it can fail:
+  //   - a real language directory IS a directory, a real document is NOT;
+  //   - a document absent from the board must fail the same predicate.
+  negative("language/document classification is not vacuous", isDir("java") && !isDir("regex-policy.md"))
+  const syntheticDoc = "reviews/__unboarded_probe_doc__.md"
+  negative("a review document absent from the board fails", !board.includes(syntheticDoc))
   check("R1 intake gate exists on disk", existsSync(path.join(M49_DIR, "verify-r1-intake.ts")))
   check("R2 regex gate exists on disk", existsSync(path.join(M49_DIR, "verify-r2-regex.ts")))
 
