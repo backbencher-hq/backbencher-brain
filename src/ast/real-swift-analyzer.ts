@@ -849,8 +849,19 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // assignment and gate only when this node sits INSIDE the LHS span
     // (the RHS of `self.count = self.count + 1` stays a genuine read).
     {
+      // The walk must climb the whole ASSIGNABLE PATH, not just the
+      // directly_assignable_expression wrapper: a nested member chain is one
+      // navigation_expression inside another, and only the OUTER one hangs
+      // directly off the wrapper. Walking through
+      // directly_assignable_expression alone therefore missed every inner LHS
+      // node, so `self.settings.pointee.on_body = …` emitted a bogus
+      // `uses pointee` for the middle segment (F5 2026-09-12, swift-nio
+      // HTTPDecoder.swift, unexplained=1) — the SCD1 rule broken from the
+      // inside. RHS values are not on this path (they sit under
+      // binary/call/collection nodes, which stop the walk), and the span check
+      // below still decides: only nodes INSIDE the LHS span are writes.
       let a = node.parent
-      while (a && a.type === "directly_assignable_expression") a = a.parent
+      while (a && (a.type === "directly_assignable_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) a = a.parent
       if (a && a.type === "assignment") {
         const lhs = a.namedChild(0)
         if (lhs && lhs.startIndex <= node.startIndex && lhs.endIndex >= node.endIndex) return
