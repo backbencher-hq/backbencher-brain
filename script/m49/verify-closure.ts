@@ -51,6 +51,10 @@ function main() {
   // R1 + R2 must pass live right now (never trusted from stored evidence).
   check("R1 intake gate passes live", runGate("script/m49/verify-r1-intake.ts"))
   check("R2 regex gate passes live", runGate("script/m49/verify-r2-regex.ts"))
+  // G6: the census must be anchored to committed blobs, not to a dirty tree.
+  // Without this, R2 can pass on a census that describes a tree no commit
+  // ever contained (verified: the census committed at HEAD was dirty-derived).
+  check("G6 census-lineage gate passes live", runGate("script/m49/verify-census-lineage.ts"))
 
   // Every tracked language folder must be fully processed before closure:
   // a folder counts as closed only when its review explicitly states RESOLVED
