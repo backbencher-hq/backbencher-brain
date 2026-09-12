@@ -39,6 +39,25 @@ Full table + SQL reconstructions: `validation/m50/results/A1.json` (+ 19 per-cas
   cached; declare the latency. (5) Unify the parameter vocabulary (`target`
   everywhere, `symbol` accepted as an alias) — decided with the registry gates.
   Every fix lands with before/after numbers from A1's harness.
+
+  **DELIVERED (root cause, not worklist guess):** A1's "slow handlers" verdict
+  was WRONG about the engine — the handlers were fast in-process (3–108ms); the
+  15–45s stdio numbers came from SQLite planning WITHOUT sqlite_stat1 (ANALYZE
+  never ran on any real DB), which made the graph owner-cascade scan every
+  brain_symbol row per hop (117–126ms × ~150 hops; EXPLAIN + cpuprofile
+  evidence). A2's real fix is planner truth, not traversal rewrites:
+  (a) `ensurePlannerStats()` — absence-only ANALYZE at DB open;
+  (b) `ensureHealthIndexes()` self-heals 8 core traversal indexes + repair-path
+  ANALYZE when one is recreated;
+  (c) `analyze` as a recorded final post-processing phase (fresh indexes are
+  born with stats).
+  Measured (fresh `node bin/bb mcp`, real repo): bb_graph 19.2s/15.4s/15.2s →
+  2.9s/0.66s/0.60s; bb_patterns timeout>45s → 4.5s; per-hop 117–126ms →
+  0.29–0.56ms (200–400×). Gate: `verify-planner-stats.ts` 9/9 bun + tsx,
+  mutation-proven. Evidence: `validation/m50/results/A2-planner-stats.json`.
+  Still open from the original worklist: bb_ask ~4.8s (provider latency),
+  parameter vocabulary unification — both continue under A2 with the same
+  before/after discipline.
 - **A3 (#765) — Guidance that survives restarts.** `bb onboard <dir>` writes an
   AGENTS.md section: only registry-real tools, one when-to-use line each.
   Purge remaining ghost names from shipped surfaces. Extended H1-style gate
@@ -54,7 +73,7 @@ Full table + SQL reconstructions: `validation/m50/results/A1.json` (+ 19 per-cas
 | Code | Script | Infra |
 |---|---|---|
 | G1 | verify-governance.ts | yes |
-| A2 | verify-a2-latency-bounds.ts | no |
+| A2 | verify-planner-stats.ts (+ verify-a2-latency-bounds.ts as further fixes land) | no |
 | A3 | verify-a3-guidance-truth.ts | no |
 | A4 | verify-a4-adoption.ts | no |
 | X1 | verify-closure.ts | yes |
