@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-12T18:50:42.214Z",
+  "updatedAt": "2026-09-12T19:49:22.713Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -39,10 +39,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m56/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-12T18:46:33.409Z",
+        "generatedAt": "2026-09-12T19:44:45.145Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 13
@@ -95,10 +95,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-12T18:39:39.656Z",
+        "generatedAt": "2026-09-12T19:44:52.112Z",
         "passed": 28,
         "failed": 0,
         "negativeCases": 6
@@ -135,10 +135,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts",
         "evidenceFile": "L1.json",
-        "generatedAt": "2026-09-12T18:40:51.843Z",
+        "generatedAt": "2026-09-12T19:49:09.735Z",
         "passed": 49,
         "failed": 0,
         "negativeCases": 11
@@ -163,10 +163,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m56/verify-docs-completeness.ts",
         "evidenceFile": "D1.json",
-        "generatedAt": "2026-09-12T18:41:45.336Z",
+        "generatedAt": "2026-09-12T19:46:31.935Z",
         "passed": 53,
         "failed": 0,
         "negativeCases": 9

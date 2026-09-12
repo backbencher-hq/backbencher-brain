@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-12T18:50:43.154Z",
+  "updatedAt": "2026-09-12T19:49:21.895Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -51,10 +51,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "672bc8278b187217eba543e710d1dd0a84e2ac09",
         "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-12T18:46:37.158Z",
+        "generatedAt": "2026-09-12T19:37:30.774Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 11
@@ -105,11 +105,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
         "evidenceFile": "T2.json",
-        "generatedAt": "2026-09-12T18:43:14.142Z",
-        "passed": 52,
+        "generatedAt": "2026-09-12T19:42:26.264Z",
+        "passed": 55,
         "failed": 0,
         "negativeCases": 3
       }
@@ -132,11 +132,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts --label T3",
         "evidenceFile": "T3.json",
-        "generatedAt": "2026-09-12T18:44:26.065Z",
-        "passed": 52,
+        "generatedAt": "2026-09-12T19:43:38.386Z",
+        "passed": 55,
         "failed": 0,
         "negativeCases": 3
       }
@@ -159,11 +159,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m41/verify-seo.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-12T18:45:49.494Z",
-        "passed": 55,
+        "generatedAt": "2026-09-12T19:44:41.356Z",
+        "passed": 62,
         "failed": 0,
         "negativeCases": 10
       }
@@ -215,10 +215,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+        "currentCommit": "79a04ca719bb6ede23be9c215667e79a429a1be7",
         "verifierCommand": "npx tsx script/m41/verify-design.ts",
         "evidenceFile": "D1.json",
-        "generatedAt": "2026-09-12T18:45:50.561Z",
+        "generatedAt": "2026-09-12T19:44:42.140Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 3,
