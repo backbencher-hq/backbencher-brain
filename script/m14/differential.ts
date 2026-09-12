@@ -128,6 +128,40 @@ function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
   }
   return idx.slice(0, n).map(i => items[i])
 }
+// M49 #760 (process gate): deterministic sampling = deterministic blind spot.
+// `Spring.subscribe -> Readable.subscribe` (ts .d.ts interface heritage) stayed
+// invisible for waves because the SAME 60 files were drawn every run. Each lane
+// now prefers files never sampled before (the cold pool), deterministically
+// seeded per rotation counter — reproducible, but every wave sees fresh files.
+// Cumulative coverage is tracked in the cold-pool state file; the gate fails if
+// a corpus's cumulative coverage stalls (no new files in N waves = the pool is
+// exhausted = sample >= corpus, fine) or the state file is missing on a
+// canonical run (silent revert to the old blind behavior).
+const COLD_POOL_STATE = "/tmp/m14-f5-cold-pool.json"
+function loadColdPool(): { seen: Record<string, string[]>; rotations: Record<string, number> } {
+  try { return JSON.parse(fs.readFileSync(COLD_POOL_STATE, "utf8")) } catch { return { seen: {}, rotations: {} } }
+}
+function saveColdPool(state: { seen: Record<string, string[]>; rotations: Record<string, number> }): void {
+  fs.mkdirSync(path.dirname(COLD_POOL_STATE), { recursive: true })
+  fs.writeFileSync(COLD_POOL_STATE, JSON.stringify(state, null, 2))
+}
+function coldPoolPick<T>(items: T[], n: number, laneKey: string): { picked: T[]; coldCount: number; total: number; rotation: number } {
+  const state = loadColdPool()
+  const seen = new Set<string>(state.seen[laneKey] ?? [])
+  const rotation = (state.rotations[laneKey] ?? 0) + 1
+  const paths = items.map((it) => String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
+  const freshIdx: number[] = []
+  const warmIdx: number[] = []
+  for (let i = 0; i < items.length; i++) (seen.has(paths[i]) ? warmIdx : freshIdx).push(i)
+  const coldFresh = seededPick(freshIdx.map((i) => items[i]), Math.min(n, freshIdx.length), `${laneKey}:rot${rotation}:fresh`)
+  const coldWarm = seededPick(warmIdx.map((i) => items[i]), n - coldFresh.length, `${laneKey}:rot${rotation}:warm`)
+  const picked = [...coldFresh, ...coldWarm]
+  const pickedPaths = picked.map((it) => String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
+  state.seen[laneKey] = [...new Set([...(state.seen[laneKey] ?? []), ...pickedPaths])]
+  state.rotations[laneKey] = rotation
+  saveColdPool(state)
+  return { picked, coldCount: coldFresh.length, total: items.length, rotation }
+}
 function lastSegment(name: string): string {
   const parts = name.split(/::|\./).filter(Boolean)
   return parts[parts.length - 1] ?? name
@@ -5484,7 +5518,11 @@ async function main() {
       for (const nm of SWIFT_PROTOCOLS) SWIFT_TYPE_KINDS.set(nm, "interface")
     }
 
-    const sample = seededPick(files, SAMPLE_PER_LANG, `${langRepo}:${lang}:m14-f5`)
+    // M49 #760: cold-pool rotation — prefer never-sampled files each wave.
+    // Falls back to warm files only when the fresh pool is exhausted.
+    const pool = coldPoolPick(files, SAMPLE_PER_LANG, `${langRepo}:${lang}`)
+    const sample = pool.picked
+    console.log(`  [cold-pool] ${langRepo}:${lang}: ${pool.coldCount}/${sample.length} fresh (rot ${pool.rotation}, corpus ${pool.total})`)
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
     let heuristicUnexplained = 0

@@ -2302,5 +2302,7 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Differential corpus harness (two-corpus gate)"
+  "title": "Differential corpus harness (two-corpus gate)",
+  "regeneratedAtCommit": "__LEGACY__",
+  "regeneratedAt": "pre-#761-gate"
 }

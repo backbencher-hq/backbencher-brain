@@ -126,7 +126,20 @@ export function emitEvidence(input: EvidenceInput, resultsDir = RESULTS_DIR): st
   }
   fs.mkdirSync(resultsDir, { recursive: true })
   const file = path.join(resultsDir, `${input.issueId}.json`)
-  fs.writeFileSync(file, stableStringify(artifact) + "\n")
+  // M49 #761 (process gate): evidence files are shared across agents/laptops —
+  // a mid-write crash (or a killed parallel run) previously left TRUNCATED
+  // evidence that read as empty baselines, and stale evidence could masquerade
+  // as fresh at an unrelated HEAD. Writes are now ATOMIC (tmp+rename: readers
+  // never see a partial file) and every artifact carries its lineage
+  // (regeneratedAtCommit + timestamp) so gate consumers can detect staleness.
+  const lineage = {
+    ...artifact,
+    regeneratedAtCommit: gitCommit(),
+    regeneratedAt: new Date().toISOString(),
+  }
+  const tmp = `${file}.tmp-${process.pid}`
+  fs.writeFileSync(tmp, stableStringify(lineage) + "\n")
+  fs.renameSync(tmp, file)
   return file
 }
 
