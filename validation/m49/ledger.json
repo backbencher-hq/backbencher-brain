@@ -89,6 +89,22 @@
       "notes": "D1-D3 probe-verified ALREADY-FIXED on the tree (the wave landed them after the review text): D1 quote states (go('save') emits only Uses(go)), D2 arrow-data keys read, D3 decorated default ownership kept. Fully gated: fixtures template-string-args/arrow-data/decorated-default, mutants string-args-revert/arrow-data-drop/decorated-default-revert, spec VSD19-VSD21. No uncovered claims.",
       "evidenceFile": "reviews/vue/master-review.md",
       "verifiedAtCommit": "aab61932"
+    },
+    {
+      "id": "J4",
+      "title": "JavaScript blind-spot wave W1 (issue #768): binding positions are definitions; write-LHS subtree suppression; call-rooted chain head",
+      "status": "verified",
+      "notes": "Surfaced by the #760 cold-pool rotation (grails-core MISSING=7, lodash MISSING=26 — the only lanes that moved off 100/0/0). The #744 bare-read walk treated every non-declaration-name identifier as a read, so import bindings, parameters, catch params, destructuring targets and export specifiers fabricated uses @0.6; the write-LHS suppression used `continue` in a stack walk that pushes children at the loop tail, so the whole statement subtree was skipped; a call-rooted chain head was emitted as raw expression TEXT (a non-symbol target). The JS-lane oracle carried the identical gate list, so lockstep mirrored all three and the lane agreed on a wrong contract — the probe battery gained `oracleForbid`, which fails as `oracle colludes`, self-tested by re-introducing the fabrication. Fixtures binding-sites-are-not-reads + write-lhs-nested-reads; mutants import-binding/binding-param/destructure-target-read-fabrication + write-lhs-subtree-skip + write-target-read-leak + chain-head-expression-fabrication; spec JSD23-JSD26.",
+      "evidenceFile": "validation/m14/fixtures/javascript/binding-sites-are-not-reads.expectation.json",
+      "verifiedAtCommit": "5d602664"
+    },
+    {
+      "id": "J5",
+      "title": "JavaScript/Vue blind-spot wave W2 (issue #769): a member's identity is its container, not its bare name",
+      "status": "verified",
+      "notes": "The JS method dedup key was `${owner ?? \"module\"}:${name}` and scopeOwnerName only reports CLASS scopes, so every object-literal member of a module shared ONE slot: the second init()/default() of a SIBLING object literal replaced the first, dead-spanning its body and dropping its calls. TypeScript kept both, so the same shape produced different graphs by file extension. Lane-visible on the real corpus: vue-element-admin MarkdownEditor/index.vue (two prop-default factories) had MISSING={toFixed,random} against the vue lane's own truth oracle, 0 after. Identity is now container-scoped (class body -> class name, object literal -> its span) while duplicates INSIDE one container still collapse last-wins. Also fixed the B5 sibling-accessor kill, which matched owner+name TEXT and so killed same-named accessors of other object literals. Fixtures javascript/sibling-object-member-identity + the re-authored vue/prop-default-factory-calls (now the real two-factory corpus shape — the #762 one-factory version passed either way); mutants javascript/sibling-object-collapse + vue/prop-default-multi-collapse; spec JSD27-JSD28. Same commit repairs 5d602664's mutant registry (ids outside the array) and adds M49.G4 script-integrity, which fails on that class.",
+      "evidenceFile": "validation/m14/fixtures/javascript/sibling-object-member-identity.expectation.json",
+      "verifiedAtCommit": "f0221d23"
     }
   ],
   "waves": [
