@@ -1879,18 +1879,53 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       // M14 #419 J3: template-literal interpolation — `hi ${name}` reads
       // name inside the enclosing function (TS T3 / kotlin K4 / scala G4
       // analog). Emit Uses on the substituted identifiers.
+      //
+      // M49 W4 (J6): a substituted identifier is a READ only when it is not
+      // part of a call's callee expression and not an assignment target — the
+      // same gates the bare-read and chain rules apply (a callee is covered by
+      // the `calls` edge; a receiver of a call is part of that callee).
+      // Pre-fix this walk emitted Uses for EVERY identifier in the subtree, so
+      // `${fn(x)}` fabricated `uses fn` and `${obj.m(x)}` fabricated
+      // `uses obj` — 5 corpus edges (benchmarking/utils.js,
+      // transform-template/template.js) that the F5 truth rightly refused,
+      // surfacing as unexplained fabrication once #760's rotation sampled
+      // those files.
       if (node.type === "template_substitution") {
+        const inCalleeOrWritePosition = (n: Node): boolean => {
+          let cur: any = n
+          while (cur) {
+            const p = cur.parent
+            if (!p || p.type === "template_substitution") break
+            if (p.type === "call_expression") {
+              const fn = p.childForFieldName("function")
+              if (fn && fn.startIndex <= n.startIndex && n.endIndex <= fn.endIndex) return true
+            }
+            if (p.type === "assignment_expression" || p.type === "augmented_assignment_expression") {
+              const left = p.childForFieldName("left") ?? p.namedChild(0)
+              if (left && left.startIndex <= n.startIndex && n.endIndex <= left.endIndex) return true
+            }
+            cur = p
+          }
+          return false
+        }
         const sub = (n: Node): void => {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c) continue
             if (c.type === "identifier") {
+              if (inCalleeOrWritePosition(c)) continue
               // JSD2: template reads attribute to the enclosing function
               // (the calls-walk owner), never the receiver/type placeholder.
               const src2 = method ?? owner ?? moduleName
               const key = `${src2}.${c.text}`
               if (!seen.has(key)) {
                 seen.add(key)
+                // M49 W4 (J6): mark the BARE-READ key too — the generic rule
+                // (added by #744) re-emitted the same read at 0.6 with
+                // isFieldAccess metadata, so one interpolated read produced
+                // two Uses edges. First emitter wins: this rule carries the
+                // documented isTemplateInterpolation contract.
+                seen.add(`${src2}.#${c.text}`)
                 relationships.push({
                   source: src2,
                   target: c.text,

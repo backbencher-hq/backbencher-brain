@@ -3478,6 +3478,45 @@ const MUTANTS: Mutant[] = [
       { type: "calls", source: "combine", target: "combine", fromSymbol: "combine", toSymbol: "combine", confidence: 0.9, metadata: { haskellSpecific: true } },
     ] }),
   },
+  {
+    id: "javascript/template-callee-uses",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description: "M49 W4 (J6) regression: re-emits the pre-fix template-substitution fabrication - Uses for call callees and receivers (`${fn(x)}` -> uses fn, `${obj.m(x)}` -> uses obj). The template walk emitted every identifier in the subtree; template-substitution-reads forbids both targets",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const call = rels.find((x: any) => String(x.type ?? x.relationshipType) === "calls" && (x.metadata ?? {}).calleeExpression)
+      if (!call) return r
+      const extra = ["fn", "obj"].map(t => ({ source: call.source, target: t, type: "uses", confidence: 0.85, metadata: { isTemplateInterpolation: true } }))
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "javascript/template-read-duplicate",
+    language: "javascript",
+    defectClass: "edge-duplication",
+    description: "M49 W4 (J6 dedupe half; TS TSD28 twin): re-emits the generic bare-read Uses alongside the template walk's edge, so one interpolated read becomes two Uses edges (0.85 + 0.6) - template-substitution-reads pins count==1",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).flatMap((x: any) => (x.type === "uses" && (x.metadata ?? {}).isTemplateInterpolation)
+      ? [x, { ...x, confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } }]
+      : [x]) }),
+  },
+  {
+    id: "typescript/property-override-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M49 W4 (T2) regression: drops the interface-PROPERTY override branch - a derived interface redeclaring a property emits no overrides edge (the svelte-repo .d.ts shape: HTMLAttributes.ontoggle over DOMAttributes.ontoggle). dts-interface-property-overrides pins exactly 2 overrides",
+    transform: r => {
+      const props = new Set((r.symbols ?? []).filter((s: any) => s.metadata?.isInterfaceMember && s.kind === "property").map((s: any) => `${s.ownerName}.${s.name}`))
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "overrides" && props.has(x.target))) }
+    },
+  },
+  {
+    id: "typescript/subscript-callee-nested-call-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M49 W4 (T3) regression: restores the pre-fix early return on computed-callee calls - the argument subtree is skipped entirely, so real calls nested inside the arguments vanish (subscript-callee-nested-calls pins exactly 2 calls->text; the svelte corpus surfaced it as MISSING on runtime-browser/test.ts)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.target === "text")) }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
