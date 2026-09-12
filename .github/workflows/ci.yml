@@ -60,7 +60,7 @@ jobs:
             BASE=$(git merge-base HEAD "origin/main" 2>/dev/null || echo "origin/main")
             CHANGED=$(git diff --name-only "$BASE"...HEAD || true)
           fi
-          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|script/m41/|package-lock.json)'; then
+          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|docs/tools/|script/m41/|script/m56/|script/m48/|script/verify-tool-docs.ts|package-lock.json)'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -92,6 +92,13 @@ jobs:
           npx tsx script/m41/verify-seo.ts && \
           npx tsx script/m41/verify-governance.ts && \
           npx tsx script/m41/verify-seo-onboarding.ts
+
+      # M56.T1 — the tool reference is single-sourced. Needs website deps
+      # (it rebuilds when .next is older than a site source) and website/ has
+      # a separate lockfile, so it runs here rather than in the fast job.
+      - name: Verify tool-reference single-sourcing (M56.T1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-tools-truth.ts
 
   # M36.S2 — enforcement of the verification discipline on every push/PR.
   # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
