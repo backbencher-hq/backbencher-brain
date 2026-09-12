@@ -1,6 +1,6 @@
 {
   "probe": "M50.A4-adoption",
-  "at": "2026-09-12T14:26:51.339Z",
+  "at": "2026-09-12T14:43:03.585Z",
   "issue": 766,
   "fixture": {
     "dir": true,
@@ -19,10 +19,10 @@
         "target": "adoptProbeTarget"
       },
       "expect": "ok",
-      "ok": false,
-      "taught": true,
-      "outcome": "still-broken",
-      "text": "bb_impact: unknown or irrelevant options: target — accepted options: symbol (aliases accepted: symbolName, query)"
+      "ok": true,
+      "taught": false,
+      "outcome": "fixed",
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"e813ef010b273da1810a2508c3a58672fa1611ba:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: unknown or irrelevant options: query (bb_cross_language)",
@@ -46,7 +46,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"0191c761c17b8d4f05a3818ad16ea8b4097490e0:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
+      "text": "{\n  \"symbol\": \"adoptProbeTarget\",\n  \"root\": {\n    \"id\": \"e813ef010b273da1810a2508c3a58672fa1611ba:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarge"
     },
     {
       "from": "A1: unknown or irrelevant options: target, direction (bb_graph)",
@@ -72,7 +72,7 @@
       "ok": true,
       "taught": false,
       "outcome": "fixed",
-      "text": "{\n  \"root\": {\n    \"id\": \"0191c761c17b8d4f05a3818ad16ea8b4097490e0:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarget\",\n    \"symbolType\": \"function\""
+      "text": "{\n  \"root\": {\n    \"id\": \"e813ef010b273da1810a2508c3a58672fa1611ba:src/adopt.ts:adoptProbeTarget:1\",\n    \"name\": \"adoptProbeTarget\",\n    \"symbolType\": \"function\""
     }
   ],
   "decidability": {
@@ -296,10 +296,10 @@
       "source": "validation/m50/results/A1.json (recorded verbatim)"
     },
     "after": {
-      "failing": 1,
-      "fixed": 4
+      "failing": 0,
+      "fixed": 5
     },
-    "claim": "4/5 recorded A1 failure shapes now succeed; the one shape with a genuinely nonexistent option (bb_graph `direction`) is still refused, and the refusal now names the accepted options and aliases."
+    "claim": "5/5 recorded A1 failure shapes now succeed; the one shape with a genuinely nonexistent option (bb_graph `direction`) is still refused, and the refusal now names the accepted options and aliases."
   },
   "humanSession": {
     "status": "pending",
@@ -309,10 +309,10 @@
   },
   "gate": "M50.A4",
   "milestone": "M50",
-  "commit": "522966109bea6b2138112021e6ce174e9dea9456",
+  "commit": "bbb8e604ab0acd2e6554bf24721a1d1b84222b39",
   "checks": 10,
-  "passed": 8,
-  "failed": 2,
+  "passed": 10,
+  "failed": 0,
   "verifierCommand": "npx tsx script/m50/verify-a4-adoption.ts",
-  "status": "known-gap"
+  "status": "verified"
 }
