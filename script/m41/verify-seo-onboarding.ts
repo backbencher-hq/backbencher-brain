@@ -42,9 +42,19 @@ function negative(label: string, byDesign: boolean, detail = ""): void {
   check(`${label} [negative]`, byDesign, detail)
 }
 
-async function get(url: string, opts?: RequestInit): Promise<{ status: number; body: string }> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(20_000), ...opts })
-  return { status: res.status, body: await res.text() }
+// A live check that cannot reach the internet has FAILED, not skipped. The
+// failure is recorded with its reason and every remaining check still runs —
+// an unreachable network must never crash this verifier halfway through and
+// throw away the checks that already ran (observed 2026-09-12: a transient
+// EHOSTUNREACH on the sitemap fetch aborted the run with no verdict at all).
+async function get(url: string, opts?: RequestInit): Promise<{ status: number; body: string; error?: string }> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(20_000), ...opts })
+    return { status: res.status, body: await res.text() }
+  } catch (e) {
+    const cause = (e as { cause?: { code?: string } }).cause
+    return { status: 0, body: "", error: String(cause?.code ?? (e as Error).message).slice(0, 60) }
+  }
 }
 
 // Token-match logic in one place so the live check and its sensitivity
@@ -82,15 +92,17 @@ const EXPECTED_TOKEN = "google-site-verification=WqhvOz_J93aA5SgNKkHS6RCqa_fVxrx
 const CORRUPT_TOKEN = "google-site-verification=0000000000000000000000000000000000000000"
 let txtRecords: string[] = []
 let dnsFetched = false
+let dnsError = ""
 try {
   const res = await fetch("https://dns.google/resolve?name=backbencher.cc&type=TXT", { signal: AbortSignal.timeout(20_000) })
   const dns = (await res.json()) as { Answer?: { type: number; data: string }[] }
   txtRecords = (dns.Answer ?? []).filter((a) => a.type === 16).map((a) => a.data)
   dnsFetched = true
-} catch {
+} catch (e) {
   dnsFetched = false
+  dnsError = String((e as { cause?: { code?: string } }).cause?.code ?? (e as Error).message).slice(0, 60)
 }
-check("S2: DNS TXT answer retrieved from dns.google", dnsFetched)
+check("S2: DNS TXT answer retrieved from dns.google", dnsFetched, dnsError)
 check("S2: Google site-verification token is live in global DNS", tokenPresent(txtRecords, EXPECTED_TOKEN), `records=${txtRecords.length}`)
 
 // --- 3. sitemap live and matching the deployed route set --------------------------
@@ -101,7 +113,7 @@ check("S2: Google site-verification token is live in global DNS", tokenPresent(t
 const DEPLOYED_EXPECTED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"].map((r) => `${LIVE}${r}`)
 const EXPECTED = DEPLOYED_EXPECTED
 const sm = await get(`${LIVE}/sitemap.xml`)
-check("S2: live sitemap.xml responds 200", sm.status === 200, `status=${sm.status}`)
+check("S2: live sitemap.xml responds 200", sm.status === 200, sm.error ?? `status=${sm.status}`)
 const liveUrls = [...sm.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
 check("S2: live sitemap lists exactly the deployed route set", JSON.stringify([...liveUrls].sort()) === JSON.stringify([...EXPECTED].sort()), `found=${liveUrls.length} expected=${EXPECTED.length}`)
 
@@ -114,7 +126,7 @@ for (const u of liveUrls.length ? liveUrls : EXPECTED) {
   try {
     const r = await get(u, { headers: { "User-Agent": GB } })
     if (r.status === 200 && !/name="robots" content="noindex/.test(r.body)) crawlOk++
-    else badRoutes.push(`${u}=${r.status}`)
+    else badRoutes.push(`${u}=${r.error ?? r.status}`)
   } catch {
     badRoutes.push(`${u}=ERR`)
   }
@@ -125,8 +137,8 @@ check("S2: all sitemap URLs return 200 to Googlebot with no noindex", crawlOk ==
 
 const home = await get(`${LIVE}/`, { headers: { "User-Agent": GB } })
 const truthVersion = readFileSync(path.join(ROOT, "website/src/data/truth.generated.ts"), "utf8").match(/version: "([^"]+)"/)?.[1]
-check("S2: live homepage renders the true version", home.body.includes(`v<!-- -->${truthVersion}`) || home.body.includes(`v${truthVersion}`), `expected v${truthVersion}`)
-check("S2: live homepage carries JSON-LD SoftwareApplication", home.body.includes('"@type":"SoftwareApplication"') || home.body.includes('"@type": "SoftwareApplication"'))
+check("S2: live homepage renders the true version", home.body.includes(`v<!-- -->${truthVersion}`) || home.body.includes(`v${truthVersion}`), `${home.error ?? `expected v${truthVersion}`} (bytes=${home.body.length})`)
+check("S2: live homepage carries JSON-LD SoftwareApplication", home.body.includes('"@type":"SoftwareApplication"') || home.body.includes('"@type": "SoftwareApplication"'), home.error ?? `bytes=${home.body.length}`)
 
 // --- 6. negatives ------------------------------------------------------------------
 
@@ -178,6 +190,7 @@ const evidence = {
   limitations: [
     "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
     "The live route set describes the deployed build and trails the repository's route list (S1) until the next deploy; X1 re-runs this gate at the deployed commit.",
+    "Live checks fail rather than skip when the network is unreachable: the failure is recorded with its reason (status=0 plus the socket error) and the remaining checks still run, so a transient outage cannot crash the run or be mistaken for a pass.",
     "DNS is checked via dns.google (Google's own resolver) — the authoritative path for GSC verification.",
     "Brave has no verification protocol; acceptance of the submit-url form is the only available signal.",
   ],
