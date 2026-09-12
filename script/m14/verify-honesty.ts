@@ -158,17 +158,87 @@ if (fs.existsSync(f5)) {
   else pass(`corpus pins present (${Object.keys(pins).join(", ")})`)
 }
 
-// 6. evidence freshness: regenerated at most one HEAD behind (any agent may have committed since)
-const head = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
-const recentCommits = execSync("git log --format=%H -5", { cwd: ROOT }).toString().trim().split("\n")
+// 6. evidence freshness: an artifact is current iff the inputs it asserts
+//    about have not changed since it was regenerated.
+//
+// The rule used to be "the artifact's commit must be among the last 5 HEAD
+// commits". That is both too strong and too weak. Too strong: unrelated
+// commits (docs, other milestones, another agent's wave) push a perfectly
+// current artifact out of the window and turn the gate permanently red —
+// measured at 5c0808ec, eight of nine required artifacts failed while nothing
+// they measure had moved, which is exactly how a gate teaches its readers to
+// ignore it. Too weak: an artifact keeps PASSING while its own analyzer is
+// edited, until the window happens to lapse.
+//
+// Content dependence is what an artifact actually claims. Each id declares the
+// paths whose change invalidates it; freshness is decided by `git diff
+// <lineage>..HEAD` restricted to those paths, so unrelated commits are silent
+// and a real edit fails immediately with the offending files named. HEAD-anchored
+// (committed range only), matching the census gates: a dirty working tree does
+// not invalidate an artifact that is true of HEAD.
+const EVIDENCE_INPUTS: Record<string, string[]> = {
+  "M14.0.F1": ["src/ast/", "wasm/", "script/m14/audit-analyzer-grammar.ts"],
+  "M14.0.F2": ["script/m14/", "validation/m14/fixtures/"],
+  "M14.0.F3": ["src/ast/", "validation/m14/fixtures/", "script/m14/run-fixtures.ts"],
+  "M14.0.F4": ["src/ast/", "validation/m14/fixtures/", "script/m14/mutate-analyzer.ts"],
+  "M14.0.F5": ["src/ast/", "script/m14/differential.ts", "script/m14/verify-differential-evidence.ts"],
+  "M14.0.F6": ["src/ast/", "validation/m14/fixtures/", "script/m14/spec/", "script/m14/verify-fixture-coverage.ts"],
+  "M14.0.F7": ["src/ast/", "script/m14/verify-analyzer-hygiene.ts"],
+  "M14.0.F8": ["src/ast/", "validation/m14/probes/", "script/m14/verify-probe-battery.ts"],
+  "M14.0.F9": ["script/m14/spec/", "script/m14/verify-completeness.ts"],
+  "M14.0.SPEC": ["script/m14/spec/", "script/m14/verify-completeness.ts"],
+  "M14.CC1": ["src/ast/"],
+  "M14.0.PIPE": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-pipeline-e2e.ts"],
+  "M14.0.WC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-web-cluster-e2e.ts"],
+  "M14.0.SC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-systems-cluster-e2e.ts"],
+}
+
+function commitOk(rev: string): boolean {
+  try { execSync(`git cat-file -e ${rev}^{commit}`, { cwd: ROOT, stdio: "pipe" }); return true } catch { return false }
+}
+function changedInputs(rev: string, prefixes: string[]): string[] {
+  const out: string[] = []
+  for (const pre of prefixes) {
+    let files: string[] = []
+    try {
+      files = execSync(`git diff --name-only ${rev}..HEAD -- ${JSON.stringify(pre)}`, { cwd: ROOT, encoding: "utf8" })
+        .toString().trim().split("\n").filter(Boolean)
+    } catch { files = [] }
+    out.push(...files)
+  }
+  return [...new Set(out)].sort()
+}
+
+let freshCount = 0
 for (const id of REQUIRED_EVIDENCE) {
   const p = path.join(M14, "results", `${id}.json`)
   if (!fs.existsSync(p)) continue
-  const c = JSON.parse(fs.readFileSync(p, "utf8"))?.commit
-  if (!recentCommits.includes(c))
-    fail(`${id}: evidence commit ${String(c).slice(0, 10)} not within last 5 commits — stale, regenerate`)
+  const ev = JSON.parse(fs.readFileSync(p, "utf8"))
+  const lineage = ev.regeneratedAtCommit === "__LEGACY__" ? ev.commit : (ev.regeneratedAtCommit ?? ev.commit)
+  if (typeof lineage !== "string" || !/^[0-9a-f]{7,40}$/.test(lineage) || !commitOk(lineage)) {
+    fail(`${id}: lineage ${JSON.stringify(lineage)} is not a commit in this repository — refresh the artifact`)
+    continue
+  }
+  const inputs = EVIDENCE_INPUTS[id] ?? ["src/", "script/", "validation/", "wasm/"]
+  const changed = changedInputs(lineage, inputs)
+  if (changed.length) {
+    fail(`${id}: ${changed.length} declared input(s) changed since ${lineage.slice(0, 10)} — regenerate (${changed.slice(0, 4).join(", ")}${changed.length > 4 ? ", …" : ""})`)
+  } else freshCount++
 }
-pass("evidence freshness within last 5 commits")
+pass(`evidence freshness: ${freshCount} artifact(s) current against their declared inputs`)
+
+// The rule must discriminate in both directions, proven from this repository's
+// own history rather than by stubbing the predicate: against the ROOT commit
+// every declared input set must show changes, and against each artifact's own
+// lineage it must show none for the artifacts just counted fresh.
+const rootCommit = execSync("git rev-list --max-parents=0 HEAD", { cwd: ROOT }).toString().trim().split("\n").pop() as string
+const probePrefixes = EVIDENCE_INPUTS["M14.0.F3"] ?? []
+if (probePrefixes.length && rootCommit) {
+  const sinceRoot = changedInputs(rootCommit, probePrefixes)
+  if (!sinceRoot.length) fail("freshness rule is vacuous: no input registers as changed since the root commit")
+  else pass(`freshness rule discriminates (${sinceRoot.length} input(s) changed since ${rootCommit.slice(0, 7)})`)
+}
+if (freshCount === 0) fail("freshness rule flags every artifact — it cannot distinguish current from stale")
 
 // 7. completeness ledger present and alive
 const LEDGER = path.join(ROOT, "docs", "M14-COMPLETENESS-LEDGER.md")
