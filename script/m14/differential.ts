@@ -15,6 +15,7 @@
  */
 import * as fs from "fs"
 import * as path from "path"
+import { createHash } from "crypto"
 import { execSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
@@ -23,6 +24,25 @@ import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew } from "../..
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
+}
+
+/**
+ * M49 G5: identity of the file set a lane actually drew.
+ *
+ * The improvement-forcing gate compares per-lane missing/unexplained counts
+ * against a pinned baseline, and `evaluateDifferential`'s `comparable` only
+ * ever compared the SAMPLE SIZE. `#760`'s cold-pool rotation deliberately
+ * draws never-sampled files each wave, so after a rotation those counts are
+ * measured on a different file set than the baseline's — which is how five
+ * genuine new-sample javascript findings and nineteen typescript ones were
+ * reported as `DIFFERENTIAL REGRESSION`. Recording a hash of the drawn set
+ * makes the two cases distinguishable instead of assumed identical.
+ *
+ * Corpus-relative paths, sorted, so the hash is stable across checkouts and
+ * across the order the pool happens to return.
+ */
+export function sampleSetHash(relPaths: string[]): string {
+  return createHash("sha256").update([...relPaths].sort().join("\n")).digest("hex").slice(0, 16)
 }
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
@@ -5336,6 +5356,15 @@ export interface DifferentialEvaluation {
   comparable: boolean
   regressions: string[]
   perfRegressions: string[]
+  /** Lanes whose drawn file set differs from the one the baseline recorded
+   * (cold-pool rotation): their counts are NOT comparable to the baseline, so
+   * an increase is a new-sample finding to triage, never a regression. */
+  resampled: string[]
+  /** Baseline lanes that carry no recorded file-set hash, i.e. their counts
+   * were pinned without recording WHICH files produced them. Those keep the
+   * strict count comparison (it is the only claim available) but the gap is
+   * reported so it can only shrink. */
+  unpinnedLanes: string[]
   checks: { id: string; description: string; status: "pass" | "fail"; detail: string }[]
 }
 
@@ -5350,13 +5379,35 @@ export function evaluateDifferential(
   baselineSample: number | undefined,
   samplePerLang: number,
   repo: string | ((lang: string) => string),
+  baselineHashes: Record<string, string> = {},
 ): DifferentialEvaluation {
   const repoOf = typeof repo === "function" ? repo : () => repo
   const comparable = !baselineSample || baselineSample === samplePerLang
   const perfRegressions: string[] = []
   const regressions: string[] = []
+  // Sample-set awareness (M49 G5). Two distinct situations, never merged:
+  //   resampled  — the baseline recorded a hash for this lane and this run's
+  //                drawn set hashes differently. The counts measure a
+  //                different file set, so growth is UNATTRIBUTABLE.
+  //   unpinned   — the baseline recorded no hash at all (pre-G5 rows). The
+  //                strict count comparison is kept, because it is the only
+  //                claim available, but the lane is reported as unpinned so
+  //                the gap is visible and can only shrink.
+  const resampled = new Set<string>()
+  const unpinnedLanes: string[] = []
+  for (const l of Object.keys(current)) {
+    const cur = current[l]?.sampleHash
+    const base = baselineHashes[l]
+    if (!baseline[l]) continue
+    if (!base) { unpinnedLanes.push(l); continue }
+    if (cur && cur !== base) resampled.add(l)
+  }
+  // A resampled lane's own parity still verifies the analyzer against the
+  // oracle on the files it drew (that is `checks`), but its counts may not be
+  // scored against the pinned baseline.
   if (comparable) {
     for (const l of Object.keys(current)) {
+      if (resampled.has(l)) continue
       const bAvg = baseline[l]?.perf?.avgMsPerFile
       const cAvg = current[l]?.perf?.avgMsPerFile
       if (bAvg && cAvg && cAvg > Math.max(3 * bAvg, bAvg + 50)) {
@@ -5377,6 +5428,7 @@ export function evaluateDifferential(
       }
     }
     for (const l of Object.keys(current)) {
+      if (resampled.has(l)) continue
       if (baseline[l] && (current[l].missing > baseline[l].missing || current[l].unexplained > baseline[l].unexplained || current[l].heuristic > baseline[l].heuristic)) {
         regressions.push(l)
       }
@@ -5400,18 +5452,63 @@ export function evaluateDifferential(
     if (parts.length >= 3) failed.add(`${parts[0]}:${parts[1]}`)
     if (parts.length >= 2) failed.add(parts[1])
   }
+  // Same key-shape tolerance as `failed`: current rows are `repo:lang` keyed
+  // while the primary report is bare-`lang` keyed, so a resampled `repo:lang`
+  // lane must also mark its bare-lang check.
+  const resampledForReport = new Set<string>(resampled)
+  for (const key of resampled) {
+    const parts = key.split(":")
+    if (parts.length >= 2) resampledForReport.add(parts[parts.length - 1])
+  }
+  // A resampled lane cannot be scored against the PINNED allowance (that
+  // allowance belongs to a different file set), so the row's own anomalies are
+  // the only honest verdict available. Split by kind, because the two kinds are
+  // not the same claim:
+  //   missing / unexplained — a real parity anomaly (a dropped edge, or an
+  //     edge the tree truth does not corroborate). Unscorable against the
+  //     pinned allowance, so it must FAIL and be triaged; it must never pass
+  //     silently just because the baseline row was generous.
+  //   heuristic — an edge the analyzer itself declares low-confidence. It is
+  //     documented suspicion, not a fabrication claim, so it does not fail a
+  //     lane; it is disclosed in the detail as unscored on this sample.
+  const resampledDirty = new Set<string>()
+  const resampledHeuristic = new Map<string, number>()
+  for (const key of resampled) {
+    const c = current[key]
+    const offenders: string[] = []
+    if (c) {
+      if ((c.missing ?? 0) > 0) offenders.push(`${c.missing} missing`)
+      if ((c.unexplained ?? 0) > 0) offenders.push(`${c.unexplained} unexplained`)
+      if ((c.heuristic ?? 0) > 0) resampledHeuristic.set(key, c.heuristic)
+    }
+    if (offenders.length === 0) continue
+    resampledDirty.add(key)
+    const parts = key.split(":")
+    if (parts.length >= 2) resampledDirty.add(parts[parts.length - 1])
+  }
   const checks = Object.entries(report).map(([lang, r]: any) => {
     const laneFailed = failed.has(lang)
+    const laneResampled = resampledForReport.has(lang)
+    const laneResampledDirty = resampledDirty.has(lang)
+    const laneHeuristic = [...resampledHeuristic.entries()]
+      .filter(([k]) => k === lang || k.endsWith(`:${lang}`))
+      .reduce((a, [, v]) => a + v, 0)
     return {
       id: `differential-${lang}`,
       description: `${repoOf(lang)}: tree-truth vs analyzer diff`,
-      status: comparable && !laneFailed ? "pass" as const : "fail" as const,
+      status: comparable && !laneFailed && !laneResampledDirty ? "pass" as const : "fail" as const,
       detail: comparable
-        ? `${r.filesSampled} files, coverage ${r.coveragePct}%, unexplained ${r.fabricationPct}%${laneFailed ? "; regression detected" : ""}`
+        ? `${r.filesSampled} files, coverage ${r.coveragePct}%, unexplained ${r.fabricationPct}%`
+          + (laneFailed ? "; regression detected" : "")
+          + (laneResampledDirty
+            ? "; drew a different file set than the baseline AND carries its own missing/unexplained anomalies - the pinned allowance (from a different sample) cannot score them, so this is a new-sample finding that needs triage"
+            : laneResampled
+              ? `; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared${laneHeuristic > 0 ? `; ${laneHeuristic} declared-heuristic edge(s) on the fresh sample left unscored (triage)` : ""}`
+              : "")
         : `${r.filesSampled} files; NOT COMPARABLE: baseline sampled ${baselineSample ?? "unknown"}/lang, run ${samplePerLang}/lang`,
     }
   })
-  return { comparable, regressions, perfRegressions, checks }
+  return { comparable, regressions, perfRegressions, resampled: [...resampled], unpinnedLanes, checks }
 }
 
 async function main() {
@@ -5978,6 +6075,10 @@ async function main() {
         samplesTimed: durations.length,
         loadAvgRetried: retryDurations !== null,
       },
+      // M49 G5: identity of the drawn file set, so the baseline gate can tell
+      // "same sample, counts grew" (regression) from "different sample"
+      // (resampled — triage). See sampleSetHash().
+      sampleSetHash: sampleSetHash(sample.map((f: any) => path.relative(repoDir, f))),
       samples,
     }
     if (sample.length === 0) {
@@ -6020,17 +6121,20 @@ async function main() {
     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
     heuristic: r.heuristicUnexplained,
     perf: { avgMsPerFile: r.perf.avgMsPerFile },
+    sampleHash: r.sampleSetHash,
   }
   const currentSecond: Record<string, any> = {}
   for (const [key, r] of Object.entries<any>(reportSecond)) currentSecond[key] = {
     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
     heuristic: r.heuristicUnexplained,
     perf: { avgMsPerFile: r.perf.avgMsPerFile },
+    sampleHash: r.sampleSetHash,
   }
-  const evaluation = evaluateDifferential(report, current, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (lang: string) => repoFor(lang))
+  const baselineHashes: Record<string, string> = parsedBaseline.hashes ?? {}
+  const evaluation = evaluateDifferential(report, current, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (lang: string) => repoFor(lang), baselineHashes)
   // Second-corpus evaluation: same baseline file (repo:lang rows), report keyed
   // repo:lang, so evaluateDifferential's failed-set must match full lane keys.
-  const evaluationSecond = evaluateDifferential(reportSecond, currentSecond, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (key: string) => key.split(":")[0])
+  const evaluationSecond = evaluateDifferential(reportSecond, currentSecond, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (key: string) => key.split(":")[0], baselineHashes)
 
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
@@ -6058,6 +6162,19 @@ async function main() {
       samplingRule: `seeded ${SAMPLE_PER_LANG} files/language (primary + second corpus lanes)`,
       report,
       secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
+      // M49 G5: exactly what the baseline comparison could and could not
+      // claim this run. `resampledLanes` drew a different file set than the
+      // pinned one, so their counts are not comparable; `unpinnedLanes` have
+      // no recorded file set at all (pre-G5 rows) and keep the strict count
+      // comparison. Both lists may only shrink, and they are evidence, not
+      // console chatter, so a green run cannot hide them.
+      baselineComparison: {
+        samplePerLang: SAMPLE_PER_LANG,
+        pinnedLanes: Object.keys(baselineHashes).length,
+        totalBaselineLanes: Object.keys(baselineCounts).length,
+        resampledLanes: [...evaluation.resampled, ...evaluationSecond.resampled],
+        unpinnedLanes: [...evaluation.unpinnedLanes, ...evaluationSecond.unpinnedLanes],
+      },
     },
   })
   console.log(`evidence written: validation/m14/results/M14.0.F5.json (resumed ${resumedLanes} lane(s) from journal)`)
@@ -6071,22 +6188,35 @@ async function main() {
     const previous = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
     // Merge BOTH lanes (primary + second) into the repo:lang baseline file.
     const clean: Record<string, any> = {}
+    const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
     for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
       clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
+      // M49 G5: pin WHICH files produced this row. Without it a later rotation
+      // is scored against a different sample and mislabelled a regression.
+      if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
     }
     const merged = {
       samplePerLang: SAMPLE_PER_LANG,
       counts: { ...(previous.counts ?? previous), ...clean },
+      hashes,
     }
     fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
-    console.log("differential baseline updated (primary + second lanes):", clean)
+    console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s); drawn file sets pinned: ${Object.keys(hashes).length}`)
   } else if (!evaluation.comparable) {
     console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsedBaseline.samplePerLang ?? "unknown"}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
   } else {
+    const resampledLanes = [...evaluation.resampled, ...evaluationSecond.resampled]
+    const unpinned = [...evaluation.unpinnedLanes, ...evaluationSecond.unpinnedLanes]
+    for (const r of resampledLanes) {
+      console.log(`RESAMPLED ${r}: drew a different file set than the baseline (cold-pool rotation) — counts NOT comparable, so this is a new-sample finding to triage, not a regression`)
+    }
+    if (unpinned.length > 0) {
+      console.log(`differential baseline file sets: ${unpinned.length} lane(s) unpinned (no recorded drawn set) — those keep the strict count comparison, which can false-positive after a rotation; pin with --update-baseline at a stable tree (unpinned: ${unpinned.slice(0, 8).join(", ")}${unpinned.length > 8 ? ", …" : ""})`)
+    }
     for (const r of [...evaluation.regressions, ...evaluationSecond.regressions]) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(baselineCounts[r])} -> ${JSON.stringify(current[r] ?? currentSecond[r])}`)
     for (const r of [...evaluation.perfRegressions, ...evaluationSecond.perfRegressions]) console.error(`PERF BUDGET EXCEEDED ${r}`)
     if (evaluation.regressions.length || evaluation.perfRegressions.length || evaluationSecond.regressions.length || evaluationSecond.perfRegressions.length) process.exit(5)
-    console.log("differential baseline gate: no regressions (primary + second corpus); perf budgets respected")
+    console.log(`differential baseline gate: no regressions on a pinned file set (primary + second corpus); perf budgets respected${resampledLanes.length ? `; ${resampledLanes.length} lane(s) resampled (triage)` : ""}`)
   }
 }
 
