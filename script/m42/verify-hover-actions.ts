@@ -152,7 +152,7 @@ try {
   console.log("\nR2: actions row (real server over the real index)")
   const hoverRender = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: renderPos })
   md = (hoverRender?.contents?.value ?? "") as string
-  check("H4/R2: hover resolves render", hoverRender?.data?.name === "render", hoverRender?.data?.name ?? "null")
+  check("H4/R2: hover resolves render", hoverRender?.data?.symbol?.name === "render", hoverRender?.data?.symbol?.name ?? "null")
   check("H4/R2: hover embeds the actions row label", md.includes("**actions**: [Open in graph]"), md.slice(0, 260))
   const actionLinks = commandLinks(md)
   const actions = actionLinks.filter((l) => l.command === "bb.openGraph" || l.command === "bb.openImpact" || l.command === "bb.showCallHierarchy")
