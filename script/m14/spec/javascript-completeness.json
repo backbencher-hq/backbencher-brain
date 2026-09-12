@@ -397,6 +397,22 @@
         "question": "M49 W1: for a call-rooted chain the head was emitted as raw node TEXT, so `document.getElementById(id).style = v` produced `uses -> document.getElementById(id)` — a target that is not a symbol. Emit or not?",
         "decision": "RULED - the chain head is a read only when it IS an identifier (the chain-root contract). A call/literal head carries no symbol; the call already has its `calls` edge. Analyzer + oracle gated identically; pinned by javascript/write-lhs-nested-reads (`targetEndsWith` forbid) and mutant javascript/chain-head-expression-fabrication.",
         "date": "2026-09-12"
+      },
+      {
+        "id": "JSD27",
+        "node_type": "member identity inside object literals (dedup scope)",
+        "status": "RULED",
+        "question": "M49 W2 (#769): the method dedup key was `${owner ?? \"module\"}:${name}` and scopeOwnerName only reports CLASS scopes, so every object-literal member of a module shared ONE slot. Two init()s in sibling objects, or two Vue prop-default() factories, collapsed: the later replaced the earlier, dead-spanning its body and dropping its calls. Is a member's identity its bare name in the module?",
+        "decision": "RULED - NO. Identity is CONTAINER-SCOPED: class body -> class name (unchanged), object literal -> the literal's span (obj@<startIndex>). Sibling containers never collide; duplicates INSIDE one container still collapse last-wins (J3 + the dup-key Option A ruling) because they share the key. Also fixed the B5 sibling-accessor kill, which matched owner+name TEXT and so also killed same-named accessors of OTHER object literals - it now resolves the exact sibling slot key. Analyzer-only (the JS lane truth oracle derives both calls site-agnostically, so lockstep was already correct here); pinned by javascript/sibling-object-member-identity (init count=2 + calls init->one) and mutants javascript/sibling-object-collapse, vue/prop-default-multi-collapse.",
+        "date": "2026-09-12"
+      },
+      {
+        "id": "JSD28",
+        "node_type": "fixture authoring from a corpus file (process, not a grammar shape)",
+        "status": "RULED",
+        "question": "M49 W2: #762 closed as `verified ALREADY-FIXED` on vue/prop-default-factory-calls - a fixture with ONE factory, whose assertions pass with or without the sibling-object collision - while the corpus file (MarkdownEditor) kept MISSING={toFixed,random}. What must a corpus-derived fixture reproduce?",
+        "decision": "RULED - the corpus file's ACTUAL shape, including the interaction that makes it fail. A one-factory reconstruction of a two-factory file tested an adjacent shape and produced false confidence for two waves. Re-authored vue/prop-default-factory-calls to the real shape (two sibling factories + interleaved plain `default:` members) and verified it FAILS against the pre-fix code (mutant vue/prop-default-multi-collapse) before accepting the green.",
+        "date": "2026-09-12"
       }
     ]
   }

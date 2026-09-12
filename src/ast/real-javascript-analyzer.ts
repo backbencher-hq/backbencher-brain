@@ -285,7 +285,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // MERGE (get+set coexist). Keys: plain for data, :get/:set for
           // accessors; the cross-kind checks below implement replace-on-val.
           const kindSlot = isAccessor ? (this.hasToken(node, "get") ? ":get" : ":set") : ""
-          const dedupKey = `${owner ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}${kindSlot}`
+          // M49 W2 (#769): the CONTAINER is part of a member's identity.
+          // `scopeOwnerName` only knows CLASS scopes, so every object-literal
+          // member of the module previously shared one key (`module:<name>`):
+          // the second `init()`/`default()` of a SIBLING object literal
+          // replaced the first, dead-spanning its body and dropping its calls.
+          // Lane-visible on vue-element-admin MarkdownEditor (two prop-default
+          // factories -> truth derived random/toFixed, the analyzer neither).
+          // The containing object literal's span is its identity; duplicates
+          // INSIDE one object still collapse last-wins (J3 + the dup-key
+          // Option A ruling) because they share the same key.
+          const containerKey = owner ?? (node.parent && node.parent.type === "object" ? `obj@${node.parent.startIndex}` : undefined)
+          const dedupKey = `${containerKey ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}${kindSlot}`
             const kind = isConstructor
               ? ASTEngine.SymbolKind.Constructor
               : isAccessor
@@ -354,15 +365,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // the replaced half via seenKey below, any sibling half here
               // (zombied for post-walk removal + deadSpanned so its body's
               // nested symbols/calls die with it).
+              // M49 W2 (#769): the sibling half is identified by the exact
+              // SLOT KEY (`<container>:<name>:get` / `:set`), not by an
+              // owner+name text match — the text match also caught same-named
+              // accessors of OTHER object literals, whose bodies then died.
               if (kindSlot === "") {
-                for (let j = 0; j < symbols.length; j++) {
-                  if (j === seenIdx) continue
-                  const sj = symbols[j]
-                  if (sj.ownerName === owner && sj.name === cleanName && sj.kind === ASTEngine.SymbolKind.Property && sj.metadata?.isAccessor) {
-                    const rj = sj.range
-                    if (rj && rj.startIndex !== undefined && rj.endIndex !== undefined) deadSpans.push({ s: rj.startIndex, e: rj.endIndex })
-                    b5Zombies.push(j)
-                  }
+                const otherKey = seenKey === dedupKey + ":get" ? dedupKey + ":set" : seenKey === dedupKey + ":set" ? dedupKey + ":get" : undefined
+                const otherIdx = otherKey !== undefined ? seenMethodIdx.get(otherKey) : undefined
+                if (otherIdx !== undefined && otherIdx !== seenIdx) {
+                  const rj = symbols[otherIdx]?.range
+                  if (rj && rj.startIndex !== undefined && rj.endIndex !== undefined) deadSpans.push({ s: rj.startIndex, e: rj.endIndex })
+                  b5Zombies.push(otherIdx)
                 }
               }
               symbols[seenIdx] = methodSymbol
@@ -1749,7 +1762,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // emitted uses inner/deeper/leaf but dropped `config`, the
               // identifier the read actually starts from. Emit it with the
               // same owner/source rules as the segments (this/super excluded:
-              // they are keywords, not symbols).                // M49 W1 (#768): the head is a read only when it IS an
+              // they are keywords, not symbols).
+                // M49 W1 (#768): the head is a read only when it IS an
                 // identifier. A call-rooted chain (`document.getElementById(x)
                 // .style = v`) has an expression for a head — emitting its raw
                 // TEXT fabricated a garbage target (`uses -> document.getElement
