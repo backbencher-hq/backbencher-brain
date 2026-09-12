@@ -338,6 +338,32 @@
         }
       ],
       "evidence": "reviews/web-family/rotated-sample-findings.md (\u00a73a), script/m14/verify-differential-evidence.ts, script/m14/differential.ts, validation/m14/differential-baseline.json"
+    },
+    {
+      "id": "M49.W6",
+      "title": "Regex census anchored to committed blobs (G6); two false M12 claims corrected; R2 remainder attributed",
+      "date": "2026-09-12",
+      "commit": "9853b521",
+      "method": "Chasing R2 to green surfaced a class of defect no existing gate could see: the census is derived from the WORKING TREE, so a run taken while an analyzer is uncommitted bakes an uncommitted position into a committed artifact. It had already happened - the census at HEAD recorded real-cpp-analyzer.ts:727 and real-rust-analyzer.ts:452/453 while the COMMITTED cpp/rust blobs carry those regexes at 382/405/406 - and script/m12/verify-regex-census.ts cannot catch it, because it re-scans the same dirty tree and therefore colludes with the census. Fix: the census is now derived from HEAD itself (git archive HEAD into a scratch tree, scanned there) and the census gate was re-run INSIDE that clean tree as the proof (0 stale / 0 unclassified / 0 mislocated); content change is positional only (identical (file,source,classification,operation) identity set, 20 usages, same per-file counts). New gate script/m49/verify-census-lineage.ts (G6) anchors the class with no parser and no regex of its own: every census entry must name a file present in HEAD and its recorded line in that blob must contain its recorded regex source. Passes on the regenerated census (41/0), convicts the previous one (12 anchor violations) - so it is proven able to fail - and is wired into `bun run verify` and into X1, which now refuses closure on an unanchored census. Two assertions in script/verify-m12-final-audit.ts demanding the census report ZERO usages and no needs_review class (the vacuous M12 state: census claimed 0 while the analyzers carried 55) were re-pinned to the real invariant (non-vacuous, every usage classified, needs_review within the shrink-only budget); the M12 final audit now PASSES. Deliberately NOT done: regenerating validation/m49/regex-debt-register.json, whose working-tree content is another wave's uncommitted (and already stale) edit - the required key set is recorded instead (reviews/regex-policy.md 'R2 remainder, attributed'), so nothing was overwritten.",
+      "findings": [
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "census-derived-from-dirty-tree",
+          "severity": "high",
+          "ledgerId": "G6",
+          "note": "A derived artifact shipped for waves describing a tree no commit contained, with the census gate structurally unable to see it (same-tree re-scan colludes). Fixed + gated @9853b521."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "audit-pinned-a-false-claim",
+          "severity": "medium",
+          "ledgerId": "R2-M12AUDIT",
+          "note": "verify-m12-final-audit.ts asserted the regex census reports zero usages - true only in the vacuous state it was written against, so the audit failed forever on a claim nobody could satisfy. Re-pinned to the real invariant; audit PASSES @9853b521."
+        }
+      ],
+      "evidence": "reviews/regex-policy.md (R2 remainder, attributed), reviews/onboarding.md, validation/m12/results/regex-census.json, script/m49/verify-census-lineage.ts, script/verify-m12-final-audit.ts"
     }
   ]
 }
