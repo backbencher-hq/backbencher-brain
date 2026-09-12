@@ -2546,6 +2546,107 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.metadata?.bareRead)) }),
   },
   {
+    id: "javascript/import-binding-read-fabrication",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description: "M49 W1 (#768) regression: import bindings are reads again — `import Default from`, `{ named, other as alias }` and `* as ns` fabricate uses @0.6 for every binding name (binding-sites-are-not-reads forbids all four; svelte/template-attr-shapes caught this pre-fix)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "destructured")) return r
+      const rels = [...(r.relationships ?? [])]
+      for (const t of ["Default", "named", "alias", "ns"]) rels.push({ type: "uses", source: "binder", target: t, confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "javascript/binding-param-read-fabrication",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description: "M49 W1 (#768) regression: parameters / catch params / pattern targets are reads again — `function binder(alpha, beta)`, `catch (err)`, arrow patterns and array patterns fabricate uses @0.6 (binding-sites-are-not-reads forbids each)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "destructured")) return r
+      const rels = [...(r.relationships ?? [])]
+      rels.push({ type: "uses", source: "binder", target: "alpha", confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
+      rels.push({ type: "uses", source: "binder", target: "beta", confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
+      rels.push({ type: "uses", source: "catcher", target: "err", confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "javascript/destructure-target-read-fabrication",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description: "M49 W1 (#768) regression: destructuring targets and export aliases are reads again (`{ first, second: renamed, ...third }`, `[one, two]`, `export { named as reexported }` — reexported is not even a symbol) (binding-sites-are-not-reads forbids each)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "destructured")) return r
+      const rels = [...(r.relationships ?? [])]
+      for (const t of ["first", "renamed", "third", "one", "two", "reexported"]) rels.push({ type: "uses", source: "binder", target: t, confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "javascript/write-lhs-subtree-skip",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M49 W1 (#768) regression: the write-LHS suppression skips the whole subtree again — every read nested in a member-chain assignment dies (call arguments like `id`, intermediate segments like `inner`, the RHS argument `delta`) (write-lhs-nested-reads expects each)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "augmented")) return r
+      const kill = new Set(["delta", "id", "step", "inner", "style"])
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && kill.has(x.target))) }
+    },
+  },
+  {
+    id: "javascript/write-target-read-leak",
+    language: "javascript",
+    defectClass: "relationship-fabrication",
+    description: "M49 W1 (#768) regression: the write TARGET is reported as a read again — `store.inner.limit = delta` emits uses limit and `...style.display = v` emits uses display (write-lhs-nested-reads forbids both)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "augmented")) return r
+      const rels = [...(r.relationships ?? [])]
+      rels.push({ type: "uses", source: "bump", target: "limit", confidence: 0.6, metadata: { isFieldAccess: true } })
+      rels.push({ type: "uses", source: "dom", target: "display", confidence: 0.6, metadata: { isFieldAccess: true } })
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "javascript/chain-head-expression-fabrication",
+    language: "javascript",
+    defectClass: "relationship-garbage",
+    description: "M49 W1 (#768) regression: the chain head is emitted as raw node TEXT again — a call-rooted chain fabricates the non-symbol target `uses -> document.getElementById(id)` (write-lhs-nested-reads forbids it; the oracle's head gate is mirrored)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "augmented")) return r
+      const rels = [...(r.relationships ?? [])]
+      rels.push({ type: "uses", source: "dom", target: "document.getElementById(id)", confidence: 0.6, metadata: { isFieldAccess: true, chainRoot: true } })
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "javascript/sibling-object-collapse",
+    language: "javascript",
+    defectClass: "symbol-identity",
+    description: "M49 W2 (#769) regression: the method dedup key is owner-OR-module again, so same-named methods of SIBLING object literals collapse — the earlier symbol is replaced and its body's calls die (sibling-object-member-identity pins init count=2 AND calls init->one; TS keeps both, so the family graph diverges)",
+    transform: r => {
+      const inits = (r.symbols ?? []).map((s: any, i: number) => i).filter((i: number) => (r.symbols ?? [])[i]?.name === "init")
+      if (inits.length < 2) return r
+      const drop = inits[0]
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((_: any, i: number) => i !== drop),
+        relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && x.source === "init" && x.target === "one")),
+      }
+    },
+  },
+  {
+    id: "vue/prop-default-multi-collapse",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "M49 W2 (#769) regression: only the LAST prop-default() factory survives (the sibling-object dedup collapse): the earlier factory's body is dead-spanned and its random/toFixed calls vanish (prop-default-factory-calls' corpus-shape expects fail; the lane's own truth derives them)",
+    transform: r => {
+      if (!(r.symbols ?? []).some((s: any) => s.name === "options" && s.kind === "property")) return r
+      const kill = new Set(["random", "toFixed"])
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && kill.has(x.target))) }
+    },
+  },
+  {
     id: "javascript/accessor-pair-collapse",
     language: "javascript",
     defectClass: "relationship-loss",
@@ -3330,77 +3431,3 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
-  {
-    id: "javascript/import-binding-read-fabrication",
-    language: "javascript",
-    defectClass: "relationship-fabrication",
-    description: "M49 W1 (#768) regression: import bindings are reads again — `import Default from`, `{ named, other as alias }` and `* as ns` fabricate uses @0.6 for every binding name (binding-sites-are-not-reads forbids all four; svelte/template-attr-shapes caught this pre-fix)",
-    transform: r => {
-      if (!(r.symbols ?? []).some((s: any) => s.name === "destructured")) return r
-      const rels = [...(r.relationships ?? [])]
-      for (const t of ["Default", "named", "alias", "ns"]) rels.push({ type: "uses", source: "binder", target: t, confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
-      return { ...r, relationships: rels }
-    },
-  },
-  {
-    id: "javascript/binding-param-read-fabrication",
-    language: "javascript",
-    defectClass: "relationship-fabrication",
-    description: "M49 W1 (#768) regression: parameters / catch params / pattern targets are reads again — `function binder(alpha, beta)`, `catch (err)`, arrow patterns and array patterns fabricate uses @0.6 (binding-sites-are-not-reads forbids each)",
-    transform: r => {
-      if (!(r.symbols ?? []).some((s: any) => s.name === "destructured")) return r
-      const rels = [...(r.relationships ?? [])]
-      rels.push({ type: "uses", source: "binder", target: "alpha", confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
-      rels.push({ type: "uses", source: "binder", target: "beta", confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
-      rels.push({ type: "uses", source: "catcher", target: "err", confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
-      return { ...r, relationships: rels }
-    },
-  },
-  {
-    id: "javascript/destructure-target-read-fabrication",
-    language: "javascript",
-    defectClass: "relationship-fabrication",
-    description: "M49 W1 (#768) regression: destructuring targets and export aliases are reads again (`{ first, second: renamed, ...third }`, `[one, two]`, `export { named as reexported }` — reexported is not even a symbol) (binding-sites-are-not-reads forbids each)",
-    transform: r => {
-      if (!(r.symbols ?? []).some((s: any) => s.name === "destructured")) return r
-      const rels = [...(r.relationships ?? [])]
-      for (const t of ["first", "renamed", "third", "one", "two", "reexported"]) rels.push({ type: "uses", source: "binder", target: t, confidence: 0.6, metadata: { isFieldAccess: true, bareRead: true } })
-      return { ...r, relationships: rels }
-    },
-  },
-  {
-    id: "javascript/write-lhs-subtree-skip",
-    language: "javascript",
-    defectClass: "relationship-loss",
-    description: "M49 W1 (#768) regression: the write-LHS suppression skips the whole subtree again — every read nested in a member-chain assignment dies (call arguments like `id`, intermediate segments like `inner`, the RHS argument `delta`) (write-lhs-nested-reads expects each)",
-    transform: r => {
-      if (!(r.symbols ?? []).some((s: any) => s.name === "augmented")) return r
-      const kill = new Set(["delta", "id", "step", "inner", "style"])
-      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && kill.has(x.target))) }
-    },
-  },
-  {
-    id: "javascript/write-target-read-leak",
-    language: "javascript",
-    defectClass: "relationship-fabrication",
-    description: "M49 W1 (#768) regression: the write TARGET is reported as a read again — `store.inner.limit = delta` emits uses limit and `...style.display = v` emits uses display (write-lhs-nested-reads forbids both)",
-    transform: r => {
-      if (!(r.symbols ?? []).some((s: any) => s.name === "augmented")) return r
-      const rels = [...(r.relationships ?? [])]
-      rels.push({ type: "uses", source: "bump", target: "limit", confidence: 0.6, metadata: { isFieldAccess: true } })
-      rels.push({ type: "uses", source: "dom", target: "display", confidence: 0.6, metadata: { isFieldAccess: true } })
-      return { ...r, relationships: rels }
-    },
-  },
-  {
-    id: "javascript/chain-head-expression-fabrication",
-    language: "javascript",
-    defectClass: "relationship-garbage",
-    description: "M49 W1 (#768) regression: the chain head is emitted as raw node TEXT again — a call-rooted chain fabricates the non-symbol target `uses -> document.getElementById(id)` (write-lhs-nested-reads forbids it; the oracle's head gate is mirrored)",
-    transform: r => {
-      if (!(r.symbols ?? []).some((s: any) => s.name === "augmented")) return r
-      const rels = [...(r.relationships ?? [])]
-      rels.push({ type: "uses", source: "dom", target: "document.getElementById(id)", confidence: 0.6, metadata: { isFieldAccess: true, chainRoot: true } })
-      return { ...r, relationships: rels }
-    },
-  },
