@@ -11,12 +11,17 @@
  *
  * Target matching tolerates FQN vs last-segment; label matching is exact.
  *
- * CLI: bun run script/m14/differential.ts [--repo <name>] [--sample N]
+ * CLI: bun run script/m14/differential.ts [--repo <name>] [--sample N] [--no-batch]
+ *
+ * Canonical full sweeps run the lanes as child processes (fresh wasm module per
+ * batch, `--lane-batch=i/n` internally) because one module cannot survive all
+ * 42 lanes; `--no-batch` runs them in-process (diagnosis only — it is the mode
+ * that aborts).
  */
 import * as fs from "fs"
 import * as path from "path"
 import { createHash } from "crypto"
-import { execSync } from "child_process"
+import { execSync, spawnSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -50,7 +55,27 @@ const CORPUS_ROOT = "$HOME/fixtures/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
-const LANE_JOURNAL = "/tmp/m14-f5-lane-journal.json"
+//
+// M49 W11: the journal is addressed by SWEEP STATE, not one global path.
+// It used to be the fixed `/tmp/m14-f5-lane-journal.json`, so a lane measured
+// in one checkout (or against a different corpus pin, or different analyzer
+// code) was resumed verbatim into an unrelated run — and the row carried no
+// corpus pin or analyzer revision, so the reuse was undetectable. Combined
+// with the dead-parser failure mode (a lane that derived ZERO truth edges was
+// journaled as a finished 0/0 lane) that let a fabricated row become durable
+// state in FRESH evidence. A lane is only reusable when the state that
+// produced it matches: corpus pins + the analyzer/oracle source that derived
+// it. Different state ⇒ a different journal file ⇒ nothing to resume.
+const LANE_JOURNAL_PREFIX = "/tmp/m14-f5-lane-journal"
+function sweepStateKey(repoPins: Record<string, string>): string {
+  const h = createHash("sha256")
+  for (const repo of Object.keys(repoPins).sort()) h.update(`${repo}@${repoPins[repo]}\n`)
+  const srcDir = path.join(ROOT, "src", "ast")
+  const files = fs.readdirSync(srcDir).filter((f: string) => f.endsWith(".ts")).sort()
+  for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
+  h.update(createHash("sha256").update(fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"))).digest("hex"))
+  return h.digest("hex").slice(0, 16)
+}
 // Per-language corpus routing: each language runs against a repo that
 // ACTUALLY CONTAINS it. The previous single-repo default (grails-core) gave
 // vacuous 0-file "pass" rows for php/ruby/etc (nothing to verify — logged as
@@ -113,6 +138,32 @@ const SECOND_CORPUS: Record<string, string> = {
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
+// M49 W11 (Defect 3): the sweep cannot finish inside ONE wasm module. Every
+// lane constructs a Parser in the fixed-size web-tree-sitter heap and the
+// module degrades after ~19-31 lanes — then `new ParserClass()` aborts with
+// `RuntimeError: Out of bounds call_indirect`, and BEFORE it aborts it can
+// return empty trees (which is how a dead parser became a clean 0/0 lane).
+// Caching the grammar and freeing the parser per lane (W10) reduced the rate
+// but not the outcome: no full sweep ever reached its evidence write, which is
+// why M14.0.F5 stayed the one pre-#761 `__LEGACY__` artifact.
+//
+// The fix is to give each lane group a FRESH module: canonical sweeps run the
+// lanes as child processes of this same file (`--lane-batch=i/n`), each
+// measuring only its slice and journaling each lane, after which this parent
+// resumes every lane from the state-keyed journal and owns the evidence write
+// and the baseline gate. Batch size is capped well below the measured
+// degradation point, and BB_F5_BATCH_SIZE exists so the cap can be exercised.
+const LANE_BATCH_ARG = process.argv.find(a => a.startsWith("--lane-batch="))
+const CHILD_SLICE = (() => {
+  if (!LANE_BATCH_ARG) return null
+  const [i, n] = LANE_BATCH_ARG.split("=")[1].split("/").map(Number)
+  if (!Number.isInteger(i) || !Number.isInteger(n) || n < 1 || i < 0 || i >= n) {
+    throw new Error(`differential: bad --lane-batch=${LANE_BATCH_ARG.split("=")[1]} (want i/n with 0 <= i < n)`)
+  }
+  return { i, n }
+})()
+const NO_BATCH = process.argv.includes("--no-batch")
+const BATCH_SIZE = process.env.BB_F5_BATCH_SIZE ? parseInt(process.env.BB_F5_BATCH_SIZE) : 8
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
@@ -5553,7 +5604,6 @@ async function main() {
   // this can still produce.
   const PARSER_CACHE = new Map<string, { grammar: any }>()
   let resumedLanes = 0
-  const laneJournal: Record<string, any> = resume && fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
   // Lane sweep: primary + second corpus per gated language (two-corpus gate).
   // Lanes are (lang, repo) pairs; rows keyed `repo:lang` in the baseline map so
   // regressions on EITHER corpus fail the language's check.
@@ -5566,11 +5616,83 @@ async function main() {
     const second = SECOND_CORPUS[lang]
     if (second && second !== repoFor(lang)) lanes.push({ lang, repo: second, isSecond: true })
   }
-  for (const lane of lanes) {
+
+  // ---------------------------------------------------------------------
+  // M49 W11: state-addressed journal + batched lanes (Defects 2 and 3).
+  //
+  // The journal is a per-SWEEP-state artifact: same corpus pins and same
+  // analyzer/oracle code ⇒ a lane's row is reusable; anything else ⇒ a
+  // different file, nothing to inherit. A probe run (--repo/--sample without
+  // batching) neither reads nor writes it, so it can no longer inherit rows it
+  // did not measure — nor overwrite the rows a canonical run measured.
+  //
+  // Batched execution is how a full sweep now COMPLETES: each child is a fresh
+  // process with a fresh web-tree-sitter module, so the fixed wasm heap is
+  // never pushed to the abort point (measured: one module dies after ~19-31
+  // lanes), and the parent — which measures nothing itself — resumes every
+  // lane from the journal and owns the evidence write and the baseline gate.
+  // ---------------------------------------------------------------------
+  const stateKey = sweepStateKey(repoPins)
+  const LANE_JOURNAL = `${LANE_JOURNAL_PREFIX}-${stateKey}.json`
+  // Canonical sweeps only: a --repo probe routes EVERY language at one repo,
+  // where most languages legitimately have no files (`files=0 SKIPPED` — not
+  // measured, so not journaled), which is not a lane the completeness check
+  // below can or should demand. Probes stay single-process, as they always
+  // were; they are interactive diagnosis, and the dead-parser guard still makes
+  // a module abort loud rather than silent.
+  const willBatch = !CHILD_SLICE && !NO_BATCH && !REPO && lanes.length > BATCH_SIZE
+  const useJournal = !!CHILD_SLICE || resume || willBatch
+  const loadJournal = (): Record<string, any> => {
+    if (!useJournal || !fs.existsSync(LANE_JOURNAL)) return {}
+    try {
+      const parsed = JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8"))
+      // Addressed by state (below) AND validated against it, so a hand-copied
+      // or stale file can never be resumed across states.
+      if (parsed?.stateKey !== stateKey) {
+        console.log(`[journal] ignoring ${LANE_JOURNAL}: written for state ${parsed?.stateKey ?? "?"}, this run is ${stateKey}`)
+        return {}
+      }
+      return parsed.lanes ?? {}
+    } catch { return {} }
+  }
+  const saveJournal = (rows: Record<string, any>) => {
+    fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
+    fs.writeFileSync(LANE_JOURNAL, JSON.stringify({ stateKey, corpusPins: repoPins, lanes: rows }, null, 2))
+  }
+  const laneJournal: Record<string, any> = loadJournal()
+  const jKeyOf = (l: { lang: string; repo: string; isSecond: boolean }) => (l.isSecond ? `${l.repo}:${l.lang}` : l.lang)
+  if (willBatch) {
+    const missing = lanes.filter(l => !laneJournal[jKeyOf(l)]).length
+    const batches = Math.ceil(lanes.length / BATCH_SIZE)
+    if (missing > 0) {
+      console.log(`[batch] ${lanes.length} lane(s), ${missing} to measure, ${batches} batch(es) of <=${BATCH_SIZE} — one fresh wasm module per batch (state ${stateKey})`)
+      for (let b = 0; b < batches; b++) {
+        const args = [...process.argv.slice(2), `--lane-batch=${b}/${batches}`]
+        const r = spawnSync(process.execPath, [process.argv[1], ...args], { stdio: "inherit", cwd: ROOT, env: process.env })
+        if (r.error) throw new Error(`differential: batch ${b}/${batches} could not start: ${r.error.message}`)
+        if (r.status !== 0) throw new Error(`differential: batch ${b}/${batches} exited ${r.status} — a lane in it failed (log above); NOT writing evidence from an incomplete sweep`)
+      }
+    } else {
+      console.log(`[batch] all ${lanes.length} lane(s) already journaled for state ${stateKey} — resuming, no child spawned`)
+    }
+    // Pick up what the children measured, then verify completeness: the parent
+    // must never emit evidence from a partial sweep.
+    Object.assign(laneJournal, loadJournal())
+    const stillMissing = lanes.filter(l => !laneJournal[jKeyOf(l)])
+    if (stillMissing.length > 0) {
+      throw new Error(`differential: ${stillMissing.length} lane(s) unmeasured after batching (${stillMissing.map(jKeyOf).join(", ")}) — no evidence written`)
+    }
+  }
+  for (let laneIndex = 0; laneIndex < lanes.length; laneIndex++) {
+    const lane = lanes[laneIndex]
+    // This child owns exactly one slice of the lanes; the rest belong to its
+    // siblings (lane order is deterministic, so every child agrees on it).
+    if (CHILD_SLICE && laneIndex % CHILD_SLICE.n !== CHILD_SLICE.i) continue
     const { lang, repo: langRepo } = lane
-    // Crash-resume: a lane already in the journal is trusted verbatim.
+    // Crash-resume: a lane already in the journal — measured in THIS state — is
+    // trusted verbatim.
     const jKey = lane.isSecond ? `${langRepo}:${lang}` : lang
-    if (resume && laneJournal[jKey]) {
+    if (useJournal && laneJournal[jKey]) {
       const jRow = laneJournal[jKey].row
       if (lane.isSecond) reportSecond[jKey] = jRow
       else report[lang] = jRow
@@ -6127,13 +6249,18 @@ async function main() {
     // lane immediately so a crash never loses finished lanes again. The
     // final emitEvidence still writes the complete artifact; this is a
     // crash-resume journal keyed by lane, re-read on startup.
-    fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
-    const journal = fs.existsSync(LANE_JOURNAL) ? JSON.parse(fs.readFileSync(LANE_JOURNAL, "utf8")) : {}
-    journal[lane.isSecond ? `${langRepo}:${lang}` : lang] = { row, repo: langRepo, isSecond: !!lane.isSecond }
+    laneJournal[lane.isSecond ? `${langRepo}:${lang}` : lang] = { row, repo: langRepo, isSecond: !!lane.isSecond }
     // Release the lane's parser now that its row is durable (the grammar stays
     // cached for the language's second corpus).
     try { (parser as any).delete?.() } catch { /* already torn down by a parser abort */ }
-    fs.writeFileSync(LANE_JOURNAL, JSON.stringify(journal, null, 2))
+    if (useJournal) saveJournal(laneJournal)
+  }
+
+  // A lane-batch child measures its slice and exits here: it must NOT evaluate
+  // the baseline or emit evidence (the parent owns both, from the journal).
+  if (CHILD_SLICE) {
+    console.log(`[batch ${CHILD_SLICE.i}/${CHILD_SLICE.n}] slice done — journal holds ${Object.keys(laneJournal).length} lane(s) for state ${stateKey}`)
+    process.exit(0)
   }
 
   // Evaluate against the pinned baseline BEFORE emitting F5 evidence. The
@@ -6210,8 +6337,9 @@ async function main() {
     },
   })
   console.log(`evidence written: validation/m14/results/M14.0.F5.json (resumed ${resumedLanes} lane(s) from journal)`)
-  // Full sweep completed: the crash-resume journal served its purpose.
-  try { fs.rmSync(LANE_JOURNAL, { force: true }) } catch { /* already gone */ }
+  // Full sweep completed: the crash-resume journal served its purpose (only for
+  // the journals this run actually used — a probe run never touched one).
+  if (useJournal) { try { fs.rmSync(LANE_JOURNAL, { force: true }) } catch { /* already gone */ } }
 
   // Improvement-forcing gate: missing/unexplained counts may never grow.
   // Baseline updates are explicit and are not silently treated as validation.
