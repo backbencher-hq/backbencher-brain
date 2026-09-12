@@ -398,6 +398,64 @@
         }
       ],
       "evidence": "reviews/regex-policy.md (W7 resolution + ruling + executed failure proofs), script/m12/census-truth.ts, script/m12/verify-regex-census.ts, script/m49/verify-r2-regex.ts, validation/m12/results/regex-census.json, validation/m49/regex-debt-register.json ; reproducibility: gates re-run green in a clean `git worktree` of e7aea7b1 (node_modules symlinked), so the green does not depend on the dirty shared tree"
+    },
+    {
+      "id": "M49.W8",
+      "title": "Evidence-identity integrity: three F7/F8/F9 collisions fixed, honesty deep-check de-vacuumized, F2 measured, F6 registered",
+      "date": "2026-09-12",
+      "commit": "PENDING",
+      "method": "A gate audit of the M14 evidence layer found that `validation/m14/results/<issueId>.json` had no uniqueness rule, and three identities had two producers each: M14.0.F7 (analyzer-hygiene + pipeline e2e), M14.0.F8 (corpus-census + web-cluster e2e), M14.0.F9 (probe battery + systems-cluster e2e). In each pair the cluster/pipeline gate was in the battery and the strengthened gate was not, so EVERY full verify run overwrote the strengthened gate's evidence and verify-honesty.ts then deep-checked whatever file remained and reported all three green - the honesty gate was verifying none of the three gates its own comment names. Fixed by giving the clobberers their own ids (M14.0.PIPE/WC1/SC1, both delegated sign-off docs and the ledger's double F9 definition updated), asserting each strengthened artifact's identity LAYER in the honesty gate so a substitution fails instead of passing, wiring the three strengthened gates into the battery as the ledger always claimed, and adding M49.G8 (verify-evidence-identity.ts: unique producer per identity, no orphan artifacts, every producer's artifact exists, every honesty-required id produced in the battery or registered in evidence-producer-register.json with script+reason+ledgerId, non-battery producers disclosed). M14.0.F2's three checks were hard-coded `status: pass`; they are now measured at emit time (selftest() really runs, determinism compares two emissions with the lineage timestamp stripped, adoption schema-checks the artifacts the harness claims to have produced). M14.0.F6's specTypes set was built and never read - a real gate defect, fixed; it did not change F6's verdict, so F6's 5-language/24-literal finding is real work, not a stale artifact: F6 stays out of the battery and is registered as knowingly unwired.",
+      "findings": [
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "evidence-identity-collision",
+          "severity": "high",
+          "ledgerId": "G8",
+          "note": "Two producers per evidence id, one wired and one not, means the wired gate destroys the unwired gate's artifact on every battery run. The consumers (verify-honesty deep-checks) then validate the wrong artifact and pass. Three separate gates had lost their evidence this way; the systems sign-off cites M14.0.F9 systems-cluster evidence that no longer existed on disk."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "identity-not-asserted",
+          "severity": "high",
+          "ledgerId": "G8",
+          "note": "verify-honesty.ts deep-checked F7/F8/F9 by 'all checks pass' without ever checking that the artifact was produced by the gate it names. Identity is now asserted via each artifact's layers."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "hard-coded-pass-evidence",
+          "severity": "medium",
+          "ledgerId": "W8",
+          "note": "M14.0.F2 (the evidence harness's own artifact) asserted selftest/determinism/adoption as literals, so its claims were never observed and its staleness was invisible. All three are now measured each emit."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "unwired-permanent-gate",
+          "severity": "medium",
+          "ledgerId": "W8",
+          "note": "The ledger describes F7/F8/F9 as permanent gates wired into the honesty REQUIRED set, but none of the three was wired into the battery, so all three artifacts were hand-run output that went stale. They are wired now; the one remaining unwired required id (M14.0.F6) is registered with a reason."
+        },
+        {
+          "issue": null,
+          "lang": "zig",
+          "class": "dead-node-type-fallbacks",
+          "severity": "medium",
+          "ledgerId": "W8",
+          "note": "F6 reports 15 literals in real-zig-analyzer.ts that are neither tree-sitter-zig node types nor spec-classified; several are rust/go node names used as `||` fallbacks (struct_item/enum_item as L634-636, composite_literal as L601/L770, continue_label L729, qualified_type L766) and cannot fire. Adjudication of the full 24-literal list (java/javascript/cpp/go/zig) is registered, not resolved."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "gate-bug-specTypes-unused",
+          "severity": "medium",
+          "ledgerId": "W8",
+          "note": "script/m14/verify-fixture-coverage.ts constructed its spec-classified type set and never consulted it, so the documented 'OR spec-classified' clause was missing and every spec-classified-but-not-grammar literal was reported as dead code. Fixed; had no effect on the current list, which is how we know the 24 are outside the spec set too."
+        }
+      ],
+      "evidence": "reviews/m49-w8-evidence-identity.md, script/m49/verify-evidence-identity.ts, validation/m49/evidence-producer-register.json, script/m14/verify-honesty.ts, script/m14/emit-f2-evidence.ts, script/m14/verify-fixture-coverage.ts, validation/m14/results/M14.0.{F2,F6,F7,F8,F9,PIPE,WC1,SC1}.json, docs/M14-SYSTEMS-DELEGATED-SIGNOFF.md, docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md, docs/M14-COMPLETENESS-LEDGER.md"
     }
   ]
 }
