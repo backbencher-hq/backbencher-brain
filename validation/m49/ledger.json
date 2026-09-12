@@ -369,7 +369,7 @@
       "id": "M49.W7",
       "title": "R2/M12 census gates made HEAD-anchored: committed truth fatal, working-tree drift disclosed; register keyed by file+source",
       "date": "2026-09-12",
-      "commit": "PENDING",
+      "commit": "e7aea7b1",
       "method": "R2 was red at 2/6 for two reasons that turned out to be one gate-design defect: it re-scanned the WORKING TREE, so (a) a census that does not describe HEAD and (b) another wave's uncommitted analyzers moving regex lines were both reported as the same failure. Because X1 requires R2 live, a foreign in-flight systems wave (c/cpp/go/rust/zig dirty) blocked every family closure. Fixed by one shared truth core, `script/m12/census-truth.ts`: scanHeadAnalyzers() scans the committed blobs (materialised via `git show HEAD:`, no tar/archive dependency), scanWorkingAnalyzers() is the preview, analyzerDrift() compares by CONTENT so a touch is not drift, and pure multiset helpers are shared by both gates and their self-tests. R2 rewritten: census<->HEAD parity is fatal; register coverage is keyed by file+source WITH MULTIPLICITY (a regex source does not move when a wave inserts 400 lines above it - the register went stale four waves running and every time the *set* was unchanged); positions are reported as an advisory, never as identity; working-tree drift is printed in full with unseen sources marked NEW, and --require-clean makes drift fatal for CI. M12 verify-regex-census rewired onto the same core, and its --strict mode now resolves authorisation through the register (the census's own justification field is generator output and empty by construction, so strict mode had been permanently red for debt that WAS justified).",
       "findings": [
         {
@@ -397,7 +397,7 @@
           "note": "M12 --strict required a census justification field that the generator never writes, so strict mode could never pass even for fully justified debt. It now accepts the register row as the justification."
         }
       ],
-      "evidence": "reviews/regex-policy.md (W7 resolution + ruling + executed failure proofs), script/m12/census-truth.ts, script/m12/verify-regex-census.ts, script/m49/verify-r2-regex.ts, validation/m12/results/regex-census.json, validation/m49/regex-debt-register.json"
+      "evidence": "reviews/regex-policy.md (W7 resolution + ruling + executed failure proofs), script/m12/census-truth.ts, script/m12/verify-regex-census.ts, script/m49/verify-r2-regex.ts, validation/m12/results/regex-census.json, validation/m49/regex-debt-register.json ; reproducibility: gates re-run green in a clean `git worktree` of e7aea7b1 (node_modules symlinked), so the green does not depend on the dirty shared tree"
     }
   ]
 }
