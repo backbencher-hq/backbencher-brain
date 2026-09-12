@@ -67,6 +67,20 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     this.usedIds = new Set<string>()
 
+    // R1 (rust review): order-independent resolution sets (CGD26 class):
+    // file-visible VALUE names mapped to their owners ("" = file scope),
+    // plus use-imported leaves (file-wide visibility). Built BEFORE the
+    // main walk so reads before declarations still resolve.
+    const valueOwners = new Map<string, Set<string>>()
+    const useImported = new Set<string>()
+    this.collectValueOwners(rootNode, valueOwners, useImported)
+
+    // R1: per-function bound-name sets (flow-insensitive, C-family
+    // contract). Residuals (documented): use-before-decl and cross-arm
+    // reads, lambda params applied function-wide, UPPERCASE locals read
+    // as path-pattern uses.
+    const fnBindings = this.collectFunctionBindings(rootNode, valueOwners, useImported)
+
     if (rootNode.hasError) {
       const errStack: Node[] = [rootNode]
       while (errStack.length > 0) {
@@ -116,7 +130,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "let_declaration" || node.type === "const_item" || node.type === "static_item") {
         this.handleVariable(node, ctx, parent)
       } else if (node.type === "use_declaration") {
-        this.handleUseDeclaration(node, ctx)
+        this.handleUseDeclaration(node, ctx, parent)
       } else if (node.type === "macro_definition") {
         this.handleMacro(node, ctx, parent)
       } else if (node.type === "mod_item") {
@@ -173,10 +187,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Enum-variant literals (MatchStrategy::Suffix { … }) carry a
         // scoped_type_identifier name field; the TARGET is the variant LEAF
         // (Suffix), matching the oracle's lastSegment and the family
-        // leaf-target contract (#419-B instantiates pin).
+        // leaf-target contract (#419-B instantiates pin). D2: a `Self`
+        // literal constructs the enclosing impl type.
         const typeNode = node.childForFieldName("name") || node.namedChild(0)
         if (typeNode && (typeNode.type === "type_identifier" || typeNode.type === "scoped_type_identifier")) {
-          const leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
+          let leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
+          if (leaf === "Self") leaf = this.enclosingImplType(node) ?? leaf
           if (leaf) {
             const source = parent?.name || "global"
             ctx.relationships.push({
@@ -264,11 +280,40 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!ctx.metadata.patterns) ctx.metadata.patterns = []
         if (ctx.metadata.patterns.indexOf("Error Propagation (?)") === -1) ctx.metadata.patterns.push("Error Propagation (?)")
       } else if (node.type === "where_clause") {
+        // R8 (rust review): a bare-identifier bound that names one of the
+        // enclosing generic parameters (`where T: Clone`) is locally bound,
+        // not a file-type reference. Real path bounds (`String: PartialEq`,
+        // fixture-pinned) still emit. Generic params collected from the
+        // nearest enclosing generic item (fn/trait/struct/enum/type/impl).
+        const genericParams = new Set<string>()
+        let gcur: Node | null = node.parent
+        while (gcur) {
+          if (
+            gcur.type === "function_item" || gcur.type === "trait_item" ||
+            gcur.type === "struct_item" || gcur.type === "enum_item" ||
+            gcur.type === "type_item" || gcur.type === "impl_item"
+          ) {
+            const tp = gcur.childForFieldName("type_parameters")
+            if (tp) {
+              const pw: Node[] = [tp]
+              while (pw.length > 0) {
+                const m = pw.pop()!
+                if (m.type === "type_identifier" || m.type === "identifier") genericParams.add(m.text)
+                for (let k = 0; k < m.namedChildCount; k++) {
+                  const c = m.namedChild(k)
+                  if (c) pw.push(c)
+                }
+              }
+            }
+            break
+          }
+          gcur = gcur.parent
+        }
         for (let i = 0; i < node.namedChildCount; i++) {
           const c = node.namedChild(i)
           if (c && c.type === "where_predicate") {
             const left = c.namedChild(0)
-            if (left) {
+            if (left && !genericParams.has(left.text)) {
               ctx.relationships.push({
                 source: parent?.name || "global",
                 target: left.text,
@@ -296,6 +341,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!ctx.metadata.patterns) ctx.metadata.patterns = []
           if (ctx.metadata.patterns.indexOf("Re-exports") === -1) ctx.metadata.patterns.push("Re-exports")
         }
+      } else if (node.type === "identifier") {
+        this.handleIdentifierRead(node, ctx, parent, valueOwners, useImported, fnBindings)
       }
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
@@ -500,6 +547,37 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /** D3 (rust second review): unrestricted `pub` only. `pub(crate)` /
+   *  `pub(super)` items are not externally importable and must not enter
+   *  the export list (the M49 importable-units invariant). Symbol
+   *  visibility fields are untouched — only export gating changes. */
+  private isUnrestrictedPublic(node: Node): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.type === "visibility_modifier" && child.text.trim() === "pub") {
+        return true
+      }
+    }
+    return false
+  }
+
+  /** D2 (rust second review): the `Self` type of the enclosing impl block
+   *  (`Self { x }` constructs the implementing type). Trait bodies have no
+   *  impl to resolve (null → existing filtered behavior). */
+  private enclosingImplType(node: Node | null): string | null {
+    let cur = node ? node.parent : null
+    while (cur) {
+      if (cur.type === "impl_item") {
+        const typeNode = cur.childForFieldName("type")
+        if (!typeNode) return null
+        const leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? ""
+        return leaf || null
+      }
+      cur = cur.parent
+    }
+    return null
+  }
+
   private createSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
@@ -597,7 +675,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    if (this.isPublic(node)) {
+    // D3: exports are externally importable units — unrestricted `pub`
+    // at true file top level only (mirrors the fn/mod/variable !parent
+    // rule; members ride Contains).
+    if (this.isUnrestrictedPublic(node) && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Class,
@@ -652,7 +733,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    if (this.isPublic(node)) {
+    // D3: see struct export gate above.
+    if (this.isUnrestrictedPublic(node) && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Trait,
@@ -750,7 +832,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // M49 exports invariant: only TOP-LEVEL modules export (a fn inside
     // `pub mod network` is imported as network::connect, not bare connect —
     // the module is the importable unit). Nested-mod members ride Contains.
-    if (this.isPublic(node) && !parent) {
+    if (this.isUnrestrictedPublic(node) && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Module,
@@ -772,7 +854,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Enum, node, parent, { type: "enum" })
     ctx.symbols.push(symbol)
 
-    if (this.isPublic(node)) {
+    // D3: see struct export gate above.
+    if (this.isUnrestrictedPublic(node) && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Enum,
@@ -870,7 +953,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (no parent at all). A `pub fn` inside `pub mod network` is imported
     // as network::connect — the module is the unit; module members ride
     // Contains. isMethod already excludes impl/trait fns.
-    if (this.isPublic(node) && !isMethod && !parent) {
+    if (this.isUnrestrictedPublic(node) && !isMethod && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Function,
@@ -880,6 +963,444 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     return symbol
+  }
+
+  /** R1: file-visible VALUE names mapped to owner sets ("" = file scope).
+   *  Kinds that name run-time entities readable bare: Constant
+   *  (const/static), Function (callbacks), EnumMember (variants),
+   *  Struct/Enum/Union/Type (constructors and unit values). Modules,
+   *  macros, traits, methods, properties never resolve bare. Function
+   *  bodies and const/static bodies contribute no declarations (locals);
+   *  impl/trait members are associated items (never bare-readable).
+   *  Use-imported leaves resolve file-wide (imports bind names too). */
+  private collectValueOwners(
+    rootNode: Node,
+    owners: Map<string, Set<string>>,
+    useImported: Set<string>,
+  ): void {
+    const add = (name: string | null, modOwners: string[]): void => {
+      if (!name) return
+      let s = owners.get(name)
+      if (!s) {
+        s = new Set<string>()
+        owners.set(name, s)
+      }
+      if (modOwners.length === 0) s.add("")
+      else for (const m of modOwners) s.add(m)
+    }
+    const leftmostId = (n: Node | null): string | null => {
+      let cur = n
+      while (cur) {
+        if (cur.type === "identifier") return cur.text
+        cur = cur.childForFieldName("declarator") || cur.namedChild(0)
+      }
+      return null
+    }
+    const stack: Array<{ n: Node; mods: string[]; inFn: boolean; inImpl: boolean }> = [
+      { n: rootNode, mods: [], inFn: false, inImpl: false },
+    ]
+    while (stack.length > 0) {
+      const { n, mods, inFn, inImpl } = stack.pop()!
+      const t = n.type
+      if (t === "mod_item") {
+        const nm = n.childForFieldName("name")?.text
+        const body = n.namedChild(n.namedChildCount - 1)
+        const hasBody = !!body && body.type === "declaration_list"
+        if (nm && hasBody) {
+          for (let i = n.namedChildCount - 1; i >= 0; i--) {
+            const c = n.namedChild(i)
+            if (c) stack.push({ n: c, mods: [...mods, nm], inFn, inImpl })
+          }
+          continue
+        }
+      } else if (t === "function_item") {
+        // Impl/trait members are associated (never bare-readable); free
+        // functions (file or module scope) are values (callbacks).
+        if (!inImpl) {
+          const nm = n.childForFieldName("name")?.text
+          if (nm) {
+            if (mods.length === 0) add(nm, [])
+            else add(nm, mods)
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) stack.push({ n: c, mods, inFn: true, inImpl })
+        }
+        continue
+      } else if (t === "impl_item" || t === "trait_item") {
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) stack.push({ n: c, mods, inFn, inImpl: true })
+        }
+        continue
+      } else if (!inFn && (t === "const_item" || t === "static_item")) {
+        const nm = n.childForFieldName("name")?.text ?? leftmostId(n)
+        if (nm && !inImpl) add(nm, mods)
+        // Bodies hold no file-visible declarations; still descend for
+        // nested mods (a mod inside a const body is legal, if bizarre).
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) stack.push({ n: c, mods, inFn: true, inImpl })
+        }
+        continue
+      } else if (
+        !inFn && !inImpl &&
+        (t === "struct_item" || t === "enum_item" || t === "union_item" || t === "type_item")
+      ) {
+        const nm = n.childForFieldName("name")?.text
+        if (nm) add(nm, mods)
+      } else if (t === "enum_variant") {
+        // Variants are global constants (C parity) — but mod-scoped when
+        // nested, so reads outside the module stay silent.
+        const nm = n.childForFieldName("name")?.text ?? n.namedChild(0)?.text
+        if (nm && !inFn) add(nm, mods)
+      } else if (t === "use_declaration") {
+        for (const leaf of this.useLeafNames(n)) {
+          if (leaf && leaf !== "self" && leaf !== "*") useImported.add(leaf)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, mods, inFn, inImpl })
+      }
+    }
+  }
+
+  /** R1: leaf names bound by one `use` (alias-aware, self-aware). Mirrors
+   *  handleUseDeclaration's leaf logic without building ImportInfo rows. */
+  private useLeafNames(node: Node): string[] {
+    const out: string[] = []
+    const walk = (n: Node | null): void => {
+      if (!n) return
+      if (n.type === "identifier" || n.type === "type_identifier") {
+        // A bare `use foo;` binds foo.
+        if (n.parent && (n.parent.type === "use_declaration" || n.parent.type === "use_list")) out.push(n.text)
+        return
+      }
+      if (n.type === "use_as_clause") {
+        const alias = n.childForFieldName("alias") || n.namedChild(n.namedChildCount - 1)
+        if (alias) out.push(alias.text)
+        return
+      }
+      if (n.type === "self") return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type !== "visibility_modifier" && c.type !== "use" && c.type !== "crate") walk(c)
+    }
+    return out
+  }
+
+  /** R1: per-function bound names (parameters + all pattern bindings in the
+   *  body, closures folded in). Keyed by function_item startIndex. */
+  /** R1: enclosing inline-module names for one node (outermost first). */
+  private enclosingMods(node: Node | null): string[] {
+    const out: string[] = []
+    let cur = node ? node.parent : null
+    while (cur) {
+      if (cur.type === "mod_item") {
+        const nm = cur.childForFieldName("name")?.text
+        if (nm) out.unshift(nm)
+      }
+      cur = cur.parent
+    }
+    return out
+  }
+
+  /** R1: identifiers bound by one PATTERN subtree. In DECLARATION
+   *  positions (let/param/for/let-condition patterns) every lowercase
+   *  identifier binds, and UPPERCASE ones bind too (the grammar declares —
+   *  `let G`, `fn f(G)`). In MATCH positions (arms, or-patterns) lowercase
+   *  binds but UPPERCASE is a path pattern (`None`, `RED`) — reported via
+   *  `uses` when the probe says resolvable, otherwise bound (harmless).
+   *  Tuple-struct HEADS (`Some` in `Some(v)`) never bind anywhere — they
+   *  name the constructor (emitted as uses when resolvable). Accepted
+   *  residual: UPPERCASE locals read as uses when a same-named global
+   *  exists AND the binding sits in match position. */
+  private collectPatternIds(
+    node: Node | null,
+    out: Set<string>,
+    resolves: (name: string) => boolean,
+    isDecl: boolean,
+  ): void {
+    if (!node) return
+    if (node.type === "identifier") {
+      const nm = node.text
+      if (!nm || nm === "_" || nm.startsWith("$")) return
+      const first = nm.charCodeAt(0)
+      if (first >= 65 && first <= 90 && !isDecl && resolves(nm)) return
+      out.add(nm)
+      return
+    }
+    // Type/namespace positions never bind values. (self/Self/super/crate
+    // are filtered by the caller/emission gate, not here.)
+    if (
+      node.type === "type_identifier" || node.type === "scoped_identifier" ||
+      node.type === "field_identifier" || node.type === "lifetime" ||
+      node.type === "primitive_type"
+    ) return
+    if (node.type === "tuple_struct_pattern") {
+      // First child is the constructor path — never a binding.
+      for (let i = 1; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c) this.collectPatternIds(c, out, resolves, isDecl)
+      }
+      return
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) this.collectPatternIds(c, out, resolves, isDecl)
+    }
+  }
+
+  /** R1: per-function bound-name sets. The uppercase path-pattern rule
+   *  needs resolvability: probe = file-scope owners, use-imported leaves,
+   *  or the function's own enclosing modules. */
+  private collectFunctionBindings(
+    rootNode: Node,
+    valueOwners: Map<string, Set<string>>,
+    useImported: Set<string>,
+  ): Map<number, Set<string>> {
+    const out = new Map<number, Set<string>>()
+    const stack: Node[] = [rootNode]
+    const fns: Node[] = []
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_item") fns.push(n)
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    for (const fn of fns) {
+      const bound = new Set<string>()
+      const fnMods = this.enclosingMods(fn)
+      const resolves = (nm: string): boolean => {
+        const owners = valueOwners.get(nm)
+        if (!owners) return useImported.has(nm)
+        if (owners.has("")) return true
+        if (useImported.has(nm)) return true
+        for (const m of fnMods) if (owners.has(m)) return true
+        return false
+      }
+      // Parameters (pattern field or the whole parameter node) — declaration
+      // context: always binds, even UPPERCASE (`fn f(G: u32)` shadows).
+      const params = fn.childForFieldName("parameters")
+      if (params) {
+        for (let i = 0; i < params.namedChildCount; i++) {
+          const p = params.namedChild(i)
+          if (!p) continue
+          if (p.type === "self_parameter") continue
+          const pat = p.childForFieldName("pattern") ?? p
+          this.collectPatternIds(pat, bound, resolves, true)
+        }
+      }
+      // Body walk. Declaration contexts (`let` patterns, `for` loop
+      // variables) always bind; `let_condition` (if/while-let, refutable)
+      // and `match_arm` patterns use match semantics (uppercase = path).
+      // Pattern-typed nodes occur ONLY in pattern positions (expressions
+      // use tuple_expression/call_expression/struct_expression), so no
+      // value subtree is ever misread as a binder.
+      const body: Node[] = [fn]
+      while (body.length > 0) {
+        const m = body.pop()!
+        if (m.type === "let_declaration") {
+          const pat = m.childForFieldName("pattern") ?? m.namedChild(0)
+          this.collectPatternIds(pat, bound, resolves, true)
+        } else if (m.type === "let_condition") {
+          this.collectPatternIds(m.namedChild(0), bound, resolves, false)
+        } else if (m.type === "for_expression") {
+          // Loop variable is the first named child (irrefutable → binds).
+          this.collectPatternIds(m.namedChild(0), bound, resolves, true)
+        } else if (m.type === "match_arm") {
+          // Arm patterns (refutable position): sweep pattern-typed nodes
+          // with match semantics. Bodies still descend normally below.
+          // Nested let/for/condition declarations keep declaration
+          // semantics — skip their subtrees here (the main walk binds
+          // them with isDecl=true when it descends).
+          const sub: Node[] = [m]
+          while (sub.length > 0) {
+            const q = sub.pop()!
+            if (
+              q !== m &&
+              (q.type === "let_declaration" || q.type === "let_condition" || q.type === "for_expression")
+            ) continue
+            if (
+              q.type === "tuple_pattern" || q.type === "struct_pattern" ||
+              q.type === "tuple_struct_pattern" || q.type === "ref_pattern" ||
+              q.type === "or_pattern" || q.type === "slice_pattern"
+            ) {
+              this.collectPatternIds(q, bound, resolves, false)
+            }
+            for (let i = q.namedChildCount - 1; i >= 0; i--) {
+              const c = q.namedChild(i)
+              if (c) sub.push(c)
+            }
+          }
+        }
+        // Do not descend into nested items (a nested fn has its own entry;
+        // nested closures share this function's set — documented residual).
+        if (m !== fn && (m.type === "function_item" || m.type === "const_item" || m.type === "static_item")) continue
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) body.push(c)
+        }
+      }
+      out.set(fn.startIndex, bound)
+    }
+    return out
+  }
+
+  /** R1: one bare `identifier` occurrence — emit Uses iff it names a
+   *  file-visible VALUE and survives the exclusion discipline (declaration
+   *  positions incl. leftmost rule, call callees incl. turbofish climb,
+   *  member leaves, qualified non-leaves, preprocessor/macros/attributes/
+   *  use-paths, LHS writes, where-bounds, shadowing). */
+  private handleIdentifierRead(
+    node: Node,
+    ctx: RustContext,
+    parent: ASTEngine.UniversalSymbol | null,
+    valueOwners: Map<string, Set<string>>,
+    useImported: Set<string>,
+    fnBindings: Map<number, Set<string>>,
+  ): void {
+    const name = node.text
+    if (!name || name === "_" || name === "self" || name === "Self" || name === "super" || name === "crate" || name.startsWith("$")) return
+    const p = node.parent
+
+    // Macro RULE bodies are templates, not code (CGD5 analog) — but macro
+    // INVOCATION arguments are genuine reads.
+    if (this.hasAncestor(node, "macro_definition", ["macro_invocation"])) return
+    // Attributes (`#[derive(Foo)]`) and use paths are metadata/imports.
+    if (this.hasAncestor(node, "attribute_item", ["function_item", "struct_item", "enum_item", "impl_item", "trait_item", "mod_item"])) return
+    if (this.hasAncestor(node, "use_declaration", null)) return
+    // Where-bounds belong to the dedicated where branch (R8).
+    if (this.hasAncestor(node, "where_predicate", null)) return
+
+    // Call callee (span-matched; climbs generic_function + parenthesized
+    // wrappers like the calls branch's leaf logic) — the calls branch owns it.
+    let top: Node = node
+    let up: Node | null = p
+    while (up && (up.type === "generic_function" || up.type === "parenthesized_expression")) {
+      top = up
+      up = up.parent
+    }
+    if (up && up.type === "call_expression") {
+      const fnField = up.childForFieldName("function")
+      if (fnField && fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex) return
+      const first = up.namedChild(0)
+      if (first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex) return
+    }
+    // Member leaves — the field path owns them; the OBJECT stays readable.
+    if (p && p.type === "field_expression") {
+      const field = p.childForFieldName("field")
+      if (field && field.startIndex === node.startIndex) return
+    }
+    // Qualified paths: non-leaf segments never read; the LEAF may (unit
+    // variants, assoc consts — the deliberate Rust difference from CPP).
+    if (p && p.type === "scoped_identifier") {
+      const last = p.namedChild(p.namedChildCount - 1)
+      if (!last || last.startIndex !== node.startIndex) return
+    } else if (this.hasAncestor(node, "scoped_identifier", ["call_expression", "field_expression"])) {
+      return
+    }
+    // Assignment LHS is a WRITE (family contract).
+    if (p && (p.type === "assignment_expression" || p.type === "compound_assignment_expr")) {
+      const lhs = p.namedChild(0)
+      if (lhs && lhs.startIndex === node.startIndex && lhs.endIndex >= node.endIndex) return
+    }
+    // Defining occurrences: entity names (first identifier-ish child of an
+    // item node) never read. (Pattern bindings are decided by membership
+    // below, not position.)
+    if (p && this.isItemNamePosition(node, p)) return
+
+    // Shadowing: bound in an enclosing function?
+    let fnNode: Node | null = p
+    while (fnNode && fnNode.type !== "function_item") fnNode = fnNode.parent
+    if (fnNode) {
+      const bound = fnBindings.get(fnNode.startIndex)
+      if (bound && bound.has(name)) return
+    }
+
+    // Resolvability: file scope, use-imported, or an enclosing module.
+    const owners = valueOwners.get(name)
+    let ok = false
+    if (owners) {
+      if (owners.has("")) ok = true
+      else if (useImported.has(name)) ok = true
+      else {
+        const mods = this.enclosingMods(node)
+        for (const m of mods) {
+          if (owners.has(m)) { ok = true; break }
+        }
+      }
+    } else if (useImported.has(name)) {
+      ok = true
+    }
+    if (!ok) return
+
+    const source = parent?.name || "global"
+    const relKey = `${source}::uses::${name}`
+    if (ctx.emittedUses.has(relKey)) return
+    ctx.emittedUses.add(relKey)
+    ctx.relationships.push({
+      source,
+      target: name,
+      type: ASTEngine.RelationshipType.Uses,
+      confidence: 1.0,
+      metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+    })
+  }
+
+  /** True when `node` sits under an ancestor of one of `types` before
+   *  crossing any node of a stop type (null stops = never stop early). */
+  private hasAncestor(node: Node, types: string | string[], stopAt: string[] | null): boolean {
+    const want = Array.isArray(types) ? types : [types]
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (want.includes(cur.type)) return true
+      if (stopAt) {
+        for (const s of stopAt) {
+          if (cur.type === s) return false
+        }
+      }
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /** True when `node` is the defining NAME occurrence of its item parent
+   *  (first identifier-ish named child of an entity-declaring node). */
+  private isItemNamePosition(node: Node, parent: Node): boolean {
+    switch (parent.type) {
+      case "function_item":
+      case "struct_item":
+      case "enum_item":
+      case "trait_item":
+      case "mod_item":
+      case "type_item":
+      case "associated_type":
+      case "static_item":
+      case "const_item":
+      case "enum_variant":
+      case "field_declaration":
+      case "extern_crate_declaration":
+        break
+      default:
+        return false
+    }
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+        return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+      }
+    }
+    return false
   }
 
   private handleVariable(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
@@ -909,7 +1430,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol = this.createSymbol(name, ASTEngine.SymbolKind.Variable, node, parent, { type: node.type })
     ctx.symbols.push(symbol)
 
-    if (this.isPublic(node) && !parent) {
+    if (this.isUnrestrictedPublic(node) && !parent) {
       ctx.exports.push({
         name,
         type: ASTEngine.SymbolKind.Variable,
@@ -919,7 +1440,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private handleUseDeclaration(node: Node, ctx: RustContext): void {
+  private handleUseDeclaration(node: Node, ctx: RustContext, parent: ASTEngine.UniversalSymbol | null): void {
     const isPublic = this.isPublic(node)
     // Split the import into MODULE (path prefix) and ITEMS (local bindings,
     // alias-aware: `Write as W` binds W, `self` binds the module leaf).
@@ -1047,7 +1568,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    if (isPublic && modulePath) {
+    // D3: re-exported paths are externally importable only when
+    // unrestricted-pub at true file top level (members ride Contains).
+    if (this.isUnrestrictedPublic(node) && !parent && modulePath) {
       ctx.exports.push({
         name: modulePath,
         type: ASTEngine.SymbolKind.Module,
@@ -1159,6 +1682,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     //   (target 'new' was garbage - the constructed TYPE is the receiver),
     //   PascalCase tuple-struct constructor call -> Instantiates @0.75
     //   (measured Rust convention: functions are snake_case).
+    //   D2: `Self` receivers / bare `Self(..)` construct the enclosing
+    //   impl type (previously filtered as unresolvable noise).
     let instTarget: string | null = null
     if (functionNode.type === "field_expression" || functionNode.type === "scoped_identifier") {
       // Receiver TYPE: value (field_expression) or path (scoped_identifier).
@@ -1168,13 +1693,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         functionNode.namedChild(functionNode.namedChildCount - 2)
       if (target === "new" && receiver) {
         const recvText = this.stripGenerics(receiver.text)
-        const leaf = recvText.split("::").filter(Boolean).pop() ?? ""
+        let leaf = recvText.split("::").filter(Boolean).pop() ?? ""
+        if (leaf === "Self") leaf = this.enclosingImplType(node) ?? leaf
         // ≡ /^[A-Z]/ — first char in A-Z (rust upper-camel types).
         if (leaf.length > 0 && leaf.charCodeAt(0) >= 65 && leaf.charCodeAt(0) <= 90) instTarget = leaf
       }
     } else if (target.length > 0 && target.charCodeAt(0) >= 65 && target.charCodeAt(0) <= 90) {
       instTarget = target
     }
+    if (instTarget === "Self") instTarget = this.enclosingImplType(node) ?? null
     // DEFERRED resolution: constructor candidates emit only when the type
     // resolves to an IN-FILE symbol. Immediate emission fired on every
     // std/external type (Arc, Ok, foreign builders) - 90%+ noise that could

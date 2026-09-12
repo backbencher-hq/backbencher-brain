@@ -520,6 +520,121 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
   },
   {
+    id: "zig/drop-bare-uses",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description: "Z3 regression: drops every bare identifier_usage edge — restores the pre-review state where `return Limit` / `return counter` emitted nothing (uses is NOT in zig's differential-compared label set, so ONLY the fixture catches it) — bare-value-reads fixture expects readLimit->Limit, bump->counter, fail->Timeout, handle->Fatal",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "identifier_usage") }),
+  },
+  {
+    id: "zig/reemit-shadowed-reads",
+    language: "zig",
+    defectClass: "shadowing-loss",
+    description: "Z3 shadowing regression: re-injects the pre-fix edges for param shadow (shadowed->counter), block-local shadow (localFirst->Limit) and payload capture shadow (arm->Answer) — bare-value-reads fixture forbids all three",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "shadowed", target: "counter", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+        { source: "localFirst", target: "Limit", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+        { source: "arm", target: "Answer", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+      ],
+    }),
+  },
+  {
+    id: "zig/reemit-error-set-declaration",
+    language: "zig",
+    defectClass: "self-edge",
+    description: "error-set identity regression: re-injects the declaration-site self-edge `(global) -> Unused` that the isDefiningOccurrence fix removed (`pub const Error = error{ WriteFailed, OutOfMemory };` compiled to a use of WriteFailed at its own declaration; probe-verified on zls src/print_zoir.zig) — bare-value-reads fixture forbids uses->Unused",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { source: "(global)", target: "Unused", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }],
+    }),
+  },
+  {
+    id: "zig/global-enum-member-uses",
+    language: "zig",
+    defectClass: "resolvability-noise",
+    description: "Z3 gate regression: re-injects a bare identifier_usage for enum member `fast` outside an error leaf (the pre-fix analyzer resolved EVERY EnumMember globally, so payload binding names, struct type positions and plain identifiers collided with enum members) — bare-value-reads fixture forbids uses[identifier_usage]->fast",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { source: "(global)", target: "fast", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }],
+    }),
+  },
+  {
+    id: "zig/drop-error-member-uses",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description: "Z3 error-member resolution regression: drops the value-position error-leaf uses (fail->Timeout, handle->Fatal) while leaving other bare reads intact — bare-value-reads fixture expects both",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !((x.metadata ?? {}).relationshipType === "identifier_usage" && (x.target === "Timeout" || x.target === "Fatal"))) }),
+  },
+  {
+    id: "zig/synthetic-complexity",
+    language: "zig",
+    defectClass: "payload-drift",
+    description: "Z1 regression: restores the pre-review synthetic complexity (every symbol reported 3 regardless of body) — bare-value-reads fixture pins score=5, guard=4",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: 3 })) }),
+  },
+  {
+    id: "zig/error-columns-0based",
+    language: "zig",
+    defectClass: "range-drift",
+    description: "Z2 regression: reverts error ranges to raw 0-based columns (the svelte-wave class) — bare-value-reads fixture pins the stray-brace error at line 151 column 1",
+    transform: r => ({
+      ...r,
+      errors: (r.errors ?? []).map(e => e.range ? { ...e, range: { ...e.range, startColumn: e.range.startColumn - 1, endColumn: e.range.endColumn - 1 } } : e),
+    }),
+  },
+  {
+    id: "zig/switch-payload-scope",
+    language: "zig",
+    defectClass: "shadowing-loss",
+    description: "Z6 regression: restores the pre-fix switch-arm capture handling (captures bound into the enclosing frame / no frame at file scope) — drops the post-switch genuine read scopeF->K and re-injects the global capture junk (global)->Clue — bare-value-reads fixture expects the first and forbids the second",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "scopeF" && normRel(x).target === "K")),
+        { source: "(global)", target: "Clue", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+      ],
+    }),
+  },
+  {
+    id: "zig/param-subtree-bindings",
+    language: "zig",
+    defectClass: "shadowing-loss",
+    description: "Z7 regression: restores binding every identifier under a parameter node (a binding is a subtree, not a name) — drops the recovered type/default reads takeT->T, withDefault->Def, typeField->Flag — bare-value-reads fixture expects all three",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => {
+        if (normRel(x).type !== "uses") return true
+        const src = normRel(x).source
+        const tgt = normRel(x).target
+        return !((src === "takeT" && tgt === "T") || (src === "withDefault" && tgt === "Def") || (src === "typeField" && tgt === "Flag"))
+      }),
+    }),
+  },
+  {
+    id: "zig/blank-symbol",
+    language: "zig",
+    defectClass: "symbol-noise",
+    description: "Z8 regression: mints the GO5-class `_` Variable symbol for `var _ = 5;` — bare-value-reads fixture forbids any `_` symbol",
+    transform: r => ({
+      ...r,
+      symbols: [...(r.symbols ?? []), { name: "_", kind: "variable", visibility: "private", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 } }],
+    }),
+  },
+  {
+    id: "zig/drop-local-import",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description: "Z9 regression: drops the function-local @import fact again (locals-are-artifacts overreach) — bare-value-reads fixture expects the helper.zig import",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).filter((i: any) => i.module !== "helper.zig"),
+      relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "references" && normRel(x).target === "helper.zig")),
+    }),
+  },
+  {
     id: "java/argument-count-inflation",
     language: "java",
     defectClass: "payload-drift",
@@ -1959,6 +2074,244 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "Sv2 #736 regression (D5): reverts if/else-if/key condition collection — heads referencing only their condition emit nothing (template-condition-uses pins shown/fallback/k)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "uses" && ["shown", "fallback", "k"].includes(x.target) && (x.metadata ?? {}).isTemplateExpression)) }),
+  },
+  {
+    id: "c/static-prototype-public",
+    language: "c",
+    defectClass: "visibility-fabrication",
+    description: "Holy-C #736 regression (HC1): reverts the prototype visibility fix — static prototype hidden reports public and leaks into exports (declaration-identity pins private + forbids the export)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => s.name === "hidden" ? { ...s, visibility: "public" } : s),
+      exports: [...(r.exports ?? []), { name: "hidden", type: "function", isType: false }],
+    }),
+  },
+  {
+    id: "c/reduplicate-merged-symbols",
+    language: "c",
+    defectClass: "symbol-duplication",
+    description: "Holy-C #736 regression (HC2): reverts the same-entity merge — tentative tally and prototype+definition shown emit twice each, shown double-exported (declaration-identity pins counts; the export duplicate trips the harness-global uniqueness invariant)",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...(r.symbols ?? []).filter((s: any) => s.name === "tally" || s.name === "shown").map((s: any) => ({ ...s })),
+      ],
+      exports: [
+        ...(r.exports ?? []),
+        ...(r.exports ?? []).filter((e: any) => e.name === "shown").map((e: any) => ({ ...e })),
+      ],
+    }),
+  },
+  {
+    id: "c/drop-knr-params",
+    language: "c",
+    defectClass: "payload-loss",
+    description: "Holy-C #736 regression (HC3): reverts K&R parameter extraction — add loses its bare-identifier params (declaration-identity pins a+b via expectParameters)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => s.name === "add" ? { ...s, parameters: [] } : s),
+    }),
+  },
+  {
+    id: "c/proto-param-uses",
+    language: "c",
+    defectClass: "relationship-fabrication",
+    description: "Holy-C deepest-review #736 regression (HC6): re-admits prototype parameter names to file-scope resolution — the main->count read fabricates a dangling use (declaration-identity forbids it)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "main", target: "count", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage" } },
+      ],
+    }),
+  },
+  {
+    id: "cpp/drop-bare-uses",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "CP1 #736 regression: reverts bare value reads — `return g;` and member/namespace/callback reads emit nothing (bare-value-reads pins f->g_var, bump->count, getx->x, reg->target_fn)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).relationshipType === "identifier_usage")) }),
+  },
+  {
+    id: "cpp/reemit-shadowed-reads",
+    language: "cpp",
+    defectClass: "scope-blindness",
+    description: "CP1 #736 regression: reverts shadowing suppression — shadowed/local reads leak (h->g_var for the shadowing local, use_tmpl->ident for the explicit-template callee); bare-value-reads forbids both",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const source = (rels.find((x: any) => x.type === "uses")?.source) || "h"
+      const extra = [
+        { source: "h", target: "g_var", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage" } },
+        { source: "use_tmpl", target: "ident", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage" } },
+      ]
+      return { ...r, relationships: [...rels, ...extra] }
+    },
+  },
+  {
+    id: "cpp/macro-function-symbols",
+    language: "cpp",
+    defectClass: "symbol-fabrication",
+    description: "CP2 #736 regression: re-mints TEST/TEST_F macro-function symbols with leaking body locals (macro-function-shapes pins zero TEST/TEST_F symbols and zero local_tmp)",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "TEST", kind: "function", scope: "global", visibility: "public", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 } },
+        { name: "local_tmp", kind: "variable", scope: "global", visibility: "public", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 } },
+      ],
+    }),
+  },
+  {
+    id: "cpp/static-fn-public",
+    language: "cpp",
+    defectClass: "visibility-fabrication",
+    description: "CP3 #736 regression: reverts static-function privacy — hidden_helper reports public (bare-value-reads pins private + forbids the export)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => s.name === "hidden_helper" ? { ...s, visibility: "public" } : s),
+      exports: [...(r.exports ?? []), { name: "hidden_helper", kind: "function" }],
+    }),
+  },
+  {
+    id: "rust/drop-bare-uses",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "R1 #736 regression: reverts bare value reads — const/static/callback/member reads emit nothing (bare-value-reads pins reader->GLOBAL/LIMIT/identity, get_c->C, matcher->Red)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).relationshipType === "identifier_usage")) }),
+  },
+  {
+    id: "rust/reemit-shadowed-reads",
+    language: "rust",
+    defectClass: "scope-blindness",
+    description: "R1 #736 regression: reverts shadowing suppression — the shadowing param read leaks (bare-value-reads forbids shadowed->GLOBAL)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "shadowed", target: "GLOBAL", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage" } },
+      ],
+    }),
+  },
+  {
+    id: "rust/reemit-where-param-refs",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "R8 #736 regression: reverts the where-bound param filter — `where T: Clone` leaks references to the bound type parameter (verified absent in bare-value-reads REFS alongside the relationship-kinds String:PartialEq pin)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "generic", target: "T", type: "references", confidence: 1.0, metadata: { rustSpecific: true, whereBound: true } },
+      ],
+    }),
+  },
+  {
+    id: "rust/drop-self-construction",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "D2 #736 regression: reverts Self resolution — `Self { x }` / `Self::new()` target the literal Self and are filtered as noise (construction-exports pins instantiates new/origin/clone_it->Point)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "Point")) }),
+  },
+  {
+    id: "rust/restore-restricted-exports",
+    language: "rust",
+    defectClass: "export-fabrication",
+    description: "D3 #736 regression: reverts export privacy — pub(crate) items and private-module members re-enter the export list (construction-exports forbids internal/Hidden/std::io::Read/f)",
+    transform: r => ({
+      ...r,
+      exports: [
+        ...(r.exports ?? []),
+        { name: "internal", type: "function", isType: false },
+        { name: "Hidden", type: "struct", isType: true },
+      ],
+    }),
+  },
+  {
+    id: "go/drop-bare-uses",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "GO1 #736 regression: reverts bare value reads — const/static/callback/member reads emit nothing (bare-value-reads pins reader->Global/Limit, target_fn->Global, usecase->Red)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).relationshipType === "identifier_usage")) }),
+  },
+  {
+    id: "go/reemit-shadowed-reads",
+    language: "go",
+    defectClass: "scope-blindness",
+    description: "GO1 #736 regression: reverts shadowing suppression — the shadowing param read leaks (bare-value-reads forbids shadowed->Global)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "shadowed", target: "Global", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage" } },
+      ],
+    }),
+  },
+  {
+    id: "go/dotimport-drop",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "GO3 #736 regression: reverts dot-import call resolution — dot-imported bare calls drop again (dot-import-calls pins F->Print)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.target === "Print")) }),
+  },
+  {
+    id: "go/tilde-garbage",
+    language: "go",
+    defectClass: "symbol-fabrication",
+    description: "GO2 #736 regression: re-mints tilde/union constraint garbage — Interface symbols and extends for `~int | ~string` / `int | string` (bare-value-reads forbids both symbols)",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "~int | ~string", kind: "interface", scope: "global", visibility: "public", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 } },
+      ],
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "Ordered", target: "~int | ~string", type: "extends", confidence: 0.8, metadata: {} },
+      ],
+    }),
+  },
+  {
+    id: "go/blank-symbol",
+    language: "go",
+    defectClass: "symbol-fabrication",
+    description: "GO5 #736 regression: re-mints blank `_` variable symbols (bare-value-reads forbids `_`)",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "_", kind: "variable", scope: "global", visibility: "private", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 } },
+      ],
+    }),
+  },
+  {
+    id: "go/owned-field-exports",
+    language: "go",
+    defectClass: "export-fabrication",
+    description: "GO7 #736 regression: re-exports owned struct fields — public field X re-enters the export list (bare-value-reads forbids X; the harness uniqueness invariant also fires)",
+    transform: r => ({
+      ...r,
+      exports: [...(r.exports ?? []), { name: "X", kind: "property" }],
+    }),
+  },
+  {
+    id: "go/package-endindex",
+    language: "go",
+    defectClass: "range-incoherence",
+    description: "GO4 #736 regression: reverts the package endIndex fix — exclusive byte offset off by one (bare-value-reads pins reads-module endIndex 13 via expectSymbolRanges)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => s.name === "reads" && s.kind === "module"
+        ? { ...s, range: { ...(s.range ?? {}), endIndex: 14 } }
+        : s),
+    }),
+  },
+  {
+    id: "go/generic-composite-drop",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "GO8 #736 regression: reverts generic composite unwrapping — `Box[int]{...}` emits no construction edge (generic-construction pins instantiates MakeBox->Box)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "Box")) }),
   },
   {
     id: "svelte/script-relative-indices",

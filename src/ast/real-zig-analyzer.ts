@@ -40,6 +40,43 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "variable_declaration") {
         // Inside a function body: locals are execution artifacts — skip.
         if (inFunction) {
+          // Z9 (extreme review): a function-local @import is still a real
+          // import fact (calls in function bodies are captured too, so
+          // dropping the import was inconsistent) — record it exactly like
+          // the top-level branch, without minting a local symbol.
+          const lchildren = this.getAllNamedChildren(node)
+          const lrhs = lchildren[lchildren.length - 1]
+          const lrhsType = lrhs?.type || ""
+          const lbuiltin =
+            lrhsType === "call_expression" || lrhsType === "builtin_function"
+              ? this.anyChild(lrhs, (n) => n.type === "builtin_identifier")
+              : null
+          if (lbuiltin && (lbuiltin.text === "@import" || lbuiltin.text === "@cImport")) {
+            const largs = this.anyChild(lrhs, (n) => n.type === "arguments")
+            const lstr = largs ? this.anyChild(largs, (n) => n.type === "string" || n.type === "string_content") : null
+            if (lstr) {
+              let ltarget = lstr.text
+              if (
+                (ltarget.startsWith('"') && ltarget.endsWith('"')) ||
+                (ltarget.startsWith("'") && ltarget.endsWith("'"))
+              ) {
+                ltarget = ltarget.substring(1, ltarget.length - 1)
+              }
+              imports.push({
+                module: ltarget,
+                isDefaultImport: false,
+                range: this.nodeRange(node),
+                metadata: { zigImport: true, builtin: lbuiltin.text },
+              })
+              relationships.push({
+                source: "(global)",
+                target: ltarget,
+                type: ASTEngine.RelationshipType.References,
+                confidence: 1.0,
+                metadata: { relationshipType: "zig_import", isImport: true },
+              })
+            }
+          }
           this.pushChildren(node, walkStack, container, inFunction)
           continue
         }
@@ -47,6 +84,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         const identNode = this.anyChild(node, (n) => n.type === "identifier")
         const varName = identNode ? identNode.text : ""
         if (!varName || varName.length > 80) {
+          this.pushChildren(node, walkStack, container, inFunction)
+          continue
+        }
+        // Z8 (extreme review): the blank identifier is not a declaration —
+        // `var _ = 1;` minted a `_` Variable symbol (GO5 class).
+        if (varName === "_") {
           this.pushChildren(node, walkStack, container, inFunction)
           continue
         }
@@ -223,7 +266,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // no named container — they must not become file-scope functions.
         const isAnonymousContainerMember = !container && inFunction
 
-        if (fnName && fnName.length < 100 && !isAnonymousContainerMember) {
+        if (fnName && fnName !== "_" && fnName.length < 100 && !isAnonymousContainerMember) {
           const params: ASTEngine.Parameter[] = []
           const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
           if (paramsNode) {
@@ -286,7 +329,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         const nameNode = this.anyChild(node, (n) => n.type === "identifier")
         const fieldName = nameNode ? nameNode.text : ""
-        if (fieldName && fieldName.length < 50) {
+        if (fieldName && fieldName !== "_" && fieldName.length < 50) {
           const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
           const typeNode = this.anyChild(
             node,
@@ -343,10 +386,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         errors.push({
           message: `Zig syntax error: ${snippet}`,
           range: {
+            // Z2 (zig review): 1-based columns like every other range in
+            // this file (nodeRange +1s) — the raw 0-based columns leaked
+            // through here (svelte-wave class).
             startLine: node.startPosition.row + 1,
-            startColumn: node.startPosition.column,
+            startColumn: node.startPosition.column + 1,
             endLine: node.endPosition.row + 1,
-            endColumn: node.endPosition.column,
+            endColumn: node.endPosition.column + 1,
+            startIndex: node.startIndex,
+            endIndex: node.endIndex,
           },
           severity: "error",
         })
@@ -379,6 +427,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // 30 KB std source with 56 call sites produced zero edges.
     this.analyzeZigCodeRelationships(rootNode, relationships, symbols)
 
+    // Z3 (zig review): bare-identifier value reads. The analyzer emitted NO
+    // bare-identifier edges at all (`return MAX` produced zero relationships)
+    // while const reads, call args, index operands and return expressions
+    // all read file-visible values. C-family discipline with a lexical
+    // scope stack (params + block/payload/short bindings shadow) and
+    // resolvability required (file-scope const/var/fn/enum-members only).
+    this.analyzeZigBareIdentifierUses(rootNode, relationships, symbols)
+
     // Declared-type reference graph (family standard — mirrors go/c/rust):
     // parameter types, return types, struct/union field types emit a
     // `references` edge to their leaf type name (builtin types excluded). A
@@ -395,6 +451,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // no generic `exports module -> X` edge — `module` is not a symbol, so the
     // edge would never resolve (Java-family contract; the exports array and
     // the `pub` visibility metadata carry the export fact).
+    //
+    // Z1 (zig review): `complexity` was the synthetic symbols.length
+    // heuristic beside per-symbol real complexities — the removed-
+    // everywhere-else disease. Both fields report the real file-level
+    // cyclomatic number (family contract, go parity).
+    const fileComplexity = this.zigBodyComplexity(rootNode)
     return {
       language: "zig",
       symbols,
@@ -403,7 +465,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports,
       errors,
       metadata: {
-        complexity: symbols.length,
+        complexity: fileComplexity,
+        cyclomaticComplexity: fileComplexity,
         linesOfCode: content.split("\n").length,
         patterns: [],
         framework: "Zig",
@@ -515,6 +578,331 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
   }
+
+  /**
+   * Z3: bare-identifier value reads (`return MAX`, `g(D)`, `m[k]` keys,
+   * return operands). Every bare `identifier` naming a file-visible VALUE
+   * (file-scope const/var/fn/enum-member) is a Uses edge, with:
+   * - a lexical scope stack: function params bind at entry; block locals
+   *   (variable_declaration names), payload captures (`|x|`), for/if/while
+   *   payloads bind in walk order (reads before any binding still resolve
+   *   outward — C-family flow discipline);
+   * - declaration positions never read (first-identifier rule for
+   *   variable_declaration; entity names; composite-literal keys are
+   *   field_identifier-typed and auto-skip; labels/package/import paths/
+   *   blank `_` excluded);
+   * - call callees (span-matched; the calls branch owns them), member
+   *   leaves (field path owns them; objects stay readable), qualified
+   *   non-leaves, assignment LHS writes, test/comptime-exempt contexts all
+   *   excluded;
+   * - resolvability required: unknown names (std/dot-imported/external,
+   *   macro-template `$x`) stay silent — no junk edges.
+   */
+  private analyzeZigBareIdentifierUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const fileValues = new Set<string>()
+    // Enum members live in one global error/value namespace in Zig
+    // (`error.Bad` reads the variant regardless of which set declared it),
+    // so they resolve by name even when owned.
+    const enumMemberNames = new Set<string>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.EnumMember) enumMemberNames.add(s.name)
+      if (
+        !s.ownerName &&
+        (s.kind === ASTEngine.SymbolKind.Constant ||
+          s.kind === ASTEngine.SymbolKind.Variable ||
+          s.kind === ASTEngine.SymbolKind.Function ||
+          s.kind === ASTEngine.SymbolKind.EnumMember)
+      ) {
+        fileValues.add(s.name)
+      }
+    }
+    const emitted = new Set<string>()
+    interface ScopeFrame {
+      names: Set<string>
+      fnName: string | null
+    }
+    const scopeStack: ScopeFrame[] = []
+    const isShadowed = (name: string): boolean => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        if (scopeStack[i].names.has(name)) return true
+      }
+      return false
+    }
+    // NOTE (M49 W9, registered defect — NOT fixed here): this walk binds EVERY
+    // identifier in the node's subtree, so a name that appears only in a
+    // parameter's TYPE becomes a binding and shadows the real file-level value
+    // for the whole function. Probe-verified: in
+    //     const FLAG = 1;
+    //     fn typeField(s: struct { FLAG: u8 }) void { _ = FLAG; }
+    // the genuine read `_ = FLAG` emits ZERO `uses` edges, and `w: io.Writer`
+    // likewise swallows reads of a global named `io`. The correct model is
+    // "a binding is a declared NAME, not a subtree" (first identifier child of
+    // a `parameter`; the direct identifier children of a `payload`). A fix was
+    // written and measured against the zls corpus, but it must land together
+    // with the zig ORACLE in script/m14/differential.ts (the oracle derives the
+    // signature-region reads this fix suppresses — measured 5 MISSING), and
+    // that oracle is another wave's in-flight work, so the fix is held rather
+    // than half-landed. Registered in reviews/m49-w9-fixture-coverage-
+    // adjudication.md + validation/m49/ledger.json (W9).
+    // Z7 (extreme review): a parameter's binding is its declared NAME, not
+    // its subtree. The entry pre-walk used to bind every identifier under a
+    // parameter node, so a name appearing only in a parameter's TYPE (or
+    // default value position) shadowed the real file-level value for the
+    // whole function (`s: struct { Flag: u8 }` swallowed `_ = Flag`;
+    // `x: T` swallowed the comptime type use; `x: u32 = Def` swallowed the
+    // default-value read). Probe-pinned on synthetics; both sides.
+    const bindParamName = (node: Node, frame: ScopeFrame): void => {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "identifier") {
+          if (c.text !== "_") frame.names.add(c.text)
+          return
+        }
+      }
+      // Defensive fallback (every valid parameter has a name): first
+      // identifier anywhere under the node.
+      const any = this.anyChild(node, (c) => c.type === "identifier")
+      if (any && any.text !== "_") frame.names.add(any.text)
+    }
+    const bindIdentifiersUnder = (node: Node, frame: ScopeFrame): void => {
+      const walk: Node[] = [node]
+      while (walk.length > 0) {
+        const m = walk.pop()!
+        // Never descend into nested executable/code bodies for bindings —
+        // their names belong to inner scopes (collected when visited), and
+        // never into call/composite arguments (those read).
+        //
+        // F6 audit: this list named `composite_literal` / `func_literal` —
+        // rust/go vocabulary that cannot occur in tree-sitter-zig, so neither
+        // stop could ever fire. They are removed; the live stops
+        // (`call_expression`, `block`, `block_expression`) are unchanged, so
+        // this is a pure dead-code removal.
+        if (
+          m !== node &&
+          (m.type === "call_expression" || m.type === "block" ||
+            m.type === "block_expression")
+        ) {
+          continue
+        }
+        if (m.type === "identifier" && m.text !== "_") frame.names.add(m.text)
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) walk.push(c)
+        }
+      }
+    }
+    // A defining occurrence never reads: the first identifier child of a
+    // variable_declaration (`const MAX = ..`, `x = ..` LHS) or of an entity
+    // item (fn/struct/enum/mod/type names).
+    const isDefiningOccurrence = (node: Node): boolean => {
+      const p = node.parent
+      if (!p) return false
+      if (p.type === "variable_declaration") {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c && c.type === "identifier") {
+            return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+          }
+        }
+        return false
+      }
+      // Error sets declare EVERY direct member (`error{ A, B }`) — unlike
+      // single-name items, there is no first-only rule here.
+      if (p.type === "error_set_declaration" && node.type === "identifier") return true
+      // F6 audit: `struct_item` / `enum_item` / `union_item` / `type_item` /
+      // `mod_item` / `package_clause` are rust/go node names — none exists in
+      // tree-sitter-zig, so those six disjuncts could never fire, and the
+      // sibling `type_identifier` / `field_identifier` child checks could never
+      // match either (zig spells every one of these `identifier`). The real
+      // zig declaring forms are all covered without them: a `const X = struct
+      // {...}` / `const T = u32` name is an `identifier` child of
+      // `variable_declaration` (handled above); container members are
+      // `container_field`; error-set members are handled above; fn/test names
+      // are `function_declaration` / `test_declaration`.
+      if (
+        p.type === "function_declaration" || p.type === "test_declaration" ||
+        p.type === "container_field" || p.type === "error_set_declaration"
+      ) {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c && c.type === "identifier") {
+            return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+          }
+        }
+      }
+      return false
+    }
+    const isCallCallee = (node: Node): boolean => {
+      // The callee is namedChild(0) of the call (identifier, field or
+      // generic/builtin wrapper): anything under it is the callee subtree.
+      let top: Node = node
+      let p: Node | null = node.parent
+      while (p && p.type !== "call_expression" && p.type !== "block" && p.type !== "function_declaration") {
+        top = p
+        p = p.parent
+      }
+      if (!p || p.type !== "call_expression") return false
+      const first = p.namedChildCount > 0 ? p.namedChild(0) : null
+      return !!first && top.startIndex >= first.startIndex && top.endIndex <= first.endIndex
+    }
+    const stack: Array<{ node: Node; exit: boolean; pushed: boolean }> = [{ node: rootNode, exit: false, pushed: false }]
+    while (stack.length > 0) {
+      const { node, exit, pushed } = stack.pop()!
+      if (exit) {
+        if (pushed) scopeStack.pop()
+        continue
+      }
+      const t = node.type
+      let pushedScope = false
+      if (t === "function_declaration") {
+        // Parameters bind at entry (identifiers in parameter nodes; type
+        // positions are type_identifier-typed and auto-skip).
+        const frame: ScopeFrame = { names: new Set<string>(), fnName: null }
+        const params: Node[] = [node]
+        while (params.length > 0) {
+          const m = params.pop()!
+          if (m.type !== "function_declaration" || m === node) {
+            if (m.type === "parameter") bindParamName(m, frame)
+            for (let i = m.namedChildCount - 1; i >= 0; i--) {
+              const c = m.namedChild(i)
+              // Do not descend into the body here (it gets its own scope
+              // frames as the walk continues); do not cross nested items.
+              if (c && c.type !== "block" && c.type !== "block_expression" && c.type !== "function_declaration") params.push(c)
+            }
+          }
+        }
+        const nm = this.anyChild(node, (c) => c.type === "identifier")
+        frame.fnName = nm ? nm.text : null
+        scopeStack.push(frame)
+        pushedScope = true
+      } else if (t === "block" || t === "block_expression") {
+        scopeStack.push({ names: new Set<string>(), fnName: null })
+        pushedScope = true
+      } else if (t === "switch_case") {
+        // Z6 (extreme review): payload captures are scoped to their own
+        // switch arm — binding them into the enclosing block/function frame
+        // leaked the capture past the arm (a post-switch genuine read of a
+        // same-named file value was swallowed) and left file-scope switches
+        // with no frame at all (a global capture name emitted a junk bare
+        // read). The case frame is empty at entry so arm PATTERNS (walked
+        // before the payload binds) still resolve outward; the payload
+        // binds into this frame and the arm body reads it; the frame pops
+        // at case exit. if/while/for/catch payloads keep the enclosing
+        // binding (their else/continuation arms share the construct — a
+        // documented single-pass boundary, see Z10).
+        scopeStack.push({ names: new Set<string>(), fnName: null })
+        pushedScope = true
+      } else if (t === "payload") {
+        // Capture bindings (`|x|`, `|*x|`, `|a, b|`) bind in the current
+        // (innermost) scope.
+        const top = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
+        if (top) bindIdentifiersUnder(node, top)
+      } else if (t === "variable_declaration") {
+        // LHS/first-identifier bindings (order-independent within the
+        // statement: bind at the declaration node before descending, so no
+        // read can leak through ordering). C6: ONLY `var`/`const`
+        // declarations bind — a plain assignment (`g = v`, same node type
+        // per ZGD1) WRITES a global; binding it would swallow later genuine
+        // reads of that global.
+        const top = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null
+        if (top && (this.hasToken(node, "var") || this.hasToken(node, "const"))) {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier") {
+              if (c.text !== "_") top.names.add(c.text)
+              break
+            }
+            break
+          }
+        }
+      } else if (t === "identifier") {
+        const name = node.text
+        const p = node.parent
+        // Error-type leaf rule (mirrors the zig oracle rod for rod): an
+        // enum member resolves BY NAME only as the leaf of an `error.X`
+        // occurrence that is a VALUE position — a parameter's error type,
+        // or a container field's error type, is a declared-type fact, not
+        // a read. Bare enum-member names never resolve in Zig (`red` alone
+        // is invalid; switch patterns are enum literals), so without this
+        // gate every same-named type/field identifier would emit junk.
+        let inError = false
+        if (p && p.type === "error_type" && p.namedChildCount > 0) {
+          const last = p.namedChild(p.namedChildCount - 1)
+          if (last && last.startIndex === node.startIndex && last.endIndex === node.endIndex) {
+            let q: Node | null = p.parent
+            let typePos = false
+            while (q) {
+              if (q.type === "parameter" || q.type === "container_field") { typePos = true; break }
+              if (
+                q.type === "variable_declaration" || q.type === "arguments" ||
+                q.type === "return_expression" || q.type === "call_expression" ||
+                q.type === "function_declaration" || q.type === "block" ||
+                q.type === "block_expression"
+              ) break
+              q = q.parent
+            }
+            if (!typePos) inError = true
+          }
+        }
+        if (
+          name && name !== "_" && !name.startsWith("$") &&
+          !isDefiningOccurrence(node) &&
+          !isCallCallee(node) &&
+          !(p && p.type === "field_expression") &&
+          // F6 audit: the former `label_name` / `continue_label` disjuncts are
+          // rust vocabulary — tree-sitter-zig labels are `block_label` /
+          // `break_label` (both live here) and a `continue :outer` label is an
+          // anonymous token with no identifier child to suppress.
+          !((p && p.type === "labeled_statement") ||
+            (p && p.type === "block_label") || (p && p.type === "break_label")) &&
+          !isShadowed(name) &&
+          (fileValues.has(name) || (inError && enumMemberNames.has(name)))
+        ) {
+          let fnName: string | null = null
+          for (let i = scopeStack.length - 1; i >= 0; i--) {
+            if (scopeStack[i].fnName) {
+              fnName = scopeStack[i].fnName
+              break
+            }
+          }
+          const src = fnName ?? "(global)"
+          const key = `${src}::uses::${name}`
+          if (!emitted.has(key)) {
+            emitted.add(key)
+            relationships.push({
+              source: src,
+              target: name,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 1.0,
+              metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+            })
+          }
+        }
+      }
+      stack.push({ node, exit: true, pushed: pushedScope })
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, exit: false, pushed: false })
+      }
+    }
+  }
+
+  // F6 audit — REMOVED: `hasZigQualifiedAncestor`. Its only `true` return was
+  // `cur.type === "qualified_type"`, and tree-sitter-zig has no such node (a
+  // qualified type `std.mem.Allocator` is a nested `field_expression`,
+  // probe-verified), so the function returned false for every input and the
+  // `!this.hasZigQualifiedAncestor(node)` guard it fed was a no-op. Its
+  // boundary names were equally dead (`field_declaration`, `composite_literal`,
+  // `assignment_statement` are rust/go names; zig uses `container_field`,
+  // `struct_initializer`, `variable_declaration`). The intended suppression of
+  // type-position reads is already done by the direct `field_expression`
+  // parent check at the call site; re-pointing this at `field_expression`
+  // would have dropped genuine receiver reads instead.
 
   /** Builtin @-prefixed calls and generic type applications are not user
    *  call targets. Returns the leaf name for a real user call site, else

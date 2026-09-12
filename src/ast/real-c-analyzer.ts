@@ -129,6 +129,13 @@ class CScopeManager {
 export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // 1. ISOLATED STATE (Thread-Safe)
+    // HC5 (deepest review): the CGD19 per-ERROR-span memo is instance state
+    // keyed by span startIndex — WITHOUT this clear, a reused instance
+    // (differential lanes, F4 runs, batch indexing) reuses file A's verdict
+    // for file B's same-offset ERROR span and silently drops B's legitimate
+    // declarations (probe: file-A glue@0/14 suppresses file-B clean@24).
+    // Fresh instances (engine per-file path) were never affected.
+    this.cgd19HeaderIdx.clear();
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -225,7 +232,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             return false
           })()
-          if (p && (!inFn || isFnDefName) && this.isDeclarationLikeIdentifier(n) && !this.isDirectiveConditionText(n)) {
+          // HC6 (deepest review): parameter names are never file-scope
+          // declarations — `int f(int count);` admitted `count` into
+          // declaredNames, fabricating a dangling `uses -> count` for any
+          // later read (the oracle's isFunctionLocal already excludes
+          // parameter ancestry, so this also restores mirror parity).
+          if (p && (!inFn || isFnDefName) && this.isDeclarationLikeIdentifier(n) && !this.isDirectiveConditionText(n) && !this.isInsideParameterList(n)) {
             // Prototype names declare even inside ERROR-glued spans
             // (CGD19 scope refinement); the glue-name test below handles
             // bare-fd artifacts.
@@ -968,6 +980,42 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // synthetic scope name "global" — `global contains core_init` would be a
     // dangling edge (no symbol named `global` exists) and pollutes the graph,
     // matching the Java family ontology where contains is container→member.
+    //
+    // HC2 (holy-c second review): merge same-entity file-scope duplicates —
+    // tentative definitions (`int x; int x;`), extern+definition pairs, and
+    // prototype+definition pairs (`int f(int); int f(int){...}`) each emitted
+    // one symbol PER OCCURRENCE (the prototype case even double-exported).
+    // In one TU these are a single entity: keep the definition (a Function
+    // without isDeclaration, a Variable with an initializer is still just a
+    // Variable — first occurrence wins there), else the first occurrence.
+    // Scoped/owned symbols (fields, members) are a different namespace and
+    // never merge; cross-kind collisions (illegal C) are left alone.
+    {
+      const best = new Map<string, number>()
+      const drop = new Set<number>()
+      const isDefinition = (s: ASTEngine.UniversalSymbol): boolean =>
+        !(s.metadata as any)?.isDeclaration
+      for (let i = 0; i < symbols.length; i++) {
+        const s = symbols[i]
+        if (!s || (s as any).ownerName || s.scope !== "global") continue
+        if (s.kind !== ASTEngine.SymbolKind.Function && s.kind !== ASTEngine.SymbolKind.Variable) continue
+        const key = `${s.kind}::${s.name}`
+        const prev = best.get(key)
+        if (prev === undefined) {
+          best.set(key, i)
+        } else if (isDefinition(s) && !isDefinition(symbols[prev])) {
+          drop.add(prev)
+          best.set(key, i)
+        } else {
+          drop.add(i)
+        }
+      }
+      if (drop.size > 0) {
+        const kept = symbols.filter((_, i) => !drop.has(i))
+        symbols.length = 0
+        symbols.push(...kept)
+      }
+    }
     for (const s of symbols) {
       if (!s.ownerName) continue
       relationships.push({
@@ -1152,6 +1200,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (pList) {
       for (let i = 0; i < pList.namedChildCount; i++) {
         const paramNode = pList.namedChild(i)
+        // HC3 (holy-c second review): K&R / untyped parameter names parse
+        // as bare identifiers (`int add(a, b)`), which the scan skipped —
+        // the params payload lost them (names also feed functionLocals via
+        // the K&R declaration path, so reads were already correct; this
+        // completes the payload with an honest `any` type).
+        if (paramNode && paramNode.type === "identifier") {
+          if (paramNode.text.trim()) parameters.push({ name: paramNode.text, type: "any" })
+          continue
+        }
         if (paramNode && (paramNode.type === "parameter_declaration" || paramNode.type === "variadic_parameter")) {
           if (paramNode.type === "variadic_parameter") {
             parameters.push({ name: "...", type: "variadic", modifiers: [] })
@@ -1555,7 +1612,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               kind: ASTEngine.SymbolKind.Function,
               range: this.nodeToRange(node),
               scope: isGlobal ? "global" : scope,
-              visibility: "public",
+              // HC1 (holy-c second review): the prototype branch hardcoded
+              // public — a `static` prototype leaked as public API AND into
+              // the export list, while a static DEFINITION is private.
+              visibility: isStatic ? "private" : "public",
               metadata: { isDeclaration: true, cSpecific: true, isConditional },
             })
           } else {
@@ -1859,6 +1919,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.cgd19HeaderIdx.set(key, headerIdx as number)
     }
     return (headerIdx as number) >= 0 && node.startIndex > (headerIdx as number)
+  }
+
+  // HC6: is this identifier inside a parameter list? Parameter names
+  // (prototype or definition) are bound by the function, never file-scope
+  // declarations — they must not enter the declaredNames pre-pass.
+  private isInsideParameterList(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t === "parameter_list" || t === "parameter_declaration") return true
+      if (t === "function_definition" || t === "declaration") return false
+      cur = cur.parent
+    }
+    return false
   }
 
   // CGD11: preprocessor CONDITION text vs conditional CODE. An identifier
@@ -2297,30 +2371,6 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const arr: string[] = []
     for (const f in frameworks) arr.push(f)
     return arr
-  }
-
-  private injectPhantomSymbols(symbols: ASTEngine.UniversalSymbol[], frameworks: string[]): void {
-    if (!inArray(frameworks, "GLib") && !inArray(frameworks, "GTK")) return
-
-    const types: ASTEngine.UniversalSymbol[] = []
-    for (let i = 0; i < symbols.length; i++) {
-      if (symbols[i].kind === ASTEngine.SymbolKind.Type && symbols[i].name.endsWith("Class")) {
-        types.push(symbols[i])
-      }
-    }
-    for (let idx = 0; idx < types.length; idx++) {
-      const symbol = types[idx]
-      symbols.push({
-        name: `${symbol.name.replace("Class", "").toLowerCase()}_get_type`,
-        kind: ASTEngine.SymbolKind.Function,
-        scope: "global",
-        visibility: "public",
-        range: symbol.range,
-        parameters: [],
-        returnType: "GType",
-        metadata: { isPhantom: true },
-      })
-    }
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
