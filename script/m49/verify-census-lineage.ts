@@ -92,14 +92,45 @@ function check(label: string, condition: boolean): void {
   else { failed++; failures.push(label) }
 }
 
+/**
+ * Emit the three anchoring rules PER ROW rather than as one aggregate.
+ * Granularity is the point: a gate whose check COUNT can quietly fall is a gate
+ * whose coverage can quietly fall, so every row reports its own two rules and a
+ * dataset that loses rows loses checks with it.
+ */
+function anchorAll(
+  prefix: string,
+  rows: { file: string; line: number; source: string }[],
+  linesOf: LineLookup,
+): string[] {
+  const violations: string[] = []
+  const cache = new Map<string, string[] | null>()
+  for (const row of rows) {
+    const where = `${prefix} ${row.file}:${row.line}`
+    if (!cache.has(row.file)) cache.set(row.file, linesOf(row.file))
+    const lines = cache.get(row.file)
+    if (!lines) {
+      check(`${where} names a file present in HEAD`, false)
+      violations.push(where)
+      continue
+    }
+    const inRange = Number.isInteger(row.line) && row.line >= 1 && row.line <= lines.length
+    check(`${where} is inside its HEAD blob (${lines.length} lines)`, inRange)
+    if (!inRange) { violations.push(where); continue }
+    const contains = (lines[row.line - 1] ?? "").includes(row.source)
+    check(`${where} line contains its recorded source ${row.source}`, contains)
+    if (!contains) violations.push(where)
+  }
+  return violations
+}
+
 function main(): void {
   // ── Census ────────────────────────────────────────────────────────────────
   if (!existsSync(CENSUS_PATH)) throw new Error(`census not found: ${CENSUS_PATH}`)
   const census = JSON.parse(readFileSync(CENSUS_PATH, "utf8")) as { perFile?: { file: string; usages: CensusEntry[] }[] }
   const entries = (census.perFile ?? []).flatMap((f) => f.usages ?? [])
   check("census has entries to anchor", entries.length > 0)
-  const censusViolations = anchorViolations(entries, headBlobLines)
-  for (const v of censusViolations.slice(0, 6)) check(`census anchor: ${v}`, false)
+  const censusViolations = anchorAll("census", entries, headBlobLines)
   check(`census is anchored to committed blobs (${entries.length} entries, ${new Set(entries.map((e) => e.file)).size} files)`,
     censusViolations.length === 0)
 
@@ -109,8 +140,7 @@ function main(): void {
     : { entries: [] }
   const rows = (register.entries ?? []).filter((r) => typeof r.source === "string") as { file: string; line: number; source: string }[]
   check("register has sourced rows to anchor", rows.length > 0)
-  const registerViolations = anchorViolations(rows, headBlobLines)
-  for (const v of registerViolations.slice(0, 6)) check(`register anchor: ${v}`, false)
+  const registerViolations = anchorAll("register", rows, headBlobLines)
   check(`register is anchored to committed blobs (${rows.length} rows, ${new Set(rows.map((r) => r.file)).size} files)`,
     registerViolations.length === 0)
 
