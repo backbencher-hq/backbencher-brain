@@ -67,9 +67,13 @@ const CORPUS_ROOT = "$HOME/fixtures/repositories"
 // produced it matches: corpus pins + the analyzer/oracle source that derived
 // it. Different state ⇒ a different journal file ⇒ nothing to resume.
 const LANE_JOURNAL_PREFIX = "/tmp/m14-f5-lane-journal"
-function sweepStateKey(repoPins: Record<string, string>): string {
+function sweepStateKey(repoPins: Record<string, string>, sampling: string): string {
   const h = createHash("sha256")
   for (const repo of Object.keys(repoPins).sort()) h.update(`${repo}@${repoPins[repo]}\n`)
+  // Sampling is part of the state: a 3-file row is NOT a 60-file row. Without
+  // this, a crashed 3-file run's journal would be resumed by the next
+  // canonical 60-file sweep and shrink the measurement silently.
+  h.update(sampling + "\n")
   const srcDir = path.join(ROOT, "src", "ast")
   const files = fs.readdirSync(srcDir).filter((f: string) => f.endsWith(".ts")).sort()
   for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
@@ -2462,8 +2466,18 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // callee: simple_identifier / identifier / navigation_expression
       const callee = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier" || c.type === "navigation_expression")
       if (callee && callee.type === "navigation_expression") {
+        // Member call -> leaf, WITHOUT the builtin filter. The analyzer filters
+        // BUILTIN_BARE_CALLS for BARE identifier invocations only ("Member calls
+        // like `users.map` are NOT filtered - only bare identifier invocations
+        // of these names"), so a receiver-qualified leaf that shares a stdlib
+        // name is a REAL call. Filtering here under-derived truth and reported
+        // genuine analyzer edges as fabrications: swift-nio's
+        // `handler.assert(callbackCount: 0, cancelCount: 0)` on the mock handler
+        // (F5 2026-09-12, unexplained=1, while `contains
+        // MockScheduledCallbackHandler -> assert` proves the type DECLARES that
+        // method). The bare branch below keeps the filter.
         const leaf = navLeaf(callee)
-        if (leaf && leaf !== "$0" && !SWIFT_BUILTINS.has(leaf)) push("calls", leaf)
+        if (leaf && leaf !== "$0") push("calls", leaf)
       } else if (callee) {
         const target = callee.text
         // SWIFTD16 mirror: XCTest assertion functions (capitalized free
@@ -5632,7 +5646,7 @@ async function main() {
   // lanes), and the parent — which measures nothing itself — resumes every
   // lane from the journal and owns the evidence write and the baseline gate.
   // ---------------------------------------------------------------------
-  const stateKey = sweepStateKey(repoPins)
+  const stateKey = sweepStateKey(repoPins, `${SAMPLE_PER_LANG}/lang ${lanes.map(l => `${l.repo}:${l.lang}`).sort().join(",")}`)
   const LANE_JOURNAL = `${LANE_JOURNAL_PREFIX}-${stateKey}.json`
   // Canonical sweeps only: a --repo probe routes EVERY language at one repo,
   // where most languages legitimately have no files (`files=0 SKIPPED` — not
