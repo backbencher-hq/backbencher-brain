@@ -773,6 +773,64 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         ) push("calls", targetName)
       }
     }
+    // M49 #744 mirror (web fix wave, java #739 family contract): member
+    // READ truth with the analyzer's exact gates — not a call callee, not
+    // an assignment LHS (JSD1 write), emits EVERY chain segment INCLUDING
+    // the root identifier (the pre-fix parity blind spot: the lane never
+    // audited uses at all, so the dropped root was invisible).
+    if (t === "member_expression") {
+      const p7 = n.parent
+      const calleeFn = p7?.type === "call_expression" ? p7.childForFieldName("function") : null
+      const isCallee = !!calleeFn && calleeFn.id === n.id
+      let isWrite = false
+      if (p7?.type === "assignment_expression" || p7?.type === "augmented_assignment_expression") {
+        const lhs = p7.childForFieldName("left") ?? p7.namedChild(0)
+        isWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      }
+      if (!isCallee && !isWrite) {
+        // flatten the chain: segments + root
+        const parts: string[] = []
+        let cur: any = n
+        while (cur && cur.type === "member_expression") {
+          const prop = cur.childForFieldName("property")
+          if (prop) parts.unshift(prop.text)
+          cur = cur.childForFieldName("object")
+        }
+        const head = cur ? cur.text : ""
+        for (const seg of parts) push("uses", seg)
+        if (head && head !== "this" && head !== "super") push("uses", head)
+      }
+    }
+    // M49 #744 mirror: BARE identifier reads (return config; / if (flag)) —
+    // identical gate set to the analyzer: not a call callee, not an
+    // assignment LHS, not a declaration name (function/variable/class),
+    // not this/super/undefined/arguments, not object keys (pair/pair_pattern
+    // key), not member parts, not labels, not shorthand properties.
+    if (t === "identifier") {
+      const txt = n.text
+      if (txt !== "this" && txt !== "super" && txt !== "undefined" && txt !== "arguments") {
+        const p7 = n.parent
+        const calleeFn = p7?.type === "call_expression" ? p7.childForFieldName("function") : null
+        const isCallee = !!calleeFn && calleeFn.id === n.id
+        let isWrite2 = false
+        if (p7?.type === "assignment_expression" || p7?.type === "augmented_assignment_expression") {
+          const lhs2 = p7.childForFieldName("left") ?? p7.namedChild(0)
+          isWrite2 = !!lhs2 && lhs2.id === n.id
+        }
+        const isDeclName = (p7?.type === "variable_declarator" && p7.childForFieldName("name")?.id === n.id) ||
+          p7?.type === "function_declaration" || p7?.type === "function_expression" ||
+          p7?.type === "generator_function_declaration" || p7?.type === "method_definition" ||
+          p7?.type === "class_declaration" || p7?.type === "class"
+        const isPropKey = (p7?.type === "pair" || p7?.type === "pair_pattern") && p7.childForFieldName("key")?.id === n.id
+        const isMemberPart = p7?.type === "member_expression"
+        const isPropName = p7?.type === "property_signature" || p7?.type === "property_identifier"
+        const isLabel = p7?.type === "labeled_statement"
+        const isShorthandProp = p7?.type === "shorthand_property_identifier"
+        if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp) {
+          push("uses", txt)
+        }
+      }
+    }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
   }
   return edges
@@ -5776,7 +5834,7 @@ async function main() {
       // call truth, so including calls there would flag every real call edge
       // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
       // USES truth as well (write-gated), so c joins the uses-audited set.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

@@ -2317,15 +2317,34 @@ class TypeScriptAnalysisRunner {
       if (valueNode?.type === "arrow_function" || valueNode?.type === "function") {
         kind = ASTEngine.SymbolKind.Function
         params = this.extractParameters(valueNode)
-        returnType = this.extractReturnType(valueNode)
-
-        // Check for async
+        // M49 #757 (TS self-audit): async arrows reported returnType "void" —
+        // actively misleading for a value-returning function. TS semantics:
+        // an async function ALWAYS returns a Promise; an expression-bodied
+        // arrow has no return statements for the block walker, so infer the
+        // body expression directly (T3's sync-arrow precedent, now actually
+        // wired for the expression form the T3 probe missed). Explicit
+        // annotations stay authoritative and are never re-wrapped.
+        let isAsyncArrow = false
         for (let j = 0; j < valueNode.childCount; j++) {
           const child = valueNode.child(j)
           if (child && (child.type === "async" || child.text === "async")) {
-            isAsync = true
+            isAsyncArrow = true
             break
           }
+        }
+        isAsync = isAsyncArrow
+        const explicitRet = valueNode.childForFieldName("return_type")
+        const fnBody = valueNode.childForFieldName("body")
+        const isExprBody = !!fnBody && fnBody.type !== "statement_block"
+        if (explicitRet) {
+          returnType = stripLeadingColon(explicitRet.text)
+        } else if (isExprBody) {
+          const info = this.typeInference.inferFromInitializer(fnBody!)
+          const inner = info.type !== "unknown" ? info.type : "void"
+          returnType = isAsyncArrow ? `Promise<${inner}>` : inner
+        } else {
+          returnType = this.extractReturnType(valueNode)
+          if (isAsyncArrow) returnType = `Promise<${returnType}>`
         }
       } else {
         // Infer type from initializer
@@ -3872,6 +3891,67 @@ class TypeScriptAnalysisRunner {
         }
       }
     }
+
+    // M49 #759 (svelte-wave verification, Spring.subscribe -> Readable.subscribe):
+    // interface-heritage member overrides emitted NOTHING — the class pass
+    // above requires metadata.isOverride (an `override` keyword concept) and
+    // a Class-kind parent, so interface_declaration members were invisible.
+    // Structural tier, in-file only, transitive BFS mirroring the oracle's
+    // truth walk (deriveTreeEdges depth-10): a member declared in the
+    // interface AND anywhere up the heritage chain overrides. Honest
+    // abstention: if the interface overloads a name (same name declared
+    // twice), no pairing — the oracle's signature gate would decide and the
+    // analyzer carries no textual-signature truth.
+    const ifaceMembers = new Map<string, ASTEngine.UniversalSymbol[]>()
+    const ifaceByName = new Map<string, ASTEngine.UniversalSymbol>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Interface) ifaceByName.set(s.name, s)
+      if (s.ownerKind === ASTEngine.SymbolKind.Interface &&
+          (s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Property)) {
+        const list = ifaceMembers.get(s.ownerName!) ?? []
+        list.push(s)
+        ifaceMembers.set(s.ownerName!, list)
+      }
+    }
+    for (const iface of symbols) {
+      if (iface.kind !== ASTEngine.SymbolKind.Interface) continue
+      const bases = iface.metadata?.extends as string[] | undefined
+      if (!bases || bases.length === 0) continue
+      const members = ifaceMembers.get(iface.name) ?? []
+      if (members.length === 0) continue
+      // Overload abstention: a name declared twice in this interface cannot
+      // be paired name-only.
+      const nameCounts = new Map<string, number>()
+      for (const m of members) nameCounts.set(m.name, (nameCounts.get(m.name) ?? 0) + 1)
+      const seenBase = new Set<string>()
+      const queue: string[] = [...bases]
+      let depth = 0
+      while (queue.length && depth < 10) {
+        depth++
+        const base = queue.shift()!
+        if (seenBase.has(base)) continue
+        seenBase.add(base)
+        const baseDecl = ifaceByName.get(base)
+        if (!baseDecl) continue // external/unresolved base: the analyzer's job, not in-file truth
+        const baseMembers = ifaceMembers.get(base) ?? []
+        for (const m of members) {
+          if ((nameCounts.get(m.name) ?? 0) > 1) continue
+          if (baseMembers.some((bm) => bm.name === m.name)) {
+            relationships.push({
+              source: `${iface.name}.${m.name}`,
+              target: `${base}.${m.name}`,
+              type: ASTEngine.RelationshipType.Overrides,
+              confidence: 0.95,
+              metadata: {
+                baseInterface: base,
+              },
+            })
+          }
+        }
+        const baseBases = baseDecl.metadata?.extends as string[] | undefined
+        if (baseBases) queue.push(...baseBases)
+      }
+    }
   }
 
   private extractImportRelationships(
@@ -4286,7 +4366,16 @@ class TypeScriptAnalysisRunner {
     for (let i = 0; i < clause.namedChildCount; i++) {
       const type = clause.namedChild(i)
       if (!type || type.type === "type_arguments") continue
-      types.push(type.text)
+      // M49 #759: `extends Readable<T>` parses with the type_arguments as a
+      // SIBLING subtree folded into the text — pushing it raw emitted
+      // extends Spring->"Readable<T>" while the oracle (and every consumer)
+      // resolves the clean head. Strip args to the type head, then take the
+      // leaf segment (TSD3 convention: TS heritage targets are leaves).
+      let t = type.text
+      const lt = t.indexOf("<")
+      if (lt !== -1) t = t.slice(0, lt).trim()
+      const dot = t.lastIndexOf(".")
+      types.push(dot !== -1 ? t.slice(dot + 1) : t)
     }
 
     return types.length > 0 ? types : undefined
@@ -4605,6 +4694,28 @@ class TypeScriptAnalysisRunner {
       } else if (n.type === "identifier") {
         if (n.text === "prompt" || n.text === "readLine") {
           sources.push({ type: "user_input", snippet: n.text })
+        }
+      } else if (n.type === "subscript_expression") {
+        // M49 #757-2: bracket-form access `req['body']` never produced a
+        // taint source (neither dotted nor pre-T9 substring form matched).
+        // Same receiver-leaf contract as the dotted branch: exact root +
+        // exact sensitive leaf; the bracket index must be a string literal.
+        const obj = n.childForFieldName("object")
+        const idx = n.childForFieldName("index")
+        if (obj && idx && idx.type === "string") {
+          const segs: string[] = []
+          for (const part of obj.text.split(".")) {
+            const t = part.trim()
+            if (t) segs.push(t)
+          }
+          segs.push(stringContent(idx))
+          const isReqInput =
+            segs.length >= 2 && segs[0] === "req" &&
+            (segs[1] === "body" || segs[1] === "query" || segs[1] === "params")
+          const isEnvRead = segs.length >= 2 && segs[0] === "process" && segs[1] === "env"
+          if (isReqInput || isEnvRead) {
+            sources.push({ type: "user_input", snippet: n.text })
+          }
         }
       }
       for (let i = 0; i < n.childCount; i++) {

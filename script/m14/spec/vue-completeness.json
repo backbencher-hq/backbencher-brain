@@ -207,6 +207,14 @@
         "question": "Deeper review D3: @Dec export default bailed on the leading decorator node, losing component ownership.",
         "decision": "Skip decorator-type leading siblings in the structural check (same treatment as comments). Fixture vue/decorated-default (ownerName pin); mutant vue/decorated-default-revert.",
         "date": "2026-09-11"
+      },
+      {
+        "id": "D10",
+        "node_type": "Options-API prop-default factory body calls (#762)",
+        "status": "RULED",
+        "question": "vue-element-admin MarkdownEditor deep-diff MISSING: member calls inside prop default() factory bodies (Math.random(), .toFixed(0)) emitted no calls edges. Fix the walk or verify already-fixed?",
+        "decision": "RULED - VERIFIED ALREADY-FIXED at HEAD (V1/V2 embedded-script walk broadening covers the factory body): probe of the exact corpus expression emits default->toFixed + default->random; control method call (ping->helper) unchanged. Pinned by vue/prop-default-factory-calls so the contract cannot silently regress; mutant vue/prop-default-call-drop re-drops the edges and is caught.",
+        "date": "2026-09-12"
       }
     ]
   }

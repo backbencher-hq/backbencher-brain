@@ -2532,6 +2532,72 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ((i as any).module === "./m2" ? { ...i, isDefault: true } : i)) }),
   },
   {
+    id: "javascript/drop-chain-root-uses",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M49 #744 regression: reverts the chain-root emission — config.inner.deeper.leaf drops uses config again (chain-root-and-bare-reads pin catches it)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.metadata?.chainRoot)) }),
+  },
+  {
+    id: "javascript/drop-bare-read-uses",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M49 #744 regression: reverts the bare identifier read emission — return config emits nothing again (chain-root-and-bare-reads pin catches it)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.metadata?.bareRead)) }),
+  },
+  {
+    id: "javascript/accessor-pair-collapse",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M49 #758 B5 regression: collapses the get/set pair back to one slot — the setter symbol disappears and the getter's body calls (val->track) die with it (accessor-slot-semantics pin catches both)",
+    transform: r => {
+      const syms = (r.symbols ?? []).filter((s: any) => !(s.name === "val" && s.kind === "property" && s.metadata?.accessorKind === "set"))
+      return { ...r, symbols: syms, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && x.target === "track")) }
+    },
+  },
+  {
+    id: "javascript/data-slot-zombie",
+    language: "javascript",
+    defectClass: "fabrication",
+    description: "M49 #758 B5 regression: resurrects the accessor half a data member replaced — Overwrite.x property reappears (forbidSymbols catches it)",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "x", kind: "property" }] }),
+  },
+  {
+    id: "javascript/static-override-fabrication",
+    language: "javascript",
+    defectClass: "fabrication",
+    description: "M49 #758 B4 regression: re-fabricates static→instance overrides — Sub2.greet2->Base2.greet2 reappears (forbidRelationships catches it)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", from: "Sub2.greet2", target: "Base2.greet2", source: "Sub2.greet2", confidence: 0.95 }] }),
+  },
+  {
+    id: "typescript/async-promise-void",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M49 #757 regression: async arrows report void again — Promise wrapping and expression inference stripped from every function returnType carrying Promise<...> (f1/f3/f4 pins catch it, including the explicit-annotation loss)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.kind === "function" && typeof s.returnType === "string" && s.returnType.startsWith("Promise<") ? { ...s, returnType: "void" } : s) }),
+  },
+  {
+    id: "typescript/bracket-taint-drop",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "M49 #757-2 regression: bracket-form taint sources invisible again — subscript snippets dropped from taintSources (b1 pin catches it)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => s.taintSources ? { ...s, taintSources: s.taintSources.filter((t: any) => !String(t.snippet ?? t).includes("[")) } : s) }),
+  },
+  {
+    id: "typescript/iface-override-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M49 #759 regression: interface-heritage overrides vanish again — baseInterface-keyed edges dropped (Spring.subscribe pin catches it)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.metadata?.baseInterface)) }),
+  },
+  {
+    id: "vue/prop-default-call-drop",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "M49 #762 regression: Options-API prop-default factory body calls invisible again — random/toFixed member-call edges dropped from the embedded script result (prop-default-factory-calls pin catches it)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && (x.target === "random" || x.target === "toFixed"))) }),
+  },
+  {
     id: "swift/guess-at-verified-confidence",
     language: "swift",
     defectClass: "confidence-corruption",
