@@ -1,0 +1,25 @@
+{
+  "issue": "770",
+  "code": "T1",
+  "milestone": "M55",
+  "title": "One identity resolver (Truth Rule 2)",
+  "status": "verified",
+  "passed": 38,
+  "failed": 0,
+  "checks": 38,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "negatives": 0,
+  "currentCommit": "20956efab2af171210101844e43a18870c2dba10",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/src/graph-panel.ts",
+    "src/lsp/graph_request.ts",
+    "ide/vscode/src/identity-label.ts",
+    "script/m55/t1-fixture.ts",
+    "script/m55/verify-identity.ts"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-identity.ts",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-09-12T18:24:25.979Z",
+  "failures": []
+}

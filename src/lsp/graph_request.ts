@@ -146,7 +146,23 @@ async function resolveTraversalRoot(
     return r
   } catch (error) {
     const owner = (deps.resolveMember ?? resolveMemberIdentity)(db, projectId, params.symbol as string, file)
-    if (owner === null) throw error
+    if (owner === null) {
+      // M55.T1 (Truth Rule 2, declared-error half): a genuinely absent symbol is
+      // THIS door's declared error, in this door's language. The engine's
+      // "Symbol '<name>' not found" used to escape verbatim, which contradicted
+      // the transport doc's own prefix contract ("every failure throws with the
+      // `bb/graph:` prefix") — clients that match the prefix to tell a declared
+      // error from a bug could not classify it. Only the not-found shape is
+      // wrapped: any other engine failure is still thrown untouched, because
+      // prefixing a real bug would mislabel it as expected behaviour.
+      const detail = error instanceof Error ? error.message : String(error)
+      if (/^Symbol '.+' not found$/.test(detail)) {
+        throw new GraphRequestError(
+          `bb/graph: symbol '${params.symbol}' not found — no graph exists (declared error; run \`bb index\` or check the name)`,
+        )
+      }
+      throw error
+    }
     const r = await deps.traverse(projectId, owner.name, opts())
     // Declare the resolution in the payload (M55.T1 Truth Rule 2; the
     // record's shape is owned by the identity resolver).
