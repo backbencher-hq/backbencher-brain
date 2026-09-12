@@ -61,16 +61,24 @@ export const IMPACT_BUDGET = {
  *  — those re-root through their OWNING declaration with the U5 rules, never
  *  silently ride a gravity pick. Exported so the bb/graph door shares the
  *  ONE list; drift-gated by the U5 gate's mutant suite. */
-export const IMPACT_TRAVERSABLE_ROOT_TYPES: readonly string[] = [
-  "function",
-  "method",
-  "class",
-  "interface",
-  "trait",
-  "struct",
-  "enum",
-  "macro",
-]
+export const IMPACT_TRAVERSABLE_ROOT_TYPES: readonly string[] = IDENTITY_TRAVERSABLE_TYPES
+
+// M55.T1 (issue #770): the whitelist above and the member-resolution rules
+// below now live in the ONE resolver, `src/lsp/identity.ts`. This module
+// re-exports them under its historical names so every existing caller, gate
+// and mutant anchor keeps working — the DECISION is not duplicated, only its
+// name, and the identity owner is the place to change it.
+import {
+  IDENTITY_TRAVERSABLE_TYPES,
+  memberFileMatches,
+  resolveMemberIdentity as resolveImpactMemberOwner,
+} from "./identity"
+export {
+  memberFileMatches,
+  resolveMemberIdentity as resolveImpactMemberOwner,
+  type MemberIdentityHint as ImpactMemberIdentity,
+  type MemberResolution,
+} from "./identity"
 
 export interface ImpactResult {
   root: { id: string; name: string; file: string }
@@ -98,115 +106,15 @@ export interface ImpactDeps {
   traverse?: typeof graphTraversal
 }
 
-/** The hover's server-resolved member identity (X1 closure, 2026-09-09): a
- *  name plus the DEFINING FILE that disambiguates same-name members. Every
- *  real repo has several `constructor` rows (one per class) — a name-only
- *  member fallback cannot resolve them (found live: the owner's demo repo
- *  has Greeter + Store constructors; rule 1 bailed to the declared error).
- *  The hover's action args already carry the file; the transports just
- *  never passed it through. */
-export interface ImpactMemberIdentity {
-  name: string
-  /** Defining file as the hover carries it (absolute or relative). Matched
-   *  against the stored relative_path component-aligned (stored is a suffix
-   *  of the hint). Optional: absent means the name alone must be unique. */
-  file?: string
-}
+// (The member identity contract and the file-hint matcher are re-exported
+// above from src/lsp/identity.ts — the ONE resolver. Nothing is defined
+// twice: the rules have a single owner, the impact door keeps its names.)
 
-/** Component-aligned suffix match: the stored relative path must be a
- *  path-suffix of the hint ("src/greeter.ts" matches
- *  "/home/u/repo/src/greeter.ts"), never a bare substring. Exported for the
- *  bb/graph door — the hint semantics are ONE decision, shared. */
-export function memberFileMatches(hint: string, stored: string): boolean {
-  const h = hint.replace(/\\/g, "/")
-  const s = stored.replace(/\\/g, "/")
-  if (h === s) return true
-  return h.endsWith("/" + s)
-}
-
-/** The member-resolution fallback (M44.U5, issue #692; disambiguated at the
- *  X1 closure). The engine's root resolver whitelists traversable symbol
- *  types ('function','method','class', ...); an indexed member the whitelist
- *  excludes (a constructor, a plain member) must not die at the impact
- *  door — it roots through its OWNING declaration. Returns the owner row
- *  only when ALL of:
- *    1. the name resolves to stored symbols and the member is UNIQUE —
- *       exactly one row, or several rows disambiguated to exactly one by the
- *       file hint (a same-name member without a hint stays ambiguous:
- *       declared error, never a guessed owner),
- *    2. that symbol's type is outside the engine's traversable whitelist
- *       (otherwise the direct path already handled it),
- *    3. the member has no stored reverse edges of its own (its own impact
- *       set would be non-empty — resolving through the owner then would
- *       DROP real dependencies), and
- *    4. the owner (via owner_symbol_id) exists and is a traversable type.
- *  Any other outcome returns null and the caller keeps the declared error —
- *  a genuinely absent symbol never silently becomes someone else's impact. */
-export function resolveImpactMemberOwner(
-  db: ImpactDb,
-  projectId: string,
-  symbolName: string,
-  fileHint?: string,
-): { id: string; name: string; file: string } | null {
-  try {
-    const TRAVERSABLE = ["function", "method", "class", "interface", "trait", "struct", "enum", "macro"]
-    const memberRows = db
-      .prepare(
-        `SELECT s.id, s.name, s.symbol_type AS symbolType, s.owner_symbol_id AS ownerId,
-                COALESCE(f.relative_path, f.path, '') AS file
-         FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id
-         WHERE s.project_id = ? AND s.name = ?`,
-      )
-      .all(projectId, symbolName) as Array<{ id: string; name: string; symbolType: string; ownerId: string | null; file: string }>
-    // Rule 1: the member must be UNIQUE. Several same-name members (every
-    // real repo's constructors) resolve ONLY through the hover's file hint;
-    // without a hint the name stays ambiguous — declared error, never a
-    // guessed owner. A hint that matches none of the rows is treated as
-    // stale-index noise: a single-row resolution still stands on the
-    // index's own truth.
-    let member = memberRows[0]
-    if (memberRows.length > 1) {
-      if (!fileHint) return null
-      const narrowed = memberRows.filter((r) => memberFileMatches(fileHint, r.file))
-      if (narrowed.length !== 1) return null
-      member = narrowed[0]
-    }
-    if (!member) return null
-    // Rule 2: the direct path handles traversable types — no fallback here.
-    if (TRAVERSABLE.includes(member.symbolType)) return null
-    // Rule 3: the member's OWN reverse edges exist -> its own impact set is
-    // real; resolving through the owner would drop dependencies. Declared
-    // error (unchanged behavior) is the honest answer for that shape.
-    const inbound = db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM brain_relationship
-         WHERE project_id = ? AND target_symbol_id = ?
-           AND relationship_type IN ('calls','instantiates','extends','implements')`,
-      )
-      .get(projectId, member.id) as { c: number }
-    if (typeof inbound?.c === "number" && inbound.c > 0) return null
-    // Rule 4: the owner must exist and be traversable (the cascade needs a
-    // real root; the owner prefix cascade in the engine does the rest).
-    if (!member.ownerId) return null
-    const ownerRows = db
-      .prepare(
-        `SELECT s.id, s.name, s.symbol_type AS symbolType,
-                COALESCE(f.relative_path, f.path, '') AS file
-         FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id
-         WHERE s.project_id = ? AND s.id = ?`,
-      )
-      .all(projectId, member.ownerId) as Array<{ id: string; name: string; symbolType: string; file: string }>
-    if (ownerRows.length !== 1) return null
-    const owner = ownerRows[0]!
-    if (!TRAVERSABLE.includes(owner.symbolType)) return null
-    return { id: owner.id, name: owner.name, file: owner.file }
-  } catch {
-    // Unreadable index: null -> the caller's declared error stands (never a
-    // crash disguised as resolution).
-    return null
-  }
-}
-
+// M55.T1 (issue #770): the member-resolution rules (M44.U5, disambiguated at
+// the M53 X1 closure) now live in src/lsp/identity.ts — the ONE resolver —
+// and are re-exported above as `resolveImpactMemberOwner`. The rules are not
+// duplicated here: this door reads them from that owner, and the identity
+// owner's header carries the full rule list.
 /** The containment rule the engine's caller traversal uses (owner cascade:
  *  a call edge to any nested symbol of X counts as a reverse dependency of
  *  X). Declared here so the total-count query and the differential gate use

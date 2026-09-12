@@ -30,9 +30,12 @@
 //             evidenceClass passes through when stored)
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
-import { resolveImpactMemberOwner, memberFileMatches, IMPACT_TRAVERSABLE_ROOT_TYPES } from "./impact"
+// M55.T1: the graph door reads the ONE identity resolver directly (the same
+// module the impact door re-exports from) — one decision, one owner.
+import { resolveMemberIdentity, memberFileMatches, IDENTITY_TRAVERSABLE_TYPES } from "./identity"
 import type { GraphTraversalResult } from "../intelligence/contracts"
 import { buildGroupedUsages, classifyFileLevel, type GroupedUsages } from "./graph_usages"
+import { memberResolutionRecord } from "./identity"
 
 export const GRAPH_REQUEST_METHOD = "bb/graph"
 // M44.U1 (issue #688): the usages-mode RESPONSE became grouped per symbol
@@ -91,9 +94,9 @@ export function isIndexedWorkspace(db: GraphRequestDb, projectId: string): boole
 export interface GraphRequestDeps {
   /** Traversal engine (injection seam for the mutation suite). */
   traverse: typeof graphTraversal
-  /** Member resolution (injection seam; defaults to the impact owner's
-   *  resolver — the ONE member-fallback decision, reused by both doors). */
-  resolveMember?: typeof resolveImpactMemberOwner
+  /** Member resolution (injection seam; defaults to the ONE identity
+   *  resolver, src/lsp/identity.ts). */
+  resolveMember?: typeof resolveMemberIdentity
 }
 
 /** X1 closure: ONE member-fallback decision for BOTH doors. A member name
@@ -124,15 +127,15 @@ async function resolveTraversalRoot(
     // hinted request whose root lands outside the hint is a silent relabel
     // and is refused (declared error, never a guessed root).
     const rootType = (r.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
-    if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
-      const owner = (deps.resolveMember ?? resolveImpactMemberOwner)(db, projectId, params.symbol as string, file)
+    if (rootType && !IDENTITY_TRAVERSABLE_TYPES.includes(rootType)) {
+      const owner = (deps.resolveMember ?? resolveMemberIdentity)(db, projectId, params.symbol as string, file)
       if (owner === null) {
         throw new GraphRequestError(
           `bb/graph: symbol '${params.symbol}' is not a traversable root (${rootType}) — no graph exists for it (declared error: the symbol was not found as a traversable root)`,
         )
       }
       const rr = await deps.traverse(projectId, owner.name, opts())
-      ;(rr as { resolution?: unknown }).resolution = { through: "owning-declaration", memberName: params.symbol, ownerName: owner.name, ...(file ? { memberFile: file } : {}) }
+      ;(rr as { resolution?: unknown }).resolution = memberResolutionRecord(params.symbol as string, owner.name, file)
       return rr
     }
     if (file && typeof r.root?.file === "string" && r.root.file !== "" && !memberFileMatches(file, r.root.file)) {
@@ -142,12 +145,12 @@ async function resolveTraversalRoot(
     }
     return r
   } catch (error) {
-    const owner = (deps.resolveMember ?? resolveImpactMemberOwner)(db, projectId, params.symbol as string, file)
+    const owner = (deps.resolveMember ?? resolveMemberIdentity)(db, projectId, params.symbol as string, file)
     if (owner === null) throw error
     const r = await deps.traverse(projectId, owner.name, opts())
-    // Declare the resolution in the payload (same rule as impact): the UI
-    // states what it rooted at — never a silent relabel.
-    ;(r as { resolution?: unknown }).resolution = { through: "owning-declaration", memberName: params.symbol, ownerName: owner.name, ...(file ? { memberFile: file } : {}) }
+    // Declare the resolution in the payload (M55.T1 Truth Rule 2; the
+    // record's shape is owned by the identity resolver).
+    ;(r as { resolution?: unknown }).resolution = memberResolutionRecord(params.symbol as string, owner.name, file)
     return r
   }
 }

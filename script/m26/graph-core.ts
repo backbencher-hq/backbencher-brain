@@ -471,6 +471,32 @@ export interface ImpactResultLike {
   truncationReason: string | null
 }
 
+/** M55.T1 (Truth Rule 2): a declared substitution is rendered on EVERY surface
+ *  that names the target — ONE helper, called by impact, the hub list and the
+ *  hub tree. Machine-readable attributes plus a visible note; an unlabeled
+ *  substitution is the defect this exists to prevent (the filing run: the
+ *  constructor graph opened titled `Store` with nothing said). The wording is
+ *  passed in so each surface keeps its own declared noun and the M44.U5
+ *  impact rendering stays byte-identical. */
+export function appendResolutionNote(
+  layer: GraphDomElement,
+  dom: GraphDom,
+  result: { resolution?: { through?: string; memberName?: string; ownerName?: string } },
+  text: (member: string, owner: string) => string,
+): GraphDomElement | null {
+  const resolution = result.resolution
+  if (resolution === undefined || resolution.through !== "owning-declaration") return null
+  layer.setAttribute("data-resolution-through", "owning-declaration")
+  if (resolution.memberName) layer.setAttribute("data-resolution-member", resolution.memberName)
+  if (resolution.ownerName) layer.setAttribute("data-resolution-owner", resolution.ownerName)
+  const note = dom.create("div")
+  note.addClass("bb-resolution-note")
+  note.setAttribute("data-resolution", "owning-declaration")
+  note.textContent = text(resolution.memberName ?? "member", resolution.ownerName ?? "")
+  layer.appendChild(note)
+  return note
+}
+
 /** Render the impact set into the DOM port. Truncation renders a visible
  *  marker with declared counts (shown vs total-if-known, or "unknown") —
  *  silent truncation is impossible by construction here. */
@@ -481,17 +507,13 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
   // M44.U5: the declared resolution rides the render — a member target
   // rooted through its owning declaration SAYS so (never a silent relabel
   // of what the user clicked). Machine-readable attr + visible note.
-  const resolution = (result as { resolution?: { through?: string; memberName?: string; ownerName?: string } }).resolution
-  if (resolution && resolution.through === "owning-declaration") {
-    layer.setAttribute("data-resolution-through", "owning-declaration")
-    if (resolution.memberName) layer.setAttribute("data-resolution-member", resolution.memberName)
-    if (resolution.ownerName) layer.setAttribute("data-resolution-owner", resolution.ownerName)
-    const note = dom.create("div")
-    note.addClass("bb-impact-resolution-note")
-    note.setAttribute("data-resolution", "owning-declaration")
-    note.textContent = `"${resolution.memberName ?? "member"}" has no dependencies of its own — showing the impact of its owner ${resolution.ownerName ?? ""}`
-    layer.appendChild(note)
-  }
+  const impactNote = appendResolutionNote(
+    layer,
+    dom,
+    result as { resolution?: { through?: string; memberName?: string; ownerName?: string } },
+    (member, owner) => `"${member}" has no dependencies of its own — showing the impact of its owner ${owner}`,
+  )
+  if (impactNote !== null) impactNote.addClass("bb-impact-resolution-note")
   for (const dep of result.impact) {
     const el = dom.create("div")
     el.addClass("bb-impact-node")
@@ -802,6 +824,12 @@ function allEntries(grouped: GroupedHub): Array<{ entry: GroupedHubEntry; dir: "
 export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" | "caller"): RenderStats {
   const section = hubSection(grouped, dom, "bb-hub-list")
   section.setAttribute("data-group", group)
+  // M55.T1: a member target rooted through its owning declaration is LABELED
+  // here too, through the same helper the impact surface uses (one label rule,
+  // one wording per surface). The hub is where the silent relabel was found.
+  appendResolutionNote(section, dom, grouped as { resolution?: { through?: string; memberName?: string; ownerName?: string } }, (member, owner) =>
+    `"${member}" has no graph of its own — showing the usages of its owning declaration ${owner}`,
+  )
   const all = allEntries(grouped)
   if (all.length === 0) {
     hubEmpty(section, dom)
@@ -851,6 +879,26 @@ interface TreeSide {
   byId: Map<string, GroupedHubEntry>
 }
 
+/** Concrete placement parent for RENDERING (M55): the row type keeps
+ *  `parentSymbolId`/`parentName` optional so hand-built LIST fixtures stay
+ *  valid, but the tree's nesting law (U3) requires them for every depth-≥1
+ *  row. A depth-≥1 row without them is a declared error — never an
+ *  `undefined` that silently becomes the key "undefined" and nests a group
+ *  under a phantom parent. Depth-0 rows fold to the root level (the engine
+ *  treats cascade(root) as root — declared, not guessed). */
+function placementParentOf(entry: GroupedHubEntry, rootId: string): { symbolId: string; name: string } {
+  const row = placementOf(entry, rootId)
+  if (row.depth === 0) {
+    return { symbolId: row.parentSymbolId ?? rootId, name: row.parentName ?? "" }
+  }
+  if (row.parentSymbolId === undefined || row.parentName === undefined) {
+    throw new Error(
+      `bb/graph: tree placement is missing the parent fields on a depth-${row.depth} row (${entry.name}) — the index emitted a row the tree cannot nest honestly (declared error)`,
+    )
+  }
+  return { symbolId: row.parentSymbolId, name: row.parentName }
+}
+
 function sideGroups(grouped: GroupedHub, dir: "caller" | "callee"): TreeSide {
   const groups = dir === "caller" ? grouped.callers : grouped.callees
   const byId = new Map<string, GroupedHubEntry>()
@@ -865,10 +913,14 @@ function placementOf(entry: GroupedHubEntry, rootId: string): GroupedHubRow {
   if (entry.rows.length === 0) throw new Error("bb/graph: tree placement on an empty group — a group without rows cannot nest")
   let best = entry.rows[0]!
   for (const r of entry.rows) {
+    // The parent fields are optional at the TYPE level (hand-built list
+    // fixtures). The tie-break needs a total order, so an absent name sorts
+    // as "" — and placementParentOf below is what refuses to render a depth
+    // ≥ 1 row without them (a declared error, never a phantom parent key).
     const rank = (x: GroupedHubRow): [number, number, string, string] => [
       x.depth,
       x.parentSymbolId === rootId ? 0 : 1,
-      x.parentName,
+      x.parentName ?? "",
       x.rowId,
     ]
     const a = rank(r)
@@ -906,9 +958,9 @@ function treeSideInto(
 
   const emit = (entry: GroupedHubEntry, level: number, parentEl: GraphDomElement): void => {
     rowsRendered.count += 1
-    const p = placementOf(entry, rootId)
-    const folded = p.parentSymbolId !== rootId && !side.byId.has(p.parentSymbolId)
-    const row = treeRow(entry, side.dir, level, p.parentSymbolId, p.parentName, folded, dom)
+    const p = placementParentOf(entry, rootId)
+    const folded = p.symbolId !== rootId && !side.byId.has(p.symbolId)
+    const row = treeRow(entry, side.dir, level, p.symbolId, p.name, folded, dom)
     parentEl.appendChild(row)
     const kids = anchorKids.get(entry.symbolId)
     if (kids && kids.length > 0) {
@@ -938,8 +990,8 @@ function treeSideInto(
   // groups emit through their parent's recursion, so every group renders
   // exactly once per side.
   for (const g of side.groups) {
-    const p = placementOf(g, rootId)
-    if (p.parentSymbolId === rootId || !side.byId.has(p.parentSymbolId)) emit(g, 0, header)
+    const p = placementParentOf(g, rootId)
+    if (p.symbolId === rootId || !side.byId.has(p.symbolId)) emit(g, 0, header)
   }
 }
 
@@ -1010,6 +1062,11 @@ function treeRow(
  *  renders exactly once inside its symbol's node. */
 export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
   const section = hubSection(grouped, dom, "bb-hub-tree")
+  // M55.T1: the same declared-substitution label as the list and impact
+  // surfaces — the tree is not allowed to quietly drop it.
+  appendResolutionNote(section, dom, grouped as { resolution?: { through?: string; memberName?: string; ownerName?: string } }, (member, owner) =>
+    `"${member}" has no graph of its own — showing the usages of its owning declaration ${owner}`,
+  )
   const all = allEntries(grouped)
   if (all.length === 0) {
     hubEmpty(section, dom)
@@ -1029,10 +1086,10 @@ export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
   for (const side of [callers, callees]) {
     const map = side.dir === "caller" ? callerKids : calleeKids
     for (const g of side.groups) {
-      const p = placementOf(g, grouped.root.symbolId)
-      if (p.parentSymbolId !== grouped.root.symbolId && side.byId.has(p.parentSymbolId)) {
-        if (!map.has(p.parentSymbolId)) map.set(p.parentSymbolId, [])
-        map.get(p.parentSymbolId)!.push(g)
+      const p = placementParentOf(g, grouped.root.symbolId)
+      if (p.symbolId !== grouped.root.symbolId && side.byId.has(p.symbolId)) {
+        if (!map.has(p.symbolId)) map.set(p.symbolId, [])
+        map.get(p.symbolId)!.push(g)
       }
     }
   }
