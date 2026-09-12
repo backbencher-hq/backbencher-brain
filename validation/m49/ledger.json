@@ -109,26 +109,26 @@
     {
       "id": "G5",
       "title": "F5 baseline comparison is not sample-aware \u2014 cold-pool rotation makes per-lane counts incomparable",
-      "status": "open",
+      "status": "pending",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "0533251e",
-      "notes": "Probe: `bun run script/m14/differential.ts --repo svelte` at 0533251e printed DIFFERENTIAL REGRESSION for svelte:javascript (0->5 unexplained) and svelte:typescript (0->19) while the svelte lane itself stayed 100% covered / 0 unexplained. `evaluateDifferential`'s `comparable` compares only samplePerLang, never WHICH files were drawn, so the #760 cold-pool rotation (prefer never-sampled files) scores a fresh sample against a baseline recorded on a different sample. Consequences: (a) genuine new-sample findings are labelled regressions, (b) the improvement-forcing rule can never be satisfied for corpora larger than the sample without a baseline update. Fix owed: record a per-lane drawn-file-set hash in the baseline; a hash mismatch must report RESAMPLED (triage) instead of REGRESSION."
+      "notes": "Probe: `bun run script/m14/differential.ts --repo svelte` at 0533251e printed DIFFERENTIAL REGRESSION for svelte:javascript (0->5 unexplained) and svelte:typescript (0->19) while the svelte lane itself stayed 100% covered / 0 unexplained. `evaluateDifferential`'s `comparable` compares only samplePerLang, never WHICH files were drawn, so the #760 cold-pool rotation (prefer never-sampled files) scores a fresh sample against a baseline recorded on a different sample. Consequences: (a) genuine new-sample findings are labelled regressions, (b) the improvement-forcing rule can never be satisfied for corpora larger than the sample without a baseline update. Fix owed: record a per-lane drawn-file-set hash in the baseline; a hash mismatch must report RESAMPLED (triage) instead of REGRESSION. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change."
     },
     {
       "id": "J6",
       "title": "JS template-substitution reads include call callees \u2014 5 over-emitted uses edges",
-      "status": "open",
+      "status": "pending",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "0533251e",
-      "notes": "All five svelte-repo javascript-lane unexplained edges carry confidence 0.85 = the template_substitution rule (`real-javascript-analyzer.ts` ~L1881): `${escape_markdown_cell(key)}`, `${format_markdown_value(value)}`, `${escape_markdown_cell(String(id))}`, `${lines.join('\\n')}` (benchmarking/utils.js), `${escape_html(value, true)}` (transform-template/template.js). The rule emits Uses for every identifier in the substitution subtree, including call callees \u2014 while the analyzer's own bare-read rule excludes callees (`!isCallee`) because the calls edge already covers them. Same defect class as M49 W1's chain-head fabrication; needs a fixture + mutant pair before the fix lands."
+      "notes": "All five svelte-repo javascript-lane unexplained edges carry confidence 0.85 = the template_substitution rule (`real-javascript-analyzer.ts` ~L1881): `${escape_markdown_cell(key)}`, `${format_markdown_value(value)}`, `${escape_markdown_cell(String(id))}`, `${lines.join('\\n')}` (benchmarking/utils.js), `${escape_html(value, true)}` (transform-template/template.js). The rule emits Uses for every identifier in the substitution subtree, including call callees \u2014 while the analyzer's own bare-read rule excludes callees (`!isCallee`) because the calls edge already covers them. Same defect class as M49 W1's chain-head fabrication; needs a fixture + mutant pair before the fix lands. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change."
     },
     {
       "id": "T2",
       "title": "TS .d.ts interface-member redeclaration overrides have no oracle mirror \u2014 19 unexplained",
-      "status": "open",
+      "status": "pending",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "0533251e",
-      "notes": "All 19 svelte-repo typescript-lane unexplained edges are `overrides` on .d.ts interface members (HTMLAttributes.ontoggle/ph? vs DOMAttributes.ontoggle at elements.d.ts; BaseNode.type/BaseElement.name in legacy-nodes.d.ts; Analysis.runes/tracing; Reaction.fn). The analyzer's interface-heritage redeclaration rule is intentional (the same contract kotlin/scala/java carry), so the likely defect is the F5 truth side: no interface-membership rule for .d.ts heritage. Triage owed: prove which side is wrong with a minimal .d.ts probe, then mirror the oracle (M37.21 lockstep) rather than weakening the analyzer."
+      "notes": "All 19 svelte-repo typescript-lane unexplained edges are `overrides` on .d.ts interface members (HTMLAttributes.ontoggle/ph? vs DOMAttributes.ontoggle at elements.d.ts; BaseNode.type/BaseElement.name in legacy-nodes.d.ts; Analysis.runes/tracing; Reaction.fn). The analyzer's interface-heritage redeclaration rule is intentional (the same contract kotlin/scala/java carry), so the likely defect is the F5 truth side: no interface-membership rule for .d.ts heritage. Triage owed: prove which side is wrong with a minimal .d.ts probe, then mirror the oracle (M37.21 lockstep) rather than weakening the analyzer. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change."
     }
   ],
   "waves": [
