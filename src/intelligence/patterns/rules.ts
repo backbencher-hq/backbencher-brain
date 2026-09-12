@@ -55,22 +55,32 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
       })
     }
 
-    // 2. Long parameter lists (from the indexed parameters JSON).
+    // 2. Long parameter lists — counted by SQLite (json_each), not JS.
+    // M57.T3 (#791): the old query shipped every parameter array to JS and
+    // JSON.parsed ~180k rows per call to keep 15 findings. The count now
+    // happens in SQLite on BOTH runtimes (bun:sqlite and node:sqlite bundle
+    // JSON1 — probed). Guards preserve the old JS behavior exactly:
+    //   - json_valid: an invalid array was a silent skip (try/catch), not a
+    //     crash — json_each would throw on it.
+    //   - length >= 17: an array with MORE than PARAMETER_THRESHOLD (7)
+    //     elements is at minimum 2 brackets + 8 one-char elements + 7 commas;
+    //     shorter rows can never match (cheap skip before json_each).
     const paramRows = raw.prepare(
-      "SELECT s.name, s.parameters, f.relative_path AS file, COALESCE(s.line_start, 0) AS line " +
+      "SELECT s.name, s.parameters, f.relative_path AS file, COALESCE(s.line_start, 0) AS line, " +
+        "(SELECT COUNT(*) FROM json_each(s.parameters)) AS paramCount " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.parameters IS NOT NULL AND s.parameters != '[]' " +
+        "AND json_valid(s.parameters) AND length(s.parameters) >= 17 " +
+        "AND (SELECT COUNT(*) FROM json_each(s.parameters)) > ? " +
         "ORDER BY s.id",
-    ).all(projectId) as Array<{ name: string; parameters: string; file: string; line: number }>
+    ).all(projectId, PARAMETER_THRESHOLD) as Array<{ name: string; parameters: string; file: string; line: number; paramCount: number }>
     for (const row of paramRows) {
-      let params: string[] = []
-      try { params = JSON.parse(row.parameters) } catch { continue }
-      if (params.length <= PARAMETER_THRESHOLD) continue
+      const params = JSON.parse(row.parameters) as string[] // json_valid-guarded; cannot throw
       findings.push({
         type: "long-parameter-list",
         confidence: 0.7,
         location: { file: row.file, line: row.line, symbol: row.name },
-        description: `Function '${row.name}' has ${params.length} parameters (threshold ${PARAMETER_THRESHOLD}).`,
+        description: `Function '${row.name}' has ${row.paramCount} parameters (threshold ${PARAMETER_THRESHOLD}).`,
         severity: "warning",
         suggestion: "Group related parameters into a single options/configuration object.",
         evidence: [{ type: "indexed-parameters", description: `parameters=${params.slice(0, 12).join(", ")}` }],

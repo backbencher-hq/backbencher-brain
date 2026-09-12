@@ -333,6 +333,11 @@ export interface PatternReport {
     scannedSymbols: number
     scannedFiles: number
     truncated: boolean
+    // M57.T3 (#791): census over the FULL candidate set (not just the returned
+    // page) so a caller can bound the page without losing the aggregate counts.
+    candidatesTotal: number
+    candidatesByRule: Record<string, number>
+    candidatesAverageConfidence: number
   }
 }
 

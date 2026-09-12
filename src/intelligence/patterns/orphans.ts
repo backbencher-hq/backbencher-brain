@@ -241,6 +241,20 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const byRule: Record<string, number> = {}
   for (const f of page) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1
 
+  // M57.T3 (#791): aggregate statistics over the FULL candidate set, so callers
+  // can bound the page without losing the census. Building the finding objects
+  // for candidates nobody displays (scope=all materialized ~28.6k of them) is
+  // the latency this milestone removes; the counts reproduce the old numbers
+  // exactly because candidate confidences are the same constants the builders
+  // stamp (0.6 symbol/class, 0.5 file).
+  const candidatesByRule: Record<string, number> = {}
+  let candidatesConfidenceSum = 0
+  for (const c of candidates) {
+    const rule = c.symbol ? (["class", "interface", "struct", "enum"].includes(c.symbol.symbolType) ? "orphaned_class" : "orphaned_function") : "orphaned_file"
+    candidatesByRule[rule] = (candidatesByRule[rule] ?? 0) + 1
+    candidatesConfidenceSum += c.conf
+  }
+
   return {
     findings: page,
     provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Dynamic dispatch, reflection, string references, and external manifests are not fully observable.", ...(ambiguousNames.size ? [`${ambiguousNames.size} duplicate symbol name(s) were treated as ambiguous rather than globally resolved.`] : [])], truncated }),
@@ -250,6 +264,9 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       scannedSymbols: symbols.length,
       scannedFiles: scannedFiles.size,
       truncated,
+      candidatesTotal: candidates.length,
+      candidatesByRule,
+      candidatesAverageConfidence: candidates.length ? candidatesConfidenceSum / candidates.length : 0,
     },
   }
 }

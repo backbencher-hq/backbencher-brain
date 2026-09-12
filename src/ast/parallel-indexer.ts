@@ -12,6 +12,7 @@ import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+import { isTestFileCandidate } from "./test-classification"
 import { createStoreDiagnostics } from "./store-diagnostics"
 // M50.A2 (#764): dense-vector read accelerator (JSON stays the source of truth).
 import { encodeVectorBlob, scanJsonVectorInto } from "../brain/semantic/vector-binary"
@@ -1894,10 +1895,13 @@ export async function storeResults(
          const hasSyntaxErrors = result.errors && result.errors.some((e: any) => e.severity === "warning")
          const errorReport = hasSyntaxErrors ? JSON.stringify(result.errors) : null
  
-         const isTestFile = 
-           pathLower.includes("/test/") || pathLower.includes("/tests/") ||
-           pathLower.includes("/__tests__/") || pathLower.includes("/spec/") ||
-           pathLower.includes(".test.") || pathLower.includes(".spec.") ? 1 : 0
+        // M57.T1 (#789): a test file must be CODE. The old path-substring
+        // classifier flagged directory segments with no file-type check — all 30
+        // flagged files on the real index were JSON fixtures (M50 receipt:
+        // validation/m50/results/A2-test-sources.json). ONE canonical predicate
+        // (test-classification.ts) now gates on file type first; the path-shape
+        // rules are unchanged and shared with AnalysisExclusions (T5).
+        const isTestFile = isTestFileCandidate(relativePath, result.language) ? 1 : 0
  
          // Count lines — use max symbol endLine as estimate, fallback to 0
          let lineCount = 0
