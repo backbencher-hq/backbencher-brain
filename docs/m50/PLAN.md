@@ -43,7 +43,12 @@ fix), `bb_security` 1032ms → 1229ms (SLOW, within run-to-run variance — no
 regression claim either way), `bb_patterns all` 90s timeout → 1609ms (SLOW
 borderline; the full-scan cost was removed, the remaining time is the rule
 evaluation itself). These three are filed as follow-ups on #764 rather than
-silently declared fixed.
+silently declared fixed. **Superseded by the residual passes below:** complexity
+**272ms**, security **164ms**, test_gaps **311ms** (all OK); `bb_patterns all`
+remains SLOW-borderline at **1,345ms**, and `bb_annotate` remains an ERROR by
+design (invalid-args probe; the write tool is deliberately not fired at the real
+index). Residue is computed from the receipts in `A2-residual.json`, and a
+conviction is only withdrawn by a newer receipt that measures OK.
 
 ## Issues
 
@@ -116,6 +121,44 @@ silently declared fixed.
   negatives); the mutation self-test proves the gate can fail. Latency itself
   stays in the probes and the A2c production-shape sweep — never a ceiling
   inside a gate.
+  (4) `bb_analyze test_gaps` (1,584ms → **311ms**, 5.1×, same harness) built a
+  gap object — with its recommendation string — for **every** production symbol
+  (30,557 here) via `testMapping({maxResults: 100000})`, sorted all of them, and
+  sliced to 200. Candidates are now lightweight sort keys, findings are built
+  only for the returned page, and the two-stage stable sort reproduces the
+  previous ordering so the output is **byte-identical** (sha256
+  `3c362e5…f68f` over gaps+summary+truncated, `prevReportDigestMatch: true`).
+  The same pass also stops the engine paying for a test-edge table scan when no
+  code test source exists, and resolves the per-file noise predicates once per
+  file instead of once per symbol.
+
+  **A2 residual, truth half — the tool was reporting a false census.**
+  `A2-test-sources.json` records it: the indexer's `is_test_file` classifier
+  matches directory segments (`…/spec/…`) and the `.spec.` infix with **no
+  regard for file type**, so on the real index all **30** flagged files are JSON
+  data fixtures (`script/m14/spec/*-completeness.json`,
+  `validation/m14/results/M14.0.SPEC.json`) and every relationship from them is
+  `contains` — **0** classified call/reference/import edges. `test_gaps` and
+  `test_mapping` therefore saw a corpus of 30 JSON files / 5,196 JSON symbols,
+  classified nothing, and reported **all 30,557 production symbols as
+  untested**, while `test_quality` listed the 30 JSON files as test files. The
+  fixes here (in-lane, no re-index): a test source must be **code**, so non-code
+  flagged files are excluded from the test corpus and the exclusion is declared
+  in `provenance.unknowns` (`non-code-test-files-excluded: 30 …`), and a corpus
+  that yields no classified evidence declares
+  `no-test-evidence-edges: … this is an absence of evidence, not evidence of
+  absence`. `test_quality` now lists **0** test files instead of 30 JSON
+  fixtures, and the whole production payload delta is the declared unknowns
+  (357 bytes standalone + 6 bytes of nesting indent = the 363 bytes observed in
+  the sweep — reconciled in the evidence, not a loose end).
+
+  **Reported, NOT changed (root cause, other lane):** the
+  `is_test_file` classifier itself (`src/ast/parallel-indexer.ts`) still flags
+  non-code files, and the same flag feeds the pattern/exclusion surfaces other
+  lanes own. Correcting it needs a re-index and a coordinated re-measure of the
+  M13/M15 pattern corpora, so it is filed as a finding with evidence rather than
+  changed unilaterally. The structural properties above are gated by
+  `verify-a2-test-sources.ts`.
 **A5 (#unregistered) — Verify-chain truth (found during A2).** Two gates in the repo's
   own chain were RED at HEAD for reasons unrelated to any live defect:
   `verify-contract-diff.ts` (13 failures — the M10.01 frozen baseline still
@@ -154,6 +197,7 @@ silently declared fixed.
 | A2-aliases | verify-a2-param-aliases.ts | no |
 | A2-vector-blobs | verify-vector-blobs.ts | no |
 | A2-bounded | verify-a2-bounded-work.ts | no |
+| A2-test-sources | verify-a2-test-sources.ts | no |
 | A3 | verify-a3-guidance-truth.ts | no |
 | A4 | verify-a4-adoption.ts | no |
 | A5 | verify-a5-verify-chain.ts | no |

@@ -16,6 +16,7 @@ import type {
   TestQualityReport,
 } from "../contracts"
 import { makeProvenance } from "../evidence"
+import { codeTestClause, nonCodeUnknown } from "./test-intel"
 
 const MOCK_LIBS = /^(jest|vitest|mocha|chai|sinon|@sinonjs|testdouble|nock|msw|@testing-library|ava|tap|node:test)/
 
@@ -66,19 +67,33 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
 
   const raw = await BrainDatabase.getRawInstance(projectId)
 
-  // All test files for this project, with absolute path + language.
+  // M50.A2 residual: a test file must be CODE. The indexer's is_test_file flag
+  // matches directory segments (…/spec/…) regardless of file type, so on a real
+  // repo all 30 flagged files were JSON data fixtures (script/m14/spec/*.json)
+  // and this tool listed them as test files, read them as "tests", and reported
+  // every quality dimension as unsupported. Non-code flagged files are excluded
+  // and the exclusion is declared in provenance.unknowns (never silent).
+  const codeClause = codeTestClause("")
+
+  // All code test files for this project, with absolute path + language.
   const files = raw.prepare(
     "SELECT id, relative_path AS rel, path, language, COALESCE(line_count,0) AS lines " +
-      "FROM brain_file WHERE project_id = ? AND COALESCE(is_test_file,0) = 1" + scopeSql + " ORDER BY relative_path",
-  ).all(projectId, ...scopeParams) as Array<{ id: string; rel: string; path: string; language: string | null; lines: number }>
+      "FROM brain_file WHERE project_id = ? AND COALESCE(is_test_file,0) = 1" + scopeSql + codeClause.sql + " ORDER BY relative_path",
+  ).all(projectId, ...scopeParams, ...codeClause.params) as Array<{ id: string; rel: string; path: string; language: string | null; lines: number }>
+
+  // How many is_test_file rows were excluded as non-code (for the disclosure).
+  const flaggedFiles = (raw.prepare(
+    "SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND COALESCE(is_test_file,0) = 1" + scopeSql,
+  ).get(projectId, ...scopeParams) as { c: number }).c
+  const nonCodeTestFiles = Math.max(0, flaggedFiles - files.length)
 
   // Import/mock/relationship evidence per test file (from the graph).
   // Scoped together with the file set so evidence and files always agree.
   const importRows = raw.prepare(
     "SELECT f.id AS fileId, COALESCE(i.import_path, '') AS target " +
       "FROM brain_file f JOIN brain_import i ON i.file_id = f.id AND i.project_id = f.project_id " +
-      "WHERE f.project_id = ? AND COALESCE(f.is_test_file,0) = 1" + scopeSql,
-  ).all(projectId, ...scopeParams) as Array<{ fileId: string; target: string }>
+      "WHERE f.project_id = ? AND COALESCE(f.is_test_file,0) = 1" + scopeSql + codeClause.sql,
+  ).all(projectId, ...scopeParams, ...codeClause.params) as Array<{ fileId: string; target: string }>
 
   const fileImports = new Map<string, string[]>()
   const fileMockImport = new Set<string>()
@@ -265,7 +280,7 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
   return {
     files: report,
     aggregate: { mean: overalls.length > 0 ? overalls.reduce((a, b) => a + b, 0) / overalls.length : null, perDimension: perDim },
-    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index) }),
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: [...report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index), ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : [])] }),
     summary: {
       filesWithContent: report.filter((r) => r.dimensions.some((d) => d.supported)).length,
       filesUnknown: report.filter((r) => r.overall === null).length,
