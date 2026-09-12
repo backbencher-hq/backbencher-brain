@@ -1,19 +1,11 @@
-# A5 — Verify-chain truth (issue text, registration PENDING)
+# A5 — Verify-chain truth (REGISTERED as #788)
 
-> **Registration status:** GitHub was unreachable from the delivery machine
-> (`proxyconnect tcp: … connect: no route to host`, and `gh auth status`
-> reports the keyring token invalid) at the time A5 was delivered. The issue
-> number is therefore **unregistered**, not invented. Nothing in the code or
-> evidence claims a number. When the network returns:
->
-> ```bash
-> gh issue create --milestone "M50: Tool Adoption Truth — used, useful, trusted" \
->   --title "M50.A5 — Verify-chain truth: two chain gates were RED at HEAD (frozen-baseline rot + a substring check)" \
->   --body-file docs/m50/A5-issue.md
-> ```
->
-> then replace `null` for `A5` in `script/m50/gates.json` with the returned
-> number and add `#<num>` to `docs/m50/PLAN.md`.
+> **Registration status:** REGISTERED as **#788** in milestone #54. GitHub was
+> unreachable from the delivery machine (`proxyconnect tcp: … no route to host`)
+> at delivery time, so the issue text was stored verbatim below and the number
+> was deliberately left NULL — never invented — until this registration landed
+> through a flapping proxy. `script/m50/gates.json` and `docs/m50/PLAN.md` now
+> carry #788; `validation/m50/results/A5.json` records the registration.
 
 ## Title
 

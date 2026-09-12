@@ -2,9 +2,9 @@
   "comment": "M50 gates registry — governance (G1) checks every entry exists, is wired into the verify chain, and that non-infra gates carry a falsifiability mutation used by the gate self-test. Probes are listed separately: they MEASURE (and may legitimately show a slow number) while gates DECIDE.",
   "milestone": "M50",
   "githubMilestone": 54,
-  "issues": { "A1": 763, "A2": 764, "A3": 765, "A4": 766, "X1": 767, "A5": null },
+  "issues": { "A1": 763, "A2": 764, "A3": 765, "A4": 766, "X1": 767, "A5": 788 },
   "unregisteredIssues": {
-    "A5": "GitHub was unreachable from the delivery machine (proxyconnect: no route to host; gh keyring token invalid) when A5 was delivered. The issue text is stored verbatim in docs/m50/A5-issue.md and the number is deliberately left NULL rather than invented."
+    "A5": "Registered after delivery as #788 once connectivity returned; the issue text was stored verbatim in docs/m50/A5-issue.md while the network was down, and the number was never invented before registration."
   },
   "gates": [
     { "code": "G1", "script": "verify-governance.ts", "infra": true },
