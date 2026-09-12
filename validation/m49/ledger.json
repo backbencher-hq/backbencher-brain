@@ -109,10 +109,10 @@
     {
       "id": "G5",
       "title": "F5 baseline comparison is not sample-aware \u2014 cold-pool rotation makes per-lane counts incomparable",
-      "status": "pending",
+      "status": "verified",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
-      "verifiedAtCommit": "0533251e",
-      "notes": "Probe: `bun run script/m14/differential.ts --repo svelte` at 0533251e printed DIFFERENTIAL REGRESSION for svelte:javascript (0->5 unexplained) and svelte:typescript (0->19) while the svelte lane itself stayed 100% covered / 0 unexplained. `evaluateDifferential`'s `comparable` compares only samplePerLang, never WHICH files were drawn, so the #760 cold-pool rotation (prefer never-sampled files) scores a fresh sample against a baseline recorded on a different sample. Consequences: (a) genuine new-sample findings are labelled regressions, (b) the improvement-forcing rule can never be satisfied for corpora larger than the sample without a baseline update. Fix owed: record a per-lane drawn-file-set hash in the baseline; a hash mismatch must report RESAMPLED (triage) instead of REGRESSION. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change."
+      "verifiedAtCommit": "ef5b10c1",
+      "notes": "Probe: `bun run script/m14/differential.ts --repo svelte` at 0533251e printed DIFFERENTIAL REGRESSION for svelte:javascript (0->5 unexplained) and svelte:typescript (0->19) while the svelte lane itself stayed 100% covered / 0 unexplained. `evaluateDifferential`'s `comparable` compares only samplePerLang, never WHICH files were drawn, so the #760 cold-pool rotation (prefer never-sampled files) scores a fresh sample against a baseline recorded on a different sample. Consequences: (a) genuine new-sample findings are labelled regressions, (b) the improvement-forcing rule can never be satisfied for corpora larger than the sample without a baseline update. Fix owed: record a per-lane drawn-file-set hash in the baseline; a hash mismatch must report RESAMPLED (triage) instead of REGRESSION. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change. FIXED: sampleSetHash(relPaths) (sha256 of the sorted corpus-relative drawn set) now rides every lane row; --update-baseline pins it per lane into differential-baseline.json hashes; evaluateDifferential compares it and splits one question into three verdicts - same pinned set => strict never-grow (unchanged, still able to fail); different set => RESAMPLED <lane>, excluded from regressions, and the lane's own missing/unexplained anomalies then fail its check for TRIAGE (so a rotated lane can never pass silently on a generous pinned allowance); no pinned set (pre-G5 rows) => strict comparison KEPT plus an unpinnedLanes disclosure, so the gate is not made vacuous for the 154 unrecorded rows at once. Declared-heuristic edges do not fail a resampled lane (they are disclosed as unscored); missing/unexplained do. The claim the run makes is emitted as evidence data.baselineComparison {pinnedLanes,totalBaselineLanes,resampledLanes,unpinnedLanes}. Self-tested in the battery (audit:differential -> script/m14/verify-differential-evidence.ts, 6 cases incl. the rotated-growth case asserted to be triage and never a regression). REMAINING: the file sets are pinned only by the next canonical no-arg --update-baseline run at a stable tree (the same ceremony R2/F1-F9 wait on); until then every lane is disclosed as unpinned and keeps the strict comparison."
     },
     {
       "id": "J6",
@@ -320,6 +320,24 @@
         }
       ],
       "evidence": "reviews/svelte/third-verification.md, reviews/web-family/rotated-sample-findings.md"
+    },
+    {
+      "id": "M49.W5",
+      "title": "F5 baseline comparison made sample-aware (G5) \u2014 a rotation can no longer mislabel a new-sample finding as a regression",
+      "date": "2026-09-12",
+      "commit": "ef5b10c1",
+      "method": "Implemented the fix owed by W4's gate flaw: `sampleSetHash` (sha256 of the sorted corpus-relative drawn set) rides every lane row; `--update-baseline` pins it per lane into differential-baseline.json `hashes`; `evaluateDifferential` compares it and returns three separate verdicts instead of one `comparable` flag. Verified at the artefact level, not from the working tree: the STAGED blob of the shared differential.ts was transpiled and asserted to carry the G5 markers and NONE of the co-agent's concurrently-edited cpp/go/zig oracle (my 10 hunks staged by hunk-scope, 137 added lines, 0 co-agent lines). The comparator is self-tested in the battery (audit:differential -> script/m14/verify-differential-evidence.ts, 6 cases: pass, regression, resampled-clean, rotated-growth-is-triage, unpinned, probe-mode) and the regression case proves the gate can still fail on a pinned sample. Deliberate asymmetries recorded rather than hidden: missing/unexplained anomalies FAIL a resampled lane's check (triage) while declared-heuristic edges are disclosed as unscored; and pre-G5 rows with no recorded file set KEEP the strict comparison plus an `unpinnedLanes` disclosure, because making 154 unrecorded rows silently non-comparable would have made the improvement-forcing gate vacuous in one step. What remains: pin the file sets in the canonical no-arg --update-baseline run at a stable tree (the same ceremony R2/F1-F9 wait on); until then every lane is disclosed as unpinned.",
+      "findings": [
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "baseline-sample-awareness",
+          "severity": "high",
+          "ledgerId": "G5",
+          "note": "The gate flaw that produced the W4 mislabel. Fixed @ef5b10c1; the fix makes the wrong label unreachable on a rotated sample AND keeps the gate able to fail on a pinned one."
+        }
+      ],
+      "evidence": "reviews/web-family/rotated-sample-findings.md (\u00a73a), script/m14/verify-differential-evidence.ts, script/m14/differential.ts, validation/m14/differential-baseline.json"
     }
   ]
 }
