@@ -165,3 +165,28 @@ decode entities.
 
 Evidence limitations were updated accordingly: structured data claims only the two
 types the site actually carries, and route discovery follows the directory layout.
+
+### Evidence-batch invariant (same change)
+
+G1 now rejects a ledger entry that disagrees with the evidence file it names —
+commit, passes, failures, negative cases — plus a separate check that every entry's
+commit exists in this history. G1's own entry is excluded from the artifact
+comparison (the validating run replaces G1.json, so that comparison could never
+settle) but not from the reachability check.
+
+The check was added because the M41
+ledger was found citing pre-re-pin commits and a stale passed-count for T2 and T3
+while the files on disk said otherwise: drift that makes a "one-commit batch" a
+claim instead of a fact. T3's artifact was also left behind by a mass re-pin and
+is re-pinned in this batch.
+
+The batch procedure is therefore mechanical rather than remembered:
+
+1. run every M41 verifier at ONE HEAD, with no commit in between;
+2. `npx tsx script/m41/sync-ledger.ts` — copies each artifact's facts into the ledger;
+3. `npx tsx script/m41/verify-governance.ts` — green;
+4. commit evidence + ledger, then STOP re-running gates.
+
+Re-running a single verifier after step 4 moves that artifact past the ledger and
+G1 turns red until the batch is re-pinned. That is intended: staleness becomes
+visible instead of invisible.
