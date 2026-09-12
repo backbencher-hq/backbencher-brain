@@ -133,6 +133,34 @@ what the analyzer records (data that already exists and is registry-checked);
 Verifier: `verify-languages-surface.ts` — union of family ids equals the registry
 exactly, every family renders tier and extracts, mutants caught.
 
+Implementation notes (as built):
+- `/languages` carries the surface name *Languages & analyzers* in its eyebrow and
+  in its document title; the homepage register cells now name the depth tier beside
+  the dot (`call graph` / `structural` / `generic pass`), in the tier's own accent,
+  so a cell states what the family buys without a legend lookup.
+- The console keeps its per-family record — extensions, registry names, recorded
+  symbols, the plate label and what the tier means — plus the "What happens when
+  you index" pipeline block. The four store tables that block names are checked
+  against `src/brain/schema-ddl.ts`, and its `/docs#how-the-index-works` anchor is
+  checked to resolve on the docs page.
+- Depth claims are audited mechanically: every family above the generic pass must
+  be backed by a real `src/ast/real-*-analyzer.ts` module, and the module↔family
+  mapping must be a bijection (41 modules ⇄ 41 analyzed families). The inventory's
+  one name mismatch (`make` → `real-makefile-analyzer.ts`) is declared in an alias
+  table, so a new mismatch fails the gate instead of being absorbed. The generic
+  tier is fully derived: no analyzer module exists for any of its languages.
+- Partitions are gated: the homepage rails split and the four ecosystem bands must
+  each cover every family exactly once. A family missing from the bands would still
+  render its panel but be unreachable from the console index — a silent loss.
+- Tier examples are gated too: every family named in a `TIER_PLATE` row must have
+  that row's tier, so a re-tiered family cannot leave a stale example behind.
+- Recorded limitation (in the evidence): the full-vs-structural split is itself an
+  audited claim. No declarative language→call-graph table exists in `src/`, so the
+  gate proves the analyzed/generic boundary and the analyzer bijection, not each
+  analyzer's relationship depth.
+- Enforced by `npx tsx script/m56/verify-languages-surface.ts` in the local
+  `verify` chain and in CI's `verify-site` job.
+
 ### D1 — Docs Completion (#783)
 Deliverables: docs sections for indexing internals (built-in skips, `.gitignore`,
 `.bbignore`, size tiers, timing), keeping the index fresh (auto-refresh budgets and
@@ -184,6 +212,7 @@ is enforced:
 - G1 `verify-governance.ts` — `verify:fast` (CI `verify` job, all node matrix legs).
 - T1 `verify-tools-truth.ts` — local `verify` chain and CI `verify-site` job.
 - E1 `verify-editors-page.ts` — local `verify` chain and CI `verify-site` job.
+- L1 `verify-languages-surface.ts` — local `verify` chain and CI `verify-site` job.
 
 The site gates may not weaken:
 M41's T2/T3/S1/S2/D1 continue to run, and any content change re-runs them — a new
