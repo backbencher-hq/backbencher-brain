@@ -413,6 +413,15 @@
         "question": "M49 W2: #762 closed as `verified ALREADY-FIXED` on vue/prop-default-factory-calls - a fixture with ONE factory, whose assertions pass with or without the sibling-object collision - while the corpus file (MarkdownEditor) kept MISSING={toFixed,random}. What must a corpus-derived fixture reproduce?",
         "decision": "RULED - the corpus file's ACTUAL shape, including the interaction that makes it fail. A one-factory reconstruction of a two-factory file tested an adjacent shape and produced false confidence for two waves. Re-authored vue/prop-default-factory-calls to the real shape (two sibling factories + interleaved plain `default:` members) and verified it FAILS against the pre-fix code (mutant vue/prop-default-multi-collapse) before accepting the green.",
         "date": "2026-09-12"
+      }      ,
+      {
+        "id": "JSD29",
+        "node_type": "template_substitution (read positions)",
+        "status": "FIXED",
+        "question": "M49 W4 rotated-sample finding (ledger J6): the template-substitution walk emitted Uses for EVERY identifier in the substitution subtree, so ${fn(x)} fabricated `uses fn` and ${obj.m(x)} fabricated `uses obj` - 5 corpus edges (benchmarking/utils.js, transform-template/template.js) that the F5 truth rightly refused; the walk's own sibling rule nine lines up excludes callees (!isCallee).",
+        "decision": "RULED - a substituted identifier is a read only when it is not part of a call's callee expression and not an assignment target; the walk gates on ancestor containment (call `function` span / assignment `left` span) and, per the TS TSD28 family contract, owns the substitution read alone (the general bare-read rule's duplicate is suppressed: one interpolated read = ONE Uses edge at 0.85 isTemplateInterpolation). Analyzer-only fix; the oracle already excluded callees, so parity was restored, not negotiated.",
+        "evidence": "fixture javascript/template-substitution-reads (forbid uses fn/obj + count==1); mutants javascript/template-callee-uses + javascript/template-read-duplicate CAUGHT; F3 javascript 55/55; F4 full battery 449/449 (0 survivors); corpus re-probe at the fixed tree: svelte-repo javascript lane 0 unexplained (was 5)",
+        "date": "2026-09-12"
       }
     ]
   }

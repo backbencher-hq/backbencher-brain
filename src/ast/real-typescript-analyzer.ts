@@ -3426,7 +3426,21 @@ class TypeScriptAnalysisRunner {
             // M14 #419 T7: dynamic import() is a module dependency, not a
             // call — skip it here so no spurious calls edge to `import` is
             // emitted (the imports edge comes from extractImportRelationships).
+            //
+            // M49 W4 (T3, rotated-sample finding): skipping the EDGE must not
+            // skip the SUBTREE. `return` here (and on the subscript branch
+            // below) aborted processNode before its child recursion, so every
+            // real call inside the arguments vanished — probe: TS emitted
+            // NOTHING for `console[method](message.text())` while the oracle
+            // derived calls->text (svelte repo runtime-browser/test.ts:203,
+            // surfaced as MISSING once #760's rotation sampled the file).
+            // Same defect class as the M49 W1 javascript `continue`-skips-
+            // subtree fix; walk the children, then stop.
             if (callee.text === "import" || callee.type === "import") {
+              for (let i = 0; i < n.namedChildCount; i++) {
+                const child = n.namedChild(i)
+                if (child) processNode(child, currentSymbol)
+              }
               return
             }
             let targetName = callee.text
@@ -3445,6 +3459,13 @@ class TypeScriptAnalysisRunner {
               // subscript text through ("nodeTransforms[i]" targets no symbol
               // index can join — 2 fabrications in vue-core transform.ts
               // alone). JS skips these; TS must too (probed 2026-09-08).
+              //
+              // M49 W4 (T3): the EDGE is skipped, never the SUBTREE — the
+              // arguments still carry real calls (see the import branch note).
+              for (let i = 0; i < n.namedChildCount; i++) {
+                const child = n.namedChild(i)
+                if (child) processNode(child, currentSymbol)
+              }
               return
             }
 
@@ -3719,12 +3740,37 @@ class TypeScriptAnalysisRunner {
       // function-local declarator/pattern (TSD2: the interpolation reads the
       // local, not a same-named module symbol).
       if (n.type === "template_substitution" && currentSymbol) {
+        // M49 W4 (J6 twin, javascript/j6): a substituted identifier is a READ
+        // only when it is not part of a call's callee expression and not an
+        // assignment target — the same gates the field-access rule below
+        // applies (a callee is covered by `calls`; a receiver belongs to that
+        // callee). Pre-fix `${fn(x)}` fabricated `uses fn` and `${obj.m(x)}`
+        // fabricated `uses obj`; the javascript twin's five edges were the
+        // measured defect, this is the same rule one language over.
+        const inCalleeOrWritePosition = (id: Node): boolean => {
+          let cur: any = id
+          while (cur) {
+            const p = cur.parent
+            if (!p || p.type === "template_substitution") break
+            if (p.type === "call_expression") {
+              const fn = p.childForFieldName("function")
+              if (fn && fn.startIndex <= id.startIndex && id.endIndex <= fn.endIndex) return true
+            }
+            if (p.type === "assignment_expression" || p.type === "augmented_assignment_expression") {
+              const left = p.childForFieldName("left") ?? p.namedChild(0)
+              if (left && left.startIndex <= id.startIndex && id.endIndex <= left.endIndex) return true
+            }
+            cur = p
+          }
+          return false
+        }
         const sub = (nn: Node): void => {
           for (let i = 0; i < nn.namedChildCount; i++) {
             const c = nn.namedChild(i)
             if (!c) continue
             if (c.type === "identifier" && c.text !== currentSymbol!.name) {
               if (locals.has(c.text)) continue
+              if (inCalleeOrWritePosition(c)) continue
               const key = `${currentSymbol!.name}:${c.text}:template`
               if (!processed[key]) {
                 processed[key] = true

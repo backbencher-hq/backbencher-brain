@@ -550,6 +550,15 @@
    "decision": "General identifier walk skips identifiers inside template_substitution (nearest-function boundary) \u2014 the template walk owns those reads; Uses only, singular. Fixture typescript/template-uses-singular (forbid references pin); mutant typescript/template-double-revert.",
    "evidence": "fixture + mutant @392/392",
    "date": "2026-09-10"
+  },
+  {
+   "id": "TSD29",
+   "node_type": "property_signature (interface heritage)",
+   "status": "FIXED",
+   "question": "M49 W4 rotated-sample finding (ledger T2): all 19 unexplained .d.ts edges in the svelte repo are interface-property redeclarations in a derived interface (HTMLAttributes.ontoggle over DOMAttributes.ontoggle, BaseElement.name over BaseNode.name, Analysis.runes/tracing, Reaction.fn). The analyzer's heritage rule is intentional (kotlin/scala/java carry the same contract); the F5 truth registered only method_signature, so the ORACLE was blind - and #759's earlier disposition ('oracle already models truth') was true only for methods.",
+   "decision": "RULED - the oracle mirrors the analyzer (M37.21 lockstep): `property_signature` joins the override member set. Class FIELDS stay out: a probe proves the analyzer emits no class-field overrides, so truth must not outrun it. The analyzer is unchanged.",
+   "evidence": "fixture typescript/dts-interface-property-overrides (count==2 + forbid pins); mutant typescript/property-override-drop CAUGHT; F3 typescript 60/60; corpus re-probe at the fixed tree: svelte-repo typescript lane 0 unexplained (was 19). Second finding of the same probe (T3) fixed in the same wave: the subscript-callee and dynamic-import branches returned before the child recursion, dropping every call nested in their arguments (console[method](message.text()) emitted nothing; runtime-browser/test.ts MISSING) - fixture typescript/subscript-callee-nested-calls + mutant typescript/subscript-callee-nested-call-drop CAUGHT",
+   "date": "2026-09-12"
   }
  ]
 }

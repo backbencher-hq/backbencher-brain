@@ -4910,7 +4910,18 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             // nodes, counting the nested type's name as a method of the
             // enclosing class (two-corpus wave 2026-09: SubVector "overrides"
             // its own nested Iterator/Spliterator/Object).
-            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|field_declaration/.test(m?.type ?? "")) {
+            // M49 W4 (T2, ledger): `property_signature` joins the member set.
+            // TypeScript's .d.ts corpus re-declares INTERFACE PROPERTIES in a
+            // derived interface (`interface HTMLAttributes<T> extends
+            // DOMAttributes<T> { ontoggle?: … }`), which the analyzer's
+            // heritage rule emits as `overrides DOMAttributes.ontoggle` — the
+            // oracle registered only method_signature, so all 19 rotated-sample
+            // .d.ts edges (elements.d.ts, legacy-nodes.d.ts, phases/types.d.ts,
+            // index.d.ts, reactivity/types.d.ts) surfaced as unexplained. The
+            // analyzer also emits NOTHING for class FIELDS
+            // (public_field_definition), so class fields must stay out of the
+            // mirror or truth would outrun the analyzer (probe-verified).
+            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|property_signature|field_declaration/.test(m?.type ?? "")) {
               // cpp class members are field_declaration > function_declarator;
               // other families keep the name as a direct identifier child.
               const fd = m.namedChildren.find((c: any) => c.type === "function_declarator")
