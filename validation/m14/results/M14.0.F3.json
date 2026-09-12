@@ -2,31 +2,31 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "49/49 fixtures pass",
+      "detail": "55/55 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "15/15 fixtures pass",
+      "detail": "29/29 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "19/19 fixtures pass",
+      "detail": "25/25 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "55/55 fixtures pass",
+      "detail": "60/60 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "36/36 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -128,12 +128,17 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5e5c52891c604b357274646b075c89f72fee66f3",
-  "committedAt": "2026-09-10T07:33:46+02:00",
+  "commit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
+  "committedAt": "2026-09-12T21:30:35+02:00",
   "data": {
     "details": [
       {
         "fixture": "javascript/accessor-name-collision",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/accessor-slot-semantics",
         "ok": true,
         "problems": []
       },
@@ -158,7 +163,17 @@
         "problems": []
       },
       {
+        "fixture": "javascript/binding-sites-are-not-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/callee-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/chain-root-and-bare-reads",
         "ok": true,
         "problems": []
       },
@@ -358,12 +373,22 @@
         "problems": []
       },
       {
+        "fixture": "javascript/sibling-object-member-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "javascript/static-block",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "javascript/stdlib-colliding-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/template-substitution-reads",
         "ok": true,
         "problems": []
       },
@@ -378,12 +403,47 @@
         "problems": []
       },
       {
+        "fixture": "javascript/write-lhs-nested-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/arrow-data",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/commented-default",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/composition-api-sfc",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "vue/data-factory-keys",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/data-keys",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/decorated-default",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/dual-script-blocks",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/dupkey-last-wins",
         "ok": true,
         "problems": []
       },
@@ -403,6 +463,16 @@
         "problems": []
       },
       {
+        "fixture": "vue/lifecycle-server-prefetch",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/member-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/modern-html-svg-builtin-tags",
         "ok": true,
         "problems": []
@@ -418,7 +488,32 @@
         "problems": []
       },
       {
+        "fixture": "vue/options-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/prop-default-factory-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/quoted-keys",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/range-coherence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "vue/script-error-offset",
         "ok": true,
         "problems": []
       },
@@ -443,6 +538,11 @@
         "problems": []
       },
       {
+        "fixture": "vue/template-string-args",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/ts-script-interface",
         "ok": true,
         "problems": []
@@ -454,6 +554,11 @@
       },
       {
         "fixture": "svelte/await-block",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/await-inline-shadow",
         "ok": true,
         "problems": []
       },
@@ -518,6 +623,11 @@
         "problems": []
       },
       {
+        "fixture": "svelte/script-range-coherence",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/snippet-definitions",
         "ok": true,
         "problems": []
@@ -528,12 +638,32 @@
         "problems": []
       },
       {
+        "fixture": "svelte/template-attr-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/template-calls",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "svelte/template-comment-safety",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/template-condition-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/template-member-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/template-string-safety",
         "ok": true,
         "problems": []
       },
@@ -564,6 +694,11 @@
       },
       {
         "fixture": "typescript/api-contract-bare-path",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/async-arrow-and-iface-overrides",
         "ok": true,
         "problems": []
       },
@@ -609,6 +744,16 @@
       },
       {
         "fixture": "typescript/destructure-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/dts-interface-property-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/dupkey-last-wins",
         "ok": true,
         "problems": []
       },
@@ -758,6 +903,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/positional-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/qualified-call-path",
         "ok": true,
         "problems": []
@@ -779,6 +929,11 @@
       },
       {
         "fixture": "typescript/stdlib-colliding-names",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/subscript-callee-nested-calls",
         "ok": true,
         "problems": []
       },
@@ -824,6 +979,11 @@
       },
       {
         "fixture": "java/anonymous-and-multihop-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/argument-count-comment-exclusion",
         "ok": true,
         "problems": []
       },
@@ -1954,11 +2114,11 @@
       },
       "java": {
         "fail": 0,
-        "pass": 36
+        "pass": 37
       },
       "javascript": {
         "fail": 0,
-        "pass": 49
+        "pass": 55
       },
       "kotlin": {
         "fail": 0,
@@ -1990,7 +2150,7 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 19
+        "pass": 25
       },
       "swift": {
         "fail": 0,
@@ -1998,11 +2158,11 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 55
+        "pass": 60
       },
       "vue": {
         "fail": 0,
-        "pass": 15
+        "pass": 29
       },
       "zig": {
         "fail": 0,
@@ -2023,6 +2183,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
+  "regeneratedAt": "2026-09-12T19:33:02.050Z",
+  "regeneratedAtCommit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

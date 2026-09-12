@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "1a9255da6e5521678a384b5f24ef5c5813de4c3c",
-  "committedAt": "2026-09-11T02:31:10+02:00",
+  "commit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
+  "committedAt": "2026-09-12T21:30:35+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -399,17 +399,11 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 64,
+        "referencedTypeLiterals": 63,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
-        "waivedFindings": [
-          {
-            "justification": "M49.K1 cross-wave finding (java R3 argumentCount guard, real-java-analyzer.ts:851): tree-sitter-java declares `comment` as an UNNAMED extra - grammar.nodeTypeForId does not surface it, so the audit's enumeration misses it - but comment nodes demonstrably appear in java named-child lists (the javadoc extraction fixtures depend on block_comment siblings). The guard excludes comment children from call argumentCount. Probe-verified live code, not a dead branch. Kotlin's wasm enumerates `comment` (audit-clean there); java's does not - grammar-enumeration asymmetry, not an analyzer defect.",
-            "line": 851,
-            "literal": "comment"
-          }
-        ],
+        "waivedFindings": [],
         "wasm": [
           "tree-sitter-java.wasm"
         ],
@@ -424,7 +418,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 55,
+        "referencedTypeLiterals": 60,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -811,7 +805,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 25,
+        "referencedTypeLiterals": 28,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -934,7 +928,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 87,
+        "referencedTypeLiterals": 89,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -957,7 +951,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 420,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 27,
+        "referencedTypeLiterals": 30,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1054,9 +1048,9 @@
       "description": "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria"
     }
   ],
+  "regeneratedAt": "2026-09-12T19:32:44.892Z",
+  "regeneratedAtCommit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Grammar-conformance auditor",
-  "regeneratedAtCommit": "__LEGACY__",
-  "regeneratedAt": "pre-#761-gate"
+  "title": "Grammar-conformance auditor"
 }
