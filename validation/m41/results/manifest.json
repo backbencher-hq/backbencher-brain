@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-13T03:13:11.090Z",
+  "updatedAt": "2026-09-13T03:23:24.377Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -51,10 +51,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "7da3b8ffe119c39ea8141f184fa5fe4a88575d06",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-13T03:12:14.241Z",
+        "generatedAt": "2026-09-13T03:22:49.414Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 11
@@ -78,10 +78,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cbc2b7001b93dd58b98f095ad9a815dbe8c9adc4",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-12T14:20:26.453Z",
+        "generatedAt": "2026-09-13T03:14:34.454Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 4
@@ -105,10 +105,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b7c91c124498de4828eace1c9b281a012de91981",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
         "evidenceFile": "T2.json",
-        "generatedAt": "2026-09-13T02:56:32.401Z",
+        "generatedAt": "2026-09-13T03:17:56.750Z",
         "passed": 58,
         "failed": 0,
         "negativeCases": 3
@@ -132,10 +132,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b7c91c124498de4828eace1c9b281a012de91981",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts --label T3",
         "evidenceFile": "T3.json",
-        "generatedAt": "2026-09-13T02:57:49.944Z",
+        "generatedAt": "2026-09-13T03:18:56.115Z",
         "passed": 58,
         "failed": 0,
         "negativeCases": 3
@@ -159,10 +159,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b7c91c124498de4828eace1c9b281a012de91981",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-seo.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-13T02:58:57.101Z",
+        "generatedAt": "2026-09-13T03:20:00.344Z",
         "passed": 65,
         "failed": 0,
         "negativeCases": 10
@@ -216,10 +216,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "b7c91c124498de4828eace1c9b281a012de91981",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-design.ts",
         "evidenceFile": "D1.json",
-        "generatedAt": "2026-09-13T02:57:50.697Z",
+        "generatedAt": "2026-09-13T03:20:01.293Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 3,
@@ -238,7 +238,7 @@
       "code": "X1",
       "githubIssue": 647,
       "tool": "gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "closure gate: one-commit evidence batch, full side-by-side audit at pushed commit, CI green, Vercel wait-for-checks proven, completion bar",
       "acceptanceCriteria": [
         "all 7 prior gates green at one commit; evidence batch committed",
@@ -250,7 +250,17 @@
         "closure evidence at current commit",
         "all sibling issues verified or explicitly known-gap/blocked with reason",
         "real GitHub issue numbers wired (placeholders rejected)"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "verifierCommand": "npx tsx script/m41/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "generatedAt": "2026-09-13T03:22:42.484Z",
+        "passed": 36,
+        "failed": 0,
+        "negativeCases": 13
+      }
     }
   ]
 }
