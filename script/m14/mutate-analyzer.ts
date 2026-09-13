@@ -2874,6 +2874,19 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "csharp/reemit-initializer-designator-reads",
+    language: "csharp",
+    defectClass: "relationship-noise",
+    description: "Second-review regression: object-initializer designators read again (bare-value-reads forbids uses Build->X/Y)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "Build", target: "X", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+      ],
+    }),
+  },
+  {
     id: "dart/drop-implements-edge",
     language: "dart",
     defectClass: "relationship-loss",
