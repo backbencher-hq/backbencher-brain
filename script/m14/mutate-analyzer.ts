@@ -1894,6 +1894,21 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isSvelteProp ? { ...s, name: undefined } : s).filter((s: any) => s.name !== undefined).concat((r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).isSvelteProp).map((s: any) => ({ ...s, name: s.name + "", kind: "variable", ownerName: undefined, metadata: { ...s.metadata, isSvelteProp: undefined, fromRunes: undefined, isDestructured: true } }))) }),
   },
   {
+    id: "svelte/drop-external-base-extends",
+    language: "svelte",
+    defectClass: "relationship-loss",
+    description: "drops `extends` edges whose base is EXTERNAL to the file — the custom-element heritage class (`class MyCustomElement extends HTMLElement`, svelte's attribute-casing-custom-element corpus shape) and the dotted-member base (`Lib.Base`). In-file bases survive, so this pins svelte/js-script-heritage specifically: the older heritage fixtures (relationship-kinds, relationship-kind-catalog) both extend an IN-FILE base and stay green",
+    transform: r => {
+      const declared = new Set((r.symbols ?? []).map((s: any) => s.name))
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter(
+          (x: any) => !(String(x.type ?? x.relationshipType) === "extends" && !declared.has(x.target)),
+        ),
+      }
+    },
+  },
+  {
     id: "svelte/drop-overrides-edges",
     language: "svelte",
     defectClass: "relationship-loss",
