@@ -81,16 +81,24 @@ jobs:
         working-directory: website
         run: npm ci
 
+      # M41 chain — ORDER IS CONTRACTUAL: the governance gate runs BEFORE the
+      # gates that emit evidence, because every evidence writer stamps
+      # `currentCommit` with the run's HEAD. A ledger (committed, pinned to the
+      # batch commit) compared against run-stamped artifacts can never agree,
+      # so governance-last is unpassable by construction. Running it first is
+      # what "an evidence batch is a fact, not a claim" actually means: the
+      # committed ledger is checked against the committed artifacts, and only
+      # then may the gates re-prove the site from scratch.
       - name: Verify site truth, SEO, and design (M41 chain)
         if: steps.sitechanged.outputs.changed == 'true'
         run: |
           npx tsx script/m41/generate-site-truth.ts --check && \
+          npx tsx script/m41/verify-governance.ts && \
           npx tsx script/m41/verify-truth-pipeline.ts && \
           npx tsx script/m41/verify-design.ts && \
           npx tsx script/m41/verify-site-truth.ts && \
           npx tsx script/m41/verify-site-truth.ts --label T3 && \
           npx tsx script/m41/verify-seo.ts && \
-          npx tsx script/m41/verify-governance.ts && \
           npx tsx script/m41/verify-seo-onboarding.ts
 
       # M56.T1 — the tool reference is single-sourced. Needs website deps
