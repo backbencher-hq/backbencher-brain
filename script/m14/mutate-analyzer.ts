@@ -3966,6 +3966,73 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "Tok.read", target: "Tok.read", fromSymbol: "Tok.read", toSymbol: "Tok.read", confidence: 0.95, metadata: { isOverride: true } }] }),
   },
   {
+    id: "ruby/endless-body-silence",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "second-review RB-F regression: endless method bodies go unwalked again (second-review expects calls fetch->get)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "calls" && normRel(x).source === "fetch" && normRel(x).target === "get")) }),
+  },
+  {
+    id: "ruby/defined-probe-reads",
+    language: "ruby",
+    defectClass: "relationship-noise",
+    description: "second-review RB-G regression: defined? operands read again (second-review forbids uses check->@cfg and calls check->other)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "check", target: "other", type: "calls", confidence: 0.9, metadata: { bareCall: true } },
+        { source: "check", target: "@cfg", type: "uses", confidence: 0.9, metadata: { memberRead: true } },
+      ],
+    }),
+  },
+  {
+    id: "ruby/undef-name-calls",
+    language: "ruby",
+    defectClass: "relationship-noise",
+    description: "second-review RB-G regression: undef names emit calls again (second-review forbids calls check->helper)",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { source: "check", target: "helper", type: "calls", confidence: 0.9, metadata: { bareCall: true } }],
+    }),
+  },
+  {
+    id: "ruby/attr-string-loss",
+    language: "ruby",
+    defectClass: "symbol-loss",
+    description: "second-review RB-H regression: attr string names dropped again (second-review expects property name)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.name === "name" && s.kind === "property")) }),
+  },
+  {
+    id: "ruby/struct-new-symbols-loss",
+    language: "ruby",
+    defectClass: "symbol-loss",
+    description: "second-review RB-I regression: dynamic class creation back to invisible (second-review expects classes Point and Cfg)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !((s.name === "Point" || s.name === "Cfg") && s.kind === "class")) }),
+  },
+  {
+    id: "ruby/autoload-import-loss",
+    language: "ruby",
+    defectClass: "relationship-loss",
+    description: "second-review RB-J regression: autoload records nothing again (second-review expects import json/parser)",
+    transform: r => ({ ...r, imports: (r.imports ?? []).filter((i: any) => i.module !== "json/parser"), relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "references" && normRel(x).target === "json/parser")) }),
+  },
+  {
+    id: "ruby/nested-def-name-calls",
+    language: "ruby",
+    defectClass: "relationship-noise",
+    description: "second-review RB-K regression: nested singleton-def names and bound receivers read as calls again (second-review forbids hook->cached/memo/obj)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "hook", target: "cached", type: "calls", confidence: 0.9, metadata: { bareCall: true } },
+        { source: "hook", target: "memo", type: "calls", confidence: 0.9, metadata: { bareCall: true } },
+        { source: "hook", target: "obj", type: "calls", confidence: 0.9, metadata: { bareCall: true } },
+      ],
+    }),
+  },
+  {
     id: "python/drop-instance-attribute-properties",
     language: "python",
     defectClass: "symbol-loss",
