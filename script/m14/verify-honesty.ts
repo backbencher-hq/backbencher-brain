@@ -184,9 +184,13 @@ const EVIDENCE_INPUTS: Record<string, string[]> = {
   "M14.0.F5": ["src/ast/", "script/m14/differential.ts", "script/m14/verify-differential-evidence.ts"],
   "M14.0.F6": ["src/ast/", "validation/m14/fixtures/", "script/m14/spec/", "script/m14/verify-fixture-coverage.ts"],
   "M14.0.F7": ["src/ast/", "script/m14/verify-analyzer-hygiene.ts"],
-  "M14.0.F8": ["src/ast/", "validation/m14/probes/", "script/m14/verify-probe-battery.ts"],
-  "M14.0.F9": ["script/m14/spec/", "script/m14/verify-completeness.ts"],
-  "M14.0.SPEC": ["script/m14/spec/", "script/m14/verify-completeness.ts"],
+  // M49 W14: these three named the WRONG producer (see the producer-coverage
+  // rule below). F8 is emitted by the corpus census, not the probe battery;
+  // F9 is emitted by the probe battery, not the spec/completeness path; SPEC
+  // is emitted by completeness-inventory, not by its verifier.
+  "M14.0.F8": ["src/ast/", "script/m14/verify-corpus-census.ts"],
+  "M14.0.F9": ["src/ast/", "script/m14/verify-probe-battery.ts"],
+  "M14.0.SPEC": ["script/m14/spec/", "wasm/", "script/m14/completeness-inventory.ts", "script/m14/verify-completeness.ts"],
   "M14.CC1": ["src/ast/"],
   "M14.0.PIPE": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-pipeline-e2e.ts"],
   "M14.0.WC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-web-cluster-e2e.ts"],
@@ -226,6 +230,47 @@ for (const id of REQUIRED_EVIDENCE) {
   } else freshCount++
 }
 pass(`evidence freshness: ${freshCount} artifact(s) current against their declared inputs`)
+
+// A declared input set is only a claim about the right thing if it names the
+// file that EMITS the artifact. Three of them did not: M14.0.F8 (emitted by
+// `verify-corpus-census.ts`) declared the probe battery, M14.0.F9 (emitted by
+// the probe battery) declared the spec + completeness verifier, and
+// M14.0.SPEC (emitted by `completeness-inventory.ts`) declared only its
+// verifier. Two consequences, and the second is the serious one: editing the
+// probe battery failed F8's freshness over work F8 does not depend on, while
+// editing F8's REAL producer left F8 passing — a stale artifact that cannot be
+// told from a current one, which is this check's entire job.
+//
+// The producers are derived from the source rather than declared a second
+// time, so this map cannot drift from the code it describes.
+const PRODUCER_DIR = path.join(ROOT, "script", "m14")
+const producerSources = fs.readdirSync(PRODUCER_DIR).filter((f) => f.endsWith(".ts"))
+  .map((f) => ({ rel: `script/m14/${f}`, src: fs.readFileSync(path.join(PRODUCER_DIR, f), "utf8") }))
+function produces(id: string, file: { rel: string; src: string }): boolean {
+  return new RegExp(`issueId:\\s*"${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).test(file.src)
+}
+const coversProducer = (inputs: string[], rel: string) => inputs.some((pre) => rel.startsWith(pre))
+let producerChecked = 0
+for (const id of REQUIRED_EVIDENCE) {
+  const inputs = EVIDENCE_INPUTS[id]
+  if (!inputs) continue // the default set already spans script/
+  const owners = producerSources.filter((f) => produces(id, f)).map((f) => f.rel)
+  if (!owners.length) { fail(`${id}: no producer under script/m14/ emits this id`); continue }
+  if (!owners.some((o) => coversProducer(inputs, o))) {
+    fail(`${id}: declared inputs do not cover its producer — emitted by ${owners.join(", ")}, declared ${inputs.join(" ")}`)
+    continue
+  }
+  producerChecked++
+}
+pass(`every declared input set covers its artifact's producer (${producerChecked} artifact(s))`)
+// The rule must discriminate in both directions, from the real producers:
+// F9's own producer is covered by F9's inputs, and F8's producer is NOT covered
+// by F9's inputs (so the predicate can fail, rather than passing for every set).
+const f9ProducerCovered = producerSources.filter((f) => produces("M14.0.F9", f)).some((f) => coversProducer(EVIDENCE_INPUTS["M14.0.F9"], f.rel))
+const f8ProducerInF9Set = producerSources.filter((f) => produces("M14.0.F8", f)).some((f) => coversProducer(EVIDENCE_INPUTS["M14.0.F9"], f.rel))
+if (!f9ProducerCovered) fail("producer coverage is vacuous: F9's own producer is not covered by F9's declared inputs")
+else if (f8ProducerInF9Set) fail("producer coverage cannot fail: F8's producer passes under F9's inputs")
+else pass("producer coverage discriminates (F9's own producer covered, F8's producer not covered by F9's inputs)")
 
 // The rule must discriminate in both directions, proven from this repository's
 // own history rather than by stubbing the predicate: against the ROOT commit
