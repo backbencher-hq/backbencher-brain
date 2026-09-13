@@ -5,7 +5,7 @@
 // rig PERMANENT, WIRED and FAIL-ABLE: it runs the promoted probe over the real
 // server and the real index, reads the captured frames back at the PIXEL level
 // (so a DOM-perfect renderer that ships unstyled still fails), and proves it
-// can fail by planting five defects a fresh install would show.
+// can fail by planting fourteen defects a fresh install would show.
 //
 // What it proves, in order:
 //
@@ -22,15 +22,35 @@
 //   R3 stale:   the recorded bundle hash still equals the bundle built at THIS
 //               HEAD — a frame about a stale bundle is the exact failure the
 //               protocol exists to prevent.
-//   R4 mutants: five planted defects (pre-T5 vocabulary in the probe, a stale
-//               bundle hash, a blank frame, a fabricated call-site identity,
-//               and two identical panel frames) each FAIL.
-//   R5 wiring:  the gate is in the npm verify chain AND the CI verify:fast
-//               chain (machine-read from package.json, not a doc claim).
+//   R4 mutants: fourteen planted defects (pre-T5 vocabulary in the probe, a
+//               stale bundle hash, a blank frame, a fabricated call-site
+//               identity, two identical panel frames, a primary outside its
+//               own tier list, a serialized card, a frame that does not exist,
+//               a non-declared verdict word, a name-ordered newest-run pick, a
+//               blocked session reported as captured, a header reading the row
+//               count as the group count, a dropped usage group, and a group
+//               whose declared multiplicity lies) each FAIL.//   R5 wiring:  the gate is in the local `npm run verify` chain, and is NOT in
+//               `verify:fast` — the latter is the M36.S2 runner-certified
+//               subset (exactly 21 gates, asserted by
+//               script/m36/verify-verify-fast.ts), and this leg needs a display
+//               and a packaged VSIX, which a CI runner cannot provide. Both
+//               directions are machine-read from package.json, and the mutant
+//               plants the leg back into the runner subset.
+//   R6 findings: every frame the findings document names exists, and every
+//               verdict is a declared word.
+//   R7 blocked: the gate RUNS the real rig with the fixture absent and asserts
+//               the session is a declared blocked record with a reason and no
+//               frames — V1's closure requirement, machine-emitted at this HEAD
+//               instead of a claim in a document.
+//   R8 header:  the hub's header counts are the GROUP counts and account for
+//               every listed row, differentially against the server's own
+//               counts block over the real index (F7's "3 callers · 2 callees"
+//               vs its five rows).
 //
 // The frames leg is BLOCKED-NOT-GREEN when the rig, the fixture or its index is
 // absent: the reason is recorded and the check passes as a declared blocked
-// state (the M25 convention), never as an unstated skip.
+// state (the M25 convention), never as an unstated skip. R7 is the proof that
+// this rule is the behaviour and not the intention.
 //
 // Run: npx tsx script/m55/verify-live-surface.ts
 // Evidence: validation/m55/results/V1.json (+ V1-probe.json, frames/<run>/)
@@ -370,8 +390,29 @@ console.log("\nR5: wiring — the gate is in the chains (machine-read, not a doc
 const pkg = JSON.parse(readFileSync(PACKAGE, "utf8")) as { scripts: Record<string, string> }
 const inVerify = (pkg.scripts.verify ?? "").includes("m55/verify-live-surface")
 const inFast = (pkg.scripts["verify:fast"] ?? "").includes("m55/verify-live-surface")
-check("R5: the gate is in the npm verify chain", inVerify, "package.json scripts.verify")
-check("R5: the gate is in the CI verify:fast chain", inFast, "package.json scripts['verify:fast']")
+check("R5: the gate is in the local npm verify chain", inVerify, "package.json scripts.verify")
+// CORRECTION (M36.S2 interplay, found while re-running this gate): the V1
+// acceptance criterion originally read "wired into the npm verify chain and the
+// CI verify:fast chain". That is no longer the honest wiring: verify:fast is now
+// the runner-certified subset — EXACTLY the 21 gates fresh-HOME-certified for CI
+// runners, asserted by script/m36/verify-verify-fast.ts — and this leg cannot
+// run there (it needs Xvfb, xdotool, PIL and a packaged VSIX). So the gate
+// asserts BOTH directions: present in the local chain, absent from the runner
+// subset. A leg that needs a display being pointed at the runner subset is a
+// broken chain, not extra coverage.
+const m36Gate = existsSync(path.join(ROOT, "script/m36/verify-verify-fast.ts"))
+check("R5: the M36 runner-subset gate is present (the authority for what verify:fast may contain)", m36Gate, "script/m36/verify-verify-fast.ts")
+check(
+  "R5: the gate is NOT in verify:fast — this leg needs a display, so it is not runner-certifiable (M36.S2)",
+  !inFast,
+  "package.json scripts['verify:fast']",
+)
+/** The wiring rule, extracted so M15 plants the defect against it. */
+const legIsInChain = (chain: string): boolean => chain.includes("m55/verify-live-surface")
+mutant(
+  "M15: a display-dependent leg planted back into the runner-certified verify:fast subset",
+  !legIsInChain(pkg.scripts["verify:fast"] ?? "") && legIsInChain("npx tsx script/m55/verify-live-surface.ts && npx tsx script/m30/verify-governance.ts"),
+)
 
 // --- R6: the findings document (frames are evidence; evidence must not rot) --------
 // docs/m55/FRAME-FINDINGS.md lists what the frames showed and what was done about
@@ -414,6 +455,223 @@ mutant(
   )
 }
 
+// --- R7: the blocked path (V1's closure requirement) ---------------------------------
+// "V1's closure requires the external-fixture blocked path proven: run with the
+// fixture absent -> blocked with a reason, never green." A rule that is only
+// read in prose is not proven, so this leg RUNS the real rig against a workspace
+// that does not exist, reads the session record back, and asserts the four
+// things a blocked record must say. The record is written into the evidence dir
+// (V1-blocked-path.json) at this HEAD, so it cannot go stale silently.
+console.log("\nR7: the blocked path — a missing fixture is a declared blocked session, never green")
+const BLOCKED_PROOF = path.join(ROOT, "validation/m55/results/V1-blocked-path.json")
+const ABSENT_FIXTURE = path.join(ROOT, "validation/m55/.blocked-path-fixture-absent")
+
+/** The one blocked-path predicate. Extracted so M11 can plant the defect
+ *  (a session record claiming to be captured) against the SAME rule the leg
+ *  asserts — a mutant that re-implements the rule proves nothing. */
+function blockedSessionIsBlocked(r: { status?: string; reason?: string; fixture?: { present?: boolean } } | null): boolean {
+  return (
+    r !== null &&
+    r.status === "blocked" &&
+    typeof r.reason === "string" &&
+    (/fixture/i.test(r.reason) || /prerequisite/i.test(r.reason)) &&
+    r.fixture?.present === false
+  )
+}
+
+check("R7: the absent-fixture path really is absent (the proof cannot pass vacuously)", !existsSync(ABSENT_FIXTURE), ABSENT_FIXTURE)
+let blockedRecord: { status?: string; reason?: string; fixture?: { present?: boolean; workspace?: string }; flows?: unknown[] } | null = null
+try {
+  // A blocked session exits non-zero by design (see the rig CLI): the RECORD is
+  // the evidence, so the exit code is deliberately not the assertion.
+  execFileSync("npx", ["tsx", "script/m55/screenshot-protocol.ts", "--fixture", ABSENT_FIXTURE, "--run", "blocked-proof", "--out", BLOCKED_PROOF], {
+    cwd: ROOT,
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 180_000,
+  })
+} catch {
+  // expected for a blocked session
+}
+try {
+  blockedRecord = JSON.parse(readFileSync(BLOCKED_PROOF, "utf8")) as typeof blockedRecord
+} catch {
+  blockedRecord = null
+}
+check("R7: a session run with the fixture absent emitted a session record at this HEAD", blockedRecord !== null, path.relative(ROOT, BLOCKED_PROOF))
+check(
+  "R7: the session is a DECLARED BLOCKED record (status + reason + the absent workspace)",
+  blockedSessionIsBlocked(blockedRecord),
+  JSON.stringify({ status: blockedRecord?.status, reason: blockedRecord?.reason, present: blockedRecord?.fixture?.present }).slice(0, 200),
+)
+check("R7: the blocked session captured nothing (no frame can back a claim)", Array.isArray(blockedRecord?.flows) && blockedRecord!.flows!.length === 0, `flows=${blockedRecord?.flows?.length ?? "n/a"}`)
+check(
+  "R7: the blocked run left no frames directory (a blocked session never writes a green-looking run)",
+  !existsSync(path.join(FRAMES_DIR, "blocked-proof")),
+  "validation/m55/frames/blocked-proof",
+)
+mutant(
+  "M11: a blocked session reported as captured",
+  !blockedSessionIsBlocked({ ...(blockedRecord ?? {}), status: "captured" }) &&
+    !blockedSessionIsBlocked({ ...(blockedRecord ?? {}), reason: "" }) &&
+    blockedSessionIsBlocked(blockedRecord),
+)
+
+// --- R8: the hub header counts account for the listed rows (F7) ---------------------
+// docs/m55/FRAME-FINDINGS.md F7: the live hub header read `3 callers · 2 callees`
+// while the by-file list below it showed five rows. hub-panel.ts says the header
+// numbers are the GROUP counts (§13.4) and the list is the rows grouped by file,
+// so 3 + 2 = the five rows listed — which may be exactly right. That is a claim
+// for a machine assertion over a real index, not for a comment.
+//
+// This leg renders the REAL probe response through the ONE renderer core and
+// asserts three independent derivations agree, in both directions:
+//   * the header number the eye reads == the number of rows rendered under it
+//     (so the two numbers account for the list);
+//   * the header number == the SERVER's own declared group count (the wire's
+//     counts block is a second, independent source — the differential);
+//   * the declared row multiplicity (occurrences) sums to the raw response's
+//     row count — the number the header is NOT, and must not be confused with.
+// A header that read the ROW count as the group count (the frame's ambiguity
+// resolved the wrong way) fails; the live fixture has groups != rows for
+// Greeter (3 vs 4), so that mutant cannot pass vacuously.
+console.log("\nR8: the hub header counts account for the listed rows (F7 — the frame's '3 callers · 2 callees' vs its five rows)")
+
+/** The minimal DOM port (the V1/U3 stub convention). */
+class HubDomEl {
+  className = ""
+  children: HubDomEl[] = []
+  textContent = ""
+  attrs: Record<string, string> = {}
+  constructor(public tagName: string) {}
+  setAttribute(name: string, value: string): void {
+    this.attrs[name] = value
+  }
+  appendChild(child: HubDomEl): HubDomEl {
+    this.children.push(child)
+    return child
+  }
+  addClass(name: string): void {
+    this.className = this.className ? `${this.className} ${name}` : name
+  }
+  find(className: string): HubDomEl | null {
+    if (this.className.split(" ").includes(className)) return this
+    for (const child of this.children) {
+      const hit = child.find(className)
+      if (hit !== null) return hit
+    }
+    return null
+  }
+  findAll(className: string, out: HubDomEl[] = []): HubDomEl[] {
+    if (this.className.split(" ").includes(className)) out.push(this)
+    for (const child of this.children) child.findAll(className, out)
+    return out
+  }
+}
+
+interface HubHeaderAudit {
+  ok: boolean
+  violations: string[]
+  facts: Record<string, number>
+}
+
+/** The F7 rule, extracted so M12–M14 plant defects against the SAME rule the
+ *  live assertion uses — a mutant that re-implements the rule proves nothing. */
+function hubHeaderAudit(grouped: any, core: typeof import("../../script/m26/graph-core.ts")): HubHeaderAudit | null {
+  if (grouped === undefined || grouped === null || !Array.isArray(grouped.callers) || !Array.isArray(grouped.callees)) return null
+  const el = new HubDomEl("div")
+  const dom = { create: (t: string) => new HubDomEl(t), root: () => el, el }
+  core.renderHubList(grouped as never, dom as never, "file")
+  const summary = el.find("bb-hub-summary")
+  if (summary === null) return null
+  const num = (v: string | undefined): number => (v === undefined ? Number.NaN : Number(v))
+  const direction = (d: "caller" | "callee") => {
+    const rows = el.findAll("bb-hub-symrow").filter((r) => r.attrs["data-dir"] === d)
+    return { rendered: rows.length, occurrences: rows.reduce((n, r) => n + num(r.attrs["data-occurrences"]), 0) }
+  }
+  const callers = direction("caller")
+  const callees = direction("callee")
+  const rawCallerRows = (grouped.callers as any[]).reduce((n, g) => n + ((g.rows ?? []) as unknown[]).length, 0)
+  const rawCalleeRows = (grouped.callees as any[]).reduce((n, g) => n + ((g.rows ?? []) as unknown[]).length, 0)
+  const facts: Record<string, number> = {
+    derivedCallerGroups: num(summary.attrs["data-callers"]),
+    derivedCalleeGroups: num(summary.attrs["data-callees"]),
+    derivedCallerRows: num(summary.attrs["data-caller-rows"]),
+    derivedCalleeRows: num(summary.attrs["data-callee-rows"]),
+    serverCallerGroups: num(summary.attrs["data-server-callers"]),
+    serverCalleeGroups: num(summary.attrs["data-server-callees"]),
+    renderedCallerRows: callers.rendered,
+    renderedCalleeRows: callees.rendered,
+    renderedCallerOccurrences: callers.occurrences,
+    renderedCalleeOccurrences: callees.occurrences,
+    rawCallerRows,
+    rawCalleeRows,
+  }
+  const violations: string[] = []
+  if (facts.derivedCallerGroups !== facts.renderedCallerRows) violations.push("header callers != caller rows listed")
+  if (facts.derivedCalleeGroups !== facts.renderedCalleeRows) violations.push("header callees != callee rows listed")
+  if (facts.derivedCallerGroups !== facts.serverCallerGroups) violations.push("derived caller groups != the server's declared caller groups")
+  if (facts.derivedCalleeGroups !== facts.serverCalleeGroups) violations.push("derived callee groups != the server's declared callee groups")
+  if (facts.derivedCallerRows !== facts.rawCallerRows) violations.push("header's declared caller rows != the response's rows")
+  if (facts.derivedCalleeRows !== facts.rawCalleeRows) violations.push("header's declared callee rows != the response's rows")
+  if (facts.renderedCallerOccurrences !== facts.rawCallerRows) violations.push("rendered caller occurrences != the response's rows")
+  if (facts.renderedCalleeOccurrences !== facts.rawCalleeRows) violations.push("rendered callee occurrences != the response's rows")
+  return { ok: violations.length === 0, violations, facts }
+}
+
+if (probe.status === "blocked") {
+  blocked("R8: the hub header counts account for the listed rows (F7)", "the probe is blocked — there is no live response to audit")
+} else {
+  const coreHub = (await import(pathToFileURL(CORE).href)) as typeof import("../../script/m26/graph-core.ts")
+  let hubAudits = 0
+  for (const [flowId, label] of [["F7", "Greeter (class)"], ["F8", "greet (method)"]] as const) {
+    const audit = hubHeaderAudit(probe.flows[flowId]?.result, coreHub)
+    if (audit === null) {
+      blocked(`R8: the ${label} hub response renders a summary`, "the flow was blocked or the response carries no summary")
+      continue
+    }
+    hubAudits++
+    const f = audit.facts
+    check(
+      `R8: ${label} — the header numbers account for every listed row (${f.derivedCallerGroups} + ${f.derivedCalleeGroups} = ${f.renderedCallerRows + f.renderedCalleeRows} rows)`,
+      audit.ok,
+      audit.violations.join("; "),
+    )
+    check(
+      `R8: ${label} — groups and row multiplicity are declared separately and both hold (${f.derivedCallerGroups} groups / ${f.derivedCallerRows} rows)`,
+      f.derivedCallerGroups === f.renderedCallerRows && f.derivedCallerRows === f.renderedCallerOccurrences,
+      JSON.stringify(f),
+    )
+  }
+  check("R8: the hub header rule was audited over the real index", hubAudits >= 1, String(hubAudits))
+
+  // The mutants. Each plants the defect this leg exists to catch, against the
+  // REAL live response, and the first one can only be caught because the live
+  // fixture's groups and rows differ — so this suite fails loudly if the fixture
+  // ever becomes trivially consistent (it would stop testing anything).
+  const live = JSON.parse(JSON.stringify(probe.flows.F7?.result ?? null)) as any
+  const groupsDifferFromRows = live !== null && (live.counts.callerGroups !== live.counts.callerRows || live.counts.calleeGroups !== live.counts.calleeRows)
+  check(
+    "R8: the live fixture's hub has groups != rows, so M12 cannot pass vacuously",
+    groupsDifferFromRows,
+    live === null ? "no F7 response" : JSON.stringify(live.counts),
+  )
+  mutant(
+    "M12: a header that reads the ROW count as the group count (the F7 ambiguity resolved the wrong way)",
+    live !== null &&
+      hubHeaderAudit({ ...live, counts: { ...live.counts, callerGroups: live.counts.callerRows, calleeGroups: live.counts.calleeRows } }, coreHub)?.ok === false &&
+      hubHeaderAudit(live, coreHub)?.ok === true,
+  )
+  mutant(
+    "M13: a usage group dropped from the list while the header keeps counting it",
+    live !== null && hubHeaderAudit({ ...live, callers: live.callers.slice(1) }, coreHub)?.ok === false,
+  )
+  mutant(
+    "M14: a group whose declared multiplicity lies about its rows",
+    live !== null &&
+      hubHeaderAudit({ ...live, callers: live.callers.map((g: any, i: number) => (i === 0 ? { ...g, occurrences: 1 } : g)) }, coreHub)?.ok === false,
+  )
+}
+
 // --- evidence ------------------------------------------------------------------------
 const failed = checks - passed
 const result = {
@@ -440,6 +698,9 @@ const result = {
     captureRun: runName,
     probeFile: path.relative(ROOT, PROBE_OUT),
     probeStatus: probe.status,
+    blockedPathProof: path.relative(ROOT, BLOCKED_PROOF),
+    blockedPathStatus: blockedRecord?.status ?? null,
+    blockedPathReason: blockedRecord?.reason ?? null,
   },
   frameFacts,
   // Acceptance 4: every claim maps to a frame or a probe line.
@@ -454,6 +715,8 @@ const result = {
     { claim: "the three surfaces are distinct views", source: "frame diffs: hub vs impact vs call hierarchy", frame: "4, 5, 6" },
     { claim: "a symbol that does not exist is a declared error, not an empty result", source: "probe F11", frame: null },
     { claim: "every frame is about the bundle built at this HEAD", source: "R3 bundle-hash comparison", frame: "all frames" },
+    { claim: "a missing fixture is a declared blocked session with a reason, never a green run", source: "R7 + validation/m55/results/V1-blocked-path.json", frame: null },
+    { claim: "the hub header's counts are the group counts and account for every listed row (F7)", source: "R8 over the real F7/F8 responses rendered by the ONE core", frame: "4-open-in-graph.png" },
   ],
   failures,
   limitations: [

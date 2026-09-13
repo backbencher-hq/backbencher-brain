@@ -134,7 +134,7 @@ above it. The one row that is the point of the card should not be below the fold
 
 **Verdict:** open — U2 (actions first, or pinned).
 
-## F7 — "3 callers · 2 callees" vs the listed rows · NEEDS A TRUTH ASSERTION
+## F7 — "3 callers · 2 callees" vs the listed rows · FIXED (asserted, not softened)
 
 **Frame:** `validation/m55/frames/live-11/4-open-in-graph.png`
 
@@ -144,7 +144,29 @@ counts are the **group** counts (§13.4, `callerGroups`/`calleeGroups`) and the
 list is a different grouping of the same rows — which may be exactly right. That
 is a claim for a machine assertion over a real index, not for a comment.
 
-**Verdict:** open — add the differential assertion to V1's in-editor gate.
+**It was exactly right, and it is now machine-checked.** R8 of
+`script/m55/verify-live-surface.ts` renders the REAL `bb/graph` usages response
+through the ONE renderer core and asserts three independent derivations agree:
+the header number the eye reads, the number of rows rendered under it, and the
+**server's own counts block** — in both directions. On the live fixture:
+
+| Symbol | Header | Rows listed | Group vs row multiplicity |
+|---|---|---|---|
+| `Greeter` | `3 callers · 2 callees` | 3 + 2 = **5** | 3 groups / **4** caller rows |
+| `greet` | `3 callers · 0 callees` | 3 + 0 = **3** | 3 groups / 3 rows |
+
+The five rows the frame listed are accounted for by the two header numbers
+exactly (3 caller groups + 2 callee groups). The multiplicity is a *separate*
+declaration and is asserted too, so a header can never be read as a row count: the
+live `Greeter` has 3 groups against 4 rows, which is why
+`M12: a header that reads the ROW count as the group count` cannot pass
+vacuously, and R8 fails loudly if the fixture ever becomes trivially consistent.
+`M13` (a dropped group) and `M14` (a lying multiplicity) are planted against the
+same rule.
+
+**Verdict:** fixed — `script/m55/verify-live-surface.ts` R8 (V1: 77/77, 14/14
+mutants); the live numbers above are read from `validation/m55/results/V1-probe.json`
+at the evidence HEAD.
 
 ## F9 — what the palette actually matches (the rig was driving the wrong command) · FIXED
 
@@ -223,3 +245,23 @@ the row's machine attribute. Gated by S1 in
   STARTING IT COST)` with the launch path, version, version verdict and cost;
   then `PER-LANGUAGE EVIDENCE LEVELS (DECLARED, DRIFT-GATED) — 7 LANGUAGE(S)`.
   (Truth Rule 1)
+
+## F12 — the blocked path (a missing fixture) · VERIFIED
+
+**Record:** `validation/m55/results/V1-blocked-path.json`
+
+V1's closure requires the external-fixture blocked path proven: run with the
+fixture absent and the session must come back **blocked with a reason, never
+green**. R7 runs the real rig against a workspace that does not exist
+(`--fixture validation/m55/.blocked-path-fixture-absent`) and asserts the four
+things a blocked record must say: status `blocked`, the missing fixture named as
+the reason, zero captured flows, and no frames directory written. `M11` plants
+the defect (a blocked session reported as captured).
+
+This matters because the fixture is external by owner decision and is not
+vendored: on a machine without it, the honest outcome is a declared blocked leg,
+and this is the machine proof that the rig does that rather than producing a
+plausible-looking green run.
+
+**Verdict:** verified — `script/m55/verify-live-surface.ts` R7 (V1: 77/77,
+14/14 mutants).

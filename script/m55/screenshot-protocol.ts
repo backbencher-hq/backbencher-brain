@@ -24,6 +24,13 @@
 // record with the reason — never green, never silently skipped.
 //
 // Run: npx tsx script/m55/screenshot-protocol.ts [--run <name>] [--out <manifest.json>]
+//      [--fixture <workspace>]
+//
+// `--fixture` is the BLOCKED-PATH proof hook: V1's closure requires a session
+// run with the fixture ABSENT to come back blocked-with-reason (never green),
+// and that requires being able to point the rig at a workspace that is not
+// there. The declared fixture remains the default, and the workspace actually
+// used is recorded in the session record.
 
 import { execFileSync, spawn, type ChildProcess } from "node:child_process"
 import { createHash } from "node:crypto"
@@ -119,7 +126,7 @@ function sh(cmd: string, args: string[], env: Record<string, string> = {}): { ok
 
 /** The declared prerequisites. Missing entries produce a blocked session (the
  *  gate records them; it never turns them into a pass). */
-export function rigPreflight(): { ok: boolean; missing: string[]; notes: Record<string, string> } {
+export function rigPreflight(fixture: string = DECLARED_FIXTURE): { ok: boolean; missing: string[]; notes: Record<string, string> } {
   const missing: string[] = []
   const notes: Record<string, string> = {}
   for (const tool of ["Xvfb", "xdotool", "import"]) {
@@ -133,7 +140,7 @@ export function rigPreflight(): { ok: boolean; missing: string[]; notes: Record<
   const pil = sh("python3", ["-c", "import PIL; print(PIL.__version__)"])
   if (!pil.ok) missing.push("python3 + PIL (script/m55/pixel-read.py)")
   else notes.pil = pil.out.trim()
-  if (!existsSync(DECLARED_FIXTURE)) missing.push(`declared fixture workspace (${DECLARED_FIXTURE})`)
+  if (!existsSync(fixture)) missing.push(`declared fixture workspace (${fixture})`)
   return { ok: missing.length === 0, missing, notes }
 }
 
@@ -201,9 +208,15 @@ async function sleep(ms: number): Promise<void> {
 }
 
 /** A capture session: build, install, launch, drive, capture, record. */
-export async function runCaptureSession(opts: { run?: string; profile?: string } = {}): Promise<SessionResult> {
+export async function runCaptureSession(opts: { run?: string; profile?: string; fixture?: string } = {}): Promise<SessionResult> {
   const runName = opts.run ?? `run-${new Date().toISOString().replace(/[:.]/g, "-")}`
   const profile = opts.profile ?? path.join(M55_ROOT, "validation/m55/profile")
+  /** The workspace under test. Declared (wire-probe's DECLARED_FIXTURE) unless
+   *  an explicit override is passed: the override exists so the BLOCKED PATH is
+   *  provable — V1's closure requires a session run with the fixture absent to
+   *  come back blocked-with-reason, never green, and that cannot be shown
+   *  without being able to point the rig at a workspace that is not there. */
+  const fixture = opts.fixture ?? DECLARED_FIXTURE
   const outDir = path.join(FRAMES_DIR, runName)
   const editorVersion = sh("bash", ["-lc", "code --version | head -3"]).out.trim().split("\n")
   const base: SessionResult = {
@@ -213,15 +226,15 @@ export async function runCaptureSession(opts: { run?: string; profile?: string }
     screen: { ...SCREEN },
     editor: { binary: sh("bash", ["-lc", "command -v code"]).out.trim(), version: editorVersion[0] ?? "unknown", pinnedDeclared: "1.85.0 (.vscode-test)", pinHonored: false },
     bundle: { vsix: "", installedAt: "", bundlePath: "", bundleSha256: "" },
-    fixture: { workspace: DECLARED_FIXTURE, present: existsSync(DECLARED_FIXTURE), contentHash: fixtureContentHash(DECLARED_FIXTURE), indexedProjectDir: fixtureProjectDir(DECLARED_FIXTURE) },
+    fixture: { workspace: fixture, present: existsSync(fixture), contentHash: fixtureContentHash(fixture), indexedProjectDir: fixtureProjectDir(fixture) },
     flows: [],
     generatedAt: new Date().toISOString(),
   }
 
-  const pre = rigPreflight()
+  const pre = rigPreflight(fixture)
   if (!pre.ok) return { ...base, reason: `rig prerequisites absent: ${pre.missing.join(", ")}` }
   if (base.fixture.indexedProjectDir === null) {
-    return { ...base, reason: `the declared fixture has no index in the owner's BB_DATA_DIR (run: bb index ${DECLARED_FIXTURE})` }
+    return { ...base, reason: `the declared fixture has no index in the owner's BB_DATA_DIR (run: bb index ${fixture})` }
   }
 
   // A pinned profile: settings recorded with the frames so the render is
@@ -294,7 +307,7 @@ export async function runCaptureSession(opts: { run?: string; profile?: string }
       "--user-data-dir", path.join(profile, "user-data"),
       "--new-window",
       "--verbose",
-      DECLARED_FIXTURE,
+      fixture,
     ], { DISPLAY })
     // Wait for the workbench: the window must exist before any capture.
     let windowId = ""
@@ -363,10 +376,10 @@ export async function runCaptureSession(opts: { run?: string; profile?: string }
         // Place the cursor ON the symbol (the editor's own -g). Without a
         // window manager, focus has to be set explicitly too: `windowactivate`
         // is an EWMH request that does nothing on a bare Xvfb.
-        const pos = resolvePosition(DECLARED_FIXTURE, { file: flow.file, symbol: flow.symbol, kind: flow.kind, id: flow.id } as never)
+        const pos = resolvePosition(fixture, { file: flow.file, symbol: flow.symbol, kind: flow.kind, id: flow.id } as never)
         const line = pos === null ? 1 : pos.line + 1
         const column = pos === null ? 1 : pos.character + 1
-        run("code", ["-g", path.join(DECLARED_FIXTURE, flow.file) + `:${line}:${column}`, "--extensions-dir", path.join(profile, "extensions"), "--user-data-dir", path.join(profile, "user-data")], { timeout: 60_000 })
+        run("code", ["-g", path.join(fixture, flow.file) + `:${line}:${column}`, "--extensions-dir", path.join(profile, "extensions"), "--user-data-dir", path.join(profile, "user-data")], { timeout: 60_000 })
         await sleep(2500)
         xdo("windowfocus", "--sync", windowId)
         xdo("windowactivate", "--sync", windowId)
@@ -461,7 +474,11 @@ export async function runCaptureSession(opts: { run?: string; profile?: string }
 if (process.argv[1] !== undefined && /screenshot-protocol\.ts$/.test(process.argv[1])) {
   const args = process.argv.slice(2)
   const runIdx = args.indexOf("--run")
-  const result = await runCaptureSession({ run: runIdx >= 0 ? args[runIdx + 1] : undefined })
+  const fixtureIdx = args.indexOf("--fixture")
+  const result = await runCaptureSession({
+    run: runIdx >= 0 ? args[runIdx + 1] : undefined,
+    fixture: fixtureIdx >= 0 ? args[fixtureIdx + 1] : undefined,
+  })
   const outIdx = args.indexOf("--out")
   if (outIdx >= 0 && args[outIdx + 1] !== undefined) writeFileSync(args[outIdx + 1]!, JSON.stringify(result, null, 2) + "\n")
   console.log(`screenshot-protocol: ${result.status}${result.reason !== undefined ? ` — ${result.reason}` : ""} (${result.flows.filter((f) => f.status === "captured").length}/${CAPTURE_FLOWS.length} frames)`)
