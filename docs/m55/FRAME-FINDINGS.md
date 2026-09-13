@@ -17,7 +17,10 @@ fails if one of them does not exist.
 | `live-8` | first status-surface attempt (taught F9: the frame was a *different* command's) |
 | `live-9` | `>`-prefixed palette drive (taught F9's second half: it ran "Toggle Panel Visibility") |
 | `live-10` | first real status surface (taught F11: "I1 — I1 — protocol-passed") |
-| `live-11` | current: F2 and F11 both fixed, read back by eye |
+| `live-11` | F2 and F11 both fixed, read back by eye |
+| `live-12` | the T1 closure frames added: the constructor card and the constructor graph |
+| `live-13` | first attempt at the T2 activation leg — **removed from the tree**: the frame did not show what its label claimed (F13) |
+| `live-14` | current: T1 and T3 closure frames captured, read back by eye, and gated by R2 |
 
 Runs `live-1`..`live-5` were rig development (blocked legs, byte-identical
 frames) and were moved out of the tree to
@@ -237,6 +240,27 @@ the row's machine attribute. Gated by S1 in
 - **Panels land as a tab in the current group and do not steal the cursor** —
   `live-11/7-status.png` shows the Status tab open with the Hub and Impact tabs
   kept and `greeter.ts` back on screen. (P1)
+- **The constructor case, framed at this HEAD (T1's closure requirement)** —
+  `validation/m55/frames/live-14/8-ctor-hover-declaration.png`: the card reads
+  `public constructor(prefix: string)` /
+  `constructor — constructor, 0 usages (usage sites only; declaration and
+  callees excluded)` / `evidence: structural` / the three actions / `source: bb
+  index (…/src/greeter.ts:7)`. And
+  `validation/m55/frames/live-14/9-ctor-open-in-graph.png`: the panel
+  tab is titled `Backbencher Hub — constructor → Greeter (owning declaration)`,
+  the body carries the declared note `"constructor" has no graph of its own —
+  showing the usages of its owning declaration Greeter`, then the rows grouped by
+  file. The owner's filing frame (`s10-ctor-graph.png`) captured this same case
+  as a **silent** relabel; at this HEAD it is labeled, on screen, in a fresh
+  install. (Also visible: the header's `3 callers · 2 callees` and the five rows
+  — the F7 case, now machine-asserted by R8.)
+- **The zero-usage case, framed at this HEAD (T3's closure requirement)** —
+  `validation/m55/frames/live-14/10-hover-zero-usages.png`: the card for `greetAll` reads
+  `greetAll — method, 0 usages (usage sites only; declaration and callees
+  excluded)` with **no usages list**, and its callee appears only in the
+  separately-labelled `connected:` line (`calls greet · role consumer · layer
+  core→core · 4 referring rows`). A zero-usage symbol never renders its callees
+  or its owning class as usages.
 - **The status surface states what it claims** — `live-11/7-status.png`:
   `FACTS (EACH LINE STATES WHAT IT IS AND WHERE IT CAME FROM)` →
   `server: running (0.3.0)`, `index: ready`, `active file: fresh (reindexed)`,
@@ -245,6 +269,40 @@ the row's machine attribute. Gated by S1 in
   STARTING IT COST)` with the launch path, version, version verdict and cost;
   then `PER-LANGUAGE EVIDENCE LEVELS (DECLARED, DRIFT-GATED) — 7 LANGUAGE(S)`.
   (Truth Rule 1)
+
+## F13 — the call-hierarchy activation leg · OPEN (narrow)
+
+**Attempt:** run `live-13` (removed from the tree), flow `call-hierarchy-activate`
+
+T2's closure requirement reads: *"in-editor leg: the native Call hierarchy view
+opened from a hover shows the expected callers and clicking one lands on the
+CALL SITE with the correct symbol highlighted (frame + machine assertion)"*. The
+callers-rendered half is covered
+(`validation/m55/frames/live-14/6-call-hierarchy.png`). For the click
+half, the rig was extended with a `thenKeys` driver: run
+`bbLsp.showCallHierarchy`, then send `Down` (select the first row) and `Return`
+(the same navigation a click posts), then capture.
+
+**What the frame showed:** no call-hierarchy view at all, and the editor's cursor
+still on `greeter.ts:15` (the status bar reads `Ln 15, Col 1`) — i.e. the
+keyboard activation never reached the tree, most likely because the view did not
+hold keyboard focus on a bare Xvfb with no window manager. The frame therefore
+did **not** show what the flow's own label would have claimed.
+
+**What was done:** the flow was removed and its run deleted rather than kept with
+a softened label — a frame that overclaims is worse than a missing one. The
+`thenKeys` mechanism stays (it is the right driver once the leg can prove the tree
+has focus), and T2 stays open with exactly this remaining item.
+
+The machine half of the requirement is already asserted where it can be:
+`script/m55/verify-call-hierarchy.ts` checks that every `fromRange` the server
+returns resolves to the **invocation token** in the source bytes, which is what
+the editor navigates on — so the landing target is verified even though the
+keystroke that would demonstrate it is not.
+
+**Verdict:** open (narrow) — T2's only remaining closure item; needs a driver that
+can focus the Call Hierarchy view (e.g. a window manager or the view's own focus
+command) before the activation can be framed.
 
 ## F12 — the blocked path (a missing fixture) · VERIFIED
 
