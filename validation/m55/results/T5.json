@@ -12,23 +12,16 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "369eeea6fe6bc4add5b4a34dc425e0421c6e353c",
+  "currentCommit": "7e5154a1a2baa86627ae9df9b2427af4325736e4",
   "workingTreeRelevantChanges": [
-    "script/m26/graph-core.ts",
-    "script/m26/verify-cross-language-hover.ts",
-    "script/m26/verify-evidence-badges.ts",
-    "src/lsp/cross_language_hover.ts",
-    "src/lsp/hover.ts",
-    "script/m55/t5-fixture.ts",
-    "script/m55/verify-tiers.ts",
-    "src/lsp/evidence_tier.ts"
+    "script/m55/verify-status-panel.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
   "evidenceFile": "T5.json",
-  "generatedAt": "2026-09-13T18:08:58.590Z",
+  "generatedAt": "2026-09-13T19:23:03.308Z",
   "fixture": {
-    "workspace": "/tmp/m55-t5-ws-cflctZ",
-    "projectId": "2999d7a6e525d294e1281ea3d44c823879e2970a",
+    "workspace": "/tmp/m55-t5-ws-Su3H4n",
+    "projectId": "29555ce23c8ba37ca08c223ce26fed2c0c35597c",
     "symbols": 7,
     "rows": 9
   },
