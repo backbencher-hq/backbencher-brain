@@ -298,6 +298,10 @@ if (runName === null) {
   const ctorGraph = framePath("ctor-open-in-graph")
   // T3's closure frame: the zero-usage card (a declared absence in the editor).
   const zeroUsage = framePath("hover-zero-usages")
+  // T2's closure frame: the call hierarchy AFTER a click on a caller row. The
+  // requirement is "clicking one lands on the CALL SITE"; the frame must show
+  // that navigation happened, so it is compared against the pre-click frame.
+  const chClick = framePath("call-hierarchy-click")
 
   // EVERY declared flow must have a frame: the milestone's rule is that a claim
   // with no frame is not a claim. A flow that silently blocks would leave a
@@ -388,6 +392,37 @@ if (runName === null) {
     const d = pixel("diff", [hub, ctorGraph, ...region("panel")])
     frameMatters("R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)", surfacesDiffer(d), d)
   }
+  // T2's closure requirement: the click that lands on the call site.
+  check("R2: the T2 closure frame exists (the call hierarchy after a click)", chClick !== null, `call-hierarchy-click=${chClick !== null}`)
+  if (chClick !== null) {
+    const full = pixel("stats", [chClick, "0", "0", String(SCREEN.width), String(SCREEN.height)])
+    frameFacts["ch-click:stats"] = full
+    check("R2: the clicked call-hierarchy frame shows a rendered surface (T2)", frameShowsContent(full), JSON.stringify(full).slice(0, 160))
+    if (callTree !== null) {
+      // The tree occupies the lower-right of the editor area; the landing editor
+      // the top-left. The click must change the EDITOR (the navigation) while the
+      // surface stays a call hierarchy (a different view would mean the click
+      // hit a toolbar/menu instead of a row).
+      const w = win ?? { x: 0, y: 0, width: SCREEN.width, height: SCREEN.height }
+      const at = (fx0: number, fy0: number, fx1: number, fy1: number): [string, string, string, string] => {
+        const x = w.x + Math.floor(w.width * fx0)
+        const y = w.y + Math.floor(w.height * fy0)
+        return [String(x), String(y), String(Math.floor(w.width * (fx1 - fx0))), String(Math.floor(w.height * (fy1 - fy0)))]
+      }
+      const editorBox = at(0.19, 0.08, 0.63, 0.27)
+      const navDiff = pixel("diff", [callTree, chClick, ...editorBox])
+      frameFacts["ch-click:editor-diff"] = navDiff
+      check(
+        "R2: clicking a caller row CHANGED the editor (the navigation landed somewhere new) — T2",
+        surfacesDiffer(navDiff),
+        JSON.stringify(navDiff).slice(0, 160),
+      )
+      const wholeDiff = pixel("diff", [callTree, chClick, "0", "0", String(SCREEN.width), String(SCREEN.height)])
+      frameFacts["ch-click:whole-diff"] = wholeDiff
+      check("R2: the click frame is its own frame (not the pre-click one)", surfacesDiffer(wholeDiff), JSON.stringify(wholeDiff).slice(0, 140))
+    }
+  }
+
   // T3's closure requirement: "V1's in-editor frame of the same case" — the
   // zero-usage symbol rendered in the editor, distinct from the used one.
   check("R2: the T3 closure frame exists (the zero-usage card)", zeroUsage !== null, `hover-zero-usages=${zeroUsage !== null}`)

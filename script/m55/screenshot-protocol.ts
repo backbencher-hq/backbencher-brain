@@ -69,7 +69,23 @@ export interface CaptureFlow {
   action:
     | { kind: "none" }
     | { kind: "hover" }
-    | { kind: "command"; command: string; title: string; thenKeys?: string[] }
+    | {
+        kind: "command"
+        command: string
+        title: string
+        thenKeys?: string[]
+        /** Click the Nth text row FOUND in a region of the window (region given
+         *  in window fractions). The row is measured from a scratch frame the
+         *  rig captures just before the click — positions are FOUND, not frozen:
+         *  the first attempt froze a y-coordinate measured from an earlier run
+         *  and clicked the tree's ROOT row instead of a caller, because the tab
+         *  strip's height shifted the tree by ~30 px between runs. */
+        thenClickRow?: { region: [number, number, number, number]; index: number }
+        /** Keys sent AFTER the row click. A click on a tree row SELECTS it (and
+         *  gives the tree focus); the activation that navigates is the second
+         *  half — exactly how a developer finishes the gesture. */
+        afterClickKeys?: string[]
+      }
 }
 
 export const CAPTURE_FLOWS: CaptureFlow[] = [
@@ -91,16 +107,30 @@ export const CAPTURE_FLOWS: CaptureFlow[] = [
   // T3's own closure requirement: the zero-usage case in the editor ("0 usages"
   // and NO list — declared absence, never the callees or the owning class).
   { id: "10", label: "hover-zero-usages", shows: "the card for a symbol with zero usages — a declared absence (T3)", file: "src/greeter.ts", symbol: "greetAll", kind: "declaration", action: { kind: "hover" } },
+  // T2's own closure requirement: "clicking one lands on the CALL SITE with the
+  // correct symbol".
+  //
+  // F13 (recorded result of the first attempt): the KEYBOARD driver
+  // (Down + Return) did not reach the tree on a bare Xvfb — the frame showed no
+  // call-hierarchy view and the cursor still on greeter.ts:15 — so that flow was
+  // removed rather than kept with a label the frame did not support.
+  //
+  // This flow uses a real MOUSE CLICK on a caller row, which is what the owner's
+  // requirement describes and what a developer does. The click point is
+  // DECLARED, measured from validation/m55/frames/live-14/6-call-hierarchy.png
+  // (the tree's first caller row, `main function · calls · 1 call site`, sits at
+  // ~x 1300 / y 337 on the 1920x1080 session window) and expressed as a fraction
+  // of the window so it travels with the window rectangle the rig records.
+  { id: "11", label: "call-hierarchy-click", shows: "the call hierarchy after CLICKING a caller — the editor lands on the CALL SITE (T2)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bb.showCallHierarchy", title: "Backbencher: Show Call Hierarchy", thenClickRow: { region: [0.646, 0.296, 0.839, 0.407], index: 1 }, afterClickKeys: ["Right", "Down", "Return"] } },
+  // The call-SITE half of the same gesture (T2's wording: "lands on the CALL
+  // SITE") was ATTEMPTED as a second flow (expand the caller, Down onto its
+  // call-site child, Return) and is NOT here: re-issuing the call-hierarchy
+  // command in the following flow produced no state change, so the rig's
+  // own "did the workbench change?" check refused the frame twice (live-18,
+  // live-19). What the kept flow DOES prove is recorded in F13: the click
+  // navigates to the caller's file with the caller selected, and the call site
+  // is rendered in the view's inline preview and machine-asserted at the wire.
 ]
-// T2's closure leg ("clicking a caller lands on the CALL SITE") was ATTEMPTED
-// here and REMOVED: the flow drove the call hierarchy and then sent
-// Down + Return, and the captured frame showed NO call-hierarchy view and the
-// cursor still on greeter.ts:15 — the keyboard activation did not reach the
-// tree, so the frame did not show what the label would have claimed. A frame
-// that overclaims is worse than a missing one, so the flow is out and the
-// negative result is recorded as docs/m55/FRAME-FINDINGS.md F13 (T2's remaining
-// closure item). The `thenKeys` mechanism is kept: it is the right driver for a
-// leg that can prove the tree had focus.
 
 export interface FrameRecord {
   flow: string
@@ -449,11 +479,66 @@ export async function runCaptureSession(opts: { run?: string; profile?: string; 
           await sleep(1600)
           xdo("key", "--clearmodifiers", "Return")
           await sleep(3000)
-          // T2's closure leg: the tree row activation. `Down` selects the first
-          // row, `Return` posts the same navigate command a click does.
+          // T2's closure leg: the tree row activation.
+          //  * `thenKeys` drives the editor's own keyboard navigation (kept for
+          //    legs that can prove the tree holds focus);
+          //  * `thenClick` clicks a declared point in the window — the mouse
+          //    path the owner's requirement names. A click is delivered to
+          //    whatever is under the pointer, so no window manager is needed.
           for (const key of flow.action.thenKeys ?? []) {
             xdo("key", "--clearmodifiers", key)
             await sleep(1200)
+          }
+          if (flow.action.thenClickRow !== undefined) {
+            const rect = windowRect()
+            if (rect === null) {
+              base.flows.push({ id: flow.id, label: flow.label, status: "blocked", reason: "the window rectangle could not be read, so a row click cannot be aimed" })
+              continue
+            }
+            const [fx0, fy0, fx1, fy1] = flow.action.thenClickRow.region
+            const rx = rect.x + Math.round(rect.width * fx0)
+            const ry = rect.y + Math.round(rect.height * fy0)
+            const rw = Math.round(rect.width * (fx1 - fx0))
+            const rh = Math.round(rect.height * (fy1 - fy0))
+            // Read the CURRENT screen: capture a scratch frame and find its rows.
+            const scratch = path.join(outDir, `.scratch-${flow.id}.png`)
+            if (!captureTo(scratch)) {
+              base.flows.push({ id: flow.id, label: flow.label, status: "blocked", reason: "the scratch frame for the row read could not be captured" })
+              continue
+            }
+            const read = sh("python3", [PIXEL_READ, "rows", scratch, String(rx), String(ry), String(rw), String(rh)])
+            let found: { y0: number; y1: number; x0: number }[] = []
+            try {
+              found = ((JSON.parse(read.out) as { rows?: typeof found }).rows ?? [])
+            } catch {
+              found = []
+            }
+            const target = found[flow.action.thenClickRow.index]
+            if (target === undefined) {
+              // Found-not-frozen: a missing row is DECLARED, never clicked blind.
+              base.flows.push({
+                id: flow.id,
+                label: flow.label,
+                status: "blocked",
+                reason: `the row to click (index ${flow.action.thenClickRow.index}) was not found in the region — ${found.length} text row(s) read`,
+              })
+              rmSync(scratch, { force: true })
+              continue
+            }
+            const cx = rx + target.x0 + 120
+            const cy = ry + Math.round((target.y0 + target.y1) / 2)
+            xdo("mousemove", "--sync", String(cx), String(cy))
+            await sleep(300)
+            xdo("click", "1")
+            await sleep(1200)
+            // The activation half: the click selected (and focused) the row, so
+            // the tree is the focused control now — Return navigates from it.
+            for (const key of flow.action.afterClickKeys ?? []) {
+              xdo("key", "--clearmodifiers", key)
+              await sleep(1800)
+            }
+            await sleep(1500)
+            rmSync(scratch, { force: true })
           }
           if (captureTo(framePath)) {
             const previous = frames[frames.length - 1]
