@@ -51,7 +51,7 @@
     "audit:completeness": "bun run script/m14/completeness-inventory.ts",
     "verify:m40": "bun run script/m40/verify-governance.ts && bun run script/m40/verify-gate-selftest.ts && bun run script/m40/verify-a1-post-entry.ts && bun run script/m40/verify-a2-bounded-post.ts && bun run script/m40/verify-a3-write-parity.ts && bun run script/m40/lifecycle-corpus.ts --gate && bun run script/m40/verify-a5-flag-semantics.ts && bun run script/m40/verify-a6-health-refresh.ts && bun run script/m40/verify-a7-cli-parity.ts && bun run script/m40/verify-a8-config.ts && bun run script/m40/verify-a9-purge.ts && bun run script/m40/verify-closure.ts",
     "verify:m44-closure": "npx tsx script/m44/verify-closure.ts",
-    "verify:m55": "npx tsx script/m55/verify-governance.ts && npx tsx script/m55/verify-call-hierarchy.ts && npx tsx script/m55/verify-identity.ts && npx tsx script/m55/verify-panel-placement.ts",
+    "verify:m55": "npx tsx script/m55/verify-governance.ts && npx tsx script/m55/verify-call-hierarchy.ts && npx tsx script/m55/verify-identity.ts && npx tsx script/m55/verify-panel-placement.ts && npx tsx script/m55/verify-relations.ts",
     "verify:m51": "npx tsx script/m51/verify-a1-owner-integrity.ts && npx tsx script/m51/verify-a2-health-split.ts && npx tsx script/m51/verify-closure.ts",
     "verify:m52": "npx tsx script/m52/verify-v1-parity-latency.ts && npx tsx script/m52/verify-closure.ts",
     "verify:m54": "bun run script/m54/verify-p1-fk.ts && npx tsx script/m54/verify-p2-stdio.ts && bun run script/m54/verify-737-738.ts && npx tsx script/m54/verify-737-738.ts && npx tsx script/m54/verify-closure.ts"

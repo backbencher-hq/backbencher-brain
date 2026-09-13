@@ -76,7 +76,10 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
     "script/m55/t1-fixture.ts",
   ],
   T2: ["src/lsp/call_hierarchy.ts", "src/lsp/positions.ts", "script/m55/verify-call-hierarchy.ts", "script/m55/t2-fixture.ts"],
-  T3: ["src/lsp/usage_vocabulary.ts", "script/m55/verify-usage-vocabulary.ts"],
+  // M55.T3: the vocabulary itself plus the two surfaces that consume it (the
+  // hover's list/count and the references door) — a change to any of them
+  // invalidates the T3 evidence, which is exactly the claim it makes.
+  T3: ["src/lsp/relations.ts", "src/lsp/rich_hover.ts", "src/lsp/navigation.ts", "script/m55/verify-relations.ts", "script/m55/t3-fixture.ts"],
   T4: ["src/lsp/signature.ts", "script/m55/verify-signatures.ts"],
   T5: ["src/lsp/tiers.ts", "script/m55/verify-tiers.ts"],
   P1: [

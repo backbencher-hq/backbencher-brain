@@ -170,17 +170,19 @@ async function main(): Promise<void> {
 
     // Differential vs the L3 references surface (real resolveReferences).
     // Declared sampling: the flat fixture IS the sample — every reverse edge
-    // of rootFn is in it, none skipped. Like-for-like rule: L3 references
-    // counts BOTH directions by design (incoming + outgoing), impact is
-    // reverse-only; the fixture declares exactly one outgoing edge
-    // (rootFn→otherFn), so the differential subtracts it. Callers are 1:1
-    // with their edges here (one call site each) — the flat condition.
+    // of rootFn is in it, none skipped. Like-for-like rule: since M55.T3
+    // (issue #772, §14 Truth Rule 1) L3 references answers the USAGE SITES —
+    // incoming rows whose kind is not a declaration containment — which is
+    // exactly the reverse-only set impact computes. No direction correction is
+    // needed any more: the pre-M55 version had to subtract the fixture's one
+    // outgoing row (rootFn→otherFn) because references counted both ways.
+    // Callers are 1:1 with their edges here (one call site each) — the flat
+    // condition.
     const { resolveReferences } = await import(join(ROOT, "src", "lsp", "navigation.ts"))
     const refs = resolveReferences(fx.raw, { filePath: join(fx.ws, "main.ts"), line: 0, character: 17, includeDeclaration: false })
-    const outgoingKnown = 1 // w5-rel-5 (rootFn → otherFn), fixture-declared
     const depth0 = result.impact.filter((d: any) => d.depth === 0)
-    const l3Incoming = refs.totalCount - outgoingKnown
-    check("R1: differential — impact set equals the L3 incoming set on the flat fixture (all reverse edges sampled, direction accounted)", l3Incoming === 4 && depth0.length === 4 && result.shownCount === 4, `l3 totalCount=${refs.totalCount} outgoing=${outgoingKnown} incoming=${l3Incoming} impact=${result.shownCount}`)
+    const l3Incoming = refs.totalCount
+    check("R1: differential — impact set equals the L3 usage-site set on the flat fixture (all reverse edges sampled)", l3Incoming === 4 && depth0.length === 4 && result.shownCount === 4, `l3 totalCount=${refs.totalCount} incoming=${l3Incoming} impact=${result.shownCount}`)
     check("R1: L3 truncated=false with the full set under MAX_LOCATIONS", refs.truncated === false && refs.evidenceTier === "indexed")
 
     // --- R2: the declared containment delta ------------------------------------
@@ -387,9 +389,9 @@ async function main(): Promise<void> {
       evidenceFile: "W5.json",
       generatedAt: new Date().toISOString(),
       differential: {
-        sampling: "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 direction rule accounted (incoming+outgoing by design, one outgoing edge fixture-declared); containment delta verified separately",
+        sampling: "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
         l3TotalCount: refs.totalCount,
-        l3IncomingCount: refs.totalCount - outgoingKnown,
+        l3IncomingCount: l3Incoming,
         impactShownCount: result.shownCount,
         nestedDelta: names.includes("nested1") ? "nested1 counted in impact via owner cascade (a flat L3 location too, as a distinct edge)" : "absent",
       },

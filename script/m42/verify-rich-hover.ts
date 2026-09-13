@@ -189,7 +189,21 @@ try {
     md.includes("[main](command:bb.openUsage") && md.includes("[main — Main2.java:4]"),
     "",
   )
-  check("H2/R3: usages section renders clickable file:line links", md.includes("**usages**") && md.includes("[Greeter — App.java:6]"), md.slice(0, 200))
+  // M55.T3 (§14 Truth Rule 1): the usages section lists USAGE SITES. The
+  // pre-M55 assertion required `[Greeter — App.java:6]` — render's own owning
+  // class, offered as a "usage" — which is exactly the defect T3 removed
+  // (found live: the owner hovered a call and read another symbol's data).
+  // It now asserts the real call sites AND the class's absence.
+  check(
+    "H2/R3: usages section renders the call sites as clickable links",
+    md.includes("**usages**") && md.includes("[main — App.java:") && md.includes("[main — Main2.java:"),
+    md.slice(md.indexOf("**usages**")),
+  )
+  check(
+    "H2/R3: the hovered method's own class never renders as a usage",
+    !md.slice(md.indexOf("**usages**")).includes("Greeter — App.java:6"),
+    md.slice(md.indexOf("**usages**")),
+  )
   check("H2/R3: definition footnote is clickable (bb.openDefinition)", md.includes("bb.openDefinition?"), "definition link missing")
   check("H2/R3: existing sections unchanged (signature + evidence + source still present)", md.includes("public method render") && md.includes("evidence:") && md.includes("bb index"), "")
 
@@ -212,7 +226,16 @@ try {
   // component's path/line/character ride inside it.
   const refList: Array<{ uri: string; range: { start: { line: number; character: number } } }> = Array.isArray(refs) ? refs : []
   const refLocs = new Set(refList.map((l) => `${filePathOf(l.uri)}:${l.range.start.line}:${l.range.start.character}`))
-  check("H2/R4: references surface returns the fixture's sites", refLocs.size >= 3, `got ${refLocs.size}`)
+  // M55.T3: references answers the usage sites under its declared filter
+  // (declaration NOT included) — the fixture stores exactly two calling
+  // symbols (App.main, Main2.main) plus the owning class's `contains` row,
+  // which is not a reference to render.
+  check("H2/R4: references surface returns each usage site exactly once", refLocs.size === 2, `got ${refLocs.size}`)
+  check(
+    "H2/R4: the owning declaration is not served as a reference",
+    ![...refLocs].some((l) => l.endsWith(`:${H2_EXPECT.renderDefLine}:`) && l.startsWith(H2_FILE_APP)),
+    JSON.stringify([...refLocs]),
+  )
   const usageLinks = commandLinks(md).filter((l) => l.command === "bb.openUsage")
   const targetInRefs = (t: { file: string; line: number; character: number }) => refLocs.has(`${t.file}:${t.line}:${t.character}`)
   check(
