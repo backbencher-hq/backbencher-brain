@@ -357,12 +357,12 @@
         "currentCommit": "see V1.json",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 62,
+        "passed": 79,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 10,
-        "mutantsTotal": 10,
-        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, and the pixel read-backs: newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the findings document's frame paths and verdicts, chain wiring, and 10 planted defects",
+        "mutantsCaught": 15,
+        "mutantsTotal": 15,
+        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, the pixel read-backs (newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the findings document's frame paths and verdicts, chain wiring), the BLOCKED-PATH proof (the rig run with the fixture absent -> a declared blocked record), the hub header differential over the real index (F7), and 14 planted defects",
         "components": [
           {
             "code": "V1-action-args",
@@ -385,7 +385,7 @@
         ]
       },
       "progress": {
-        "stage": "the rig is permanent, wired and fail-able, and it is now driving the right commands: 62/62 with 10/10 mutants. Two defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11). NOT closable yet: the blocked-path proof (fixture absent -> blocked with a reason) is still outstanding.",
+        "stage": "the rig is permanent, wired and fail-able, and it is now driving the right commands: 79/79 with 15/15 mutants. Two defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11). The blocked path is now PROVEN (R7 runs the real rig with the fixture absent and asserts the declared blocked record: validation/m55/results/V1-blocked-path.json), and F7 is now a machine assertion (R8: the hub header's group counts account for every listed row, differentially against the server's own counts block over the real index -- the live Greeter reads 3 + 2 = 5). NOT closable yet: the per-issue in-editor frames that T1-T5/P1 name as their own closure requirements.",
         "verifiedAt": "2026-09-13",
         "fixes": [
           "ide/vscode/src/hover-action-args.ts (new, PURE) + hover-commands.ts: a palette / context-menu invocation carries no args, so all three symbol-scoped actions dead-ended; identity now comes from the SERVER (the same textDocument/hover the editor uses), so both entry points answer alike without client-side guessing (issue #652 holds).",
@@ -409,10 +409,26 @@
           "F8 (verified): the hover identity at call sites, the hub's real data, the native call hierarchy, the panel-placement/focus rule and the new status surface all read correctly in the frames."
         ],
         "remaining": [
-          "the blocked-path proof: a run with the fixture absent must produce a declared blocked session with a reason (never green)",
-          "G1's truth-rule-5 enforcement must read this gate's frames and the findings document",
-          "the open findings F3-F7 belong to the surface-redesign work (U2), recorded in docs/m55/FRAME-FINDINGS.md"
-        ]
+          "the per-issue closure frames: T1 needs the constructor case with the label visible, T2 needs the callers tree plus the click that lands on the call site, and T3/T4/T5 need their own case frames (V1's rig captures the flows; the issues' closureRequirements name them)",
+          "the open findings F3-F6 belong to the surface-redesign work (U2), recorded in docs/m55/FRAME-FINDINGS.md"
+        ],
+        "closure": {
+          "blockedPathProof": {
+            "status": "proven",
+            "leg": "R7",
+            "record": "validation/m55/results/V1-blocked-path.json",
+            "what": "the real rig run against a workspace that does not exist returns a declared blocked session (status blocked, the missing fixture named as the reason, zero flows, no frames directory) -- never green"
+          },
+          "m36WiringCorrection": {
+            "status": "retargeted",
+            "what": "V1's acceptance criterion read 'wired into the npm verify chain and the CI verify:fast chain'. That is no longer the honest wiring: the M36.S2 lane redefined verify:fast as EXACTLY the 21 gates fresh-HOME-certified for runners (asserted by script/m36/verify-verify-fast.ts), and this leg needs Xvfb, xdotool, PIL and a packaged VSIX, so a runner cannot run it. R5 now asserts BOTH directions (present in the local verify chain, ABSENT from verify:fast, with M15 planting it back); the criterion text is superseded by M36's contract, not softened."
+          },
+          "f7TruthAssertion": {
+            "status": "proven",
+            "leg": "R8",
+            "what": "the hub header's counts are the GROUP counts and account for every listed row: header number == rows rendered == the server's declared group count, with the row multiplicity asserted separately. Live Greeter: 3 callers + 2 callees = the 5 rows the frame listed; the F7 ambiguity is now machine-checked, and M12 plants the wrong reading"
+          }
+        }
       }
     },
     {

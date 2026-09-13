@@ -1,0 +1,30 @@
+{
+  "status": "blocked",
+  "run": "blocked-proof",
+  "display": ":99",
+  "screen": {
+    "width": 1920,
+    "height": 1080
+  },
+  "editor": {
+    "binary": "/usr/bin/code",
+    "version": "1.137.0",
+    "pinnedDeclared": "1.85.0 (.vscode-test)",
+    "pinHonored": false
+  },
+  "bundle": {
+    "vsix": "",
+    "installedAt": "",
+    "bundlePath": "",
+    "bundleSha256": ""
+  },
+  "fixture": {
+    "workspace": "$HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
+    "present": false,
+    "contentHash": null,
+    "indexedProjectDir": null
+  },
+  "flows": [],
+  "generatedAt": "2026-09-13T21:42:37.318Z",
+  "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
+}

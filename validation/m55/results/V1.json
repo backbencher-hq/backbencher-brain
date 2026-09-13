@@ -3,24 +3,23 @@
   "code": "V1",
   "milestone": "M55",
   "status": "verified",
-  "checks": 62,
-  "passed": 62,
+  "checks": 79,
+  "passed": 79,
   "failed": 0,
   "realFailed": 0,
-  "negativeCases": 10,
+  "negativeCases": 15,
   "mutants": {
-    "total": 10,
-    "caught": 10
+    "total": 15,
+    "caught": 15
   },
-  "currentCommit": "7e5154a1a2baa86627ae9df9b2427af4325736e4",
+  "currentCommit": "3a2a8ecfdfc0fe133361013a387848c89f8056f8",
   "workingTreeRelevantChanges": [
     "script/m55/screenshot-protocol.ts",
-    "script/m55/verify-live-surface.ts",
-    "script/m55/verify-status-panel.ts"
+    "script/m55/verify-live-surface.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-13T19:57:32.672Z",
+  "generatedAt": "2026-09-13T21:42:37.531Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
@@ -28,7 +27,10 @@
     "rigMissing": [],
     "captureRun": "live-11",
     "probeFile": "validation/m55/results/V1-probe.json",
-    "probeStatus": "read"
+    "probeStatus": "read",
+    "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
+    "blockedPathStatus": "blocked",
+    "blockedPathReason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
   },
   "frameFacts": {
     "base:stats": {
@@ -180,6 +182,16 @@
       "claim": "every frame is about the bundle built at this HEAD",
       "source": "R3 bundle-hash comparison",
       "frame": "all frames"
+    },
+    {
+      "claim": "a missing fixture is a declared blocked session with a reason, never a green run",
+      "source": "R7 + validation/m55/results/V1-blocked-path.json",
+      "frame": null
+    },
+    {
+      "claim": "the hub header's counts are the group counts and account for every listed row (F7)",
+      "source": "R8 over the real F7/F8 responses rendered by the ONE core",
+      "frame": "4-open-in-graph.png"
     }
   ],
   "failures": [],
