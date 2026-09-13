@@ -24,6 +24,9 @@
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
 import { createPositionMapper, resolveRowByteColumns, PositionError } from "./positions";
+// M55.T3: the ONE relation vocabulary — a declaration row is never a usage,
+// and neither is a row that references the symbol from itself.
+import { isUsageSiteRow } from "./relations";
 import { languageForPath } from "./hover";
 
 /** Hard cap on locations per response (contract §3 bounded result sets). */
@@ -414,8 +417,16 @@ export function resolveReferences(
     };
   }
 
-  // Reverse edges: relationships pointing at this symbol (callers), plus the
-  // symbol's own declaration when includeDeclaration is set.
+  // Reverse edges: the stored rows whose TARGET is this symbol — the usage
+  // sites, by the one vocabulary in src/lsp/relations.ts (M55.T3, §14 Truth
+  // Rule 1). History: this surface answered BOTH directions, so a callee (a
+  // symbol the hovered one calls) and the hovered symbol's own owning class
+  // (`contains`) were served as "references" — on the demo index greet
+  // answered 7 while the graph reported 3 callers and the hover counted 6.
+  // Declaration containments (`contains`/`exports`) are filtered by the same
+  // predicate the hover list uses, so the two surfaces cannot disagree; the
+  // declaration itself is still offered when the client asks for it
+  // (includeDeclaration, the LSP context flag).
   const edges = raw
     .prepare(
       `SELECT r.id, r.source_symbol_id, r.target_symbol_id, r.line_number,
@@ -431,32 +442,42 @@ export function resolveReferences(
        LEFT JOIN brain_file sf ON sf.id = ss.file_id
        LEFT JOIN brain_symbol ts ON ts.id = r.target_symbol_id
        LEFT JOIN brain_file tf ON tf.id = ts.file_id
-       WHERE r.target_symbol_id = ? OR r.source_symbol_id = ?
+       WHERE r.target_symbol_id = ?
        ORDER BY r.confidence DESC, r.id`,
     )
-    .all(symbol.id, symbol.id) as EdgeRow[];
+    .all(symbol.id) as EdgeRow[];
 
   const locations: NavigationLocation[] = [];
   const seen = new Set<string>();
   for (const edge of edges) {
-    // The reference site is the *other* end of the edge (the caller for
-    // incoming edges, the callee for outgoing ones).
-    const useSource = edge.target_symbol_id === symbol.id;
-    const loc = useSource
-      ? edgeLocation(
-          edge.source_path,
-          edge.source_byte_start,
-          edge.source_byte_end,
-          edge.source_line_start,
-          edge.source_line_end,
-        )
-      : edgeLocation(
-          edge.target_path,
-          edge.target_byte_start,
-          edge.target_byte_end,
-          edge.target_line_start,
-          edge.target_line_end,
-        );
+    // The ONE vocabulary (src/lsp/relations.ts): a reference is a stored row
+    // whose target is this symbol and whose kind is not a declaration
+    // containment. The same predicate is applied by the hover's collector and
+    // by the SQL count, so the three surfaces cannot drift apart — including
+    // on the rows that are easy to forget (a self-loop `calls` row written by
+    // an analyzer is neither a declaration nor a reference; the first version
+    // of this filter kept it and the T3 gate caught the extra location).
+    if (
+      !isUsageSiteRow(
+        {
+          source_symbol_id: edge.source_symbol_id,
+          target_symbol_id: edge.target_symbol_id,
+          relationship_type: edge.relationship_type,
+        },
+        symbol.id,
+      )
+    ) {
+      continue;
+    }
+    // The reference site is the OTHER end — the referencing symbol, whose
+    // indexed location is where the reference lives.
+    const loc = edgeLocation(
+      edge.source_path,
+      edge.source_byte_start,
+      edge.source_byte_end,
+      edge.source_line_start,
+      edge.source_line_end,
+    );
     if (loc === null) continue;
     const key = `${loc.path}:${loc.line}:${loc.character}`;
     if (seen.has(key)) continue;

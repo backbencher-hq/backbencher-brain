@@ -104,7 +104,7 @@ async function main(): Promise<void> {
     const block = usagesIdx === -1 ? "" : md.slice(usagesIdx)
     const usageLinkCount = (block.match(/command:bb\.openUsage/g) ?? []).length
     check("R2: top-3 usage links render (bounded hover, unchanged)", usageLinkCount === U6_EXPECT.shownLinks, String(usageLinkCount))
-    check("R2: the +3 more escape hatch renders", block.includes(`+${U6_EXPECT.hiddenMore} more — [show all usages](command:bb.showAllUsages?`), block.slice(0, 300))
+    check("R2: the +N more escape hatch renders", block.includes(`+${U6_EXPECT.hiddenMore} more — [show all usages](command:bb.showAllUsages?`), block.slice(0, 300))
 
     const sau = firstCommandLink(block, "bb.showAllUsages")
     check("R2: exactly one showAllUsages link", sau !== null, "")

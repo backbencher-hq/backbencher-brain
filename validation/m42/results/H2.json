@@ -3,8 +3,8 @@
   "code": "H2",
   "milestone": "M42",
   "status": "verified",
-  "checks": 29,
-  "passed": 29,
+  "checks": 31,
+  "passed": 31,
   "failed": 0,
   "failures": [],
   "verdict": {
@@ -61,10 +61,10 @@
   "budgets": {
     "hoverP95Ms": 50
   },
-  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
+  "currentCommit": "c7c993e5727bb87f350bb8679da2b9d5b151c5ff",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-09-11T21:26:27.603Z",
+  "generatedAt": "2026-09-13T16:55:40.421Z",
   "limitations": [
     "Header usage count keeps the M24 semantics (raw relationship-row count); the usages section lists deduplicated L3 locations — when several rows point at one site the numbers differ, honestly.",
     "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to).",
