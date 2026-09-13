@@ -112,6 +112,22 @@ Deliverables:
 - Close all issues + milestone with evidence comments.
 Acceptance: every closure-gate check green at current HEAD; negative probes fire.
 
+## X1 owner steps (the part no agent can do)
+
+The closure gate proves everything observable from the repository; these steps
+need dashboards and credentials no agent holds:
+
+1. **Enable Vercel wait-for-checks** — project → Settings → Git → "Wait for
+   Checks" — the one toggle that makes a red build undeployable.
+2. **Push** the branch to `origin/main`.
+3. Confirm **CI** is green on the pushed commit (Actions tab, or
+   `gh run list --workflow ci.yml --limit 1`).
+4. **After the deploy**, re-run `npx tsx script/m41/verify-seo-onboarding.ts`:
+   it re-pins S2 onto the deployed commit and closes the recorded route lag.
+5. Resubmit `sitemap.xml` in Google Search Console, Bing Webmaster Tools and
+   Brave so the refreshed route set is crawled.
+6. Close the M41 issues (#640–#647) and the milestone with the evidence comments.
+
 ## Gates & future verifications (permanent)
 
 All M41 verifiers join `npm run verify` → enforced by CI on every push, forever.
