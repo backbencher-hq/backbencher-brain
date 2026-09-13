@@ -175,6 +175,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, not a shallow clone: the tier-2 M56 governance gate
+          # asserts that every verified ledger entry cites a commit that exists
+          # in this history (its batch commit is an ancestor, not HEAD), and a
+          # depth-1 checkout reports those commits as nonexistent. Same reason
+          # the verify-site job fetches full depth.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
