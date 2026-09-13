@@ -5034,11 +5034,34 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
 }
 // Rust truth: call edges (identifier + member-leaf callees), implements
 // (impl <Trait> for Type), extends (supertrait bounds on trait items).
-function deriveRustEdges(root: any): { label: string; from: string; target: string }[] {
+// Exported like the zig/cpp oracles so lane replicas and probes can verify
+// the mirror directly.
+export function deriveRustEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
   const impls: { ty: string; trait: string }[] = []
   const supertraits: Record<string, string[]> = {}
+  // D2 mirror (rust extreme review): the analyzer resolves `Self` to the
+  // enclosing impl type in struct literals (`Self { }`), `Self::new()` and
+  // bare `Self(..)` (cargo src/compiler/rustdoc.rs + manifest/mod.rs lanes:
+  // oracle emitted raw Self while the analyzer emitted RustdocExternMap /
+  // RegistryName — one disagreement surfacing as a MISSING+UNEXPLAINED
+  // pair). Same rule here: resolve via the enclosing impl_item's type leaf,
+  // fall back exactly like the analyzer (struct literals keep raw "Self",
+  // calls drop it).
+  const enclosingImplType = (n: any): string | null => {
+    let cur: any = n ? n.parent : null
+    while (cur) {
+      if (cur.type === "impl_item") {
+        const typeNode = cur.childForFieldName?.("type")
+        if (!typeNode) return null
+        const leaf = String(typeNode.text ?? "").split("<")[0].split("::").filter(Boolean).pop() ?? ""
+        return leaf || null
+      }
+      cur = cur.parent
+    }
+    return null
+  }
 
   // In-file declared type names (struct/enum/type-alias/impl targets),
   // mirroring the analyzer's deferred-instantiation contract: ctor
@@ -5122,6 +5145,10 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
             const r2 = fn.childForFieldName?.("value") ?? fn.childForFieldName?.("path")
             recv = lastSegment((r2?.text ?? "").split("<")[0].trim())
           }
+          // D2 mirror: a `Self` receiver / bare `Self(..)` constructs the
+          // enclosing impl type (matches the analyzer's enclosingImplType
+          // rule; unresolvable Self drops like the analyzer's ?? null).
+          if (recv === "Self") recv = enclosingImplType(n) ?? ""
           if (recv && /^[A-Z]/.test(recv) && declaredTypes.has(recv) && !seenCalls.has("inst:" + recv)) {
             seenCalls.add("inst:" + recv)
             edges.push({ label: "instantiates", from: "(expr)", target: recv })
@@ -5138,7 +5165,11 @@ function deriveRustEdges(root: any): { label: string; from: string; target: stri
       // judged on the LEAF segment (the type), matching the analyzer.
       if (typeNode) {
         const rawLeaf = lastSegment(typeNode.text)
-        const t2 = rawLeaf.split("<")[0].trim()
+        // D2 mirror: `Self { }` constructs the enclosing impl type
+        // (analyzer emits the resolved type immediately with no in-file
+        // filter; unresolvable Self keeps the raw leaf on both sides).
+        let t2 = rawLeaf.split("<")[0].trim()
+        if (t2 === "Self") t2 = enclosingImplType(n) ?? "Self"
         if (/^[A-Z]/.test(t2) && !seenCalls.has("struct:" + t2)) {
           seenCalls.add("struct:" + t2)
           edges.push({ label: "instantiates", from: "(expr)", target: t2 })
