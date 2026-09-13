@@ -225,7 +225,7 @@
     ]
   },
   "gap": {
-    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` — bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
+    "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` \u2014 bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
     "gaps": []
   },
   "design_decision": {
@@ -242,7 +242,49 @@
         "node_type": "implicit_object_creation_expression (target-typed new in collection/array initializers)",
         "status": "FIXED",
         "question": "OO family closure #613 (fsharp corpus): how do target-typed new() sites inside collection/array member initializers resolve?",
-        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle — the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
+        "answer": "Through the member ELEMENT type (EnumSettingEntry[] x = [new()] -> EnumSettingEntry); direct field/property initializers use the declared type base; a new() nested in a call argument resolves to nothing. One shared resolver (csharpResolveTargetTypedNew + csharpMemberDeclaredTypeText) now serves the analyzer AND the differential oracle \u2014 the old divergent copies shared the self-map blind spot (member NAME read as the type) that F5 could not see. pinned: csd14-array-member-news fixture + csharp/array-member-new-selfmap mutant."
+      },
+      {
+        "id": "CS-R1",
+        "node_type": "bare identifier value reads",
+        "status": "RULED",
+        "question": "C# review (2026-09-13): the analyzer emitted no bare-identifier edges at all while the oracle audits only calls/instantiates (CONV-CS-1, same both-sides-blind class as pre-review CP1/R1).",
+        "resolution": "FIXED + GATED: analyzeCSharpBareIdentifierUses resolves Property-kind member names through the lexical class chain (innermost first), transitive bases (capped) and enclosing classes, with walk-order shadowing (methods, blocks, lambdas, local functions, switch arms, queries, catch/foreach/for/using, class frames for primary-ctor params; record positionals deliberately unbound so property reads flow) and the full exclusion discipline (declaration positions incl. leftmost/declarator roles, callees incl. generic/conditional wrappers, member leaves, qualified names, preproc text, labels, attribute names, named/anonymous/with/subpattern designators, deconstruction/out writes, LHS writes, nameof/typeof/default/sizeof and is/as type positions). `uses` is uncompared for csharp, so fixtures + mutants gate it (no oracle change). Fixture csharp/bare-value-reads (10 expects, 12 forbids); mutants drop-bare-uses, reemit-shadowed-reads, reemit-designator-reads CAUGHT."
+      },
+      {
+        "id": "CS-B1",
+        "node_type": "top-level statement calls",
+        "status": "RULED",
+        "question": "C# review (2026-09-13): calls in top-level statements (C# 9) were dropped for lack of an enclosing symbol name, while the oracle derives every invocation leaf (each one a MISSING).",
+        "resolution": "FIXED + GATED: attribute to global (field-use convention). Fixture expects calls global->WriteLine; mutant top-level-call-loss CAUGHT. No oracle change needed (it already derived them)."
+      },
+      {
+        "id": "CS-B2",
+        "node_type": "nameof call fabrication",
+        "status": "RULED",
+        "question": "C# review (2026-09-13): `nameof(x)` parses as an invocation with an identifier callee, so every site fabricated calls->nameof on both sides (probe-verified; the keyword set lacked it).",
+        "resolution": "FIXED + GATED both sides: nameof added to the analyzer keyword set and the oracle keyword regex; the operand is gated as a name position. Fixture forbids calls NameOf->nameof and uses NameOf->Max; mutant nameof-call-fabrication CAUGHT."
+      },
+      {
+        "id": "CS-B3",
+        "node_type": "bare catch complexity",
+        "status": "RULED",
+        "question": "C# review (2026-09-13): both catch forms parse as catch_clause containing an optional catch_declaration \u2014 counting the inner declaration counted typed catches but never bare `catch { }`.",
+        "resolution": "FIXED + GATED: count the clause (exactly once either way) in the file counter and the per-symbol counter (kept in sync per CSD2); matches swift catch_block. Fixture pins Errors/ErrorsTyped complexity 2; mutant bare-catch-complexity-loss CAUGHT."
+      },
+      {
+        "id": "CS-B4",
+        "node_type": "file-scoped type visibility and exports",
+        "status": "RULED",
+        "question": "C# review (2026-09-13): `file class Hidden` reported undefined visibility and exported as public API (probe-verified).",
+        "resolution": "FIXED + GATED: file maps to private; file-scoped types never export. Fixture expects Hidden private and forbids its export; mutant file-type-exported CAUGHT."
+      },
+      {
+        "id": "CS-B5",
+        "node_type": "positional-pattern invocations",
+        "status": "RULED",
+        "question": "C# review (2026-09-13): positional-pattern heads (`o is Point(1, y)`) parse as invocation_expressions under constant_pattern, so both sides emitted them as calls.",
+        "resolution": "FIXED + GATED both sides: invocations directly under constant_pattern are patterns (no calls edge; their bare identifiers read as constant patterns, declared vars bind via declaration rules). Fixture forbids calls Pos->Point; oracle mirrored (lane-pinned)."
       }
     ]
   }
