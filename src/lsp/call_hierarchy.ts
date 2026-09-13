@@ -57,6 +57,7 @@ import type { CoreDatabase } from "../brain/database";
 import type { ProjectID } from "../project/schema";
 import { createPositionMapper, resolveRowByteColumns } from "./positions";
 import { languageForPath } from "./hover";
+import { renderSignature } from "./signature";
 import { findIndexedSymbol } from "./navigation";
 import { traverseGraph } from "../intelligence/graph/graph-engine";
 import type {
@@ -422,6 +423,29 @@ export function prepareCallHierarchy(
     symbol.name,
     { start: (symbol.line_start ?? 1) - 1, end: (symbol.line_end ?? 1) - 1 },
   ) ?? lspRange;
+  // M55.T4 (issue #772, §14 Truth Rule 4): the item's detail line carries the
+  // HUMAN signature, rendered by the ONE owner (src/lsp/signature.ts) — the
+  // call-hierarchy view is a place a developer reads a signature, and it used
+  // to answer the bare symbol type. The row's parameters/return type are read
+  // here (the position resolver never needed them); the language decides the
+  // notation, and visibility is intentionally left out (the hover card owns
+  // the identity line; this is a one-line editor label).
+  const sigRow = raw
+    .prepare("SELECT parameters, return_type, visibility FROM brain_symbol WHERE id = ?")
+    .get(symbol.id) as { parameters: string | null; return_type: string | null; visibility: string | null } | undefined;
+  const detail =
+    sigRow === undefined
+      ? symbol.symbol_type
+      : renderSignature(
+          {
+            name: symbol.name,
+            symbol_type: symbol.symbol_type,
+            parameters: sigRow.parameters,
+            return_type: sigRow.return_type,
+            visibility: null,
+          },
+          languageForPath(symbol.path),
+        );
   return {
     item: {
       name: symbol.name,
@@ -429,7 +453,7 @@ export function prepareCallHierarchy(
       uri: `file://${symbol.path}`,
       range: lspRange,
       selectionRange: nameRange,
-      detail: symbol.symbol_type,
+      detail,
       data: { symbolId: symbol.id, isExternal: false },
     },
     notIndexed: false,

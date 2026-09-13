@@ -12,21 +12,18 @@
     "total": 3,
     "caught": 3
   },
-  "currentCommit": "c7c993e5727bb87f350bb8679da2b9d5b151c5ff",
+  "currentCommit": "6f98d43955b26cca67b7a50bea417d8238b1bd70",
   "workingTreeRelevantChanges": [
     "script/m55/verify-governance.ts",
-    "src/lsp/navigation.ts",
-    "src/lsp/rich_hover.ts",
-    "script/m55/t3-fixture.ts",
-    "script/m55/verify-relations.ts",
-    "src/lsp/relations.ts"
+    "script/m55/t4-fixture.ts",
+    "script/m55/verify-signatures.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-09-13T16:57:13.625Z",
+  "generatedAt": "2026-09-13T17:07:49.964Z",
   "fixture": {
-    "workspace": "/tmp/m55-t3-ws-tM4esE",
-    "projectId": "ccefe31347d6940d702a4ef9d2568cad416f89ac",
+    "workspace": "/tmp/m55-t3-ws-zopWsw",
+    "projectId": "7c5528da9afdec581b853ee7328b7c2bed569728",
     "symbols": 7,
     "rows": 12,
     "expect": {
