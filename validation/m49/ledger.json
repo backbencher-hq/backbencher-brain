@@ -188,6 +188,15 @@
         "evidenceFile": "reviews/csharp/master-review.md",
         "verifiedAtCommit": "00c49c59"
     }
+,
+    {
+        "id": "RB1",
+        "title": "Ruby second review wave (issue #812): RB-F endless bodies, RB-G defined?/undef, RB-H attr strings, RB-I dynamic classes, RB-J autoload, RB-K nested singleton defs",
+        "status": "verified",
+        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirror fixes in deriveRubyEdges. Fully gated: fixture ruby/second-review (new), 7 mutants, spec RB-F-RB-K. Lanes: rack + rake, pinned + 5 rotations, 0/0. F3 all pass, F4 493/493, R1 95/95, R2 15/15.",
+        "evidenceFile": "reviews/ruby/second-review.md",
+        "verifiedAtCommit": "399e4a02"
+    }
   ],
   "waves": [
     {
