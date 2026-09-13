@@ -82,7 +82,16 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   T3: ["src/lsp/relations.ts", "src/lsp/rich_hover.ts", "src/lsp/navigation.ts", "script/m55/verify-relations.ts", "script/m55/t3-fixture.ts"],
   // M55.T4: the renderer owner plus every surface that renders through it.
   T4: ["src/lsp/signature.ts", "src/lsp/hover.ts", "src/lsp/call_hierarchy.ts", "script/m55/verify-signatures.ts", "script/m55/t4-fixture.ts"],
-  T5: ["src/lsp/tiers.ts", "script/m55/verify-tiers.ts"],
+  // M55.T5: the classifier owner, every surface that consumes it, and the
+  // import-pure mirror in the renderer core (its drift gate is T5's own P1).
+  T5: [
+    "src/lsp/evidence_tier.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/cross_language_hover.ts",
+    "script/m26/graph-core.ts",
+    "script/m55/verify-tiers.ts",
+    "script/m55/t5-fixture.ts",
+  ],
   P1: [
     "ide/vscode/src/panel-placement.ts",
     "ide/vscode/src/hub-panel.ts",

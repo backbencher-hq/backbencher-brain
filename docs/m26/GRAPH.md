@@ -17,11 +17,11 @@ versioned custom LSP request `bb/graph` (schema v2, declared in
 
 | tier | meaning in UI terms |
 | --- | --- |
-| **structural** | stored or derived structure (calls/extends/implements/overrides at confidence >= 0.7) — safe to trust for navigation |
+| **structural** | stored or derived structure (calls/extends/implements/overrides/contains/exports/instantiates at confidence >= 0.7) — safe to trust for navigation |
 | **import_based** | derived from import statements — the module relationship is real, the use may be indirect |
 | **usage_contextual** | usage-site evidence — the name appears in context, not guaranteed to be a call |
 | **reference_qualified** | reference with qualifier evidence — stronger than usage_contextual, weaker than structure |
-| **inferred** | a guess (heuristic or confidence < 0.7) — treat as a hint, never as fact |
+| **inferred** | a guess or an unrecognized relationship kind (heuristic, or confidence < 0.7) — treat as a hint, never as fact |
 
 Derivation: stored `metadata.evidenceClass` wins; otherwise a structural
 edge below the 0.7 confidence floor renders as inferred. The hover gloss

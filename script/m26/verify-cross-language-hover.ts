@@ -226,10 +226,14 @@ async function main(): Promise<void> {
         },
       },
       {
+        // M55.T5: the rule moved to src/lsp/evidence_tier.ts; the component
+        // now DELEGATES. The defect is planted at the delegation site — the
+        // component passing its own answer instead of the row's/edge's real
+        // ones — which is exactly the drift the gate must catch.
         name: "M3 tier floor broken",
         file: "component",
-        from: 'return (edge.confidence ?? 0) >= 0.7 ? "structural" : "inferred"',
-        to: 'return "structural"',
+        from: "    confidence: edge.confidence,",
+        to: "    confidence: 1,",
         probe: (m) => m.tierForCrossLanguageEdge({ relationship_type: "calls", confidence: 0.5, evidence_class: null }) === "structural", // sub-floor labeled structural
       },
       {
@@ -248,8 +252,8 @@ async function main(): Promise<void> {
       {
         name: "M5 stored class ignored",
         file: "component",
-        from: 'if (stored === "structural" || stored === "import_based" || stored === "usage_contextual" || stored === "reference_qualified" || stored === "inferred") {',
-        to: "if (false) {",
+        from: "    evidenceClass: edge.evidence_class,",
+        to: "    evidenceClass: null,",
         probe: (m) => m.tierForCrossLanguageEdge({ relationship_type: "calls", confidence: 0.99, evidence_class: "usage_contextual" }) === "structural", // derivation overrides stored class
       },
     ]
@@ -270,6 +274,9 @@ async function main(): Promise<void> {
         .replace(/from "\.\.\/brain\/freshness"/g, `from "file://${join(ROOT, "src", "brain", "freshness.ts").replace(/\\/g, "/")}"`)
         .replace(/from "\.\/positions"/g, `from "file://${join(ROOT, "src", "lsp", "positions.ts").replace(/\\/g, "/")}"`)
         .replace(/from "\.\/cross_language_hover"/g, `from "file://${mutantPath.replace(/\\/g, "/")}"`)
+        // M55.T5: the component delegates to the tier owner, so the mutant copy
+        // must resolve that specifier too (a load failure is not a catch).
+        .replace(/from "\.\/evidence_tier"/g, `from "file://${join(ROOT, "src", "lsp", "evidence_tier.ts").replace(/\\/g, "/")}"`)
       writeFileSync(mutantPath, src)
       let detected = false
       try {
