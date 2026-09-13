@@ -102,7 +102,7 @@
           "script/m24/lsp_harness.ts (M24.V1): four L2 hover legs still asserted the pre-wire-law shape (flat `data.name`, top-level `provenance`, `{contents:null}` absence) and sat KNOWN-GAP while the server was correct; they now assert the declared contract (data.symbol.*, data.provenance.source, wire null) and the L5 leg asserts the reported call site slices back to the invoked name."
         ],
         "remaining": [
-          "in-editor leg, CLICK half only (the callers tree is framed at this HEAD: validation/m55/frames/live-14/6-call-hierarchy.png, and every fromRange is machine-asserted to resolve to the invocation token; the activation that lands on the call site could not be framed — docs/m55/FRAME-FINDINGS.md F13 — so the flow was removed rather than kept with a label the frame did not support). Original item: hover -> Call hierarchy in a pinned editor, the callers rendered, clicking one landing on the CALL SITE with the correct symbol (frame + machine assertion) — V1's rig"
+          "in-editor leg, CALL-SITE-CHILD half only: the callers tree is framed at this HEAD and so is the CLICK (validation/m55/frames/live-19/11-call-hierarchy-click.png — a real mouse click on the `main` caller row followed by Return navigates the editor to app.ts with `main` highlighted, gated by V1's R2). What is NOT framed is the second hop: expanding a caller onto its call-site child and activating that. Two attempts (live-18, live-19) produced no state change for the rig to capture, so the flow was removed and the negative result is F13. The call site itself is machine-asserted where it can be: every fromRange the server returns resolves to the invocation token."
         ],
         "defectsReportedToOtherLanes": [
           "a file-absolute symbol row whose offset also fits the target line's byte length is still read as a per-line column by resolveRowByteColumns (pre-existing declared ambiguity, now recorded in P1.json's limitations); removing it needs a writer-side convention flag from the indexer lane"
@@ -354,12 +354,12 @@
         "currentCommit": "see V1.json",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 86,
+        "passed": 90,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 15,
         "mutantsTotal": 15,
-        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, the pixel read-backs (newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the findings document's frame paths and verdicts, chain wiring), the BLOCKED-PATH proof (the rig run with the fixture absent -> a declared blocked record), the hub header differential over the real index (F7), and 14 planted defects",
+        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, the pixel read-backs (newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the findings document's frame paths and verdicts, chain wiring), the BLOCKED-PATH proof (the rig run with the fixture absent -> a declared blocked record), the hub header differential over the real index (F7), the T2 click-frame navigation checks, and 14 planted defects",
         "components": [
           {
             "code": "V1-action-args",
@@ -382,7 +382,7 @@
         ]
       },
       "progress": {
-        "stage": "the rig is permanent, wired and fail-able, and it is now driving the right commands: 86/86 with 15/15 mutants, 10/10 declared frames captured (including T1's constructor case and T3's zero-usage case). Two defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11). The blocked path is now PROVEN (R7 runs the real rig with the fixture absent and asserts the declared blocked record: validation/m55/results/V1-blocked-path.json), and F7 is now a machine assertion (R8: the hub header's group counts account for every listed row, differentially against the server's own counts block over the real index -- the live Greeter reads 3 + 2 = 5). NOT closable yet: the per-issue in-editor frames that T1-T5/P1 name as their own closure requirements.",
+        "stage": "the rig is permanent, wired and fail-able, and it is now driving the right commands: 90/90 with 15/15 mutants, 10/10 declared frames captured (including T1's constructor case and T3's zero-usage case). Two defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11). The blocked path is now PROVEN (R7 runs the real rig with the fixture absent and asserts the declared blocked record: validation/m55/results/V1-blocked-path.json), and F7 is now a machine assertion (R8: the hub header's group counts account for every listed row, differentially against the server's own counts block over the real index -- the live Greeter reads 3 + 2 = 5). NOT closable yet: the per-issue in-editor frames that T1-T5/P1 name as their own closure requirements.",
         "verifiedAt": "2026-09-13",
         "fixes": [
           "ide/vscode/src/hover-action-args.ts (new, PURE) + hover-commands.ts: a palette / context-menu invocation carries no args, so all three symbol-scoped actions dead-ended; identity now comes from the SERVER (the same textDocument/hover the editor uses), so both entry points answer alike without client-side guessing (issue #652 holds).",
@@ -406,7 +406,7 @@
           "F8 (verified): the hover identity at call sites, the hub's real data, the native call hierarchy, the panel-placement/focus rule and the new status surface all read correctly in the frames."
         ],
         "remaining": [
-          "T2's click-to-call-site leg only: the attempt (docs/m55/FRAME-FINDINGS.md F13) drove the call hierarchy and sent the tree activation keys, and the frame showed the activation never reached the tree (no window manager to hold the view's focus); the flow was removed rather than kept with an overclaiming label",
+          "T2's call-SITE child activation only: the caller-row click now works and is framed (live-17/live-19), but re-issuing the call-hierarchy command to expand a caller and step onto its call-site child produced no state change, so the rig refused the frame twice (live-18, live-19) and the flow was removed rather than kept with an overclaiming label — docs/m55/FRAME-FINDINGS.md F13",
           "the open findings F3-F6 belong to the surface-redesign work (U2), recorded in docs/m55/FRAME-FINDINGS.md"
         ],
         "closure": {
@@ -418,8 +418,8 @@
           },
           "perIssueClosureFrames": {
             "status": "captured",
-            "run": "live-14",
-            "what": "T1: 8-ctor-hover-declaration.png + 9-ctor-open-in-graph.png (the owner's silent relabel, now labeled on screen). T3: 10-hover-zero-usages.png (0 usages, no list, callee only in the labelled connected: line). T4: 2-hover-declaration.png (a human signature, no serialization). T5: 2-hover-declaration.png + 4-open-in-graph.png + 9-ctor-open-in-graph.png (one tier story, card and hub). P1: 4/5/7 show the editor column kept and the panels as tabs. T2: the callers tree is framed (6-call-hierarchy.png); the click-to-call-site half is F13, still open."
+            "run": "live-19",
+            "what": "T1: 8-ctor-hover-declaration.png + 9-ctor-open-in-graph.png (the owner's silent relabel, now labeled on screen). T3: 10-hover-zero-usages.png (0 usages, no list, callee only in the labelled connected: line). T4: 2-hover-declaration.png (a human signature, no serialization). T5: 2-hover-declaration.png + 4-open-in-graph.png + 9-ctor-open-in-graph.png (one tier story, card and hub). P1: 4/5/7 show the editor column kept and the panels as tabs. T2: the callers tree is framed (6-call-hierarchy.png) AND the click is framed (11-call-hierarchy-click.png in live-17/live-19: a real mouse click on the `main` caller row, then Return, navigates the editor to app.ts with `main` selected). The call-site CHILD activation could not be driven (F13)."
           },
           "m36WiringCorrection": {
             "status": "retargeted",

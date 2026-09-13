@@ -3,8 +3,8 @@
   "code": "V1",
   "milestone": "M55",
   "status": "verified",
-  "checks": 86,
-  "passed": 86,
+  "checks": 90,
+  "passed": 90,
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 15,
@@ -12,20 +12,21 @@
     "total": 15,
     "caught": 15
   },
-  "currentCommit": "44eedc542dd2414a90bda149d84668e1549cecd1",
+  "currentCommit": "11fd120432de889a581ddec2427d495afa6454dd",
   "workingTreeRelevantChanges": [
+    "script/m55/pixel-read.py",
     "script/m55/screenshot-protocol.ts",
     "script/m55/verify-live-surface.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-13T21:55:33.107Z",
+  "generatedAt": "2026-09-13T22:55:05.178Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
     "rigAvailable": true,
     "rigMissing": [],
-    "captureRun": "live-14",
+    "captureRun": "live-19",
     "probeFile": "validation/m55/results/V1-probe.json",
     "probeStatus": "read",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
@@ -42,9 +43,9 @@
         19,
         20
       ],
-      "textPixels": 3066,
+      "textPixels": 3028,
       "textFraction": 0.0015,
-      "textRows": 19
+      "textRows": 20
     },
     "hover-declaration:stats": {
       "ok": true,
@@ -74,13 +75,13 @@
     },
     "hover:diff": {
       "ok": true,
-      "changedPixels": 170455,
-      "changedFraction": 0.0822,
+      "changedPixels": 161632,
+      "changedFraction": 0.0779,
       "box": [
         418,
         30,
-        1490,
-        1046
+        640,
+        309
       ]
     },
     "hub:panel": {
@@ -146,13 +147,13 @@
     },
     "ctor-hover:diff": {
       "ok": true,
-      "changedPixels": 115595,
+      "changedPixels": 115549,
       "changedFraction": 0.0557,
       "box": [
         377,
-        12,
+        30,
         1243,
-        1061
+        1043
       ]
     },
     "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)": {
@@ -164,6 +165,41 @@
         82,
         448,
         521
+      ]
+    },
+    "ch-click:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 3158,
+      "textFraction": 0.0015,
+      "textRows": 20
+    },
+    "ch-click:editor-diff": {
+      "ok": true,
+      "changedPixels": 7129,
+      "changedFraction": 0.0412,
+      "box": [
+        13,
+        196,
+        831,
+        9
+      ]
+    },
+    "ch-click:whole-diff": {
+      "ok": true,
+      "changedPixels": 426307,
+      "changedFraction": 0.2056,
+      "box": [
+        348,
+        35,
+        1272,
+        1038
       ]
     },
     "zero-usage:stats": {
@@ -181,13 +217,13 @@
     },
     "zero-usage:diff": {
       "ok": true,
-      "changedPixels": 213275,
-      "changedFraction": 0.1029,
+      "changedPixels": 213234,
+      "changedFraction": 0.1028,
       "box": [
         377,
-        12,
+        30,
         1243,
-        1061
+        1043
       ]
     }
   },
@@ -230,7 +266,7 @@
     {
       "claim": "the three surfaces are distinct views",
       "source": "frame diffs: hub vs impact vs call hierarchy",
-      "frame": "4, 5, 6"
+      "frame": "4-open-in-graph.png, 5-impact.png, 6-call-hierarchy.png"
     },
     {
       "claim": "a symbol that does not exist is a declared error, not an empty result",
