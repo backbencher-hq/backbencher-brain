@@ -3,8 +3,8 @@
   "code": "V1",
   "milestone": "M55",
   "status": "verified",
-  "checks": 79,
-  "passed": 79,
+  "checks": 86,
+  "passed": 86,
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 15,
@@ -12,20 +12,20 @@
     "total": 15,
     "caught": 15
   },
-  "currentCommit": "3a2a8ecfdfc0fe133361013a387848c89f8056f8",
+  "currentCommit": "44eedc542dd2414a90bda149d84668e1549cecd1",
   "workingTreeRelevantChanges": [
     "script/m55/screenshot-protocol.ts",
     "script/m55/verify-live-surface.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-13T21:42:37.531Z",
+  "generatedAt": "2026-09-13T21:55:33.107Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
     "rigAvailable": true,
     "rigMissing": [],
-    "captureRun": "live-11",
+    "captureRun": "live-14",
     "probeFile": "validation/m55/results/V1-probe.json",
     "probeStatus": "read",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
@@ -74,13 +74,13 @@
     },
     "hover:diff": {
       "ok": true,
-      "changedPixels": 161594,
-      "changedFraction": 0.0779,
+      "changedPixels": 170455,
+      "changedFraction": 0.0822,
       "box": [
         418,
         30,
-        640,
-        309
+        1490,
+        1046
       ]
     },
     "hub:panel": {
@@ -129,6 +129,65 @@
         0,
         468,
         810
+      ]
+    },
+    "ctor-hover:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 5541,
+      "textFraction": 0.0027,
+      "textRows": 19
+    },
+    "ctor-hover:diff": {
+      "ok": true,
+      "changedPixels": 115595,
+      "changedFraction": 0.0557,
+      "box": [
+        377,
+        12,
+        1243,
+        1061
+      ]
+    },
+    "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)": {
+      "ok": true,
+      "changedPixels": 14902,
+      "changedFraction": 0.0252,
+      "box": [
+        0,
+        82,
+        448,
+        521
+      ]
+    },
+    "zero-usage:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 6390,
+      "textFraction": 0.0031,
+      "textRows": 19
+    },
+    "zero-usage:diff": {
+      "ok": true,
+      "changedPixels": 213275,
+      "changedFraction": 0.1029,
+      "box": [
+        377,
+        12,
+        1243,
+        1061
       ]
     }
   },

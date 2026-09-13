@@ -292,8 +292,23 @@ if (runName === null) {
   const hub = framePath("open-in-graph")
   const impact = framePath("impact")
   const callTree = framePath("call-hierarchy")
+  // T1's closure frames: the constructor case that the owner's filing evidence
+  // (s10-ctor-graph.png) captured as a SILENT RELABEL.
+  const ctorHover = framePath("ctor-hover-declaration")
+  const ctorGraph = framePath("ctor-open-in-graph")
+  // T3's closure frame: the zero-usage card (a declared absence in the editor).
+  const zeroUsage = framePath("hover-zero-usages")
 
-  check(`R2: the session captured the declared frames (${frames.length}/${CAPTURE_FLOWS.length})`, frames.length >= 5, `captured: ${frames.map((f) => f.label).join(",")}`)
+  // EVERY declared flow must have a frame: the milestone's rule is that a claim
+  // with no frame is not a claim. A flow that silently blocks would leave a
+  // claim unframed, so it fails here (the rig drives these deterministically;
+  // the blocked-path proof is R7's job, not a hole in this run).
+  const missingFlows = CAPTURE_FLOWS.filter((f) => !frames.some((x) => x.label === f.label))
+  check(
+    `R2: the session captured every declared frame (${frames.length} captured, ${CAPTURE_FLOWS.length} declared)`,
+    missingFlows.length === 0,
+    `missing: ${missingFlows.map((f) => f.label).join(",") || "none"}`,
+  )
   let hashesHold = 0
   for (const f of frames) {
     const abs = path.join(ROOT, f.frame!.path)
@@ -351,6 +366,40 @@ if (runName === null) {
     check("R2: the call-site hover is its own frame (different position, same identity)", surfacesDiffer(d), JSON.stringify(d).slice(0, 140))
   } else {
     blocked("R2: the call-site hover is its own frame", "the call-site frame was not captured")
+  }
+
+  // T1's closure requirement: the constructor case, framed at this HEAD. A
+  // missing frame here is the claim with no evidence behind it, so it fails
+  // rather than being blocked — the rig drives this flow deterministically
+  // (the fixture has a constructor; the drive is `code -g` + the hover chord +
+  // a palette command by id).
+  check("R2: the T1 closure frames exist (the constructor card and the constructor graph)", ctorHover !== null && ctorGraph !== null, `ctor-hover=${ctorHover !== null} ctor-graph=${ctorGraph !== null}`)
+  if (ctorHover !== null) {
+    const full = pixel("stats", [ctorHover, "0", "0", String(SCREEN.width), String(SCREEN.height)])
+    frameFacts["ctor-hover:stats"] = full
+    check("R2: the constructor hover frame shows a rendered card (T1 U5)", frameShowsContent(full), JSON.stringify(full).slice(0, 160))
+  }
+  if (ctorHover !== null && hoverDecl !== null) {
+    const d = pixel("diff", [hoverDecl, ctorHover, "0", "0", String(SCREEN.width), String(SCREEN.height)])
+    frameFacts["ctor-hover:diff"] = d
+    check("R2: the constructor card is its OWN frame, not the method card again (T1 U5 — different identity)", surfacesDiffer(d), JSON.stringify(d).slice(0, 160))
+  }
+  if (ctorGraph !== null && hub !== null) {
+    const d = pixel("diff", [hub, ctorGraph, ...region("panel")])
+    frameMatters("R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)", surfacesDiffer(d), d)
+  }
+  // T3's closure requirement: "V1's in-editor frame of the same case" — the
+  // zero-usage symbol rendered in the editor, distinct from the used one.
+  check("R2: the T3 closure frame exists (the zero-usage card)", zeroUsage !== null, `hover-zero-usages=${zeroUsage !== null}`)
+  if (zeroUsage !== null) {
+    const full = pixel("stats", [zeroUsage, "0", "0", String(SCREEN.width), String(SCREEN.height)])
+    frameFacts["zero-usage:stats"] = full
+    check("R2: the zero-usage frame shows a rendered card (T3)", frameShowsContent(full), JSON.stringify(full).slice(0, 160))
+    if (hoverDecl !== null) {
+      const d = pixel("diff", [hoverDecl, zeroUsage, "0", "0", String(SCREEN.width), String(SCREEN.height)])
+      frameFacts["zero-usage:diff"] = d
+      check("R2: the zero-usage card is its own frame, not the used symbol's card again (T3)", surfacesDiffer(d), JSON.stringify(d).slice(0, 160))
+    }
   }
 
   // R3 lives inside the frames leg: the bundle the frames are about.

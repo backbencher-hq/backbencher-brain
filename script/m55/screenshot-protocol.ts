@@ -61,8 +61,15 @@ export interface CaptureFlow {
    *  so). The position is resolved from the file text, never hardcoded. */
   symbol: string
   kind: "declaration" | "call-site"
-  /** the editor action that produces the frame */
-  action: { kind: "none" } | { kind: "hover" } | { kind: "command"; command: string; title: string }
+  /** the editor action that produces the frame. `thenKeys` drives the editor's
+   *  OWN keyboard navigation after the command (T2's closure requirement is the
+   *  click that lands on the call site: activating a caller in the tree is
+   *  VS Code's navigation, so the deterministic headless equivalent is the
+   *  keyboard activation on the tree row). */
+  action:
+    | { kind: "none" }
+    | { kind: "hover" }
+    | { kind: "command"; command: string; title: string; thenKeys?: string[] }
 }
 
 export const CAPTURE_FLOWS: CaptureFlow[] = [
@@ -73,7 +80,27 @@ export const CAPTURE_FLOWS: CaptureFlow[] = [
   { id: "5", label: "impact", shows: "the impact view (T1 U5 root)", file: "src/greeter.ts", symbol: "Greeter", kind: "declaration", action: { kind: "command", command: "bb.openImpact", title: "Backbencher: Impact Analysis" } },
   { id: "6", label: "call-hierarchy", shows: "the call hierarchy (T2)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bb.showCallHierarchy", title: "Backbencher: Show Call Hierarchy" } },
   { id: "7", label: "status", shows: "the status surface: every fact carries its claim level (Truth Rule 1)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bbLsp.showStatusPanel", title: "Backbencher: Show status (evidence levels, staleness)" } },
+  // T1's own closure requirement: "the constructor case reproduced by V1's
+  // fresh-install frame showing the label". The owner's filing evidence
+  // (s10-ctor-graph.png) captured the SILENT RELABEL — a constructor graph that
+  // opened on the class with nothing said. These two flows capture the same
+  // case after the fix, so the claim has a frame at the evidence HEAD instead
+  // of a reference to the filing run.
+  { id: "8", label: "ctor-hover-declaration", shows: "the card at the constructor's declaration — a member identity that resolves (T1 U5)", file: "src/greeter.ts", symbol: "constructor", kind: "declaration", action: { kind: "hover" } },
+  { id: "9", label: "ctor-open-in-graph", shows: "the hub opened from the constructor — the label names the owning declaration (T1 U5, the silent relabel)", file: "src/greeter.ts", symbol: "constructor", kind: "declaration", action: { kind: "command", command: "bb.openGraph", title: "Backbencher: Open in Graph" } },
+  // T3's own closure requirement: the zero-usage case in the editor ("0 usages"
+  // and NO list — declared absence, never the callees or the owning class).
+  { id: "10", label: "hover-zero-usages", shows: "the card for a symbol with zero usages — a declared absence (T3)", file: "src/greeter.ts", symbol: "greetAll", kind: "declaration", action: { kind: "hover" } },
 ]
+// T2's closure leg ("clicking a caller lands on the CALL SITE") was ATTEMPTED
+// here and REMOVED: the flow drove the call hierarchy and then sent
+// Down + Return, and the captured frame showed NO call-hierarchy view and the
+// cursor still on greeter.ts:15 — the keyboard activation did not reach the
+// tree, so the frame did not show what the label would have claimed. A frame
+// that overclaims is worse than a missing one, so the flow is out and the
+// negative result is recorded as docs/m55/FRAME-FINDINGS.md F13 (T2's remaining
+// closure item). The `thenKeys` mechanism is kept: it is the right driver for a
+// leg that can prove the tree had focus.
 
 export interface FrameRecord {
   flow: string
@@ -422,6 +449,12 @@ export async function runCaptureSession(opts: { run?: string; profile?: string; 
           await sleep(1600)
           xdo("key", "--clearmodifiers", "Return")
           await sleep(3000)
+          // T2's closure leg: the tree row activation. `Down` selects the first
+          // row, `Return` posts the same navigate command a click does.
+          for (const key of flow.action.thenKeys ?? []) {
+            xdo("key", "--clearmodifiers", key)
+            await sleep(1200)
+          }
           if (captureTo(framePath)) {
             const previous = frames[frames.length - 1]
             if (previous === undefined) {
