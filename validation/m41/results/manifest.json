@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-13T03:23:24.377Z",
+  "updatedAt": "2026-09-13T22:44:26.944Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -51,10 +51,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "fdb1a6f5740a246ecc694120098abac74f1e7741",
         "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-13T03:22:49.414Z",
+        "generatedAt": "2026-09-13T21:57:27.577Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 11
@@ -187,14 +187,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "cbc2b7001b93dd58b98f095ad9a815dbe8c9adc4",
+        "currentCommit": "fedeb9424d69ecc6050a93eced105fb6f9c5d0ec",
         "verifierCommand": "npx tsx script/m41/verify-seo-onboarding.ts",
         "evidenceFile": "S2.json",
         "ownerConfirmationsFile": "S2-OWNER-CONFIRMATIONS.json",
-        "generatedAt": "2026-09-12T14:25:13.752Z",
-        "passed": 12,
+        "generatedAt": "2026-09-13T22:44:19.158Z",
+        "passed": 15,
         "failed": 0,
-        "negativeCases": 3,
+        "negativeCases": 5,
         "deployGate": "Deploy-gated by construction: S2 probes the LIVE deployment (dns.google + backbencher.cc) and cannot be re-run from the repository working tree. It is accepted PASS-with-negatives at this ancestor commit; the owner re-runs the gate after the Vercel deploy, which records deployLag (open -> closed) and re-pins S2 onto the batch commit. M56.X1 and M41.X1 both refuse to close on an unstated lag state."
       }
     },
@@ -256,7 +256,7 @@
         "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "generatedAt": "2026-09-13T03:22:42.484Z",
+        "generatedAt": "2026-09-13T03:25:27.341Z",
         "passed": 36,
         "failed": 0,
         "negativeCases": 13
