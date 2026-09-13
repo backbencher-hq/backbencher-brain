@@ -208,7 +208,11 @@ const CSHARP_KEYWORDS = new Set([
   "if", "for", "foreach", "while", "do", "switch", "case", "else", "return",
   "throw", "using", "new", "delegate", "in", "is", "as", "sizeof", "fixed",
   "lock", "checked", "unchecked", "params", "ref", "out", "base", "this",
-  "get", "set",
+  // CS-B2 (csharp review): `nameof(x)` parses as an invocation_expression
+  // with an identifier callee — without this entry every nameof site
+  // fabricated a `calls -> nameof` edge (probe-verified). `typeof`/`default`
+  // never parse as invocations (dedicated nodes), so only nameof belongs.
+  "get", "set", "nameof",
 ])
 
 // ≡ /^(binary|conditional|prefix_unary|postfix_unary|cast|as_|await|coalesce|conditional_access|element_access|member_access)_expression$/
@@ -303,7 +307,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Cyclomatic complexity
       const complexityNodes = new Set([
         "if_statement", "for_statement", "foreach_statement", "while_statement",
-        "case_switch_label", "catch_declaration", "conditional_expression",
+        // CS-B3 (csharp review): BOTH catch forms parse as `catch_clause`
+        // (which CONTAINS an optional `catch_declaration`) — counting the
+        // inner declaration counted typed catches but never bare `catch { }`.
+        // Count the clause instead (exactly once either way); matches
+        // swift's catch_block.
+        "case_switch_label", "catch_clause", "conditional_expression",
         "logical_and_expression", "logical_or_expression",
         // CSD2 (re-review 2026-09-04, probe): switch EXPRESSION arms are
         // decision points exactly like case labels — a 3-arm switch
@@ -595,7 +604,8 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the using-directive binds). The pre-fix push exported
         // namespace-nested types under bare names, which the F3 gate
         // correctly rejects as unresolvable; membership rides Contains.
-        if (!parentContext) {
+        // CS-B4: `file`-scoped types never export (file-only visibility).
+        if (!parentContext && !this.hasModifier(node, "file")) {
           exports.push({ name: sym.name, kind: sym.kind, range: sym.range, visibility: visibility || "public" })
         }
         newContext = {
@@ -880,6 +890,40 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         scopeStack.push(newContext)
         pushedScope = true
       } else if (type === "invocation_expression") {
+        // CS-P1 (csharp review): positional-pattern heads (`o is Point(1,
+        // y)`) parse as invocation_expressions inside pattern contexts — a
+        // pattern match, never a call. Bounded climb: a constant_pattern /
+        // is_pattern_expression ancestor before any statement / declaration
+        // / block / method-ish / lambda / query / invocation boundary means
+        // pattern position (note: trailing `&&` misparses INSIDE the
+        // constant_pattern, so direct-parent checks miss — probe-verified).
+        // Skipping here (the read pass treats their bare identifiers as
+        // constant-pattern reads, and declared vars bind via declaration
+        // rules).
+        let inPattern = false
+        {
+          let q: Node | null = node.parent
+          while (q) {
+            const t: string = q.type
+            if (t === "constant_pattern" || t === "is_pattern_expression") { inPattern = true; break }
+            if (
+              t === "invocation_expression" ||
+              t.includes("statement") || t.includes("declaration") ||
+              t.includes("block") || t.includes("function") ||
+              t === "lambda_expression" || t === "local_function_statement" ||
+              t === "query_expression" || t === "method_declaration" ||
+              t === "constructor_declaration"
+            ) break
+            q = q.parent
+          }
+        }
+        if (inPattern) {
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         const callExpr = this.buildCSharpCallExpression(node)
         // Call sites live in method bodies AND constructor/property/indexer
         // bodies (csharp #264 Station-6: calls inside a constructor like
@@ -902,7 +946,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           enclosingKind === ASTEngine.SymbolKind.Class ||
           enclosingKind === ASTEngine.SymbolKind.Struct ||
           enclosingKind === ASTEngine.SymbolKind.Interface
-        if (callExpr && parentContext?.name && isCallSite) {
+        // CS-B1 (csharp review): top-level statements (C# 9) execute at file
+        // scope with no enclosing symbol — their calls were dropped for lack
+        // of a source name (the oracle derives every invocation leaf, so each
+        // one surfaced as MISSING). Attribute to "global" (the field-use
+        // pass convention for file-scope reads).
+        const callSource = parentContext?.rawName || "global"
+        if (callExpr && callSource && (isCallSite || !parentContext)) {
           // Strip generic type arguments so a generic call `x?.Get<T>(...)` /
           // `Foo.Gen<T>(...)` resolves to its clean leaf `Get` / `Gen` before
           // hygiene (the raw callExpr leaf carries `<T>`).
@@ -920,7 +970,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (cpp isPlainIdentifier twin; same \w class semantics).
           if (!isCSharpKeyword && this.isPlainIdentifier(target) && !this.isCSharpBuiltin(callExpr)) {
             relationships.push({
-              source: parentContext.rawName,
+              source: callSource,
               target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
@@ -1096,6 +1146,28 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (not in call-callee position) emits `uses containingFn -> field`.
     this.analyzeFieldAccessUses(rootNode, relationships, symbols)
 
+    // CS-R1 (csharp review): bare-identifier value reads. The analyzer
+    // emitted NO bare-identifier edges at all (`return Max;` produced zero
+    // relationships) while the oracle audits only calls/instantiates — a
+    // both-sides blind spot (CONV-CS-1), same class as pre-review CP1/R1.
+    // Every bare identifier naming a class member VALUE (fields, consts,
+    // properties — all Property-kind symbols) is a Uses edge, with the
+    // C-family exclusion discipline adapted to C#: declaration positions
+    // (entity names, declarators, patterns), call callees (calls branch
+    // owns them, incl. generic/conditional wrappers), member leaves (the
+    // field pass owns member_access leaves; RECEIVERS read), qualified
+    // names (types/namespaces stay silent), preprocessor text, labels,
+    // attributes names, named-argument designators, with/subpattern
+    // designators, anonymous-type designators, assignment LHS writes
+    // (incl. deconstruction), out-param writes, nameof/typeof/default/
+    // sizeof operands, is/as type operands — and walk-order shadowing via
+    // lexical frames (methods, blocks, lambdas, local functions, switch
+    // arms, queries, catch/foreach/for/using constructs, class frames for
+    // primary-ctor params). Resolvability required: unknown names stay
+    // silent. `uses` is uncompared for csharp, so fixtures + mutants gate
+    // this surface (no oracle change).
+    this.analyzeCSharpBareIdentifierUses(rootNode, relationships, symbols, classHierarchy)
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -1153,7 +1225,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     let complexity = 1
     const complexityNodes = new Set([
       "if_statement", "for_statement", "foreach_statement", "while_statement",
-      "case_switch_label", "catch_declaration", "conditional_expression",
+      // CS-B3: `catch_clause` (not `catch_declaration`) — both catch forms
+      // parse as catch_clause containing an optional declaration.
+      "case_switch_label", "catch_clause", "conditional_expression",
       "logical_and_expression", "logical_or_expression",
       // CSD2: keep per-symbol in sync with the file-level counter above.
       "switch_expression_arm",
@@ -1399,6 +1473,793 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * CS-R1: bare-identifier value reads (see the call site for the contract).
+   * Inventory = Property-kind member names keyed by owner (full name and
+   * leaf); resolution walks the lexical class chain innermost-first, then
+   * base classes transitively (capped), then lexically enclosing classes.
+   * Methods, enum members, events and delegates never resolve bare
+   * (method groups, qualified-only members, ruled boundaries).
+   */
+  private analyzeCSharpBareIdentifierUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    classHierarchy: Map<string, string[]>,
+  ): void {
+    const leafOf = (s: string): string => {
+      const parts = s.split(/::|\./).filter(Boolean)
+      return parts.length > 0 ? parts[parts.length - 1] : s
+    }
+    const membersByOwner = new Map<string, Set<string>>()
+    const addMember = (owner: string, name: string): void => {
+      if (!owner || !name || name === "_") return
+      for (const key of [owner, leafOf(owner)]) {
+        let s = membersByOwner.get(key)
+        if (!s) { s = new Set<string>(); membersByOwner.set(key, s) }
+        s.add(name)
+      }
+    }
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Property && s.ownerName) addMember(s.ownerName, s.name)
+    }
+    const emitted = new Set<string>()
+    interface Frame { names: Set<string>; cls: string | null }
+    const scopeStack: Frame[] = []
+    // File-scope frame: top-level-statement locals (`int x = 1;` outside
+    // any type) bind here instead of leaking into member resolution on
+    // colliding names. Popped at root exit like every other frame.
+    scopeStack.push({ names: new Set<string>(), cls: null })
+    const isShadowed = (name: string): boolean => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        if (scopeStack[i].names.has(name)) return true
+      }
+      return false
+    }
+    const isResolvableRead = (name: string): boolean => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) {
+        const fr = scopeStack[i]
+        if (!fr.cls) continue
+        const seen = new Set<string>()
+        const queue = [fr.cls]
+        let depth = 0
+        while (queue.length > 0 && depth < 10) {
+          depth++
+          const cur = queue.shift()!
+          if (seen.has(cur)) continue
+          seen.add(cur)
+          const mm = membersByOwner.get(cur) ?? membersByOwner.get(leafOf(cur))
+          if (mm && mm.has(name)) return true
+          for (const b of classHierarchy.get(cur) ?? classHierarchy.get(leafOf(cur)) ?? []) {
+            if (!seen.has(b)) queue.push(b)
+          }
+        }
+      }
+      return false
+    }
+    // First identifier-ish direct child (the declared name for parameters,
+    // declarators, catch variables, from/join/let range variables).
+    const firstIdent = (n: Node | null): Node | null => {
+      if (!n) return null
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && (c.type === "identifier" )) return c
+      }
+      return null
+    }
+    // Leftmost declarator name (`int *p` → p, `int x` → x): descend through
+    // declarator wrappers to the declared identifier.
+    const declaratorName = (declNode: Node | null): Node | null => {
+      let cur: Node | null = declNode
+      while (cur) {
+        if (cur.type === "identifier") return cur
+        let next: Node | null = null
+        for (let i = 0; i < cur.namedChildCount; i++) {
+          const c = cur.namedChild(i)
+          if (
+            c && (c.type === "identifier"  ||
+              c.type.endsWith("declarator"))
+          ) {
+            next = c
+            break
+          }
+        }
+        if (!next || next === cur) return null
+        cur = next
+      }
+      return null
+    }
+    // A variable_declarator declares a LOCAL (bind) or a MEMBER (skip) —
+    // climb to the nearest scope boundary. Method-ish bodies (incl. blocks
+    // and lambdas, which always precede any arrow clause on the climb)
+    // mean local; class-ish means member; file top level (top-level
+    // statements) means local.
+    const declaratorRole = (declNode: Node): "local" | "member" => {
+      let cur: Node | null = declNode.parent
+      while (cur) {
+        const t: string = cur.type
+        if (
+          t === "method_declaration" || t === "constructor_declaration" ||
+          t === "destructor_declaration" || t === "operator_declaration" ||
+          t === "conversion_operator_declaration" ||
+          t === "local_function_statement" || t === "lambda_expression" ||
+          t === "block" || t === "accessor_declaration"
+        ) return "local"
+        if (
+          t === "class_declaration" || t === "struct_declaration" ||
+          t === "interface_declaration" || t === "record_declaration" ||
+          t === "record_struct_declaration" || t === "enum_declaration"
+        ) return "member"
+        cur = cur.parent
+      }
+      return "local"
+    }
+    interface ScopeFrameT { names: Set<string> }
+    // `=`, `:` or `{` among a node's ALL children switches it from
+    // declaring to reading (CP8-class segment discipline for anonymous
+    // initializers and attribute arguments).
+    const hasEqualsAfter = (parent: Node, node: Node): boolean => {
+      let sawSelf = false
+      for (let i = 0; i < parent.childCount; i++) {
+        const c = parent.child(i)
+        if (!c) continue
+        if (c.startIndex === node.startIndex && c.endIndex === node.endIndex) { sawSelf = true; continue }
+        if (!c.isNamed && sawSelf && (c.type === "=" || c.type === ":")) return true
+      }
+      return false
+    }
+    const stack: Array<{ node: Node; exit: boolean; pushed: boolean }> = [{ node: rootNode, exit: false, pushed: false }]
+    while (stack.length > 0) {
+      const { node, exit, pushed } = stack.pop()!
+      if (exit) {
+        if (pushed) scopeStack.pop()
+        continue
+      }
+      const t = node.type
+      let pushedScope = false
+      const top = (): Frame | null => (scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : null);
+      if (
+        t === "method_declaration" || t === "constructor_declaration" ||
+        t === "destructor_declaration" || t === "operator_declaration" ||
+        t === "conversion_operator_declaration" || t === "local_function_statement"
+      ) {
+        const frame: Frame = { names: new Set<string>(), cls: null }
+        const plist = this.findChild(node, (n) => n.type === "parameter_list")
+        if (plist) {
+          for (let i = 0; i < plist.namedChildCount; i++) {
+            const p = plist.namedChild(i)
+            if (!p || p.type !== "parameter") continue
+            const nm = p.childForFieldName("name") ?? firstIdent(p)
+            if (nm && nm.text !== "_") frame.names.add(nm.text)
+          }
+        }
+        // Local functions declare their NAME in the enclosing scope.
+        if (t === "local_function_statement") {
+          const nm = node.childForFieldName("name") ?? firstIdent(node)
+          const outer = top()
+          if (outer && nm && nm.text !== "_") outer.names.add(nm.text)
+        }
+        scopeStack.push(frame)
+        pushedScope = true
+      } else if (
+        t === "block" || t === "lambda_expression" ||
+        t === "switch_expression_arm" || t === "query_expression" ||
+        t === "foreach_statement" || t === "for_statement" ||
+        t === "using_statement" || t === "catch_clause"
+      ) {
+        // Lambda parameters bind at entry (named `parameter` nodes via
+        // their name field, plus bare `implicit_parameter` names).
+        if (t === "lambda_expression") {
+          const frame: Frame = { names: new Set<string>(), cls: null }
+          const walk: Node[] = [node]
+          while (walk.length > 0) {
+            const m = walk.pop()!
+            if (m !== node && (m.type === "block" || m.type === "lambda_expression")) continue
+            if (m.type === "parameter") {
+              const pn = m.childForFieldName("name") ?? firstIdent(m)
+              if (pn && pn.text !== "_") frame.names.add(pn.text)
+            } else if (m.type === "implicit_parameter") {
+              for (let i = 0; i < m.namedChildCount; i++) {
+                const c = m.namedChild(i)
+                if (c && (c.type === "identifier" ) && c.text !== "_") frame.names.add(c.text)
+              }
+            }
+            for (let i = m.namedChildCount - 1; i >= 0; i--) {
+              const c = m.namedChild(i)
+              if (c) walk.push(c)
+            }
+          }
+          scopeStack.push(frame)
+          pushedScope = true
+        } else if (t === "foreach_statement") {
+          // `foreach (var x in ys)` binds x; `foreach (Point p in ps)`
+          // binds p (a bare-identifier type is still a type — the grammar
+          // spells all C# type names `identifier`); `foreach (x in ys)`
+          // assigns the existing x (a write — binds nothing, and the
+          // identifier gate below silences the write site). Rule: with a
+          // recognized type node present, bind the first identifier after
+          // it; otherwise (all-bare shapes) bind all-but-first-and-last
+          // (first = the positional type, last = the source, both read
+          // nothing... the source reads normally via the read path).
+          const frame: Frame = { names: new Set<string>(), cls: null }
+          const isTypeish = (c: Node): boolean =>
+            c.type === "implicit_type" || c.type === "predefined_type" ||
+            c.type === "generic_name" ||
+            c.type === "qualified_name" || c.type === "nullable_type" ||
+            c.type === "array_type" || c.type === "pointer_type" ||
+            c.type === "tuple_type" || c.type === "ref_type"
+          const kids: Node[] = []
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (!c || c.type === "block") break
+            kids.push(c)
+          }
+          const hasType = kids.some((c) => isTypeish(c))
+          if (hasType) {
+            let bound = false
+            let seen = false
+            for (const c of kids) {
+              if (isTypeish(c)) { seen = true; continue }
+              if (!bound && seen && c.type === "identifier" && c.text !== "_") {
+                frame.names.add(c.text)
+                bound = true
+              }
+            }
+          } else {
+            const ids = kids.filter((c) => c.type === "identifier" && c.text !== "_")
+            for (let i = 1; i + 1 < ids.length; i++) frame.names.add(ids[i].text)
+          }
+          scopeStack.push(frame)
+          pushedScope = true
+        } else {
+          scopeStack.push({ names: new Set<string>(), cls: null })
+          pushedScope = true
+        }
+      } else if (
+        t === "class_declaration" || t === "struct_declaration" ||
+        t === "interface_declaration" || t === "record_declaration" ||
+        t === "record_struct_declaration"
+      ) {
+        // Class scope: resolution context + primary-constructor params.
+        // Record positionals are NOT bound (they coincide with properties —
+        // reads must flow to the member). Enums push no frame (no members
+        // resolve bare, no params exist).
+        const frame: Frame = { names: new Set<string>(), cls: null }
+        const nm = node.childForFieldName("name")?.text ?? firstIdent(node)?.text ?? null
+        if (nm) frame.cls = nm
+        if (t !== "record_declaration" && t !== "record_struct_declaration") {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c && c.type === "parameter_list") {
+              for (let k = 0; k < c.namedChildCount; k++) {
+                const p = c.namedChild(k)
+                if (!p || p.type !== "parameter") continue
+                const pn = p.childForFieldName("name") ?? firstIdent(p)
+                if (pn && pn.text !== "_") frame.names.add(pn.text)
+              }
+            }
+          }
+        }
+        scopeStack.push(frame)
+        pushedScope = true
+      } else if (t === "variable_declarator") {
+        // Locals bind (walk-order shadowing); member declarators declare
+        // symbols elsewhere and never bind (their reads resolve via the
+        // member inventory — binding them would self-shadow).
+        if (declaratorRole(node) === "local") {
+          const f = top()
+          const nm = declaratorName(node)
+          if (f && nm && nm.text !== "_") f.names.add(nm.text)
+        }
+      } else if (t === "declaration_pattern") {
+        // `Point p`, `List<int> x`, `var v`: skip the TYPE (first child),
+        // bind the rest.
+        const f = top()
+        if (f) {
+          for (let i = 1; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c && (c.type === "identifier" ) && c.text !== "_") f.names.add(c.text)
+          }
+        }
+      } else if (t === "declaration_expression") {
+        // `out int v`, `out v`: the LAST direct identifier declares (a
+        // lone `out <type>` never names a value). Earlier siblings are
+        // types (never read as values here).
+        const f = top()
+        if (f) {
+          let last: Node | null = null
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c && c.type === "identifier") last = c
+          }
+          if (last && last.text !== "_") f.names.add(last.text)
+        }
+      } else if (t === "from_clause" || t === "join_clause" || t === "let_clause") {
+        // `from x in src`, `join y in ys`, `let b = a`: the FIRST
+        // identifier binds, the rest read. (`into` continuations do not
+        // parse in this grammar version — the identifiers vanish, so no
+        // rule can bind them; ruled grammar limitation.)
+        const f = top()
+        if (f) {
+          const id = firstIdent(node)
+          if (id && id.text !== "_") f.names.add(id.text)
+        }
+      } else if (t === "catch_declaration") {
+        // `catch (E e)`: bind direct identifiers that have an earlier
+        // sibling (the variable, never the leading type). `catch (E)`
+        // binds nothing; `catch {}` has nothing to bind.
+        const f = top()
+        if (f) {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (!c || c.type !== "identifier" || c.text === "_") continue
+            let earlier = false
+            for (let k = 0; k < i; k++) {
+              if (node.namedChild(k)) { earlier = true; break }
+            }
+            if (earlier) f.names.add(c.text)
+          }
+        }
+      } else if (t === "tuple_expression") {
+        // Deconstruction (`(int a, int b) = t`, `(a, b) = t`): per
+        // `argument` child — with a recognized type sibling, bind its
+        // identifier children (declarations); with multiple bare
+        // identifiers and no type, bind all-but-first (first is the
+        // positional type, e.g. `(Point p)`); a lone bare identifier
+        // assigns an existing variable (a write — bind nothing; the
+        // emission gate silences it). Only when this tuple is the LHS of
+        // an assignment (RHS tuples read normally).
+        const p = node.parent
+        if (p && p.type === "assignment_expression" && p.namedChild(0) &&
+          node.startIndex >= p.namedChild(0)!.startIndex && node.endIndex <= (p.namedChild(0)!.endIndex ?? 0)) {
+          const f = top()
+          if (f) {
+            const isTypeish = (c: Node): boolean =>
+              c.type === "implicit_type" || c.type === "predefined_type" ||
+              c.type === "generic_name" ||
+              c.type === "qualified_name" || c.type === "nullable_type" ||
+              c.type === "array_type" || c.type === "pointer_type" ||
+              c.type === "tuple_type" || c.type === "ref_type"
+            for (let i = 0; i < node.namedChildCount; i++) {
+              const arg = node.namedChild(i)
+              if (!arg || arg.type !== "argument") continue
+              const ids: Node[] = []
+              let typed = false
+              for (let k = 0; k < arg.namedChildCount; k++) {
+                const c = arg.namedChild(k)
+                if (!c) continue
+                if (isTypeish(c)) typed = true
+                else if (c.type === "identifier" && c.text !== "_") ids.push(c)
+              }
+              const bind = typed ? ids : ids.slice(1)
+              for (const b of bind) f.names.add(b.text)
+            }
+          }
+        }
+      } else if (t === "identifier") {
+        const name = node.text
+        const p = node.parent
+        // Attribute NAMES name attribute types, never values (arguments
+        // below read normally).
+        const isAttrName = !!p && p.type === "attribute" &&
+          (() => {
+            for (let i = 0; i < p.namedChildCount; i++) {
+              const c = p.namedChild(i)
+              if (c && (c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name")) {
+                return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+              }
+            }
+            return false
+          })()
+        // Named-argument designators (`Size = 3`): first identifier
+        // followed by `=` designates, never reads.
+        const isNamedArgDesignator = !!p && p.type === "attribute_argument" &&
+          (() => {
+            const first = firstIdent(p)
+            return !!first && first.startIndex === node.startIndex && first.endIndex === node.endIndex && hasEqualsAfter(p, node)
+          })()
+        // Anonymous-type designators (`new { X = 1, Y = v }`): same
+        // equals-rule per comma segment; lone identifiers read (shorthand).
+        const isAnonDesignator = !!p && (() => {
+          let q: Node | null = p
+          while (q && q.type !== "anonymous_object_creation_expression" && q.type !== "block" &&
+            q.type !== "method_declaration" && q.type !== "constructor_declaration" &&
+            q.type !== "local_function_statement" && q.type !== "lambda_expression") {
+            q = q.parent
+          }
+          if (!q || q.type !== "anonymous_object_creation_expression") return false
+          // Segment discipline: reset at `,`/`;`/`{`/`}` (the opening
+          // brace starts the member list fresh — it must NOT poison
+          // freshness, else the first designator leaks as a read);
+          // `=`/`:` switch a segment to reading; the first identifier of
+          // a fresh segment with `=` after designates, lone identifiers
+          // read (shorthand).
+          let fresh = true
+          let foundFirst = false
+          for (let i = 0; i < q.childCount; i++) {
+            const c = q.child(i)
+            if (!c) continue
+            if (!c.isNamed) {
+              if (c.type === "," || c.type === ";" || c.type === "{" || c.type === "}") { fresh = true; foundFirst = false } else if (c.type === "=" || c.type === ":") fresh = false
+              continue
+            }
+            if (c.type === "identifier" ) {
+              if (!foundFirst && fresh) {
+                if (c.startIndex === node.startIndex && c.endIndex === node.endIndex) {
+                  return hasEqualsAfter(q, c)
+                }
+                foundFirst = true
+              } else {
+                if (c.startIndex === node.startIndex && c.endIndex === node.endIndex) return false
+              }
+            }
+          }
+          return false
+        })()
+        // with-initializer + subpattern designators: the first direct
+        // identifier child names the member (never reads, never binds).
+        const isMemberDesignator = !!p && (p.type === "with_initializer" || p.type === "subpattern") &&
+          (() => {
+            const first = firstIdent(p)
+            return !!first && first.startIndex === node.startIndex && first.endIndex === node.endIndex
+          })()
+        // `out x` writes (bare existing var); `out <decl>` binds above.
+        // `ref`/`in` read.
+        const isOutWrite = !!p && p.type === "argument" &&
+          (() => {
+            let sawOut = false
+            for (let i = 0; i < p.childCount; i++) {
+              const c = p.child(i)
+              if (!c) continue
+              if (!c.isNamed && c.type === "out") { sawOut = true; continue }
+              if (c.isNamed) {
+                if (c.type === "declaration_expression") return false
+                if ((c.type === "identifier" ) &&
+                  c.startIndex === node.startIndex && c.endIndex === node.endIndex) return sawOut
+                return false
+              }
+            }
+            return false
+          })()
+        // Deconstruction writes: identifiers in the LHS tuple of an
+        // assignment (nested reads inside still read via their own rules —
+        // this only covers identifiers whose nearest tuple/call/index/
+        // member/lambda boundary is the LHS itself).
+        const isDeconWrite = (() => {
+          let cur: Node | null = node
+          let q: Node | null = p
+          while (q && (q.type === "tuple_expression" || q.type === "argument" || q.type === "parenthesized_expression")) {
+            cur = q
+            q = q.parent
+          }
+          if (!q || q.type !== "assignment_expression") return false
+          const lhs = q.namedChild(0)
+          return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+        })()
+        // Member declarator names declare symbols (never read, never bind
+        // here — locals self-suppress via shadowing). Covers both wrapped
+        // (`int *p`, leftmost match) and flat field shapes (first direct).
+        const isMemberDeclName = (() => {
+          if (!p) return false
+          if (p.type === "variable_declarator") {
+            const nm = declaratorName(p)
+            return !!nm && nm.startIndex === node.startIndex && nm.endIndex === node.endIndex &&
+              declaratorRole(p) === "member"
+          }
+          if (p.type === "field_declaration") {
+            const first = firstIdent(p)
+            return !!first && first.startIndex === node.startIndex && first.endIndex === node.endIndex
+          }
+          return false
+        })()
+        // Write-position foreach variables (`foreach (x in ys)` with no
+        // type): assigned, never declared and never read here. (Declared
+        // forms bind in the branch above and self-suppress; the source
+        // `ys` is always last and always reads.) Positional rule: a direct
+        // identifier child that is not the last child never reads — the
+        // loop variable precedes the source in every shape.
+        const isForeachWrite = !!p && p.type === "foreach_statement" &&
+          (() => {
+            let last: Node | null = null
+            for (let i = p.namedChildCount - 1; i >= 0; i--) {
+              const c = p.namedChild(i)
+              if (c && c.type !== "block") { last = c; break }
+            }
+            if (!last || last.type === "block") return false
+            for (let i = 0; i < p.namedChildCount; i++) {
+              const c = p.namedChild(i)
+              if (!c || c === last || c.type === "block") continue
+              if (c.type === "identifier" && c.startIndex === node.startIndex && c.endIndex === node.endIndex) return true
+            }
+            return false
+          })()
+        // Deconstruction LHS arguments: direct identifier children never
+        // read here — declared names self-suppress via shadowing, plain
+        // names are writes (the tuple branch above binds exactly the
+        // declaring ones).
+        const isDeconArgName = !!p && p.type === "argument" &&
+          (() => {
+            let q: Node | null = p.parent
+            while (q && q.type === "parenthesized_expression") q = q.parent
+            if (!q || q.type !== "tuple_expression") return false
+            const a = q.parent
+            if (!a || a.type !== "assignment_expression") return false
+            const lhs = a.namedChild(0)
+            if (!lhs || q.startIndex < lhs.startIndex || q.endIndex > (lhs.endIndex ?? 0)) return false
+            return node.type === "identifier"
+          })()
+        // Using directives and extern aliases are imports (handled by the
+        // import logic) — their names never read as values.
+        const isImportName = (() => {
+          let q: Node | null = p
+          while (q) {
+            if (q.type === "using_directive" || q.type === "extern_alias_directive") return true
+            q = q.parent
+          }
+          return false
+        })()
+        // Pattern heads that are invocations (`Point(1, y)` under a pattern
+        // context) are patterns, not calls — but the invocation keeps its
+        // shape, so the callee rule below already skips it only when the
+        // calls branch owns it. Bare identifiers inside pattern-position
+        // invocations are constant-pattern reads and flow through normally.
+        if (
+          name && name !== "_" &&
+          !isAttrName && !isNamedArgDesignator && !isAnonDesignator &&
+          !isMemberDesignator && !isOutWrite && !isDeconWrite &&
+          !isDeconArgName &&
+          !isMemberDeclName && !isForeachWrite && !isImportName &&
+          !this.isInValueSetter(node) &&
+          !this.isNameofOperand(node) &&
+          !this.isCSharpCallCalleeShaped(node) &&
+          !this.isCSharpMemberLeaf(node) &&
+          !this.isCSharpQualifiedNamePart(node) &&
+          !this.isCSharpNamePosition(node) &&
+          !this.isCSharpPreprocText(node) &&
+          !this.isCSharpLabelOrDiscard(node) &&
+          !this.isCSharpEntityName(node) &&
+          !this.isCSharpAssignLhs(node) &&
+          !isShadowed(name) &&
+          isResolvableRead(name)
+        ) {
+          // Source attribution: enclosing method/ctor/property if any,
+          // else the innermost enclosing class (member initializers and
+          // class-level attribute arguments read in class scope — strictly
+          // more precise than "global"), else global (top-level statements).
+          let clsScope: string | null = null
+          for (let i = scopeStack.length - 1; i >= 0; i--) {
+            if (scopeStack[i].cls) { clsScope = scopeStack[i].cls; break }
+          }
+          const src = this.findContainingCSharpFunction(node) || clsScope || "global"
+          const key = `${src}::uses::${name}`
+          if (!emitted.has(key)) {
+            emitted.add(key)
+            relationships.push({
+              source: src,
+              target: name,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 1.0,
+              metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+            })
+          }
+        }
+      }
+      stack.push({ node, exit: true, pushed: pushedScope })
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push({ node: child, exit: false, pushed: false })
+      }
+    }
+  }
+
+  /**
+   * CS-R1 gate helpers (see analyzeCSharpBareIdentifierUses for the contract).
+   * All climb-based, span-compared (never object identity — web-tree-sitter
+   * wraps per retrieval), mirroring the family gates where they exist.
+   */
+
+  /** True when `node` is the implicit `value` parameter of a set/init/add/remove accessor. */
+  private isInValueSetter(node: Node): boolean {
+    if (node.text !== "value") return false
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t: string = cur.type
+      if (t === "accessor_declaration") {
+        for (let i = 0; i < cur.childCount; i++) {
+          const c = cur.child(i)
+          if (c && !c.isNamed && (c.type === "set" || c.type === "init" || c.type === "add" || c.type === "remove")) {
+            return true
+          }
+        }
+        return false
+      }
+      if (
+        t === "method_declaration" || t === "constructor_declaration" ||
+        t === "local_function_statement" || t === "lambda_expression" ||
+        t === "class_declaration" || t === "struct_declaration" ||
+        t === "interface_declaration" || t === "record_declaration" ||
+        t === "record_struct_declaration" || t === "enum_declaration"
+      ) return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /** True when `node` is (part of) the callee the calls branch owns. */
+  private isCSharpCallCalleeShaped(node: Node): boolean {
+    let top: Node = node
+    let p: Node | null = node.parent
+    while (p && (p.type === "generic_name" || p.type === "parenthesized_expression")) {
+      top = p
+      p = p.parent
+    }
+    // Member-access callee (`o.M()`, `o.M<T>()`): only the member side is
+    // the callee — the receiver reads (never climb through it blindly).
+    if (p && p.type === "member_access_expression") {
+      const expr = p.childForFieldName("expression")
+      if (expr && node.startIndex >= expr.startIndex && node.endIndex <= expr.endIndex) return false
+      top = p
+      p = p.parent
+    }
+    // Null-conditional callee (`x?.M()`): the member binding is always the
+    // member side (it has no receiver child to confuse).
+    if (p && p.type === "member_binding_expression") {
+      top = p
+      p = p.parent
+      if (p && p.type === "conditional_access_expression") {
+        top = p
+        p = p.parent
+      }
+    }
+    if (!p || p.type !== "invocation_expression") return false
+    const fn = p.childForFieldName("function")
+    return !!fn && top.startIndex >= fn.startIndex && top.endIndex <= fn.endIndex
+  }
+
+  /** True when `node` is the member LEAF the field pass owns. */
+  private isCSharpMemberLeaf(node: Node): boolean {
+    const p = node.parent
+    if (!p || p.type !== "member_access_expression") return false
+    const field = p.childForFieldName("name")
+    return !!field && field.startIndex === node.startIndex && field.endIndex === node.endIndex
+  }
+
+  /** True when `node` sits under a qualified_name (types/namespaces — never value reads). */
+  private isCSharpQualifiedNamePart(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "qualified_name") return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /** True for name/type positions that never read values. */
+  private isCSharpNamePosition(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t: string = cur.type
+      // typeof/default/sizeof operands name declarations. (There is no
+      // name_of_expression node in this grammar — nameof parses as an
+      // invocation; its operand is gated by isNameofOperand, not here.)
+      if (
+        t === "typeof_expression" || t === "default_expression" ||
+        t === "sizeof_expression"
+      ) return true
+      // `is`/`as` type operands: only the first child reads.
+      if (t === "is_expression" || t === "as_expression") {
+        const first = cur.namedChild(0)
+        return !first || node.startIndex < first.startIndex || node.endIndex > first.endIndex
+      }
+      if (
+        t.includes("statement") || t.includes("declaration") ||
+        t.includes("expression") || t.includes("clause") ||
+        t.includes("function") || t.includes("body") ||
+        t.includes("pattern") || t.includes("argument")
+      ) return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /** True when `node` is the operand of a `nameof(...)` (names, never reads). */
+  private isNameofOperand(node: Node): boolean {
+    const calleeIsNameof = (inv: Node): boolean => {
+      const fn = inv.childForFieldName("function")
+      return !!fn && fn.type === "identifier" && fn.text === "nameof"
+    }
+    const p0 = node.parent
+    if (p0 && p0.type === "invocation_expression") return calleeIsNameof(p0)
+    let cur: Node | null = p0
+    while (cur && (cur.type === "argument_list" || cur.type === "argument" || cur.type === "parenthesized_expression")) {
+      cur = cur.parent
+      if (cur && cur.type === "invocation_expression") return calleeIsNameof(cur)
+    }
+    return false
+  }
+
+  /** True for preprocessor-directive text with no code container between (CGD11 contract). */
+  private isCSharpPreprocText(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t: string = cur.type
+      if (
+        t.includes("statement") || t.includes("declaration") ||
+        t.includes("declarator") || t.includes("specifier") ||
+        t.includes("enumerator") || t.includes("compound") ||
+        t.includes("argument_list") || t.includes("init") ||
+        t.includes("expression") || t.includes("function") ||
+        t.includes("class_body") || t.includes("field_declaration_list") ||
+        t.includes("block")
+      ) return false
+      if (t.startsWith("preproc_")) return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /** True for goto/break/continue/label identifiers (never values). */
+  private isCSharpLabelOrDiscard(node: Node): boolean {
+    const p = node.parent
+    return !!p && (
+      p.type === "goto_statement" || p.type === "break_statement" ||
+      p.type === "continue_statement" || p.type === "labeled_statement"
+    )
+  }
+
+  /** True when `node` is the defining NAME of its entity parent. */
+  private isCSharpEntityName(node: Node): boolean {
+    const p = node.parent
+    if (!p) return false
+    switch (p.type) {
+      case "class_declaration":
+      case "struct_declaration":
+      case "interface_declaration":
+      case "record_declaration":
+      case "record_struct_declaration":
+      case "enum_declaration":
+      case "delegate_declaration":
+      case "method_declaration":
+      case "constructor_declaration":
+      case "destructor_declaration":
+      case "operator_declaration":
+      case "conversion_operator_declaration":
+      case "property_declaration":
+      case "indexer_declaration":
+      case "event_declaration":
+      case "event_field_declaration":
+      case "enum_member_declaration":
+      case "namespace_declaration":
+      case "file_scoped_namespace_declaration":
+        break
+      default:
+        return false
+    }
+    for (let i = 0; i < p.namedChildCount; i++) {
+      const c = p.namedChild(i)
+      if (c && c.type === "identifier") {
+        return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+      }
+    }
+    return false
+  }
+
+  /** True when `node` is an assignment-LHS write (GO9-class climb). */
+  private isCSharpAssignLhs(node: Node): boolean {
+    let cur: Node | null = node
+    let p: Node | null = node.parent
+    // Climb through assignment-transparent wrappers only (tuples for
+    // deconstruction are handled by the dedicated rule — a bare tuple
+    // element here would double-skip; parens are transparent).
+    while (p && p.type === "parenthesized_expression") {
+      cur = p
+      p = p.parent
+    }
+    if (!p || p.type !== "assignment_expression") return false
+    const lhs = p.namedChild(0)
+    return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+  }
+
   /** Find the nearest enclosing method/constructor/property symbol name. */
   private findContainingCSharpFunction(node: Node): string | null {
     let cur: Node | null = node.parent
@@ -1500,6 +2361,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (text === "private") return "private"
         if (text === "protected") return "protected"
         if (text === "internal") return "internal"
+        // CS-B4 (csharp review): `file`-scoped types are visible only in
+        // their own file — never public API. Closest representable value
+        // is private (probe: `file class Hidden` reported undefined and
+        // was exported).
+        if (text === "file") return "private"
       }
     }
     return undefined
