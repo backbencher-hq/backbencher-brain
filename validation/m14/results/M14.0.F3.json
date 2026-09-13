@@ -26,7 +26,7 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "37/37 fixtures pass",
+      "detail": "38/38 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -44,7 +44,7 @@
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "46/46 fixtures pass",
+      "detail": "47/47 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
-  "committedAt": "2026-09-13T21:35:05+02:00",
+  "commit": "00eb0da5810df21733f3c7d18360d77a083c241f",
+  "committedAt": "2026-09-14T00:04:07+02:00",
   "data": {
     "details": [
       {
@@ -1108,6 +1108,11 @@
         "problems": []
       },
       {
+        "fixture": "java/member-read-source",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/method-complexity-payload",
         "ok": true,
         "problems": []
@@ -1723,6 +1728,11 @@
         "problems": []
       },
       {
+        "fixture": "scala/member-read-target",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "scala/method-value-refs",
         "ok": true,
         "problems": []
@@ -2199,7 +2209,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 37
+        "pass": 38
       },
       "javascript": {
         "fail": 0,
@@ -2231,7 +2241,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 46
+        "pass": 47
       },
       "svelte": {
         "fail": 0,
@@ -2268,8 +2278,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-13T20:12:32.726Z",
-  "regeneratedAtCommit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
+  "regeneratedAt": "2026-09-13T22:06:22.098Z",
+  "regeneratedAtCommit": "00eb0da5810df21733f3c7d18360d77a083c241f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
