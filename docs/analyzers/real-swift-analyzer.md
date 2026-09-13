@@ -40,7 +40,7 @@
 | implements | ✅ | remaining `inheritance_specifier` bases (adopted protocols) | 0.9 |
 | calls | ✅ | `call_expression` — member calls resolve to the LEAF target (`users.first {...}` → `first`, `users.append(...)` → `append`, `[1,2].map {...}` → `map`); source = enclosing method; bare stdlib calls (print/String/Int/...) filtered (C# `BuiltinsAreFiltered` precedent) | 1.0 |
 | instantiates | ✅ | bare CAPITALIZED call `User(...)` → `instantiates` ONLY (Swift construction syntax — Java `new Foo()` analog; never also a calls edge) | 0.7 |
-| uses | ✅ | ONLY `self.` member reads (Swift's `this`) — source = enclosing TYPE, target = field leaf (`self.name` in `BaseService.init` → `uses BaseService -> name`, `self.id` in `User.init` → `uses User -> id`). Type references (String/Int/[User]) emit NOTHING. | 0.7 |
+| uses | ✅ | ONLY `self.` member reads (Swift's `this`) — source = enclosing METHOD, target = field leaf (`self.name` in `BaseService.init` → `uses BaseService.init -> name`, `self.id` in `User.read` → `uses User.read -> id`). M49 W15 #814 converged the whole family on method-source; the earlier type-source rule is superseded (a read at class level — a property initializer — has no method and falls back to the type). Type references (String/Int/[User]) emit NOTHING. | 0.7 |
 | overrides | ✅ | `override` keyword (`modifiers > member_modifier [override]`) → qualified `Owner.method -> Parent.method` resolved via class-hierarchy BFS + shared companion index (Java/C# M12.02-03 semantics): `UserService.describe -> BaseService.describe` | 0.8 |
 | references | ✅ | file-scope imports → `references root -> module` (`import Foundation` → `references root -> Foundation`, ObjC M12.19 pattern) | 0.9 |
 

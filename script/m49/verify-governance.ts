@@ -177,7 +177,7 @@ function main() {
   // --- 3. Verifier registry wiring ----------------------------------------
   const onDisk = readdirSync(M49_DIR).filter((f) => /^verify-.*\.ts$/.test(f)).sort()
   const governanceSrc = readFileSync(__filename, "utf8")
-  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts", "verify-census-lineage.ts", "verify-evidence-identity.ts"]
+  const registered = ["verify-governance.ts", "verify-r1-intake.ts", "verify-r2-regex.ts", "verify-closure.ts", "verify-evidence-lineage.ts", "verify-script-integrity.ts", "verify-census-lineage.ts", "verify-evidence-identity.ts", "verify-family-parity.ts"]
   for (const f of onDisk) {
     check(`verifier ${f} is registered in governance`, registered.includes(f))
   }
@@ -190,6 +190,7 @@ function main() {
   check("package.json verify runs M49 R2", verifyScript.includes("script/m49/verify-r2-regex.ts"))
   check("package.json verify runs M49 G6 census lineage", verifyScript.includes("script/m49/verify-census-lineage.ts"))
   check("package.json verify runs M49 G8 evidence identity", verifyScript.includes("script/m49/verify-evidence-identity.ts"))
+  check("package.json verify runs M49 G9 family parity", verifyScript.includes("script/m49/verify-family-parity.ts"))
   check("script/m49/verify-evidence-identity.ts carries self-test negatives",
     /negative\(/.test(readFileSync(path.join(M49_DIR, "verify-evidence-identity.ts"), "utf8")))
 

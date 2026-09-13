@@ -835,7 +835,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     emittedUses: Set<string>,
   ) {
-    // `self.x` -> uses (source = enclosing TYPE, target = leaf). Other
+    // `self.x` -> uses (source = enclosing METHOD, target = leaf — #814). Other
     // receivers (locals, type names) emit nothing — only Swift's `this`.
     // self may sit one level down on a nested chain (`self.pipeline.readerIndex`
     // is navigation > navigation(self_expression) > suffix) — walk the RECEIVER
@@ -886,7 +886,22 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const leaf = this.navigationLeaf(node)
     if (!leaf) return
 
-    const source = typeName || (parent?.ownerName ? parent.ownerName : null) || parent?.name || "root"
+    // M49 W15 #814 (owner rule: converge on METHOD source). The original rule
+    // sourced `self.x` to the enclosing TYPE (typeName first). The method is
+    // the actor that reads, and the family now agrees on that: probe
+    // `class Store { var count = 0; func read() -> Int { return self.count } }`
+    // is the exact shape java/javascript pointed at, and resolving to the
+    // method is what makes `x calls read` + `read uses count` compose into
+    // reachability. A read at CLASS level (a property initializer) has no
+    // method, so typeName remains the fallback.
+    const source =
+      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Constructor)
+        ? parent.name
+        : null) ||
+      typeName ||
+      (parent?.ownerName ? parent.ownerName : null) ||
+      parent?.name ||
+      "root"
     const key = `${source}\u0000uses\u0000${leaf}`
     if (emittedUses.has(key)) return
     emittedUses.add(key)

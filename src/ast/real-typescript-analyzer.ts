@@ -2553,7 +2553,13 @@ class TypeScriptAnalysisRunner {
     }
 
     const symbol: ASTEngine.UniversalSymbol = {
-      name: stripPrivatePrefix(name), // Normalize private field name
+      // M49 W15 (#813, owner ruling "symbol keeps the declared name"): a `#x`
+      // member declares the name `#x`, and every edge that reads it already
+      // carries that spelling — the old strip made the edge target name no
+      // symbol at all (the join `edge.target -> symbol.name` failed for every
+      // private member). `#` cannot appear in an identifier, so the declared
+      // spelling can never collide with a module binding of the same text.
+      name,
       kind: isAccessor ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Method,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
@@ -2702,7 +2708,10 @@ class TypeScriptAnalysisRunner {
     const ownerInfo = this.scopeManager.getOwnerInfo()
 
     const symbol: ASTEngine.UniversalSymbol = {
-      name: stripPrivatePrefix(name),
+      // #813: the declared spelling is the member's one name (see the method
+      // site above). `metadata.isPrivateField` stays as the flag consumers
+      // read for the private-ness itself.
+      name,
       kind: ASTEngine.SymbolKind.Property,
       range: this.nodeRange(node),
       scope: ownerInfo?.ownerName,
@@ -3814,23 +3823,23 @@ class TypeScriptAnalysisRunner {
           const prop = n.childForFieldName("property") ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
           if (prop) {
             const name = prop.text
-            // M49 W13: a PRIVATE member read (`this.#count`) never emitted a
-            // Uses edge while a public one (`this.count`) did — and while a
-            // private METHOD call (`this.#step()`) did. The declared-symbol
-            // set stores private members under their CLEAN name (`count`,
-            // `property:count` — the documented spec-table contract), but the
-            // read rule looked the node's raw text (`#count`) up in that map,
-            // so the membership test `!!symbolNames[name]` was always false and
-            // the read was skipped by the analyzer ITSELF rather than resolved.
-            // Probe-proven (`this.#count` emitted nothing, `this.count` emitted
-            // `uses read->count`). Rare in the pinned TS corpora (the only
-            // `this.#` occurrence in element-plus/vue-core/vue-element-admin is
-            // inside a comment in vue-core babelUtils.ts), which is why the
-            // sampled differential lanes never surfaced it. The TARGET keeps
-            // the `#` spelling: that is what the calls edge already carries
-            // (`calls run->#step`) and what the javascript twin emits
-            // (`uses Store->#update_version`), so the family agrees.
-            const lookupName = name.startsWith("#") ? name.slice(1) : name
+            // M49 W13 fixed a blind spot here: a PRIVATE member read
+            // (`this.#count`) emitted nothing while a public one
+            // (`this.count`) and a private METHOD call (`this.#step()`) both
+            // did — the membership test compared the node's raw text against
+            // a symbol set that stored the stripped name, so it was always
+            // false. W13 normalized the LOOKUP against the then-stripped
+            // symbols; M49 W15 (#813) instead made the SYMBOL carry the
+            // declared `#` spelling, so the node's own text is now exactly the
+            // symbol key and both sides agree without normalization. The
+            // TARGET keeps the `#` spelling, which is what the calls edge
+            // already carried (`calls run->#step`) and what the javascript
+            // twin emits (`uses Store->#update_version`).
+            // #813: symbols now carry the DECLARED `#` spelling, so the
+            // membership test uses the node's own text directly (this rule's
+            // old `#`-strip normalization existed only because symbols were
+            // stored stripped).
+            const lookupName = name
             if (!!symbolNames[lookupName] && lookupName !== currentSymbol.name) {
               const key = `${currentSymbol.name}:${name}:field`
               if (!processed[key]) {
