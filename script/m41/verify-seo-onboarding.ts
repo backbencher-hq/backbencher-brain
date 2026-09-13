@@ -21,7 +21,7 @@
 
 import path from "node:path"
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m41/results")
@@ -105,24 +105,77 @@ try {
 check("S2: DNS TXT answer retrieved from dns.google", dnsFetched, dnsError)
 check("S2: Google site-verification token is live in global DNS", tokenPresent(txtRecords, EXPECTED_TOKEN), `records=${txtRecords.length}`)
 
-// --- 3. sitemap live and matching the deployed route set --------------------------
+// --- 3. sitemap live and matching the canonical route set --------------------------
+//
+// The expectation is not a hardcoded list. Two sets are meaningful:
+//   - PREVIOUS_DEPLOYED — the pre-M56 IA that backbencher.cc actually serves
+//     today (recorded 2026-09-05);
+//   - CANONICAL — the repository's set, discovered from website/src/app minus
+//     the routes declared retired in website/src/lib/redirects.ts.
+// The gate therefore has two HONEST states and rejects every other one:
+//   lag CLOSED — the live sitemap equals the repository's canonical set (the
+//     state after the X1 deploy, which is what closes this gate's loop);
+//   lag OPEN   — the live sitemap equals the previously deployed set, and every
+//     route the deploy has not yet published is recorded in the evidence.
+// A hardcoded expectation could not tell "not deployed yet" from "the deploy is
+// wrong", which is exactly the failure mode M56.I1 created by changing the IA:
+// the old literal list would have failed forever after the deploy.
 
-// The route set the search engines can see TODAY. It trails the repository's
-// list (S1 discovers that from src/app — currently larger) until the next deploy;
-// X1 re-runs this gate against the deployed commit and the lag closes.
-const DEPLOYED_EXPECTED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"].map((r) => `${LIVE}${r}`)
-const EXPECTED = DEPLOYED_EXPECTED
+const PREVIOUS_DEPLOYED = ["", "/install", "/docs", "/tools", "/faq", "/troubleshooting", "/contact"]
+  .map((r) => `${LIVE}${r}`)
+  .sort()
+
+// Independent instrument. S1 discovers the route set too, and M56's rule is that
+// the two instruments must not share code, so a single bug cannot satisfy both.
+function discoverCanonicalRoutes(): string[] {
+  const appDir = path.join(ROOT, "website/src/app")
+  const found: string[] = []
+  const walk = (dir: string, route: string): void => {
+    let entries: ReturnType<typeof readdirSync>
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    if (entries.some((e) => e.isFile() && e.name === "page.tsx")) found.push(route)
+    for (const e of entries) {
+      if (!e.isDirectory()) continue
+      // Route groups, dynamic segments and the API tree are not sitemap surfaces.
+      if (e.name.startsWith("(") || e.name.startsWith("[") || e.name === "api") continue
+      walk(path.join(dir, e.name), `${route}/${e.name}`)
+    }
+  }
+  walk(appDir, "")
+  const retired = new Set(
+    [...readFileSync(path.join(ROOT, "website/src/lib/redirects.ts"), "utf8").matchAll(/^\s*"(\/[^"]+)":/gm)].map((m) => m[1]!),
+  )
+  return found.filter((r) => !retired.has(r))
+}
+
+const CANONICAL = discoverCanonicalRoutes().map((r) => `${LIVE}${r}`).sort()
 const sm = await get(`${LIVE}/sitemap.xml`)
 check("S2: live sitemap.xml responds 200", sm.status === 200, sm.error ?? `status=${sm.status}`)
+check("S2: canonical route set is discoverable and non-trivial", CANONICAL.length >= 5, `canonical=${CANONICAL.length}`)
 const liveUrls = [...sm.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
-check("S2: live sitemap lists exactly the deployed route set", JSON.stringify([...liveUrls].sort()) === JSON.stringify([...EXPECTED].sort()), `found=${liveUrls.length} expected=${EXPECTED.length}`)
+const liveSet = [...liveUrls].sort()
+const sameSet = (a: string[], b: string[]): boolean => JSON.stringify(a) === JSON.stringify(b)
+const lagClosed = sameSet(liveSet, CANONICAL)
+const lagOpen = sameSet(liveSet, PREVIOUS_DEPLOYED)
+check(
+  "S2: live sitemap equals the canonical set (lag closed) or the previously deployed set (lag recorded)",
+  lagClosed || lagOpen,
+  `lag=${lagClosed ? "closed" : lagOpen ? "open" : "UNKNOWN"} live=${liveUrls.length} canonical=${CANONICAL.length} previous=${PREVIOUS_DEPLOYED.length}`,
+)
+const laggingRoutes = CANONICAL.filter((u) => !liveSet.includes(u))
+const deployLag: "closed" | "open" | "unknown" = lagClosed ? "closed" : lagOpen ? "open" : "unknown"
 
 // --- 4. every sitemap URL serves 200 to a crawler --------------------------------
 
 const GB = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+const crawlTarget = liveUrls.length ? liveUrls : PREVIOUS_DEPLOYED
 let crawlOk = 0
 const badRoutes: string[] = []
-for (const u of liveUrls.length ? liveUrls : EXPECTED) {
+for (const u of crawlTarget) {
   try {
     const r = await get(u, { headers: { "User-Agent": GB } })
     if (r.status === 200 && !/name="robots" content="noindex/.test(r.body)) crawlOk++
@@ -131,7 +184,7 @@ for (const u of liveUrls.length ? liveUrls : EXPECTED) {
     badRoutes.push(`${u}=ERR`)
   }
 }
-check("S2: all sitemap URLs return 200 to Googlebot with no noindex", crawlOk === EXPECTED.length && badRoutes.length === 0, badRoutes.join(","))
+check("S2: all sitemap URLs return 200 to Googlebot with no noindex", crawlOk === crawlTarget.length && badRoutes.length === 0, badRoutes.join(","))
 
 // --- 5. truth renders live (the index story is the correct one) ------------------
 
@@ -146,12 +199,27 @@ check("S2: live homepage carries JSON-LD SoftwareApplication", home.body.include
 // token against the real DNS answer — proving the check can fail.
 negative("S2: DNS token comparison rejects a corrupted token (live records)", dnsFetched && txtRecords.length > 0 && !tokenPresent(txtRecords, CORRUPT_TOKEN))
 
-// N2 (live): the route-equality comparator must reject a phantom route.
+// N2 (live): the route-equality comparator must reject a phantom route in
+// EITHER accepted set — the comparator actually used above, not a copy of it.
 {
-  const real = [...EXPECTED].sort()
-  const mutated = [...EXPECTED, `${LIVE}/phantom`].sort()
-  negative("S2: route-list comparator rejects phantom URLs", JSON.stringify(mutated) !== JSON.stringify(real))
+  const mutated = [...liveSet, `${LIVE}/phantom`].sort()
+  negative("S2: route-list comparator rejects phantom URLs", !sameSet(mutated, CANONICAL) && !sameSet(mutated, PREVIOUS_DEPLOYED))
 }
+
+// N2b: an unrecognised sitemap set is rejected by both states, so "neither
+// closed nor the recorded previous deploy" can never read as a pass.
+{
+  const unknown = [`${LIVE}/only-one`]
+  negative("S2: lag detector rejects an unrecognised sitemap set", !sameSet(unknown, CANONICAL) && !sameSet(unknown, PREVIOUS_DEPLOYED))
+}
+
+// N2c: when the lag is open the delta must be non-empty, so the recorded
+// limitation can never be vacuous (an empty delta would mean the sets matched).
+negative(
+  "S2: open-lag state reports a non-empty route delta",
+  deployLag !== "open" || laggingRoutes.length > 0,
+  `lag=${deployLag} delta=${laggingRoutes.length}`,
+)
 
 // N3 (cheap): the noindex detector must fire on a synthetic noindex page.
 negative("S2: noindex detector is sensitive", /name="robots" content="noindex/.test('<meta name="robots" content="noindex, nofollow">'))
@@ -187,9 +255,15 @@ const evidence = {
   evidenceFile: "S2.json",
   ownerConfirmationsFile: "S2-OWNER-CONFIRMATIONS.json",
   generatedAt: new Date().toISOString(),
+  deployLag,
+  canonicalRoutes: CANONICAL,
+  liveRoutes: liveSet,
+  laggingRoutes,
   limitations: [
     "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
-    "The live route set describes the deployed build and trails the repository's route list (S1) until the next deploy; X1 re-runs this gate at the deployed commit.",
+    deployLag === "closed"
+      ? "The live sitemap equals the repository's canonical route set: the deploy has caught up with the M56 IA, so the lag M41.S2 recorded against the pre-M56 deploy is closed."
+      : `The live sitemap equals the PREVIOUSLY deployed (pre-M56) route set, not the repository's canonical set: \`deployLag=open\`, ${laggingRoutes.length} route(s) the deploy has not published yet are named in laggingRoutes. X1's post-deploy re-run closes this; the state is recorded, never silently accepted.`,
     "Live checks fail rather than skip when the network is unreachable: the failure is recorded with its reason (status=0 plus the socket error) and the remaining checks still run, so a transient outage cannot crash the run or be mistaken for a pass.",
     "DNS is checked via dns.google (Google's own resolver) — the authoritative path for GSC verification.",
     "Brave has no verification protocol; acceptance of the submit-url form is the only available signal.",
