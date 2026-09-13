@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "55/55 fixtures pass",
+      "detail": "57/57 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -14,13 +14,13 @@
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "25/25 fixtures pass",
+      "detail": "26/26 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "60/60 fixtures pass",
+      "detail": "61/61 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -50,19 +50,19 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
@@ -74,19 +74,19 @@
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
     {
       "description": "zig adversarial fixtures",
-      "detail": "1/1 fixtures pass",
+      "detail": "2/2 fixtures pass",
       "id": "fixtures-zig",
       "status": "pass"
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "2/2 fixtures pass",
+      "detail": "3/3 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -104,7 +104,7 @@
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
@@ -116,7 +116,7 @@
     },
     {
       "description": "ruby adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-ruby",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a57e0b2f673b6a4405b08c23efb70af002d1ced1",
-  "committedAt": "2026-09-13T01:09:35+02:00",
+  "commit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
+  "committedAt": "2026-09-13T21:35:05+02:00",
   "data": {
     "details": [
       {
@@ -174,6 +174,11 @@
       },
       {
         "fixture": "javascript/chain-root-and-bare-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/class-expression-member-identity",
         "ok": true,
         "problems": []
       },
@@ -344,6 +349,11 @@
       },
       {
         "fixture": "javascript/private-field-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/private-member-read-identity",
         "ok": true,
         "problems": []
       },
@@ -579,6 +589,11 @@
       },
       {
         "fixture": "svelte/evidence-tiers-and-columns",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/js-script-heritage",
         "ok": true,
         "problems": []
       },
@@ -904,6 +919,11 @@
       },
       {
         "fixture": "typescript/positional-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/private-member-reads",
         "ok": true,
         "problems": []
       },
@@ -1818,6 +1838,11 @@
         "problems": []
       },
       {
+        "fixture": "c/declaration-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/dispatch-table-filter",
         "ok": true,
         "problems": []
@@ -1828,7 +1853,17 @@
         "problems": []
       },
       {
+        "fixture": "cpp/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/ctor-and-overload-regressions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/macro-function-shapes",
         "ok": true,
         "problems": []
       },
@@ -1859,6 +1894,21 @@
       },
       {
         "fixture": "rust/await-single-edge",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/construction-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/declared-type-refs",
         "ok": true,
         "problems": []
       },
@@ -1923,7 +1973,22 @@
         "problems": []
       },
       {
+        "fixture": "go/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/dot-import-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/framework-detection",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/generic-construction",
         "ok": true,
         "problems": []
       },
@@ -1943,7 +2008,17 @@
         "problems": []
       },
       {
+        "fixture": "zig/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "zig/calls-uses-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/bare-value-reads",
         "ok": true,
         "problems": []
       },
@@ -2013,6 +2088,11 @@
         "problems": []
       },
       {
+        "fixture": "objc/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "objc/edges-and-patterns",
         "ok": true,
         "problems": []
@@ -2078,6 +2158,11 @@
         "problems": []
       },
       {
+        "fixture": "ruby/second-review",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "haskell/payload-and-complexity",
         "ok": true,
         "problems": []
@@ -2086,15 +2171,15 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 5
+        "pass": 6
       },
       "cpp": {
         "fail": 0,
-        "pass": 6
+        "pass": 8
       },
       "csharp": {
         "fail": 0,
-        "pass": 2
+        "pass": 3
       },
       "dart": {
         "fail": 0,
@@ -2102,7 +2187,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 4
+        "pass": 7
       },
       "groovy": {
         "fail": 0,
@@ -2118,7 +2203,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 55
+        "pass": 57
       },
       "kotlin": {
         "fail": 0,
@@ -2126,7 +2211,7 @@
       },
       "objc": {
         "fail": 0,
-        "pass": 4
+        "pass": 5
       },
       "php": {
         "fail": 0,
@@ -2138,11 +2223,11 @@
       },
       "ruby": {
         "fail": 0,
-        "pass": 4
+        "pass": 5
       },
       "rust": {
         "fail": 0,
-        "pass": 10
+        "pass": 13
       },
       "scala": {
         "fail": 0,
@@ -2150,7 +2235,7 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 25
+        "pass": 26
       },
       "swift": {
         "fail": 0,
@@ -2158,7 +2243,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 60
+        "pass": 61
       },
       "vue": {
         "fail": 0,
@@ -2166,7 +2251,7 @@
       },
       "zig": {
         "fail": 0,
-        "pass": 1
+        "pass": 2
       }
     }
   },
@@ -2183,8 +2268,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-12T23:10:20.908Z",
-  "regeneratedAtCommit": "a57e0b2f673b6a4405b08c23efb70af002d1ced1",
+  "regeneratedAt": "2026-09-13T20:12:32.726Z",
+  "regeneratedAtCommit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
