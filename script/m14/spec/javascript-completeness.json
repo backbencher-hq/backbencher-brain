@@ -422,6 +422,22 @@
         "decision": "RULED - a substituted identifier is a read only when it is not part of a call's callee expression and not an assignment target; the walk gates on ancestor containment (call `function` span / assignment `left` span) and, per the TS TSD28 family contract, owns the substitution read alone (the general bare-read rule's duplicate is suppressed: one interpolated read = ONE Uses edge at 0.85 isTemplateInterpolation). Analyzer-only fix; the oracle already excluded callees, so parity was restored, not negotiated.",
         "evidence": "fixture javascript/template-substitution-reads (forbid uses fn/obj + count==1); mutants javascript/template-callee-uses + javascript/template-read-duplicate CAUGHT; F3 javascript 55/55; F4 full battery 449/449 (0 survivors); corpus re-probe at the fixed tree: svelte-repo javascript lane 0 unexplained (was 5)",
         "date": "2026-09-12"
+      },
+      {
+        "id": "JSD30",
+        "node_type": "class (class EXPRESSION) member identity",
+        "status": "FIXED",
+        "question": "M49 W13 (deep-measurement finding; W12 residual): only class_declaration pushed a Class scope, so scopeOwnerName returned undefined for every member of every ANONYMOUS class expression and they ALL shared the dedup key `module:<name>` - the second class expression's `constructor` (and any same-named method) replaced the first, dead-spanning its body and dropping every edge it owned. Measured on the svelte corpus: custom-element.js defines TWO class expressions (the SvelteElement custom-element base, and the per-component Class inside create_custom_element), each with a constructor, so this.attachShadow(shadow_root_init) in the FIRST vanished - the second javascript-lane MISSING edge W12's 400-file measurement registered. The 60-file rotation never sampled a file with two anonymous class expressions, which is why the deep run found it and no fixture did.",
+        "decision": "RULED - a member's identity is container-scoped (W2 #769 for object literals, now class bodies too): when no declared class name exists, the containing class_body's span is the container key. Duplicates INSIDE one class still collapse last-wins (J3 / dup-key Option A). Pinned by fixture javascript/class-expression-member-identity (constructor count=2, run count=2, calls constructor->attachShadow and calls run->alpha - both LOST pre-fix) with mutant javascript/class-expression-container-collapse.",
+        "date": "2026-09-13"
+      },
+      {
+        "id": "JSD31",
+        "node_type": "member_expression with private_property_identifier (read positions)",
+        "status": "FIXED",
+        "question": "M49 W13 (deep-measurement finding; W12 residual): the member-segment dedup key was `${source}.${seg}`, and a private segment's text is literally `#x` - so the key became `${source}.#` + `x`, BYTE-IDENTICAL to the bare-read/chain-root key of the plain identifier `x` (`${source}.#` + `x`). Whichever node was walked first claimed it. Measured on the svelte corpus: packages/svelte/src/reactivity/set.js - the field initializer `#update_version = update_version || -1` (line 52) reads the IMPORTED binding update_version first, claiming key SvelteSet.#update_version, so the genuine read this.#update_version (line 88) was dropped as a duplicate - the FIRST javascript-lane MISSING edge W12's 400-file measurement registered. #version/#size survived only because no plain binding of those names is read in the same container.",
+        "decision": "RULED - a private segment's key uses a `#`-marked namespace (`${source}.$private${seg}`); `#` cannot appear inside an identifier, so no bare/root/segment key can collide with it and the private read and the same-named bare read are distinct edges that never suppress each other. The emitted target keeps the `#` spelling. Pinned by fixture javascript/private-member-read-identity (uses Store->#update_version LOST pre-fix) with mutant javascript/private-read-key-collision.",
+        "date": "2026-09-13"
       }
     ]
   }
