@@ -54,27 +54,27 @@
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 557,
+      "line": 578,
       "source": "/^module\\.exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 557,
+      "line": 578,
       "source": "/^exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 1256,
+      "line": 1277,
       "source": "/^@/",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained]"
     },
     {
       "file": "real-svelte-analyzer.ts",
