@@ -59,14 +59,29 @@ interface Finding {
   note: string
 }
 
+// A ternary's `?` is never the tail of a nullish-coalescing operator. Without
+// this guard both rules below read `x ?? null` as a ternary question mark and
+// then run `\s*` (which matches newlines) across to the ternary's own `: arm`,
+// inventing a no-op that is not in the source. Measured: the ruby analyzer's
+// `cond ? (n.parent as any)?.childForFieldName?.("name") ?? null : null` — a
+// meaningful expression — was reported as `? null : null` and release-blocked
+// M14.0.F7 (M49 W13). The guard is on the operator, not on the whitespace,
+// because whitespace between a ternary's `?` and its arms may legitimately
+// wrap; the shape that must not match is specifically the `??`/`??=` pair.
+const TERNARY_Q = /(?<!\?)\?(?!\?)/.source
+
 export function findNoopTernaries(src: string, lang: string, findings: Finding[]) {
   // `cond ? X : X` where both arms are token-identical. The regex anchors on
   // a ternary whose arms share the exact same token sequence (letters, dots,
   // parens, underscores, digits). The second lookahead rejects matches where
   // the second arm continues into a NESTED ternary (`? start : start ? ...`
   // is legitimate nesting, not a duplicate — false-positive guard added after
-  // the first run flagged exactly that shape in the scala analyzer).
-  const re = /\?\s*([A-Za-z_][A-Za-z0-9_.()]*)\s*:\s*\1(?![A-Za-z0-9_.?])(?!\s*\?)/g
+  // the first run flagged exactly that shape in the scala analyzer) or into a
+  // nullish-coalescing continuation (`? a : a ?? b`).
+  const re = new RegExp(
+    `${TERNARY_Q}\\s*([A-Za-z_][A-Za-z0-9_.()]*)\\s*:\\s*\\1(?![A-Za-z0-9_.?])(?!\\s*\\?(?:\\?)?)`,
+    "g",
+  )
   let m: RegExpExecArray | null
   while ((m = re.exec(src))) {
     if (m[1] === "null") continue // reported once by the dedicated null-null pass below
@@ -85,7 +100,7 @@ export function findNoopTernaries(src: string, lang: string, findings: Finding[]
     })
   }
   // Degenerate `? null : null`
-  const reNull = /\?\s*null\s*:\s*null/g
+  const reNull = new RegExp(`${TERNARY_Q}\\s*null\\s*:\\s*null`, "g")
   while ((m = reNull.exec(src))) {
     const line = src.slice(0, m.index).split("\n").length
     findings.push({
@@ -309,4 +324,89 @@ export function main() {
   console.log(`\nanalyzer-hygiene gate: all ${langs.length} analyzer(s) clean`)
 }
 
-if (process.argv[1]?.endsWith("verify-analyzer-hygiene.ts")) main()
+// Self-test: these detectors are regexes over source text, so the property
+// that matters is not "do they run" but "do they still discriminate". Every
+// case below is a shape this gate has actually mis-read, or a true positive
+// it must not stop catching. Run with --selftest; it belongs to the gate
+// battery (a detector that silently stops matching is indistinguishable from
+// a clean codebase otherwise).
+//
+// Returns 0 on success, 1 if any expectation is unmet.
+export function selftest(): number {
+  const cases: { name: string; src: string; expect: number }[] = [
+    {
+      name: "identical arms (the original php relative_scope class)",
+      src: "const x = cond ? foo : foo;\n",
+      expect: 1,
+    },
+    {
+      name: "null arms on one line (csharp system.linq class)",
+      src: "const y = cond ? null : null;\n",
+      expect: 1,
+    },
+    {
+      name: "null arms wrapped across lines — still a real no-op",
+      src: "const z = cond\n  ? null\n  : null;\n",
+      expect: 1,
+    },
+    {
+      name: "nullish coalescing in the then-arm, ternary else-arm null (ruby FP)",
+      src:
+        "const nameField = (parentType === \"method\" || parentType === \"singleton_method\")\n" +
+        "  ? (n.parent as any)?.childForFieldName?.(\"name\") ?? null\n" +
+        "  : null\n",
+      expect: 0,
+    },
+    {
+      name: "optional chaining before a ternary question mark",
+      src: "const a = obj?.foo ? 1 : 2;\n",
+      expect: 0,
+    },
+    {
+      name: "plain nullish coalescing, no ternary at all",
+      src: "const b = x ?? y;\n",
+      expect: 0,
+    },
+    {
+      name: "else arm continues into nullish coalescing — not a no-op",
+      src: "const c = cond ? a : a ?? b;\n",
+      expect: 0,
+    },
+    {
+      name: "nested ternary (the scala false positive class)",
+      src: "const d = cond ? start : start ? 1 : 2;\n",
+      expect: 0,
+    },
+  ]
+
+  let bad = 0
+  for (const c of cases) {
+    const found: Finding[] = []
+    findNoopTernaries(c.src, "selftest", found)
+    const noops = found.filter((f) => f.kind === "noop-ternary")
+    const ok = noops.length === c.expect
+    if (!ok) bad++
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${c.name}: expected ${c.expect}, got ${noops.length}` +
+        (ok ? "" : ` (${noops.map((f) => f.snippet.replace(/\s+/g, " ")).join(" | ")})`),
+    )
+  }
+  // The negative cases are only meaningful if the detector works at all, so a
+  // run that reports nothing anywhere is a failure, not a pass.
+  const positive = cases.filter((c) => c.expect > 0).length
+  if (positive === 0) {
+    bad++
+    console.log("FAIL self-test is vacuous: no positive case to discriminate against")
+  }
+  console.log(
+    bad === 0
+      ? `\nanalyzer-hygiene selftest: ${cases.length} case(s) meet expectation`
+      : `\nanalyzer-hygiene selftest: ${bad} case(s) failed`,
+  )
+  return bad === 0 ? 0 : 1
+}
+
+if (process.argv[1]?.endsWith("verify-analyzer-hygiene.ts")) {
+  if (process.argv.includes("--selftest")) process.exit(selftest())
+  main()
+}
