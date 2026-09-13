@@ -310,6 +310,22 @@ for (const integration of integrations) must(integration.languages.length > 0, `
 const sessionRel = "validation/m45/results/demo-session/D1-session-raw.json"
 const session = readJson<any>(sessionRel)
 const beatOf = (name: string) => (session.observedTimeline?.beats ?? []).find((b: any) => b.name === name)
+// The take records the desktop it was grabbed from (2560x1600 at scale 2, i.e.
+// a 1280x800 logical window). The /editors viewer renders each frame at 1x
+// logical scale; it can only say that honestly if it knows the ratio, so the
+// capture geometry travels with the still instead of being hard-coded in copy.
+const takeGrab = String(session.take?.grab ?? "")
+const takeScale = Number(session.take?.scale ?? 0)
+const captureGeometry = (() => {
+  const m = /^(\d+)x(\d+)$/.exec(takeGrab)
+  must(m && takeScale > 0, `session take grab/scale unreadable: grab=${takeGrab} scale=${takeScale}`)
+  return {
+    device: `${m![1]}x${m![2]}`,
+    scale: takeScale,
+    logical: `${Number(m![1]) / takeScale}x${Number(m![2]) / takeScale}`,
+  }
+})()
+
 const STILL_SPECS: { file: string; title: string; beat: string }[] = [
   { file: "probes/01-establish.png", title: "The index, attached", beat: "establish" },
   { file: "probes/02-hover-place.png", title: "Hover with evidence tier", beat: "hover-place" },
@@ -337,6 +353,7 @@ const stills = STILL_SPECS.map((spec) => {
     sessionEvidence: sessionRel,
     sessionCommit: session.currentCommit as string,
     take: `${session.take?.grab ?? "?"} @ ${session.take?.fps ?? "?"}fps, ${session.take?.seconds ?? "?"}s`,
+    capture: captureGeometry,
   }
 })
 
