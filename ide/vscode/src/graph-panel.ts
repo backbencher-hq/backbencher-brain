@@ -34,43 +34,14 @@ import {
   type PanelPlacement,
 } from "./panel-placement"
 
-/** Escaping DOM port over strings (browser Element API, no vscode import).
- *  Exported (M42.H4) so the impact panel shares the SAME port + serializer —
- *  one escaping implementation across webview surfaces. */
-export class StringElement {
-  tagName: string
-  className = ""
-  attrs: Record<string, string> = {}
-  textContent = ""
-  children: StringElement[] = []
-  constructor(tag: string) {
-    this.tagName = tag
-  }
-  addClass(c: string): void {
-    this.className = this.className ? `${this.className} ${c}` : c
-  }
-  setAttribute(k: string, v: string): void {
-    this.attrs[k] = v
-  }
-  appendChild(child: StringElement): StringElement {
-    this.children.push(child)
-    return child
-  }
-}
-
-export function escapeHtmlValue(v: string): string {
-  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
-}
-
-export function serialize(el: StringElement): string {
-  const attrs = Object.entries(el.attrs)
-    .map(([k, v]) => ` ${k}="${escapeHtmlValue(v)}"`)
-    .join("")
-  const cls = el.className ? ` class="${escapeHtmlValue(el.className)}"` : ""
-  const open = `<${el.tagName}${cls}${attrs}`
-  if (el.children.length === 0) return `${open}>${escapeHtmlValue(el.textContent)}</${el.tagName}>`
-  return `${open}>${el.children.map(serialize).join("")}</${el.tagName}>`
-}
+// The ONE escaping DOM port + serializer now lives in ./webview-dom (M55.V1):
+// it never needed vscode, but it sat in this file — which does — so a PURE
+// renderer that imported it inherited the editor dependency and could not be
+// run by a headless gate. Re-exported here because the hub / impact / graph
+// panels already import these names from this module (same pattern as
+// applyResolutionTitle below): one implementation, one import site for them.
+import { escapeHtmlValue, serialize, StringElement } from "./webview-dom"
+export { escapeHtmlValue, serialize, StringElement } from "./webview-dom"
 
 /** bb/graph request — schemaVersion-pinned per GRAPH-TRANSPORT.md. The
  *  method name as a string (same convention as bb/staleness). */

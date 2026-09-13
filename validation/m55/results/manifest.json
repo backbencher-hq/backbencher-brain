@@ -269,24 +269,24 @@
         "scope": "the ONE tier classifier (src/lsp/evidence_tier.ts) with a closed vocabulary over a seeded real index; hover provenance+list+card text over the real dist server for the four pinned symbols plus the declared-unknown case; the hub chip rendered by the ONE core from the REAL bb/graph usages response; the legend's tier set and badge mapping; the import-pure mirror asserted by equivalence on a declared case table; 7 planted defects"
       },
       "progress": {
-        "stage": "one classifier, one vocabulary, one order, one badge mapping — verified end-to-end (68/68, 7/7 mutants). NOT closable yet only because its closure requirement includes V1's in-editor frame.",
+        "stage": "one classifier, one vocabulary, one order, one badge mapping \u2014 verified end-to-end (68/68, 7/7 mutants). NOT closable yet only because its closure requirement includes V1's in-editor frame.",
         "verifiedAt": "2026-09-13",
         "fixes": [
           "src/lsp/evidence_tier.ts (new, the ONE owner): the W4/M29.R5 rule, the declared vocabulary, the declared order and the declared primary in one place. Stored legend-tier classes win; the legacy `indexed`/`semantic_candidate` labels the index still carries are UNCLAIMED (not tier claims), so the row's own kind decides and the emitted set stays renderable by the legend; an empty row set is the declared `unknown`, never a guess.",
-          "src/lsp/hover.ts: the local rule, its 10-entry legacy map and its metadata parse are gone; the tier list and the primary both come from the owner, and the primary is the first member of the list it headlines (the pre-T5 `[...tiers].sort()` made `indexed` — a tier the legend cannot render — the primary of a symbol whose real evidence was structural: the #775 defect).",
+          "src/lsp/hover.ts: the local rule, its 10-entry legacy map and its metadata parse are gone; the tier list and the primary both come from the owner, and the primary is the first member of the list it headlines (the pre-T5 `[...tiers].sort()` made `indexed` \u2014 a tier the legend cannot render \u2014 the primary of a symbol whose real evidence was structural: the #775 defect).",
           "src/lsp/cross_language_hover.ts: the second copy of the W4 rule became a delegation, so one stored `imports` row can no longer read `import_based` in the cross-language section and `indexed` in the card.",
-          "script/m26/graph-core.ts: the import-pure mirror now matches the owner (containment/exports/instantiates/override and the `uses`/`usage` kinds, case-insensitive), the legend wording says what the rule does, and the hub row chip stopped writing its own `bb-badge-${tier}` template — legend, edge badge and hub chip all call badgeClassForTier.",
+          "script/m26/graph-core.ts: the import-pure mirror now matches the owner (containment/exports/instantiates/override and the `uses`/`usage` kinds, case-insensitive), the legend wording says what the rule does, and the hub row chip stopped writing its own `bb-badge-${tier}` template \u2014 legend, edge badge and hub chip all call badgeClassForTier.",
           "script/m55/t5-fixture.ts + script/m55/verify-tiers.ts (new): a real-index fixture (class, method, field, external target, an unclaimed stored label, and the no-rows case) with authored per-symbol and per-row expectations, the wire legs over the real dist server, the hub legs over the REAL bb/graph usages response, the mirror-equivalence table, and 7 mutants (including the pre-T5 alphabetical primary and the pre-T5 legacy label)."
         ],
         "findings": [
           "the fixture's first version produced an EMPTY hub: real symbol ids are `<projectId>:<relPath>:<name>:<n>` and the engine's member cascade keys on `owner_symbol_id` matching the owner's own id prefix, so made-up ids silently returned no callees. The fixture now builds ids the way the indexer does (and the gate asserts the rows really came back).",
-          "the hub row chip carried a second badge-class template — a surface that could have disagreed with its own legend. Found by the T5 source rule, now single-sourced.",
+          "the hub row chip carried a second badge-class template \u2014 a surface that could have disagreed with its own legend. Found by the T5 source rule, now single-sourced.",
           "the pre-T5 hover's tier list could include `indexed`, a tier the legend cannot render: a vocabulary that changes per surface is not a vocabulary. The closed set is asserted at the owner, on the wire and through the rendered DOM.",
           "the fixture must seed the indexer's REAL content hash: with a placeholder hash every fixture file reads `stale` and the provenance assertions measure the fixture instead of the rule (found while wiring the hover leg)."
         ],
         "remaining": [
           "V1's in-editor frame showing the same tier story in the card and the hub (closure requirement)",
-          "the hub (bb/graph usages) only traverses calls/instantiates/extends/implements, so contains/imports/references/uses rows are asserted on the hover and model legs — recorded as a limitation, not hidden"
+          "the hub (bb/graph usages) only traverses calls/instantiates/extends/implements, so contains/imports/references/uses rows are asserted on the hover and model legs \u2014 recorded as a limitation, not hidden"
         ]
       }
     },
@@ -353,9 +353,66 @@
         "G1's truth-rule 5 enforcement reads this gate's frames"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
+        "currentCommit": "see V1.json",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
-        "evidenceFile": "V1.json"
+        "evidenceFile": "V1.json",
+        "passed": 62,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 10,
+        "mutantsTotal": 10,
+        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, and the pixel read-backs: newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the findings document's frame paths and verdicts, chain wiring, and 10 planted defects",
+        "components": [
+          {
+            "code": "V1-action-args",
+            "evidenceFile": "V1-action-args.json",
+            "passed": 47,
+            "checks": 47,
+            "mutantsCaught": 7,
+            "mutantsTotal": 7,
+            "what": "the hover actions' argument core: arrival classification (link / absent / malformed), server-resolved identity at the cursor, a differential proving the link's args and the fallback's args are byte-identical, wiring lint"
+          },
+          {
+            "code": "V1-status-panel",
+            "evidenceFile": "V1-status-panel.json",
+            "passed": 42,
+            "checks": 42,
+            "mutantsCaught": 11,
+            "mutantsTotal": 11,
+            "what": "the status SURFACE: every model line rendered in order with no truncation, the staleness marker first, escaping through the DOM port, declared emptiness, one surface for both status commands, and the palette title rule"
+          }
+        ]
+      },
+      "progress": {
+        "stage": "the rig is permanent, wired and fail-able, and it is now driving the right commands: 62/62 with 10/10 mutants. Two defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11). NOT closable yet: the blocked-path proof (fixture absent -> blocked with a reason) is still outstanding.",
+        "verifiedAt": "2026-09-13",
+        "fixes": [
+          "ide/vscode/src/hover-action-args.ts (new, PURE) + hover-commands.ts: a palette / context-menu invocation carries no args, so all three symbol-scoped actions dead-ended; identity now comes from the SERVER (the same textDocument/hover the editor uses), so both entry points answer alike without client-side guessing (issue #652 holds).",
+          "ide/vscode/src/status-markup.ts (new, PURE) + extension.ts: the status facts rendered through window.showInformationMessage(lines.join('\\n')) and VS Code renders a notification as ONE line, so the frame showed only 'launch: compiled dist (bundled) - ...'; the facts now render on a webview surface through the ONE shell, the ONE placement helper and the ONE reuse key, and bbLsp.showServerStatus opens that same surface instead of its own collapsed notification.",
+          "ide/vscode/src/webview-dom.ts (new): the escaping DOM port moved out of graph-panel.ts (which imports vscode) so a PURE surface renderer can be run by a headless gate; graph-panel re-exports it, so the hub/impact/graph import sites are unchanged.",
+          "ide/vscode/src/panel-placement.ts: 'status' joins the panel-key kinds, so the status surface obeys the same one-panel-per-surface rule instead of re-implementing it.",
+          "ide/vscode/package.json: all 8 contributed titles dropped their redundant 'Backbencher: ' prefix (every command already carries category 'Backbencher'), so the palette no longer reads 'Backbencher: Backbencher: ...' and now matches what docs/m25/INSTALL.md tells the user to run.",
+          "script/m55/screenshot-protocol.ts: command flows are driven by BARE COMMAND ID. A palette TITLE is not an identifier (live-8: 'Backbencher: Show status' selected 'Show server status'), and '>' + the id is worse (live-9: the fuzzy matcher ranked 'View: Toggle Panel Visibility' first and toggled the panel)."
+        ],
+        "findings": [
+          "F1 (fixed): live-6/4 and live-6/5 captured the 'malformed link (no symbol target)' toast instead of a panel - the palette path was a dead end.",
+          "F2 (fixed): live-7/7 captured only 'launch: compiled dist (bundled) - ...'. Honest correction: that frame was bbLsp.showServerStatus, not showStatusPanel; the collapse defect was in BOTH commands.",
+          "F3 (open): renderImpact emits no header at all - the impact surface states neither its root, its counts nor the bound it was computed within.",
+          "F4 (open): hub rows carry no click affordance (the owner's own complaint).",
+          "F5 (open): the legend block sits below the data inside the scrolling body and outweighs a short list.",
+          "F6 (open, narrow): the hover card scrolls with its actions row last.",
+          "F7 (needs a truth assertion): '3 callers - 2 callees' vs the five listed rows must become a machine assertion over a real index, not a code comment.",
+          "F9 (fixed): the rig drove the wrong command twice (title match; '>' prefix) - see fixes above.",
+          "F10 (fixed): 8 palette titles repeated their category.",
+          "F11 (fixed): the first status surface rendered 'I1 - I1 - protocol-passed' (level stated twice).",
+          "F8 (verified): the hover identity at call sites, the hub's real data, the native call hierarchy, the panel-placement/focus rule and the new status surface all read correctly in the frames."
+        ],
+        "remaining": [
+          "the blocked-path proof: a run with the fixture absent must produce a declared blocked session with a reason (never green)",
+          "G1's truth-rule-5 enforcement must read this gate's frames and the findings document",
+          "the open findings F3-F7 belong to the surface-redesign work (U2), recorded in docs/m55/FRAME-FINDINGS.md"
+        ]
       }
     },
     {

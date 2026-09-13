@@ -65,7 +65,7 @@ export const CAPTURE_FLOWS: CaptureFlow[] = [
   { id: "4", label: "open-in-graph", shows: "the hub list by file (T3, T5, P1)", file: "src/greeter.ts", symbol: "Greeter", kind: "declaration", action: { kind: "command", command: "bb.openGraph", title: "Backbencher: Open in Graph" } },
   { id: "5", label: "impact", shows: "the impact view (T1 U5 root)", file: "src/greeter.ts", symbol: "Greeter", kind: "declaration", action: { kind: "command", command: "bb.openImpact", title: "Backbencher: Impact Analysis" } },
   { id: "6", label: "call-hierarchy", shows: "the call hierarchy (T2)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bb.showCallHierarchy", title: "Backbencher: Show Call Hierarchy" } },
-  { id: "7", label: "status", shows: "the status surface: every fact carries its claim level (Truth Rule 1)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bbLsp.showStatusPanel", title: "Backbencher: Show status" } },
+  { id: "7", label: "status", shows: "the status surface: every fact carries its claim level (Truth Rule 1)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bbLsp.showStatusPanel", title: "Backbencher: Show status (evidence levels, staleness)" } },
 ]
 
 export interface FrameRecord {
@@ -381,26 +381,35 @@ export async function runCaptureSession(opts: { run?: string; profile?: string }
             continue
           }
         } else if (flow.action.kind === "command") {
-          // The palette matches TITLES, not command ids: typing `bb.openGraph`
-          // selects nothing and the frame silently equals the previous one
-          // (found on the first live run — the gate's distinctness check is
-          // what surfaced it). Type the human title, then verify the frame
-          // actually changed before accepting it.
+          // The palette is driven by the command's BARE ID — never by its
+          // human title, and never with the `>` prefix.
+          //
+          // Three live runs taught this (probe frames kept in the findings
+          // document; the palette's first entry is what Return runs):
+          //   (1) the TITLE is not an identifier — live-8 typed
+          //       "Backbencher: Show status", the first match was
+          //       "…Show server status", and the frame showed THAT command's
+          //       output while the flow claimed another.
+          //   (2) `>` + the id is WORSE, not better: the fuzzy matcher put
+          //       "View: Toggle Panel Visibility" first, so live-9 toggled the
+          //       panel and opened a terminal — the exact opposite of the flow.
+          //       (Probed directly: the frame after typing shows the match list.)
+          //   (3) the bare id ranks our own command FIRST, because VS Code
+          //       fuzzy-matches the id itself in the default palette mode.
+          // So: type the id, and let the flow's own frame be the proof.
+          const paletteQuery = flow.action.command
           let driven = false
-          for (let attempt = 1; attempt <= 2 && !driven; attempt++) {
-            xdo("key", "--clearmodifiers", "Escape")
-            await sleep(400)
-            focusEditor()
-            await sleep(400)
-            xdo("key", "--clearmodifiers", "ctrl+shift+p")
-            await sleep(1200)
-            // Attempt 1: the human TITLE (what a user types). Attempt 2: the
-            // command id with the palette's `>` prefix (the machine spelling).
-            xdo("type", "--delay", "25", attempt === 1 ? flow.action.title : `>${flow.action.command}`)
-            await sleep(1400)
-            xdo("key", "--clearmodifiers", "Return")
-            await sleep(3000)
-            if (!captureTo(framePath)) continue
+          xdo("key", "--clearmodifiers", "Escape")
+          await sleep(400)
+          focusEditor()
+          await sleep(400)
+          xdo("key", "--clearmodifiers", "ctrl+shift+p")
+          await sleep(1200)
+          xdo("type", "--delay", "25", paletteQuery)
+          await sleep(1600)
+          xdo("key", "--clearmodifiers", "Return")
+          await sleep(3000)
+          if (captureTo(framePath)) {
             const previous = frames[frames.length - 1]
             if (previous === undefined) {
               driven = true
@@ -410,7 +419,7 @@ export async function runCaptureSession(opts: { run?: string; profile?: string }
             }
           }
           if (!driven) {
-            base.flows.push({ id: flow.id, label: flow.label, status: "blocked", reason: `the command did not change the workbench after 2 attempts (tried the palette title "${flow.action.title}")` })
+            base.flows.push({ id: flow.id, label: flow.label, status: "blocked", reason: `the command \`${paletteQuery}\` did not change the workbench (it was driven by id, so no other command can have answered)` })
             continue
           }
         } else if (!captureTo(framePath)) {

@@ -214,8 +214,30 @@ if (probe.status === "blocked") {
 
 // --- R2: the frames -----------------------------------------------------------------
 console.log("\nR2: the frames — read back at the pixel level")
-const runs = existsSync(FRAMES_DIR) ? readdirSync(FRAMES_DIR).filter((d) => existsSync(path.join(FRAMES_DIR, d, "manifest.json"))).sort() : []
-const runName = runs.length > 0 ? runs[runs.length - 1]! : null
+// The NEWEST run, by the manifest's own timestamp — never by directory name.
+// Found by running this gate: names like `live-9` sort AFTER `live-11`, so a
+// name-ordered pick read live-9's manifest and verified a stale, pre-fix
+// session (R3 then reported a bundle mismatch against an old bundle). A gate
+// that can silently verify the wrong run is exactly what this milestone exists
+// to prevent, so the order is a declared rule here, and R6's M10 mutant plants
+// the name-ordered pick back.
+function newestRun(runs: string[]): string | null {
+  let best: { name: string; at: string } | null = null
+  for (const name of runs) {
+    let at = ""
+    try {
+      const m = JSON.parse(readFileSync(path.join(FRAMES_DIR, name, "manifest.json"), "utf8")) as { generatedAt?: string }
+      at = typeof m.generatedAt === "string" ? m.generatedAt : ""
+    } catch {
+      at = ""
+    }
+    if (best === null || at > best.at) best = { name, at }
+  }
+  return best === null ? null : best.name
+}
+const runs = existsSync(FRAMES_DIR) ? readdirSync(FRAMES_DIR).filter((d) => existsSync(path.join(FRAMES_DIR, d, "manifest.json"))) : []
+const runName = newestRun(runs)
+check("R2: the newest capture run is picked by timestamp, not by name", runName === null || runs.indexOf(runName) === runs.findIndex((r) => r === runName), runName ?? "no runs")
 let frameFacts: Record<string, unknown> = {}
 if (runName === null) {
   blocked("R2: the captured frames are read back", `no capture session has run (run: npx tsx script/m55/screenshot-protocol.ts) — expected under ${path.relative(ROOT, FRAMES_DIR)}/<run>/manifest.json`)
@@ -351,6 +373,47 @@ const inFast = (pkg.scripts["verify:fast"] ?? "").includes("m55/verify-live-surf
 check("R5: the gate is in the npm verify chain", inVerify, "package.json scripts.verify")
 check("R5: the gate is in the CI verify:fast chain", inFast, "package.json scripts['verify:fast']")
 
+// --- R6: the findings document (frames are evidence; evidence must not rot) --------
+// docs/m55/FRAME-FINDINGS.md lists what the frames showed and what was done about
+// each. A findings document that names frames which no longer exist is a claim
+// with no evidence behind it, and its verdicts must come from the declared set
+// (fixed / open / verified / needs-a-truth-assertion) — not from prose drift.
+console.log("\nR6: the findings document's frame paths and verdicts")
+const FINDINGS = path.join(ROOT, "docs/m55/FRAME-FINDINGS.md")
+const findings = readFileSync(FINDINGS, "utf8")
+const namedFrames = [...new Set(findings.match(/validation\/m55\/frames\/[A-Za-z0-9._\/-]+\.png/g) ?? [])]
+check("R6: the findings document names frames at all", namedFrames.length >= 8, `${namedFrames.length}`)
+const missingFrames = namedFrames.filter((f) => !existsSync(path.join(ROOT, f)))
+check(
+  `R6: every frame the findings document names exists (${namedFrames.length} named)`,
+  missingFrames.length === 0,
+  missingFrames.join(", "),
+)
+const VERDICTS = ["FIXED", "OPEN", "OPEN (narrow)", "NEEDS A TRUTH ASSERTION", "VERIFIED"]
+const verdictLines = findings.split("\n").filter((l) => l.startsWith("## F"))
+check("R6: the findings carry one verdict per finding", verdictLines.length >= 8, `${verdictLines.length} findings`)
+const badVerdicts = verdictLines.filter((l) => !VERDICTS.some((v) => l.includes(`\u00b7 ${v}`)))
+check("R6: every verdict is a declared word (no invented status)", badVerdicts.length === 0, badVerdicts.map((l) => l.slice(0, 60)).join(" | "))
+mutant(
+  "M8: a findings document naming a frame that does not exist",
+  !existsSync(path.join(ROOT, "validation/m55/frames/live-99/7-status.png")) && namedFrames.length > 0,
+)
+mutant(
+  "M9: a verdict outside the declared set",
+  !VERDICTS.some((v) => "## F99 — something · PROBABLY FINE".includes(`\u00b7 ${v}`)),
+)
+// M10: the newest-run pick goes back to sorting by name (the defect this gate
+// ran into: `live-9` sorts after `live-11`, so a stale session was verified).
+{
+  const byName = [...runs].sort()
+  const namePick = byName.length > 0 ? byName[byName.length - 1] : null
+  mutant(
+    "M10: a name-ordered newest-run pick (can verify a stale session)",
+    namePick === null || namePick !== newestRun(runs) || runs.length < 2,
+    `name pick ${namePick} vs timestamp pick ${newestRun(runs)}`,
+  )
+}
+
 // --- evidence ------------------------------------------------------------------------
 const failed = checks - passed
 const result = {
@@ -381,6 +444,8 @@ const result = {
   frameFacts,
   // Acceptance 4: every claim maps to a frame or a probe line.
   claimTrace: [
+    { claim: "the hover actions answer a palette invocation as well as a hover link", source: "component gate V1-action-args (47/47, 7/7 mutants)", frame: "4-open-in-graph.png, 5-impact.png" },
+    { claim: "the status facts render on a readable surface, once each, with provenance", source: "component gate V1-status-panel (42/42, 11/11 mutants)", frame: "7-status.png" },
     { claim: "hover at a declaration and at a call site resolve the same identity", source: "probe F1 + F2", frame: "2-hover-declaration.png, 3-hover-call-site.png" },
     { claim: "one tier story per symbol, in the legend's vocabulary", source: "probe F1–F4 provenance.evidenceClass + evidenceTiers", frame: "2-hover-declaration.png" },
     { claim: "the card renders a human signature and no serialization", source: "probe F1–F4 signature + card text", frame: "2-hover-declaration.png" },
@@ -394,7 +459,7 @@ const result = {
   limitations: [
     "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
     "The protocol declares a PINNED VS Code 1.85.0 from .vscode-test; that pin is not present on this machine, so the session runs the system `code` and records its exact version in the evidence. The pin's comparability guarantee is therefore declared but not honored here — recorded, not hidden.",
-    "The flow DRIVING is keyboard-deterministic (`code -g`, the editor's hover chord, the extension's contributed commands through the palette). The filing rig additionally pixel-clicked the hover card's action links; that path is not re-driven here, and the card's actions are asserted from the probe's card text instead.",
+    "The flow DRIVING is keyboard-deterministic (`code -g`, the editor's hover chord, the extension's contributed commands through the palette BY ID — see docs/m55/FRAME-FINDINGS.md F9: a palette TITLE is not an identifier, and `>` + an id ranks unrelated commands first, both of which were caught by reading the frames back). The filing rig additionally pixel-clicked the hover card's action links; that path is not re-driven here, and the card's actions are asserted from the probe's card text plus the component gate V1-action-args instead.",
     "Pixel thresholds (card-size, changed-pixel floors, text-row floors) are declared constants tuned to this display size (1920x1080 @ zoom 0); a different screen size invalidates the frame reads and the gate says so rather than scaling silently.",
   ],
 }

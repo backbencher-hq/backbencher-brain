@@ -115,7 +115,13 @@ export class PanelRegistry<T extends { reveal?: (...args: never[]) => void }> {
 
 /** The reuse key for a panel kind + symbol + defining file. Same symbol from a
  *  different file is a different panel (a repo has one `constructor` per
- *  class); the same symbol twice is the SAME panel. */
-export function panelKey(kind: "hub" | "impact" | "graph", symbol: string, file?: string): string {
+ *  class); the same symbol twice is the SAME panel.
+ *
+ *  M55.V1: "status" joins the kinds. It is not symbol-scoped (the status
+ *  surface describes the SERVER and the INDEX, not a symbol), so callers pass
+ *  a fixed symbol — the point is that it goes through THIS key function like
+ *  every other panel, so "one panel per surface, never a second column" holds
+ *  for it too instead of being re-implemented locally. */
+export function panelKey(kind: "hub" | "impact" | "graph" | "status", symbol: string, file?: string): string {
   return file === undefined || file === "" ? `${kind}:${symbol}` : `${kind}:${symbol}:${file}`
 }

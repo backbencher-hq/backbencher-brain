@@ -1,0 +1,31 @@
+{
+  "issue": "V1-component",
+  "code": "V1-status-panel",
+  "milestone": "M55",
+  "title": "The status surface (Truth Rule 1: a fact that cannot be read was not delivered)",
+  "status": "verified",
+  "passed": 42,
+  "failed": 0,
+  "checks": 42,
+  "mutantsCaught": 11,
+  "mutantsTotal": 11,
+  "negatives": 0,
+  "currentCommit": "7e5154a1a2baa86627ae9df9b2427af4325736e4",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/package.json",
+    "ide/vscode/src/extension.ts",
+    "ide/vscode/src/graph-panel.ts",
+    "ide/vscode/src/panel-placement.ts",
+    "script/m55/screenshot-protocol.ts",
+    "ide/vscode/src/status-markup.ts",
+    "ide/vscode/src/webview-dom.ts",
+    "script/m55/verify-status-panel.ts"
+  ],
+  "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
+  "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
+  "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
+  "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
+  "evidenceFile": "V1-status-panel.json",
+  "generatedAt": "2026-09-13T19:48:53.764Z",
+  "failures": []
+}
