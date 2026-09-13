@@ -1759,9 +1759,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // wave): reads sourced to the receiver variable (`cfg.limit` -> cfg) or the
     // type put edges from non-symbol nodes into the graph — the calls walk
     // attributes `cfg.helper()` to the enclosing METHOD, so the uses walk must
-    // agree (two walks, one owner; php/objc/python family rule). this/super
-    // keep the TYPE owner (a self-read is a read of the type's member — the
-    // swift precedent), but any other receiver resolves to the method.
+    // agree (two walks, one owner; php/objc/python family rule). M49 W15 #814:
+    // this/super ALSO resolve to the method now — the TYPE-owner exception
+    // (JAD2, "the swift precedent") was ruled out family-wide, and swift moved
+    // with java in the same ruling.
     const stack: { node: Node; owner: string | null; method: string | null }[] = [
       { node: rootNode, owner: null, method: null },
     ]
@@ -1810,7 +1811,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (parts.length >= 2) {
           const first = parts[0]
           const readOwner = method ?? owner
-          const source = first === "this" || first === "super" ? (owner ?? first) : readOwner ?? first
+          // M49 W15 #814 (owner rule: converge on METHOD source). JAD2 sourced
+          // this/super reads to the enclosing TYPE ("a self-read is a read of
+          // the type's member — the swift precedent"), while every OTHER
+          // receiver already resolved to the method. The swift precedent moved
+          // in this same ruling, so the exception is gone: the enclosing
+          // method is the actor that reads, and `x calls read` + `read uses
+          // count` now composes into reachability.
+          const source = first === "this" || first === "super" ? (method ?? owner ?? first) : readOwner ?? first
           // JAD1 (M37 java wave): assignment LHS is a WRITE, not a read —
           // `this.x = v` emitted a bogus uses edge for x (every other
           // managed-OO analyzer gates this: php/python/csharp/dart). The
@@ -1863,7 +1871,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (parts.length >= 2) {
               const first = parts[0]
               const readOwner = method ?? owner
-              source = first === "this" || first === "super" ? (owner ?? first) : readOwner ?? first
+              // #814: same convergence as the field_access site above.
+              source = first === "this" || first === "super" ? (method ?? owner ?? first) : readOwner ?? first
               target = parts[parts.length - 1]
             }
           }

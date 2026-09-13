@@ -22,6 +22,33 @@ import { runLang, LANGS } from "./run-fixtures"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
+// M49 W15 (family-parity G9): reproduces the scala defect the parity gate
+// found — a self-receiver member read targeting the literal keyword `this`
+// instead of the member leaf. Generic off the symbol table: a `uses` edge whose
+// source is a method of the type that declares the target becomes `target:
+// "this"`, which is the exact pre-fix shape (and a non-symbol target).
+function revertToKeywordTarget(r: any) {
+  const ownerOfMethod = new Map<string, string>()
+  const membersOf = new Map<string, Set<string>>()
+  for (const s of r.symbols ?? []) {
+    const owner = s.ownerName ?? s.owner
+    if (!owner || typeof s.name !== "string") continue
+    if (s.kind === "method" || s.kind === "function" || s.kind === "constructor") ownerOfMethod.set(s.name, owner)
+    else if (!membersOf.has(owner)) membersOf.set(owner, new Set([s.name]))
+    else membersOf.get(owner)!.add(s.name)
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const rel = normRel(x)
+      if (rel.type !== "uses" || rel.target === "this") return x
+      const owner = ownerOfMethod.get(rel.source)
+      if (owner && membersOf.get(owner)?.has(String(rel.target))) return { ...x, target: "this" }
+      return x
+    }),
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -31,6 +58,33 @@ interface Mutant {
 }
 
 function normRel(r: any) { return { ...r, type: r.type ?? r.relationshipType } }
+
+// M49 W15 #814: a faithful revert of the family-wide source ruling — every
+// `uses` edge whose source is a METHOD (or constructor) is re-attributed to
+// that method's OWNER, which is exactly what the analyzer did before the
+// convergence. Written generically off the result's own symbol table (a method
+// name maps to its owner), so it stays valid on any fixture and any language,
+// and it cannot silently stop matching the way a name-hardcoded filter does
+// (the failure mode that left swift/drop-container-subscript-uses surviving).
+function revertToTypeSource(r: any) {
+  const ownerOf = new Map<string, string>()
+  for (const s of r.symbols ?? []) {
+    const owner = s.ownerName ?? s.owner
+    if (owner && typeof s.name === "string" && (s.kind === "method" || s.kind === "function" || s.kind === "constructor")) {
+      ownerOf.set(s.name, owner)
+    }
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const rel = normRel(x)
+      if (rel.type === "uses" && ownerOf.has(rel.source)) {
+        return { ...x, source: ownerOf.get(rel.source) }
+      }
+      return x
+    }),
+  }
+}
 
 const MUTANTS: Mutant[] = [
   {
@@ -697,6 +751,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: [] })) }),
   },
   {
+    id: "scala/self-target-revert",
+    language: "scala",
+    defectClass: "symbol-identity",
+    description: "M49 W15 family-parity regression: a self-receiver member read targets the literal keyword `this` again instead of the member leaf — the edge names no symbol and the member read disappears (scala/member-read-target forbids target `this`); scala's lane cannot see it (F5 compares label+target and scala does not compare uses at all), which is exactly why the parity gate exists",
+    transform: revertToKeywordTarget,
+  },
+  {
     id: "scala/write-as-read-leak",
     language: "scala",
     defectClass: "relationship-noise",
@@ -1096,6 +1157,13 @@ const MUTANTS: Mutant[] = [
     description: "M49.K1 K4 regression: drops the metadata.overrideSig signature payload from override edges — overload disambiguation downstream dies; the K4 claim-probe re-pin and override-fallback-confidence's sig expectations catch it",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
       x.type === "overrides" ? { ...x, metadata: { ...x.metadata, overrideSig: undefined } } : x) }),
+  },
+  {
+    id: "java/type-source-revert",
+    language: "java",
+    defectClass: "attribution",
+    description: "M49 W15 #814 regression: re-attributes every field read to the enclosing TYPE (the pre-ruling JAD2 `this`/`super` exception) — java/member-read-source forbids the type-sourced spelling, which under the old rule was indistinguishable from the write spelling",
+    transform: revertToTypeSource,
   },
   {
     id: "java/anonymous-body-scope-leak",
@@ -3193,8 +3261,27 @@ const MUTANTS: Mutant[] = [
     id: "javascript/visibility-flip",
     language: "javascript",
     defectClass: "payload-corruption",
-    description: "J9 regression: #private fields report public again — private-field-visibility pin catches it",
-    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "secret" ? { ...s, visibility: "public" } : s)) }),
+    description: "J9 regression: #private fields report public again — private-field-visibility pin catches it (matches the DECLARED `#secret` spelling, which is the member's one name since the #813 ruling)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "#secret" ? { ...s, visibility: "public" } : s)) }),
+  },
+  {
+    id: "javascript/type-source-revert",
+    language: "javascript",
+    defectClass: "attribution",
+    description: "M49 W15 #814 regression: re-attributes every member read to the enclosing TYPE (the pre-ruling `this`/`super` rule, which contradicted this analyzer's own bare-read source in the same body) — javascript/private-member-read-identity forbids the type-sourced spelling",
+    transform: revertToTypeSource,
+  },
+  {
+    id: "javascript/private-name-strip-revert",
+    language: "javascript",
+    defectClass: "symbol-identity",
+    description: "M49 W15 #813 regression: private members are stored under their STRIPPED name again (`secret` for `#secret`), so every reading edge targets a name no symbol carries and a class-declared `#x` shares its slot with a same-named `x` — private-field-visibility / private-methods / visibility-payload pin the declared spelling",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        typeof s.name === "string" && s.name.startsWith("#") ? { ...s, name: s.name.slice(1) } : s
+      ),
+    }),
   },
   {
     id: "javascript/jsx-cap",
@@ -3365,11 +3452,23 @@ const MUTANTS: Mutant[] = [
     id: "typescript/private-read-raw-lookup",
     language: "typescript",
     defectClass: "uses-coverage",
-    description: "M49 W13 regression: the field-access Uses rule looks the member's RAW text up in the declared-symbol set again — private members are stored under their clean name, so `!!symbolNames['#count']` is always false and EVERY private field read emits nothing (typescript/private-member-reads pins uses read->#count and uses bump->#version)",
+    description: "M49 W13 regression: every private field read emits nothing again (typescript/private-member-reads pins uses read->#count and uses bump->#version and calls bump->#step)",
     transform: (r: any) => ({
       ...r,
       relationships: (r.relationships ?? []).filter(
         (x: any) => !(x.type === "uses" && String(x.target).startsWith("#"))
+      ),
+    }),
+  },
+  {
+    id: "typescript/private-name-strip-revert",
+    language: "typescript",
+    defectClass: "symbol-identity",
+    description: "M49 W15 #813 regression: private members are stored under their STRIPPED name again — the graph-visible symbol no longer resolves from its reading edges, and the field-access membership test (`symbolNames[name]` against the declared `#count`) goes false, so the private read vanishes too (typescript/private-member-reads pins symbol `#step` plus uses read->#count)",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        typeof s.name === "string" && s.name.startsWith("#") ? { ...s, name: s.name.slice(1) } : s
       ),
     }),
   },
@@ -3520,8 +3619,15 @@ const MUTANTS: Mutant[] = [
     id: "swift/drop-container-subscript-uses",
     language: "swift",
     defectClass: "relationship-loss",
-    description: "SWIFTD17 regression: re-suppresses the subscript base (drops uses Cache->storage/key, the self-container subscript reads+writes) — master-review-w2 expectUses pins die",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "Cache" && (x.target === "storage" || x.target === "key"))) }),
+    description: "SWIFTD17 regression: re-suppresses the subscript base (drops the self-container subscript reads+writes on storage/key) — master-review-w2 expectUses pins die (M49 W15: matched by TARGET, not by the old `source === \"Cache\"` filter, which stopped matching the moment #814 moved uses sources to the enclosing method — that hardcoded name is how this mutant went from caught to surviving)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(normRel(x).type === "uses" && (x.target === "storage" || x.target === "key"))) }),
+  },
+  {
+    id: "swift/type-source-revert",
+    language: "swift",
+    defectClass: "attribution",
+    description: "M49 W15 #814 regression: re-attributes every `self.` member read to the enclosing TYPE (the pre-ruling rule) — swift/write-gate forbids the type-sourced spelling and the method-sourced expectUses pins die",
+    transform: revertToTypeSource,
   },
   {
     id: "swift/re-add-field-write-uses",

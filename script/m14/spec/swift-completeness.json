@@ -240,7 +240,7 @@
         "node_type": "navigation_expression, self_expression",
         "status": "RULED",
         "question": "`self.x` member READS vs `self.method()` CALLS both parse as navigation_expression.",
-        "resolution": "A navigation_expression that is the callee of a call_expression is a CALL (calls edge to leaf); otherwise with a self receiver it is a member read (uses edge, source = enclosing type, target = leaf)."
+        "resolution": "A navigation_expression that is the callee of a call_expression is a CALL (calls edge to leaf); otherwise with a self receiver it is a member read (uses edge, source = enclosing METHOD, target = leaf). M49 W15 #814: the source was the enclosing TYPE until the family-wide ruling converged on method-source (java/swift/javascript moved; python/dart/cpp already agreed); a class-level read has no method and falls back to the type."
       },
       {
         "id": "SWD2",

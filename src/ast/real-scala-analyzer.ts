@@ -1275,8 +1275,21 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
         if (!isCallFn) {
           const recv = this.leftmostIdentifier(n)
-          // Capitalized receivers are type references (G3) — never Uses.
-          if (recv && recv.text.length > 0 && !(recv.text.charCodeAt(0) >= 65 && recv.text.charCodeAt(0) <= 90)) {
+          // M49 W15 (family-parity gate G9, the `member-read-through-receiver`
+          // construct): `this.count` emitted `uses <method> -> this` — the edge
+          // targeted the literal KEYWORD, which is not a symbol in the graph at
+          // all, so the member read was invisible and the target was garbage.
+          // Every other managed-OO analyzer targets the MEMBER here
+          // (java/swift/python/dart/cpp/csharp/php/go/rust all emit
+          // `<method> -> count`; probe-verified across 13 analyzers). A
+          // self-receiver resolves to its member leaf; any other receiver keeps
+          // the base-variable read (reading `h.value` also reads `h`).
+          const isSelfReceiver = recv !== null && (recv.text === "this" || recv.text === "super")
+          if (isSelfReceiver) {
+            const leaf = n.childForFieldName?.("field")
+            if (leaf && leaf.text.length > 0) emitUse(n, leaf.text)
+          } else if (recv && recv.text.length > 0 && !(recv.text.charCodeAt(0) >= 65 && recv.text.charCodeAt(0) <= 90)) {
+            // Capitalized receivers are type references (G3) — never Uses.
             emitUse(n, recv.text)
           }
         }
