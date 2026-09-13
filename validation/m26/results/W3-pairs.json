@@ -21,8 +21,22 @@
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
       "origin": "real project index"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "origin": "real project index"
     }
   ],
-  "realDbsScanned": 40,
-  "generatedAt": "2026-09-11T21:16:08.333Z"
+  "realDbsScanned": 41,
+  "generatedAt": "2026-09-13T18:09:21.213Z"
 }

@@ -257,9 +257,37 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
+        "currentCommit": "see T5.json",
         "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
-        "evidenceFile": "T5.json"
+        "evidenceFile": "T5.json",
+        "passed": 68,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 7,
+        "mutantsTotal": 7,
+        "scope": "the ONE tier classifier (src/lsp/evidence_tier.ts) with a closed vocabulary over a seeded real index; hover provenance+list+card text over the real dist server for the four pinned symbols plus the declared-unknown case; the hub chip rendered by the ONE core from the REAL bb/graph usages response; the legend's tier set and badge mapping; the import-pure mirror asserted by equivalence on a declared case table; 7 planted defects"
+      },
+      "progress": {
+        "stage": "one classifier, one vocabulary, one order, one badge mapping — verified end-to-end (68/68, 7/7 mutants). NOT closable yet only because its closure requirement includes V1's in-editor frame.",
+        "verifiedAt": "2026-09-13",
+        "fixes": [
+          "src/lsp/evidence_tier.ts (new, the ONE owner): the W4/M29.R5 rule, the declared vocabulary, the declared order and the declared primary in one place. Stored legend-tier classes win; the legacy `indexed`/`semantic_candidate` labels the index still carries are UNCLAIMED (not tier claims), so the row's own kind decides and the emitted set stays renderable by the legend; an empty row set is the declared `unknown`, never a guess.",
+          "src/lsp/hover.ts: the local rule, its 10-entry legacy map and its metadata parse are gone; the tier list and the primary both come from the owner, and the primary is the first member of the list it headlines (the pre-T5 `[...tiers].sort()` made `indexed` — a tier the legend cannot render — the primary of a symbol whose real evidence was structural: the #775 defect).",
+          "src/lsp/cross_language_hover.ts: the second copy of the W4 rule became a delegation, so one stored `imports` row can no longer read `import_based` in the cross-language section and `indexed` in the card.",
+          "script/m26/graph-core.ts: the import-pure mirror now matches the owner (containment/exports/instantiates/override and the `uses`/`usage` kinds, case-insensitive), the legend wording says what the rule does, and the hub row chip stopped writing its own `bb-badge-${tier}` template — legend, edge badge and hub chip all call badgeClassForTier.",
+          "script/m55/t5-fixture.ts + script/m55/verify-tiers.ts (new): a real-index fixture (class, method, field, external target, an unclaimed stored label, and the no-rows case) with authored per-symbol and per-row expectations, the wire legs over the real dist server, the hub legs over the REAL bb/graph usages response, the mirror-equivalence table, and 7 mutants (including the pre-T5 alphabetical primary and the pre-T5 legacy label)."
+        ],
+        "findings": [
+          "the fixture's first version produced an EMPTY hub: real symbol ids are `<projectId>:<relPath>:<name>:<n>` and the engine's member cascade keys on `owner_symbol_id` matching the owner's own id prefix, so made-up ids silently returned no callees. The fixture now builds ids the way the indexer does (and the gate asserts the rows really came back).",
+          "the hub row chip carried a second badge-class template — a surface that could have disagreed with its own legend. Found by the T5 source rule, now single-sourced.",
+          "the pre-T5 hover's tier list could include `indexed`, a tier the legend cannot render: a vocabulary that changes per surface is not a vocabulary. The closed set is asserted at the owner, on the wire and through the rendered DOM.",
+          "the fixture must seed the indexer's REAL content hash: with a placeholder hash every fixture file reads `stale` and the provenance assertions measure the fixture instead of the rule (found while wiring the hover leg)."
+        ],
+        "remaining": [
+          "V1's in-editor frame showing the same tier story in the card and the hub (closure requirement)",
+          "the hub (bb/graph usages) only traverses calls/instantiates/extends/implements, so contains/imports/references/uses rows are asserted on the hover and model legs — recorded as a limitation, not hidden"
+        ]
       }
     },
     {

@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
+  "currentCommit": "369eeea6fe6bc4add5b4a34dc425e0421c6e353c",
   "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
   "evidenceFile": "W2.json",
-  "generatedAt": "2026-09-11T21:16:06.120Z",
+  "generatedAt": "2026-09-13T18:09:29.098Z",
   "schemaVersion": 2,
   "method": "bb/graph",
   "limitations": [
