@@ -60,27 +60,39 @@ function main() {
   // required G1/R1/R2/X1 scaffold codes. They must still satisfy the same
   // status/evidence checks below. Anything that is neither a required code nor
   // a known wave-code shape fails.
-  // M49 W13: the vocabulary is the set of LANGUAGE PREFIXES the waves
-  // actually use, written out — not an opaque single-character class. The
-  // old `/^[JKSCEPGVTRHD][0-9]+$/` silently rejected five LEGITIMATE ledger
-  // rows the systems and csharp review waves appended: the two-letter codes
-  // CPP1/RS1/GO1/CS1 (one letter followed by digits cannot match a two-letter
-  // prefix) and Z1 (Z was never in the class). G1 therefore failed on rows no
-  // rule was meant to forbid, while simultaneously offering no way to see
-  // WHAT vocabulary was allowed. Listing the prefixes keeps the gate exactly
-  // as strict — anything outside the vocabulary still fails — and makes the
-  // allowed shapes reviewable.
-  const WAVE_PREFIXES = [
-    "J", "K", "S", "C", "E", "P", "G", "V", "T", "R", "H", "D",
-    "CPP", "CS", "GO", "RS", "Z",
-  ]
-  const WAVE_CODE = new RegExp(`^(?:${WAVE_PREFIXES.join("|")})[0-9]+$`)
+  // M49 W13/W14: the vocabulary is the set of LANGUAGE PREFIXES the waves
+  // actually use, and it is DATA (validation/m49/wave-codes.json) rather than
+  // a literal inside this gate. History explains why: the original opaque
+  // `/^[JKSCEPGVTRHD][0-9]+$/` silently rejected five LEGITIMATE ledger rows
+  // the systems and csharp waves appended (CPP1/RS1/GO1/CS1 — one letter
+  // cannot match a two-letter prefix — and Z1, never in the class), and then
+  // the explicit replacement list did the same thing to RB1, the ruby wave's
+  // code (ruby cannot use `R`, which the R1/R2 scaffold rows own). Both times
+  // G1 failed on a row no rule was meant to forbid, because a rule that lives
+  // in code must be edited in code by whoever closes the next wave. The gate
+  // keeps its strictness — a code outside the registry still fails — and §2
+  // adds the rule that makes the drift impossible to repeat silently: every
+  // language directory must own a code or be declared `unwaved` with a reason.
+  const CODES_PATH = path.join(ROOT, "validation/m49/wave-codes.json")
+  check("wave-code registry exists", existsSync(CODES_PATH))
+  const registry: { prefixes?: Record<string, string[]>; unwaved?: Record<string, string> } =
+    existsSync(CODES_PATH) ? JSON.parse(readFileSync(CODES_PATH, "utf8")) : {}
+  const ownedPrefixes = registry.prefixes ?? {}
+  const unwaved = registry.unwaved ?? {}
+  // Longest prefix first so `CPP1` is read as CPP+1, not as a failed C+`PP1`
+  // that only succeeding by backtracking happens to hide.
+  const prefixAlt = Object.keys(ownedPrefixes)
+    .sort((a, b) => b.length - a.length)
+    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")
+  const WAVE_CODE = new RegExp(`^(?:${prefixAlt})[0-9]+$`)
   check("ledger has no extra codes", issues.every((i) => REQUIRED_CODES.includes(String(i.id)) || WAVE_CODE.test(String(i.id))),
     `extras: ${ids.filter((x) => !REQUIRED_CODES.includes(x) && !WAVE_CODE.test(x)).join(",")}`)
-  // The vocabulary must discriminate: a real systems code passes, a typo of
-  // one does not, and every ledger code the gate now admits is at least
-  // shape-legal — otherwise "no extra codes" could pass vacuously.
-  negative("wave-code vocabulary admits the systems/csharp codes", ["CPP1", "RS1", "GO1", "Z1", "CS1"].every((c) => WAVE_CODE.test(c)))
+  // The vocabulary must discriminate: every code the ledger actually carries
+  // passes, a typo of an owned prefix does not, and a bare prefix (no wave
+  // number) does not — otherwise "no extra codes" could pass vacuously.
+  negative("wave-code vocabulary admits every code the ledger carries",
+    ids.filter((x) => !REQUIRED_CODES.includes(x)).every((c) => WAVE_CODE.test(c)))
   negative("wave-code vocabulary rejects an unowned prefix", !WAVE_CODE.test("FOO1") && !WAVE_CODE.test("CPP"))
   for (const i of issues) {
     const status = String(i.status)
@@ -113,6 +125,42 @@ function main() {
   for (const lang of langDirs) {
     check(`onboarding board tracks ${lang}`, board.includes(`reviews/${lang}`))
   }
+  // Every registered prefix must name a REAL owner — the scaffold, or a
+  // directory that exists under reviews/. Without this, a typo in the
+  // registry ("ruBU" for ruby) would license codes nobody owns.
+  for (const [prefix, owners] of Object.entries(ownedPrefixes)) {
+    check(`wave-code prefix ${prefix} names a real owner`,
+      Array.isArray(owners) && owners.length > 0 && owners.every((o) => o === "scaffold" || isDir(o)),
+      String(owners))
+  }
+  // An `unwaved` entry is an explicit, reviewable admission that a language
+  // directory has no M49 ledger row. It must be a real directory AND must
+  // state why, so "unwaved" cannot be used as a silence-shaped escape hatch.
+  for (const [lang, reason] of Object.entries(unwaved)) {
+    check(`unwaved ${lang} is a language directory`, isDir(lang))
+    check(`unwaved ${lang} states a reason`, typeof reason === "string" && reason.trim().length >= 20,
+      typeof reason === "string" ? reason.slice(0, 60) : String(reason))
+  }
+  // Exhaustiveness — the rule whose absence let both drifts through. A
+  // language directory must either own a wave code or be declared unwaved
+  // with a reason; silence is not an option. This fails and NAMES the
+  // directory, so the next wave learns what to register from the gate output
+  // instead of from a mysteriously red G1.
+  const ownedLangs = new Set(Object.values(ownedPrefixes).flat())
+  const unaccounted = langDirs.filter((l) => !ownedLangs.has(l) && !(l in unwaved))
+  check("every language directory owns a wave code or is declared unwaved", unaccounted.length === 0,
+    `unaccounted: ${unaccounted.join(",")}`)
+  // The predicate must discriminate in both directions, proven from the
+  // registry itself rather than from a synthetic string: strip a real
+  // language of its code and the rule must report it, while the registry as
+  // it stands must report nothing.
+  negative("exhaustiveness rule flags a real language stripped of its code",
+    (() => {
+      const withoutRuby = new Set(ownedLangs); withoutRuby.delete("ruby")
+      return ["ruby"].some((l) => !withoutRuby.has(l) && !(l in unwaved))
+    })())
+  negative("exhaustiveness rule does not flag a registered language",
+    ["ruby"].every((l) => ownedLangs.has(l)))
   for (const doc of reviewDocs) {
     check(`onboarding board documents ${doc}`, board.includes(doc))
   }
