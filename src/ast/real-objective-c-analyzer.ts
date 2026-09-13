@@ -1,6 +1,14 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+// OC-E: implicit names and constant spellings are never value reads —
+// `self`/`super` are implicit receivers, `nil`/`Nil`/`NULL`/`YES`/`NO`/
+// `true`/`false` are constants, `_cmd` is the implicit second method
+// parameter (reads of it are definition artifacts, not dependencies).
+const BARE_READ_SKIP: ReadonlySet<string> = new Set([
+  "self", "super", "nil", "Nil", "NULL", "YES", "NO", "true", "false", "_cmd",
+])
+
 export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -21,19 +29,97 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the ivar-area macro as a call_expression, and the pre-fix code emitted
     // a fabricated `calls` edge for it because activeScope (the class name)
     // was non-global there (OBJCD6).
-    const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string; parentType: string; isInBody: boolean }> = [
-      { node: rootNode, isExit: false, activeScope: "global", parentType: "", isInBody: false }
+    //
+    // OC-E (first OO review): bare-identifier VALUE reads (`uses`). Three
+    // walk-state additions carry the scope model — owner (enclosing class
+    // name, "" at file scope; categories resolve to the extended class
+    // because the class branch sets it from the class name), bindable (true
+    // only under a REAL definition or block — method_declaration prototypes
+    // must not bind their parameter names into a stale frame), and block
+    // exit markers (reusing the isExit flag, which no producer ever sets —
+    // a marker pops one block value-frame).
+    const walkStack: Array<{ node: Node; isExit: boolean; activeScope: string; parentType: string; isInBody: boolean; owner: string; bindable: boolean }> = [
+      { node: rootNode, isExit: false, activeScope: "global", parentType: "", isInBody: false, owner: "", bindable: false }
     ]
+
+    // OC-E scope inventory. valueFrame holds the current method/function
+    // definition's bound value names (parameters + body locals); blockFrames
+    // is the open block-literal chain (innermost last). classMembers maps a
+    // class name to its same-file ivar + property names (pre-scan below —
+    // headers are invisible in a .m translation unit, so cross-file ivars
+    // stay silent by design). globals holds file-scope declared names.
+    // Lookup order frame -> block chain -> class -> globals; anything
+    // unbound is silent (family resolvability contract — macro constants,
+    // type names, enum cases and keyword spellings never emit).
+    let valueFrame: Set<string> | null = null
+    const blockFrameStack: Array<Set<string>> = []
+    const globals = new Set<string>()
+    const classMembers = new Map<string, Set<string>>()
+    {
+      const preStack: Node[] = [rootNode]
+      while (preStack.length > 0) {
+        const pn = preStack.pop()!
+        if (!pn || pn.isMissing) continue
+        if (pn.type === "class_interface" || pn.type === "class_implementation") {
+          const cn = this.findChild(pn, (n) => n.type === "identifier" || n.type === "type_identifier")
+          if (cn) {
+            let members = classMembers.get(cn.text)
+            if (!members) { members = new Set<string>(); classMembers.set(cn.text, members) }
+            const memStack: Node[] = [pn]
+            while (memStack.length > 0) {
+              const mn = memStack.pop()!
+              if (!mn) continue
+              if (mn !== pn && (mn.type === "class_interface" || mn.type === "class_implementation" || mn.type === "protocol_declaration")) continue
+              if (mn.type === "property_declaration" || mn.type === "instance_variable") {
+                const mname = this.findDeclaredName(mn)
+                if (mname) members!.add(mname)
+              }
+              for (let mi = mn.namedChildCount - 1; mi >= 0; mi--) {
+                const mc = mn.namedChild(mi)
+                if (mc) memStack.push(mc)
+              }
+            }
+          }
+        }
+        for (let pi = pn.namedChildCount - 1; pi >= 0; pi--) {
+          const pc = pn.namedChild(pi)
+          if (pc) preStack.push(pc)
+        }
+      }
+    }
+    const bindValue = (name: string): void => {
+      if (!name) return
+      if (blockFrameStack.length > 0) blockFrameStack[blockFrameStack.length - 1].add(name)
+      else if (valueFrame) valueFrame.add(name)
+      else globals.add(name)
+    }
+    const isBoundValue = (name: string, owner: string): boolean => {
+      for (let bi = blockFrameStack.length - 1; bi >= 0; bi--) {
+        if (blockFrameStack[bi].has(name)) return true
+      }
+      if (valueFrame && valueFrame.has(name)) return true
+      const cm = classMembers.get(owner)
+      if (cm && cm.has(name)) return true
+      if (globals.has(name)) return true
+      return false
+    }
 
     while (walkStack.length > 0) {
       const state = walkStack.pop()!
       if (!state) continue
-      
-      const { node, isExit, activeScope, parentType, isInBody } = state
+      // OC-E block exit marker: pop one block value-frame.
+      if (state.isExit) {
+        blockFrameStack.pop()
+        continue
+      }
+
+      const { node, isExit, activeScope, parentType, isInBody, owner, bindable } = state
       if (isExit || !node || node.isMissing) continue
 
       let nextActiveScope = activeScope
       let nextIsInBody = isInBody
+      let nextOwner = owner
+      let nextBindable = bindable
 
       // Law 1: Flawless Database Extraction (cover all major Obj-C constructs)
 
@@ -89,6 +175,9 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "type_identifier")
         if (nameNode) {
           nextActiveScope = nameNode.text
+          // OC-E: methods resolve ivar/property reads against the enclosing
+          // class (categories contribute the extended class name here).
+          nextOwner = nameNode.text
           // Category detection: a category is `@interface Name (CategoryName)`
           // which carries an anonymous `(` token. A plain class has `:` then a
           // superclass identifier — never a paren. This is exact, not heuristic.
@@ -194,6 +283,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const sel = this.fullMethodSelector(node)
         if (sel) {
           nextActiveScope = sel
+          if (node.type === "method_definition") {
+            // OC-E: methods never nest — a definition opens a fresh value
+            // frame (parameters + body locals). Declarations bind nothing
+            // (their parameter names must not leak into a stale frame).
+            valueFrame = new Set<string>()
+            nextBindable = true
+          }
           // The `+`/`-` sign is an anonymous token child of the method node
           // (`method_declaration [-:"-"] [;:";"]`) — pure AST, no text scan.
           const isClassMethod = this.isClassMethodToken(node)
@@ -224,6 +320,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findFunctionName(node)
         if (nameNode) {
           nextActiveScope = nameNode.text
+          // OC-E: file-scope C functions open a fresh value frame with no
+          // enclosing class (their locals are the richest bare-read source
+          // in helper-heavy files).
+          valueFrame = new Set<string>()
+          nextOwner = ""
+          nextBindable = true
           symbols.push({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Function,
@@ -261,24 +363,195 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
+      // 6c. C type declarations (OC-D, first OO review — C parity). The
+      // pinned objc wasm shares the C node shapes exactly (shape-dumped):
+      // struct_specifier > type_identifier + field_declaration_list,
+      // enum_specifier > type_identifier + enumerator_list > enumerator,
+      // type_definition > typedef-name (+ optional struct/enum for
+      // `typedef struct {...} Size`). C symbolizes all of these (holy-c
+      // waves); objc dropped them, so identical C code lost its entire type
+      // inventory in a .m file. Mirror C's symbol shapes (Struct + Property
+      // fields owned by the struct, Enum + EnumMember owned by the enum,
+      // Type for aliases, anonymous structs named by their typedef).
+      // Type-USE references are deliberately NOT ported: every ObjC method
+      // signature mentions Foundation types, so C-style type-use references
+      // would be systematic noise (ruled in the spec).
+      else if (node.type === "struct_specifier" || node.type === "union_specifier") {
+        const sname = this.findChild(node, (n) => n.type === "type_identifier")
+        const tname = sname ? sname.text : this.typedefName(node)
+        // Definition-only: a bare `struct Node *p` reference (no field
+        // list, not under a typedef) declares nothing.
+        const defines = !!this.findChild(node, (n) => n.type === "field_declaration_list") ||
+          (node.parent != null && node.parent.type === "type_definition")
+        if (tname && defines) {
+          symbols.push({
+            name: tname,
+            kind: ASTEngine.SymbolKind.Struct,
+            range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
+            metadata: { objcSpecific: true, isCStruct: true },
+          })
+          const flist = this.findChild(node, (n) => n.type === "field_declaration_list")
+          if (flist) {
+            for (let fi = 0; fi < flist.namedChildCount; fi++) {
+              const fd = flist.namedChild(fi)
+              if (!fd || fd.type !== "field_declaration") continue
+              // The field name nests under pointer declarators
+              // (`struct Node *next`), so search the declaration subtree
+              // (nested struct_specifiers carry type_identifiers, never
+              // field_identifiers — the first hit is the field).
+              const fname = this.deepFind(fd, (n) => n.type === "field_identifier")
+              if (fname && fname.text.trim()) {
+                symbols.push({
+                  name: fname.text,
+                  kind: ASTEngine.SymbolKind.Property,
+                  range: this.getRange(fd),
+                  ownerName: tname,
+                  metadata: { objcSpecific: true, isStructField: true },
+                })
+              }
+            }
+          }
+        }
+      }
+      else if (node.type === "enum_specifier") {
+        const ename = this.findChild(node, (n) => n.type === "type_identifier")
+        const tname = ename ? ename.text : this.typedefName(node)
+        // Definition-only: `enum Color x` (no enumerator list, not under a
+        // typedef) is a use, not a declaration.
+        const defines = !!this.findChild(node, (n) => n.type === "enumerator_list") ||
+          (node.parent != null && node.parent.type === "type_definition")
+        if (tname && defines) {
+          symbols.push({
+            name: tname,
+            kind: ASTEngine.SymbolKind.Enum,
+            range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
+            metadata: { objcSpecific: true, isCEnum: true },
+          })
+          const elist = this.findChild(node, (n) => n.type === "enumerator_list")
+          if (elist) {
+            for (let ei = 0; ei < elist.namedChildCount; ei++) {
+              const en = elist.namedChild(ei)
+              if (!en || en.type !== "enumerator") continue
+              const mname = this.findChild(en, (n) => n.type === "identifier")
+              if (mname && mname.text.trim()) {
+                symbols.push({
+                  name: mname.text,
+                  kind: ASTEngine.SymbolKind.EnumMember,
+                  range: this.getRange(en),
+                  ownerName: tname,
+                  metadata: { objcSpecific: true },
+                })
+              }
+            }
+          }
+        }
+      }
+      else if (node.type === "type_definition") {
+        // `typedef int Counter` — the alias is the LAST type_identifier
+        // child (specifier types precede it). When the typedef defines a
+        // struct/enum, the aggregate branch above owns the symbol (C parity:
+        // `typedef struct Node {...} Node` emits struct:Node only, never a
+        // parallel type:Node).
+        let alias: Node | null = null
+        for (let ti = 0; ti < node.namedChildCount; ti++) {
+          const tc = node.namedChild(ti)
+          if (tc && (tc.type === "type_identifier" || tc.type === "identifier")) alias = tc
+        }
+        const hasAggregate = !!this.findChild(node, (n) => n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier")
+        if (alias && !hasAggregate) {
+          symbols.push({
+            name: alias.text,
+            kind: ASTEngine.SymbolKind.Type,
+            range: this.getRange(node),
+            ownerName: activeScope !== "global" ? activeScope : undefined,
+            metadata: { objcSpecific: true, isTypedef: true },
+          })
+        }
+      }
       // 7. Variables (C-style declarations) — file-scope only; method-body
       // declarations are locals (execution artifacts) and blocks are generated.
       else if (node.type === "block_literal") {
         // Anonymous blocks have generated names — skip as symbols.
+        // OC-E: a block opens a chained value frame for its parameters
+        // (closed by the exit marker pushed with the children below).
+        if (nextBindable) blockFrameStack.push(new Set<string>())
       } else if (node.type === "declaration" && activeScope === "global") {
-         const declarator = this.findChild(node, (n) => n.type === "init_declarator" || n.type === "identifier")
-         const nameNode = declarator ? (declarator.type === "init_declarator" ? this.findChild(declarator, (n) => n.type === "identifier") : declarator) : null
-         if (nameNode) {
-           symbols.push({
-             name: nameNode.text,
-             kind: ASTEngine.SymbolKind.Variable,
-             range: this.getRange(node),
-             metadata: { objcSpecific: true },
-           })
-         }
+          // OC-E: every declarator binds (multi-declarator `int x = 1,
+          // y = 2` binds both) through the declarator name — pointer
+          // globals (`static NSString * k = ...`) nest the name under a
+          // pointer_declarator, so a direct-child lookup misses them. Bare
+          // declarators without initializers (`static NSArray * g;`) bind
+          // the same way; prototypes (function_declarator) never bind.
+          for (let di = 0; di < node.namedChildCount; di++) {
+            const dc = node.namedChild(di)
+            if (!dc) continue
+            let dname: string | null = null
+            if (dc.type === "init_declarator") {
+              dname = this.declaratorName(dc)
+            } else if (dc.type === "identifier") {
+              dname = dc.text
+            } else if (dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+                       dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
+              dname = this.declaratorName(dc)
+            }
+            if (dname) {
+              symbols.push({
+                name: dname,
+                kind: ASTEngine.SymbolKind.Variable,
+                range: this.getRange(node),
+                metadata: { objcSpecific: true },
+              })
+              // OC-E: file-scope names are resolvable read targets.
+              globals.add(dname)
+            }
+          }
+      } else if (node.type === "declaration" && nextBindable) {
+        // OC-E: in-body declarations bind their declarator names as locals
+        // (no symbols — locals are execution artifacts, family contract),
+        // including bare declarators without initializers.
+        for (let di = 0; di < node.namedChildCount; di++) {
+          const dc = node.namedChild(di)
+          if (!dc) continue
+          if (dc.type === "init_declarator") {
+            const dname = this.declaratorName(dc)
+            if (dname) bindValue(dname)
+          } else if (dc.type === "identifier") {
+            bindValue(dc.text)
+          } else if (dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+                     dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
+            const dname = this.declaratorName(dc)
+            if (dname) bindValue(dname)
+          }
+        }
+      } else if ((node.type === "method_parameter" || node.type === "parameter_declaration") && nextBindable) {
+        // OC-E: parameter names bind into the current frame. Only the
+        // declarator identifier binds (type names are type_identifier, and
+        // `id` parses as typedefed_specifier — never bare identifiers).
+        const pname = this.declaratorName(node)
+        if (pname) bindValue(pname)
       }
-      // 8. Relationships (Obj-C Message Expressions `[receiver selector]` & C-Function Calls)
-      // OBJCD7: the callable identity of a message send is the FULL selector
+      // 7b. For-in loop variables (`for (id x in items)`) — the identifier
+      // directly preceding the anonymous `in` token binds as a local; the
+      // collection (`items`) stays a read candidate for the rule below.
+      else if (node.type === "for_statement" && nextBindable) {
+        const cc = node.childCount
+        for (let fi = 0; fi < cc; fi++) {
+          const fc = node.child(fi)
+          if (fc && !fc.isNamed && fc.type === "in" && fi > 0) {
+            for (let fj = fi - 1; fj >= 0; fj--) {
+              const pc = node.child(fj)
+              if (pc && pc.isNamed) {
+                if (pc.type === "identifier") bindValue(pc.text)
+                break
+              }
+            }
+            break
+          }
+        }
+      }
+      // 8. Relationships (Obj-C Message Expressions `[receiver selector]` & C-Function Calls)      // OBJCD7: the callable identity of a message send is the FULL selector
       // (storeImage:forName:, initWithBlock:), not its first keyword — a
       // leaf-named edge could not resolve to the exact overload. The grammar
       // flattens keywords and arguments as siblings; a keyword is an
@@ -324,8 +597,48 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { isMessageExpression: true }
               })
             }
-         }
-      }
+            // OC-E bare reads inside the send: the receiver (namedChild(0)
+            // when it is a bare identifier) and every argument identifier.
+            // Keywords (identifier followed by ':') and the zero-argument
+            // selector (last non-keyword identifier when the send has no
+            // keywords) are NAMES, never reads. Unbound names (type
+            // receivers like NSString, macro constants) stay silent.
+            const msgKids: Array<{ n: Node; isKeyword: boolean }> = []
+            for (let mi = 0; mi < node.childCount; mi++) {
+              const mc = node.child(mi)
+              if (!mc || !mc.isNamed || mc.type !== "identifier") continue
+              const nxt = mi + 1 < node.childCount ? node.child(mi + 1) : null
+              msgKids.push({ n: mc, isKeyword: !!(nxt && !nxt.isNamed && nxt.type === ":") })
+            }
+            const recvNode = node.namedChild(0)
+            const hasKeyword = msgKids.some((k) => k.isKeyword)
+            let lastNonRecv = -1
+            if (!hasKeyword) {
+              for (let ki = msgKids.length - 1; ki >= 0; ki--) {
+                if (!this.sameNode(msgKids[ki].n, recvNode)) { lastNonRecv = ki; break }
+              }
+            }
+            for (let ki = 0; ki < msgKids.length; ki++) {
+              const kk = msgKids[ki]
+              if (kk.isKeyword || ki === lastNonRecv) continue
+              const ktext = kk.n.text.trim()
+              if (!ktext || BARE_READ_SKIP.has(ktext)) continue
+              if (this.sameNode(kk.n, recvNode)) {
+                // Receiver position: self/super are implicit, never reads.
+                if (ktext === "self" || ktext === "super") continue
+              }
+              if (isBoundValue(ktext, nextOwner)) {
+                relationships.push({
+                  source: activeScope,
+                  target: ktext,
+                  type: ASTEngine.RelationshipType.Uses,
+                  confidence: 0.9,
+                  metadata: { isBareRead: true, isMessageArgument: !this.sameNode(kk.n, recvNode) },
+                })
+              }
+            }
+          }
+       }
       else if (node.type === "call_expression") {
         const funcNode = this.findChild(node, (n) => n.type === "identifier")
         if (funcNode && activeScope !== "global" && isInBody) {
@@ -360,6 +673,48 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+      // 8c. Bare-identifier VALUE reads (OC-E, managed-OO family contract).
+      // A bare identifier in a body is a read when it names a bound value
+      // (parameter, body local, same-file ivar/property, file global).
+      // Everything else is a name, not a read: declarations (declarator
+      // names via isDeclaratorName, direct declaration children, parameter
+      // and method keywords), message parts (handled in the send branch
+      // above), call callees (CGD17 parity — the callee is a call, not a
+      // read), assignment-LHS writes (span-matched like the C analyzer),
+      // for-in loop variables, @synthesize/@selector names, and the implicit
+      // / constant spellings (self/super/nil/YES/NO/_cmd).
+      else if (node.type === "identifier" && nextBindable && activeScope !== "global") {
+        const text = node.text.trim()
+        if (text && !BARE_READ_SKIP.has(text)) {
+          const parent = node.parent
+          const ptype = parent ? parent.type : ""
+          let isName = false
+          if (ptype === "method_declaration" || ptype === "method_definition" ||
+              ptype === "method_parameter" || ptype === "parameter_declaration" ||
+              ptype === "property_implementation" || ptype === "selector_expression" ||
+              ptype === "function_declarator" || ptype === "message_expression" ||
+              ptype === "declaration") {
+            isName = true
+          } else if (ptype === "call_expression" && parent && parent.namedChild(0) && this.sameNode(parent.namedChild(0)!, node)) {
+            isName = true
+          } else if (ptype === "assignment_expression" && parent && parent.namedChild(0) && this.spanContains(parent.namedChild(0)!, node)) {
+            isName = true
+          } else if (ptype === "for_statement" && parent && this.isForInVariable(parent, node)) {
+            isName = true
+          } else if (this.isDeclaratorName(node)) {
+            isName = true
+          }
+          if (!isName && isBoundValue(text, nextOwner)) {
+            relationships.push({
+              source: activeScope,
+              target: text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { isBareRead: true },
+            })
+          }
+        }
+      }
 
       // Law 2: Absolute Zero array bridge. Bounds checked loops only.
       // A method/function/block node starts a real body: its children (and
@@ -368,10 +723,15 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // sends and calls there are macro/declaration artifacts, never edges.
       const childCount = node.namedChildCount
       nextIsInBody = nextIsInBody || node.type === "method_definition" || node.type === "method_declaration" || node.type === "function_definition" || node.type === "block_literal"
+      // OC-E: block exit markers are pushed FIRST so they pop AFTER all
+      // children (LIFO) and close the block's value frame.
+      if (node.type === "block_literal" && nextBindable) {
+        walkStack.push({ node, isExit: true, activeScope: nextActiveScope, parentType: node.type, isInBody: nextIsInBody, owner: nextOwner, bindable: nextBindable })
+      }
       for (let i = childCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-           walkStack.push({ node: child, isExit: false, activeScope: nextActiveScope, parentType: node.type, isInBody: nextIsInBody })
+           walkStack.push({ node: child, isExit: false, activeScope: nextActiveScope, parentType: node.type, isInBody: nextIsInBody, owner: nextOwner, bindable: nextBindable })
         }
       }
     }
@@ -392,10 +752,23 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Dedup key includes the relationship TYPE — two distinct facts with the
     // same (source, target) pair (e.g. calls vs instantiates for `[Foo alloc]`)
-    // must never collapse into one.
+    // must never collapse into one. When same-key uses edges merge, the
+    // read-kind flags union: a name read BOTH as a member (`self.x`) and as
+    // a bare value (`x`) was genuinely read both ways (OC-E fixture pins
+    // the field-read mark on such merges).
     const uniqueRelMap = new Map<string, ASTEngine.UniversalRelationship>()
     for (let i = 0; i < relationships.length; i++) {
-        uniqueRelMap.set(`${relationships[i].type}|${relationships[i].source}->${relationships[i].target}`, relationships[i])
+        const rk = `${relationships[i].type}|${relationships[i].source}->${relationships[i].target}`
+        const prev = uniqueRelMap.get(rk)
+        if (prev) {
+          const pm: any = prev.metadata ?? {}
+          const nm: any = relationships[i].metadata ?? {}
+          if (nm.isFieldRead) pm.isFieldRead = true
+          if (nm.isBareRead) pm.isBareRead = true
+          prev.metadata = pm
+        } else {
+          uniqueRelMap.set(rk, relationships[i])
+        }
     }
     const uniqueRelationships = Array.from(uniqueRelMap.values())
     const relKeySet = new Set(uniqueRelMap.keys())
@@ -509,7 +882,12 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const seenExportNames = new Set<string>()
       for (let i = 0; i < uniqueSymbols.length; i++) {
         const s = uniqueSymbols[i]
+        // OC-B: categories are not top-level resolvable units (swift
+        // precedent: extension symbols exist but never export) — exporting
+        // `@interface NSString (Trim)` as "NSString" claims the class is
+        // defined here.
         if (s.ownerName) continue
+        if (s.kind === ASTEngine.SymbolKind.Extension) continue
         if (seenExportNames.has(s.name)) continue
         seenExportNames.add(s.name)
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
@@ -588,10 +966,111 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return complexity
   }
 
+  /**
+   * OC-E helpers: bare-identifier read classification. web-tree-sitter
+   * returns fresh wrappers per accessor call, so node identity is compared
+   * by span (start/end offsets), never by reference.
+   */
+  private sameNode(a: Node | null, b: Node | null): boolean {
+    if (!a || !b) return false
+    return a.startIndex === b.startIndex && a.endIndex === b.endIndex
+  }
+  private spanContains(outer: Node | null, inner: Node | null): boolean {
+    if (!outer || !inner) return false
+    return outer.startIndex <= inner.startIndex && outer.endIndex >= inner.endIndex
+  }
+  /**
+   * True when the identifier is the DECLARED name of an init_declarator
+   * (`int y = ...`, `int arr[10] = ...`, `Counter g = ...`): climb through
+   * name-wrapping declarators (array/pointer/parenthesized); the name is
+   * the declarator subtree under the init_declarator's FIRST named child.
+   * Initializer values live outside that subtree and stay reads.
+   */
+  private isDeclaratorName(node: Node): boolean {
+    const wrappers = new Set(["array_declarator", "pointer_declarator", "parenthesized_declarator", "attributed_declarator", "abstract_pointer_declarator", "block_pointer_declarator", "function_declarator"])
+    let cur: Node | null = node
+    let p: Node | null = node.parent ?? null
+    while (p && wrappers.has(p.type) && cur) {
+      cur = p
+      p = p.parent ?? null
+    }
+    if (!p || p.type !== "init_declarator" || !cur) return false
+    const head = p.namedChild(0)
+    return !!head && this.spanContains(head, cur)
+  }
+  /**
+   * True when the identifier is a for-in loop variable
+   * (`for (id x in items)`): the named sibling directly preceding the
+   * anonymous `in` token.
+   */
+  private isForInVariable(forNode: Node, node: Node): boolean {
+    const cc = forNode.childCount
+    for (let i = 0; i < cc; i++) {
+      const c = forNode.child(i)
+      if (c && !c.isNamed && c.type === "in" && i > 0) {
+        for (let j = i - 1; j >= 0; j--) {
+          const pc = forNode.child(j)
+          if (pc && pc.isNamed) return this.sameNode(pc, node)
+        }
+        return false
+      }
+    }
+    return false
+  }
+  /**
+   * The bound name declared by an init_declarator, method_parameter, or
+   * parameter_declaration: the declarator identifier (through wrappers for
+   * arrays/pointers; first document-order identifier for parameters, where
+   * type names are type_identifier and `id` is a typedefed_specifier).
+   */
+  private declaratorName(node: Node): string | null {
+    if (node.type === "init_declarator") {
+      const head = node.namedChild(0)
+      if (!head) return null
+      const stack: Node[] = [head]
+      while (stack.length > 0) {
+        const c = stack.pop()!
+        if (c.type === "identifier") return c.text
+        for (let i = c.namedChildCount - 1; i >= 0; i--) {
+          const ch = c.namedChild(i)
+          if (ch) stack.push(ch)
+        }
+      }
+      return null
+    }
+    const direct = this.findChild(node, (n) => n.type === "identifier")
+    if (direct) return direct.text
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === "identifier") return c.text
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const ch = c.namedChild(i)
+        if (ch) stack.push(ch)
+      }
+    }
+    return null
+  }
+
+  /**
+   * OC-D: the typedef alias naming an anonymous aggregate
+   * (`typedef struct {...} Size` -> "Size"): the LAST type_identifier
+   * child directly under the enclosing type_definition.
+   */
+  private typedefName(node: Node): string | null {
+    const p = node.parent
+    if (!p || p.type !== "type_definition") return null
+    let alias: Node | null = null
+    for (let i = 0; i < p.namedChildCount; i++) {
+      const c = p.namedChild(i)
+      if (c && (c.type === "type_identifier" || c.type === "identifier")) alias = c
+    }
+    return alias ? alias.text : null
+  }
+
   // Walk struct_declaration → struct_declarator → (pointer/reference) →
   // identifier to find the declared property/ivar name.
-  private findDeclaredName(node: Node): string | null {
-    const walkForIdentifier = (n: Node | null): Node | null => {
+  private findDeclaredName(node: Node): string | null {    const walkForIdentifier = (n: Node | null): Node | null => {
       if (!n) return null
       if (n.type === "identifier") return n
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -715,6 +1194,21 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < count; i++) {
         const child = node.namedChild(i)
         if (child && predicate(child)) return child
+    }
+    return null
+  }
+
+  // Deep pre-order variant of findChild (first document-order match in the
+  // subtree, including the node itself).
+  private deepFind(node: Node, predicate: (n: Node) => boolean): Node | null {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (predicate(c)) return c
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const ch = c.namedChild(i)
+        if (ch) stack.push(ch)
+      }
     }
     return null
   }

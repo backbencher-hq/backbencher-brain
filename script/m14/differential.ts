@@ -3160,6 +3160,139 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
   }
   const isRootBase = (name: string) => name === "NSObject" || name === "NSProxy"
+  // OC-E oracle mirror: bare-identifier value reads. Mirrors the analyzer's
+  // scope inventory exactly — per-definition value frames (+ block chain),
+  // same-file class ivar/property pre-scan, file-scope globals, and the
+  // identical name-vs-read skip battery (span-compared, never reference
+  // identity). Unbound names stay silent on both sides.
+  const objcBareSkip = new Set(["self", "super", "nil", "Nil", "NULL", "YES", "NO", "true", "false", "_cmd"])
+  const objcSame = (a: any, b: any): boolean => !!a && !!b && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+  const objcSpanIn = (outer: any, inner: any): boolean => !!outer && !!inner && outer.startIndex <= inner.startIndex && outer.endIndex >= inner.endIndex
+  const objcDeclaredName = (mnode: any): string | null => {
+    const firstId = (n: any): any => {
+      if (!n) return null
+      if (n.type === "identifier") return n
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const f = firstId(n.namedChild(i))
+        if (f) return f
+      }
+      return null
+    }
+    const idNode = firstId(mnode)
+    if (!idNode) return null
+    const findT = (n: any, pred: (x: any) => boolean): any => {
+      if (pred(n)) return n
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const f = findT(n.namedChild(i), pred)
+        if (f) return f
+      }
+      return null
+    }
+    const structDecl = findT(mnode, (n: any) => n.type === "struct_declaration")
+    if (structDecl) {
+      const sd = findT(structDecl, (n: any) => n.type === "struct_declarator")
+      if (sd) {
+        const deep = firstId(sd)
+        if (deep) return deep.text
+      }
+    }
+    return idNode.text
+  }
+  const objcDeclaratorName = (dnode: any): string | null => {
+    // Mirrors the analyzer's declaratorName exactly: init_declarators
+    // search the head declarator subtree; parameters prefer the DIRECT
+    // identifier child (a block-pointer parameter's inner type names must
+    // not win over the parameter name).
+    if (dnode.type !== "init_declarator") {
+      const direct = dnode.namedChildren.find((c: any) => c.type === "identifier")
+      if (direct) return direct.text
+    }
+    const kids: any[] = dnode.type === "init_declarator" && dnode.namedChild(0) ? [dnode.namedChild(0)] : [dnode]
+    const stack: any[] = [...kids]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (!c) continue
+      if (c.type === "identifier") return c.text
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const ch = c.namedChild(i)
+        if (ch) stack.push(ch)
+      }
+    }
+    return null
+  }
+  const objcIsDeclaratorName = (inode: any): boolean => {
+    const wrappers = new Set(["array_declarator", "pointer_declarator", "parenthesized_declarator", "attributed_declarator", "abstract_pointer_declarator", "block_pointer_declarator", "function_declarator"])
+    let cur: any = inode
+    let p: any = inode.parent ?? null
+    while (p && wrappers.has(p.type) && cur) { cur = p; p = p.parent ?? null }
+    if (!p || p.type !== "init_declarator" || !cur) return false
+    return objcSpanIn(p.namedChild(0), cur)
+  }
+  const objcIsForInVar = (forNode: any, inode: any): boolean => {
+    for (let i = 0; i < forNode.childCount; i++) {
+      const c = forNode.child(i)
+      if (c && !c.isNamed && c.type === "in" && i > 0) {
+        for (let j = i - 1; j >= 0; j--) {
+          const pc = forNode.child(j)
+          if (pc && pc.isNamed) return objcSame(pc, inode)
+        }
+        return false
+      }
+    }
+    return false
+  }
+  const objcClassMembers = new Map<string, Set<string>>()
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const pn = pre.pop()!
+      if (!pn) continue
+      if (pn.type === "class_interface" || pn.type === "class_implementation") {
+        const cn = pn.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
+        if (cn) {
+          let members = objcClassMembers.get(cn.text)
+          if (!members) { members = new Set<string>(); objcClassMembers.set(cn.text, members) }
+          const ms: any[] = [pn]
+          while (ms.length > 0) {
+            const mn = ms.pop()!
+            if (!mn) continue
+            if (mn !== pn && (mn.type === "class_interface" || mn.type === "class_implementation" || mn.type === "protocol_declaration")) continue
+            if (mn.type === "property_declaration" || mn.type === "instance_variable") {
+              const mname = objcDeclaredName(mn)
+              if (mname) members!.add(mname)
+            }
+            for (let i = mn.namedChildCount - 1; i >= 0; i--) {
+              const mc = mn.namedChild(i)
+              if (mc) ms.push(mc)
+            }
+          }
+        }
+      }
+      for (let i = pn.namedChildCount - 1; i >= 0; i--) {
+        const pc = pn.namedChild(i)
+        if (pc) pre.push(pc)
+      }
+    }
+  }
+  let objcFrame: Set<string> | null = null
+  const objcBlockFrames: Array<Set<string>> = []
+  const objcGlobals = new Set<string>()
+  const objcBind = (name: string): void => {
+    if (!name) return
+    if (objcBlockFrames.length > 0) objcBlockFrames[objcBlockFrames.length - 1].add(name)
+    else if (objcFrame) objcFrame.add(name)
+    else objcGlobals.add(name)
+  }
+  const objcBound = (name: string, owner: string): boolean => {
+    for (let i = objcBlockFrames.length - 1; i >= 0; i--) {
+      if (objcBlockFrames[i].has(name)) return true
+    }
+    if (objcFrame && objcFrame.has(name)) return true
+    const cm = objcClassMembers.get(owner)
+    if (cm && cm.has(name)) return true
+    if (objcGlobals.has(name)) return true
+    return false
+  }
   // OBJCD8 oracle mirror: collect in-file class superclass clauses + full
   // selectors per class (interface/implementation both contribute; a Set
   // dedups the same selector declared in @interface and defined in
@@ -3270,11 +3403,25 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
   }
 
   // Walk with an inBody flag: calls/instantiates only inside method/function
-  // bodies (mirrors the analyzer's activeScope !== "global" guard).
-  const stack: any[] = [{ n: root, inBody: false, parentType: "" }]
+  // bodies (mirrors the analyzer's activeScope !== "global" guard). OC-E
+  // threads the analyzer's scope model too (scope ~ activeScope, owner,
+  // bindable) plus block exit markers, so bare-read binds and reads land
+  // identically on both sides.
+  const stack: any[] = [{ n: root, inBody: false, parentType: "", scope: "global", owner: "", bindable: false }]
   while (stack.length > 0) {
-    const { n, inBody, parentType } = stack.pop()!
+    const { n, inBody, parentType, scope, owner, bindable, exitBlock } = stack.pop()!
+    if (exitBlock) { objcBlockFrames.pop(); continue }
     const t = n.type
+    let childScope = scope
+    let childOwner = owner
+    let childBindable = bindable
+    if (t === "method_definition" || t === "function_definition") {
+      objcFrame = new Set<string>()
+      childBindable = true
+      if (t === "function_definition") { childOwner = ""; childScope = "fn" }
+      else { const sel = fullMethodSelector(n); if (sel) childScope = sel }
+    }
+    if (t === "block_literal" && childBindable) objcBlockFrames.push(new Set<string>())
     if (t === "class_interface" || t === "class_implementation") {
       // Category detection: an anonymous `(` child (like swift's actor via
       // keyword token). Categories emit Extension symbols, no inheritance.
@@ -3283,6 +3430,10 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
         const c = n.child(i)
         if (c && !c.isNamed && c.type === "(") { isCategory = true; break }
       }
+      // OC-E: the class name scopes reads (categories resolve to the
+      // extended class, mirroring the analyzer).
+      const clsNameNode = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
+      if (clsNameNode) { childScope = clsNameNode.text; childOwner = clsNameNode.text }
       if (!isCategory) {
         let foundName = false
         let superName: string | null = null
@@ -3340,8 +3491,7 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
         push("uses", field.text)
       }
     }
-    if (t === "message_expression" && inBody) {
-      // OBJCD7: full selector (mirrors the analyzer) — a keyword is an
+    if (t === "message_expression" && inBody) {      // OBJCD7: full selector (mirrors the analyzer) — a keyword is an
       // identifier whose next child is an anonymous ':'; zero-arg messages
       // fall back to the last identifier. alloc/new -> instantiates the
       // receiver leaf (first keyword check); nested [[Foo alloc] ...]
@@ -3368,6 +3518,35 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
           push("calls", msgSel)
         }
       }
+      // OC-E bare reads inside the send (mirrors the analyzer): receiver +
+      // arguments; keywords and the keyword-less zero-arg selector are
+      // names. Gated on scope like the analyzer (activeScope !== global).
+      if (t === "message_expression" && inBody && scope !== "global") {
+        const kids: Array<{ n: any; isKeyword: boolean }> = []
+        for (let mi = 0; mi < n.childCount; mi++) {
+          const mc = n.child(mi)
+          if (!mc || !mc.isNamed || mc.type !== "identifier") continue
+          const nxt = mi + 1 < n.childCount ? n.child(mi + 1) : null
+          kids.push({ n: mc, isKeyword: !!(nxt && !nxt.isNamed && nxt.type === ":") })
+        }
+        const recvNode = n.namedChild(0)
+        const hasKw = kids.some((k) => k.isKeyword)
+        let lastNonRecv = -1
+        if (!hasKw) {
+          for (let ki = kids.length - 1; ki >= 0; ki--) {
+            if (!objcSame(kids[ki].n, recvNode)) { lastNonRecv = ki; break }
+          }
+        }
+        for (let ki = 0; ki < kids.length; ki++) {
+          const kk = kids[ki]
+          if (kk.isKeyword || ki === lastNonRecv) continue
+          const ktext = String(kk.n.text).trim()
+          if (!ktext || objcBareSkip.has(ktext)) continue
+          const isRecv = objcSame(kk.n, recvNode)
+          if (isRecv && (ktext === "self" || ktext === "super")) continue
+          if (objcBound(ktext, owner)) push("uses", ktext)
+        }
+      }
     }
     if (t === "call_expression" && inBody) {
       const fn = n.namedChildren.find((c: any) => c.type === "identifier")
@@ -3391,10 +3570,88 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
       }
       if (modName) push("references", modName)
     }
+    // OC-E binding sites (mirror the analyzer's bindable-gated binds).
+    if (bindable) {
+      if (t === "declaration") {
+        for (let di = 0; di < n.namedChildCount; di++) {
+          const dc = n.namedChild(di)
+          if (!dc) continue
+          if (dc.type === "init_declarator" || dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+              dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
+            const dname = objcDeclaratorName(dc)
+            if (dname) objcBind(dname)
+          } else if (dc.type === "identifier") {
+            objcBind(dc.text)
+          }
+        }
+      } else if (t === "method_parameter" || t === "parameter_declaration") {
+        const pname = objcDeclaratorName(n)
+        if (pname) objcBind(pname)
+      } else if (t === "for_statement") {
+        for (let fi = 0; fi < n.childCount; fi++) {
+          const fc = n.child(fi)
+          if (fc && !fc.isNamed && fc.type === "in" && fi > 0) {
+            for (let fj = fi - 1; fj >= 0; fj--) {
+              const pc = n.child(fj)
+              if (pc && pc.isNamed) {
+                if (pc.type === "identifier") objcBind(pc.text)
+                break
+              }
+            }
+            break
+          }
+        }
+      }
+    }
+    if (t === "declaration" && scope === "global") {
+      // File-scope names are resolvable read targets (mirrors the
+      // analyzer's globals set).
+      for (let di = 0; di < n.namedChildCount; di++) {
+        const dc = n.namedChild(di)
+        if (!dc) continue
+        if (dc.type === "init_declarator" || dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+            dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
+          const dname = objcDeclaratorName(dc)
+          if (dname) objcGlobals.add(dname)
+        } else if (dc.type === "identifier") {
+          objcGlobals.add(dc.text)
+        }
+      }
+    }
+    // OC-E bare-identifier reads (mirrors the analyzer's 8c rule exactly:
+    // same parent-type skips, span-compared positions, same inventory).
+    if (t === "identifier" && bindable && scope !== "global") {
+      const text = String(n.text).trim()
+      if (text && !objcBareSkip.has(text)) {
+        const parent = n.parent
+        const ptype = parent ? parent.type : ""
+        let isName = false
+        if (ptype === "method_declaration" || ptype === "method_definition" ||
+            ptype === "method_parameter" || ptype === "parameter_declaration" ||
+            ptype === "property_implementation" || ptype === "selector_expression" ||
+            ptype === "function_declarator" || ptype === "message_expression" ||
+            ptype === "declaration") {
+          isName = true
+        } else if (ptype === "call_expression" && parent && objcSame(parent.namedChild(0), n)) {
+          isName = true
+        } else if (ptype === "assignment_expression" && parent && objcSpanIn(parent.namedChild(0), n)) {
+          isName = true
+        } else if (ptype === "for_statement" && parent && objcIsForInVar(parent, n)) {
+          isName = true
+        } else if (objcIsDeclaratorName(n)) {
+          isName = true
+        }
+        if (!isName && objcBound(text, owner)) push("uses", text)
+      }
+    }
     const nextBody = inBody || t === "method_definition" || t === "method_declaration" || t === "function_definition"
+    // OC-E: block exit markers pop the block frame after its children.
+    if (t === "block_literal" && childBindable) {
+      stack.push({ n: null, inBody: nextBody, parentType: t, scope: childScope, owner: childOwner, bindable: childBindable, exitBlock: true })
+    }
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
-      if (c) stack.push({ n: c, inBody: nextBody, parentType: t })
+      if (c) stack.push({ n: c, inBody: nextBody, parentType: t, scope: childScope, owner: childOwner, bindable: childBindable })
     }
   }
   return edges
