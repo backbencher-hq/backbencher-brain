@@ -9,6 +9,7 @@
     "GO": ["go"],
     "J": ["javascript"],
     "K": ["kotlin"],
+    "OC": ["objc"],
     "R": ["scaffold"],
     "RB": ["ruby"],
     "RS": ["rust"],
