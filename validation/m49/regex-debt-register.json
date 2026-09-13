@@ -86,19 +86,19 @@
     },
     {
       "file": "real-cpp-analyzer.ts",
-      "line": 718,
+      "line": 786,
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained]"
     },
     {
       "file": "real-cpp-analyzer.ts",
-      "line": 736,
+      "line": 804,
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained]"
     },
     {
       "file": "real-rust-analyzer.ts",
