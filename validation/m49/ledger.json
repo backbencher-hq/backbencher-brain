@@ -197,6 +197,15 @@
         "evidenceFile": "reviews/ruby/second-review.md",
         "verifiedAtCommit": "399e4a02"
     }
+,
+    {
+        "id": "OC1",
+        "title": "ObjC first review wave (issue #815): OC-B category exports, OC-D C type inventory, OC-E bare value reads, OC-R1 update operands, OC-R2 synthesize/selector",
+        "status": "verified",
+        "notes": "Full analyzer re-read + hostile battery + shape dumps + C-parity probes + fresh lanes; oracle mirror in deriveObjcEdges. Fully gated: fixture objc/bare-value-reads (new), 7 mutants, spec OC-B/OC-D/OC-E/OC-R1/OC-R2. Lanes: sdwebimage + afnetworking, pinned + 5 rotations, 0/0. F3 all pass, F4 500/500, R1 98/98, R2 15/15.",
+        "evidenceFile": "reviews/objc/first-review.md",
+        "verifiedAtCommit": "630a3660"
+    }
   ],
   "waves": [
     {
