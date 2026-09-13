@@ -2583,6 +2583,30 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         }
       }
     } else if (n.type === "invocation_expression") {
+      // CS-P1 mirror: positional-pattern heads parse as invocations inside
+      // pattern contexts (trailing `&&` misparses inside constant_pattern,
+      // so direct-parent checks miss — bounded climb like the analyzer).
+      let inPattern = false
+      {
+        let q: any = n.parent
+        while (q) {
+          const t: string = q.type
+          if (t === "constant_pattern" || t === "is_pattern_expression") { inPattern = true; break }
+          if (
+            t === "invocation_expression" ||
+            t.includes("statement") || t.includes("declaration") ||
+            t.includes("block") || t.includes("function") ||
+            t === "lambda_expression" || t === "local_function_statement" ||
+            t === "query_expression" || t === "method_declaration" ||
+            t === "constructor_declaration"
+          ) break
+          q = q.parent
+        }
+      }
+      if (inPattern) {
+        for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
+        continue
+      }
       const fn = n.childForFieldName?.("function")
       if (fn) {
         let leaf = ""
@@ -2622,7 +2646,7 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         // `if (...)` as an invocation_expression, and unsafe vtable dispatch can
         // slot pointer indexes / element-addresses as the callee. A real target
         // is a clean, non-keyword identifier.
-        const isKeyword = /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set)$/.test(leaf)
+        const isKeyword = /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set|nameof)$/.test(leaf)
         const key = "call:" + leaf
         if (leaf && !isKeyword && /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) && !isSuppressed && !seen.has(key)) {
           seen.add(key)
