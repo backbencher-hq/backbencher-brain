@@ -11,6 +11,7 @@ REPO=backbencher-hq/backbencher-brain
 say() { echo "$(date +%T) $*" >> "$LOG"; }
 
 ms_num=""
+LAST_STATE=""
 
 title_for() { # $1 = index
   sed -n "s/^## $1\. \(.*\) — RED.*$/\1/p" docs/convictions/foreign-reds.md | head -1
@@ -59,6 +60,9 @@ for round in $(seq 1 400); do
     say "ALL FILED (milestone $ms_num)"
     break
   fi
+  # compact progress line (only when the picture changes, to avoid proxy spam)
+  STATE="ms=${ms_num:-?} have=$done_count/4"
+  if [ "$STATE" != "$LAST_STATE" ]; then say "round $round: $STATE"; LAST_STATE="$STATE"; fi
   sleep 20
 done
 say "foreign-reds publisher exit"

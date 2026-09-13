@@ -46,27 +46,38 @@ const FOREIGN_REDS: Array<{ code: string; script: string; reason: string }> = [
 async function main() {
   let pass = 0
   let failed = 0
+  // M57 follow-up: capture each gate's output so a RED is diagnosable. On
+  // 2026-09-13 a single closure run reported M13.test-intel exit=1 with no
+  // reason recorded (spawnSync had swallowed its output); the next 7 runs were
+  // green. Without the tail, a flake and a real regression look identical.
+  let LAST_OUT = ""
   const run = (cmd: string, args: string[], env?: Record<string, string>) => {
     const r = spawnSync(cmd, args, { cwd: ROOT, encoding: "utf8", timeout: GATE_TIMEOUT, env: { ...process.env, ...env } })
+    LAST_OUT = `${r.stdout ?? ""}${r.stderr ?? ""}`
     return r.status ?? 1
+  }
+  const dumpFail = (label: string) => {
+    const lines = LAST_OUT.trimEnd().split("\n")
+    console.log(`  ---- ${label} output (last 25 lines) ----`)
+    for (const l of lines.slice(-25)) console.log(`  | ${l}`)
   }
 
   for (const g of SUBORDINATE) {
     const code = run("bun", ["run", path.join(ROOT, "script/m57", g.script)], g.env)
     if (code === 0) { pass++; console.log(`  ok subordinate ${g.code} (${g.script})`) }
-    else { failed++; console.log(`FAIL subordinate ${g.code} (${g.script}) exit=${code}`) }
+    else { failed++; console.log(`FAIL subordinate ${g.code} (${g.script}) exit=${code}`); dumpFail(g.code) }
   }
 
   for (const g of DOWNSTREAM) {
     const code = run("bun", ["run", g.script])
     if (code === 0) { pass++; console.log(`  ok downstream ${g.code}`) }
-    else { failed++; console.log(`FAIL downstream ${g.code} (${g.script}) exit=${code}`) }
+    else { failed++; console.log(`FAIL downstream ${g.code} (${g.script}) exit=${code}`); dumpFail(g.code) }
   }
 
   for (const g of FOREIGN_REDS) {
     const code = run("bun", ["run", g.script])
     if (code !== 0) { pass++; console.log(`  ok foreign-red ${g.code} fails as documented (${g.reason})`) }
-    else { failed++; console.log(`FAIL foreign-red ${g.code} now PASSES — the documented conviction no longer reproduces; re-examine before closing`) }
+    else { failed++; console.log(`FAIL foreign-red ${g.code} now PASSES — the documented conviction no longer reproduces; re-examine before closing`); dumpFail(g.code) }
   }
 
   // Receipt currency: every M57 gate receipt stamped at the CURRENT commit.
