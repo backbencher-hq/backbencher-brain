@@ -1,0 +1,29 @@
+{
+  "issue": "V1-component",
+  "code": "V1-action-args",
+  "milestone": "M55",
+  "title": "The hover actions' argument core (one entry point, one answer)",
+  "status": "verified",
+  "passed": 47,
+  "failed": 0,
+  "checks": 47,
+  "mutantsCaught": 7,
+  "mutantsTotal": 7,
+  "negatives": 23,
+  "currentCommit": "2142ad35f109d2442b188ed2615492c8735f76f7",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/src/hover-commands.ts",
+    "ide/vscode/src/hover-action-args.ts",
+    "script/m55/pixel-read.py",
+    "script/m55/screenshot-protocol.ts",
+    "script/m55/verify-action-args.ts",
+    "script/m55/verify-live-surface.ts",
+    "script/m55/wire-probe.ts"
+  ],
+  "foundBy": "the V1 rig's own frames (flows 4 and 5 captured the error toast: validation/m55/frames/live-6/4-open-in-graph.png, 5-impact.png)",
+  "owner": "ide/vscode/src/hover-action-args.ts (pure) + ide/vscode/src/hover-commands.ts (IO)",
+  "verifierCommand": "npx tsx script/m55/verify-action-args.ts",
+  "evidenceFile": "V1-action-args.json",
+  "generatedAt": "2026-09-13T19:13:24.865Z",
+  "failures": []
+}

@@ -8,7 +8,7 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 3,
-  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
+  "currentCommit": "377dea29d232a79f748395cc1c913970f4efb57d",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -110,6 +110,10 @@
         "caught": true
       },
       {
+        "name": "M1b empty-state dropped",
+        "caught": true
+      },
+      {
         "name": "M2 fabricated total",
         "caught": true
       },
@@ -173,5 +177,5 @@
       }
     ]
   },
-  "generatedAt": "2026-09-11T21:16:18.049Z"
+  "generatedAt": "2026-09-12T21:35:25.107Z"
 }

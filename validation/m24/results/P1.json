@@ -3,10 +3,10 @@
   "code": "P1",
   "milestone": "M24",
   "status": "verified",
-  "checks": 17,
-  "passed": 17,
+  "checks": 21,
+  "passed": 21,
   "failed": 0,
-  "negativeCases": 8,
+  "negativeCases": 11,
   "mutants": [
     {
       "name": "off-by-one line (indexToLsp)",
@@ -47,15 +47,31 @@
       "name": "line count drops phantom line",
       "caught": true,
       "detail": "caught: lineCount 3 (phantom) (got 2, want 3)"
+    },
+    {
+      "name": "row: byte 0 rejected again (the pre-M55 hole)",
+      "caught": true,
+      "detail": "caught: absolute offset 0 = the file's first declaration: want {\"line\":1,\"column\":1}, got null"
+    },
+    {
+      "name": "row: byte 0 accepted on any line (inconsistent rows invented)",
+      "caught": true,
+      "detail": "caught: byte 0 claimed on a line that is not line 1 (inconsistent row): want null, got {\"line\":2,\"column\":1}"
+    },
+    {
+      "name": "row: absolute column off by one",
+      "caught": true,
+      "detail": "caught: absolute offset inside a later line: want {\"line\":3,\"column\":1}, got {\"line\":3,\"column\":0}"
     }
   ],
-  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
-  "sourceFingerprint": "a46a5661517d88abc200a4fcd45e2de5eeb9f438054a01ada2f800a2d555e26a",
+  "currentCommit": "369eeea6fe6bc4add5b4a34dc425e0421c6e353c",
+  "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-11T21:22:26.860Z",
+  "generatedAt": "2026-09-13T18:11:23.972Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
+    "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
     "Tab-width treated as 1 UTF-16 unit (LSP standard); editor tab rendering is a client concern.",
     "Roundtrip property samples code-point boundaries, not every byte of multi-byte sequences."
   ]

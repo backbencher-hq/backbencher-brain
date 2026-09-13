@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
+  "currentCommit": "369eeea6fe6bc4add5b4a34dc425e0421c6e353c",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-11T21:16:08.333Z",
+  "generatedAt": "2026-09-13T18:09:21.213Z",
   "storedPairs": [
     {
       "source": "kotlin",
@@ -34,9 +34,23 @@
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
       "origin": "real project index"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "origin": "real project index"
     }
   ],
-  "realDbsScanned": 40,
+  "realDbsScanned": 41,
   "limitations": [
     "Launch launch-language pairs with no stored rows are declared absent (doc generated per scan).",
     "Coverage scan reads real project dbs read-only; unreadable dbs are skipped and counted in realDbsScanned."
