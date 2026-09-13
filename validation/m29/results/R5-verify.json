@@ -1,6 +1,6 @@
 {
   "status": "verified",
-  "passed": 19,
+  "passed": 20,
   "failed": 0,
   "negatives": {
     "planned": 4
@@ -11,9 +11,9 @@
     "mutantsTotal": 4,
     "ok": true
   },
-  "currentCommit": "0074c07da58462204726c8cd4ae91999bc2406a7",
+  "currentCommit": "369eeea6fe6bc4add5b4a34dc425e0421c6e353c",
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
   "evidenceFile": "R5-verify.json",
-  "generatedAt": "2026-09-11T21:21:06.812Z",
+  "generatedAt": "2026-09-13T18:09:34.872Z",
   "details": []
 }
