@@ -10,17 +10,17 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negatives": 0,
-  "currentCommit": "6f98d43955b26cca67b7a50bea417d8238b1bd70",
+  "currentCommit": "7e5154a1a2baa86627ae9df9b2427af4325736e4",
   "workingTreeRelevantChanges": [
-    "script/m55/verify-governance.ts",
-    "src/lsp/call_hierarchy.ts",
-    "src/lsp/hover.ts",
-    "script/m55/t4-fixture.ts",
-    "script/m55/verify-signatures.ts",
-    "src/lsp/signature.ts"
+    "ide/vscode/src/extension.ts",
+    "ide/vscode/src/graph-panel.ts",
+    "ide/vscode/src/panel-placement.ts",
+    "ide/vscode/src/status-markup.ts",
+    "ide/vscode/src/webview-dom.ts",
+    "script/m55/verify-status-panel.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-identity.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-09-13T17:08:08.338Z",
+  "generatedAt": "2026-09-13T19:22:59.194Z",
   "failures": []
 }

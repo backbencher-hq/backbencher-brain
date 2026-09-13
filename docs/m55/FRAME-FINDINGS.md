@@ -1,0 +1,225 @@
+# M55 frame findings — what the screenshots actually showed
+
+Every entry below was read off a real frame, not inferred from code. The frames
+come from the V1 rig (`script/m55/screenshot-protocol.ts`): it builds the VSIX,
+installs it into an isolated profile, launches VS Code on the declared fixture
+(`~/bb-demo-hub`, real index) on a virtual display, drives each declared flow,
+and writes the frames under `validation/m55/frames/<run>/` with a manifest.
+
+The frame paths named here are drift-gated: `script/m55/verify-live-surface.ts`
+fails if one of them does not exist.
+
+| Run | What it is |
+|---|---|
+| `filing-2026-09-12` | the hand-run rig's frames, from when the milestone was filed |
+| `live-6` | first rig-driven run: **pre-fix** — this is where F1 was found |
+| `live-7` | after the palette fix for `bb.openGraph` / `bb.openImpact` |
+| `live-8` | first status-surface attempt (taught F9: the frame was a *different* command's) |
+| `live-9` | `>`-prefixed palette drive (taught F9's second half: it ran "Toggle Panel Visibility") |
+| `live-10` | first real status surface (taught F11: "I1 — I1 — protocol-passed") |
+| `live-11` | current: F2 and F11 both fixed, read back by eye |
+
+Runs `live-1`..`live-5` were rig development (blocked legs, byte-identical
+frames) and were moved out of the tree to
+`/tmp/bb-shots/superseded-rig-runs` rather than deleted.
+
+---
+
+## F1 — the hover actions dead-ended on the palette · FIXED
+
+**Frames:** `validation/m55/frames/live-6/4-open-in-graph.png`,
+`validation/m55/frames/live-6/5-impact.png`
+
+Both show the workbench and, bottom-right, one error toast — not a panel:
+
+```
+bb_lsp: malformed bb.openGraph link (no symbol target).
+bb_lsp: malformed bb.openImpact link (no symbol target).
+```
+
+Cause: a palette / context-menu invocation passes **no arguments**, so all three
+symbol-scoped actions refused on the editor's own discovery surface. The
+declared rule (issue #652) forbids the client from guessing identity, so the fix
+asks the **server** for the identity at the cursor (the same `textDocument/hover`
+the editor's hover uses) and converges both entry points in one argument source
+(`ide/vscode/src/hover-action-args.ts`, pure).
+
+**Verdict:** fixed and gated — `script/m55/verify-action-args.ts` 47/47 with
+7/7 mutants (`validation/m55/results/V1-action-args.json`). Post-fix frames:
+`live-7/4-open-in-graph.png`, `live-7/5-impact.png`.
+
+## F2 — the status facts were collapsed into one line · FIXED
+
+**Frames:** `validation/m55/frames/live-7/7-status.png` (the defect),
+`validation/m55/frames/live-11/7-status.png` (the surface now)
+
+`validation/m55/frames/live-7/7-status.png` shows the entire visible result of
+the status flow as a single toast line:
+
+```
+launch: compiled dist (bundled) — $HOME/backbenc…
+```
+
+**Correction (honest record):** the first reading of this frame attributed it to
+`bbLsp.showStatusPanel`. It was not — it was
+`bbLsp.showServerStatus`, whose four facts (`launch:`, `server version:`,
+`version ok:`, `activation:`) went into one notification and collapsed to its
+first line. The *class* of defect is the same, and it was present in **both**
+commands, so both are fixed:
+
+- the facts `showStatusPanel` owns (server state, index phase, staleness,
+  activation budget, per-language levels, this file's level) now render on a real
+  panel — `ide/vscode/src/status-markup.ts` is the pure markup owner, the panel
+  reuses the ONE webview shell, the ONE placement helper and the ONE reuse key;
+- the facts `showServerStatus` owns are the surface's **server provenance**
+  section, and that command now opens the same surface — one surface, one place
+  to look, not two surfaces telling overlapping stories.
+
+**Verdict:** fixed and gated — `script/m55/verify-status-panel.ts` 42/42 with
+11/11 mutants (`validation/m55/results/V1-status-panel.json`), and the model's
+own gate (`script/m25/verify-status-surface.ts`) retargeted and re-verified
+32/32.
+
+## F3 — the impact surface renders no header at all · OPEN
+
+**Frames:** `validation/m55/frames/live-7/5-impact.png`,
+`validation/m55/frames/live-11/5-impact.png`
+
+The panel body starts directly with dependency rows
+(`main (src/app.ts)`, `greetAll (src/greeter.ts)`, `describe (src/report.ts)`)
+and ends with the legend. Reading `renderImpact` in `script/m26/graph-core.ts`
+confirms this is not clipping: **the renderer emits no header element**. The
+surface therefore does not state what it is showing — no root identity, no
+count, and no bound (the depth/budget the set was computed under). The
+truncation marker appears only when the set actually truncated, so a
+non-truncated set never states the bound it was complete within.
+
+Consequence: a reader cannot tell from the panel whether the list is complete.
+
+**Verdict:** open — belongs with the surface redesign (U2): a header law (root
+identity + declared counts + the bound) plus click affordances.
+
+## F4 — hub rows do not look clickable · OPEN
+
+**Frame:** `validation/m55/frames/live-11/4-open-in-graph.png`
+
+The Hub renders file groups and symbol rows with relationship chips
+(`calls ×1`, `⚙ enriched (consumer)`). It reads as a report: nothing says a row
+is a target — no link styling, no hover state, no cursor change, no chevron.
+The owner's own words when filing this milestone: "they just see text without
+knowing that these are clickable".
+
+**Verdict:** open — U2's first deliverable.
+
+## F5 — the legend competes with the data · OPEN
+
+**Frames:** `validation/m55/frames/live-11/4-open-in-graph.png`,
+`validation/m55/frames/live-11/5-impact.png`
+
+Both surfaces ship the full edge-tier legend, the enrichment key and the
+staleness key **inside the scrolling body, below the data**. In the impact panel
+(three rows of data) the legend is the majority of the surface, and with a long
+list the staleness key is pushed out of view.
+
+**Verdict:** open — U2 (declared, collapsible key; the staleness key belongs
+next to the staleness marker, not in a glossary).
+
+## F6 — the hover card can hide its own actions · OPEN (narrow)
+
+**Frame:** `validation/m55/frames/live-6/3-hover-call-site.png`
+
+The card is right about identity and vocabulary (see F8), but it scrolls and the
+**actions row is its last line** — at the call site the captured card clips just
+above it. The one row that is the point of the card should not be below the fold.
+
+**Verdict:** open — U2 (actions first, or pinned).
+
+## F7 — "3 callers · 2 callees" vs the listed rows · NEEDS A TRUTH ASSERTION
+
+**Frame:** `validation/m55/frames/live-11/4-open-in-graph.png`
+
+The header states `3 callers · 2 callees`; the by-file list shows five rows
+(`map`, `main`, `greet`, `greetAll`, `describe`). `hub-panel.ts` says the header
+counts are the **group** counts (§13.4, `callerGroups`/`calleeGroups`) and the
+list is a different grouping of the same rows — which may be exactly right. That
+is a claim for a machine assertion over a real index, not for a comment.
+
+**Verdict:** open — add the differential assertion to V1's in-editor gate.
+
+## F9 — what the palette actually matches (the rig was driving the wrong command) · FIXED
+
+**Probe frames:** the palette's match list after typing each spelling (kept in
+`/tmp/bb-shots/palette-probe/`; the finding is reproducible from the procedure
+below).
+
+Two runs captured a frame for a command the flow did not name:
+
+- typing the **title** `Backbencher: Show status` selected
+  `Backbencher: Show server status` first — so `live-8/7-status.png` shows
+  *that* command's output while the flow claimed the other (F2's correction);
+- typing **`>` + the id** (`>bbLsp.showStatusPanel`) was worse: the fuzzy
+  matcher ranked **`View: Toggle Panel Visibility`** first, so `live-9/7-status.png`
+  shows a toggled panel and an opened terminal.
+
+The bare id (`bbLsp.showStatusPanel`, no `>`) ranks our own command first,
+because the default palette mode fuzzy-matches the id too.
+
+**Verdict:** fixed — the rig drives every command flow by bare id, and the
+flow's own frame is the proof that the right command answered. (A title is not
+an identifier; a `>` is not a safety net.)
+
+## F10 — every palette title repeated its category · FIXED
+
+**Probe frame:** the palette listing, showing
+`Backbencher: Backbencher: Show status (evidence levels, staleness)`.
+
+All 8 contributed commands carry `"category": "Backbencher"` **and** a title
+that began with `Backbencher: `, so the palette read
+`Backbencher: Backbencher: …` — while `docs/m25/INSTALL.md` tells the user to run
+`Backbencher: Show status`. The docs were right and the manifest was wrong.
+
+**Verdict:** fixed — the 8 titles no longer repeat the category, so the palette
+reads exactly what the docs say. Gated by S5b in
+`script/m55/verify-status-panel.ts` (mutant M9).
+
+## F11 — the status surface stated each level twice · FIXED
+
+**Frame:** `validation/m55/frames/live-10/7-status.png` (the defect),
+`validation/m55/frames/live-11/7-status.png` (fixed)
+
+The first real status surface rendered the per-language table as
+`java  I1 — I1 — protocol-passed`: the level is a machine fact on the row
+(`data-level`) and it is also the first thing `description` says
+(`describeLevel()` renders `${level} — ${meaning}`). A fact stated twice reads
+as a broken surface.
+
+**Verdict:** fixed — the row renders the description once, keeping the level as
+the row's machine attribute. Gated by S1 in
+`script/m55/verify-status-panel.ts` (mutant M10).
+
+---
+
+## F8 — what the frames confirm as working · VERIFIED
+
+- **Hover identity is right at call sites** — `live-6/3-hover-call-site.png`
+  shows the card for `greet` while the cursor sits on `g.greet(name)` in
+  `report.ts`, with `3 usages (usage sites only; declaration and callees
+  excluded)`, the tier story, three usage rows and the actions row. (T1/T3/T4/T5)
+- **The Hub renders real data** — `live-11/4-open-in-graph.png`: file groups,
+  per-row relationship chips, the file-level exports note, the shared legend.
+  (T3/T5/P1)
+- **The native call hierarchy is a good surface** —
+  `live-7/6-call-hierarchy.png`: `Callers of 'greet'` with
+  `main function · calls · 1 call site`, `greetAll method · calls · 1 call site`,
+  `describe function · calls · 1 call site`, and inline source previews. (T2)
+- **Panels land as a tab in the current group and do not steal the cursor** —
+  `live-11/7-status.png` shows the Status tab open with the Hub and Impact tabs
+  kept and `greeter.ts` back on screen. (P1)
+- **The status surface states what it claims** — `live-11/7-status.png`:
+  `FACTS (EACH LINE STATES WHAT IT IS AND WHERE IT CAME FROM)` →
+  `server: running (0.3.0)`, `index: ready`, `active file: fresh (reindexed)`,
+  `activation: 117ms (declared budget 150ms)`, `this file (typescript): I1 —
+  protocol-passed`; then `SERVER PROVENANCE (WHICH BINARY IS ANSWERING, AND WHAT
+  STARTING IT COST)` with the launch path, version, version verdict and cost;
+  then `PER-LANGUAGE EVIDENCE LEVELS (DECLARED, DRIFT-GATED) — 7 LANGUAGE(S)`.
+  (Truth Rule 1)

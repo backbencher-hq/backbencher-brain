@@ -34,6 +34,12 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
 const SRC = path.join(EXT_ROOT, "src/status-model.ts")
 const EXT_TS = path.join(EXT_ROOT, "src/extension.ts")
+// M55.V1: the status SURFACE owner. The facts used to be assembled inline in
+// extension.ts and shown in a notification; they are now rendered by this pure
+// markup owner (script/m55/verify-status-panel.ts). G4's "the panel renders the
+// per-language evidence table" therefore reads BOTH: the extension feeds
+// perLanguage to the surface, and the surface owner renders the table.
+const STATUS_MARKUP = path.join(EXT_ROOT, "src/status-markup.ts")
 const TOOL_DOC = path.join(ROOT, "docs/m24/TOOL-DOC.md")
 const MANIFEST = JSON.parse(readFileSync(path.join(EXT_ROOT, "package.json"), "utf8")) as {
   contributes?: { commands?: Array<{ command: string }> }
@@ -154,7 +160,11 @@ try {
     const cmds = MANIFEST.contributes?.commands?.map((c) => c.command) ?? []
     check("G4: both commands declared in the manifest", cmds.includes("bbLsp.showStatusPanel") && cmds.includes("bbLsp.indexNow"), cmds.join(","))
     check("G4: staleness fallback on declared absence renders UNKNOWN (never fresh)", extSource.includes("bb/staleness") && extSource.includes('status: "unknown"') && extSource.includes("transport failure"))
-    check("G4: panel renders the per-language evidence table", extSource.includes("perLanguage") && extSource.includes("evidence levels"))
+    const surfaceSource = readFileSync(STATUS_MARKUP, "utf8")
+    check(
+      "G4: panel renders the per-language evidence table (extension feeds it, the surface owner renders it)",
+      extSource.includes("perLanguage: view.perLanguage") && surfaceSource.includes("per-language evidence levels"),
+    )
   }
 
   // --- G5: render capture (log evidence) ------------------------------------

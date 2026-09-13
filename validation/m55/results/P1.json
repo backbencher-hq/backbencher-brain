@@ -12,14 +12,17 @@
   "negatives": 0,
   "currentHost": "linux",
   "focusLeg": "pending — column count + active editor are asserted in-editor by V1's rig (closure requirement)",
-  "currentCommit": "c7c993e5727bb87f350bb8679da2b9d5b151c5ff",
+  "currentCommit": "7e5154a1a2baa86627ae9df9b2427af4325736e4",
   "workingTreeRelevantChanges": [
-    "script/m55/verify-governance.ts",
-    "script/m55/t3-fixture.ts",
-    "script/m55/verify-relations.ts"
+    "ide/vscode/src/extension.ts",
+    "ide/vscode/src/graph-panel.ts",
+    "ide/vscode/src/panel-placement.ts",
+    "ide/vscode/src/status-markup.ts",
+    "ide/vscode/src/webview-dom.ts",
+    "script/m55/verify-status-panel.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-13T16:57:08.467Z",
+  "generatedAt": "2026-09-13T19:22:50.476Z",
   "failures": []
 }
