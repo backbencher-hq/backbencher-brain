@@ -279,31 +279,40 @@ the row's machine attribute. Gated by S1 in
 
 T2's closure requirement reads: *"in-editor leg: the native Call hierarchy view
 opened from a hover shows the expected callers and clicking one lands on the CALL
-SITE with the correct symbol highlighted (frame + machine assertion)"*. Three
+SITE with the correct symbol highlighted (frame + machine assertion)"*. Four
 attempts, recorded in full because the negative results are what the next attempt
 needs:
 
 | Attempt | Driver | Result |
 |---|---|---|
 | `live-13` (removed) | `Down` + `Return` on the keyboard | the keys never reached the tree: no call-hierarchy view in the frame, cursor still on `greeter.ts:15` |
-| **`live-17` / `live-19` (KEPT)** | a real **mouse click** on the caller row, then `Return` | **navigated**: the editor opens `app.ts` with `main` **selected** (`Ln 6, Col 21 — 4 selected`), i.e. the caller the row named, with the correct symbol highlighted |
+| **`live-20` (KEPT)** | a real **mouse click** on the caller row FOUND in a scratch frame, then `Return` | **navigated**: the editor opens `app.ts` with `main` **selected** (`Ln 6, Col 21 — 4 selected`), i.e. the caller the row named, with the correct symbol highlighted |
+| `live-17` / `live-19` (dropped) | the same click followed by `Right`, `Down`, `Return` | **flaky, and one of the two results was a lie the gate then accepted** (see F14): `live-17` navigated, `live-19` did NOT — there the click had not taken the row selection, so the keys went to the EDITOR (a newline in `greeter.ts`, dirty dot, cursor on line 15). The two extra keys bought nothing and could damage the file, so the gesture is now the click plus the single activation key |
 | `live-18` / `live-19` (removed) | click the caller, `Right` to expand, `Down` onto its call-site child, `Return` | the rig's own "did the workbench change?" check refused the frame twice — re-issuing the call-hierarchy command in a following flow produced no state change, so there was no frame to read |
 
 **The click coordinate is FOUND, not frozen.** The first mouse attempt
 (`live-15`) froze a y-coordinate measured from an earlier run and clicked the
 tree's **root** row: the tab strip's height shifts the tree by ~30 px between
 runs. The rig now captures a scratch frame, reads the region's text rows with a
-new `rows` subcommand of `script/m55/pixel-read.py`, and clicks the row it found
+`rows` subcommand of `script/m55/pixel-read.py`, and clicks the row it found
 (and refuses — with a reason — when the row is not there).
+
+**The rig now refuses to record a frame that did not navigate**, and the gate
+refuses to pass one: the shared rule in `script/m55/navigation.ts` (a navigation
+changes the editor's TOP lines; a cursor move is confined to a band) is applied
+by the rig BEFORE the frame is written and by V1's R2 afterwards, so the two can
+never disagree about what a frame proves.
 
 **What is proven at this HEAD:**
 
 - the native Call hierarchy renders the expected callers for `greet`
-  (`validation/m55/frames/live-19/6-call-hierarchy.png`: `main function · calls · 1
+  (`validation/m55/frames/live-20/6-call-hierarchy.png`: `main function · calls · 1
   call site`, `greetAll …`, `describe …`), and
 - clicking one navigates the editor to that caller with the correct symbol
-  selected (`validation/m55/frames/live-19/11-call-hierarchy-click.png`), gated by
-  V1's R2 (the editor region must change while the surface stays a call hierarchy);
+  selected (`validation/m55/frames/live-20/11-call-hierarchy-click.png`), gated by
+  V1's R2 (the editor's top lines must change — the run's own measured box is
+  `y=0, height=288`, inside the declared `≤40 / ≥120 px` rule, and the rig's
+  pre-click scratch frame is the baseline the diff is taken against);
 - the CALL SITES themselves are machine-asserted in
   `script/m55/verify-call-hierarchy.ts`: every `fromRange` the server returns
   resolves to the **invocation token** in the source bytes, and the view's inline
@@ -319,6 +328,39 @@ rather than smoothed over.
 driven in the SAME flow that opens the view (the rig's change check refuses a
 frame when a repeated command changes nothing), or a window manager so the view
 keeps focus between flows.
+
+## F14 — the gate accepted a frame that never navigated · FIXED (asserted, not softened)
+
+Found by reading `live-17/11-call-hierarchy-click.png` and
+`live-19/11-call-hierarchy-click.png` **side by side** after the ledger claimed
+the click leg was gated:
+
+| Frame | What it shows | V1's R2 said |
+|---|---|---|
+| `validation/m55/frames/live-17/11-call-hierarchy-click.png` | `app.ts` open, `main` selected — the navigation | pass (correct) |
+| `validation/m55/frames/live-19/11-call-hierarchy-click.png` | `greeter.ts` still open, dirty dot, cursor on line 15 — **no navigation** | **pass (wrong)** |
+
+R2's assertion was "the editor region changed", and a cursor move changes the
+editor region too, so the leg passed both. Worse, the run read was the NEWEST
+run by timestamp (`live-19`), so the gate was verifying the lying frame while the
+good one went unread.
+
+**Fix, two halves, one rule:**
+
+- `script/m55/navigation.ts` owns the decision — a navigation changes the
+  editor's TOP lines (measured: `y=0, height=288`), a cursor move is a band
+  (measured: `y=196, height=95`); the region (`[0.19, 0.08, 0.63, 0.27]` of the
+  window) and the thresholds are declared there, not inlined at the call sites;
+- the rig applies it to the pre-click scratch frame versus the post-click screen
+  and records the flow as **blocked with that reason** instead of writing a frame
+  it cannot stand behind; V1's R2 applies it to the recorded frame and fails.
+
+Gated by mutants **M16** (the exact `live-19` numbers — a cursor band) and
+**M17** (no change / unreadable frame), plus a positive control that the measured
+navigation box still passes, so an over-strict threshold cannot silently redden
+every run. The flow's label was corrected in the same pass: it said "lands on the
+CALL SITE", and the frame shows the caller's **declaration** — the label now says
+what the frame shows (see the F13 verdict for the call-site nuance).
 
 ## F12 — the blocked path (a missing fixture) · VERIFIED
 

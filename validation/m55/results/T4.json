@@ -12,18 +12,18 @@
     "total": 4,
     "caught": 4
   },
-  "currentCommit": "6f98d43955b26cca67b7a50bea417d8238b1bd70",
+  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
   "workingTreeRelevantChanges": [
-    "script/m55/t4-fixture.ts",
-    "script/m55/verify-signatures.ts",
-    "src/lsp/signature.ts"
+    "script/m55/screenshot-protocol.ts",
+    "script/m55/verify-live-surface.ts",
+    "script/m55/navigation.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-signatures.ts",
   "evidenceFile": "T4.json",
-  "generatedAt": "2026-09-13T17:06:38.758Z",
+  "generatedAt": "2026-09-13T23:37:45.011Z",
   "fixture": {
-    "workspace": "/tmp/m55-t4-ws-SzTiFD",
-    "projectId": "ef75f1d11f7cb5798befa1e7338d2a0800b851bf",
+    "workspace": "/tmp/m55-t4-ws-nIKteW",
+    "projectId": "b5377f0fdf8de268bf027c57fd4dbd4bcb6fad48",
     "symbols": 10,
     "storedShapes": [
       "null",

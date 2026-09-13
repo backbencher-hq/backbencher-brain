@@ -4,18 +4,21 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 40,
-  "passed": 30,
-  "failed": 10,
-  "realFailed": 10,
+  "passed": 34,
+  "failed": 6,
+  "realFailed": 6,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "319d0e59f6a5facf91ae662846a9b78cdb0c943c",
+  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
   "workingTreeRelevantChanges": [
-    "script/m55/verify-governance.ts",
+    "docs/m55/FRAME-FINDINGS.md",
+    "docs/m55/VERDICT-PACK.md",
+    "script/m55/screenshot-protocol.ts",
     "script/m55/verify-live-surface.ts",
+    "validation/m55/results/G1.json",
     "validation/m55/results/P1.json",
     "validation/m55/results/T1.json",
     "validation/m55/results/T2.json",
@@ -24,23 +27,34 @@
     "validation/m55/results/T5.json",
     "validation/m55/results/V1-action-args.json",
     "validation/m55/results/V1-blocked-path.json",
+    "validation/m55/results/V1-probe.json",
     "validation/m55/results/V1-status-panel.json",
+    "validation/m55/results/V1.json",
+    "validation/m55/results/X1.json",
     "validation/m55/results/manifest.json",
-    "docs/m55/HANDOFF-cross-language.md",
-    "docs/m55/VERDICT-PACK.md",
-    "script/m55/relevance.ts",
-    "script/m55/verify-closure.ts",
-    "validation/m55/results/X1.json"
+    "script/m55/navigation.ts",
+    "validation/m55/frames/live-20/1-base.png",
+    "validation/m55/frames/live-20/10-hover-zero-usages.png",
+    "validation/m55/frames/live-20/11-call-hierarchy-click.png",
+    "validation/m55/frames/live-20/2-hover-declaration.png",
+    "validation/m55/frames/live-20/3-hover-call-site.png",
+    "validation/m55/frames/live-20/4-open-in-graph.png",
+    "validation/m55/frames/live-20/5-impact.png",
+    "validation/m55/frames/live-20/6-call-hierarchy.png",
+    "validation/m55/frames/live-20/7-status.png",
+    "validation/m55/frames/live-20/8-ctor-hover-declaration.png",
+    "validation/m55/frames/live-20/9-ctor-open-in-graph.png",
+    "validation/m55/frames/live-20/manifest.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-13T22:13:15.769Z",
+  "generatedAt": "2026-09-13T23:40:47.821Z",
   "audit": {
-    "head": "319d0e59f6a5facf91ae662846a9b78cdb0c943c",
+    "head": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "known-gap",
-      "pin": "377dea29d232a79f748395cc1c913970f4efb57d",
+      "pin": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
       "green": 37,
       "total": 40,
       "milestones": {
@@ -358,8 +372,8 @@
         "status": "planned"
       }
     ],
-    "captureRun": "live-14",
-    "frames": 10,
+    "captureRun": "live-20",
+    "frames": 11,
     "claims": 12,
     "wireOnlyClaims": 2,
     "openFindings": [
@@ -367,21 +381,17 @@
       "F4 — hub rows do not look clickable · OPEN",
       "F5 — the legend competes with the data · OPEN",
       "F6 — the hover card can hide its own actions · OPEN (narrow)",
-      "F13 — the call-hierarchy activation leg · OPEN (narrow)"
+      "F13 — the call-hierarchy click leg · OPEN (narrow: ONE hop left)"
     ],
     "handoffIssue": 816
   },
   "failures": [
-    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=blocked pin=7e5154a1a2ba realFailed=0",
-    "C1: V1 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=44eedc542dd2 realFailed=0 stale(script/m55/screenshot-protocol.ts,script/m55/verify-live-surface.ts)",
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=377dea29d232 green=37/40 lane-changed=40",
-    "C2: G1's bar re-audit records the ladder gates it ran: []",
-    "C2: G1's bar re-audit records every ladder gate green: []",
+    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=0c871bedec31 realFailed=2",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=fbfbba013c42 green=37/40 lane-changed=0",
+    "C2: G1's bar re-audit records every ladder gate green: [{\"gate\":\"m53-ladder\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json\"},{\"gate\":\"m53-closure\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json\"}]",
     "C2: M29 — every ladder gate green (5): m29-closure=1",
     "C2: M42 — every ladder gate green (7): m42-closure=1",
-    "C2: M44 — every ladder gate green (6): m44-closure=1",
-    "C3: the pack is byte-identical to the fresh generation (no hand edits survive): 5210 vs 5210 bytes",
-    "C3: every claim that names a frame has that frame on disk (9/10): the three surfaces are distinct views"
+    "C2: M44 — every ladder gate green (6): m44-closure=1"
   ],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
