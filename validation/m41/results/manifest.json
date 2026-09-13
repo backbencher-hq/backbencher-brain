@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-13T02:59:08.861Z",
+  "updatedAt": "2026-09-13T03:13:11.090Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -51,10 +51,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "f1ad7c0d700e4d0ae054306df6980cf2d834e82e",
+        "currentCommit": "7da3b8ffe119c39ea8141f184fa5fe4a88575d06",
         "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-13T02:35:57.724Z",
+        "generatedAt": "2026-09-13T03:12:14.241Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 11
@@ -194,7 +194,8 @@
         "generatedAt": "2026-09-12T14:25:13.752Z",
         "passed": 12,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "deployGate": "Deploy-gated by construction: S2 probes the LIVE deployment (dns.google + backbencher.cc) and cannot be re-run from the repository working tree. It is accepted PASS-with-negatives at this ancestor commit; the owner re-runs the gate after the Vercel deploy, which records deployLag (open -> closed) and re-pins S2 onto the batch commit. M56.X1 and M41.X1 both refuse to close on an unstated lag state."
       }
     },
     {

@@ -353,6 +353,27 @@ issues and milestones closed with evidence comments.
 Acceptance: every closure check green at one commit; negative probes fire; owner
 confirms dashboards and the live site.
 
+## X1 owner steps (the part no agent can do)
+
+The closure gate proves everything observable from the repository. The steps below
+need dashboards and credentials no agent holds, so they are listed as pending
+owner actions rather than claimed as done:
+
+1. **Push** the branch to `origin/main` — agents never push.
+2. Confirm **CI** is green on the pushed commit
+   (`gh run list --workflow ci.yml --limit 1`, or the Actions tab).
+3. Confirm **Vercel** waits for the CI check before deploying, and that the
+   deploy that follows is the pushed commit.
+4. After the deploy, re-run `npx tsx script/m41/verify-seo-onboarding.ts`
+   against the deployment: it moves M41.S2 onto the batch commit and closes the
+   route lag it records (`deployLag=open` → `closed`).
+5. Resubmit the sitemap in **Google Search Console**, Bing Webmaster Tools and
+   Brave — one fetch each; the sitemap URL is unchanged.
+6. Close the M41 (#640–#647) and M56 (#779–#787) issues and milestones with the
+   evidence comments.
+7. **Owner visual approval** of `/editors`, `/support`, the homepage tools
+   section and the language cells — M56.D2's closure condition.
+
 ## Gates & future verifications (permanent)
 
 Every M56 verifier joins the verify chain and CI, and each one states where it
