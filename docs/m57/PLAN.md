@@ -95,6 +95,40 @@ Re-index: `node bin/bb index <repo> --force` — 3,338 files, 180,772 symbols, 1
 
 Latency context (honest): scope=all min 4.85s / p50 15.8s / max 20.3s through `node bin/bb mcp` while machine load was ~15 (co-agent builds). Structural gates (bounding + parity) are the load-independent proof; the M50-era 1.3s numbers were taken on an idle box and a smaller corpus.
 
+**Caveat resolved (idle-box re-measure).** After a reboot cleared the co-agent load the same corpus was measured three ways (`T3-latency-idle.json`, `probe-scope-all.ts`, `probe-scope-all-warm.ts`): engine warm **p50 825 ms**; MCP warm session per call **p50 1655 ms** (load 5) / **2618 ms** (load 9); MCP cold process **p50 3490 ms** (includes Node boot + handshake). `bb_health` warm **p50 242–391 ms**. Disclosed, not hidden: the **first** call in a fresh server pays lazy engine init (4568 ms at load 5; 20694 ms under heavy contention).
+
 Closure command: `BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> bun run script/m57/verify-closure.ts`
 
 Concurrency ground rule (M50 lesson): M57 gates tamper shared mutation seams; run them serially — never two at once (closure's first run failed exactly this way while G2 ran).
+
+## Post-close follow-up (M57.T3 evidence completeness + one honest flake)
+
+1. **Idle-box latency resolved** — see above; the load caveat is no longer open.
+
+2. **One unreproduced closure flake, recorded not excused.** A closure run on
+   2026-09-13 reported `FAIL downstream M13.test-intel (script/verify-test-intel.ts)
+   exit=1`. It did **not** reproduce: 2 standalone runs, 5 consecutive standalone
+   runs (under load ~18), and 2 subsequent full closure runs were all green.
+   The cause is **not known and not claimed**. What was fixed is the reason it
+   was undiagnosable: closure's `spawnSync` swallowed the failing gate's output,
+   so a flake and a real regression were indistinguishable.
+
+3. **Closure now surfaces failure evidence.** `verify-closure.ts` captures each
+   gate's stdout+stderr and prints the last 25 lines on any red (subordinate,
+   downstream, and foreign-red branches). Proof it fires: a temporary mutation
+   that added the known-failing `script/m20/verify-patterns-orphan-semantics.ts`
+   to the downstream set made closure print `FAIL downstream NEGTEST … exit=1`
+   followed by that gate's output tail; the mutation was then reverted.
+
+4. **Residual risk kept visible:** if `M13.test-intel` reds again, closure's
+   report will now carry the assertion that failed, which is what turns this
+   from an anecdote into evidence.
+
+5. **Why committed receipts can look one commit behind HEAD (by design).**
+   Closure re-runs every subordinate gate live, and each of those gates
+   re-stamps its receipt at the then-current HEAD before closure checks currency.
+   So a closure run is green at its own HEAD; committing the closure *moves*
+   HEAD, leaving the committed stamps one commit behind by construction. This is
+   self-healing — the next closure run re-stamps — and it is NOT the staleness
+   T4 guards against: T4 reds on a changed **corpus or classifier epoch**, which
+   is the condition that actually invalidates a measurement.
