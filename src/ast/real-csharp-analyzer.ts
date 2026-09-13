@@ -1488,8 +1488,15 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     classHierarchy: Map<string, string[]>,
   ): void {
     const leafOf = (s: string): string => {
-      const parts = s.split(/::|\./).filter(Boolean)
-      return parts.length > 0 ? parts[parts.length - 1] : s
+      // Last ::- or .-separated segment, skipping empties (R2 shrink-only:
+      // no regex literals for what two splits express exactly).
+      const segs: string[] = []
+      for (const a of s.split("::")) {
+        for (const b of a.split(".")) {
+          if (b) segs.push(b)
+        }
+      }
+      return segs.length > 0 ? segs[segs.length - 1] : s
     }
     const membersByOwner = new Map<string, Set<string>>()
     const addMember = (owner: string, name: string): void => {
