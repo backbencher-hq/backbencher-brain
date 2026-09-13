@@ -117,10 +117,11 @@ check(
   docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") && !docsPage.includes("bb upgrade"),
 )
 
-// --- 3b. T3 pages: install, support, troubleshooting (+ the /faq, /contact redirects) ---
-// M56.S1: FAQ and Contact consolidated into /support. The redirect stubs still
-// build (bookmarks stay valid); their content checks now bind to the support
-// page, which carries the merged surface.
+// --- 3b. T3 pages: install, support, docs (+ the retired redirects) ---
+// M56.S1: FAQ and Contact consolidated into /support. M56.I1: troubleshooting
+// content moved into /docs, and /demos was retired. The redirect stubs still
+// build (bookmarks stay valid); their content checks now bind to the canonical
+// surface that carries the merged content.
 
 const EXPECTED_ROUTES = ["index", "docs", "tools", "languages", "install", "support", "troubleshooting", "faq", "contact"]
 for (const route of EXPECTED_ROUTES) {
@@ -129,11 +130,23 @@ for (const route of EXPECTED_ROUTES) {
 
 const installHtml = buildOk ? normalize(read("website/.next/server/app/install.html")) : ""
 const faqHtml = buildOk ? normalize(read("website/.next/server/app/support.html")) : "" // the consolidated FAQ surface
-const troubleshootHtml = buildOk ? normalize(read("website/.next/server/app/troubleshooting.html")) : ""
+const troubleshootHtml = buildOk ? normalize(read("website/.next/server/app/docs.html")) : "" // M56.I1: fixes live in the docs section
 const contactHtml = buildOk ? normalize(read("website/.next/server/app/support.html")) : "" // the consolidated contact surface
 
-check("T3: /faq redirects to /support (bookmark-safe)", read("website/src/app/faq/page.tsx").includes('redirect("/support")'))
-check("T3: /contact redirects to /support (bookmark-safe)", read("website/src/app/contact/page.tsx").includes('redirect("/support")'))
+// Retired paths redirect through the site's single declaration
+// (website/src/lib/redirects.ts), which verify-seo.ts pins to its contract.
+const retiredSrc = read("website/src/lib/redirects.ts")
+for (const [from, to] of [
+  ["/faq", "/support"],
+  ["/contact", "/support"],
+  ["/troubleshooting", "/docs#troubleshooting"],
+  ["/demos", "/editors"],
+] as const) {
+  check(
+    `T3: ${from} redirects to ${to} (bookmark-safe)`,
+    retiredSrc.includes(`"${from}": "${to}"`) && read(`website/src/app${from}/page.tsx`).includes(`redirect(REDIRECTS["${from}"])`),
+  )
+}
 
 const installVersion = read("website/src/data/truth.generated.ts").match(/install: \{[\s\S]*?version: "([^"]+)"/)?.[1] ?? ""
 const installRepo = read("website/src/data/truth.generated.ts").match(/repo: "([^"]+)"/)?.[1] ?? ""
@@ -152,7 +165,18 @@ check("T3: contact offers only the real support channel", contactHtml.includes("
 check("T3: shared footer renders on all T3 pages", [installHtml, faqHtml, troubleshootHtml, contactHtml].every((h) => h.includes("independent, local-first code intelligence engine")))
 
 const navSrc = read("website/src/components/Navigation.tsx")
-check("T3: navigation links every public route (redirects excluded)", ["install", "tools", "languages", "editors", "docs", "demos", "support", "troubleshooting"].every((r) => navSrc.includes(`href: '/${r}'`)), ["install", "tools", "languages", "editors", "docs", "demos", "support", "troubleshooting"].filter((r) => !navSrc.includes(`href: '/${r}'`)).join(","))
+// M56.I1: the final nav set is six items, one per public surface, in order.
+const NAV_CONTRACT = ["install", "docs", "tools", "languages", "editors", "support"] as const
+const navEntries = [...navSrc.matchAll(/\{ href: '(\/[a-z0-9-]+)', label: '[^']+' \},/g)].map((m) => m[1]!.slice(1))
+check(
+  "T3: navigation is exactly the six public surfaces, in order",
+  JSON.stringify(navEntries) === JSON.stringify([...NAV_CONTRACT]),
+  navEntries.join(","),
+)
+check(
+  "T3: navigation links no retired path",
+  !["/demos", "/faq", "/contact", "/troubleshooting"].some((r) => navSrc.includes(`href: '/${r}'`)),
+)
 check("T3: no phantom command renders on any T3 page", PHANTOMS.every((p) => ![installHtml, faqHtml, troubleshootHtml, contactHtml].some((h) => h.includes(p))))
 
 // --- 4. language display coverage (source-level) --------------------------------

@@ -251,13 +251,28 @@ check("S1: no other inbox renders on /support", !/[\w.+-]+@[\w-]+\.[\w.]+/.test(
 
 // --- 3. redirects and discovery hygiene -------------------------------------------------
 
-check("S1: /faq redirects to /support", read("website/src/app/faq/page.tsx").includes('redirect("/support")'))
-check("S1: /contact redirects to /support", read("website/src/app/contact/page.tsx").includes('redirect("/support")'))
+// M56.I1: every retired path redirects through the site's single declaration
+// (website/src/lib/redirects.ts); M41.S1 pins that declaration to its contract.
+check("S1: /faq redirects to /support", read("website/src/app/faq/page.tsx").includes('redirect(REDIRECTS["/faq"])') && read("website/src/lib/redirects.ts").includes('"/faq": "/support"'))
+check("S1: /contact redirects to /support", read("website/src/app/contact/page.tsx").includes('redirect(REDIRECTS["/contact"])') && read("website/src/lib/redirects.ts").includes('"/contact": "/support"'))
 check("S1: sitemap lists /support", build.ok && read("website/.next/server/app/sitemap.xml.body").includes("https://backbencher.cc/support"))
 const sitemapBody = build.ok ? read("website/.next/server/app/sitemap.xml.body") : ""
-check("S1: sitemap does NOT list redirect sources (canonical URLs only)", !sitemapBody.includes("/faq</loc>") && !sitemapBody.includes("/contact</loc>"))
-check("S1: no rendered link points at the retired /faq", !/href="\/faq"/.test(supportHtmlRaw) && !/href="\/faq"/.test(read("website/src/components/SiteFooter.tsx")) && !/href="\/faq"/.test(read("website/src/components/Navigation.tsx")))
-check("S1: no rendered link points at the retired /contact", !/href="\/contact"/.test(supportHtmlRaw) && !/href="\/contact"/.test(read("website/src/app/troubleshooting/page.tsx")) && !/href="\/contact"/.test(read("website/src/components/Navigation.tsx")))
+check("S1: sitemap lists no retired route (canonical URLs only)", !["/faq", "/contact", "/troubleshooting", "/demos"].some((r) => sitemapBody.includes(`${r}</loc>`)))
+// M56.I1 widened this from the two FAQ paths to every retired path: a retired
+// URL must never be linked from a surface a visitor reads.
+const retiredHrefs = ["/faq", "/contact", "/troubleshooting", "/demos"]
+const linkSurfaces: Array<[string, string]> = [
+  ["the rendered /support page", supportHtmlRaw],
+  ["Navigation", read("website/src/components/Navigation.tsx")],
+  ["SiteFooter", read("website/src/components/SiteFooter.tsx")],
+  ["the docs page", read("website/src/app/docs/page.tsx")],
+  ["the install page", read("website/src/app/install/page.tsx")],
+]
+check(
+  "S1: no rendered link points at a retired path (faq, contact, troubleshooting, demos)",
+  retiredHrefs.every((r) => linkSurfaces.every(([, src]) => !src.includes(`href="${r}"`))),
+  linkSurfaces.filter(([, src]) => retiredHrefs.some((r) => src.includes(`href="${r}"`))).map(([n]) => n).join(","),
+)
 
 // --- 4. mutants --------------------------------------------------------------------------
 
@@ -374,7 +389,7 @@ writeFileSync(
       generatedAt: new Date().toISOString(),
       source: "website/faq.md",
       generatedData: "website/src/data/support.generated.ts",
-      surfaces: ["/support (FAQ + still-have-questions)", "/faq -> /support (redirect)", "/contact -> /support (redirect)"],
+      surfaces: ["/support (FAQ + still-have-questions)", "/faq -> /support (redirect)", "/contact -> /support (redirect)", "retired paths carry no rendered link (M56.I1 widened the scan)"],
       questions: mdParsed.qas.length,
       sections: mdParsed.sections.length,
       details: failures.slice(0, 10),
