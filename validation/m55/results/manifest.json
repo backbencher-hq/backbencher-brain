@@ -207,9 +207,36 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
+        "currentCommit": "see T4.json",
         "verifierCommand": "npx tsx script/m55/verify-signatures.ts",
-        "evidenceFile": "T4.json"
+        "evidenceFile": "T4.json",
+        "passed": 67,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "scope": "the ONE signature renderer (src/lsp/signature.ts) per stored parameter shape over a seeded real index, the notation table per language, both wired surfaces over the real dist server (hover card + call-hierarchy detail), the wire's typed parameters preserved, the lane-wide single-owner source check, 4 planted defects"
+      },
+      "progress": {
+        "stage": "every stored parameter shape renders as human text; no rendered surface matches the raw-JSON shape; the unresolved case renders the declared marker. NOT closable yet only because its closure requirement includes V1's in-editor frame.",
+        "verifiedAt": "2026-09-13",
+        "fixes": [
+          "src/lsp/signature.ts (new, the ONE owner): parseParameters declares the shape it found (absent/empty/list/opaque/serialized), renderParameter applies the language's own notation (rest for ts/js/java/kotlin/scala/python, `?` only where the language has it, `= default` where a default is stored, an implicit receiver unannotated), and renderSignature is what every surface calls. A non-JSON value passes through only when it carries no raw-JSON shape; a stored JSON object renders the declared `(\u2026)` absence instead of leaking serialization.",
+          "src/lsp/hover.ts: buildSignature (which interpolated the stored column) is gone; the card renders through the owner with the file's language, and the hover payload now carries the STORED structured parameters, typed, alongside the rendered text (acceptance 3: the machine data survives for clients).",
+          "src/lsp/call_hierarchy.ts: the prepared item's detail line is the rendered signature instead of the bare symbol type \u2014 the editor's call-hierarchy view is a place a developer reads a signature.",
+          "src/lsp/signature.ts also fixes two readability defects found while wiring: a constructor rendered `constructor constructor(prefix)` (the stored name repeats the type) and a non-callable could render `()` from a stored empty list.",
+          "script/m55/t4-fixture.ts + script/m55/verify-signatures.ts (new): one symbol per stored shape, the notation table exercised directly per language, the wire legs over the real dist server, and a lane-wide source check that only the owner interpolates the parameters column \u2014 67 checks, 4 mutants."
+        ],
+        "findings": [
+          "the stored column has exactly six key shapes across every brain.db on this machine (isOptional+name+type; defaultValue+isOptional+name; defaultValue+isOptional+name+type; name; name+type; isImplicit+name+type) \u2014 the fixture pins one symbol per shape rather than an invented schema",
+          "no analyzer writes a rest/variadic flag: the notation is exercised from the declared flag AND from the stored name marker (`...rest`, `*rest`), recorded as a limitation so the claim is not overstated",
+          "an unresolved type is the common case, not an edge (the `name`-only entries are real rows), so the unknown marker appears in ordinary cards"
+        ],
+        "remaining": [
+          "V1's in-editor frame showing a human signature in the card (closure requirement)",
+          "the hub's usage rows carry no signature field today; when one is added it must render through this owner (the R4 source check enforces the rule lane-wide)"
+        ]
       }
     },
     {

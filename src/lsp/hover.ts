@@ -41,6 +41,7 @@ import {
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { parseParameters, renderSignature } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
 import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
@@ -107,6 +108,12 @@ export interface SymbolHoverData {
   qualifiedName: string | null
   symbolType: string
   signature: string
+  /** M55.T4 (§14 Truth Rule 4): the STORED structured parameters, typed and
+   *  unrendered — the wire keeps the machine data while the rendered signature
+   *  is human text (a client that wants the structured form reads this, never
+   *  the markdown). null when the index stores no structured list (declared
+   *  absence); an empty array is a callable with zero parameters. */
+  parameters: Array<{ name: string; type: string | null; isOptional: boolean; defaultValue: string | null; isRest: boolean }> | null
   usageCount: number
   evidenceTiers: EvidenceTier[]
   /** M26.W3: pre-rendered cross-language section — empty string when the
@@ -185,26 +192,14 @@ interface FileRow {
   language: string | null
 }
 
-/** Build a human-readable signature from the indexed symbol fields. */
-export function buildSignature(row: {
-  name: string
-  symbol_type: string
-  return_type: string | null
-  parameters: string | null
-  visibility: string | null
-}): string {
-  const parts: string[] = []
-  if (row.visibility) parts.push(row.visibility)
-  parts.push(row.symbol_type)
-  let sig = parts.join(" ") + " " + row.name
-  if (row.parameters !== null && row.parameters !== undefined) {
-    sig += `(${row.parameters})`
-  } else if (row.symbol_type === "function" || row.symbol_type === "method") {
-    sig += "(…)"
-  }
-  if (row.return_type) sig += ` → ${row.return_type}`
-  return sig
-}
+// M55.T4 (issue #772): the signature renderer moved to its ONE owner,
+// src/lsp/signature.ts. The pre-M55 version interpolated the stored
+// `parameters` column verbatim, so the card rendered the analyzer's raw JSON
+// (`method greetAll([{"name":"names","type":"string[]",...}])`). Every
+// surface that renders a signature now calls the owner with the symbol's
+// language; nothing in the LSP lane interpolates `parameters` directly
+// (asserted at source level by script/m55/verify-signatures.ts).
+export { renderSignature, renderParameterList, UNRESOLVED_TYPE } from "./signature"
 
 /**
  * Resolve the LSP position to an index position via the P1 component and
@@ -544,7 +539,20 @@ export async function hover(
     name: symbol.name,
     qualifiedName: symbol.qualified_name,
     symbolType: symbol.symbol_type,
-    signature: buildSignature(symbol),
+    signature: renderSignature(symbol, file.language),
+    // M55.T4: structured data stays structured (see the field's declaration).
+    parameters: (() => {
+      const parsed = parseParameters(symbol.parameters)
+      if (parsed.shape === "empty") return []
+      if (parsed.shape !== "list") return null
+      return parsed.entries.map((e) => ({
+        name: e.name,
+        type: e.type ?? null,
+        isOptional: e.isOptional === true,
+        defaultValue: e.defaultValue ?? null,
+        isRest: e.isRest === true,
+      }))
+    })(),
     usageCount,
     evidenceTiers: tiers,
     // M42.H2: rich sections composed from stored relationship rows.

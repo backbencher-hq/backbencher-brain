@@ -80,7 +80,8 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   // hover's list/count and the references door) — a change to any of them
   // invalidates the T3 evidence, which is exactly the claim it makes.
   T3: ["src/lsp/relations.ts", "src/lsp/rich_hover.ts", "src/lsp/navigation.ts", "script/m55/verify-relations.ts", "script/m55/t3-fixture.ts"],
-  T4: ["src/lsp/signature.ts", "script/m55/verify-signatures.ts"],
+  // M55.T4: the renderer owner plus every surface that renders through it.
+  T4: ["src/lsp/signature.ts", "src/lsp/hover.ts", "src/lsp/call_hierarchy.ts", "script/m55/verify-signatures.ts", "script/m55/t4-fixture.ts"],
   T5: ["src/lsp/tiers.ts", "script/m55/verify-tiers.ts"],
   P1: [
     "ide/vscode/src/panel-placement.ts",
