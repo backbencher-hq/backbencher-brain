@@ -99,10 +99,11 @@
           "src/lsp/positions.ts (M24.P1 owner): a stored byte 0 could not convert (`byte < 1` -> null), so prepareCallHierarchy returned a declared absence for the FIRST symbol of any file whose declaration starts at offset 0 — the live demo's `deep`/`loop`/`Store` were unreachable in call hierarchy. Byte 0 is unambiguous (per-line columns are 1-based), so it now converts to line 1 column 1; a byte 0 on any other line stays declared-unconvertible. Gated by 8 row cases + 3 new mutants in script/m24/verify-positions.ts (P1 21/21, 11/11).",
           "src/lsp/call_hierarchy.ts: receiver classification read `this.items.get(...)` as `this.` (recursion) because the receiver ended with a separator — the analyzer's name-resolution artifact was therefore kept and the member listed itself as its own caller. Classification now uses the receiver's LAST segment plus the symbol's own names (qualified_name owner), and the receiver text is reported without the trailing separator.",
           "src/lsp/call_hierarchy.ts: incoming/outgoing rendered the engine's deeper hops (depth > 0) as callers/callees with an approximate position (`top` listed as a caller of `deep` through `mid`; a mutual pair listed each function as its own caller). LSP's lists are DIRECT relations, so a stored `calls` row from an indexed caller whose own source never invokes the name is now DROPPED and declared in droppedEdges.",
-          "script/m24/lsp_harness.ts (M24.V1): four L2 hover legs still asserted the pre-wire-law shape (flat `data.name`, top-level `provenance`, `{contents:null}` absence) and sat KNOWN-GAP while the server was correct; they now assert the declared contract (data.symbol.*, data.provenance.source, wire null) and the L5 leg asserts the reported call site slices back to the invoked name."
+          "script/m24/lsp_harness.ts (M24.V1): four L2 hover legs still asserted the pre-wire-law shape (flat `data.name`, top-level `provenance`, `{contents:null}` absence) and sat KNOWN-GAP while the server was correct; they now assert the declared contract (data.symbol.*, data.provenance.source, wire null) and the L5 leg asserts the reported call site slices back to the invoked name.",
+          "script/m55/screenshot-protocol.ts + script/m55/navigation.ts (new): the click leg's driver. Reading live-17 and live-19 side by side showed the gesture was not deterministic (the extra Right/Down keys went to the EDITOR when the click had not taken the row selection) and that the gate accepted live-19's frame as a landing although it showed a cursor band in the same file (F14). The gesture is now the click plus the single activation key, and the shared navigation rule (a navigation changes the editor's TOP lines; a cursor move is confined to a band) is applied by the rig BEFORE a frame is written and by V1's R2 afterwards."
         ],
         "remaining": [
-          "in-editor leg, CALL-SITE-CHILD half only: the callers tree is framed at this HEAD and so is the CLICK (validation/m55/frames/live-19/11-call-hierarchy-click.png — a real mouse click on the `main` caller row followed by Return navigates the editor to app.ts with `main` highlighted, gated by V1's R2). What is NOT framed is the second hop: expanding a caller onto its call-site child and activating that. Two attempts (live-18, live-19) produced no state change for the rig to capture, so the flow was removed and the negative result is F13. The call site itself is machine-asserted where it can be: every fromRange the server returns resolves to the invocation token."
+          "in-editor leg, CALL-SITE-CHILD half only: the callers tree is framed at this HEAD and so is the CLICK (validation/m55/frames/live-20/11-call-hierarchy-click.png — a real mouse click on the `main` caller row followed by Return navigates the editor to app.ts with `main` highlighted, gated by V1's R2). What is NOT framed is the second hop: expanding a caller onto its call-site child and activating that. Two attempts (live-18, live-19) produced no state change for the rig to capture, so the flow was removed and the negative result is F13. The call site itself is machine-asserted where it can be: every fromRange the server returns resolves to the invocation token."
         ],
         "defectsReportedToOtherLanes": [
           "a file-absolute symbol row whose offset also fits the target line's byte length is still read as a per-line column by resolveRowByteColumns (pre-existing declared ambiguity, now recorded in P1.json's limitations); removing it needs a writer-side convention flag from the indexer lane"
@@ -354,12 +355,12 @@
         "currentCommit": "see V1.json",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 90,
+        "passed": 94,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 15,
-        "mutantsTotal": 15,
-        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, the pixel read-backs (newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the findings document's frame paths and verdicts, chain wiring), the BLOCKED-PATH proof (the rig run with the fixture absent -> a declared blocked record), the hub header differential over the real index (F7), the T2 click-frame navigation checks, and 14 planted defects",
+        "mutantsCaught": 17,
+        "mutantsTotal": 17,
+        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, the pixel read-backs (newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the navigation rule for the click leg, the findings document's frame paths and verdicts, chain wiring), the BLOCKED-PATH proof (the rig run with the fixture absent -> a declared blocked record), the hub header differential over the real index (F7), and 17 planted defects",
         "components": [
           {
             "code": "V1-action-args",
@@ -382,7 +383,7 @@
         ]
       },
       "progress": {
-        "stage": "the rig is permanent, wired and fail-able, and it is now driving the right commands: 90/90 with 15/15 mutants, 10/10 declared frames captured (including T1's constructor case and T3's zero-usage case). Two defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11). The blocked path is now PROVEN (R7 runs the real rig with the fixture absent and asserts the declared blocked record: validation/m55/results/V1-blocked-path.json), and F7 is now a machine assertion (R8: the hub header's group counts account for every listed row, differentially against the server's own counts block over the real index -- the live Greeter reads 3 + 2 = 5). NOT closable yet: the per-issue in-editor frames that T1-T5/P1 name as their own closure requirements.",
+        "stage": "the rig is permanent, wired and fail-able: 94/94 with 17/17 mutants, 11/11 declared frames captured (including T1's constructor case, T3's zero-usage case and T2's caller-row click). Three defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11, and F14 — the gate accepted a frame that never navigated). The blocked path is PROVEN (R7 runs the real rig with the fixture absent and asserts the declared blocked record: validation/m55/results/V1-blocked-path.json), and F7 is a machine assertion (R8: the hub header's group counts account for every listed row, differentially against the server's own counts block over the real index -- the live Greeter reads 3 + 2 = 5). NOT closable yet: the per-issue in-editor frames that T1-T5/P1 name as their own closure requirements.",
         "verifiedAt": "2026-09-13",
         "fixes": [
           "ide/vscode/src/hover-action-args.ts (new, PURE) + hover-commands.ts: a palette / context-menu invocation carries no args, so all three symbol-scoped actions dead-ended; identity now comes from the SERVER (the same textDocument/hover the editor uses), so both entry points answer alike without client-side guessing (issue #652 holds).",
@@ -390,7 +391,8 @@
           "ide/vscode/src/webview-dom.ts (new): the escaping DOM port moved out of graph-panel.ts (which imports vscode) so a PURE surface renderer can be run by a headless gate; graph-panel re-exports it, so the hub/impact/graph import sites are unchanged.",
           "ide/vscode/src/panel-placement.ts: 'status' joins the panel-key kinds, so the status surface obeys the same one-panel-per-surface rule instead of re-implementing it.",
           "ide/vscode/package.json: all 8 contributed titles dropped their redundant 'Backbencher: ' prefix (every command already carries category 'Backbencher'), so the palette no longer reads 'Backbencher: Backbencher: ...' and now matches what docs/m25/INSTALL.md tells the user to run.",
-          "script/m55/screenshot-protocol.ts: command flows are driven by BARE COMMAND ID. A palette TITLE is not an identifier (live-8: 'Backbencher: Show status' selected 'Show server status'), and '>' + the id is worse (live-9: the fuzzy matcher ranked 'View: Toggle Panel Visibility' first and toggled the panel)."
+          "script/m55/screenshot-protocol.ts: command flows are driven by BARE COMMAND ID. A palette TITLE is not an identifier (live-8: 'Backbencher: Show status' selected 'Show server status'), and '>' + the id is worse (live-9: the fuzzy matcher ranked 'View: Toggle Panel Visibility' first and toggled the panel).",
+          "script/m55/navigation.ts (new, shared by the rig and the gate) + verify-live-surface.ts R2: the click leg's assertion was \"the editor region changed\", which a cursor move satisfies, so live-19's frame (greeter.ts still open, cursor on line 15) passed as a landing and the ledger claimed the leg was gated. One rule now decides -- a navigation changes the editor's TOP lines (measured y=0, height=288), a cursor move is a band (measured y=196, height=95, the region and thresholds declared in the module) -- the rig records such a flow as BLOCKED with that reason instead of writing the frame, and R2 fails if one is ever recorded."
         ],
         "findings": [
           "F1 (fixed): live-6/4 and live-6/5 captured the 'malformed link (no symbol target)' toast instead of a panel - the palette path was a dead end.",
@@ -403,10 +405,11 @@
           "F9 (fixed): the rig drove the wrong command twice (title match; '>' prefix) - see fixes above.",
           "F10 (fixed): 8 palette titles repeated their category.",
           "F11 (fixed): the first status surface rendered 'I1 - I1 - protocol-passed' (level stated twice).",
-          "F8 (verified): the hover identity at call sites, the hub's real data, the native call hierarchy, the panel-placement/focus rule and the new status surface all read correctly in the frames."
+          "F8 (verified): the hover identity at call sites, the hub's real data, the native call hierarchy, the panel-placement/focus rule and the new status surface all read correctly in the frames.",
+          "F14 (fixed, asserted): the gate accepted live-19's click frame as a landing although it showed the same file with a cursor band (the newest-run read made it worse: the gate verified the lying frame while the good one went unread). Closed by the shared navigation rule + mutants M16/M17 and a positive control on the measured navigation box."
         ],
         "remaining": [
-          "T2's call-SITE child activation only: the caller-row click now works and is framed (live-17/live-19), but re-issuing the call-hierarchy command to expand a caller and step onto its call-site child produced no state change, so the rig refused the frame twice (live-18, live-19) and the flow was removed rather than kept with an overclaiming label — docs/m55/FRAME-FINDINGS.md F13",
+          "T2's call-SITE child activation only: the caller-row click works and is framed (validation/m55/frames/live-20/11-call-hierarchy-click.png, gated by the navigation rule), but re-issuing the call-hierarchy command to expand a caller and step onto its call-site child produced no state change, so the rig refused the frame twice (live-18, live-19) and the flow was removed rather than kept with an overclaiming label -- docs/m55/FRAME-FINDINGS.md F13",
           "the open findings F3-F6 belong to the surface-redesign work (U2), recorded in docs/m55/FRAME-FINDINGS.md"
         ],
         "closure": {

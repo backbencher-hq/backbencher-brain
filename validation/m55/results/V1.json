@@ -3,30 +3,30 @@
   "code": "V1",
   "milestone": "M55",
   "status": "verified",
-  "checks": 90,
-  "passed": 90,
+  "checks": 94,
+  "passed": 94,
   "failed": 0,
   "realFailed": 0,
-  "negativeCases": 15,
+  "negativeCases": 17,
   "mutants": {
-    "total": 15,
-    "caught": 15
+    "total": 17,
+    "caught": 17
   },
-  "currentCommit": "11fd120432de889a581ddec2427d495afa6454dd",
+  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
   "workingTreeRelevantChanges": [
-    "script/m55/pixel-read.py",
     "script/m55/screenshot-protocol.ts",
-    "script/m55/verify-live-surface.ts"
+    "script/m55/verify-live-surface.ts",
+    "script/m55/navigation.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-13T22:55:05.178Z",
+  "generatedAt": "2026-09-13T23:38:26.613Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
     "rigAvailable": true,
     "rigMissing": [],
-    "captureRun": "live-19",
+    "captureRun": "live-20",
     "probeFile": "validation/m55/results/V1-probe.json",
     "probeStatus": "read",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
@@ -176,30 +176,41 @@
         19,
         20
       ],
-      "textPixels": 3158,
-      "textFraction": 0.0015,
+      "textPixels": 3616,
+      "textFraction": 0.0017,
       "textRows": 20
     },
     "ch-click:editor-diff": {
       "ok": true,
-      "changedPixels": 7129,
-      "changedFraction": 0.0412,
+      "changedPixels": 123348,
+      "changedFraction": 0.3506,
       "box": [
-        13,
-        196,
-        831,
-        9
+        0,
+        0,
+        1209,
+        291
+      ]
+    },
+    "ch-click:navigation": {
+      "ok": true,
+      "changedPixels": 123348,
+      "changedFraction": 0.3506,
+      "box": [
+        0,
+        0,
+        1209,
+        291
       ]
     },
     "ch-click:whole-diff": {
       "ok": true,
-      "changedPixels": 426307,
-      "changedFraction": 0.2056,
+      "changedPixels": 466518,
+      "changedFraction": 0.225,
       "box": [
-        348,
+        48,
         35,
-        1272,
-        1038
+        1689,
+        1039
       ]
     },
     "zero-usage:stats": {
@@ -217,7 +228,7 @@
     },
     "zero-usage:diff": {
       "ok": true,
-      "changedPixels": 213234,
+      "changedPixels": 213233,
       "changedFraction": 0.1028,
       "box": [
         377,

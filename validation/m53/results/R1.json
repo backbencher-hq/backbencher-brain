@@ -60,7 +60,7 @@
       "name": "m26-evidence-badges",
       "script": "script/m26/verify-evidence-badges.ts",
       "rc": 0,
-      "verdict": "VERIFIED (19/19 passed, 5/5 mutants caught)",
+      "verdict": "VERIFIED (20/20 passed, 5/5 mutants caught)",
       "ok": true
     },
     {
@@ -179,7 +179,7 @@
       "name": "m29-precision-improvements",
       "script": "script/m29/verify-precision-improvements.ts",
       "rc": 0,
-      "verdict": "VERIFIED (19/19 passed, 4 negatives)",
+      "verdict": "VERIFIED (20/20 passed, 4 negatives)",
       "ok": true
     },
     {
@@ -193,7 +193,7 @@
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (28/32 passed, 3 negatives)",
+      "verdict": "KNOWN-GAP (30/32 passed, 3 negatives)",
       "ok": false
     },
     {
@@ -235,14 +235,14 @@
       "name": "m42-rich-hover",
       "script": "script/m42/verify-rich-hover.ts",
       "rc": 0,
-      "verdict": "VERIFIED (29/29 passed, 6/6 mutants)",
+      "verdict": "VERIFIED (31/31 passed, 6/6 mutants)",
       "ok": true
     },
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (25/30 passed, 7 negatives)",
+      "verdict": "KNOWN-GAP (28/30 passed, 7 negatives)",
       "ok": false
     },
     {
@@ -284,11 +284,11 @@
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
       "rc": 1,
-      "verdict": "KNOWN-GAP (43/48 passed, 7 negatives)",
+      "verdict": "KNOWN-GAP (46/48 passed, 7 negatives)",
       "ok": false
     }
   ],
-  "currentCommit": "377dea29d232a79f748395cc1c913970f4efb57d",
+  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-12T21:44:56.391Z"
+  "generatedAt": "2026-09-13T23:37:34.342Z"
 }

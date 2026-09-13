@@ -60,6 +60,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { M55_ROOT, ensureServerBuilt } from "./lsp-wire.ts"
+import { EDITOR_CONTENT_REGION, navigationSpannedFile, noNavigationReason, type RegionDiff } from "./navigation.ts"
 import { runWireProbe, DECLARED_FIXTURE, type ProbeResult } from "./wire-probe.ts"
 import { CAPTURE_FLOWS, FRAMES_DIR, PIXEL_READ, SCREEN, rigPreflight } from "./screenshot-protocol.ts"
 
@@ -400,22 +401,43 @@ if (runName === null) {
     check("R2: the clicked call-hierarchy frame shows a rendered surface (T2)", frameShowsContent(full), JSON.stringify(full).slice(0, 160))
     if (callTree !== null) {
       // The tree occupies the lower-right of the editor area; the landing editor
-      // the top-left. The click must change the EDITOR (the navigation) while the
-      // surface stays a call hierarchy (a different view would mean the click
-      // hit a toolbar/menu instead of a row).
+      // the top-left. The click must change the EDITOR, and it must change it
+      // like a NAVIGATION rather than a cursor move — see navigation.ts for the
+      // rule and the two frames it was measured from (live-17 navigation,
+      // live-19 the recorded cursor move).
       const w = win ?? { x: 0, y: 0, width: SCREEN.width, height: SCREEN.height }
-      const at = (fx0: number, fy0: number, fx1: number, fy1: number): [string, string, string, string] => {
-        const x = w.x + Math.floor(w.width * fx0)
-        const y = w.y + Math.floor(w.height * fy0)
-        return [String(x), String(y), String(Math.floor(w.width * (fx1 - fx0))), String(Math.floor(w.height * (fy1 - fy0)))]
+      /** A region RECT (x, y, width, height all as window fractions) to the
+       *  pixel-read argument tuple. The shared rule's region is declared as a
+       *  rect, so the conversion lives here once. */
+      const atRect = (rect: [number, number, number, number]): [string, string, string, string] => {
+        const [fx, fy, fw, fh] = rect
+        return [
+          String(w.x + Math.floor(w.width * fx)),
+          String(w.y + Math.floor(w.height * fy)),
+          String(Math.floor(w.width * fw)),
+          String(Math.floor(w.height * fh)),
+        ]
       }
-      const editorBox = at(0.19, 0.08, 0.63, 0.27)
+      const editorBox = atRect(EDITOR_CONTENT_REGION)
       const navDiff = pixel("diff", [callTree, chClick, ...editorBox])
       frameFacts["ch-click:editor-diff"] = navDiff
       check(
         "R2: clicking a caller row CHANGED the editor (the navigation landed somewhere new) — T2",
         surfacesDiffer(navDiff),
         JSON.stringify(navDiff).slice(0, 160),
+      )
+      // The stronger form, and the one live-19 proved was missing: the change
+      // must reach the TOP of the visible file. A frame where only a band of
+      // lines changed is the open file being edited (a click that never took
+      // the row selection, so the activation key went to the editor) — that was
+      // recorded as a "landing" and passed, which is the gate weakness this
+      // assertion closes. The rig refuses to record such a frame now; this leg
+      // refuses to pass one.
+      frameFacts["ch-click:navigation"] = navDiff
+      check(
+        "R2: the click NAVIGATED to another file — the editor's TOP lines changed, not just a cursor band (T2)",
+        navigationSpannedFile(navDiff as RegionDiff),
+        noNavigationReason(navDiff as RegionDiff),
       )
       const wholeDiff = pixel("diff", [callTree, chClick, "0", "0", String(SCREEN.width), String(SCREEN.height)])
       frameFacts["ch-click:whole-diff"] = wholeDiff
@@ -461,6 +483,29 @@ mutant("M2: a stale bundle hash", !bundleIsCurrent("deadbeef".repeat(8), "cafeba
 mutant("M3: a blank (unstyled) frame", !frameShowsContent({ ok: true, uniform: true, textRows: 0, textFraction: 0 }) && !frameShowsContent({ ok: true, uniform: false, textRows: 1, textFraction: 0 }))
 mutant("M4: a fabricated call-site identity", !identityAgrees("greet", "greetAll") && !identityAgrees(null, null) && !identityAgrees("greet", null))
 mutant("M5: two identical panel frames (a view that never rendered)", !surfacesDiffer({ ok: true, changedPixels: 0 }) && !surfacesDiffer({ ok: true, changedPixels: 120 }))
+// M16/M17: the navigation rule (M14/M15 are already taken by R8 and R5). M16 is
+// the REAL defect this gate ran into — live-19's recorded "landing" frame shows
+// the open file with a cursor band changed (box y=196 height=95, the measured
+// numbers) — so a rule that accepted it would pass a click that never
+// navigated. M17 is the empty case.
+mutant(
+  "M16: a click that only moved the cursor inside the open file (the recorded live-19 frame)",
+  !navigationSpannedFile({ ok: true, changedPixels: 44053, box: [12, 196, 1197, 95] }),
+)
+mutant(
+  "M17: a click that changed nothing / an unreadable frame",
+  !navigationSpannedFile({ ok: true, changedPixels: 0, box: null }) &&
+    !navigationSpannedFile({ ok: false, reason: "pixel-read failed" }) &&
+    !navigationSpannedFile(null),
+)
+// The positive control: the measured NAVIGATION shape (live-17's box: the
+// change starts at the top line and spans the visible file) must satisfy the
+// rule, so an over-strict threshold cannot silently make every run fail.
+check(
+  "R2: the navigation rule accepts the measured navigation shape (live-17's box: y=0, height=288)",
+  navigationSpannedFile({ ok: true, changedPixels: 44216, box: [12, 0, 1197, 288] }),
+  JSON.stringify({ box: [12, 0, 1197, 288] }),
+)
 {
   // M6: the primary disagreeing with its own list — the defect T5 names.
   const tiers = ["structural", "usage_contextual"]
