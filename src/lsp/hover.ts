@@ -41,6 +41,7 @@ import {
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
 import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
 import { parseParameters, renderSignature } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
 import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
@@ -52,56 +53,21 @@ import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_la
 export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
 /** Evidence tiers for relationship data, per the evidence class vocabulary.
- *  M29.R5: the hover tier is the five-class vocabulary (structural,
- *  import_based, usage_contextual, reference_qualified, inferred) plus the
- *  coarse "indexed" legacy bucket mapped through tierForRelationship below.
- *  Rationale (F7 fixture script/m29/r5-tier-fixture.ts): the pre-R5 map had
- *  10 entries and dumped parser-deterministic facts (contains, instantiates,
- *  exports) into "inferred" — measured 42.5% of giant-corpus relationships
- *  downgraded. The structural set and the 0.7 floor mirror the W4 decision
- *  (script/m26/graph-core.ts TIER_MEANINGS; drift-gated by
- *  script/m26/verify-evidence-badges.ts P4 and
- *  script/m29/verify-precision-improvements.ts). */
-export type EvidenceTier = "structural" | "import_based" | "usage_contextual" | "reference_qualified" | "indexed" | "inferred" | "semantic_candidate" | "unknown"
-
-const RELATIONSHIP_TIER: Record<string, EvidenceTier> = {
-  call: "indexed",
-  calls: "indexed",
-  import: "indexed",
-  imports: "indexed",
-  extends: "indexed",
-  implements: "indexed",
-  override: "indexed",
-  reference: "indexed",
-  references: "indexed",
-  uses: "indexed",
-}
-
-/** Structural relationship types: parser-deterministic facts. Same set as the
- *  W4 badge owner (script/m26/graph-core.ts STRUCTURAL_TYPES) plus the
- *  containment/exports/instantiates facts the analyzers stamp structural. */
-const STRUCTURAL_RELATIONSHIPS = new Set(["call", "calls", "extends", "implements", "overrides", "contains", "exports", "instantiates", "inherits"])
-
-/** Tier for one relationship row (M29.R5 rule):
- *  1. a STORED metadata.evidenceClass wins (the analyzer's own
- *     classification — same "stored wins" rule as tierForCrossLanguageEdge
- *     and the W4 webview badge);
- *  2. else a structural relationship type at confidence >= 0.7 is structural
- *     (the W4 floor — below it the edge is a guess and must read inferred);
- *  3. else the legacy coarse map (indexed vocabulary);
- *  4. else sub-0.5 confidence is a semantic candidate; everything else is
- *     honestly inferred. */
-function tierForRelationship(relType: string, confidence: number | null, evidenceClass: string | null): EvidenceTier {
-  if (evidenceClass === "structural" || evidenceClass === "import_based" || evidenceClass === "usage_contextual" || evidenceClass === "reference_qualified" || evidenceClass === "inferred") {
-    return evidenceClass
-  }
-  const t = relType.toLowerCase()
-  if (STRUCTURAL_RELATIONSHIPS.has(t)) return (confidence ?? 0) >= 0.7 ? "structural" : "inferred"
-  const coarse = RELATIONSHIP_TIER[t]
-  if (coarse) return coarse
-  if (confidence !== null && confidence < 0.5) return "semantic_candidate"
-  return "inferred"
-}
+ *  M55.T5: the hover tier is derived by the SINGLE owner
+ *  (src/lsp/evidence_tier.ts) — the same rule the W4 legend and the hub row
+ *  chips use. Before T5 this file carried its own copy of the rule whose
+ *  legacy coarse map answered "indexed" for `imports`/`references`/`uses`
+ *  while the same stored row rendered `import_based`/`usage_contextual` in
+ *  the hub and the legend declared a five-tier vocabulary with no "indexed"
+ *  in it (found live by the T5 step-zero wire probe; see the owner's header).
+ *  Rationale for the structural set and the 0.7 floor is the F7 fixture
+ *  script/m29/r5-tier-fixture.ts: the pre-R5 map had 10 entries and dumped
+ *  parser-deterministic facts (contains, instantiates, exports) into
+ *  "inferred" — measured 42.5% of giant-corpus relationships downgraded.
+ *  The vocabulary/derivation are drift-gated by script/m55/verify-tiers.ts
+ *  and script/m29/verify-precision-improvements.ts (F6, retargeted to the
+ *  owner when the rule moved). */
+export type { EvidenceTier } from "./evidence_tier"
 
 export interface SymbolHoverData {
   name: string
@@ -317,29 +283,23 @@ export function countUsages(raw: CoreDatabase, symbolId: string): number {
   return countUsageSites(raw, symbolId)
 }
 
-/** Collect evidence tiers across the symbol's relationships. */
+/** Collect the symbol's evidence tiers across its stored relationships.
+ *
+ *  M55.T5: the derivation AND the ordering are the owner's
+ *  (src/lsp/evidence_tier.ts) — this function only fetches the rows and
+ *  hands them over. The pre-T5 version derived locally and returned
+ *  `[...tiers].sort()`, an ALPHABETICAL order that made `indexed` the
+ *  reported primary of any symbol that also carried structural evidence.
+ *
+ *  M29.R3 scale fix kept: UNION rewrite (see countUsages) — same tier set,
+ *  two indexed probes instead of one full scan. */
 export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceTier[] {
-  // M29.R3 scale fix: UNION rewrite (see countUsages) — same tier set, two
-  // indexed probes instead of one full scan.
   const rows = raw
     .prepare(
       "SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE source_symbol_id = ?",
     )
-    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; metadata: string | null }>
-  const tiers = new Set<EvidenceTier>()
-  for (const r of rows) {
-    let evidenceClass: string | null = null
-    if (r.metadata) {
-      try {
-        const cls = (JSON.parse(r.metadata) as { evidenceClass?: unknown }).evidenceClass
-        if (typeof cls === "string") evidenceClass = cls
-      } catch {
-        // unreadable metadata is not evidence — fall through to derivation
-      }
-    }
-    tiers.add(tierForRelationship(r.relationship_type, r.confidence, evidenceClass))
-  }
-  return [...tiers].sort()
+    .all(symbolId, symbolId) as StoredTierRow[]
+  return orderTiers(rows.map(classifyStoredRow))
 }
 
 /** Format the hover markdown, including the honesty block. */
@@ -583,7 +543,10 @@ export async function hover(
     data,
     provenance: {
       source: "bb_index",
-      evidenceClass: stale ? "stale" : (tiers[0] ?? "unknown"),
+      // M55.T5: the primary is the STRONGEST tier the symbol carries, by the
+      // declared rank — a member of `tiers` by construction, so the primary
+      // can never disagree with the tier list it headlines.
+      evidenceClass: stale ? "stale" : primaryTier(tiers),
       engine: "bb_lsp hover@m24.l2",
       limitations: [
         "index-sourced; no compiler-backed types (complement stance)",

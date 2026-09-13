@@ -349,13 +349,14 @@ const HOVER_MUTANTS: Array<{ name: string; from: string; to: string }> = [
     to: "  const usageCount = usageSiteRows.length + 1",
   },
   {
-    // The pre-M55 anchor was the final `return "inferred"` — a branch the
-    // fixture can no longer reach (the W4/M29.R5 rule classifies the fixture's
-    // rows as structural + semantic_candidate), so the mutant survived
-    // invisibly. Retargeted to the structural floor the fixture DOES exercise.
+    // M55.T5: the tier RULE moved to src/lsp/evidence_tier.ts (one owner for
+    // every surface), so the pre-M55 anchor (the hover's local structural
+    // branch) no longer exists and the mutant was silently skipping — found
+    // by the T5 sweep. The defect is planted where the hover still owns the
+    // answer: the CARD's tier line, which must render the owner's tier list.
     name: "content: wrong tier label (structural rows mislabeled)",
-    from: 'if (STRUCTURAL_RELATIONSHIPS.has(t)) return (confidence ?? 0) >= 0.7 ? "structural" : "inferred"',
-    to: 'if (STRUCTURAL_RELATIONSHIPS.has(t)) return "indexed"',
+    from: 'lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)',
+    to: 'lines.push(`evidence: indexed`)',
   },
   {
     name: "honesty: fabricate not-indexed entry",
@@ -439,16 +440,20 @@ async function hoverMutantOracle(mod: any): Promise<boolean> {
     // outgoing `return` row are not usages).
     const result = await hover(raw, { filePath: join(dir, FILE_PATH_REL), position: { line: 8, character: 2 } })
     if (result.data?.usageCount !== 3) return true
-    // Tier honesty, stated by the CURRENT rule (M29.R5 + the W4 structural
-    // set): the `calls`/`contains` rows are parser-deterministic structural
-    // facts, the low-confidence `return` row is a semantic candidate. The
-    // pre-M55 oracle still asked for "indexed" (a tier the rule stopped
-    // emitting), so it returned true for every mutant — a hollow suite the
-    // T3 sweep found. It now asserts the tiers the rule actually emits.
+    // Tier honesty, stated by the CURRENT rule (M55.T5 closed vocabulary: the
+    // legend's five tiers + the declared unknown). The `calls`/`contains` rows
+    // are parser-deterministic structural facts; the low-confidence `return`
+    // row is an unrecognized kind, which the legend defines as `inferred` (a
+    // heuristic classification) — the pre-T5 `semantic_candidate` bucket is
+    // retired, and the tier list may only contain legend tiers (that is what
+    // makes it renderable at all). The card must render that same list.
     const tiers: string[] = result.data?.evidenceTiers ?? []
     if (!tiers.includes("structural")) return true
-    if (!tiers.includes("semantic_candidate")) return true
+    if (!tiers.includes("inferred")) return true
+    if (tiers.some((t) => !["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(t))) return true
     if (!result.contents?.value) return true
+    const card = result.contents.value
+    if (!card.includes("evidence: structural, inferred")) return true
 
     // Honesty oracle: not-indexed position must not fabricate. Derived from
     // the fixture (the pre-M55 hard-coded line 13 is INSIDE callerA now).

@@ -34,6 +34,9 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const R3 = path.join(ROOT, "validation/m29/results/R3.json")
 const LEDGER_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
 const HOVER = path.join(ROOT, "src/lsp/hover.ts")
+// M55.T5: the tier rule moved out of src/lsp/hover.ts into the LSP lane's
+// single owner; F6 drift-gates the owner and asserts the hover delegates.
+const TIER_OWNER = path.join(ROOT, "src/lsp/evidence_tier.ts")
 
 let passed = 0
 let failed = 0
@@ -149,9 +152,13 @@ check("F4: a 0.7-confidence contains edge reads structural", newTier("contains",
 // F6: source drift gates — the rule lives where the gates say it lives
 // ---------------------------------------------------------------------------
 const src = readFileSync(HOVER, "utf8")
-check("F6: hover.ts honors stored evidenceClass", src.includes("evidenceClass") && src.includes("JSON.parse(r.metadata)"))
-check("F6: hover.ts structural set includes the containment/exports/instantiates facts", ["contains", "exports", "instantiates", "inherits"].every((t) => src.includes(`"${t}"`)))
-check("F6: the 0.7 floor is declared in hover.ts", src.includes(">= 0.7") || src.includes("0.7 ?"))
+const owner = readFileSync(TIER_OWNER, "utf8")
+// M55.T5: the rule lives in ONE module (src/lsp/evidence_tier.ts). The hover
+// must DELEGATE (no local copy), and the owner must carry the R5 rule.
+check("F6: hover.ts delegates tier derivation to the single owner (M55.T5)", src.includes('./evidence_tier') && !src.includes("RELATIONSHIP_TIER") && !src.includes("JSON.parse(r.metadata)"), "the hover must not carry a second derivation")
+check("F6: the owner honors stored evidenceClass", owner.includes("evidenceClass") && owner.includes("isDeclaredTier") && owner.includes("JSON.parse(metadata)"))
+check("F6: the owner's structural set includes the containment/exports/instantiates facts", ["contains", "exports", "instantiates", "inherits"].every((t) => owner.includes(`"${t}"`)))
+check("F6: the 0.7 floor is declared in the owner", owner.includes("STRUCTURAL_FLOOR = 0.7") && owner.includes(">= STRUCTURAL_FLOOR"))
 check("F6: the F7 fixture is referenced in hover.ts's rationale", src.includes("r5-tier-fixture"))
 
 // ---------------------------------------------------------------------------

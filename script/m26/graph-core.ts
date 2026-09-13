@@ -127,8 +127,29 @@ export interface RenderStats {
   edgesTruncated: boolean
 }
 
-const STRUCTURAL_TYPES = new Set(["calls", "inherits", "implements", "overrides"])
+// M55.T5: the derivation mirror. The owner is src/lsp/evidence_tier.ts
+// (the server's ONE classifier); this core is import-pure (verify-webview-core
+// P1: zero imports) so it mirrors the rule, and script/m55/verify-tiers.ts
+// drift-gates the mirror on a declared case table against the owner. Before
+// T5 this set lacked the containment/exports/instantiates facts and the
+// `uses`/`usage` kinds, so a hub row whose analyzer stored no class rendered
+// `inferred` where the hover card for the same row rendered `structural` /
+// `usage_contextual` — a symbol with two tier stories.
+const STRUCTURAL_TYPES = new Set([
+  "call",
+  "calls",
+  "extends",
+  "inherits",
+  "implements",
+  "overrides",
+  "override",
+  "contains",
+  "exports",
+  "instantiates",
+])
 const IMPORT_TYPES = new Set(["imports", "import"])
+const USAGE_TYPES = new Set(["reference", "references", "use", "uses", "usage"])
+const REFERENCE_QUALIFIED_TYPES = new Set(["references_qualified", "reference_qualified"])
 
 /** Tier meanings in UI terms — the legend vocabulary. Documented decision:
  *  the 0.7 confidence floor mirrors patterns.ts inheritance — at or above it
@@ -136,24 +157,27 @@ const IMPORT_TYPES = new Set(["imports", "import"])
  *  MUST render as inferred. Kept in sync with the hover gloss
  *  (src/lsp/cross_language_hover.ts) — the W4 verifier drift-gates the two. */
 export const TIER_MEANINGS: Record<EdgeTier, string> = {
-  structural: "stored or derived structure (calls/extends/implements/overrides at confidence >= 0.7) — safe to trust for navigation",
+  structural: "stored or derived structure (calls/extends/implements/overrides/contains/exports/instantiates at confidence >= 0.7) — safe to trust for navigation",
   import_based: "derived from import statements — the module relationship is real, the use may be indirect",
   usage_contextual: "usage-site evidence — the name appears in context, not guaranteed to be a call",
   reference_qualified: "reference with qualifier evidence — stronger than usage_contextual, weaker than structure",
-  inferred: "a guess (heuristic or confidence < 0.7) — treat as a hint, never as fact",
+  inferred: "a guess or an unrecognized relationship kind (heuristic, or confidence < 0.7) — treat as a hint, never as fact",
 }
 
-/** Tier for an edge: stored evidenceClass wins; else the declared derivation.
+/** Tier for an edge: a STORED legend-tier evidenceClass wins; else the
+ *  declared derivation (the owner's rule, mirrored — see STRUCTURAL_TYPES).
+ *  A stored label outside the legend is not a tier claim (M55.T5), so the
+ *  edge's own kind decides, exactly as src/lsp/evidence_tier.ts does.
  *  The 0.7 confidence floor mirrors the inheritance threshold decision in
  *  patterns.ts — below it, an edge is a guess and must render as inferred. */
 export function tierForEdge(edge: GraphEdgeLike): EdgeTier {
   const stored = edge.metadata?.evidenceClass
   if (stored && (EDGE_TIERS as readonly string[]).includes(stored)) return stored as EdgeTier
-  const t = edge.relationshipType
+  const t = edge.relationshipType.trim().toLowerCase()
   if (STRUCTURAL_TYPES.has(t)) return edge.confidence >= 0.7 ? "structural" : "inferred"
   if (IMPORT_TYPES.has(t)) return "import_based"
-  if (t === "references") return "usage_contextual"
-  if (t === "references_qualified") return "reference_qualified"
+  if (USAGE_TYPES.has(t)) return "usage_contextual"
+  if (REFERENCE_QUALIFIED_TYPES.has(t)) return "reference_qualified"
   return "inferred"
 }
 
@@ -201,13 +225,23 @@ function edgeElement(edge: GraphEdgeLike, index: number, dom: GraphDom): GraphDo
   return el
 }
 
+/** The ONE tier -> badge-class mapping (M55.T5 acceptance 4): the legend
+ *  swatch and every evidence badge derive their class from this single
+ *  function, so the rendering path can never disagree with the legend it
+ *  ships. Before T5 the template was written twice (legend + badge) and the
+ *  two could drift silently; script/m55/verify-tiers.ts asserts the template
+ *  appears exactly once in this source. */
+export function badgeClassForTier(tier: EdgeTier): string {
+  return `bb-badge-${tier}`
+}
+
 /** W4 badge: tier name + confidence, class-distinct per tier, rendered from
  *  the SAME tier resolution as the element it sits on (a badge can never
  *  disagree). Shared by graph edges and hub usage rows (M42.H5). */
 function appendEvidenceBadge(parent: GraphDomElement, edge: GraphEdgeLike, tier: EdgeTier, badgeClass: string, dom: GraphDom): void {
   const badge = dom.create("span")
   badge.addClass(badgeClass)
-  badge.addClass(`bb-badge-${tier}`)
+  badge.addClass(badgeClassForTier(tier))
   badge.setAttribute("data-badge-tier", tier)
   badge.setAttribute("data-badge-confidence", String(edge.confidence))
   badge.textContent = `${tier} · ${edge.confidence}`
@@ -259,7 +293,7 @@ export function renderLegend(dom: GraphDom): GraphDomElement {
     item.addClass(`bb-legend-${tier}`)
     const swatch = dom.create("span")
     swatch.addClass("bb-legend-swatch")
-    swatch.addClass(`bb-badge-${tier}`)
+    swatch.addClass(badgeClassForTier(tier))
     swatch.setAttribute("data-legend-tier", tier)
     const meaning = dom.create("span")
     meaning.addClass("bb-legend-meaning")
@@ -658,7 +692,10 @@ function relChips(entry: GroupedHubEntry, parent: GraphDomElement, dom: GraphDom
     const tier = tierForTypeRows(typeRows)
     const chip = dom.create("span")
     chip.addClass("bb-hub-relchip")
-    chip.addClass(tier === "mixed" ? "bb-badge-mixed" : `bb-badge-${tier}`)
+    // M55.T5: the chip's class comes from the ONE mapping (badgeClassForTier),
+    // never a second literal template — the legend, the edge badge and the hub
+    // chip must be incapable of disagreeing.
+    chip.addClass(tier === "mixed" ? "bb-badge-mixed" : badgeClassForTier(tier))
     chip.setAttribute("data-rel-type", rt.type)
     chip.setAttribute("data-occurrences", String(rt.occurrences))
     chip.setAttribute("data-tier", tier)
