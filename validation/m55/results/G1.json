@@ -8,16 +8,18 @@
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 6,
-  "currentCommit": "ba29ae36ae7edf6de297becccdfb1e41c0652ad6",
+  "currentCommit": "c7c993e5727bb87f350bb8679da2b9d5b151c5ff",
   "workingTreeRelevantChanges": [
     "script/m55/verify-governance.ts",
+    "validation/m55/results/G1.json",
     "validation/m55/results/manifest.json",
-    "script/m55/verify-panel-placement.ts",
-    "validation/m55/results/P1.json"
+    "script/m55/t3-fixture.ts",
+    "script/m55/verify-relations.ts",
+    "validation/m55/results/T3.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-12T18:38:43.584Z",
+  "generatedAt": "2026-09-13T16:56:52.306Z",
   "ledger": {
     "issues": 9,
     "verified": [],
@@ -35,6 +37,7 @@
     "partial": [
       "T1",
       "T2",
+      "T3",
       "P1"
     ],
     "ledgerStatus": "open"

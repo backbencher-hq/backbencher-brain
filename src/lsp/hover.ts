@@ -40,8 +40,9 @@ import {
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
+import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { parseForSafety } from "../ast/safety-primitives"
-import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usagesSection } from "./rich_hover"
+import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (M29.R2: one owner; the set was duplicated here
@@ -307,18 +308,18 @@ export async function resolveOccurrenceSymbol(
   }
 }
 
-/** Count usages of a symbol from brain_relationship (direct count). */
+/** Count usages of a symbol (M55.T3: the vocabulary's usage-site count).
+ *
+ * History: this counted EVERY row touching the symbol — both directions,
+ * including the owning declaration and callees, undeduplicated by location.
+ * On the demo index that made `greet` read "6 usages" while its list rendered
+ * 6 rows (one of them its class) and the graph reported 3 callers; `greetAll`
+ * read a usage it did not have while its caller set was empty. The count now
+ * comes from src/lsp/relations.ts — the same rule, in SQL (independent of the
+ * row materialization the hover list uses; the M55.T3 gate asserts the two
+ * agree on a real index). */
 export function countUsages(raw: CoreDatabase, symbolId: string): number {
-  // M29.R3 scale fix: the OR form defeats both single-column indexes and
-  // scanned brain_relationship at giant scale (hover p95 902ms on a 59k-file
-  // corpus vs the 50ms budget). The UNION form is two indexed probes with
-  // row-identity dedupe — the exact result multiset of the OR, index-served.
-  const row = raw
-    .prepare(
-      "SELECT COUNT(*) AS c FROM (SELECT id FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT id FROM brain_relationship WHERE source_symbol_id = ?)",
-    )
-    .get(symbolId, symbolId) as { c: number }
-  return row.c
+  return countUsageSites(raw, symbolId)
 }
 
 /** Collect evidence tiers across the symbol's relationships. */
@@ -350,7 +351,14 @@ export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceT
 export function formatHoverMarkdown(data: SymbolHoverData): string {
   const lines: string[] = []
   lines.push(`\`\`\`\n${data.signature}\n\`\`\``)
-  lines.push(`**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"}`)
+  // M55.T3: the count line declares what was counted, so a reader (and the
+  // references surface, which legitimately answers a wider question when the
+  // client asks for the declaration too) can never read two numbers as a
+  // disagreement. Zero is stated, never omitted: a symbol with no stored
+  // references reads "0 usages", not silence (§14 Truth Rule 1).
+  lines.push(
+    `**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"} _(${USAGE_SITE_FILTER_LABEL})_`,
+  )
   if (data.evidenceTiers.length > 0) {
     lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)
   } else {
@@ -459,12 +467,18 @@ export async function hover(
   const freshnessStatus = freshness?.status ?? "missing"
   const stale = freshnessStatus !== "fresh"
 
-  const usageCount = countUsages(raw, symbol.id)
   const tiers = evidenceTiersFor(raw, symbol.id)
   // M42.H2: usage sites = the L3 references row set, resolved through the
-  // navigation location owner. Used for BOTH the connected summary and the
-  // top-3 usage links (one collection, two renderings).
+  // navigation location owner. Used for the connected summary, the top-3
+  // usage links AND the count (one collection, three renderings).
   const sites = richSitesForSymbol(raw, symbol.id)
+  // M55.T3 (§14 Truth Rule 1): the count IS this array's length — the number
+  // of rows the usages list can show (the `+N more` rest included, since the
+  // list is capped at MAX_USAGE_LINKS and reports the remainder). The
+  // vocabulary filter (declaration/callee exclusion) lives in relations.ts;
+  // it is applied once here, and the section renders the same filtered array.
+  const usageSiteRows = usageSitesOf(sites)
+  const usageCount = usageSiteRows.length
   // M26.W3: per-pair cross-language facts from stored rows only.
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
   // M28.A2: annotation rows for this symbol, rendered by the single owner.
@@ -535,7 +549,7 @@ export async function hover(
     evidenceTiers: tiers,
     // M42.H2: rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
-    usagesSection: usagesSection(sites, sites.length, symbol.name, file.path, request.position.line, request.position.character),
+    usagesSection: usagesSection(usageSiteRows, usageCount, symbol.name, file.path, request.position.line, request.position.character),
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },

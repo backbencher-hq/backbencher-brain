@@ -48,13 +48,13 @@
         "verifiedAt": "2026-09-12",
         "fixes": [
           "src/lsp/identity.ts (new, the ONE owner): the member-resolution rules moved out of the impact door, where the graph door had re-implemented its own call. Both doors read this module now (impact.ts delegates, graph_request.ts imports the resolver + the record builder), so a rule change cannot land on one surface only.",
-          "src/lsp/graph_request.ts: a member target the engine whitelist excludes no longer travels as an unlabeled root — the substitution rides the payload as a declared `resolution` record (memberName/ownerName/through), and a hinted request whose root lands outside the hint is refused instead of silently relabeled.",
+          "src/lsp/graph_request.ts: a member target the engine whitelist excludes no longer travels as an unlabeled root \u2014 the substitution rides the payload as a declared `resolution` record (memberName/ownerName/through), and a hinted request whose root lands outside the hint is refused instead of silently relabeled.",
           "src/lsp/graph_request.ts (declared-error half): a genuinely absent symbol used to escape as the engine's bare \"Symbol '<name>' not found\", contradicting GRAPH-TRANSPORT.md's own prefix contract (clients match `bb/graph:` to tell a declared error from a bug). It is wrapped into a declared `bb/graph:` reason; any OTHER engine failure is still thrown untouched, because prefixing a real bug would mislabel it as expected behaviour. The doc row was corrected to match the code.",
-          "ide/vscode/src/identity-label.ts (new): the panel-title rule was extracted out of graph-panel.ts (which imports `vscode`) into a vscode-free module, because a rule that cannot run in a gate cannot be verified — and this one had silently failed the owner (a constructor graph opening titled `Store` with nothing said). graph-panel re-exports it, so hub/impact/graph all render through ONE rule.",
-          "script/m55/t1-fixture.ts + script/m55/verify-identity.ts (new): the fixture (member target, a SECOND constructor for the ambiguity case, an accessor, an absent name, a direct root) and the suite over the REAL indexer, the REAL server and the REAL renderer — 38 checks, 5 mutants."
+          "ide/vscode/src/identity-label.ts (new): the panel-title rule was extracted out of graph-panel.ts (which imports `vscode`) into a vscode-free module, because a rule that cannot run in a gate cannot be verified \u2014 and this one had silently failed the owner (a constructor graph opening titled `Store` with nothing said). graph-panel re-exports it, so hub/impact/graph all render through ONE rule.",
+          "script/m55/t1-fixture.ts + script/m55/verify-identity.ts (new): the fixture (member target, a SECOND constructor for the ambiguity case, an accessor, an absent name, a direct root) and the suite over the REAL indexer, the REAL server and the REAL renderer \u2014 38 checks, 5 mutants."
         ],
         "findings": [
-          "a TypeScript getter is stored as `property`, which is outside the traversal whitelist — so an accessor is a member target too and is now labeled rather than silently relabeled (asserted from the stored type, not assumed)",
+          "a TypeScript getter is stored as `property`, which is outside the traversal whitelist \u2014 so an accessor is a member target too and is now labeled rather than silently relabeled (asserted from the stored type, not assumed)",
           "the accessor invariant is derived at run time from the stored symbol_type, so the gate cannot pass vacuously if a future analyzer starts storing getters as traversable methods"
         ],
         "remaining": [
@@ -96,13 +96,13 @@
         "stage": "component + wire legs verified; the in-editor Call-hierarchy leg is still pending V1's rig (closure requirement), so the issue is NOT closable yet",
         "verifiedAt": "2026-09-12",
         "fixes": [
-          "src/lsp/positions.ts (M24.P1 owner): a stored byte 0 could not convert (`byte < 1` -> null), so prepareCallHierarchy returned a declared absence for the FIRST symbol of any file whose declaration starts at offset 0 — the live demo's `deep`/`loop`/`Store` were unreachable in call hierarchy. Byte 0 is unambiguous (per-line columns are 1-based), so it now converts to line 1 column 1; a byte 0 on any other line stays declared-unconvertible. Gated by 8 row cases + 3 new mutants in script/m24/verify-positions.ts (P1 21/21, 11/11).",
-          "src/lsp/call_hierarchy.ts: receiver classification read `this.items.get(...)` as `this.` (recursion) because the receiver ended with a separator — the analyzer's name-resolution artifact was therefore kept and the member listed itself as its own caller. Classification now uses the receiver's LAST segment plus the symbol's own names (qualified_name owner), and the receiver text is reported without the trailing separator.",
+          "src/lsp/positions.ts (M24.P1 owner): a stored byte 0 could not convert (`byte < 1` -> null), so prepareCallHierarchy returned a declared absence for the FIRST symbol of any file whose declaration starts at offset 0 \u2014 the live demo's `deep`/`loop`/`Store` were unreachable in call hierarchy. Byte 0 is unambiguous (per-line columns are 1-based), so it now converts to line 1 column 1; a byte 0 on any other line stays declared-unconvertible. Gated by 8 row cases + 3 new mutants in script/m24/verify-positions.ts (P1 21/21, 11/11).",
+          "src/lsp/call_hierarchy.ts: receiver classification read `this.items.get(...)` as `this.` (recursion) because the receiver ended with a separator \u2014 the analyzer's name-resolution artifact was therefore kept and the member listed itself as its own caller. Classification now uses the receiver's LAST segment plus the symbol's own names (qualified_name owner), and the receiver text is reported without the trailing separator.",
           "src/lsp/call_hierarchy.ts: incoming/outgoing rendered the engine's deeper hops (depth > 0) as callers/callees with an approximate position (`top` listed as a caller of `deep` through `mid`; a mutual pair listed each function as its own caller). LSP's lists are DIRECT relations, so a stored `calls` row from an indexed caller whose own source never invokes the name is now DROPPED and declared in droppedEdges.",
           "script/m24/lsp_harness.ts (M24.V1): four L2 hover legs still asserted the pre-wire-law shape (flat `data.name`, top-level `provenance`, `{contents:null}` absence) and sat KNOWN-GAP while the server was correct; they now assert the declared contract (data.symbol.*, data.provenance.source, wire null) and the L5 leg asserts the reported call site slices back to the invoked name."
         ],
         "remaining": [
-          "in-editor leg: hover -> Call hierarchy in a pinned editor, the callers rendered, clicking one landing on the CALL SITE with the correct symbol (frame + machine assertion) — V1's rig"
+          "in-editor leg: hover -> Call hierarchy in a pinned editor, the callers rendered, clicking one landing on the CALL SITE with the correct symbol (frame + machine assertion) \u2014 V1's rig"
         ],
         "defectsReportedToOtherLanes": [
           "a file-absolute symbol row whose offset also fits the target line's byte length is still read as a per-line column by resolveRowByteColumns (pre-existing declared ambiguity, now recorded in P1.json's limitations); removing it needs a writer-side convention flag from the indexer lane"
@@ -152,9 +152,41 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "planned",
-        "verifierCommand": "npx tsx script/m55/verify-usage-vocabulary.ts",
-        "evidenceFile": "T3.json"
+        "status": "verified",
+        "currentCommit": "see T3.json",
+        "verifierCommand": "npx tsx script/m55/verify-relations.ts",
+        "evidenceFile": "T3.json",
+        "passed": 52,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3,
+        "scope": "the ONE relation vocabulary (src/lsp/relations.ts) over a real seeded sqlite index: hover count = rendered rows = references (under its declared filter) = the independent SQL count; the zero-caller case; the class/callee/self-loop/NULL-location exclusions; the real dist server over the wire; 3 planted defects"
+      },
+      "progress": {
+        "stage": "the four-way disagreement recorded at filing time is GONE at this evidence HEAD: greet reads 3 usages / 3 rendered rows / 3 references (4 with the declaration) / 3 graph callers, and greetAll reads 0 usages with no list. The issue is NOT closable yet only because its closure requirement includes V1's in-editor frame of the same case.",
+        "verifiedAt": "2026-09-13",
+        "fixes": [
+          "src/lsp/relations.ts (new, the ONE owner): the relation vocabulary \u2014 a usage site is a stored row whose TARGET is the symbol and whose kind is not a declaration containment (`contains`/`exports`); `countUsageSites` is a second, independent SQL implementation of the same rule, and the gate asserts the two agree on a real index.",
+          "src/lsp/hover.ts: the usage count is DERIVED from the usage-site collection (count and list are the same array, so they cannot disagree), and the count line declares its filter (`usage sites only; declaration and callees excluded`).",
+          "src/lsp/rich_hover.ts: the usages section renders usage sites only, filters defensively at the renderer, and its header declares what the rows are.",
+          "src/lsp/navigation.ts: textDocument/references answers the usage sites under the same predicate (its WHERE narrowed to the target side, self-loops and declaration containments filtered), so references is differential with the hover instead of counting both directions plus the declaration (the wire answering 7 where the graph said 3).",
+          "src/lsp/graph_usages.ts: the hub's caller list drops self-referential rows (from === to) \u2014 the same artifact the hover's collector and the SQL count exclude; found live by the T3 gate listing `greet` among greet's own callers.",
+          "script/m55/t3-fixture.ts + script/m55/verify-relations.ts (new): the fixture (a multi-caller method, a zero-caller method with a callee and an owning class, a duplicate-location row pair, a self-loop, an unresolvable other end, a file-level export) and the suite over the real seeded schema, the real component and the real dist server \u2014 52 checks, 3 mutants.",
+          "script/m24/verify-hover.ts: the fixture stored its rows BACKWARDS (greet as the source of three `call` rows with no target), so it asserted greet's own outgoing rows as its usage count; the fixture now stores the analyzer convention (3 incoming `calls` rows from 3 callers + the owning `contains` row + an outgoing row) and the count check is a real differential (3). Its mutation suite was also hollow (2 of 4 mutants could never be caught: the count anchor no longer existed, and the tier branch the oracle demanded is unreachable since the W4/M29.R5 rule) \u2014 retargeted and split into load-vs-oracle outcomes.",
+          "script/m42/verify-rich-hover.ts: the H2/R3 assertion required `[Greeter \u2014 App.java:6]` \u2014 the hovered method's own class, offered as a usage \u2014 which is the T3 defect verbatim; it now asserts the real call sites and the class's absence, and the R4 differential asserts references answers each usage site once and never the declaration.",
+          "script/m26/verify-impact-mode.ts: the L3 differential no longer subtracts the fixture's outgoing row (references is reverse-only now), and its evidence comment was corrected.",
+          "script/m44/u6-fixture.ts: the U6 expectation drops from 5 sites to 4 (`+1 more`, not `+2`) because the owning class's `contains` row was never a usage."
+        ],
+        "findings": [
+          "the four surfaces were not merely inconsistent in presentation \u2014 each counted a different SET (all touching rows / incoming calls / both directions deduplicated / both directions + declaration)",
+          "the graph's caller list included the symbol itself when an analyzer wrote a self-loop `calls` row, and the hover's references door did too \u2014 the T3 gate caught both from one fixture row",
+          "textDocument/references was answering callees and the owning declaration as \"references\" \u2014 wrong under the LSP meaning of the request and invisible to the earlier gates, which asserted the old behavior"
+        ],
+        "remaining": [
+          "V1's in-editor frame of the same case (closure requirement)",
+          "T4 (signature rendering) and T5 (tier vocabulary) own the remaining two Truth Rule 1 surfaces"
+        ]
       }
     },
     {
@@ -212,9 +244,9 @@
         "stage": "the decision, the reuse rule, the structural lint and the setting contribution are verified headlessly; the in-editor column/focus leg is V1's rig, so the issue is NOT closable yet",
         "verifiedAt": "2026-09-12",
         "fixes": [
-          "ide/vscode/src/panel-placement.ts (new, the ONE owner): the placement decision moved out of three panel files that each hardcoded `ViewColumn.Beside` and set no focus policy. vscode-free so the gate can execute it — the column numbers are injected. `activeGroup` is the default (owner decision); `beside` is honored; `panel`/`secondarySidebar` are NOT implementable for webview panels (createWebviewPanel takes an editor-area column only), so they resolve to the default WITH a declared warning instead of silently doing nothing.",
+          "ide/vscode/src/panel-placement.ts (new, the ONE owner): the placement decision moved out of three panel files that each hardcoded `ViewColumn.Beside` and set no focus policy. vscode-free so the gate can execute it \u2014 the column numbers are injected. `activeGroup` is the default (owner decision); `beside` is honored; `panel`/`secondarySidebar` are NOT implementable for webview panels (createWebviewPanel takes an editor-area column only), so they resolve to the default WITH a declared warning instead of silently doing nothing.",
           "ide/vscode/src/panel-placement.ts: the reuse registry + key rules (one panel per symbol+file; the same click twice is the same panel; a disposed panel leaves no stale handle) and a declared preserveFocus policy (informational panels never move the cursor; a future input-taking panel must opt out explicitly).",
-          "hub/impact/graph panels: each now resolves its placement through the one rule, reuses its own registry entry, and reveals with preserveFocus. The graph panel hosts the single `resolvePlacementFromSettings()` helper the other two import — no panel names a column.",
+          "hub/impact/graph panels: each now resolves its placement through the one rule, reuses its own registry entry, and reveals with preserveFocus. The graph panel hosts the single `resolvePlacementFromSettings()` helper the other two import \u2014 no panel names a column.",
           "ide/vscode/package.json: `bb.panelPlacement` is now CONTRIBUTED (enum + default + descriptions). Without the contribution the setting could not be set at all, so 'remembered' would have been a claim about a setting that did not exist."
         ],
         "remaining": [

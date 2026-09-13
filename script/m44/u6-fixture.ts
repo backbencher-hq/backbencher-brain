@@ -73,10 +73,13 @@ function declLine(source: string, needle: string): number {
 export const U6_EXPECT = {
   renderDeclLine: declLine(U6_SOURCE_APP, "public String render()"),
   renderDeclChar: U6_SOURCE_APP.split("\n")[declLine(U6_SOURCE_APP, "public String render()")]!.indexOf("render"),
-  // six call sites: App.main, ExtraCalls.both (twice), Extra1.main,
-  // Extra2.main — the usages section shows top-3 links + "+3 more".
+  // FOUR usage sites: App.main, ExtraCalls.both (twice — one site after the
+  // location dedup), Extra1.main, Extra2.main. The usages section shows the
+  // top-3 links + "+1 more". (Pre-M55 the count was 5 because render's own
+  // owning class `contains` row was offered as a usage — M55.T3, §14 Truth
+  // Rule 1: a declaration is never a usage.)
   shownLinks: 3,
-  hiddenMore: 2,
+  hiddenMore: 1,
   symbol: "render",
 } as const
 
