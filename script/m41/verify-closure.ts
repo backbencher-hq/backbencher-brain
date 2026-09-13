@@ -490,7 +490,11 @@ const evidence = {
   passed,
   failed: checks - passed,
   negativeCases: negatives,
-  currentCommit: head,
+  // currentCommit is the BATCH commit, not HEAD-at-run-time: the ledger records
+  // this entry and the governance gate compares it byte-for-byte against this
+  // file, so writing HEAD here would make the gate's own re-run (or a later
+  // `npm run verify` at the evidence commit) disagree with the ledger.
+  currentCommit: H,
   batchCommit: H,
   deployGated: { code: "S2", commit: s2Commit, status: "pass at ancestor commit; owner re-runs post-deploy" },
   liveReruns: { truthPipeline: tp.code, governance: gov.code },

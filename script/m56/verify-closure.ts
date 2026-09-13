@@ -612,7 +612,12 @@ const evidence = {
   passed,
   failed: checks - passed,
   negativeCases: negatives,
-  currentCommit: head,
+  // currentCommit is the BATCH commit, not HEAD-at-run-time. The ledger records
+  // this entry and the governance gate compares it byte-for-byte against this
+  // file, so a gate that wrote HEAD here would make its own re-run (and any
+  // later `npm run verify` at the evidence commit) disagree with the ledger it
+  // just satisfied. The batch is what X1 asserts; when it ran is generatedAt.
+  currentCommit: H,
   batchCommit: H,
   foldIn: {
     milestone: "M41",
