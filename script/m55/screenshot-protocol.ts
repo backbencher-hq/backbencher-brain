@@ -38,6 +38,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { homedir } from "node:os"
 import path from "node:path"
 import { M55_ROOT } from "./lsp-wire.ts"
+import { EDITOR_CONTENT_REGION, navigationSpannedFile, noNavigationReason, type RegionDiff } from "./navigation.ts"
 import { DECLARED_FIXTURE, resolvePosition } from "./wire-probe.ts"
 
 const ROOT = M55_ROOT
@@ -116,20 +117,33 @@ export const CAPTURE_FLOWS: CaptureFlow[] = [
   // removed rather than kept with a label the frame did not support.
   //
   // This flow uses a real MOUSE CLICK on a caller row, which is what the owner's
-  // requirement describes and what a developer does. The click point is
-  // DECLARED, measured from validation/m55/frames/live-14/6-call-hierarchy.png
-  // (the tree's first caller row, `main function · calls · 1 call site`, sits at
-  // ~x 1300 / y 337 on the 1920x1080 session window) and expressed as a fraction
-  // of the window so it travels with the window rectangle the rig records.
-  { id: "11", label: "call-hierarchy-click", shows: "the call hierarchy after CLICKING a caller — the editor lands on the CALL SITE (T2)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bb.showCallHierarchy", title: "Backbencher: Show Call Hierarchy", thenClickRow: { region: [0.646, 0.296, 0.839, 0.407], index: 1 }, afterClickKeys: ["Right", "Down", "Return"] } },
+  // requirement describes and what a developer does. The row is FOUND in a
+  // scratch frame the rig captures just before the click (never a frozen
+  // coordinate — see thenClickRow), inside a region measured from
+  // validation/m55/frames/live-14/6-call-hierarchy.png.
+  //
+  // GESTURE (corrected after reading live-17 and live-19 side by side):
+  //   live-17 — click + `Return`: the editor opened src/app.ts with the caller
+  //             `main` selected.                                    = NAVIGATION
+  //   live-19 — click + `Right`,`Down`,`Return`: the click had not taken the
+  //             row selection, so the keys went to the EDITOR — the frame shows
+  //             the same file with a dirty dot and the cursor on line 15.
+  // The two extra keys bought nothing and could only damage the file, so the
+  // gesture is the click plus the single activation key. On top of that the rig
+  // now REFUSES to record a frame whose editor did not navigate (the shared
+  // rule in script/m55/navigation.ts), which is how live-19 was recorded as a
+  // landing while showing a cursor move. The label says what the frame shows:
+  // the editor lands on the CALLER (its declaration), which is the landing half
+  // of T2; the call-site nuance is recorded in F13 and machine-asserted at the
+  // wire by script/m55/verify-call-hierarchy.ts (every fromRange resolves to
+  // the invocation token).
+  { id: "11", label: "call-hierarchy-click", shows: "the call hierarchy after CLICKING a caller — the editor opens the caller's file with the caller (T2; the call-site nuance is F13)", file: "src/greeter.ts", symbol: "greet", kind: "declaration", action: { kind: "command", command: "bb.showCallHierarchy", title: "Backbencher: Show Call Hierarchy", thenClickRow: { region: [0.646, 0.296, 0.839, 0.407], index: 1 }, afterClickKeys: ["Return"] } },
   // The call-SITE half of the same gesture (T2's wording: "lands on the CALL
   // SITE") was ATTEMPTED as a second flow (expand the caller, Down onto its
   // call-site child, Return) and is NOT here: re-issuing the call-hierarchy
   // command in the following flow produced no state change, so the rig's
   // own "did the workbench change?" check refused the frame twice (live-18,
-  // live-19). What the kept flow DOES prove is recorded in F13: the click
-  // navigates to the caller's file with the caller selected, and the call site
-  // is rendered in the view's inline preview and machine-asserted at the wire.
+  // live-19). What the kept flow DOES prove is recorded in F13.
 ]
 
 export interface FrameRecord {
@@ -538,7 +552,47 @@ export async function runCaptureSession(opts: { run?: string; profile?: string; 
               await sleep(1800)
             }
             await sleep(1500)
+            // The self-check (see script/m55/navigation.ts): the scratch frame
+            // is the PRE-click screen, so capturing the post-click screen and
+            // applying the shared rule tells the rig whether the gesture
+            // navigated. A frame that did not navigate is DECLARED BLOCKED here
+            // and never recorded — the same discipline as the palette flow's
+            // "did the workbench change?" check, and the reason a cursor move
+            // can no longer be filed as a landing.
+            const post = path.join(outDir, `.scratch-${flow.id}-post.png`)
+            if (!captureTo(post)) {
+              base.flows.push({ id: flow.id, label: flow.label, status: "blocked", reason: "the post-click frame for the navigation check could not be captured" })
+              rmSync(scratch, { force: true })
+              continue
+            }
+            const [ex, ey, ew, eh] = EDITOR_CONTENT_REGION
+            const navRead = sh("python3", [
+              PIXEL_READ,
+              "diff",
+              scratch,
+              post,
+              String(rect.x + Math.round(rect.width * ex)),
+              String(rect.y + Math.round(rect.height * ey)),
+              String(Math.round(rect.width * ew)),
+              String(Math.round(rect.height * eh)),
+            ])
+            let navDiff: RegionDiff | null = null
+            try {
+              navDiff = JSON.parse(navRead.out) as RegionDiff
+            } catch {
+              navDiff = null
+            }
             rmSync(scratch, { force: true })
+            rmSync(post, { force: true })
+            if (!navigationSpannedFile(navDiff)) {
+              base.flows.push({
+                id: flow.id,
+                label: flow.label,
+                status: "blocked",
+                reason: `the click did not navigate — ${noNavigationReason(navDiff)}`,
+              })
+              continue
+            }
           }
           if (captureTo(framePath)) {
             const previous = frames[frames.length - 1]

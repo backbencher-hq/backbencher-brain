@@ -10,22 +10,17 @@
   "mutantsCaught": 11,
   "mutantsTotal": 11,
   "negatives": 0,
-  "currentCommit": "7e5154a1a2baa86627ae9df9b2427af4325736e4",
+  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
   "workingTreeRelevantChanges": [
-    "ide/vscode/package.json",
-    "ide/vscode/src/extension.ts",
-    "ide/vscode/src/graph-panel.ts",
-    "ide/vscode/src/panel-placement.ts",
     "script/m55/screenshot-protocol.ts",
-    "ide/vscode/src/status-markup.ts",
-    "ide/vscode/src/webview-dom.ts",
-    "script/m55/verify-status-panel.ts"
+    "script/m55/verify-live-surface.ts",
+    "script/m55/navigation.ts"
   ],
   "foundBy": "the V1 rig's own frame: validation/m55/frames/live-7/7-status.png (the visible content was the single line 'launch: compiled dist (bundled) — …')",
   "owner": "ide/vscode/src/status-markup.ts (pure markup) + ide/vscode/src/extension.ts (panel + reuse)",
   "modelOwner": "ide/vscode/src/status-model.ts (unchanged; gated by script/m25/verify-status-surface.ts)",
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
-  "generatedAt": "2026-09-13T19:48:53.764Z",
+  "generatedAt": "2026-09-13T23:37:58.863Z",
   "failures": []
 }

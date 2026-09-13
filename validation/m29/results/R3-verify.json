@@ -1,14 +1,16 @@
 {
-  "status": "verified",
-  "passed": 25,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 24,
+  "failed": 1,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "377dea29d232a79f748395cc1c913970f4efb57d",
-  "relevantInputsHash": "bcdf7d5eaceb7d21c957642fc98af574f35457a3",
+  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
+  "relevantInputsHash": "97ec48e442843ecf70365a638a14ed58d2faeec2",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-12T22:37:56.037Z",
-  "details": []
+  "generatedAt": "2026-09-13T23:31:39.655Z",
+  "details": [
+    "R2: relevant inputs unchanged since the evidence run: evidence=bcdf7d5eaceb7d21c957642fc98af574f35457a3 vs current=97ec48e442843ecf70365a638a14ed58d2faeec2 — re-run giant-repo-budget.ts --reuse to refresh"
+  ]
 }
