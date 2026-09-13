@@ -383,14 +383,14 @@
       "status": "pass"
     },
     {
-      "description": "javascript: 16 ruled, 12 pending owner",
+      "description": "javascript: 16 ruled, 14 pending owner",
       "id": "design-decisions-tracked",
       "language": "javascript",
       "status": "pass"
     },
     {
       "description": "every named node type classified (javascript)",
-      "detail": "125 types, 89 handled, 20 silent, 9 gaps, 28 decisions",
+      "detail": "125 types, 89 handled, 20 silent, 9 gaps, 30 decisions",
       "id": "section-a-structural",
       "language": "javascript",
       "status": "pass"
@@ -531,14 +531,14 @@
       "status": "pass"
     },
     {
-      "description": "svelte: 6 ruled, 3 pending owner",
+      "description": "svelte: 6 ruled, 4 pending owner",
       "id": "design-decisions-tracked",
       "language": "svelte",
       "status": "pass"
     },
     {
       "description": "every named node type classified (svelte)",
-      "detail": "74 types, 32 handled, 21 silent, 16 gaps, 9 decisions",
+      "detail": "74 types, 32 handled, 21 silent, 16 gaps, 10 decisions",
       "id": "section-a-structural",
       "language": "svelte",
       "status": "pass"
@@ -605,14 +605,14 @@
       "status": "pass"
     },
     {
-      "description": "c: 4 ruled, 0 pending owner",
+      "description": "c: 10 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "c",
       "status": "pass"
     },
     {
       "description": "every named node type classified (c)",
-      "detail": "160 types, 22 handled, 103 silent, 0 gaps, 4 decisions",
+      "detail": "160 types, 22 handled, 103 silent, 0 gaps, 10 decisions",
       "id": "section-a-structural",
       "language": "c",
       "status": "pass"
@@ -679,14 +679,14 @@
       "status": "pass"
     },
     {
-      "description": "cpp: 4 ruled, 10 pending owner",
+      "description": "cpp: 12 ruled, 10 pending owner",
       "id": "design-decisions-tracked",
       "language": "cpp",
       "status": "pass"
     },
     {
       "description": "every named node type classified (cpp)",
-      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 14 decisions",
+      "detail": "256 types, 42 handled, 144 silent, 0 gaps, 22 decisions",
       "id": "section-a-structural",
       "language": "cpp",
       "status": "pass"
@@ -753,21 +753,21 @@
       "status": "pass"
     },
     {
-      "description": "rust: 3 ruled, 8 pending owner",
+      "description": "rust: 14 ruled, 8 pending owner",
       "id": "design-decisions-tracked",
       "language": "rust",
       "status": "pass"
     },
     {
       "description": "every named node type classified (rust)",
-      "detail": "185 types, 42 handled, 121 silent, 0 gaps, 11 decisions",
+      "detail": "185 types, 42 handled, 121 silent, 0 gaps, 22 decisions",
       "id": "section-a-structural",
       "language": "rust",
       "status": "pass"
     },
     {
       "description": "8 relationship kinds pinned by rust fixtures",
-      "detail": "pinned: calls, contains, exports, extends, implements, instantiates, references, uses",
+      "detail": "pinned: calls, contains, declared_type, exports, extends, implements, instantiates, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "rust",
       "status": "pass"
@@ -827,14 +827,14 @@
       "status": "pass"
     },
     {
-      "description": "go: 3 ruled, 6 pending owner",
+      "description": "go: 17 ruled, 6 pending owner",
       "id": "design-decisions-tracked",
       "language": "go",
       "status": "pass"
     },
     {
       "description": "every named node type classified (go)",
-      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 9 decisions",
+      "detail": "107 types, 36 handled, 67 silent, 0 gaps, 23 decisions",
       "id": "section-a-structural",
       "language": "go",
       "status": "pass"
@@ -901,21 +901,21 @@
       "status": "pass"
     },
     {
-      "description": "zig: 6 ruled, 0 pending owner",
+      "description": "zig: 16 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "zig",
       "status": "pass"
     },
     {
       "description": "every named node type classified (zig)",
-      "detail": "96 types, 9 handled, 83 silent, 2 gaps, 6 decisions",
+      "detail": "96 types, 9 handled, 83 silent, 2 gaps, 16 decisions",
       "id": "section-a-structural",
       "language": "zig",
       "status": "pass"
     },
     {
       "description": "5 relationship kinds pinned by zig fixtures",
-      "detail": "pinned: calls, contains, declared_type, imports, references, uses, zig_field_access, zig_function_call, zig_import",
+      "detail": "pinned: calls, contains, declared_type, identifier_usage, imports, references, uses, zig_field_access, zig_function_call, zig_import",
       "id": "section-b-relationship-kinds",
       "language": "zig",
       "status": "pass"
@@ -975,21 +975,21 @@
       "status": "pass"
     },
     {
-      "description": "csharp: 1 ruled, 1 pending owner",
+      "description": "csharp: 11 ruled, 1 pending owner",
       "id": "design-decisions-tracked",
       "language": "csharp",
       "status": "pass"
     },
     {
       "description": "every named node type classified (csharp)",
-      "detail": "239 types, 51 handled, 164 silent, 0 gaps, 2 decisions",
+      "detail": "239 types, 51 handled, 164 silent, 0 gaps, 12 decisions",
       "id": "section-a-structural",
       "language": "csharp",
       "status": "pass"
     },
     {
       "description": "9 relationship kinds pinned by csharp fixtures",
-      "detail": "pinned: calls, contains, csharp_field_access, extends, implements, imports, instantiates, method_override, overrides, references, uses",
+      "detail": "pinned: calls, contains, csharp_field_access, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, uses",
       "id": "section-b-relationship-kinds",
       "language": "csharp",
       "status": "pass"
@@ -1197,14 +1197,14 @@
       "status": "pass"
     },
     {
-      "description": "objc: 4 ruled, 4 pending owner",
+      "description": "objc: 6 ruled, 7 pending owner",
       "id": "design-decisions-tracked",
       "language": "objc",
       "status": "pass"
     },
     {
       "description": "every named node type classified (objc)",
-      "detail": "214 types, 35 handled, 146 silent, 3 gaps, 8 decisions",
+      "detail": "214 types, 43 handled, 138 silent, 3 gaps, 13 decisions",
       "id": "section-a-structural",
       "language": "objc",
       "status": "pass"
@@ -1345,14 +1345,14 @@
       "status": "pass"
     },
     {
-      "description": "ruby: 19 ruled, 0 pending owner",
+      "description": "ruby: 25 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
       "language": "ruby",
       "status": "pass"
     },
     {
       "description": "every named node type classified (ruby)",
-      "detail": "158 types, 120 handled, 10 silent, 0 gaps, 19 decisions",
+      "detail": "158 types, 120 handled, 10 silent, 0 gaps, 25 decisions",
       "id": "section-a-structural",
       "language": "ruby",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
-  "committedAt": "2026-09-12T21:30:35+02:00",
+  "commit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
+  "committedAt": "2026-09-13T21:35:05+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1568,11 +1568,17 @@
           "C-D1",
           "C-D2",
           "C-D3",
-          "C-D4"
+          "C-D4",
+          "HC1",
+          "HC2",
+          "HC3",
+          "HC4",
+          "HC5",
+          "HC6"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "160 types, 22 handled, 103 silent, 0 gaps, 4 decisions",
+            "detail": "160 types, 22 handled, 103 silent, 0 gaps, 10 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1624,11 +1630,19 @@
           "CPP-D1",
           "CPP-D2",
           "CPP-D3",
-          "CPP-D9"
+          "CPP-D9",
+          "CP1",
+          "CP2",
+          "CP3",
+          "CP4",
+          "CP5",
+          "CP6",
+          "CP7",
+          "CP8"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 14 decisions",
+            "detail": "256 types, 42 handled, 144 silent, 0 gaps, 22 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1668,15 +1682,25 @@
           "CSD14"
         ],
         "ruledDecisions": [
-          "CSD1"
+          "CSD1",
+          "CS-R1",
+          "CS-B1",
+          "CS-B2",
+          "CS-B3",
+          "CS-B4",
+          "CS-B5",
+          "CS-C1",
+          "CS-C2",
+          "CS-C3",
+          "CS-C4"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "239 types, 51 handled, 164 silent, 0 gaps, 2 decisions",
+            "detail": "239 types, 51 handled, 164 silent, 0 gaps, 12 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, csharp_field_access, extends, implements, imports, instantiates, method_override, overrides, references, uses",
+            "detail": "pinned: calls, contains, csharp_field_access, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -1786,11 +1810,25 @@
         "ruledDecisions": [
           "GOD1",
           "GOD2",
-          "GOD3"
+          "GOD3",
+          "GO1",
+          "GO2",
+          "GO3",
+          "GO4",
+          "GO5",
+          "GO6",
+          "GO7",
+          "G12",
+          "GO8",
+          "GO9",
+          "GO10",
+          "GO11",
+          "GO13",
+          "GO14"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 9 decisions",
+            "detail": "107 types, 36 handled, 67 silent, 0 gaps, 23 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2049,7 +2087,9 @@
           "JSD16",
           "JSD17",
           "JSD18",
-          "JSD29"
+          "JSD29",
+          "JSD30",
+          "JSD31"
         ],
         "ruledDecisions": [
           "D1",
@@ -2071,7 +2111,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "125 types, 89 handled, 20 silent, 9 gaps, 28 decisions",
+            "detail": "125 types, 89 handled, 20 silent, 9 gaps, 30 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2182,17 +2222,22 @@
           "OBJCD5",
           "OBJCD6",
           "OBJCD7",
-          "OBJCD8"
+          "OBJCD8",
+          "OC-B",
+          "OC-D",
+          "OC-E"
         ],
         "ruledDecisions": [
           "OBJCD1",
           "OBJCD2",
           "OBJCD3",
-          "OBJCD4"
+          "OBJCD4",
+          "OC-R1",
+          "OC-R2"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "214 types, 35 handled, 146 silent, 3 gaps, 8 decisions",
+            "detail": "214 types, 43 handled, 138 silent, 3 gaps, 13 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2355,11 +2400,17 @@
           "RUBD12",
           "RUBD13",
           "RUBD14",
-          "RUBD15"
+          "RUBD15",
+          "RB-F",
+          "RB-G",
+          "RB-H",
+          "RB-I",
+          "RB-J",
+          "RB-K"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "158 types, 120 handled, 10 silent, 0 gaps, 19 decisions",
+            "detail": "158 types, 120 handled, 10 silent, 0 gaps, 25 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2408,15 +2459,26 @@
         "ruledDecisions": [
           "RUST-D1",
           "RUST-D2",
-          "RUST-D3"
+          "RUST-D3",
+          "R1",
+          "R8",
+          "D2",
+          "D3",
+          "D6",
+          "R9",
+          "R10",
+          "R11",
+          "R12",
+          "R13",
+          "R14"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "185 types, 42 handled, 121 silent, 0 gaps, 11 decisions",
+            "detail": "185 types, 42 handled, 121 silent, 0 gaps, 22 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, exports, extends, implements, instantiates, references, uses",
+            "detail": "pinned: calls, contains, declared_type, exports, extends, implements, instantiates, references, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -2540,7 +2602,8 @@
         "pendingDecisions": [
           "D7",
           "D8",
-          "D9"
+          "D9",
+          "D10"
         ],
         "ruledDecisions": [
           "D1",
@@ -2552,7 +2615,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "74 types, 32 handled, 21 silent, 16 gaps, 9 decisions",
+            "detail": "74 types, 32 handled, 21 silent, 16 gaps, 10 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2786,15 +2849,25 @@
           "ZIG.D.3",
           "ZIGD2",
           "ZIG.D.4",
-          "ZIG.D.5"
+          "ZIG.D.5",
+          "Z1",
+          "Z2",
+          "Z3",
+          "Z4",
+          "Z5",
+          "Z6",
+          "Z7",
+          "Z8",
+          "Z9",
+          "Z10"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "96 types, 9 handled, 83 silent, 2 gaps, 6 decisions",
+            "detail": "96 types, 9 handled, 83 silent, 2 gaps, 16 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, declared_type, imports, references, uses, zig_field_access, zig_function_call, zig_import",
+            "detail": "pinned: calls, contains, declared_type, identifier_usage, imports, references, uses, zig_field_access, zig_function_call, zig_import",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -2850,8 +2923,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-09-12T19:32:47.782Z",
-  "regeneratedAtCommit": "5c0808ec4fe680c274f8959bf0aca024ebbc5355",
+  "regeneratedAt": "2026-09-13T20:13:52.125Z",
+  "regeneratedAtCommit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
