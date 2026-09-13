@@ -292,10 +292,18 @@ function deriveSvelteComponentUsages(root: any): { label: string; from: string; 
   return edges
 }
 
-// Embedded-script truth for SFC languages: extract <script> raw_text
-// blocks and parse them with the JS grammar (lang="ts" blocks included -
-// the JS-family structural rules apply identically).
-async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
+// M49 W12 svelte measurement blocker: this function created a FRESH Parser
+// (and re-read both grammars) on every CALL, and the svelte/vue lanes call it
+// twice per file (calls truth + structural truth) — four wasm allocations per
+// file against a fixed-size heap. Measured 2026-09-13: `--repo svelte
+// --sample 400` died at `RuntimeError: Out of bounds call_indirect
+// (_ts_parser_new_wasm)` INSIDE this function, so an SFC lane could never be
+// measured past the canonical 60-file rotation. Parsers are stateless between
+// parses, so they are built once and reused (the same fix the per-language
+// grammar cache above applies to lane parsers).
+let EMBEDDED_SCRIPT_PARSERS: { js: any; ts: any } | null = null
+async function embeddedScriptParsers(): Promise<{ js: any; ts: any }> {
+  if (EMBEDDED_SCRIPT_PARSERS) return EMBEDDED_SCRIPT_PARSERS
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
   const Lang = wts.Language ?? wts.default?.Language
@@ -306,6 +314,15 @@ async function deriveEmbeddedScriptTrees(root: any, content: string, lang: strin
   const tsLanguage = await Lang.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-typescript.wasm")))
   const tsParser = new P()
   tsParser.setLanguage(tsLanguage)
+  EMBEDDED_SCRIPT_PARSERS = { js: parser, ts: tsParser }
+  return EMBEDDED_SCRIPT_PARSERS
+}
+
+// Embedded-script truth for SFC languages: extract <script> raw_text
+// blocks and parse them with the JS grammar (lang="ts" blocks included -
+// the JS-family structural rules apply identically).
+async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
+  const { js: parser, ts: tsParser } = await embeddedScriptParsers()
   const out: any[] = []
   const walk = (n: any): void => {
     if (n.type === "script_element") {
@@ -5239,6 +5256,30 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
               if (!c || c.type === "type_arguments") continue
               collect(c, "implements", clsName)
             }
+          }
+          // M49 W12 svelte/JS heritage blind spot: tree-sitter-JAVASCRIPT's
+          // class_heritage holds the base EXPRESSION directly —
+          // `(class_heritage (identifier))` or `(class_heritage
+          // (member_expression))` — the `extends` keyword is an UNNAMED token
+          // and there is NO extends_clause node (that wrapper is a TYPESCRIPT
+          // grammar shape). The extends_clause branch above therefore never
+          // fired and the oracle derived ZERO extends edges for every pure-JS
+          // parse. The svelte lane derives its script-side truth with this
+          // walker (`deriveTreeEdges(st, "javascript")`), so
+          // RealSvelteAnalyzer's custom-element edge (`class
+          // MyCustomElement extends HTMLElement`, merged from the JS
+          // sub-analyzer) had no truth to match and surfaced as a fabrication
+          // (probe 2026-09-13, attribute-casing-custom-element/main.svelte:
+          // analyzer emits extends->HTMLElement, oracle []). Mirrors the
+          // analyzer's contract EXACTLY (RealJavaScriptAnalyzer L252-262):
+          // a direct-child `identifier`, else a direct-child
+          // `member_expression` whose FULL dotted text is the target
+          // (`extends Lib.Base` -> Lib.Base).
+          if (!ext2 && !imp2) {
+            const base =
+              heritage.namedChildren.find((c: any) => c.type === "identifier") ??
+              heritage.namedChildren.find((c: any) => c.type === "member_expression")
+            if (base) edges.push({ label: "extends", from: clsName, target: base.text })
           }
         }
       }

@@ -63,7 +63,16 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   const parser = new P()
   parser.setLanguage(langWasm)
   const tree = parser.parse(src)
-  const edges = (diff as any)[deriveFn](tree.rootNode, new Set())
+  // `deriveTreeEdges(root, lang)` is the GENERIC structural walker: its second
+  // parameter is the LANGUAGE TAG, not the protocol/type-kind Set the
+  // language-specific oracles take (deriveJavaEdges, derivePhpEdges, ...).
+  // Passing a Set here silently ran the walker without its language branches,
+  // i.e. a probe that no longer mirrored the sweep it claims to gate. The
+  // dispatch is explicit so a future deriveTreeEdges probe stays honest.
+  const edges =
+    deriveFn === "deriveTreeEdges"
+      ? (diff as any)[deriveFn](tree.rootNode, lang)
+      : (diff as any)[deriveFn](tree.rootNode, new Set())
   return new Set(edges.map((e: any) => `${e.label}:${e.target}`))
 }
 
@@ -392,6 +401,47 @@ class Host
       ["uses:reader->base", "uses:reader->count", "uses:reader->flag", "uses:defaults->seed"],
       ["uses:Default", "uses:named", "uses:alias", "uses:ns", "uses:alpha", "uses:beta", "uses:err", "uses:first", "uses:renamed", "uses:third", "uses:one", "uses:two", "uses:reexported", "uses:value"],
       { oracleForbid: true },
+    )
+  }
+
+  // ── JS-HERITAGE-EXTERNAL (M49 W12 svelte wave) ─────────────────────────
+  // Real defect: the F5 oracle derived heritage from the TYPESCRIPT
+  // class_heritage shape (extends_clause/implements_clause children) only.
+  // tree-sitter-JAVASCRIPT never wraps the base — `(class_heritage
+  // (identifier))`, or `(class_heritage (member_expression))` for a dotted
+  // base, with `extends` an UNNAMED token — so deriveTreeEdges derived ZERO
+  // extends edges for every pure-JS parse. The svelte lane derives its
+  // script-side truth with that walker, so RealSvelteAnalyzer's custom-element
+  // edge (`class MyCustomElement extends HTMLElement`, merged from the JS
+  // sub-analyzer) had no truth to match and surfaced as a fabrication
+  // (probe 2026-09-13: analyzer [extends MyCustomElement->HTMLElement],
+  // oracle []). This probe asserts BOTH sides: the analyzer emits the three
+  // heritage forms, and the ORACLE still derives them (revert the oracle
+  // branch and this fails as `oracle no longer derives`).
+  //
+  // No `oracleForbid` here on purpose: a SELF-edge forbid
+  // (`extends MyCustomElement->MyCustomElement`) is unrepresentable in the
+  // oracle's site-agnostic `label:target` space, where the legitimate
+  // `extends Extended->MyCustomElement` shares the same target key — the
+  // collusion check would fire on a true edge. The self-edge and the
+  // head-only form (`Lib` instead of `Lib.Base`) are asserted on the
+  // analyzer side, which is where a fabrication can actually occur.
+  {
+    const jsCfg = { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: ".js" }
+    const src = [
+      `class MyCustomElement extends HTMLElement {`,
+      `  connectedCallback() { this.render(); }`,
+      `  render() { return 1; }`,
+      `}`,
+      `class Extended extends MyCustomElement {}`,
+      `class Qualified extends Lib.Base {}`,
+      `window.customElements.define('my-custom-element', MyCustomElement);`,
+    ].join("\n") + "\n"
+    await probeLang("F9-PROBE-JS-HERITAGE-EXTERNAL", "javascript",
+      "bare external, in-file and DOTTED heritage bases all derive `extends` on the analyzer AND the oracle (the JS class_heritage shape the TS-clause-matching oracle missed)",
+      jsCfg, "deriveTreeEdges", src,
+      ["extends:MyCustomElement->HTMLElement", "extends:Extended->MyCustomElement", "extends:Qualified->Lib.Base"],
+      ["extends:MyCustomElement->MyCustomElement", "extends:Qualified->Lib", "extends:Extended->MyCustomElement2"],
     )
   }
 
