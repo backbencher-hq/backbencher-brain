@@ -36,7 +36,12 @@ say() { echo "$(date +%T) $*"; echo "$(date +%T) $*" >> "$LOG"; }
 title_for() { sed -n "s/^## $1\. \(.*\) — RED.*$/\1/p" "$SRC" | head -1 | tr -d '`'; }
 
 ms_num=""
+PUSHED=""
 for round in $(seq 1 "$LIMIT"); do
+  # ---- push (the same flapping proxy blocks git; local was 15 commits ahead) ----
+  if [ -z "$PUSHED" ] && [ "$DRY" = "0" ]; then
+    if timeout 45 git push origin m48-recovery >/dev/null 2>&1; then PUSHED=1; say "PUSHED m48-recovery"; fi
+  fi
   # ---- milestone (idempotent) ----
   if [ -z "$ms_num" ]; then
     out=$(timeout 25 gh api "repos/$REPO/milestones?state=open" \
@@ -111,11 +116,11 @@ for round in $(seq 1 "$LIMIT"); do
   # ---- verification: exactly four open issues on the milestone ----
   if [ -n "$ms_num" ]; then
     open_ms=$(timeout 25 gh issue list --repo "$REPO" --state open --milestone "$MS_TITLE" --json number -q 'length' 2>/dev/null)
-    if [ $? -eq 0 ] && [ "$open_ms" = "4" ] && [ "$ok" -eq 4 ]; then
-      say "VERIFIED: 4 convictions, exactly 4 open issues on milestone #$ms_num"
+    if [ $? -eq 0 ] && [ "$open_ms" = "4" ] && [ "$ok" -eq 4 ] && [ -n "$PUSHED" ]; then
+      say "VERIFIED: 4 convictions, exactly 4 open issues on milestone #$ms_num; branch pushed"
       exit 0
     fi
-    say "round $round: ok=$ok/4 open_on_milestone=${open_ms:-?}"
+    say "round $round: ok=$ok/4 open_on_milestone=${open_ms:-?} pushed=${PUSHED:-0}"
   fi
   [ "$ONCE" = "1" ] && break
   sleep 20
