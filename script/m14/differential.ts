@@ -1207,6 +1207,20 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
     }
     return null
   }
+  // Scope cleaning (mirrors the analyzer's getFunctionDetails template_type
+  // handling): `FloatingPoint<float>::Max` scopes to FloatingPoint, not the
+  // full argument list. Shared by the pre-pass flush and the CP5 main-walk
+  // class scope below (one definition — they must compute identical keys).
+  const cleanScope = (node: any): string | null => {
+    if (!node) return null
+    if (node.type === "template_type") {
+      const tn = node.childForFieldName?.("name")?.text ??
+        (node.namedChildren ?? []).find((c: any) => c.type === "type_identifier")?.text ??
+        (() => { const lt = node.text.indexOf("<"); return lt > 0 ? node.text.slice(0, lt).trim() : node.text })()
+      return tn ?? null
+    }
+    return node.text?.split("::").filter(Boolean).pop() ?? null
+  }
   {
     const pre: any[] = [{ n: root, ns: [], inFn: false, inClass: null }]
     while (pre.length > 0) {
@@ -1265,22 +1279,19 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
         }
         const qid = decl?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
         const nm = qid ? qid.namedChild(qid.namedChildCount - 1)?.text : decl?.namedChildren?.find((c: any) => c.type === "identifier" || c.type === "field_identifier")?.text
-        // Scope cleaning (mirrors the analyzer's getFunctionDetails
-        // template_type handling): `FloatingPoint<float>::Max` scopes to
-        // FloatingPoint, not the full argument list — else the flush
-        // misattributes to file scope while the analyzer resolves the
-        // class member (unexplained/file-only truth).
-        const cleanScope = (node: any): string | null => {
-          if (!node) return null
-          if (node.type === "template_type") {
-            const tn = node.childForFieldName?.("name")?.text ??
-              (node.namedChildren ?? []).find((c: any) => c.type === "type_identifier")?.text ??
-              (() => { const lt = node.text.indexOf("<"); return lt > 0 ? node.text.slice(0, lt).trim() : node.text })()
-            return tn ?? null
-          }
-          return node.text?.split("::").filter(Boolean).pop() ?? null
+        // CP7 mirror: nested qualification (`Outer::Inner::m`) nests
+        // RIGHT-leaning as qid[ns Outer, qid[ns Inner, m]] — the owning
+        // scope is the INNERMOST qualifier (`Inner`, matching the
+        // analyzer's descended scope and the member registry keys).
+        // Descend to the deepest qualifier, then take the first scope-ish
+        // child (namespace/type/identifier/template).
+        let scopeQid: any = qid ?? null
+        while (scopeQid) {
+          const last = scopeQid.namedChild(scopeQid.namedChildCount - 1)
+          if (last && last.type === "qualified_identifier") scopeQid = last
+          else break
         }
-        const scNode = qid ? qid.namedChildren?.find((c: any) => c.type !== "identifier" && c.type !== "field_identifier") : null
+        const scNode = scopeQid ? scopeQid.namedChildren?.find((c: any) => c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier" || c.type === "template_type") : null
         const sc = cleanScope(scNode)
         // CP2 mirror: macro-function shapes (`TEST(a, b) {...}` — ALL-CAPS
         // name, params without any type node) define no real function; the
@@ -1337,7 +1348,14 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (!c) continue
-          if (c.type === "init_declarator" || c.type === "identifier" || c.type === "field_identifier" ||
+          // CP6 mirror: a file-scope structured binding declares EVERY name.
+          if (c.type === "init_declarator" && c.namedChild(0)?.type === "structured_binding_declarator") {
+            const sb = c.namedChild(0)!
+            for (let k = 0; k < sb.namedChildCount; k++) {
+              const b = sb.namedChild(k)
+              if (b && (b.type === "identifier" || b.type === "field_identifier")) addValue(b.text, ns, inClass)
+            }
+          } else if (c.type === "init_declarator" || c.type === "identifier" || c.type === "field_identifier" ||
               c.type === "pointer_declarator" || c.type === "reference_declarator" || c.type === "array_declarator" ||
               c.type === "function_declarator") {
             const id = leftmostId(c)
@@ -1376,7 +1394,12 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
     "abstract_array_declarator", "abstract_function_declarator",
     "enumerator", "using_declaration", "alias_declaration",
     "optional_parameter_declaration", "type_parameter_declaration",
-    "template_type_parameter", "template_value_parameter",
+    // CP6 mirror: structured bindings declare (see the carve-out in
+    // isDeclaringPos — all names, not first-only). NOTE: the analyzer's F6
+    // audit removed the dead `template_type_parameter` /
+    // `template_value_parameter` names here; they never occur in the pinned
+    // grammar, so their absence changes nothing.
+    "structured_binding_declarator",
   ])
   const isDeclaringPos = (n: any): boolean => {
     const p = n.parent
@@ -1389,7 +1412,41 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
       }
       return false
     }
+    // CP8 mirror: member/enum declarator segments (see the analyzer — a
+    // field_declaration or enumerator with a bare identifier value has no
+    // init_declarator wrapper, so the generic rule below treated the VALUE
+    // as declaring). Segment rule over ALL children: `,`/`;` split
+    // segments (fresh again), `=`/`:`/`{` switch a segment to reading; the
+    // first identifier-ish child of a fresh segment declares, the rest read.
+    if (p.type === "field_declaration" || p.type === "enumerator") {
+      let fresh = true
+      let foundFirst = false
+      for (let k = 0; k < (p.childCount ?? 0); k++) {
+        const c = p.child(k)
+        if (!c) continue
+        if (!c.isNamed) {
+          if (c.type === "," || c.type === ";") { fresh = true; foundFirst = false }
+          else if (c.type === "=" || c.type === ":" || c.type === "{") fresh = false
+          continue
+        }
+        if (c.type === "identifier" || c.type === "field_identifier") {
+          if (!foundFirst && fresh) {
+            if (c.startIndex === n.startIndex && c.endIndex === n.endIndex) return true
+            foundFirst = true
+          } else {
+            if (c.startIndex === n.startIndex && c.endIndex === n.endIndex) return false
+          }
+        }
+      }
+      return false
+    }
     if (!DECL_PARENTS.has(p.type)) return false
+    // CP6 mirror: structured bindings declare EVERY name (`auto [x, y]`
+    // binds x AND y). Must precede the endsWith-declarator branch: that
+    // rule is first-only and would bind x while leaking y as a read. The
+    // initializer is a SIBLING (under init_declarator / for_range_loop),
+    // never under this node, so a blanket true is exact.
+    if (p.type === "structured_binding_declarator") return true
     if (p.type.endsWith("declarator") || p.type === "init_declarator") {
       let cur: any = p
       while (cur) {
@@ -1459,7 +1516,7 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
   }
   // Walk-order function locals (mirrors the analyzer's flow-sensitive
   // collection: params at entry, bindings in walk order, catch/lambda params).
-  const scopeStack: Array<{ kind: string; name: string; locals: Set<string> }> = []
+  const scopeStack: Array<{ kind: string; name: string; locals: Set<string>; cls?: string | null }> = []
   const stack: any[] = [{ n: root, ctx: null as any, exit: false as boolean }]
   while (stack.length > 0) {
     const { n, ctx, exit } = stack.pop()!
@@ -1500,7 +1557,27 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
         }
         for (let k = 0; k < m.namedChildCount; k++) { const c = m.namedChild(k); if (c) pw.push(c) }
       }
-      cur = { kind: "function", name: "", locals }
+      // CP5 mirror: out-of-line definitions resolve bare member reads
+      // through their class (same qualified-scope computation as the
+      // pre-pass flush above — the analyzer keys classMembers identically).
+      let fnCls: string | null = null
+      {
+        const d2 = (n.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+        const q2 = d2?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
+        if (q2) {
+          // CP7 mirror: descend to the innermost qualifier (same rule as
+          // the pre-pass flush and the analyzer's getFunctionDetails).
+          let sq: any = q2
+          while (sq) {
+            const last = sq.namedChild(sq.namedChildCount - 1)
+            if (last && last.type === "qualified_identifier") sq = last
+            else break
+          }
+          const scNode2 = sq?.namedChildren?.find((c: any) => c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier" || c.type === "template_type")
+          fnCls = cleanScope(scNode2)
+        }
+      }
+      cur = { kind: "function", name: "", locals, cls: fnCls }
       scopeStack.push(cur)
       stack.push({ n, ctx: cur, exit: true })
     } else if (t === "identifier") {
@@ -1526,6 +1603,11 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
               const s = scopeStack[i]
               if (s.kind === "class") {
                 const mm = classMembers.get(s.name)
+                if (mm && mm.has(n.text)) ok = true
+              }
+              // CP5 mirror: out-of-line member scope carries its class.
+              if (!ok && s.kind === "function" && (s as any).cls) {
+                const mm = classMembers.get((s as any).cls)
                 if (mm && mm.has(n.text)) ok = true
               }
               if (s.kind === "namespace" && s.name !== "anonymous") {

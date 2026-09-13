@@ -162,10 +162,18 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // leftmost + bare declarators). Function prototypes contribute
           // their NAME (a callable value); their PARAMETERS never do (HC6
           // class: prototype params are not file-scope declarations).
+          // CP6: a file-scope structured binding (`auto [x, y] = p;`)
+          // declares EVERY name (the leftmost rule would register x only).
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c) continue
-            if (c.type === "init_declarator" || c.type === "identifier" || c.type === "field_identifier" ||
+            if (c.type === "init_declarator" && c.namedChild(0)?.type === "structured_binding_declarator") {
+              const sb = c.namedChild(0)!
+              for (let k = 0; k < sb.namedChildCount; k++) {
+                const b = sb.namedChild(k)
+                if (b && (b.type === "identifier" || b.type === "field_identifier")) addValue(b.text, ns, inClass)
+              }
+            } else if (c.type === "init_declarator" || c.type === "identifier" || c.type === "field_identifier" ||
                 c.type === "pointer_declarator" || c.type === "reference_declarator" || c.type === "array_declarator") {
               const nm = leftmostId(c)
               if (nm) addValue(nm, ns, inClass)
@@ -218,6 +226,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // suppresses the file/member read. Flow-sensitive like the C family:
       // reads before any binding still resolve outward.
       locals?: Set<string>
+      // CP5 (second review): the owning class of an OUT-OF-LINE definition
+      // (`void Foo::bar() {}` pushes a Method scope named `bar`, so the
+      // Class entry that inline methods resolve through is absent and bare
+      // member reads stayed silent on both sides). Set from the definition's
+      // explicit scope; looked up in classMembers with the same key the
+      // pre-pass flush uses (exact match — nested `A::B::m` scopes stay a
+      // documented limitation, same as the flush).
+      classScope?: string
     }
 
     const scopeStack: Scope[] = []
@@ -239,6 +255,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       "abstract_array_declarator", "abstract_function_declarator",
       "enumerator", "using_declaration", "alias_declaration",
       "optional_parameter_declaration", "type_parameter_declaration",
+      // CP6 (second review): `auto [x, y]` bindings declare (see the
+      // carve-out in isDeclarationPosition — all names, not first-only).
+      "structured_binding_declarator",
       // F6 audit: `template_type_parameter` / `template_value_parameter` are
       // NOT types in the pinned tree-sitter-cpp grammar — template parameters
       // parse as `type_parameter_declaration` (`typename T` / `class T`) and
@@ -287,7 +306,48 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         return false
       }
+      // CP8 (second review): member/EnUM declarator segments. A
+      // field_declaration or enumerator with a bare identifier value
+      // (`int x = LIMIT;`, `A = LIMIT`) has NO init_declarator wrapper —
+      // the whole declarator is flat, so the generic rule below treated
+      // the VALUE as declaring and the read stayed silent on both sides.
+      // Segment rule over ALL children (anonymous `,`/`;` split segments;
+      // `=`/`:`/`{` switch a segment from declaring to reading): the first
+      // identifier-ish child of a fresh segment declares, the rest read.
+      // `int x = G, y = 2` → x declares, G reads, y declares. Multi-name
+      // `int x, y;` still declares both (one segment each). Residual: two
+      // declarators sharing one flat segment cannot occur (a comma always
+      // splits), so the rule is exact for this grammar.
+      if (p.type === "field_declaration" || p.type === "enumerator") {
+        let fresh = true
+        let foundFirst = false
+        for (let k = 0; k < p.childCount; k++) {
+          const c = p.child(k)
+          if (!c) continue
+          if (!c.isNamed) {
+            if (c.type === "," || c.type === ";") { fresh = true; foundFirst = false }
+            else if (c.type === "=" || c.type === ":" || c.type === "{") fresh = false
+            continue
+          }
+          if (c.type === "identifier" || c.type === "field_identifier") {
+            if (!foundFirst && fresh) {
+              if (c.startIndex === node.startIndex && c.endIndex === node.endIndex) return true
+              foundFirst = true
+            } else {
+              if (c.startIndex === node.startIndex && c.endIndex === node.endIndex) return false
+            }
+          }
+        }
+        return false
+      }
       if (!DECL_PARENT_TYPES.has(p.type)) return false
+      // CP6 (second review): structured bindings declare EVERY name
+      // (`auto [x, y] = p` binds x AND y — not first-only). The initializer
+      // is a SIBLING under init_declarator (or the range under
+      // for_range_loop), never under this node, so a blanket true is exact.
+      // Must precede the endsWith-declarator branch below: that rule is
+      // first-only and would bind x while leaking y as a read.
+      if (p.type === "structured_binding_declarator") return true
       if (p.type.endsWith("declarator") || p.type === "init_declarator") {
         return isDeclaringChainLeftmost(node)
       }
@@ -393,6 +453,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const s = scopeStack[i]
         if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Struct) {
           const mm = classMembers.get(s.name)
+          if (mm && mm.has(name)) return true
+        }
+        // CP5: out-of-line member scope carries its class (see Scope).
+        if (
+          (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method ||
+            s.kind === ASTEngine.SymbolKind.Constructor) && s.classScope
+        ) {
+          const mm = classMembers.get(s.classScope)
           if (mm && mm.has(name)) return true
         }
         if (s.kind === ASTEngine.SymbolKind.Namespace && s.name !== "anonymous") enclosingNs.push(s.name)
@@ -982,6 +1050,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               isAbstract: false,
               friends: [],
               symbolRef: sym,
+              // CP5: out-of-line class scope for member resolution.
+              classScope: explicitScope,
               // CP1: parameters bind at function entry (flow-sensitive
               // shadowing like the C family — reads before any local
               // binding still resolve outward).
@@ -1765,9 +1835,24 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `namespace_identifier` wrongly grabs the method name as the scope
       // (constructor:log in log) — so inspect in the right order.
       const actualNameNode = nameNode.namedChild(nameNode.namedChildCount - 1)
+      // CP7 (second review): nested qualification (`Outer::Inner::m`)
+      // nests RIGHT-leaning as qid[ns Outer, qid[ns Inner, m]] — the owning
+      // scope is the INNERMOST qualifier (`Inner`). The old code read the
+      // outermost qualifier's full text (`Outer`, and the oracle took the
+      // outermost segment too), so neither side matched the `Inner`-keyed
+      // member registry and bare member reads in nested out-of-line bodies
+      // stayed silent on both sides. Descend to the deepest qualifier,
+      // then read its scope child with the same rules as below. (The
+      // method NAME computation above is untouched.)
+      let scopeQid: Node = nameNode
+      while (true) {
+        const last = scopeQid.namedChild(scopeQid.namedChildCount - 1)
+        if (last && last.type === "qualified_identifier") scopeQid = last
+        else break
+      }
       let scopeNode: Node | null = null
-      for (let i = 0; i < nameNode.namedChildCount - 1; i++) {
-        const c = nameNode.namedChild(i)
+      for (let i = 0; i < scopeQid.namedChildCount - 1; i++) {
+        const c = scopeQid.namedChild(i)
         if (c && (c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
           scopeNode = c
           break
@@ -1783,9 +1868,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
-      // Nested qualification (A::B::fn): the outer scope wraps a nested
-      // qualified_identifier; use its full text as the scope.
-      const firstChild = nameNode.namedChild(0)
+      // Defensive fallback (unreachable after the descent above — the
+      // deepest qualifier's first child is always a scope leaf): keep the
+      // scope empty rather than guessing.
+      const firstChild = scopeQid.namedChild(0)
       if (!scopeNode && firstChild && firstChild.type === "qualified_identifier") {
         scopeNode = firstChild
       }
