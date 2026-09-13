@@ -1,39 +1,64 @@
 #!/usr/bin/env bash
-# Foreign-reds publisher: creates the analyzer-lane review milestone + 4 issues
-# inside flapping-proxy windows. Persistent (setsid); receipts live in-repo.
+# Foreign-reds publisher v2: creates the analyzer-lane review milestone + 4
+# issues inside flapping-proxy windows, and ATTACHES every issue to the
+# milestone (v1 forgot --milestone and its title regex missed "— RED (n/m)").
+# Persistent (setsid); log lives in-repo so a /tmp wipe cannot lose it.
 cd $HOME/mcp/backbencher-brain
+LOG=.foreign-reds-publisher.log
 MS_TITLE="Analyzer Lane Review — foreign-red gates (M57 convictions)"
-declare -A CREATED
+REPO=backbencher-hq/backbencher-brain
+
+say() { echo "$(date +%T) $*" >> "$LOG"; }
+
+ms_num=""
+
+title_for() { # $1 = index
+  sed -n "s/^## $1\. \(.*\) — RED.*$/\1/p" docs/convictions/foreign-reds.md | head -1
+}
 
 for round in $(seq 1 400); do
-  # milestone (idempotent)
-  if [ -z "${CREATED[ms]}" ]; then
-    EXISTS=$(timeout 18 gh api "repos/backbencher-hq/backbencher-brain/milestones?state=open" --jq '.[] | select(.title=="'"$MS_TITLE"'") | .number' 2>/dev/null)
-    if [ -n "$EXISTS" ]; then
-      CREATED[ms]=$EXISTS; echo "$(date +%T) milestone exists: $EXISTS"
-    elif timeout 18 gh api -X POST repos/backbencher-hq/backbencher-brain/milestones -f title="$MS_TITLE" -f description="Four gates convicted to the analyzer/indexer lane during M50/M57 (revert-proven, re-verified red at HEAD before filing). Receipts: docs/convictions/foreign-reds.md" > /dev/null 2>&1; then
-      CREATED[ms]=$(timeout 18 gh api "repos/backbencher-hq/backbencher-brain/milestones?state=open" --jq '.[] | select(.title=="'"$MS_TITLE"'") | .number' 2>/dev/null)
-      echo "$(date +%T) milestone created: ${CREATED[ms]}"
+  # ---- milestone (idempotent) ----
+  if [ -z "$ms_num" ]; then
+    ms_num=$(timeout 18 gh api "repos/$REPO/milestones?state=open" --jq '.[] | select(.title=="'"$MS_TITLE"'") | .number' 2>/dev/null | head -1)
+    if [ -z "$ms_num" ]; then
+      timeout 18 gh api -X POST "repos/$REPO/milestones" \
+        -f title="$MS_TITLE" \
+        -f description="Four gates convicted to the analyzer/indexer lane during M50/M57 (revert-proven, re-verified red at HEAD before filing). Receipts: docs/convictions/foreign-reds.md" >/dev/null 2>&1
+      ms_num=$(timeout 18 gh api "repos/$REPO/milestones?state=open" --jq '.[] | select(.title=="'"$MS_TITLE"'") | .number' 2>/dev/null | head -1)
+      [ -n "$ms_num" ] && say "milestone created: $ms_num"
     fi
   fi
 
-  # issues (idempotent by title search)
+  # ---- issues (idempotent by title search) ----
+  done_count=0
   for n in 1 2 3 4; do
-    [ -n "${CREATED[i$n]}" ] && continue
-    TITLE=$(sed -n "s/^## $n\. \(.*\) — RED$/\1/p" docs/convictions/foreign-reds.md | head -1)
-    [ -z "$TITLE" ] && continue
-    FOUND=$(timeout 18 gh issue list --search "$TITLE in:title" --json number -q '.[].number' 2>/dev/null | head -1)
-    if [ -n "$FOUND" ]; then
-      CREATED[i$n]=$FOUND; echo "$(date +%T) issue exists: #$FOUND"
-    elif timeout 18 gh issue create --title "$TITLE — RED (foreign conviction, analyzer lane)" --body-file docs/convictions/issues/$n.md > /dev/null 2>&1; then
-      CREATED[i$n]="new"; echo "$(date +%T) issue created: $TITLE"
+    T=$(title_for "$n")
+    [ -z "$T" ] && { say "WARN empty title for $n"; continue; }
+    SEARCH=$(printf '%s' "$T" | tr -d '`')
+    NUM=$(timeout 18 gh issue list --repo "$REPO" --search "$SEARCH in:title" --state all --json number -q '.[0].number' 2>/dev/null | head -1)
+    if [ -z "$NUM" ]; then
+      TITLE_TXT="${T} — RED (foreign conviction, analyzer lane)"
+      if [ -n "$ms_num" ]; then
+        timeout 18 gh issue create --repo "$REPO" --title "$TITLE_TXT" --body-file "docs/convictions/issues/$n.md" --milestone "$MS_TITLE" >/dev/null 2>&1
+      else
+        timeout 18 gh issue create --repo "$REPO" --title "$TITLE_TXT" --body-file "docs/convictions/issues/$n.md" >/dev/null 2>&1
+      fi
+      NUM=$(timeout 18 gh issue list --repo "$REPO" --search "$SEARCH in:title" --state all --json number -q '.[0].number' 2>/dev/null | head -1)
+      [ -n "$NUM" ] && say "issue $n created: #$NUM"
     fi
+    [ -z "$NUM" ] && continue
+    # attach to milestone regardless of how it was created
+    if [ -n "$ms_num" ]; then
+      timeout 18 gh issue edit "$NUM" --repo "$REPO" --milestone "$MS_TITLE" >/dev/null 2>&1 \
+        && say "issue $n #$NUM on milestone $ms_num" || say "issue $n #$NUM milestone pending"
+    fi
+    done_count=$((done_count+1))
   done
 
-  # done when all four issues exist and milestone known
-  if [ -n "${CREATED[ms]}" ] && [ -n "${CREATED[i1]}" ] && [ -n "${CREATED[i2]}" ] && [ -n "${CREATED[i3]}" ] && [ -n "${CREATED[i4]}" ]; then
-    echo "ALL FILED"; break
+  if [ -n "$ms_num" ] && [ "$done_count" -eq 4 ]; then
+    say "ALL FILED (milestone $ms_num)"
+    break
   fi
   sleep 20
 done
-echo "foreign-reds publisher exit"
+say "foreign-reds publisher exit"
