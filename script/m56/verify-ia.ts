@@ -256,10 +256,17 @@ writeFileSync(
   EVIDENCE_PATH,
   JSON.stringify(
     {
-      gate: "I1",
-      issue: 785,
-      title: "Information architecture, redirects and sitemap",
-      verifierCommand: "npx tsx script/m56/verify-ia.ts",
+      // Same artifact contract as every other M56 gate: the ledger↔artifact
+      // agreement check reads `status` and `generatedAt`, so this file must
+      // carry them under those names (not a private vocabulary).
+      issue: "M56.I1 — Information Architecture (#785)",
+      code: "I1",
+      milestone: "m56",
+      status: ok ? "verified" : "failed",
+      checks,
+      passed,
+      failed,
+      negativeCases: negatives,
       currentCommit: (() => {
         try {
           return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
@@ -267,13 +274,18 @@ writeFileSync(
           return "unknown"
         }
       })(),
-      passed,
-      checks,
-      failed,
-      negativeCases: negatives,
-      verdict: ok ? "PASS" : "FAIL",
-      checkedAt: new Date().toISOString(),
+      verifierCommand: "npx tsx script/m56/verify-ia.ts",
+      evidenceFile: "I1.json",
+      generatedAt: new Date().toISOString(),
       contract: { nav: NAV_CONTRACT, redirects: REDIRECT_CONTRACT },
+      summary: [
+        `nav is exactly six surfaces in contract order: ${NAV_CONTRACT.join(" · ")}`,
+        `footer links every live surface; shared footer renders on every live surface`,
+        `retired paths redirect through one declaration: ${RETIRED.join(", ")}`,
+        `built sitemap.xml lists ${expectedSitemap.length} indexable routes and no retired path`,
+        `docs carries every remediation command; the retired troubleshooting page carries none`,
+        `/demos has no film markup and its media is absent from the published bundle`,
+      ],
       limitations: [
         "Rendered-HTML link scanning covers the surfaces that can link a retired path (support, nav, footer, docs, install); a retired link inside a long-form legal page would not be seen here.",
       ],
