@@ -291,7 +291,7 @@ function deriveVueComponentUsages(root: any): { label: string; from: string; tar
 // (e.g. `children` from the $props() destructure) — not independently
 // derivable as calls, so the oracle stays silent on them (they are covered
 // by the analyzer's render_tag contract, not fabricated).
-function deriveSvelteSnippetCalls(root: any): { label: string; from: string; target: string }[] {
+export function deriveSvelteSnippetCalls(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const snippets = new Set<string>()
@@ -325,7 +325,25 @@ function deriveSvelteSnippetCalls(root: any): { label: string; from: string; tar
   return edges
 }
 
-function deriveSvelteComponentUsages(root: any): { label: string; from: string; target: string }[] {
+// M49 W13: the DYNAMIC component/element target is mirrored here too.
+// `<svelte:component this={X}/>` (and `this={X}` on `svelte:element`) names its
+// component through an attribute, so the tag-name walk above never sees it -
+// and both tags sit in VUE_STYLE_BUILTINS, so the pre-fix oracle emitted
+// nothing for the construct while the analyzer's H2 rule emitted
+// `instantiates X`. That asymmetry surfaced as the one unexplained edge W12's
+// 400-file svelte measurement left open (corpus file:
+// packages/svelte/tests/runtime-legacy/samples/event-handler-shorthand-dynamic-component/main.svelte).
+// The analyzer's gates are mirrored exactly, because a superset here would
+// trade an unexplained edge for a fabrication: the target must be a bare
+// identifier that is an IMPORT BINDING. The analyzer also skips a target that
+// resolves to a declared MEMBER (that case carries a `uses` edge instead) — but
+// an ES module cannot both import and declare the same name, so a name that is
+// import-bound can never trip that second gate, and a name that is not
+// import-bound is rejected by this one. One gate, no dead branch.
+export function deriveSvelteComponentUsages(
+  root: any,
+  importBindings?: Set<string>,
+): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const VUE_STYLE_BUILTINS = new Set(["slot","svelte:component","svelte:self","svelte:element","svelte:window","svelte:document","svelte:body","svelte:head","svelte:options","svelte:fragment","svelte:boundary"])
@@ -337,6 +355,30 @@ function deriveSvelteComponentUsages(root: any): { label: string; from: string; 
       const container = n.namedChildren.find((c: any) => c.type === "start_tag" || c.type === "self_closing_tag")
       const tag = container?.namedChildren.find((c: any) => c.type === "tag_name")
       const name = tag?.text
+      if (name === "svelte:component" || name === "svelte:element") {
+        const thisTag =
+          n.namedChildren.find((c: any) => c.type === "start_tag") ??
+          n.namedChildren.find((c: any) => c.type === "self_closing_tag")
+        if (thisTag) {
+          for (let i = 0; i < thisTag.namedChildCount; i++) {
+            const attr = thisTag.namedChild(i)
+            if (!attr || attr.type !== "attribute") continue
+            const attrName = attr.namedChildren.find((c: any) => c.type === "attribute_name")
+            if (attrName?.text !== "this") continue
+            const valueNode =
+              attr.namedChildren.find((c: any) => c.type === "expression") ??
+              attr.namedChild(attr.namedChildCount - 1)
+            if (!valueNode) continue
+            let vt = String(valueNode.text).trim()
+            if (vt.startsWith("{") && vt.endsWith("}")) vt = vt.slice(1, -1).trim()
+            if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(vt)) continue
+            if (!importBindings?.has(vt)) continue
+            if (seen.has(vt)) continue
+            seen.add(vt)
+            edges.push({ label: "instantiates", from: "(expr)", target: vt })
+          }
+        }
+      }
       if (name && !ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name) && !seen.has(name)) {
         seen.add(name)
         edges.push({ label: "instantiates", from: "(expr)", target: name })
@@ -357,7 +399,7 @@ function deriveSvelteComponentUsages(root: any): { label: string; from: string; 
 // parses, so they are built once and reused (the same fix the per-language
 // grammar cache above applies to lane parsers).
 let EMBEDDED_SCRIPT_PARSERS: { js: any; ts: any } | null = null
-async function embeddedScriptParsers(): Promise<{ js: any; ts: any }> {
+export async function embeddedScriptParsers(): Promise<{ js: any; ts: any }> {
   if (EMBEDDED_SCRIPT_PARSERS) return EMBEDDED_SCRIPT_PARSERS
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
@@ -376,7 +418,7 @@ async function embeddedScriptParsers(): Promise<{ js: any; ts: any }> {
 // Embedded-script truth for SFC languages: extract <script> raw_text
 // blocks and parse them with the JS grammar (lang="ts" blocks included -
 // the JS-family structural rules apply identically).
-async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
+export async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
   const { js: parser, ts: tsParser } = await embeddedScriptParsers()
   const out: any[] = []
   const walk = (n: any): void => {
@@ -3968,6 +4010,14 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
     if (t === "method" || t === "singleton_method" || t === "setter") {
       nextMethodId = String(n.id)
     }
+    // `defined?(...)` is unevaluated (mirrors the analyzer): skip the
+    // whole subtree so probed names never read as calls/uses.
+    if (t === "unary") {
+      const op = (n as any).childCount > 0 ? (n as any).child(0) : null
+      if (op && !op.isNamed && op.type === "defined?") continue
+    }
+    // `undef foo` names methods being undefined (mirrors the analyzer).
+    if (t === "undef") continue
     const nextBody = inBody || t === "method" || t === "singleton_method"
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
@@ -6973,7 +7023,56 @@ async function main() {
         }
       }
       if (lang === "svelte") {
-        for (const e of deriveSvelteComponentUsages(root)) {
+        // Script-side truth: the svelte grammar stores script bodies as
+        // opaque raw_text - re-parse them and derive the SAME structural
+        // edges (extends/implements/instantiates) the non-SFC languages get.
+        // (Computed FIRST because the dynamic-component mirror below needs the
+        // script's import bindings and member names; the edge objects are
+        // pushed once, unchanged.)
+        const subTrees = await deriveEmbeddedScriptTrees(root, content, "svelte")
+        const scriptEdges: any[] = []
+        for (const st of subTrees) {
+          for (const e of deriveTreeEdges(st, "javascript")) scriptEdges.push(e)
+        }
+        // M49 W13: the analyzer's H2 rule emits `instantiates X` for a
+        // `<svelte:component this={X}/>` target when X is an import-bound bare
+        // identifier; the oracle skipped the tag and the edge surfaced
+        // unexplained (W12's last open web residual).
+        //
+        // MEASURED, not assumed: the embedded-script truth walk
+        // (`deriveTreeEdges(st, "javascript")`) emits NOTHING for an import
+        // statement (probed: `import Widget from './Widget.svelte'` -> 0
+        // edges), so the bindings cannot be read off scriptEdges — they are
+        // walked off the script tree directly, mirroring the analyzer's
+        // `imports[].items` (default clause, namespace_import, and the LOCAL
+        // side of `{ a as b }`).
+        const importBindings = new Set<string>()
+        const collectImportBindings = (n: any): void => {
+          if (n.type === "import_statement") {
+            const clause = n.namedChildren.find((c: any) => c.type === "import_clause")
+            if (clause) {
+              for (let i = 0; i < clause.namedChildCount; i++) {
+                const c = clause.namedChild(i)
+                if (c.type === "identifier") importBindings.add(c.text)
+                else if (c.type === "namespace_import") {
+                  const id = c.namedChildren.find((x: any) => x.type === "identifier")
+                  if (id) importBindings.add(id.text)
+                } else if (c.type === "named_imports") {
+                  for (let j = 0; j < c.namedChildCount; j++) {
+                    const s = c.namedChild(j)
+                    if (s.type !== "import_specifier") continue
+                    const ids = s.namedChildren.filter((x: any) => x.type === "identifier")
+                    const local = ids[ids.length - 1]
+                    if (local) importBindings.add(local.text)
+                  }
+                }
+              }
+            }
+          }
+          for (let i = 0; i < n.namedChildCount; i++) collectImportBindings(n.namedChild(i))
+        }
+        for (const st of subTrees) collectImportBindings(st)
+        for (const e of deriveSvelteComponentUsages(root, importBindings)) {
           ;(truth as any[]).push(e)
         }
         // Snippet render-call truth ({@render X()} where X is a declared
@@ -6981,13 +7080,7 @@ async function main() {
         for (const e of deriveSvelteSnippetCalls(root)) {
           ;(truth as any[]).push(e)
         }
-        // Script-side truth: the svelte grammar stores script bodies as
-        // opaque raw_text - re-parse them and derive the SAME structural
-        // edges (extends/implements/instantiates) the non-SFC languages get.
-        const subTrees = await deriveEmbeddedScriptTrees(root, content, "svelte")
-        for (const st of subTrees) {
-          for (const e of deriveTreeEdges(st, "javascript")) (truth as any[]).push(e)
-        }
+        for (const e of scriptEdges) (truth as any[]).push(e)
       }
       if (lang === "vue") {
         const subTrees = await deriveEmbeddedScriptTrees(root, content, "vue")
