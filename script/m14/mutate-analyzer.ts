@@ -2404,6 +2404,41 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "Box")) }),
   },
   {
+    id: "go/assign-lhs-reads",
+    language: "go",
+    defectClass: "relationship-noise",
+    description: "GO9 second-review regression: reverts the expression_list-aware write gate — assignment LHS targets leak as uses again (bare-value-reads forbids uses writeonly->wa/wb and writeplain->wa)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "writeonly", target: "wa", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+        { source: "writeplain", target: "wa", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+      ],
+    }),
+  },
+  {
+    id: "go/arraylen-param-shadow",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "GO10 second-review regression: parameter binding swallows type-position identifiers again — the array-length read goes silent (bare-value-reads expects uses sized->N)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "sized" && normRel(x).target === "N")) }),
+  },
+  {
+    id: "go/map-key-silence",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "GO11 second-review regression: map-literal keys treated as struct keys again — the key read goes silent (bare-value-reads expects uses keyed->Red)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "keyed" && normRel(x).target === "Red")) }),
+  },
+  {
+    id: "go/builtin-receiver-drop",
+    language: "go",
+    defectClass: "relationship-loss",
+    description: "GO13 second-review regression: the builtin filter matches the receiver again — qualified calls on builtin-named packages vanish (relationship-and-payloads expects calls duplicate->DeepCopyValue)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "calls" && normRel(x).source === "duplicate" && normRel(x).target === "DeepCopyValue")) }),
+  },
+  {
     id: "svelte/script-relative-indices",
     language: "svelte",
     defectClass: "range-incoherence",
