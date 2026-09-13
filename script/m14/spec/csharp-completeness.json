@@ -285,6 +285,34 @@
         "status": "RULED",
         "question": "C# review (2026-09-13): positional-pattern heads (`o is Point(1, y)`) parse as invocation_expressions under constant_pattern, so both sides emitted them as calls.",
         "resolution": "FIXED + GATED both sides: invocations directly under constant_pattern are patterns (no calls edge; their bare identifiers read as constant patterns, declared vars bind via declaration rules). Fixture forbids calls Pos->Point; oracle mirrored (lane-pinned)."
+      },
+      {
+        "id": "CS-C1",
+        "node_type": "object-initializer designators",
+        "status": "RULED",
+        "question": "C# second review (2026-09-13): `new Point { X = v }` parses initializers as assignment_expressions \u2014 X must designate (never read) while v reads. Probe-verified on a colliding member.",
+        "resolution": "FIXED + GATED: the assignment-LHS write gate covers initializer designators (verified identical shape); values read normally. Fixture expects Build->G and forbids Build->X/Y; mutant reemit-initializer-designator-reads CAUGHT."
+      },
+      {
+        "id": "CS-C2",
+        "node_type": "type-context name positions",
+        "status": "RULED",
+        "question": "C# second review (2026-09-13): this grammar spells ALL type names plain `identifier` (no type_identifier/field_identifier nodes exist \u2014 17 dead disjuncts removed, audit-proven), so type-parameter lists, where-clause and base-list subtrees and tuple types need explicit gates or member-name collisions fabricate reads.",
+        "resolution": "FIXED, partially unpinned: type_parameter_list direct names, where-clause and base-list subtrees, and tuple_type identifiers never read. Unpinnable on valid code by construction (a colliding member in those positions is either invalid code or genuinely ambiguous), so no fixture/mutant covers them \u2014 documented with the grammar evidence; lanes + F3 confirm zero valid-code impact."
+      },
+      {
+        "id": "CS-C3",
+        "node_type": "declarator roles and binding precision",
+        "status": "RULED",
+        "question": "C# second review (2026-09-13): variable_declarator names bound unconditionally (member declarators self-shadowed their own reads); foreach/deconstruction/lambda binding had gaps (write-position foreach vars, lambda params, typed deconstruction args never bound).",
+        "resolution": "FIXED + GATED: declaratorRole climb (method-ish = local binds via leftmost-name resolution incl. wrapped declarators; class-ish = member skips) with a matching emission gate; foreach binds type-gated first names plus all-but-first-and-last fallback with a positional write gate; lambdas bind parameter names + implicit params; deconstruction binds typed args (bare args write-skip). Existing forbids cover every class (Shadowed/Flow/Guards pairs); no new mutants needed (drop-bare-uses + reemit-shadowed-reads span the surface)."
+      },
+      {
+        "id": "CS-C4",
+        "node_type": "class-scope attribution and file frame",
+        "status": "RULED",
+        "question": "C# second review (2026-09-13): class-scope reads (member initializers, class-level attribute arguments) attributed to global, and top-level-statement locals had no frame (member-name collisions leaked).",
+        "resolution": "FIXED + GATED: innermost enclosing class attributes class-scope reads (strictly more precise; field pass unchanged by design); a file-scope frame binds top-level locals. Fixture expects Holder->Limit/Annotated->Other class sources and forbids global->topmark."
       }
     ]
   }
