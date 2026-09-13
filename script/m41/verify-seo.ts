@@ -6,8 +6,8 @@
 // that JSON-LD structured data parses and is registry-derived.
 //
 // Structured data covers two surfaces:
-//   /      SoftwareApplication  (registry-derived: version, tools, author)
-//   /faq   FAQPage              (data/faqs.tsx → JSON-LD → the rendered page)
+//   /         SoftwareApplication  (registry-derived: version, tools, author)
+//   /support  FAQPage              (website/faq.md → generated data → JSON-LD)
 // The FAQ chain is the strict one: every question and every answer published to
 // search engines must be text the page actually renders.
 //
@@ -88,10 +88,28 @@ const htmlName = (r: string): string => (r === "" ? "index" : r.slice(1))
 // being onboarded here fails too: a new route gets truth/SEO coverage
 // deliberately, never by accident.
 const REQUIRED_ROUTES = ["", "/install", "/docs", "/demos", "/tools", "/languages", "/editors", "/support", "/troubleshooting", "/privacy", "/terms"]
-// M56.S1: /faq and /contact are permanent redirects to /support — known routes
-// with their own onboarding rules (they must redirect; they are excluded from
-// the sitemap and from head-completeness). Any OTHER new route still fails here.
-const REDIRECT_ROUTES = ["/faq", "/contact"]
+// M56.S1/I1: retired routes are redirect stubs. The site declares the map ONCE
+// (website/src/lib/redirects.ts); this gate reads that declaration and requires
+// it to equal the retired-route contract below, so a live page cannot quietly
+// become a stub (and a retired path cannot quietly become a live page) without
+// changing this contract. Stubs are excluded from the sitemap and from
+// head-completeness; any OTHER new route still fails here.
+const EXPECTED_REDIRECTS: Record<string, string> = {
+  "/faq": "/support",
+  "/contact": "/support",
+  "/troubleshooting": "/docs#troubleshooting",
+  "/demos": "/editors",
+}
+const redirectsSrc = read("website/src/lib/redirects.ts")
+const DECLARED_REDIRECTS: Record<string, string> = Object.fromEntries(
+  [...redirectsSrc.matchAll(/^\s*"(\/[a-z0-9-]+)": "([^"]+)",$/gm)].map((m) => [m[1]!, m[2]!]),
+)
+const REDIRECT_ROUTES = Object.keys(DECLARED_REDIRECTS)
+check(
+  "S1: the site's redirect map is declared in one place and matches the retired-route contract",
+  JSON.stringify(DECLARED_REDIRECTS) === JSON.stringify(EXPECTED_REDIRECTS),
+  `declared=${JSON.stringify(DECLARED_REDIRECTS)}`,
+)
 const discoveryMissing = REQUIRED_ROUTES.filter((r) => !REAL_ROUTES.includes(r))
 const discoveryExtra = REAL_ROUTES.filter((r) => !REQUIRED_ROUTES.includes(r) && !REDIRECT_ROUTES.includes(r))
 check("S1: route discovery finds every required page", discoveryMissing.length === 0, discoveryMissing.join(" "))
@@ -125,9 +143,15 @@ function heads(): Record<string, string> {
 const H = heads()
 const indexable = Object.entries(H).filter(([r]) => !REDIRECT_ROUTES.includes(`/${r}`))
 
-// Every redirect stub really is a redirect (source of truth: the page module).
-for (const rr of REDIRECT_ROUTES) {
-  check(`S1: /${rr} is a permanent redirect to /support`, read(`website/src/app/${rr}/page.tsx`).includes('redirect("/support")'))
+// Every redirect stub really redirects — and to the destination the single
+// declaration names, not a literal that could drift away from it.
+for (const [from, to] of Object.entries(DECLARED_REDIRECTS)) {
+  const stub = read(`website/src/app${from}/page.tsx`)
+  check(
+    `S1: ${from} redirects to ${to} via the declared map (no literal destination)`,
+    stub.includes('from "@/lib/redirects"') && stub.includes(`redirect(REDIRECTS["${from}"])`),
+    stub.slice(0, 140),
+  )
 }
 
 // --- uniqueness + completeness (indexable routes only) -------------------------------
@@ -282,8 +306,8 @@ if (faqLd) {
 // the real inboxes (M56.S1), and the FAQ/contact paths must redirect to it.
 check("S1: /support offers the real inboxes", supportHtmlRaw.includes("support@backbencher.cc") && supportHtmlRaw.includes("info@backbencher.cc"))
 check("S1: /support has a still-have-questions block", faqRenderedText.includes("Still have questions"))
-check("S1: /faq redirects to /support", buildOk && read("website/src/app/faq/page.tsx").includes('redirect("/support")'))
-check("S1: /contact redirects to /support", buildOk && read("website/src/app/contact/page.tsx").includes('redirect("/support")'))
+check("S1: /faq redirects to /support", buildOk && DECLARED_REDIRECTS["/faq"] === "/support" && read("website/src/app/faq/page.tsx").includes('redirect(REDIRECTS["/faq"])'))
+check("S1: /contact redirects to /support", buildOk && DECLARED_REDIRECTS["/contact"] === "/support" && read("website/src/app/contact/page.tsx").includes('redirect(REDIRECTS["/contact"])'))
 
 // --- keyword presence (woven into real content, verified) --------------------------
 
@@ -386,7 +410,7 @@ negative("S1: FAQ question-drift detector is sensitive", (() => {
 
 // N7a (real data): the required-route contract must fire when discovery loses a
 // page — the failure mode a parity check alone cannot see.
-negative("S1: required-route detector rejects a discovery that lost a page", !REQUIRED_ROUTES.every((r) => REAL_ROUTES.filter((x) => x !== "/demos").includes(r)))
+negative("S1: required-route detector rejects a discovery that lost a page", !REQUIRED_ROUTES.every((r) => REAL_ROUTES.filter((x) => x !== "/editors").includes(r)))
 
 // N7b (real data): a page outside the contract must be flagged, so a new route
 // cannot slip in without being onboarded.
