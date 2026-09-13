@@ -292,6 +292,59 @@ Verifier: `verify-design.ts` — component reuse, palette tokens, contrast floor
 banned styles absent, responsive checks.
 Acceptance: verifier green plus owner visual approval before closure.
 
+Implementation notes (as built):
+- **Contrast is computed, not asserted.** The gate parses the surface and ink
+  tokens out of `globals.css` and runs the WCAG relative-luminance formula over
+  every one of them AND over every literal `text-[#hex]` / Tailwind accent class
+  used in site source, against the LIGHTEST surface text can sit on
+  (`--surface-2`, the plate hover state — not the kinder page canvas). The floor
+  is 4.5:1 for all text; large-text exceptions are deliberately not used. Audit
+  findings that were fixed rather than documented away: `--faint` was 3.40:1,
+  `--muted-foreground` 4.17:1, the most-used muted ink `#8A7E6C` 4.46:1 on hover
+  surfaces, `/docs` carried 40 cool-grey `zinc` classes (its tables had drifted
+  to a different palette), and four alpha-faded ember text classes (`/70`,`/80`,
+  `/90`) resolved to 2.9–4.4:1. Alpha-faded text classes are now refused outright
+  by the gate.
+- **Keyboard focus.** A global `:focus-visible` ring (2px ember-bright, 2px
+  offset) plus a `.console-index label:has(> input:focus-visible)` rule, because
+  the tools and languages consoles hide their radios (`.peer.sr-only`) and paint
+  the row from them — a ring on the input would have been invisible. Both
+  console indexes now carry `.console-index`, and the built stylesheet is checked
+  for both rules.
+- **Reduced motion.** Every `animation:` in `globals.css` must be inside a
+  `prefers-reduced-motion: no-preference` block or have its rule's class listed
+  in the `reduce` block. The check resolves through the rule's selector because
+  the declaration names a keyframe (`marquee-x`) while the reduce block disables
+  the class (`.marquee-track`).
+- **One component kit.** `ui/section.tsx`, `ui/plate.tsx`, `ui/callout.tsx` and
+  `ui/inline.tsx` hold the shared shell, surface, tone-aware note and inline
+  vocabulary. `/editors` and `/support` import them and declare no local twins;
+  `/docs` moved its note onto the shared `Callout`, whose tones now mean
+  something (`default` context, `warn` limitation, `safe` guarantee).
+- **Dead modules removed.** The gate requires every component module to be
+  referenced; it found five unreferenced ones (`FeatureCard`, `StatsGrid`,
+  `Grid`, `ui/badge`, `ui/button` — the last two from the shadcn scaffold) and
+  they were deleted. `FeatureCard`/`StatsGrid` were the only users of
+  `framer-motion`.
+- **Homepage data without density.** The tool cards dropped the radial glow (it
+  lifted card backgrounds unevenly) and the truncated JSON example strip, and
+  now state two registry facts that matter before an agent calls a tool —
+  `read-only` vs `writes to disk`, and `needs index` — with every type step
+  ≥12px. The language register cells and rail tiles moved up one type step and
+  the rail icons to full opacity; every L1-pinned fact (extensions, tier label,
+  recorded symbols, `>name</h5>` anchors) is unchanged.
+- **Responsive invariants.** Every `<table>` must sit inside an
+  `overflow-x-auto` wrapper, and every page that renders a multi-column grid
+  must declare a breakpoint — the pattern the docs/tools/editors tables already
+  followed, now enforced.
+- **Rendered proof.** No built page may contain a cool-grey class, and the built
+  stylesheet must carry both focus rules, so the claims are checked end to end.
+- Recorded limitation (in the evidence): contrast is computed on declared colours,
+  not rendered pixels, so a parent opacity or blend mode could still reduce
+  effective contrast (no such utility is used; alpha text is refused).
+  Photographic media (the verified session stills) is exempt. Visual taste is
+  not machine-checkable — owner approval remains the closure gate.
+
 ### X1 — Closure, Deploy and M41 Fold-In (#787)
 Deliverables: one-commit evidence batch for M56; M41's site gates (T2, T3, S1, S2,
 D1) re-pinned at the pushed commit so M41.X1 closes on the same push; both closure
