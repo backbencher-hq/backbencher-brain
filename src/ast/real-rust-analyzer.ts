@@ -399,6 +399,21 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // cyclomaticComplexity counter existed).
     ctx.metadata.complexity = ctx.metadata.cyclomaticComplexity ?? 1
 
+    // Declared-type reference graph (R13, rust extreme review — family
+    // standard, mirrors go/c/zig; rust had ONLY where-bound references).
+    // Parameter types, return types, struct/union field types, enum variant
+    // field types, const/static types and type-alias right-hand sides emit
+    // `references` to every named type mentioned. Primitives are
+    // `primitive_type` nodes (never collected); lifetimes are `lifetime`
+    // nodes (never collected); generic parameter LISTS are declarations,
+    // not deps (skipped — but a use of a param in a field type still
+    // mentions it); where-clauses belong to the R8 branch (skipped here);
+    // body-local annotations and turbofish args are execution artifacts
+    // (documented boundary). `Self` resolves to the enclosing impl type
+    // (D2 rule) and is otherwise skipped — a bare "Self" edge could never
+    // resolve to any symbol.
+    this.extractRustDeclaredTypeRefs(rootNode, ctx)
+
     // #419-D evidence tiers on EVERY edge.
     this.classifyEvidenceTier(ctx.relationships)
 
@@ -408,6 +423,182 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       imports: ctx.imports,
       exports: ctx.exports,
       metadata: ctx.metadata,
+    }
+  }
+
+  /** R13: declared-type `references` (see the call site for the contract). */
+  private extractRustDeclaredTypeRefs(rootNode: Node, ctx: RustContext): void {
+    const emitted = new Set<string>()
+    // Generic parameter names of the nearest enclosing generic item (R8's
+    // climb): they are LOCALLY BOUND, not dependencies — `fn generic<T>(x:
+    // T)` must not emit generic->T (the existing R8 forbid pins exactly
+    // this for the where-bound; the param-type mention is the same name).
+    const genericParamsOf = (item: Node): Set<string> => {
+      const out = new Set<string>()
+      let gcur: Node | null = item
+      while (gcur) {
+        if (
+          gcur.type === "function_item" || gcur.type === "trait_item" ||
+          gcur.type === "struct_item" || gcur.type === "enum_item" ||
+          gcur.type === "type_item" || gcur.type === "impl_item"
+        ) {
+          const tp = gcur.childForFieldName("type_parameters")
+          if (tp) {
+            const pw: Node[] = [tp]
+            while (pw.length > 0) {
+              const m = pw.pop()!
+              if (m.type === "type_identifier" || m.type === "identifier") out.add(m.text)
+              for (let k = 0; k < m.namedChildCount; k++) {
+                const c = m.namedChild(k)
+                if (c) pw.push(c)
+              }
+            }
+          }
+          break
+        }
+        gcur = gcur.parent
+      }
+      return out
+    }
+    const push = (source: string, leafNode: Node, gparams: Set<string>): void => {
+      let target = leafNode.text
+      if (!target || target === "Self") {
+        const resolved = this.enclosingImplType(leafNode)
+        if (!resolved) return
+        target = resolved
+      }
+      if (gparams.has(target)) return
+      const key = `${source}::references::${target}`
+      if (emitted.has(key)) return
+      emitted.add(key)
+      ctx.relationships.push({
+        source,
+        target,
+        type: ASTEngine.RelationshipType.References,
+        confidence: 0.9,
+        metadata: { relationshipType: "declared_type" },
+      })
+    }
+    const collectLeaves = (typeNode: Node | null): Node[] => {
+      const out: Node[] = []
+      if (!typeNode) return out
+      const w: Node[] = [typeNode]
+      while (w.length > 0) {
+        const m = w.pop()!
+        // where-bounds belong to R8; generic parameter lists declare.
+        if (m !== typeNode && (m.type === "where_clause" || m.type === "type_parameters")) continue
+        if (m.type === "type_identifier") out.push(m)
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) w.push(c)
+        }
+      }
+      return out
+    }
+    const walk: Node[] = [rootNode]
+    while (walk.length > 0) {
+      const n = walk.pop()!
+      const t = n.type
+      // Macro RULE bodies are templates, not code (same rule as the R1
+      // read gate) — never collect type mentions from them.
+      if (t === "macro_definition") continue
+      if (t === "function_item") {
+        const src = this.extractIdentifier(n, "name") ?? "global"
+        const gparams = genericParamsOf(n)
+        const params = n.childForFieldName("parameters")
+        if (params) {
+          for (let i = 0; i < params.namedChildCount; i++) {
+            const p = params.namedChild(i)
+            if (!p) continue
+            if (p.type === "self_parameter") continue
+            const ty = p.type === "parameter" ? p.childForFieldName("type") : null
+            for (const leaf of collectLeaves(ty)) push(src, leaf, gparams)
+          }
+        }
+        const ret = n.childForFieldName("return_type")
+        for (const leaf of collectLeaves(ret)) push(src, leaf, gparams)
+      } else if (t === "struct_item" || t === "union_item") {
+        const src = this.extractIdentifier(n, "name") ?? "global"
+        const gparams = genericParamsOf(n)
+        // Field types are the non-name direct children of each
+        // field_declaration (the name is field_identifier-typed, never
+        // collected — only type_identifier leaves resolve).
+        const fw: Node[] = [n]
+        while (fw.length > 0) {
+          const m = fw.pop()!
+          if (m !== n && (m.type === "where_clause" || m.type === "type_parameters")) continue
+          if (m.type === "field_declaration") {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c && c.type !== "field_identifier" && c.type !== "visibility_modifier" && c.type !== "attribute_item") {
+                for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+              }
+            }
+            continue
+          }
+          for (let i = m.namedChildCount - 1; i >= 0; i--) {
+            const c = m.namedChild(i)
+            if (c) fw.push(c)
+          }
+        }
+      } else if (t === "enum_item") {
+        const src = this.extractIdentifier(n, "name") ?? "global"
+        const gparams = genericParamsOf(n)
+        // Struct-variant fields behave like struct fields; tuple-variant
+        // fields (`V(Point)`) are bare type children of
+        // ordered_field_declaration_list. Variant NAMES are
+        // identifier-typed (never collected).
+        const ew: Node[] = [n]
+        while (ew.length > 0) {
+          const m = ew.pop()!
+          if (m !== n && (m.type === "where_clause" || m.type === "type_parameters")) continue
+          if (m.type === "field_declaration") {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c && c.type !== "field_identifier" && c.type !== "visibility_modifier" && c.type !== "attribute_item") {
+                for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+              }
+            }
+            continue
+          }
+          if (m.type === "ordered_field_declaration_list") {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c) for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+            }
+            continue
+          }
+          for (let i = m.namedChildCount - 1; i >= 0; i--) {
+            const c = m.namedChild(i)
+            if (c) ew.push(c)
+          }
+        }
+      } else if (t === "type_item" || t === "associated_type") {
+        const src = this.extractIdentifier(n, "name") ?? "global"
+        const gparams = genericParamsOf(n)
+        // The aliased type is the last named child that is not the name
+        // itself nor the parameter list (a valueless `type Item;`
+        // contributes nothing).
+        const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (!c || c.type === "type_parameters" || c.type === "where_clause") continue
+          if (nameNode && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex) continue
+          for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+          break
+        }
+      } else if (t === "const_item" || t === "static_item") {
+        const nm = n.childForFieldName("name")?.text
+        if (nm && nm !== "_") {
+          const ty = n.childForFieldName("type")
+          const gparams = genericParamsOf(n)
+          for (const leaf of collectLeaves(ty)) push(nm, leaf, gparams)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) walk.push(c)
+      }
     }
   }
 
@@ -1036,7 +1227,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       } else if (!inFn && (t === "const_item" || t === "static_item")) {
         const nm = n.childForFieldName("name")?.text ?? leftmostId(n)
-        if (nm && !inImpl) add(nm, mods)
+        if (nm && nm !== "_" && !inImpl) add(nm, mods)
         // Bodies hold no file-visible declarations; still descend for
         // nested mods (a mod inside a const body is legal, if bizarre).
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -1076,6 +1267,26 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (n.type === "identifier" || n.type === "type_identifier") {
         // A bare `use foo;` binds foo.
         if (n.parent && (n.parent.type === "use_declaration" || n.parent.type === "use_list")) out.push(n.text)
+        return
+      }
+      // R11 (rust extreme review): a scoped single-leaf path binds its
+      // LEAF (`use std::io::Read` binds Read — previously NOTHING was
+      // bound, so every read of a plain-path import stayed silent while
+      // braced/aliased imports resolved; the import ROW was recorded
+      // correctly, only the R1 name set missed it). Only the last segment
+      // binds (intermediate modules are not values); do not recurse inside
+      // (the inner path segments bind nothing). A scoped path that is the
+      // PREFIX of a brace group (`use foo::bar::{a}`) binds nothing — the
+      // group leaves bind on their own; only direct paths and group leaves.
+      if (n.type === "scoped_identifier") {
+        const par = n.parent
+        if (par && (par.type === "use_declaration" || par.type === "use_list")) {
+          const last = n.namedChild(n.namedChildCount - 1)
+          if (last && (last.type === "identifier" || last.type === "type_identifier")) {
+            const t = last.text
+            if (t && t !== "self" && t !== "super" && t !== "crate") out.push(t)
+          }
+        }
         return
       }
       if (n.type === "use_as_clause") {
@@ -1217,12 +1428,60 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (m.type === "for_expression") {
           // Loop variable is the first named child (irrefutable → binds).
           this.collectPatternIds(m.namedChild(0), bound, resolves, true)
+        } else if (m.type === "closure_expression") {
+          // R10 (rust extreme review): closure parameters bind (irrefutable
+          // position — `|x|`, `|(a, b)|`, `|*p|` all declare). They were
+          // never collected, so a closure param colliding with a file value
+          // emitted junk `uses` (probe: `|G| G + 1` with `const G: u32`
+          // emitted f->G). Folded into the enclosing function's set per the
+          // documented contract (closures share it; a same-named read past
+          // the closure stays suppressed — flow-insensitive residual, same
+          // class as cross-arm reads).
+          for (let i = 0; i < m.namedChildCount; i++) {
+            const c = m.namedChild(i)
+            if (c && c.type === "closure_parameters") {
+              this.collectPatternIds(c, bound, resolves, true)
+            }
+          }
         } else if (m.type === "match_arm") {
           // Arm patterns (refutable position): sweep pattern-typed nodes
           // with match semantics. Bodies still descend normally below.
           // Nested let/for/condition declarations keep declaration
           // semantics — skip their subtrees here (the main walk binds
           // them with isDecl=true when it descends).
+          //
+          // R9 (rust extreme review): the arm PATTERN lives in the
+          // `pattern` field wrapped in `match_pattern`, and a bare
+          // binding (`v => ...`) is a BARE identifier — neither shape was
+          // in the sweep list, so the binding never bound: the pattern
+          // site itself and every body read of it emitted junk `uses`
+          // whenever a file value collided (probe: `v => v` with
+          // `const v: u32` emitted f->v). The pattern subtree is swept
+          // with match semantics (bare identifiers included); the arm
+          // BODY is untouched (its reads are values, never bindings).
+          const patField = m.childForFieldName("pattern")
+          if (patField) {
+            const psub: Node[] = [patField]
+            while (psub.length > 0) {
+              const q = psub.pop()!
+              if (
+                q !== patField &&
+                (q.type === "let_declaration" || q.type === "let_condition" || q.type === "for_expression")
+              ) continue
+              if (
+                q.type === "match_pattern" || q.type === "identifier" ||
+                q.type === "tuple_pattern" || q.type === "struct_pattern" ||
+                q.type === "tuple_struct_pattern" || q.type === "ref_pattern" ||
+                q.type === "or_pattern" || q.type === "slice_pattern"
+              ) {
+                this.collectPatternIds(q, bound, resolves, false)
+              }
+              for (let i = q.namedChildCount - 1; i >= 0; i--) {
+                const c = q.namedChild(i)
+                if (c) psub.push(c)
+              }
+            }
+          }
           const sub: Node[] = [m]
           while (sub.length > 0) {
             const q = sub.pop()!
@@ -1417,6 +1676,14 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!patternNode) return
 
     const name = patternNode.text
+
+    // R12 (rust extreme review): the blank identifier declares nothing —
+    // `const _ : u32 = 0;` (valid Rust) minted a `_` Variable symbol
+    // (GO5/Z8 class). Reads already skip blanks; extraction must too.
+    // R12 (rust extreme review): the blank identifier declares nothing —
+    // `const _ : u32 = 0;` (valid Rust) minted a `_` Variable symbol
+    // (GO5/Z8 class). Reads already skip blanks; extraction must too.
+    if (name === "_") return
 
     // Module/impl-level const/static/let are declarations; function-local
     // `let` bindings are execution artifacts (noise), not declaration sites.
