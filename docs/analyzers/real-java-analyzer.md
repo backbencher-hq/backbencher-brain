@@ -33,7 +33,7 @@
 | extends | ✅ | `superclass` field → `extractJavaTypeBaseName` strips `generic_type` type args → clean symbol name | 1.0 |
 | implements | ✅ | `super_interfaces`/`extends_interfaces` → `interface_type_list` → per-interface, type args stripped | 1.0 |
 | instantiates | ✅ | `object_creation_expression` → `type_identifier`; plus PascalCase `method_invocation` heuristics | 0.95 (new) / 0.6 (heuristic) |
-| uses | ✅ | field accesses (`field_access`) with `this`/`super` receiver resolved to enclosing type; Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access / 1.0 framework-derived |
+| uses | ✅ | field accesses (`field_access`) resolved to the enclosing METHOD (M49 W15 #814: `this`/`super` receivers used to resolve to the enclosing type, the JAD2 exception, which the family-wide ruling removed — a class-level read falls back to the type); Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access / 1.0 framework-derived |
 | imports | ✅ | `import_declaration` → `scoped_identifier`/`identifier`; metadata for static/wildcard | — |
 | exports | ✅ | public top-level symbols; Spring MVC endpoints (`Exports` with route, httpMethod) | 1.0 |
 | overrides | ✅ | `@Override` + hierarchy BFS over `classHierarchy` (type-arg-clean parents): exact-signature match first, then declaring-parent resolution via the project companion index (cross-file / generic signatures), then deterministic first-parent fallback | 1.0 (exact / companion-resolved) / 0.9 (fallback) |
@@ -49,7 +49,7 @@
 - Methods, constructors (named `constructor`), overloads (signature-keyed FQN), abstract/default methods — `AdvancedFeatures.java`
 - Annotations: Spring bean markers, `@Entity`/`@Table` (table mapping), JPA column/relation mappings, `@RequestMapping`/`@GetMapping`-family routes (class base path + method route composed, `@Value` config injection) — `AdvancedFeatures.java`
 - Method invocations (`qualified_calls` + Calls edges), object instantiation, streams/lambdas (`mapXs.stream().map(…).collect(…)` chains) — `AdvancedFeatures.java`
-- `this`/`super` field access receivers resolved to the enclosing type — `AdvancedFeatures.java`
+- `this`/`super` field access reads resolved to the enclosing METHOD (M49 W15 #814; they resolved to the enclosing type before the ruling) — `AdvancedFeatures.java`
 - Phantom symbols: Spring Data repositories (`JpaRepository`/`CrudRepository` default methods), Lombok `@Data`/`@Getter`/`@Setter` accessors — `UserService.java`
 
 ## Unsupported / explicit-unknown constructs

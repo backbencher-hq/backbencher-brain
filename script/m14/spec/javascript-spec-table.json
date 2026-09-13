@@ -24,14 +24,14 @@
         "decorators",
         "comments"
       ],
-      "note": "constructor -> Constructor kind; get/set -> Property kind; # members strip prefix and mark private"
+      "note": "constructor -> Constructor kind; get/set -> Property kind; # members keep the declared `#` spelling and mark private (JSD32, M49 W15 #813 ruling)"
     },
     "field_definition": {
       "symbol": "property",
       "payloads": [
         "visibility"
       ],
-      "note": "# private fields stripped to clean name, metadata.isPrivate"
+      "note": "# private fields keep the declared `#` spelling, metadata.isPrivate (JSD32, M49 W15 #813 ruling: the old strip left every reading edge targeting a name no symbol carried)"
     },
     "function_declaration": {
       "symbol": "function",
@@ -82,7 +82,7 @@
     },
     "member_expression": {
       "relationship": "uses (isFieldAccess)",
-      "note": "root-anchored Uses at 0.6; call-callee double-emission is gap J4"
+      "note": "root-anchored Uses at 0.6; source = the enclosing METHOD (M49 W15 #814 — `this`/`super` receivers used to resolve to the enclosing type, which contradicted this analyzer's own bare-read rule in the same body); call-callee double-emission is gap J4"
     },
     "subscript_expression": {
       "relationship": "uses",

@@ -317,7 +317,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               : parentType === "class_body"
                 ? `cls@${node.parent!.startIndex}`
                 : undefined)
-          const dedupKey = `${containerKey ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}${kindSlot}`
+          // M49 W15 (#813): the dedup key uses the DECLARED name. A class may
+          // legitimately declare both `x` and `#x` as distinct members, so
+          // stripping `#` here made two different members share one slot (the
+          // last declaration would have dead-spanned the first). The key is
+          // internal, but "one member, one name" has to hold at this layer too
+          // or the graph-visible name cannot be the declared one.
+          const dedupKey = `${containerKey ?? "module"}:${name}${kindSlot}`
             const kind = isConstructor
               ? ASTEngine.SymbolKind.Constructor
               : isAccessor
@@ -327,7 +333,6 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             const isAsync = this.hasToken(node, "async")
             const isGenerator = this.hasToken(node, "*")
             const isPrivateMethod = name.startsWith("#")
-            const cleanName = isPrivateMethod ? name.slice(1) : name
             // J3 (review wave): LAST declaration wins — first-wins kept the
             // dead redeclaration while the runtime (and the TS analyzer)
             // use the last body. Replace in place so scope push/pop stay
@@ -360,7 +365,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // siblings).
               const decorators = this.collectOwnDecorators(node)
             var methodSymbol: ASTEngine.UniversalSymbol = {
-              name: cleanName,
+              // #813: the declared spelling IS the member's name (every edge
+              // that reads it carries the `#`; see the TS site's note).
+              name,
               kind,
               range: this.nodeToRange(node),
               scope: scopeString(scopeStack),
@@ -416,7 +423,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "field_definition": {
           const prop = node.childForFieldName("property")
           if (prop) {
-            const name = prop.text.startsWith("#") ? prop.text.slice(1) : prop.text
+            // #813: keep the declared `#` spelling.
+            const name = prop.text
             const owner = scopeOwnerName(scopeStack)
             symbols.push({
               name,
@@ -1805,12 +1813,18 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 }
               }
               for (const seg of parts) {
-                // JSD2: this/super read the TYPE's member (swift/java JAD2
-                // precedent). Outside a class there IS no type — a bare
-                // function's this is dynamic; pre-M37 the edge leaked with the
-                // literal keyword as source (uses this -> value). Fall back to
-                // the enclosing function (the only static owner that exists).
-                const source = head === "this" || head === "super" ? owner ?? method ?? moduleName : method ?? owner ?? moduleName
+                // M49 W15 #814 (owner rule: converge on METHOD source). JSD2
+                // used to source `this.x`/`super.x` to the enclosing TYPE
+                // (citing a java/swift precedent that no longer holds — both
+                // moved in this same ruling). The source is now the enclosing
+                // METHOD for every receiver, which is what the analyzer
+                // ALREADY did for a bare member read in the same body: probe
+                // `class Store { count = 0; bare(){ return count }
+                // dotted(){ return this.count } }` emitted `bare -> count`
+                // next to `Store -> count` — two sources for one member, one
+                // class. Outside a class there is no method either, so fall
+                // back to the owner, then the module.
+                const source = method ?? owner ?? moduleName
                 // M49 W13: a PRIVATE segment's natural key (`${source}.` +
                 // `#x`) is byte-identical to the bare-read/chain-root key of
                 // the plain identifier `x` (`${source}.#` + `x`), so a bare
