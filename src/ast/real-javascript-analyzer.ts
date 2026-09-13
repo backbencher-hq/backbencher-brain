@@ -295,7 +295,28 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // The containing object literal's span is its identity; duplicates
           // INSIDE one object still collapse last-wins (J3 + the dup-key
           // Option A ruling) because they share the same key.
-          const containerKey = owner ?? (node.parent && node.parent.type === "object" ? `obj@${node.parent.startIndex}` : undefined)
+          // M49 W13: a CLASS EXPRESSION has no declared name, and only
+          // `class_declaration` pushes a Class scope, so `scopeOwnerName`
+          // returned undefined for every member of every anonymous class
+          // expression and they ALL shared the key `module:<name>`: the
+          // second class expression's `constructor` replaced the first's,
+          // dead-spanning its body and dropping its edges. Measured on the
+          // svelte corpus: `custom-element.js` defines TWO class expressions
+          // (`SvelteElement = class extends HTMLElement`, and `Class = class
+          // extends SvelteElement` inside `create_custom_element`), each with
+          // a `constructor`, so `this.attachShadow(shadow_root_init)` in the
+          // first vanished — the second javascript-lane MISSING edge W12's
+          // 400-file measurement registered. The containing class's span is
+          // its identity, exactly as W2 (#769) did for object literals;
+          // duplicates INSIDE one class still collapse last-wins (J3).
+          const parentType = node.parent?.type
+          const containerKey =
+            owner ??
+            (parentType === "object"
+              ? `obj@${node.parent!.startIndex}`
+              : parentType === "class_body"
+                ? `cls@${node.parent!.startIndex}`
+                : undefined)
           const dedupKey = `${containerKey ?? "module"}:${name.startsWith("#") ? name.slice(1) : name}${kindSlot}`
             const kind = isConstructor
               ? ASTEngine.SymbolKind.Constructor
@@ -1790,7 +1811,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // literal keyword as source (uses this -> value). Fall back to
                 // the enclosing function (the only static owner that exists).
                 const source = head === "this" || head === "super" ? owner ?? method ?? moduleName : method ?? owner ?? moduleName
-                const key = `${source}.${seg}`
+                // M49 W13: a PRIVATE segment's natural key (`${source}.` +
+                // `#x`) is byte-identical to the bare-read/chain-root key of
+                // the plain identifier `x` (`${source}.#` + `x`), so a bare
+                // read of the imported binding `update_version` (set.js:52
+                // `#update_version = update_version || -1`) claimed the key
+                // and the real private read `this.#update_version` (set.js:88)
+                // was dropped as a duplicate — the first javascript-lane
+                // MISSING edge W12's 400-file measurement registered. `#` can
+                // never appear inside an identifier, so a `#`-marked
+                // namespace is disjoint from every bare/root/segment key.
+                const key = seg.startsWith("#") ? `${source}.$private${seg}` : `${source}.${seg}`
                 if (!seen.has(key)) {
                   seen.add(key)
                   relationships.push({
