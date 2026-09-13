@@ -1091,7 +1091,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       "println",
       "close",
     ]
-    return inArray(builtins, call.split(".")[0])
+    // GO13 (second review): match the CALLEE LEAF, never the receiver. The
+    // old first-segment test dropped every qualified call on a
+    // builtin-named package (`copy.DeepCopyValue(x)` from
+    // terraform/internal/copy never emitted — lane MISSING), while the
+    // oracle filters by resolved leaf. Leaf semantics keeps every other
+    // call site identical (they already pass leaves or pop() explicitly)
+    // and preserves the deliberate `v.len()` method/builtin rule.
+    const segs = call.split(".")
+    return inArray(builtins, segs[segs.length - 1])
   }
 
   /**
@@ -2030,13 +2038,30 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // Parameters (and method receivers): bind the identifiers of each
     // parameter_declaration / variadic_parameter_declaration.
+    //
+    // GO10 (second review): bind the leading NAME identifiers only, not
+    // the whole subtree. Go params are names-first (`a, b int` binds a
+    // AND b), so everything before the first type-ish child is a name —
+    // but an array length (`a [N]int`) or any type-position identifier is
+    // a VALUE read, not a binding (probe: `f(a [N]int)` with file const N
+    // suppressed the genuine `return N` read). Types are usually
+    // type_identifier-typed (auto-skipped), but array lengths and similar
+    // are bare identifiers. Unnamed params (`f(int, string)`) bind nothing.
     const bindParamsOf = (declNode: Node | null, frame: ScopeFrame): void => {
       if (!declNode) return
       const seen: Node[] = [declNode]
       while (seen.length > 0) {
         const m = seen.pop()!
         if (m.type === "parameter_declaration" || m.type === "variadic_parameter_declaration") {
-          bindNamesUnder(m, frame)
+          for (let i = 0; i < m.namedChildCount; i++) {
+            const c = m.namedChild(i)
+            if (!c) continue
+            if (c.type === "identifier") {
+              if (c.text !== "_") frame.names.add(c.text)
+            } else {
+              break
+            }
+          }
           continue
         }
         for (let i = m.namedChildCount - 1; i >= 0; i--) {
@@ -2047,12 +2072,26 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     // Keyed-element struct keys (`Point{X: y}`) never read; map-literal
     // variable keys are the documented residual (shapes identical).
+    //
+    // GO11 (second review): the shapes are NOT identical — a keyed element
+    // belongs to the nearest composite literal, and that literal's TYPE
+    // tells struct keys (field names, never read) from map keys (key
+    // EXPRESSIONS, genuinely read: `map[Color]int{Red: 1}` reads Red).
+    // Probe-verified missing pair on both... (uses is uncompared for go,
+    // so the lane cannot see it — fixtures gate it). Elided inner
+    // literals (`[]Point{{X: 1}}`) and non-map literals stay silent
+    // (conservative = old behavior).
     const isCompositeKey = (node: Node): boolean => {
       let cur: Node | null = node.parent
+      let keyed: Node | null = null
       while (cur) {
         if (cur.type === "keyed_element") {
           const first = cur.namedChildCount > 0 ? cur.namedChild(0) : null
-          return !!first && node.startIndex >= first.startIndex && node.endIndex <= first.endIndex
+          if (first && node.startIndex >= first.startIndex && node.endIndex <= first.endIndex) {
+            keyed = cur
+            break
+          }
+          return false
         }
         if (
           cur.type === "composite_literal" || cur.type === "call_expression" ||
@@ -2061,7 +2100,24 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         ) return false
         cur = cur.parent
       }
-      return false
+      if (!keyed) return false
+      cur = keyed.parent
+      while (cur) {
+        if (cur.type === "composite_literal") {
+          for (let i = 0; i < cur.namedChildCount; i++) {
+            const c = cur.namedChild(i)
+            if (c && c.type === "map_type") return false
+          }
+          return true
+        }
+        if (
+          cur.type === "call_expression" || cur.type === "field_declaration" ||
+          cur.type === "function_declaration" || cur.type === "method_declaration" ||
+          cur.type === "block"
+        ) return true
+        cur = cur.parent
+      }
+      return true
     }
     // Channel operands belong to the channel-op pass (leaf + direction).
     const isChannelOperand = (node: Node): boolean => {
@@ -2099,6 +2155,32 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (fnField) return fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex
       const first = p.namedChild(0)
       return !!first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex
+    }
+    // GO9 (second review): assignment LHS is a WRITE — but EVERY side of
+    // every assignment wraps in expression_list (`a = 1` is
+    // assignment > [expression_list[a], expression_list[1]]), so the old
+    // direct-parent check never fired and every written name leaked as a
+    // use whenever it resolved (probe: `a, b = 1, 2` with no reads at all
+    // emitted f->a, f->b). Climb through expression_lists only: landing in
+    // the FIRST child subtree of an assignment_statement is a write;
+    // stopping anywhere else (index/call/selector/unary = a genuine read
+    // like `arr[i]`, `*p`, `s.f`) is not. `=` and `+=` are both writes
+    // (family parity with the selector pass, which got this gate in S1).
+    // F6 note: go has no `compound_assignment_statement` node — `a += 1`
+    // and `a = 1` are both `assignment_statement` (operator is anonymous).
+    const isAssignLhsWrite = (node: Node): boolean => {
+      let cur: Node | null = node
+      let p: Node | null = node.parent
+      while (p && p.type === "expression_list") {
+        const gp = p.parent
+        if (gp && gp.type === "assignment_statement") {
+          const lhs = gp.namedChild(0)
+          return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+        }
+        cur = p
+        p = p.parent
+      }
+      return false
     }
     const isEntityName = (node: Node): boolean => {
       const p = node.parent
@@ -2165,7 +2247,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < node.namedChildCount; i++) {
           const c = node.namedChild(i)
           if (!c) continue
-          if (c.type === "parameter_list") bindParamsOf(c, frame)
+          // GO14 (second review): generic type parameters bind too
+          // (`func f[T any]` shadows a file value T — types and values
+          // share scope in Go). They parse as parameter_declaration nodes
+          // under type_parameter_list, which this loop never visited, so a
+          // colliding file value misattributed (probe: `return T` emitted
+          // f->T for the const instead of staying silent for the param).
+          if (c.type === "parameter_list" || c.type === "type_parameter_list") bindParamsOf(c, frame)
         }
         // Method receivers live in the FIRST parameter_list; the loop above
         // already covers every parameter_list, receiver included.
@@ -2242,11 +2330,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // isCallCallee above. Removed rather than re-pointed at
           // selector_expression, which would silently drop the receiver read.
           !this.hasGoQualifiedAncestor(node) &&
-          // F6 audit: go has no `compound_assignment_statement` node — `a += 1`
-          // and `a = 1` are both `assignment_statement` (operator is an
-          // anonymous token), which this condition already covers.
-          !((p && p.type === "assignment_statement") &&
-            (() => { const lhs = p.namedChild(0); return !!lhs && lhs.startIndex === node.startIndex && (lhs.endIndex ?? 0) >= node.endIndex })()) &&
+          // GO9 (second review): assignment LHS is a WRITE — but EVERY
+          // side of every assignment wraps in expression_list, so the old
+          // direct-parent check never fired (see isAssignLhsWrite above).
+          !isAssignLhsWrite(node) &&
           !(p && (p.type === "inc_statement" || p.type === "dec_statement")) &&
           !(p && (p.type === "goto_statement" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "labeled_statement")) &&
           !isShadowed(name) &&
