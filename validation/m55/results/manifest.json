@@ -234,8 +234,7 @@
           "an unresolved type is the common case, not an edge (the `name`-only entries are real rows), so the unknown marker appears in ordinary cards"
         ],
         "remaining": [
-          "V1's in-editor frame showing a human signature in the card (closure requirement)",
-          "the hub's usage rows carry no signature field today; when one is added it must render through this owner (the R4 source check enforces the rule lane-wide)"
+          "NONE for T4's own closure requirement: the signature is read in the card at this HEAD (validation/m55/frames/live-14/2-hover-declaration.png), read back by eye and gated by V1's R2. The issue stays planned only because T2's open item sits before it in the ledger's ladder."
         ]
       }
     },
@@ -285,8 +284,7 @@
           "the fixture must seed the indexer's REAL content hash: with a placeholder hash every fixture file reads `stale` and the provenance assertions measure the fixture instead of the rule (found while wiring the hover leg)."
         ],
         "remaining": [
-          "V1's in-editor frame showing the same tier story in the card and the hub (closure requirement)",
-          "the hub (bb/graph usages) only traverses calls/instantiates/extends/implements, so contains/imports/references/uses rows are asserted on the hover and model legs — recorded as a limitation, not hidden"
+          "NONE for T5's own closure requirement: the tier story is read in the card and the hub at this HEAD (validation/m55/frames/live-14/2-hover-declaration.png, 4-open-in-graph.png, 9-ctor-open-in-graph.png), read back by eye and gated by V1's R2. The issue stays planned only because T2's open item sits before it in the ledger's ladder."
         ]
       }
     },
@@ -305,8 +303,7 @@
           "ide/vscode/package.json: `bb.panelPlacement` is now CONTRIBUTED (enum + default + descriptions). Without the contribution the setting could not be set at all, so 'remembered' would have been a claim about a setting that did not exist."
         ],
         "remaining": [
-          "V1's in-editor leg: the editor column count unchanged and the active editor still the source file after hub/impact/graph opens in one session",
-          "the setting surviving a window reload (needs the in-editor leg)"
+          "NONE for P1's own closure requirement: the panels are tabs in the current group with the editor column kept (validation/m55/frames/live-14/4-open-in-graph.png, 5-impact.png, 7-status.png), read back by eye and gated by V1's R2. The issue stays planned only because T2's open item sits before it in the ledger's ladder."
         ]
       },
       "scope": "panels open as a preview tab in the current editor group by default (owner decision 2026-09-12); one panel per kind, reused and updated; preserveFocus; bb.panelPlacement setting honored and remembered",
@@ -460,14 +457,16 @@
       },
       "handoffIssue": 816,
       "progress": {
-        "stage": "closure gate written and run: the ledger must close at one HEAD, the M24->M44 ladder record must be green at that HEAD, the verdict pack is generated and drift-gated, and the cross-language false positive is handed over (issue #816).",
+        "stage": "closure gate written, wired and run: it reports known-gap with the exact remaining reason (G1 ladder + the ledger closure), never a softened verdict.",
         "verifiedAt": "2026-09-13",
         "fixes": [
           "script/m55/verify-closure.ts (new): C1 ledger closure (every issue verified and pinned to the audit HEAD; X1's own record is the declared self-consistency exception), C2 the M53 R1 ladder's 40-gate record read per milestone with gate/exit/evidence, C3 docs/m55/VERDICT-PACK.md GENERATED from the ledger + V1's claim trace and drift-gated byte-for-byte (a claim naming a missing frame fails; a frame-less claim must declare its wire-only source), C4 the hand-off note checked against the owner's index (blocked-with-reason when absent), C6 chain wiring, 5 mutants.",
           "docs/m55/HANDOFF-cross-language.md (new): the stored cross-language row (greet -> package.json name, uses, 0.85, bridge name-resolution, is_cross_language=1) with what the lane already does about it and what is asked of the analyzer lane.",
           "The cross-lane hand-off was FILED: issue #816 in the analyzer lane (M14: Analyzer Truth & Honesty), carrying the stored row and the probe/frame evidence."
         ],
-        "remaining": []
+        "remaining": [
+          "the closure run itself: G1's M53 R1 ladder (m24->m44 + M53 closure) must be green at ONE HEAD with every prior issue verified — T2's click-to-call-site leg (F13) is the current blocker, and because T2 sits before T3/T4/T5/P1/V1 in the ladder, its open item holds them too"
+        ]
       }
     }
   ]
