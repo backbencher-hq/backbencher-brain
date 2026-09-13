@@ -60,9 +60,28 @@ function main() {
   // required G1/R1/R2/X1 scaffold codes. They must still satisfy the same
   // status/evidence checks below. Anything that is neither a required code nor
   // a known wave-code shape fails.
-  const WAVE_CODE = /^[JKSCEPGVTRHD][0-9]+$/
+  // M49 W13: the vocabulary is the set of LANGUAGE PREFIXES the waves
+  // actually use, written out — not an opaque single-character class. The
+  // old `/^[JKSCEPGVTRHD][0-9]+$/` silently rejected five LEGITIMATE ledger
+  // rows the systems and csharp review waves appended: the two-letter codes
+  // CPP1/RS1/GO1/CS1 (one letter followed by digits cannot match a two-letter
+  // prefix) and Z1 (Z was never in the class). G1 therefore failed on rows no
+  // rule was meant to forbid, while simultaneously offering no way to see
+  // WHAT vocabulary was allowed. Listing the prefixes keeps the gate exactly
+  // as strict — anything outside the vocabulary still fails — and makes the
+  // allowed shapes reviewable.
+  const WAVE_PREFIXES = [
+    "J", "K", "S", "C", "E", "P", "G", "V", "T", "R", "H", "D",
+    "CPP", "CS", "GO", "RS", "Z",
+  ]
+  const WAVE_CODE = new RegExp(`^(?:${WAVE_PREFIXES.join("|")})[0-9]+$`)
   check("ledger has no extra codes", issues.every((i) => REQUIRED_CODES.includes(String(i.id)) || WAVE_CODE.test(String(i.id))),
     `extras: ${ids.filter((x) => !REQUIRED_CODES.includes(x) && !WAVE_CODE.test(x)).join(",")}`)
+  // The vocabulary must discriminate: a real systems code passes, a typo of
+  // one does not, and every ledger code the gate now admits is at least
+  // shape-legal — otherwise "no extra codes" could pass vacuously.
+  negative("wave-code vocabulary admits the systems/csharp codes", ["CPP1", "RS1", "GO1", "Z1", "CS1"].every((c) => WAVE_CODE.test(c)))
+  negative("wave-code vocabulary rejects an unowned prefix", !WAVE_CODE.test("FOO1") && !WAVE_CODE.test("CPP"))
   for (const i of issues) {
     const status = String(i.status)
     check(`${i.id} status legal`, ALLOWED_STATUS.includes(status), status)

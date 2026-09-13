@@ -559,6 +559,13 @@
    "decision": "RULED - the oracle mirrors the analyzer (M37.21 lockstep): `property_signature` joins the override member set. Class FIELDS stay out: a probe proves the analyzer emits no class-field overrides, so truth must not outrun it. The analyzer is unchanged.",
    "evidence": "fixture typescript/dts-interface-property-overrides (count==2 + forbid pins); mutant typescript/property-override-drop CAUGHT; F3 typescript 60/60; corpus re-probe at the fixed tree: svelte-repo typescript lane 0 unexplained (was 19). Second finding of the same probe (T3) fixed in the same wave: the subscript-callee and dynamic-import branches returned before the child recursion, dropping every call nested in their arguments (console[method](message.text()) emitted nothing; runtime-browser/test.ts MISSING) - fixture typescript/subscript-callee-nested-calls + mutant typescript/subscript-callee-nested-call-drop CAUGHT",
    "date": "2026-09-12"
+  },
+  {
+   "id": "TSD30",
+   "node_type": "#private field read (member_expression / private_property_identifier)",
+   "status": "FIXED",
+   "question": "M49 W13 (web-family private-member audit): the field-access Uses rule looks the member's name up in the declared-symbol set before emitting, and that set stores private members under their CLEAN name (`count` for `#count` - the documented spec-table contract). The rule passed the node's RAW text (`#count`), so the membership test was always false and the analyzer skipped the read BY ITSELF: this.#count emitted nothing, while this.count emitted uses read->count and while the private METHOD call correctly emitted calls run->#step. TS was therefore blind to every private field read in a codebase. Probe-proven (public/private/method-arg/private-call matrix), not inferred. Not corpus-visible in the pinned corpora (element-plus 0, vue-element-admin 0, vue-core 1 - and that one is inside a comment in packages/compiler-core/src/babelUtils.ts), which is why no sampled differential lane ever surfaced it.",
+   "decision": "RULED - the declared-symbol lookup normalizes the `#` prefix (private members are stored stripped) while the EMITTED TARGET keeps the `#` spelling: that is the spelling the calls edge already carries (calls run->#step) and the one the javascript twin emits (uses Store->#update_version), so the web family agrees on one private-member spelling. Pinned by fixture typescript/private-member-reads (uses read->#count and uses bump->#version LOST pre-fix) with mutant typescript/private-read-raw-lookup."
   }
  ]
 }

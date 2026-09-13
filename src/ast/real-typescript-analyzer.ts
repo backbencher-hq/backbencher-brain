@@ -3814,7 +3814,24 @@ class TypeScriptAnalysisRunner {
           const prop = n.childForFieldName("property") ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
           if (prop) {
             const name = prop.text
-            if (!!symbolNames[name] && name !== currentSymbol.name) {
+            // M49 W13: a PRIVATE member read (`this.#count`) never emitted a
+            // Uses edge while a public one (`this.count`) did — and while a
+            // private METHOD call (`this.#step()`) did. The declared-symbol
+            // set stores private members under their CLEAN name (`count`,
+            // `property:count` — the documented spec-table contract), but the
+            // read rule looked the node's raw text (`#count`) up in that map,
+            // so the membership test `!!symbolNames[name]` was always false and
+            // the read was skipped by the analyzer ITSELF rather than resolved.
+            // Probe-proven (`this.#count` emitted nothing, `this.count` emitted
+            // `uses read->count`). Rare in the pinned TS corpora (the only
+            // `this.#` occurrence in element-plus/vue-core/vue-element-admin is
+            // inside a comment in vue-core babelUtils.ts), which is why the
+            // sampled differential lanes never surfaced it. The TARGET keeps
+            // the `#` spelling: that is what the calls edge already carries
+            // (`calls run->#step`) and what the javascript twin emits
+            // (`uses Store->#update_version`), so the family agrees.
+            const lookupName = name.startsWith("#") ? name.slice(1) : name
+            if (!!symbolNames[lookupName] && lookupName !== currentSymbol.name) {
               const key = `${currentSymbol.name}:${name}:field`
               if (!processed[key]) {
                 processed[key] = true

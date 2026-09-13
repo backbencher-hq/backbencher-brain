@@ -3329,6 +3329,51 @@ const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "javascript/class-expression-container-collapse",
+    language: "javascript",
+    defectClass: "symbol-identity",
+    description: "M49 W13 regression: an ANONYMOUS class expression's members lose their container identity again, so two class expressions in one file share `module:<name>` and the second replaces the first. The first class expression's constructor is dead-spanned and its edges die — the svelte custom-element.js `this.attachShadow(...)` MISSING class, and the same-named `run` of the FIRST class expression too (class-expression-member-identity pins both)",
+    transform: (r: any) => {
+      const ctors = (r.symbols ?? [])
+        .map((s: any, i: number) => i)
+        .filter((i: number) => (r.symbols ?? [])[i]?.kind === "constructor")
+      if (ctors.length < 2) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((_: any, i: number) => i !== ctors[0]),
+        relationships: (r.relationships ?? []).filter(
+          (x: any) =>
+            !(x.type === "calls" && x.source === "constructor" && x.target === "attachShadow") &&
+            !(x.type === "calls" && x.source === "run" && x.target === "alpha")
+        ),
+      }
+    },
+  },
+  {
+    id: "javascript/private-read-key-collision",
+    language: "javascript",
+    defectClass: "symbol-identity",
+    description: "M49 W13 regression: the member-segment dedup key is `${source}.${seg}` again, so a private segment (#x) collides byte-for-byte with the bare-read key of the plain identifier `x` and the private read is swallowed (set.js: `this.#update_version` dropped because the field initializer read the imported `update_version` first; the first javascript-lane MISSING edge W12's 400-file measurement registered)",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && x.target === "#update_version")
+      ),
+    }),
+  },
+  {
+    id: "typescript/private-read-raw-lookup",
+    language: "typescript",
+    defectClass: "uses-coverage",
+    description: "M49 W13 regression: the field-access Uses rule looks the member's RAW text up in the declared-symbol set again — private members are stored under their clean name, so `!!symbolNames['#count']` is always false and EVERY private field read emits nothing (typescript/private-member-reads pins uses read->#count and uses bump->#version)",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && String(x.target).startsWith("#"))
+      ),
+    }),
+  },
+  {
     id: "vue/prop-default-multi-collapse",
     language: "vue",
     defectClass: "relationship-loss",
