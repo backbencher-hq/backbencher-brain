@@ -3959,11 +3959,25 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
       // calls — on BOTH sides, a shared blind spot F5 cannot see.
       // `alias` is present: `alias a b` identifiers are method-name
       // declarations, never expression calls (analyzer + oracle parity).
-      const skip = pt === "method" || pt === "singleton_method" || pt === "setter" ||
+      // Def names never read: prefer the `name` field (receiver-
+      // qualified defs like `def @rio.check?` / `def self.build` put the
+      // receiver first, so positional-first misses them); fall back to
+      // first-named-child for fieldless shapes. Endless bodies
+      // (`def label = name`) read normally (mirrors the analyzer's
+      // second-review fix exactly).
+      const nameField = (pt === "method" || pt === "singleton_method") ?
+        (parent as any)?.childForFieldName?.("name") ?? null : null
+      const isDefName = !!nameField ?
+        (nameField as any).id === (n as any).id :
+        ((pt === "method" || pt === "singleton_method") &&
+          (parent as any)?.namedChild?.(0)?.id === (n as any).id)
+      const skip = ((pt !== "method" && pt !== "singleton_method") && (
+        pt === "setter" ||
         pt === "method_parameters" || pt === "parameters" ||
         pt === "block_parameters" || pt === "lambda_parameters" ||
         pt === "alias" || pt === "class" || pt === "module" ||
-        pt === "singleton_class" || pt === "call" || pt === "command" || pt === "command_call"
+        pt === "singleton_class" || pt === "call" || pt === "command" || pt === "command_call")) ||
+        isDefName
       if (!skip && !(localsHere?.has(n.text) ?? false) && !isRubyBuiltin(n.text) && !isVisibilityDirective(n.text)) {
         // A bare identifier naming a method defined in this file resolves to
         // that method (Ruby parse-of-scope rule) — the analyzer emits it as a
@@ -4009,6 +4023,31 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
     let nextMethodId = methodId
     if (t === "method" || t === "singleton_method" || t === "setter") {
       nextMethodId = String(n.id)
+      // A nested def's NAME and RECEIVER (`def result.name`) evaluate in
+      // the ENCLOSING scope — only params/body belong to the fresh scope.
+      // Push name+receiver here with the outer id (so receiver locals
+      // resolve: probe `result` bound two lines up misread as
+      // calls:result), params+body below with the fresh id, then skip the
+      // generic push (it would re-push everything with one id).
+      // (The def NAME itself is still skipped at visit time by the
+      // name-field isDefName check above.)
+      // NOTE: body/params ride the method's own inBody (a def body IS a
+      // body even when reached through this branch).
+      const defBody = inBody || t === "method" || t === "singleton_method"
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "body_statement") {
+          stack.push({ n: c, parent: n, inBody: defBody, cls: nextCls, methodId: nextMethodId })
+          continue
+        }
+        if (c.type === "method_parameters" || c.type === "parameters" || c.type === "block_parameters") {
+          stack.push({ n: c, parent: n, inBody: defBody, cls: nextCls, methodId: nextMethodId })
+          continue
+        }
+        stack.push({ n: c, parent: n, inBody, cls: nextCls, methodId })
+      }
+      continue
     }
     // `defined?(...)` is unevaluated (mirrors the analyzer): skip the
     // whole subtree so probed names never read as calls/uses.

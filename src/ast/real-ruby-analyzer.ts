@@ -9,7 +9,11 @@ import { ASTEngine } from "./engine"
 // hash keys, parameter lists, and class/module names.
 const BARE_CALL_SKIP_PARENTS = new Set([
   "call", "command", "command_call",
-  "method", "singleton_method",
+  // NOTE: `method`/`singleton_method` are deliberately ABSENT — an endless
+  // `def label = name` body is a DIRECT identifier child of the def node,
+  // and only the FIRST named child is the def name (second review: the set
+  // form suppressed endless-body reads on both sides). The def-name check
+  // lives inline at the identifier branch (positional).
   // `def size=(v)` parses the NAME as a `setter` node wrapping the plain
   // identifier — without this the nested `size` leaked as a bare call
   // (master-review 2026-09; oracle already carried `setter`).
@@ -389,13 +393,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         const enclosingMethod = name
 
-        // Walk body
-        const body = this.findChild(node, "body_statement")
-        if (body) {
-          this.walkBody(body, symbols, relationships, imports, metadata,
-            owner, ownerKind, enclosingMethod, visibilityOverrides,
-            new Set((params ?? []).map((p) => p.name)))
-        }
+        // Walk body (endless `def f = expr` has no body_statement — the
+        // body is a direct expression child; without this the whole body
+        // was invisible: probe-verified `def fetch = client.get` emitted
+        // nothing while the oracle derives calls->get).
+        this.walkMethodBody(node, this.findChild(node, "body_statement"), symbols, relationships, imports, metadata,
+          owner, ownerKind, enclosingMethod, visibilityOverrides,
+          new Set((params ?? []).map((p) => p.name)))
         // Default-argument VALUE expressions run in this method's scope at
         // call time (`mutex = Mutex.new`, `params = Rack::Utils.…`) — surface
         // their calls/reads too (RB-B, rack wave; the oracle truth walks
@@ -458,11 +462,31 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(sym)
 
-        const body = this.findChild(node, "body_statement")
-        if (body) {
-          this.walkBody(body, symbols, relationships, imports, metadata,
-            owner, ownerKind, name, visibilityOverrides,
-            new Set((params ?? []).map((p) => p.name)))
+        // Walk body (endless bodies included — see walkMethodBody).
+        this.walkMethodBody(node, this.findChild(node, "body_statement"), symbols, relationships, imports, metadata,
+          owner, ownerKind, name, visibilityOverrides,
+          new Set((params ?? []).map((p) => p.name)))
+        // Singleton-def receiver (`def @rio.check?`): the receiver object
+        // is evaluated at definition time, so an instance-variable
+        // receiver reads (`uses->@rio`, matching the oracle). ONLY ivars:
+        // identifier receivers are virtually always bound locals (spec
+        // setups like `def obj.close` — visiting them fabricated
+        // calls->obj), and constants/self never read. Probe-verified on
+        // rack minitest specs both ways.
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (!c || c.type !== "instance_variable") continue
+          const nm = node.childForFieldName("name")
+          if (nm && c.id === (nm as any).id) continue
+          const p0 = node.namedChild(0)
+          if (p0 && c.id === (p0 as any).id && (node.childForFieldName("name") == null)) continue
+          relationships.push({
+            source: name,
+            target: c.text,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { memberRead: true },
+          })
         }
         // RB-B default-argument values (see walkParamDefaults above).
         this.walkParamDefaults(node, symbols, relationships, imports, metadata,
@@ -535,19 +559,45 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // --- Assignment at module/class level (constants, instance vars) ---
-      if (type === "assignment" && owner) {
+      // Dynamic class/module creation also applies at TOP level (owner
+      // undefined) — `Point = Struct.new` almost always sits at file top
+      // level, so gating on owner would miss the common case. Plain
+      // constants keep the existing owner-gated behavior.
+      if (type === "assignment" && (owner || this.isDynamicClassFactoryRhs(node))) {
         const left = node.childForFieldName("left")
         if (left) {
           const leftType = left.type
           if (leftType === "constant") {
-            symbols.push({
-              name: left.text,
-              kind: ASTEngine.SymbolKind.Constant,
-              range: this.nodeToRange(node),
-              ownerName: owner,
-              visibility: visibility as any,
-              metadata: { variableType: "constant" },
-            })
+            // Dynamic class/module creation (`Point = Struct.new(:x)`,
+            // `Cfg = Data.define(:h)`, `K = Class.new(Base)`,
+            // `M = Module.new`): the LHS names a real class/module, not a
+            // plain constant — probe-verified the defined type was
+            // otherwise invisible (no symbol; methods calling Point.new
+            // resolved against nothing). Emits Class (Struct/Data/Class)
+            // or Module (Module.new) instead of Constant. Block-defined
+            // methods keep the enclosing owner (documented residual —
+            // reparenting dynamic scopes is a wave of its own).
+            const right = node.childForFieldName("right")
+            const factoryKind = right ? this.dynamicClassFactoryKind(right) : null
+            if (factoryKind) {
+              symbols.push({
+                name: left.text,
+                kind: factoryKind === "Module" ? ASTEngine.SymbolKind.Module : ASTEngine.SymbolKind.Class,
+                range: this.nodeToRange(node),
+                ownerName: owner,
+                visibility: visibility as any,
+                metadata: { definedBy: factoryKind === "Module" ? "Module.new" : "classFactory" },
+              })
+            } else if (owner) {
+              symbols.push({
+                name: left.text,
+                kind: ASTEngine.SymbolKind.Constant,
+                range: this.nodeToRange(node),
+                ownerName: owner,
+                visibility: visibility as any,
+                metadata: { variableType: "constant" },
+              })
+            }
           }
           // Instance/class/global variables at class level: skip (noise)
         }
@@ -696,6 +746,46 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Walk a method's body: the body_statement when present, else (endless
+   * `def f = expr`) every direct child except the name and parameter nodes.
+   * Endless bodies are real executable code in the method's scope with its
+   * params bound — skipping them dropped all calls/reads inside.
+   */
+  private walkMethodBody(
+    node: Node,
+    body: Node | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    metadata: Partial<ASTEngine.FileMetadata>,
+    owner: string | undefined,
+    ownerKind: string | undefined,
+    enclosingMethod: string,
+    visibilityOverrides: Map<string, string>,
+    locals: Set<string>,
+  ): void {
+    if (body) {
+      this.walkBody(body, symbols, relationships, imports, metadata,
+        owner, ownerKind, enclosingMethod, visibilityOverrides, locals)
+      return
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "method_parameters" || c.type === "block_parameters") continue
+      const fld = (node as any).childForFieldName?.("name")
+      if (fld && c.id === (fld as any).id) continue
+      if (c.type === "identifier" && i === 0) {
+        // Defensive: a leading bare identifier is the def name under every
+        // observed shape; the name field check above covers the rest.
+        continue
+      }
+      this.walkBody(c, symbols, relationships, imports, metadata,
+        owner, ownerKind, enclosingMethod, visibilityOverrides, new Set(locals))
+    }
+  }
+
   // ========================================================================
   // BODY WALKER — processes statements inside a method/function body
   // Handles: calls, require/require_relative, include/extend/prepend,
@@ -722,6 +812,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scanStack: Node[] = [node]
     while (scanStack.length > 0) {
       const sn = scanStack.pop()!
+      // `defined?(...)` is unevaluated — never bind names inside it.
+      if (sn.type === "unary") {
+        const op = sn.childCount > 0 ? sn.child(0) : null
+        if (op && !op.isNamed && op.type === "defined?") continue
+      }
       if (sn.type === "assignment" || sn.type === "operator_assignment") {
         // tree-sitter-ruby has NO `multiple_assignment` node: `a, b = 1, 2`
         // parses as `assignment` whose left is a `left_assignment_list` —
@@ -848,6 +943,16 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       const type = n.type
 
+      // --- `defined?(expr)` is unevaluated: the operand is a name being
+      // probed, never a call or read (`defined?(bar)` emitted junk
+      // calls->bar; `defined?(x = 1)` must not bind x either). Skip the
+      // whole subtree. Other unary operators (`-`, `!`, `~`, `not`)
+      // evaluate their operand and descend normally.
+      if (type === "unary") {
+        const op = n.childCount > 0 ? n.child(0) : null
+        if (op && !op.isNamed && op.type === "defined?") continue
+      }
+
       // --- Call (method(), obj.method(), command-style) ---
       // `command`/`command_call` guard against grammar-version drift where
       // paren-less calls may not be folded into `call` nodes.
@@ -863,6 +968,19 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // handled by processCall or are locals by definition.
       if (type === "identifier") {
         const parentType = n.parent?.type
+        // Only the def NAME is skipped — receiver-qualified defs
+        // (`def result.name`, `def @rio.check?`) put the receiver first,
+        // so positional-first misses them. Prefer the `name` field, fall
+        // back to first-named-child for fieldless shapes (mirrors the
+        // oracle exactly).
+        const nameField = (parentType === "method" || parentType === "singleton_method")
+          ? (n.parent as any)?.childForFieldName?.("name") ?? null
+          : null
+        const isDefName = nameField
+          ? (nameField as any).id === n.id
+          : (parentType === "method" || parentType === "singleton_method") &&
+            n.parent!.namedChild(0)?.id === n.id
+        if (isDefName) continue
         if (!BARE_CALL_SKIP_PARENTS.has(parentType as string) && !localNames.has(n.text)) {
           this.pushBareCall(n.text, owner, enclosingMethod, relationships)
         }
@@ -918,6 +1036,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "class_variable" || type === "global_variable") {
         metadata.classAndGlobalVarsSkipped = (metadata.classAndGlobalVarsSkipped ?? 0) + 1
       }
+
+      // --- `undef foo` names methods being undefined, never calls/reads.
+      // Skip the whole subtree (probe: `undef helper` emitted junk
+      // calls->helper). Mirrored in the oracle.
+      if (type === "undef") continue
 
       // Recurse into children
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -1054,6 +1177,38 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
+    // --- autoload: `autoload :JsonParser, "json/parser"` loads a file for
+    // one constant — record the same import/reference shape as require
+    // (probe: previously recorded nothing at all). String paths only
+    // (dynamic paths are unresolvable, mirroring require); the const name
+    // itself declares nothing here (defined in the loaded file).
+    if (methodName === "autoload") {
+      const args = this.findChild(node, "argument_list")
+      if (args) {
+        for (let i = 0; i < args.childCount; i++) {
+          const arg = args.child(i)
+          if (arg && arg.type === "string") {
+            const cleanText = this.stripQuotes(arg.text)
+            imports.push({
+              module: cleanText,
+              names: [],
+              range: this.nodeToRange(node),
+              isWildcard: true,
+              metadata: { requireMethod: methodName },
+            })
+            relationships.push({
+              source: "Global",
+              target: cleanText,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.9,
+              metadata: { requireMethod: methodName },
+            })
+          }
+        }
+      }
+      return
+    }
+
     // --- include / extend / prepend (mixin relationships) ---
     if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
       const relType = methodName === "extend"
@@ -1091,8 +1246,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (args) {
         for (let i = 0; i < args.namedChildCount; i++) {
           const arg = args.namedChild(i)
-          if (arg && (arg.type === "simple_symbol")) {
+          // Bare strings are legal attribute names too (`attr_reader
+          // "name"`); the grammar types them `string`, not simple_symbol.
+          if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
             let propName = this.stripSymbolColon(arg.text)
+            if (arg.type === "string") propName = this.stripQuotes(arg.text)
             symbols.push({
               name: propName,
               kind: ASTEngine.SymbolKind.Property,
@@ -1296,6 +1454,64 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ========================================================================
   // HELPERS
   // ========================================================================
+
+  /**
+   * True when an `assignment` node's RHS is a dynamic class/module factory
+   * call (`Struct.new`, `Data.define`, `Class.new`, `Module.new`, possibly
+   * with blocks/args). Used to admit top-level factory assignments that
+   * the owner-gated constant rule would otherwise skip.
+   */
+  private isDynamicClassFactoryRhs(node: Node): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      // Only `call`: the pinned grammar folds every call shape (paren,
+      // paren-less command, command_call) into `call` nodes — the other
+      // two names do not exist in it (grammar-audit proven).
+      if (c.type === "call") {
+        if (this.dynamicClassFactoryKind(c)) return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * If `node` is a `X.new`/`X.define` call on a class-factory receiver,
+   * return "Class" (Struct/Data/Class) or "Module" (Module.new); else null.
+   * Receiver must be the bare constant (RHS of the assignment may wrap in
+   * blocks — only the call head matters).
+   */
+  private dynamicClassFactoryKind(node: Node): "Class" | "Module" | null {
+    let callNode: Node | null = node.type === "call" ? node : null
+    if (!callNode) {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "call") {
+          callNode = c
+          break
+        }
+      }
+    }
+    if (!callNode) return null
+    const methodNode = callNode.childForFieldName("method")
+    if (!methodNode) return null
+    const methodName = methodNode.text
+    if (methodName !== "new" && methodName !== "define") return null
+    let receiver: string | undefined
+    for (let i = 0; i < callNode.namedChildCount; i++) {
+      const child = callNode.namedChild(i)
+      if (child && child.id === methodNode.id) break
+      if (!child) continue
+      if (child.type === "constant" || child.type === "scope_resolution") {
+        receiver = child.text
+      }
+    }
+    if (!receiver) return null
+    const leaf = receiver.split("::").filter(Boolean).pop() ?? receiver
+    if (leaf === "Module" && methodName === "new") return "Module"
+    if ((leaf === "Struct" || leaf === "Data" || leaf === "Class") && (methodName === "new" || methodName === "define")) return "Class"
+    return null
+  }
 
   /** Extract superclass from class node — pure char scan, no regex */
   private extractSuperclass(node: Node): string | undefined {
