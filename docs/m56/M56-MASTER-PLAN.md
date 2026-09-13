@@ -247,6 +247,43 @@ discovered route list exactly; the redirect map declared.
 Verifier: `verify-ia.ts` — route parity, nav set, redirect map, and no rendered
 link pointing at a removed route.
 
+Implementation notes (as built):
+- **One redirect declaration.** `website/src/lib/redirects.ts` exports `REDIRECTS`
+  (four retired paths → canonical destinations) and `RETIRED_ROUTES`. The four
+  stubs, the sitemap and the gates all read that one file; no module hand-types a
+  destination. `verify-ia.ts` parses the declaration and requires it to equal its
+  contract, and M41.S1 pins the same map, so a live page cannot quietly become a
+  stub (or a retired path become a live page) without failing a gate.
+- **Retired set:** `/faq` → `/support`, `/contact` → `/support`,
+  `/troubleshooting` → `/docs#troubleshooting`, `/demos` → `/editors`. Each URL
+  stays valid for bookmarks and search results; the sitemap lists canonical URLs
+  only, while still carrying every retired path in its route-parity contract
+  (parity is against the disk, and the directories exist).
+- **The nav is six surfaces** — Install · Docs · Tools · Languages · Editors ·
+  Support — and the footer mirrors them. The shared `SiteFooter` now renders on
+  `/docs`, `/tools`, `/languages` and `/editors`, which previously ended at
+  bespoke footers; a live surface without the shared footer fails the gate.
+- **`/demos` retirement is recorded, not deleted.** M45.T1's scope changed: the
+  films were withdrawn by owner review, their 16 MB of derived cuts were removed
+  from `website/public/demos` (the verified takes stay in
+  `validation/m45/results/demo-session/`, and `script/m45/post-production.ts` can
+  re-derive cuts if that decision ever reverses), and the surviving
+  machine-verified stills serve on `/editors`. The gate was rewritten to assert
+  the retirement (no film markup, no media in the bundle, no retired link, the
+  declaration intact) and re-pinned at 19/19 checks + 6 mutants; its previous
+  live-page scope is described here rather than erased.
+- **Troubleshooting moved into `/docs`** with all six symptom-based fixes and
+  their remediation commands; the retired page is a stub shorter than 700 bytes
+  with no fix content, and the docs page is where the content is scanned.
+- M41.S1, M41.T2/T3, M56.S1 and M45.T1 were updated in the same change: the SEO
+  gate now derives the retired set from the declaration and verifies each stub,
+  the site-truth gate binds the troubleshooting content checks to `docs.html` and
+  requires the exact six-item nav, and the support gate scans every retired path
+  for stray links.
+- Recorded limitation (in the evidence): rendered-link scanning covers the
+  surfaces that can link a retired path (support, nav, footer, docs, install); a
+  retired link inside a long-form legal page would not be seen.
+
 ### D2 — Design Pass (#786)
 Deliverables: editors and support pages built from the shared plate/eyebrow/section
 components; language cards and the homepage tools section restyled to carry data

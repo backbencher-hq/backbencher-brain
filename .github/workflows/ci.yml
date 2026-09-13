@@ -60,7 +60,7 @@ jobs:
             BASE=$(git merge-base HEAD "origin/main" 2>/dev/null || echo "origin/main")
             CHANGED=$(git diff --name-only "$BASE"...HEAD || true)
           fi
-          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|docs/tools/|script/m41/|script/m56/|script/m48/|script/verify-tool-docs.ts|website/faq.md|ide/|validation/m25/|validation/m29/|validation/m45/|package-lock.json)'; then
+          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|docs/tools/|script/m41/|script/m45/|script/m56/|script/m48/|script/verify-tool-docs.ts|website/faq.md|ide/|validation/m25/|validation/m29/|validation/m45/|package-lock.json)'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -121,6 +121,18 @@ jobs:
       - name: Verify support consolidation (M56.S1)
         if: steps.sitechanged.outputs.changed == 'true'
         run: npx tsx script/m56/verify-support-page.ts
+
+      # M56.I1 — the site's shape: six-surface nav, the one redirect
+      # declaration, /demos retirement, and sitemap parity with the disk.
+      - name: Verify information architecture (M56.I1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-ia.ts
+
+      # M45.T1 — the website-embed gate, re-scoped by M56.I1 to the recorded
+      # /demos retirement (the hero decision itself is unchanged).
+      - name: Verify demo embedding and retirement (M45.T1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m45/verify-site-embed.ts
 
   # M36.S2 — enforcement of the verification discipline on every push/PR.
   # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
