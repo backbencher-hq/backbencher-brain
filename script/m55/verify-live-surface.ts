@@ -761,7 +761,7 @@ const result = {
     { claim: "the card renders a human signature and no serialization", source: "probe F1–F4 signature + card text", frame: "2-hover-declaration.png" },
     { claim: "the hub rows agree with the one classifier on the real index", source: "probe F7 + F8 rows (owner vs core)", frame: "4-open-in-graph.png" },
     { claim: "the panel opens without stealing the editor column", source: "frame read: editor region text rows", frame: "4-open-in-graph.png" },
-    { claim: "the three surfaces are distinct views", source: "frame diffs: hub vs impact vs call hierarchy", frame: "4, 5, 6" },
+    { claim: "the three surfaces are distinct views", source: "frame diffs: hub vs impact vs call hierarchy", frame: "4-open-in-graph.png, 5-impact.png, 6-call-hierarchy.png" },
     { claim: "a symbol that does not exist is a declared error, not an empty result", source: "probe F11", frame: null },
     { claim: "every frame is about the bundle built at this HEAD", source: "R3 bundle-hash comparison", frame: "all frames" },
     { claim: "a missing fixture is a declared blocked session with a reason, never a green run", source: "R7 + validation/m55/results/V1-blocked-path.json", frame: null },
