@@ -275,6 +275,14 @@
     "status": "FIXED",
     "question": "Can <search> (2023 HTML element) or camelCase SVG tags surface as component instantiates?",
     "ruling": "NO — HTML_BUILTIN_TAGS covers all 134 modern-HTML + SVG tags; the F5 oracle's ORACLE_HTML_TAGS drifted (126 tags, missing search + 7 SVG camelCase) and faked a MISSING instantiates->search in vue-element-admin. Lesson (family-wide): parallel builtin lists on analyzer and oracle sides must be diffed by a set-comparison probe, not trusted. fixture: vue/modern-html-svg-builtin-tags (forbids search + 7 SVG tags)."
+   },
+   {
+     "id": "D10",
+     "node_type": "svelte:component / svelte:element `this={X}` (F5 ORACLE contract)",
+     "status": "FIXED",
+     "question": "M49 W13 (W12 residual): the analyzer's H2 rule emits `instantiates X` when a `<svelte:component this={X}/>` target is an import-bound bare identifier, but the oracle's component-usage walk skipped `svelte:component` as a builtin tag - and the dynamic target is named by an ATTRIBUTE, so the tag-name walk never saw it either. The analyzer's correct edge therefore surfaced as the one unexplained edge W12's 400-file svelte measurement left open (corpus file: packages/svelte/tests/runtime-legacy/samples/event-handler-shorthand-dynamic-component/main.svelte).",
+     "decision": "RULED - the oracle mirrors the analyzer's gate and nothing more: `deriveSvelteComponentUsages(root, importBindings)` emits `instantiates` for a bare-identifier `this={X}` when X is an import binding. The analyzer's second gate (skip a target that resolves to a declared member, which carries a `uses` edge instead) is deliberately NOT mirrored: an ES module cannot both import and declare the same name, so an import-bound name can never trip it and a non-import name is rejected by the import gate. Measured: the bindings are NOT available from the embedded-script truth (probed - `deriveTreeEdges(st, \"javascript\")` emits zero edges for `import Widget from './Widget.svelte'`), so they are walked off the JS-parsed script tree, mirroring the analyzer's `imports[].items`. Per-file parity on the real corpus file: analyzer `instantiates|Widget` vs oracle `instantiates|Widget`, 0 missing / 0 unexplained; lane re-run at 60 files svelte 100%/0/0, javascript 744/744, typescript 100%, baseline gate no regressions. Pinned by F9-PROBE-SVELTE-DYNAMIC-COMPONENT (both directions asserted, so the mirror cannot trade an unexplained edge for a fabricated one) and proven load-bearing by revert; the analyzer side was already pinned by fixture svelte/relationship-kinds.",
+     "date": "2026-09-13"
    }
   ]
  }

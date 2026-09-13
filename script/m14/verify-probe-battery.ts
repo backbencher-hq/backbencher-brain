@@ -445,6 +445,91 @@ class Host
     )
   }
 
+  // ── SVELTE-DYNAMIC-COMPONENT (M49 W13) ────────────────────────────────
+  // The analyzer side of `<svelte:component this={X}/>` is already pinned by
+  // fixture svelte/relationship-kinds (instantiates -> Widget). What needed
+  // pinning is the ORACLE: it treats `svelte:component` as a builtin tag, so
+  // the dynamic target is named by an ATTRIBUTE and the tag-name walk never
+  // saw it — the analyzer's (correct) edge surfaced as the one unexplained
+  // edge W12's 400-file svelte measurement left open. Revert the
+  // deriveSvelteComponentUsages branch and this probe fails as
+  // `oracle no longer derives: instantiates:Widget`. The negative half keeps
+  // the mirror HONEST: the analyzer gates on the import binding, so a local
+  // `const Widget` must NOT produce an oracle instantiates either — a bare
+  // superset here would fix an unexplained edge by fabricating one.
+  {
+    const wts: any = WTS
+    const P = wts.Parser ?? wts.default ?? wts
+    const L = wts.Language ?? wts.default?.Language
+    await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+    const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, "tree-sitter-svelte.wasm")))
+    const parser = new P()
+    parser.setLanguage(langWasm)
+    const jsWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, "tree-sitter-javascript.wasm")))
+    const jsParser = new P()
+    jsParser.setLanguage(jsWasm)
+    const diff: any = await import("./differential")
+    const run = (svelteSrc: string): Set<string> => {
+      const root: any = parser.parse(svelteSrc).rootNode
+      const bindings = new Set<string>()
+      // The svelte grammar keeps script bodies as OPAQUE raw_text, so the
+      // script must be re-parsed as JS before any import_clause exists —
+      // exactly what the truth block's deriveEmbeddedScriptTrees does.
+      const scriptRoots: any[] = []
+      const findScripts = (n: any): void => {
+        if (n.type === "script_element") {
+          const raw = n.namedChildren.find((c: any) => c.type === "raw_text")
+          if (raw && raw.text.trim().length > 0) scriptRoots.push(jsParser.parse(raw.text).rootNode)
+        }
+        for (let i = 0; i < n.namedChildCount; i++) findScripts(n.namedChild(i))
+      }
+      findScripts(root)
+      const collect = (n: any): void => {
+        if (n.type === "import_statement") {
+          const clause = n.namedChildren.find((c: any) => c.type === "import_clause")
+          if (clause) {
+            for (let i = 0; i < clause.namedChildCount; i++) {
+              const c = clause.namedChild(i)
+              if (c.type === "identifier") bindings.add(c.text)
+              else if (c.type === "namespace_import") {
+                const id = c.namedChildren.find((x: any) => x.type === "identifier")
+                if (id) bindings.add(id.text)
+              } else if (c.type === "named_imports") {
+                for (let j = 0; j < c.namedChildCount; j++) {
+                  const sp = c.namedChild(j)
+                  if (sp.type !== "import_specifier") continue
+                  const ids = sp.namedChildren.filter((x: any) => x.type === "identifier")
+                  if (ids.length) bindings.add(ids[ids.length - 1].text)
+                }
+              }
+            }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) collect(n.namedChild(i))
+      }
+      for (const sr of scriptRoots) collect(sr)
+      return new Set<string>(
+        (diff.deriveSvelteComponentUsages(root, bindings) as any[]).map(
+          (e: any) => `${e.label}:${e.target}`
+        )
+      )
+    }
+    const imported = run(
+      "<script>\n\timport Widget from './Widget.svelte';\n</script>\n\n<svelte:component this={Widget} on:foo/>\n"
+    )
+    const localOnly = run(
+      "<script>\n\tconst Widget = 1;\n</script>\n\n<svelte:component this={Widget}/>\n"
+    )
+    const ok = imported.has("instantiates:Widget") && !localOnly.has("instantiates:Widget")
+    record(
+      "F9-PROBE-SVELTE-DYNAMIC-COMPONENT",
+      "svelte",
+      "the oracle derives instantiates for an import-bound <svelte:component this={X}/> target and does NOT for a non-import (member) target — the analyzer's own gate, so the mirror cannot fabricate",
+      ok,
+      `imported=[${[...imported].join(",")}] local=[${[...localOnly].join(",")}]`
+    )
+  }
+
   // ── F7 detector self-test: regexes regress like any code ────────────────
   {
     const hyg = await import("./verify-analyzer-hygiene")
