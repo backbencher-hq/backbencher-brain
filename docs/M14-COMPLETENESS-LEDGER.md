@@ -145,7 +145,7 @@ analyzer via classifyEvidenceTier() so emission sites cannot forget it.
 | Cluster | Languages | Polyglot e2e fixture | Status |
 |---|---|---|---|
 | JVM interop | java + groovy (+kotlin, scala when audited) | F7 project | GATED (java+groovy); kotlin/scala PENDING -> #384 |
-| Web embedded | ts/tsx + js + html + css + vue/svelte + json | — | PENDING -> #384 |
+| Web embedded | ts/tsx + js + html + css + vue/svelte + json | polyglot project indexed via the real CLI | **PARTIAL — GATED for ts/tsx + js + vue + css by `M14.0.WC1` (#384)**: `verify-web-cluster-e2e.ts` writes a project of `types.ts` + `api.ts` + `component.js` + `App.vue` + `styles.css`, indexes it through `bin/bb index`, and asserts symbols persisted per language (typescript/javascript/vue/css), imports persisted, and a real cross-language js→ts call in `brain.db`. This row read a bare `PENDING` for several waves after that gate landed, which understated it. The cell is NOT fully closed: **svelte, html and json are not in that fixture**, so the full cluster stays PENDING -> #384 |
 | Web embedded (TS core) | typescript | vue-core@f8975657 (60 seeded files) | GATED: 100% coverage, 0.9% unexplained (1 duplicate-emission residual, tracked) |
 | Mixed server | js/ts + python + json/yaml (ProxiCall shape) | ProxiCall as living corpus | PENDING -> #299 + #384 |
 | .NET | csharp + fsharp | — | PENDING -> #384 |
