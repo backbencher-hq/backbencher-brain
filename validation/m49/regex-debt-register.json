@@ -38,19 +38,19 @@
     },
     {
       "file": "real-csharp-analyzer.ts",
-      "line": 730,
+      "line": 740,
       "source": "/\\boperator\\s+(implicit|explicit)\\s+([\\w.<>]+)/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
     },
     {
       "file": "real-csharp-analyzer.ts",
-      "line": 731,
+      "line": 741,
       "source": "/\\boperator\\s+(checked\\s+)?([^\\s(]+)/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",

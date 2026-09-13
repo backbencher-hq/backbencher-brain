@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-13T01:37:47.519Z",
+  "generatedAt": "2026-09-13T04:39:31.442Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
   "totalRegexUsages": 20,
@@ -84,7 +84,7 @@
       "usages": [
         {
           "file": "real-csharp-analyzer.ts",
-          "line": 334,
+          "line": 343,
           "column": 30,
           "source": "/using\\s+([\\w.]+)\\s*=/",
           "operation": "test",
@@ -95,7 +95,7 @@
         },
         {
           "file": "real-csharp-analyzer.ts",
-          "line": 730,
+          "line": 740,
           "column": 27,
           "source": "/\\boperator\\s+(implicit|explicit)\\s+([\\w.<>]+)/",
           "operation": "test",
@@ -106,7 +106,7 @@
         },
         {
           "file": "real-csharp-analyzer.ts",
-          "line": 731,
+          "line": 741,
           "column": 44,
           "source": "/\\boperator\\s+(checked\\s+)?([^\\s(]+)/",
           "operation": "test",
