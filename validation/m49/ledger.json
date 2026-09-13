@@ -179,6 +179,15 @@
       "evidenceFile": "reviews/zig/master-review.md",
       "verifiedAtCommit": "5c71e176"
     }
+,
+    {
+        "id": "CS1",
+        "title": "C# first review wave (issue #804): CS-R1 bare reads, CS-B1 top-level calls, CS-B2 nameof, CS-B3 bare catch, CS-B4 file visibility, CS-B5 pattern calls",
+        "status": "verified",
+        "notes": "Full analyzer read + hostile battery + shape dumps + fresh lanes. Fully gated: fixture csharp/bare-value-reads (new), 7 mutants, spec CS-R1/CS-B1-CS-B5. Lanes: powershell 2557/2557 + fsharp 1213/1213, 0/0. F3 401/401, F4 482/482. Second review scheduled per OO program.",
+        "evidenceFile": "reviews/csharp/master-review.md",
+        "verifiedAtCommit": "00c49c59"
+    }
   ],
   "waves": [
     {
