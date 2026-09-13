@@ -33,6 +33,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { ISSUE_RELEVANT_FILES } from "./relevance.ts";
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..");
 const LEDGER = path.join(ROOT, "validation/m55/results/manifest.json");
@@ -62,48 +63,9 @@ const PROTOCOL_FACTS: Array<{ label: string; needle: string }> = [
   { label: "a frame is READ before it is evidence", needle: "Reading the frames" },
 ];
 
-/** Per-issue relevant files: evidence stays fresh while none of these changed
- *  since the evidence commit. Mirrors the M24.G1 relevance rule. */
-const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
-  G1: ["script/m55/verify-governance.ts", "docs/m55/M55-MASTER-PLAN.md", "docs/m55/SCREENSHOT-PROTOCOL.md"],
-  T1: [
-    "src/lsp/identity.ts",
-    "src/lsp/impact.ts",
-    "src/lsp/graph_request.ts",
-    "ide/vscode/src/identity-label.ts",
-    "ide/vscode/src/graph-panel.ts",
-    "script/m55/verify-identity.ts",
-    "script/m55/t1-fixture.ts",
-  ],
-  T2: ["src/lsp/call_hierarchy.ts", "src/lsp/positions.ts", "script/m55/verify-call-hierarchy.ts", "script/m55/t2-fixture.ts"],
-  // M55.T3: the vocabulary itself plus the two surfaces that consume it (the
-  // hover's list/count and the references door) — a change to any of them
-  // invalidates the T3 evidence, which is exactly the claim it makes.
-  T3: ["src/lsp/relations.ts", "src/lsp/rich_hover.ts", "src/lsp/navigation.ts", "script/m55/verify-relations.ts", "script/m55/t3-fixture.ts"],
-  // M55.T4: the renderer owner plus every surface that renders through it.
-  T4: ["src/lsp/signature.ts", "src/lsp/hover.ts", "src/lsp/call_hierarchy.ts", "script/m55/verify-signatures.ts", "script/m55/t4-fixture.ts"],
-  // M55.T5: the classifier owner, every surface that consumes it, and the
-  // import-pure mirror in the renderer core (its drift gate is T5's own P1).
-  T5: [
-    "src/lsp/evidence_tier.ts",
-    "src/lsp/hover.ts",
-    "src/lsp/cross_language_hover.ts",
-    "script/m26/graph-core.ts",
-    "script/m55/verify-tiers.ts",
-    "script/m55/t5-fixture.ts",
-  ],
-  P1: [
-    "ide/vscode/src/panel-placement.ts",
-    "ide/vscode/src/hub-panel.ts",
-    "ide/vscode/src/impact-panel.ts",
-    "ide/vscode/src/graph-panel.ts",
-    "ide/vscode/package.json",
-    "script/m55/verify-panel-placement.ts",
-  ],
-  V1: ["script/m55/verify-live-surface.ts", "script/m55/screenshot-protocol.ts"],
-  X1: ["script/m55/verify-closure.ts"],
-};
-
+// The freshness map lives in script/m55/relevance.ts (pure data): this gate and
+// M55.X1's closure gate must apply the SAME rule, and importing this script to
+// share it would execute the gate (found the hard way).
 /** Lanes whose files an M55 evidence run may never touch (plan completion bar
  *  item 4). Diff-asserted against every M55 evidence file's recorded working
  *  tree. */
