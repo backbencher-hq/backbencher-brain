@@ -7540,6 +7540,37 @@ async function main() {
   // repo:lang, so evaluateDifferential's failed-set must match full lane keys.
   const evaluationSecond = evaluateDifferential(reportSecond, currentSecond, baselineCounts, parsedBaseline.samplePerLang, SAMPLE_PER_LANG, (key: string) => key.split(":")[0], baselineHashes)
 
+  // M49 W14: a SCOPED run must never emit M14.0.F5.
+  //
+  // The artifact claims the canonical 60-file, 21-language, two-corpus sweep —
+  // it says so in its own `samplingRule`. A run scoped by `--repo` or
+  // `--sample` measures a different object, so its rows are not that claim.
+  // Reading the journal was already guarded (`resume` above); EMITTING was not,
+  // and emitting is the destructive half: there is one artifact path, so a
+  // scoped run silently replaced the canonical file with its own rows. Measured
+  // 2026-09-13 — `bun run script/m14/differential.ts --repo cython --lang python`,
+  // a probe whose only purpose was to inspect one lane, took a completed
+  // 42-check canonical artifact and left a 4-check one in its place (the run's
+  // own log line reads `evidence written: … (resumed 0 lane(s) from journal)`).
+  // That is the mechanism behind the earlier "F5 evidence was truncated by a
+  // --lang run" observations, and it is how an artifact can name a commit whose
+  // sweep never completed.
+  //
+  // The sweep-completion path also CLEARS the resume journal, so a scoped run
+  // reaching it discards the canonical run's completed-lane record as well.
+  // Probe runs keep everything they were for — the per-lane diffs above, and
+  // the baseline comparison below — and simply do not claim the artifact.
+  const SCOPED_RUN = !!REPO || process.argv.includes("--sample")
+  if (SCOPED_RUN) {
+    const measured = Object.keys(report).length + Object.keys(reportSecond).length
+    console.log(
+      `probe run (${REPO ? `--repo ${REPO}` : "--sample"}): measured ${measured} lane(s) — M14.0.F5 NOT written. `
+      + `The artifact belongs to the canonical ${SAMPLE_PER_LANG}-file, ${Object.keys(LANGS).length}-language sweep; `
+      + `a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.`,
+    )
+    process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)
+  }
+
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
     issueId: "M14.0.F5",
