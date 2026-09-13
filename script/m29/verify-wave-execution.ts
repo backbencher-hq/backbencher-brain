@@ -102,12 +102,19 @@ for (const lang of approval?.languages ?? []) {
   // Freshness per the ledger model: the leg is stale only if a RELEVANT
   // input changed since its commit (exact-HEAD equality would stale on
   // every evidence-only pin, which is output, not input).
+  //
+  // RELEVANCE IS PER-LANGUAGE (corrected when wave-2's packs were authored):
+  // the path list named the WHOLE `script/m29/wave-fixtures` directory, so
+  // authoring another language's pack staled every approved leg — a new
+  // language would invalidate the six that were already verified, which is
+  // exactly the coupling contract §9 says a wave must not have (language N+1
+  // joins as a ROUTINE wave). The fixture path is now the language's OWN pack
+  // plus the shared server/launch-set sources that really are common inputs.
   let legStale = false
   try {
-    const changed = execFileSync("git", [
-      "diff", "--name-only", leg.commit, "HEAD", "--",
-      "script/m29/wave-execute.ts", "script/m29/wave-fixtures", "src/lsp/launch_languages.ts", "src/lsp/hover.ts", "src/lsp/navigation.ts", "src/lsp/symbols.ts", "src/lsp/server.ts",
-    ], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean)
+    const changed = execFileSync("git", ["diff", "--name-only", leg.commit, "HEAD", "--", ...staleRelevantPaths(lang)], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean)
     legStale = changed.length > 0
   } catch {
     legStale = true
@@ -195,8 +202,38 @@ if (existsSync(NVIM) && approval) {
   }
 }
 
+/** The RELEVANT inputs of one language's S5 leg — extracted so M4 plants the
+ *  directory-wide path back against the SAME rule the check uses (a mutant that
+ *  re-implements the rule proves nothing). */
+function staleRelevantPaths(language: string): string[] {
+  return [
+    "script/m29/wave-execute.ts",
+    `script/m29/wave-fixtures/${language}`,
+    "src/lsp/launch_languages.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/symbols.ts",
+    "src/lsp/server.ts",
+  ]
+}
+
 // --- R4: mutants --------------------------------------------------------------
 {
+  // M4: the per-language relevance rule. The defect it catches is the coupling
+  // this file shipped with: naming the WHOLE fixtures directory, so authoring
+  // wave-2's packs staled the six approved legs that were already verified.
+  // The rule holds when a leg's inputs name its OWN pack, never another
+  // language's and never the directory.
+  {
+    const paths = staleRelevantPaths("java")
+    mutant(
+      "a wave leg staled by another language's pack (the directory-wide rule)",
+      paths.includes("script/m29/wave-fixtures/java") &&
+        !paths.includes("script/m29/wave-fixtures") &&
+        !paths.includes("script/m29/wave-fixtures/zig"),
+    )
+  }
+
   // M1: approval forgery — an unapproved language must be rejected by the
   // execution guard.
   let rejected = false
