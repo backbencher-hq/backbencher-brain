@@ -3120,8 +3120,8 @@ const MUTANTS: Mutant[] = [
     id: "swift/drop-glued-receiver-reads",
     language: "swift",
     defectClass: "relationship-loss",
-    description: "SWD1 regression: reverts hasSelfReceiver to the pre-fix receiver chain, dropping glued-shape reads (inout `&self.ctx`, additive `base + self.count`) — swift/write-gate expectUses Counter->ctx pin fails when the edge vanishes",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((rel: any) => !(rel.type === "uses" && rel.source === "Counter" && rel.target === "ctx")) }),
+    description: "SWD1 regression: reverts hasSelfReceiver to the pre-fix receiver chain, dropping glued-shape reads (inout `&self.ctx`, additive `base + self.count`) — swift/write-gate expectUses inoutRead->ctx pin fails when the edge vanishes (M49 W15: matched by TARGET, not by the old `source === \"Counter\"` filter — #814 moved uses sources to the enclosing method, and that hardcoded type name is exactly how this mutant went from caught to surviving)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((rel: any) => !(normRel(rel).type === "uses" && normRel(rel).target === "ctx")) }),
   },
   {
     id: "swift/drop-operator-symbol",
