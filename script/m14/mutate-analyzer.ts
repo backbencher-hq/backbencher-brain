@@ -2189,6 +2189,37 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "cpp/out-of-line-member-silence",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "CP5 second-review regression: out-of-line bodies lose their class scope — bare member reads in Foo::bar go silent (bare-value-reads expects uses add->total)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "add" && normRel(x).target === "total")) }),
+  },
+  {
+    id: "cpp/nested-scope-silence",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "CP7 second-review regression: nested qualification scopes to the outer segment — bare member reads in Outer::Inner::m go silent (bare-value-reads expects uses Inner::step->n)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "Inner::step" && normRel(x).target === "n")) }),
+  },
+  {
+    id: "cpp/structured-binding-reads",
+    language: "cpp",
+    defectClass: "shadowing-loss",
+    description: "CP6 second-review regression: structured bindings stop declaring — the binding site and body reads of a colliding name leak as uses (bare-value-reads forbids uses destructure->a)",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { source: "destructure", target: "a", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }],
+    }),
+  },
+  {
+    id: "cpp/member-init-silence",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description: "CP8 second-review regression: member/enumerator declarator values treated as declaring again — NSDMI and enumerator reads go silent (bare-value-reads expects uses Config->LIMIT and Level->LIMIT)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && (normRel(x).source === "Config" || normRel(x).source === "Level") && normRel(x).target === "LIMIT")) }),
+  },
+  {
     id: "rust/drop-bare-uses",
     language: "rust",
     defectClass: "relationship-loss",
