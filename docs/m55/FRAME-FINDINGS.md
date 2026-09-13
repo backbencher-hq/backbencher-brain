@@ -20,7 +20,12 @@ fails if one of them does not exist.
 | `live-11` | F2 and F11 both fixed, read back by eye |
 | `live-12` | the T1 closure frames added: the constructor card and the constructor graph |
 | `live-13` | first attempt at the T2 activation leg — **removed from the tree**: the frame did not show what its label claimed (F13) |
-| `live-14` | current: T1 and T3 closure frames captured, read back by eye, and gated by R2 |
+| `live-14` | T1 and T3 closure frames captured, read back by eye, and gated by R2 |
+| `live-15` | first mouse-click attempt — clicked the tree's root row (frozen coordinate; the lesson behind F13's "found, not frozen") |
+| `live-16` | row-finding click driver lands on the caller row (selected, no navigation yet) |
+| `live-17` | click + `Return` navigates the editor to `app.ts` with `main` selected — the T2 click frame |
+| `live-18` | attempt at the call-site child hop — refused (no state change), flow removed |
+| `live-19` | **current**: the full run (12 flows declared, 11 frames) whose click frame is the T2 evidence |
 
 Runs `live-1`..`live-5` were rig development (blocked legs, byte-identical
 frames) and were moved out of the tree to
@@ -270,39 +275,50 @@ the row's machine attribute. Gated by S1 in
   then `PER-LANGUAGE EVIDENCE LEVELS (DECLARED, DRIFT-GATED) — 7 LANGUAGE(S)`.
   (Truth Rule 1)
 
-## F13 — the call-hierarchy activation leg · OPEN (narrow)
-
-**Attempt:** run `live-13` (removed from the tree), flow `call-hierarchy-activate`
+## F13 — the call-hierarchy click leg · OPEN (narrow: ONE hop left)
 
 T2's closure requirement reads: *"in-editor leg: the native Call hierarchy view
-opened from a hover shows the expected callers and clicking one lands on the
-CALL SITE with the correct symbol highlighted (frame + machine assertion)"*. The
-callers-rendered half is covered
-(`validation/m55/frames/live-14/6-call-hierarchy.png`). For the click
-half, the rig was extended with a `thenKeys` driver: run
-`bbLsp.showCallHierarchy`, then send `Down` (select the first row) and `Return`
-(the same navigation a click posts), then capture.
+opened from a hover shows the expected callers and clicking one lands on the CALL
+SITE with the correct symbol highlighted (frame + machine assertion)"*. Three
+attempts, recorded in full because the negative results are what the next attempt
+needs:
 
-**What the frame showed:** no call-hierarchy view at all, and the editor's cursor
-still on `greeter.ts:15` (the status bar reads `Ln 15, Col 1`) — i.e. the
-keyboard activation never reached the tree, most likely because the view did not
-hold keyboard focus on a bare Xvfb with no window manager. The frame therefore
-did **not** show what the flow's own label would have claimed.
+| Attempt | Driver | Result |
+|---|---|---|
+| `live-13` (removed) | `Down` + `Return` on the keyboard | the keys never reached the tree: no call-hierarchy view in the frame, cursor still on `greeter.ts:15` |
+| **`live-17` / `live-19` (KEPT)** | a real **mouse click** on the caller row, then `Return` | **navigated**: the editor opens `app.ts` with `main` **selected** (`Ln 6, Col 21 — 4 selected`), i.e. the caller the row named, with the correct symbol highlighted |
+| `live-18` / `live-19` (removed) | click the caller, `Right` to expand, `Down` onto its call-site child, `Return` | the rig's own "did the workbench change?" check refused the frame twice — re-issuing the call-hierarchy command in a following flow produced no state change, so there was no frame to read |
 
-**What was done:** the flow was removed and its run deleted rather than kept with
-a softened label — a frame that overclaims is worse than a missing one. The
-`thenKeys` mechanism stays (it is the right driver once the leg can prove the tree
-has focus), and T2 stays open with exactly this remaining item.
+**The click coordinate is FOUND, not frozen.** The first mouse attempt
+(`live-15`) froze a y-coordinate measured from an earlier run and clicked the
+tree's **root** row: the tab strip's height shifts the tree by ~30 px between
+runs. The rig now captures a scratch frame, reads the region's text rows with a
+new `rows` subcommand of `script/m55/pixel-read.py`, and clicks the row it found
+(and refuses — with a reason — when the row is not there).
 
-The machine half of the requirement is already asserted where it can be:
-`script/m55/verify-call-hierarchy.ts` checks that every `fromRange` the server
-returns resolves to the **invocation token** in the source bytes, which is what
-the editor navigates on — so the landing target is verified even though the
-keystroke that would demonstrate it is not.
+**What is proven at this HEAD:**
 
-**Verdict:** open (narrow) — T2's only remaining closure item; needs a driver that
-can focus the Call Hierarchy view (e.g. a window manager or the view's own focus
-command) before the activation can be framed.
+- the native Call hierarchy renders the expected callers for `greet`
+  (`validation/m55/frames/live-19/6-call-hierarchy.png`: `main function · calls · 1
+  call site`, `greetAll …`, `describe …`), and
+- clicking one navigates the editor to that caller with the correct symbol
+  selected (`validation/m55/frames/live-19/11-call-hierarchy-click.png`), gated by
+  V1's R2 (the editor region must change while the surface stays a call hierarchy);
+- the CALL SITES themselves are machine-asserted in
+  `script/m55/verify-call-hierarchy.ts`: every `fromRange` the server returns
+  resolves to the **invocation token** in the source bytes, and the view's inline
+  preview renders the same call site (`// greet call site 1` at `app.ts:12` in the
+  frames above).
+
+**What is NOT proven:** the second hop — expanding a caller onto its call-site
+child and activating that — is not framed. The requirement names the call site,
+and the frame shows the caller's declaration; the difference is declared here
+rather than smoothed over.
+
+**Verdict:** open (narrow) — one hop. The driver needs the tree's child rows
+driven in the SAME flow that opens the view (the rig's change check refuses a
+frame when a repeated command changes nothing), or a window manager so the view
+keeps focus between flows.
 
 ## F12 — the blocked path (a missing fixture) · VERIFIED
 

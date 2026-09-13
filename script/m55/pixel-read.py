@@ -21,6 +21,13 @@ Subcommands (all print one JSON object):
   uniform SRC X Y W H
       whether the region is a single colour (an unstyled/blank render).
 
+  rows SRC X Y W H
+      the y-intervals (region-relative) of the text ROWS in the region, with the
+      x of each row's first stroke. The M55.V1 click leg reads this to FIND the
+      row it clicks: a captured tree row moves between runs (the tab strip and
+      tree layout shift by a few dozen pixels), so frozen coordinates click the
+      wrong row — found ones do not.
+
 Exit codes: 0 read, 2 unreadable input (the caller records blocked).
 """
 import json
@@ -89,6 +96,46 @@ def stats(src, x, y, w, h):
     }
 
 
+def rows(src, x, y, w, h):
+    """Text rows in a region: consecutive stroke rows merge into one band."""
+    im = load(src).crop((x, y, x + w, y + h))
+    px = im.load()
+    counts = {}
+    for j in range(0, im.height, 4):
+        for i in range(0, im.width, 4):
+            counts[px[i, j]] = counts.get(px[i, j], 0) + 1
+    bg = max(max(counts.items(), key=lambda kv: kv[1])[0])
+    bands = []
+    current = None
+    for j in range(im.height):
+        first_x = None
+        for i in range(im.width):
+            if is_text_pixel(*px[i, j], bg):
+                first_x = i
+                break
+        if first_x is None:
+            if current is not None:
+                bands.append(current)
+                current = None
+            continue
+        if current is None:
+            current = {"y0": j, "y1": j, "x0": first_x}
+        else:
+            current["y1"] = j
+            current["x0"] = min(current["x0"], first_x)
+    if current is not None:
+        bands.append(current)
+    # Merge bands separated by a single pixel row (anti-aliasing gaps).
+    merged = []
+    for b in bands:
+        if merged and b["y0"] - merged[-1]["y1"] <= 2:
+            merged[-1]["y1"] = b["y1"]
+            merged[-1]["x0"] = min(merged[-1]["x0"], b["x0"])
+        else:
+            merged.append(b)
+    return {"ok": True, "count": len(merged), "rows": merged}
+
+
 def diff(a, b, x, y, w, h, threshold=12):
     ia, ib = load(a).crop((x, y, x + w, y + h)), load(b).crop((x, y, x + w, y + h))
     if ia.size != ib.size:
@@ -122,7 +169,7 @@ def uniform(src, x, y, w, h):
 
 def main():
     if len(sys.argv) < 3:
-        print(json.dumps({"ok": False, "reason": "usage: pixel-read.py <stats|diff|uniform> ..."}))
+        print(json.dumps({"ok": False, "reason": "usage: pixel-read.py <stats|diff|uniform|rows> ..."}))
         sys.exit(2)
     cmd = sys.argv[1]
     try:
@@ -135,6 +182,9 @@ def main():
         elif cmd == "uniform":
             src, x, y, w, h = sys.argv[2], *(int(v) for v in sys.argv[3:7])
             out = uniform(src, x, y, w, h)
+        elif cmd == "rows":
+            src, x, y, w, h = sys.argv[2], *(int(v) for v in sys.argv[3:7])
+            out = rows(src, x, y, w, h)
         else:
             out = {"ok": False, "reason": f"unknown subcommand {cmd}"}
     except Exception as exc:  # unreadable frame: the caller declares it
