@@ -2225,8 +2225,8 @@ const MUTANTS: Mutant[] = [
     id: "rust/drop-self-construction",
     language: "rust",
     defectClass: "relationship-loss",
-    description: "D2 #736 regression: reverts Self resolution — `Self { x }` / `Self::new()` target the literal Self and are filtered as noise (construction-exports pins instantiates new/origin/clone_it->Point)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && x.target === "Point")) }),
+    description: "D2 #736 regression: reverts Self resolution — `Self { x }` / `Self::new()` / bare `Self(..)` target the literal Self and are filtered as noise (construction-exports pins instantiates new/origin/clone_it->Point and R14 wrap->Wrap)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && (x.target === "Point" || x.target === "Wrap"))) }),
   },
   {
     id: "rust/restore-restricted-exports",
@@ -2241,6 +2241,50 @@ const MUTANTS: Mutant[] = [
         { name: "Hidden", type: "struct", isType: true },
       ],
     }),
+  },
+  {
+    id: "rust/reemit-arm-binding-reads",
+    language: "rust",
+    defectClass: "shadowing-loss",
+    description: "R9 extreme regression: bare match-arm patterns stop binding — the pattern site and body reads of `v` leak as uses (bare-value-reads forbids uses arm_binds->v)",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { source: "arm_binds", target: "v", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }],
+    }),
+  },
+  {
+    id: "rust/closure-param-reads",
+    language: "rust",
+    defectClass: "shadowing-loss",
+    description: "R10 extreme regression: closure parameters stop binding — the closure body read of VAL leaks as uses (bare-value-reads forbids uses closure_binds->VAL)",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { source: "closure_binds", target: "VAL", type: "uses", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }],
+    }),
+  },
+  {
+    id: "rust/drop-scoped-use-leaf",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "R11 extreme regression: scoped single-leaf use paths bind nothing again — value-position reads of plain-path imports go silent (bare-value-reads expects uses capped->MAX)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "capped" && normRel(x).target === "MAX")) }),
+  },
+  {
+    id: "rust/blank-symbol",
+    language: "rust",
+    defectClass: "symbol-noise",
+    description: "R12 extreme regression: mints the GO5/Z8-class `_` Variable symbol for `const _ : u32 = 0;` (bare-value-reads forbids any `_` symbol)",
+    transform: r => ({
+      ...r,
+      symbols: [...(r.symbols ?? []), { name: "_", kind: "variable", visibility: "private", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 } }],
+    }),
+  },
+  {
+    id: "rust/drop-declared-type-refs",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "R13 extreme regression: drops the whole declared-type references graph — param/return/field/alias type mentions emit nothing (declared-type-refs expects 9 declared_type edges)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !((x.metadata ?? {}).relationshipType === "declared_type")) }),
   },
   {
     id: "go/drop-bare-uses",
