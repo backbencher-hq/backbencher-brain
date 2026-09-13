@@ -1959,6 +1959,27 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           return false
         })()
+        // Type contexts never read values: type parameter lists declare
+        // type params; where-clause and base-list subtrees mention only
+        // types; tuple types name members-or-pattern-vars, never values
+        // (tuple EXPRESSIONS are a different node and read normally).
+        const isTypeContextName = (() => {
+          if (!p) return false
+          if (p.type === "type_parameter_list") return true
+          let q: Node | null = p
+          while (q) {
+            const t: string = q.type
+            if (t === "type_parameter_constraints_clause" || t === "base_list") return true
+            if (t === "tuple_type") return true
+            if (
+              t.includes("statement") || t.includes("declaration") ||
+              t.includes("block") || t.includes("function") ||
+              t.includes("body") || t.includes("clause") && t !== "type_parameter_constraints_clause"
+            ) return false
+            q = q.parent
+          }
+          return false
+        })()
         // Write-position foreach variables (`foreach (x in ys)` with no
         // type): assigned, never declared and never read here. (Declared
         // forms bind in the branch above and self-suppress; the source
@@ -2016,6 +2037,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           !isMemberDesignator && !isOutWrite && !isDeconWrite &&
           !isDeconArgName &&
           !isMemberDeclName && !isForeachWrite && !isImportName &&
+          !isTypeContextName &&
           !this.isInValueSetter(node) &&
           !this.isNameofOperand(node) &&
           !this.isCSharpCallCalleeShaped(node) &&
