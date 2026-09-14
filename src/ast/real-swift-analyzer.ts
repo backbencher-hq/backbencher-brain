@@ -177,7 +177,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emittedContains = new Set<string>()
     // SW-B candidates: navigation calls with capitalized heads, resolved
     // post-walk against declared enum cases (symbols must be whole first).
-    const enumCtorCandidates: Array<{ source: string; head: string; leaf: string }> = []
+    const enumCtorCandidates: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean }> = []
+    // SW-G: class -> superclass (first base when it IS a superclass),
+    // recorded at declaration time for `super.init(...)` targets.
+    const superByClass = new Map<string, string>()
 
     const stack: WalkFrame[] = [
       { node: rootNode, parentSymbol: null, typeName: null },
@@ -197,7 +200,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         newParentSymbol = this.handleProtocol(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "class_declaration") {
-        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined)
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined, superByClass)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
         newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
@@ -238,7 +241,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
         }
       } else if (curr.type === "call_expression") {
-        this.handleCall(curr, relationships, parentSymbol, emittedCalls, enumCtorCandidates)
+        this.handleCall(curr, relationships, parentSymbol, emittedCalls, enumCtorCandidates, superByClass)
       } else if (curr.type === "navigation_expression") {
         // `self.x` member READ -> uses (source = enclosing type, target = leaf).
         this.handleSelfUse(curr, relationships, newTypeName, parentSymbol, emittedUses)
@@ -327,6 +330,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // builds Result). Convert recorded candidates whose (head, leaf) is a
     // declared enum case: drop the dangling leaf call, emit instantiates.
     // Static factory methods (`C.create()`) are not cases — stays calls.
+    // SW-H (second review): implicit (`.a(v)`) and Self (`Self.a(v)`)
+    // constructions resolve against the ENCLOSING enum instead of a head.
     if (enumCtorCandidates.length > 0) {
       const enumCases = new Set<string>()
       for (const s of symbols) {
@@ -336,21 +341,24 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (enumCases.size > 0) {
         for (const cand of enumCtorCandidates) {
-          if (!enumCases.has(`${cand.head}.${cand.leaf}`)) continue
-          for (let i = relationships.length - 1; i >= 0; i--) {
-            const r = relationships[i]
-            if (r.type === ASTEngine.RelationshipType.Calls && r.source === cand.source && String(r.target) === cand.leaf) {
-              relationships.splice(i, 1)
-              break
+          const key = cand.head ?? cand.owner
+          if (!key || !enumCases.has(`${key}.${cand.leaf}`)) continue
+          if (cand.removeCalls) {
+            for (let i = relationships.length - 1; i >= 0; i--) {
+              const r = relationships[i]
+              if (r.type === ASTEngine.RelationshipType.Calls && r.source === cand.source && String(r.target) === cand.leaf) {
+                relationships.splice(i, 1)
+                break
+              }
             }
           }
-          const key = `${cand.source}\u0000instantiates\u0000${cand.head}`
-          if (!emittedCalls.has(key)) {
-            emittedCalls.add(key)
+          const ekey = `${cand.source}\u0000instantiates\u0000${key}`
+          if (!emittedCalls.has(ekey)) {
+            emittedCalls.add(ekey)
             relationships.push({
               type: ASTEngine.RelationshipType.Instantiates,
               source: cand.source,
-              target: cand.head,
+              target: key,
               isExternal: true,
               weight: 0.7,
               confidence: 0.95,
@@ -544,6 +552,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     classHierarchy: Map<string, string[]>,
     inFileKinds: Map<string, string>,
     crossFileKinds?: Map<string, string>,
+    superByClass?: Map<string, string>,
   ): ASTEngine.UniversalSymbol | null {
     let kind = ASTEngine.SymbolKind.Class
 
@@ -622,6 +631,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         const base = bases[i]
         parents.push(base)
         const isExtends = firstIsSuperclass && i === 0
+        if (isExtends && superByClass) superByClass.set(symbol.name, base)
         relationships.push({
           type: isExtends ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
           source: symbol.name,
@@ -805,14 +815,36 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     parent: ASTEngine.UniversalSymbol | null,
     emittedCalls: Set<string>,
-    enumCtorCandidates?: Array<{ source: string; head: string; leaf: string }>,
+    enumCtorCandidates?: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean }>,
+    superByClass?: Map<string, string>,
   ) {
     const source = parent ? parent.name : "root"
 
     // The function child: bare identifier or navigation/member expression.
     const funcNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier") || this.findChildByType(node, "navigation_expression")
 
-    if (!funcNode) return
+    if (!funcNode) {
+      // SW-H (second review): implicit enum-case construction (`.a(v)`)
+      // parses the callee as a prefix_expression (leading dot) — no
+      // simple_identifier, so the call is silent. Record for post-walk
+      // resolution against the enclosing enum's cases.
+      if (enumCtorCandidates) {
+        const pre = this.findChildByType(node, "prefix_expression")
+        const dotFirst = pre ? pre.child(0) : null
+        if (pre && dotFirst && !dotFirst.isNamed && dotFirst.type === ".") {
+          let leaf: string | null = null
+          for (let i = 0; i < pre.namedChildCount; i++) {
+            const c = pre.namedChild(i)
+            if (c && (c.type === "simple_identifier" || c.type === "identifier")) { leaf = c.text; break }
+          }
+          const owner = parent?.ownerName ?? null
+          if (leaf && owner) {
+            enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: false })
+          }
+        }
+      }
+      return
+    }
 
     // Subscript READ (`entries[key]`) parses as call_expression with a
     // `[key]` call_suffix in the pinned grammar — it is a property access,
@@ -823,6 +855,35 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Member call -> leaf target (`users.first` -> `first`, `[1,2].map` -> `map`).
       const leaf = this.navigationLeaf(funcNode)
       if (!leaf || leaf === "$0") return
+      // SW-G (second review): `super.init(...)` / `self.init(...)` /
+      // `Self.init(...)` construct (dart DT-D parity) — never a call to a
+      // method named `init` (constructors are literally `constructor`).
+      // super builds the superclass (prescan), self/Self the enclosing type.
+      if (leaf === "init") {
+        const recv = this.navigationReceiver(funcNode)
+        if (recv === "super" || recv === "self" || recv === "Self") {
+          const owner = parent?.ownerName ?? parent?.name
+          let target: string | null = null
+          if ((recv === "self" || recv === "Self") && owner) target = owner
+          else if (recv === "super" && owner && superByClass) target = superByClass.get(owner) ?? null
+          if (target) {
+            const key = `${source}\u0000instantiates\u0000${target}`
+            if (!emittedCalls.has(key)) {
+              emittedCalls.add(key)
+              relationships.push({
+                type: ASTEngine.RelationshipType.Instantiates,
+                source,
+                target,
+                isExternal: true,
+                weight: 0.7,
+                confidence: 0.95,
+                metadata: { isSuperInit: recv === "super", isSelfInit: recv !== "super" },
+              })
+            }
+            return
+          }
+        }
+      }
       // SW-B (ultimate review): record enum-construction CANDIDATES
       // (`Result.success(1)` may build Result, not call success) — resolved
       // post-walk against declared enum cases (symbols must be whole first).
@@ -831,7 +892,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         const chain = this.navigationChain(funcNode)
         const receiver = chain.length >= 2 ? chain[chain.length - 2] : null
         if (receiver && this.isTypeName(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
-          enumCtorCandidates.push({ source, head: receiver, leaf })
+          enumCtorCandidates.push({ source, head: receiver, owner: null, leaf, removeCalls: true })
+        } else if (receiver === "Self") {
+          // SW-H: `Self.a(v)` in an enum builds the enclosing enum.
+          const owner = parent?.ownerName ?? null
+          if (owner) enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: true })
         }
       }
       this.emitCall(relationships, source, leaf, emittedCalls)
@@ -1645,6 +1710,20 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c < 48 || c > 57) return false
     }
     return true
+  }
+
+  /** SW-G: receiver head of a navigation (`super`/`self`/`Self`/identifier). */
+  private navigationReceiver(node: Node): string | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "self_expression") return "self"
+      if (c.type === "super_expression") return "super"
+      if (c.type === "simple_identifier" || c.type === "identifier" || c.type === "type_identifier") return c.text
+      if (c.type === "navigation_expression") return this.navigationReceiver(c)
+      return null
+    }
+    return null
   }
 
   /**
