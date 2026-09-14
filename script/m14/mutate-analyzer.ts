@@ -1004,6 +1004,40 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !s.metadata?.isTypeAlias) }),
   },
   {
+    id: "kotlin/drop-bare-member-reads",
+    language: "kotlin",
+    defectClass: "relationship-loss",
+    description: "drops Uses edges for BARE/DOTTED member reads (#740 CONV-K-1: `return x` and `return this.x` both emitted ZERO uses while only the indexing and template forms were ever claimed) — caught by the bare-member-read-uses fixture's expectRelationships (bare/dotted/plus/callee/read/bump)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isBareRead)) }),
+  },
+  {
+    id: "kotlin/bare-read-gate-bypass",
+    language: "kotlin",
+    defectClass: "relationship-fabrication",
+    description: "#740 gate regression: re-injects the four edges the gates exist to stop — uses(write->count) (assignment LHS is a write), uses(shadow->count) (a local the function binds, CGD15 gate B), uses(callee->go) (a bare CALLEE belongs to the call graph) and uses(read->leaf) (a chain mid/leaf belonging to ANOTHER type, gate A) — caught by the bare-member-read-uses fixture's forbidRelationships",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "write", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "shadow", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "callee", target: "go", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "read", target: "leaf", confidence: 0.6, metadata: { isBareRead: true } }] }),
+  },
+  {
+    id: "kotlin/bare-read-owner-attribution",
+    language: "kotlin",
+    defectClass: "attribution-corruption",
+    description: "re-sources member reads from the enclosing METHOD to the enclosing TYPE (the family rule is METHOD source — java JAD2 / swift #814 both moved to it) — caught by the bare-member-read-uses fixture, which expects from=bare/dotted/plus/callee/read/bump",
+    transform: r => {
+      const ownerOf = new Map<string, string>()
+      for (const s of r.symbols ?? []) {
+        if (s.ownerName) ownerOf.set(s.name, s.ownerName)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map(x =>
+          (x.metadata ?? {}).isBareRead && ownerOf.has(String(x.source))
+            ? { ...x, source: ownerOf.get(String(x.source)) }
+            : x,
+        ),
+      }
+    },
+  },
+  {
     id: "kotlin/drop-anonymous-objects",
     language: "kotlin",
     defectClass: "symbol-loss",
