@@ -43,8 +43,10 @@ import {
   pinDriftReason,
   measuredInputDirt,
   readCodeInputs,
+  sweepWorkRoot,
   SWEEP_STATE_ENV,
   SWEEP_PINS_ENV,
+  M14_WORK_ENV,
 } from "../m14/differential"
 import { execSync } from "node:child_process"
 import * as fs from "node:fs"
@@ -114,6 +116,12 @@ negative("the no-drift reason is unreachable when there IS drift",
 //    copy, so a check that cannot fail is itself caught.
 // ---------------------------------------------------------------------------
 const source = readFileSync(HARNESS, "utf8")
+// Comments removed, for rules about what the CODE does. The harness documents
+// the defects it fixes by quoting the shapes it removed (`` `/tmp/m14-f5-lane-journal.json` ``),
+// so a rule that scans raw text can be satisfied — or tripped — by prose.
+const sourceCode = source
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .split("\n").map((l) => l.replace(/(^|[^:])\/\/.*$/, "$1")).join("\n")
 // Returns the mutated copy, or null when the harness no longer contains the
 // pattern at all — which is itself a wiring failure (the matching POSITIVE
 // check below fails), reported as such instead of crashing the gate.
@@ -208,6 +216,47 @@ const exitWiring = (src: string) => /DIFFERENTIAL CODE INPUTS DIRTY/.test(src) &
 check("a dirty measurement cannot exit 0", exitWiring(source))
 negative("the exit rule catches a silent dirty run",
   breaksWhenMutated("process.exit(6)", "process.exit(0)", exitWiring))
+
+// 3b. A scoped run must never claim the canonical artifact (W14's fourth
+//     harness defect: `--repo X` wrote a 4-check F5 over the canonical 42-lane
+//     one, so an inspection erased the release claim). The rule is structural:
+//     the scoped branch exits before the emit, and says so in its output.
+//     A negative control removes the exit and requires the rule to notice.
+const scopedGuard = (src: string) => {
+  const i = src.indexOf("if (SCOPED_RUN) {")
+  if (i < 0) return false
+  const block = src.slice(i, src.indexOf("\n\n", i))
+  // The CALL, not the name: the string also appears in prose above the block.
+  return block.includes("M14.0.F5 NOT written") && /process\.exit\(/.test(block)
+    && src.indexOf("emitEvidence({") > i
+}
+check("a scoped probe run cannot write the canonical artifact", scopedGuard(source))
+negative("the scoped-run rule catches a probe that falls through to the emit",
+  breaksWhenMutated("a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.", "", scopedGuard)
+  || breaksWhenMutated("process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)", "void 0", scopedGuard))
+
+// 5. Durable scratch (defect 4): the resume journal, the cold-pool rotation
+//    state and the pinned corpus trees all lived in os.tmpdir(). This machine
+//    rebooted twice while a ~2h canonical sweep was in flight and took all three
+//    with it — the journal (progress) and the rotation counter, whose loss makes
+//    the NEXT sweep draw a different sample than the baseline it is scored
+//    against, i.e. correct work reported as movement.
+const WORK = "/var/bb-work"
+check("an explicit work root is honoured", sweepWorkRoot(WORK, "/tmp") === WORK)
+check("an unset work root falls back", sweepWorkRoot(undefined, "/tmp") === "/tmp")
+check("a blank work root falls back", sweepWorkRoot("   ", "/tmp") === "/tmp")
+negative("the fallback is not unconditional", sweepWorkRoot(WORK, "/tmp") !== "/tmp")
+const workWiring = (src: string) =>
+  /const WORK_ROOT = sweepWorkRoot\(process\.env\[M14_WORK_ENV\], os\.tmpdir\(\)\)/.test(src)
+  && /const LANE_JOURNAL_PREFIX = path\.join\(WORK_ROOT, "m14-f5-lane-journal"\)/.test(src)
+  && /const COLD_POOL_STATE = path\.join\(WORK_ROOT, "m14-f5-cold-pool\.json"\)/.test(src)
+  && /const FROZEN_ROOT = path\.join\(WORK_ROOT, `m14-frozen-corpus-\$\{stateKey\}`\)/.test(src)
+check("journal, rotation state and pinned trees share one work root", workWiring(source))
+negative("the work-root rule catches scratch left in tmpdir",
+  breaksWhenMutated("const FROZEN_ROOT = path.join(WORK_ROOT,", "const FROZEN_ROOT = path.join(os.tmpdir(),", workWiring))
+negative("the work-root rule catches a hardcoded journal path",
+  breaksWhenMutated('path.join(WORK_ROOT, "m14-f5-lane-journal")', '"/tmp/m14-f5-lane-journal"', workWiring))
+check("no sweep scratch path is hardcoded under /tmp", !/["'`]\/tmp\/m14-f5-/.test(sourceCode))
 
 // 4b. The reader against a REAL repository — the pure filter above says what the
 //     paths SHOULD do; this says what `git status` actually reports, so a filter
