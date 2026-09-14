@@ -26,7 +26,7 @@ import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
-import { assertLanguageApproved, hoverCharacter } from "./wave-execute.ts"
+import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
 
 const APPROVAL = path.join(ROOT, "validation/m29/results/wave-1-approval.json")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
@@ -202,20 +202,12 @@ if (existsSync(NVIM) && approval) {
   }
 }
 
-/** The RELEVANT inputs of one language's S5 leg — extracted so M4 plants the
- *  directory-wide path back against the SAME rule the check uses (a mutant that
- *  re-implements the rule proves nothing). */
-function staleRelevantPaths(language: string): string[] {
-  return [
-    "script/m29/wave-execute.ts",
-    `script/m29/wave-fixtures/${language}`,
-    "src/lsp/launch_languages.ts",
-    "src/lsp/hover.ts",
-    "src/lsp/navigation.ts",
-    "src/lsp/symbols.ts",
-    "src/lsp/server.ts",
-  ]
-}
+/** The RELEVANT inputs of one language's S5 leg: imported from the execution
+ *  library (ONE rule, both doors read it — the gate must not re-implement what
+ *  it gates). Wave-2 rule: the language's OWN analyzer is in the list.
+ *  M4 plants the directory-wide path back against this SAME imported rule.
+ *  (History: this was a dynamic import placed below its first use — the TDZ
+ *  ReferenceError landed in the staleness catch and every leg read stale.) */
 
 // --- R4: mutants --------------------------------------------------------------
 {
@@ -231,6 +223,12 @@ function staleRelevantPaths(language: string): string[] {
       paths.includes("script/m29/wave-fixtures/java") &&
         !paths.includes("script/m29/wave-fixtures") &&
         !paths.includes("script/m29/wave-fixtures/zig"),
+    )
+    // Wave-2 rule, mutant-gated: dropping the language's own analyzer from the
+    // list would break the guarantee that a changed analyzer stales the leg.
+    mutant(
+      "a wave leg NOT staled by its own analyzer's change (the pre-wave-2 rule)",
+      paths.includes("src/ast/real-java-analyzer.ts"),
     )
   }
 
