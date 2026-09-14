@@ -303,6 +303,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // #754: BARE member reads (after the walk, so the symbol table is whole).
+    this.handleBareUses(rootNode, relationships, symbols, emittedUses)
+
     for (const p in patternsObj) {
       metadata.patterns!.push(p)
     }
@@ -916,6 +919,170 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
   }
 
+  /**
+   * M49 #754 (CONV-SW-1): BARE member reads. The main walk only emits uses
+   * for `self.x` navigation reads, so a plain `return count` on a declared
+   * property emitted NOTHING while `return self.count` did (probe-confirmed
+   * live: `uses edges on x: 0`). Mirrors java #739 / dart #752. Gate A: the
+   * name must resolve to a DECLARED MEMBER of the enclosing type (the symbol
+   * table's ownerName IS the enclosing type); gate B (CGD15): a name the
+   * CURRENT function binds locally is not a member read — without it every
+   * local/loop variable fabricates an edge.
+   */
+  private handleBareUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    emittedUses: Set<string>,
+  ): void {
+    const membersByOwner = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      if (!s.ownerName) continue
+      let set = membersByOwner.get(s.ownerName)
+      if (!set) {
+        set = new Set<string>()
+        membersByOwner.set(s.ownerName, set)
+      }
+      set.add(s.name)
+    }
+    // Positions that DECLARE rather than read (`var count`), plus two that name
+    // something other than a member of the ENCLOSING type: an argument label
+    // (`group: channelEL`) names a parameter, and an implicit member expression
+    // (`.regular`) resolves through a base the type checker infers. Both were
+    // corpus false edges (nio FileType / Bootstrap) until gated here.
+    const NOT_A_READ = new Set([
+      "pattern", "parameter", "function_declaration", "protocol_function_declaration",
+      "class_declaration", "protocol_declaration", "struct_declaration",
+      "enum_declaration", "extension_declaration", "actor_declaration",
+      "typealias_declaration", "associatedtype_declaration", "type_annotation",
+      "user_type", "import_declaration", "attribute", "enum_entry",
+      "value_argument_label",
+    ])
+    const TYPE_DECLS = new Set([
+      "class_declaration", "protocol_declaration", "struct_declaration",
+      "enum_declaration", "extension_declaration", "actor_declaration",
+    ])
+    const FUNC_SCOPES = new Set([
+      "function_declaration", "protocol_function_declaration",
+      "init_declaration", "deinit_declaration",
+    ])
+    // CGD15 value scopes: a name can also be BOUND by a `let` inside a computed
+    // property or a closure. Treating only functions as scopes read those locals
+    // as members (corpus false edges: nio EventLoop `fullNS`, TestUtils
+    // `ipv6Loopback`).
+    const VALUE_SCOPES = new Set(["lambda_literal", "property_declaration"])
+    // SCD1 walk (same as handleSelfUse): climb the whole ASSIGNABLE PATH, then
+    // gate only when this node sits INSIDE the assignment's LHS span.
+    const isWrite = (n: Node): boolean => {
+      let a = n.parent
+      while (
+        a && (a.type === "directly_assignable_expression" ||
+          a.type === "navigation_expression" || a.type === "navigation_suffix")
+      ) a = a.parent
+      if (a && a.type === "assignment") {
+        const lhs = a.namedChild(0)
+        return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+      }
+      return false
+    }
+    // A value scope's OWN name declares a member — it must not shadow itself
+    // (`var description: String { ... }` still reads the member `description`).
+    const ownNameSpan = (scope: Node): number => {
+      if (scope.type === "property_declaration") {
+        const pat = this.findChildByType(scope, "pattern")
+        const id = pat ? this.findChildByType(pat, "simple_identifier") : null
+        return id ? id.startIndex : -1
+      }
+      return -1
+    }
+    const collectBound = (node: Node, out: Set<string>): void => {
+      const own = ownNameSpan(node)
+      const w: Node[] = [node]
+      while (w.length > 0) {
+        const m = w.pop()!
+        if (m.type === "simple_identifier" && m.startIndex !== own) {
+          const pt = m.parent?.type ?? ""
+          if (pt === "parameter" || pt === "pattern") out.add(m.text)
+        }
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) w.push(c)
+        }
+      }
+    }
+    const extendLocals = (locals: Set<string>, scope: Node): Set<string> => {
+      const bound = new Set<string>()
+      collectBound(scope, bound)
+      if (bound.size === 0) return locals
+      const next = new Set(locals)
+      for (const nm of bound) next.add(nm)
+      return next
+    }
+    const walk = (n: Node, ty: string | null, fn: string | null, locals: Set<string>): void => {
+      const t = n.type
+      let cTy = ty
+      let cFn = fn
+      let cLocals = locals
+      if (TYPE_DECLS.has(t)) {
+        // Depth-first: `extension Foo` (and any qualified or generic name)
+        // carries its name under `user_type`, where the shallow child search
+        // finds nothing — so EVERY bare read inside an extension was silently
+        // dropped (corpus finding: nio FileType, IPv4Header, EventLoop,
+        // ByteBuffer — Swift puts a large share of its members in extensions).
+        const nameNode =
+          this.firstDescendantOfType(n, "type_identifier") ||
+          this.firstDescendantOfType(n, "simple_identifier")
+        if (nameNode) {
+          cTy = nameNode.text
+          cFn = null
+        }
+      } else if (FUNC_SCOPES.has(t)) {
+        cFn = t === "init_declaration" ? "constructor" : (this.findChildByType(n, "simple_identifier")?.text ?? cFn)
+        cLocals = extendLocals(locals, n)
+      } else if (VALUE_SCOPES.has(t)) {
+        cLocals = extendLocals(locals, n)
+      }
+      if (t === "simple_identifier") {
+        const txt = n.text
+        const pt = n.parent?.type ?? ""
+        const isMember = !!cTy && (membersByOwner.get(cTy)?.has(txt) ?? false)
+        // A chain leaf (`self.x`, `obj.x`) is owned by handleSelfUse; a bare
+        // CALLEE (`go(...)`) is owned by handleCall; a leading-dot implicit
+        // member (`.regular`) infers its base, so it is not a read of THIS type.
+        const isImplicitMember = pt === "prefix_expression" && (n.parent?.text ?? "").startsWith(".")
+        if (
+          !NOT_A_READ.has(pt) &&
+          !isImplicitMember &&
+          pt !== "navigation_suffix" &&
+          pt !== "call_expression" &&
+          !isWrite(n) &&
+          !cLocals.has(txt) &&
+          isMember
+        ) {
+          const source = cFn || cTy || "root"
+          const key = `${source}\u0000uses\u0000${txt}`
+          if (!emittedUses.has(key)) {
+            emittedUses.add(key)
+            relationships.push({
+              type: ASTEngine.RelationshipType.Uses,
+              source,
+              target: txt,
+              isExternal: false,
+              weight: 0.7,
+              confidence: 0.6,
+              metadata: { isBareRead: true },
+            })
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c, cTy, cFn, cLocals)
+      }
+    }
+    walk(rootNode, null, null, new Set<string>())
+  }
+
   // ==========================================================================
   // Override resolution (Java/C# shared machinery)
   // ==========================================================================
@@ -1131,6 +1298,26 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c && c.type === type) return c
+    }
+    return null
+  }
+
+  /**
+   * Depth-first (pre-order) first named descendant of the given type. Needed
+   * where the node of interest is wrapped: a type declaration's name sits in a
+   * direct `type_identifier` child for `struct Foo`, but under `user_type` for
+   * `extension Foo` — so a shallow search finds nothing and the declaration
+   * reads as nameless (#754 corpus finding).
+   */
+  private firstDescendantOfType(node: Node, type: string): Node | null {
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const x = stack.pop()!
+      if (x.type === type) return x
+      for (let i = x.namedChildCount - 1; i >= 0; i--) {
+        const c = x.namedChild(i)
+        if (c) stack.push(c)
+      }
     }
     return null
   }
