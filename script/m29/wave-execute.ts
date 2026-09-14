@@ -218,6 +218,30 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
   }
 }
 
+/** The wave-leg freshness rule, in ONE place (the library, not the gate —
+ *  importing a gate executes it; M55 lesson). A leg's evidence is stale when
+ *  any of these changed since the leg's commit:
+ *    - the execution engine itself,
+ *    - the language's OWN fixture pack,
+ *    - the language's OWN analyzer (wave-2 rule, fixture-first): the analyzer
+ *      produces the index the S5 leg serves, so a changed analyzer stales the
+ *      leg — a cheap, declared re-run refreshes it. Never another language's
+ *      pack or analyzer (per-language coupling is banned and mutant-gated).
+ *    - the shared LSP surfaces the leg exercises.
+ */
+export function staleRelevantPaths(language: string): string[] {
+  return [
+    "script/m29/wave-execute.ts",
+    `script/m29/wave-fixtures/${language}`,
+    `src/ast/real-${language}-analyzer.ts`,
+    "src/lsp/launch_languages.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/symbols.ts",
+    "src/lsp/server.ts",
+  ]
+}
+
 /** Approved set discipline: read the approval record; it is the execution
  *  authority. `--languages` may narrow (execute a subset) but never extend. */
 export function approvedLanguages(): string[] {
