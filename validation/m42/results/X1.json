@@ -2,14 +2,11 @@
   "issue": "655",
   "code": "X1",
   "milestone": "M42",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 30,
-  "passed": 28,
-  "failed": 2,
-  "failures": [
-    "X1: M29 ladder run green at HEAD: exit=1",
-    "X1: closure preconditions audited — zero violations: pre2:ladder leg M29 failed (exit=1)"
-  ],
+  "passed": 30,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 7,
   "suiteExits": {
     "M24": 0,
@@ -17,7 +14,7 @@
     "M26": 0,
     "M27": 0,
     "M28": 0,
-    "M29": 1,
+    "M29": 0,
     "M42-H1": 0,
     "M42-H2": 0,
     "M42-H3": 0,
@@ -25,7 +22,7 @@
     "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
+  "currentCommit": "aa4736111d7fe16485f24db0e655986d33bae3df",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -40,7 +37,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-13T23:34:39.288Z",
+  "generatedAt": "2026-09-14T00:19:06.348Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
