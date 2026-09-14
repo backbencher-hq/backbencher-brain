@@ -25,6 +25,6 @@
     "indexedProjectDir": null
   },
   "flows": [],
-  "generatedAt": "2026-09-13T23:38:26.381Z",
+  "generatedAt": "2026-09-14T03:29:07.260Z",
   "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
 }
