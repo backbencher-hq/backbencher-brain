@@ -19,6 +19,7 @@
  * that aborts).
  */
 import * as fs from "fs"
+import * as os from "os"
 import * as path from "path"
 import { createHash } from "crypto"
 import { execSync, spawnSync } from "child_process"
@@ -79,6 +80,144 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
   for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
   h.update(createHash("sha256").update(fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"))).digest("hex"))
   return h.digest("hex").slice(0, 16)
+}
+
+// ---------------------------------------------------------------------------
+// M49 W16: the parent's sweep state is the ONLY authority, and a lane is
+// measured at its PIN.
+//
+// Two harness defects found live while re-emitting F5 (2026-09-14). Both made a
+// canonical sweep impossible to finish on this checkout, because `proxicall` —
+// the dart primary corpus — is a symlink to an actively developed 16G project
+// ($HOME/ProxiCall) whose HEAD moved five times during one sweep:
+//
+//   1. STATE FORKED PER CHILD. The journal is addressed by sweep state (pins +
+//      sampling + the analyzer/oracle source that derived it), and every
+//      lane-batch child RE-DERIVED that state from a live `git rev-parse HEAD`.
+//      A child started after a corpus commit therefore journaled its lanes
+//      under a different state, and the parent — correctly refusing to emit
+//      evidence from a partial sweep — aborted with `35 lane(s) unmeasured
+//      after batching`. Four distinct journal states were observed in 20
+//      minutes, and F5 had to be completed by hand-running slices. The parent
+//      reads every pin ONCE, before any child starts, and now hands that frozen
+//      state down (M14_SWEEP_STATE / M14_SWEEP_PINS).
+//
+//   2. THE PIN WAS NOT WHAT GOT MEASURED. Rows and checks are stamped
+//      `@<pin>` from `git rev-parse HEAD`, while the FILES PARSED came from the
+//      working tree — so a dirty checkout (34 modified paths in proxicall) was
+//      measured and reported as its pin. Measured content now follows the pin:
+//      when the live checkout is not exactly the pin (moved, or dirty) the lane
+//      is measured in a detached worktree OF that pin, and the substitution is
+//      logged and recorded in the evidence. A clean checkout at its pin is
+//      measured in place, exactly as before.
+// ---------------------------------------------------------------------------
+export const SWEEP_STATE_ENV = "M14_SWEEP_STATE"
+export const SWEEP_PINS_ENV = "M14_SWEEP_PINS"
+
+/** A lane-batch child adopts its parent's frozen state; everything else derives
+ *  its own. A stray env var must never retarget a canonical run, so the
+ *  inherited value is honoured only for a real child (`--lane-batch=i/n`). */
+export function resolveSweepState(computed: string, envState: string | undefined, isChild: boolean): string {
+  return isChild && envState ? envState : computed
+}
+
+/** The parent's pins win for every repo the parent pinned; a child never
+ *  invents a pin for a repo the parent did not read, and a malformed or absent
+ *  payload falls back to the live read. */
+export function resolveSweepPins(computed: Record<string, string>, envPins: string | undefined, isChild: boolean): Record<string, string> {
+  if (!isChild || !envPins) return computed
+  let parsed: any
+  try { parsed = JSON.parse(envPins) } catch { return computed }
+  if (!parsed || typeof parsed !== "object") return computed
+  const out: Record<string, string> = { ...computed }
+  for (const repo of Object.keys(out)) {
+    if (typeof parsed[repo] === "string" && parsed[repo]) out[repo] = parsed[repo]
+  }
+  return out
+}
+
+/** Measure the live checkout in place only when it IS the pin: same commit and
+ *  no uncommitted paths (tracked or untracked — both change what gets parsed). */
+export function pinNeedsFrozenTree(head: string, pin: string, dirty: boolean): boolean {
+  return head !== pin || dirty
+}
+
+/** Why the live checkout is not the pin, for the log line, so a substitution is
+ *  never silent. */
+export function pinDriftReason(head: string, pin: string, dirty: boolean): string {
+  const parts: string[] = []
+  if (head !== pin) parts.push(`at ${head.slice(0, 10)}`)
+  if (dirty) parts.push("dirty working tree")
+  return parts.length ? parts.join(" + ") : "clean at its pin"
+}
+
+// ---------------------------------------------------------------------------
+// M49 W16 (defect 3): THE CODE SIDE OF THE SAME LIE.
+//
+// Defect 2 froze the CONTENT measured (corpus repos are read at their pin). It
+// left the CODE alone: rows are stamped `@<commit>` and the artifact records
+// `regeneratedAtCommit`, both read from `git rev-parse HEAD`, while the analyzers
+// and the oracle that produced those rows came from whatever the working tree
+// held. Found live 2026-09-14: the W16 F5 was written by a tree carrying a
+// 479-line uncommitted edit to `src/ast/real-dart-analyzer.ts`, and the artifact
+// claimed that commit's dart lane at 50.6% unexplained — a number true of no
+// commit at all. Re-measured on the same pinned corpus with the committed
+// analyzer: 0% unexplained. The artifact was the only thing wrong, and it was
+// wrong in the most expensive direction (it accused working code).
+//
+// The rule: a measurement may only claim a commit when every file that can
+// change a lane's rows IS that commit. Modified, added, deleted and renamed
+// paths all count — an untracked analyzer is as invisible to the commit hash as
+// a modified one. `script/m14/tmp/` is scratch (probe scripts are not inputs to
+// any lane) and `validation/` is output, so neither can make a sweep dirty.
+// ---------------------------------------------------------------------------
+export const MEASURED_INPUT_ROOTS = ["src/", "script/m14/spec/"] as const
+export const MEASURED_INPUT_FILES = [
+  "script/m14/differential.ts",
+  "script/m14/evidence-harness.ts",
+  "package.json",
+  "tsconfig.json",
+] as const
+
+/** Paths that can change what a lane measures, out of a `git status --porcelain`
+ *  line set. Pure, so a gate can prove the filter discriminates without a
+ *  dirty tree. */
+export function measuredInputDirt(statusLines: string[]): string[] {
+  const out: string[] = []
+  for (const raw of statusLines) {
+    if (!raw.trim()) continue
+    const body = raw.slice(3).trim() // XY<space>PATH
+    // A rename carries both sides (`R  old -> new`): the NEW path is the input.
+    const p = body.includes(" -> ") ? body.split(" -> ").pop()!.trim() : body
+    const path = p.replace(/^"|"$/g, "")
+    if (path.startsWith("script/m14/tmp/")) continue
+    const root = MEASURED_INPUT_ROOTS.find(r => path.startsWith(r))
+    if (root) { out.push(path); continue }
+    if (MEASURED_INPUT_FILES.includes(path as any)) { out.push(path); continue }
+    if (path.startsWith("bun.lock")) { out.push(path); continue }
+  }
+  return [...new Set(out)].sort()
+}
+
+export interface CodeInputs {
+  head: string
+  clean: boolean
+  dirty: string[]
+}
+
+/** Read the tree's code-input dirt in the directory that will run the lanes. */
+export function readCodeInputs(root: string): CodeInputs {
+  const head = execSync("git rev-parse HEAD", { cwd: root }).toString().trim()
+  let lines: string[] = []
+  try {
+    lines = execSync("git status --porcelain --untracked-files=normal", { cwd: root, stdio: ["ignore", "pipe", "ignore"] })
+      .toString().split("\n")
+  } catch {
+    // Cannot read the tree: that is not evidence of a clean one.
+    return { head, clean: false, dirty: ["<git status unreadable>"] }
+  }
+  const dirty = measuredInputDirt(lines)
+  return { head, clean: dirty.length === 0, dirty }
 }
 // Per-language corpus routing: each language runs against a repo that
 // ACTUALLY CONTAINS it. The previous single-repo default (grails-core) gave
@@ -2757,6 +2896,148 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
       out.push(c.text)
     }
     return out
+  }
+
+  // DT-A/DT-D oracle mirrors: in-file named constructors (owner.named) and
+  // superclass per class (resolved). Both prescans mirror the analyzer's
+  // extractCallRelationships setup exactly.
+  const dartNamedCtors = new Set<string>()
+  const dartSuperByClass = new Map<string, string>()
+  {
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const pn = pre.pop()!
+      if (!pn) continue
+      if (pn.type === "class_definition") {
+        const nm = pn.childForFieldName?.("name")?.text
+        const sup = pn.namedChildren.find((c: any) => c.type === "superclass")
+        if (nm && sup) {
+          const base = resolvedRawNames(sup)[0]
+          if (base) dartSuperByClass.set(nm, base)
+        }
+      }
+      if (pn.type === "constructor_signature") {
+        const dids: string[] = []
+        for (let k = 0; k < pn.namedChildCount; k++) {
+          const c = pn.namedChild(k)
+          if (c && (c.type === "identifier" || c.type === "type_identifier")) dids.push(c.text)
+        }
+        let own: any = pn.parent
+        let og = 0
+        while (own && og++ < 8) {
+          if (own.type === "class_definition") break
+          own = own.parent
+        }
+        const onm = own && own.type === "class_definition" ? own.childForFieldName?.("name")?.text : null
+        const seg = dids.find((id) => id !== onm)
+        if (onm && seg) dartNamedCtors.add(`${onm}.${seg}`)
+      }
+      for (let k = pn.namedChildCount - 1; k >= 0; k--) {
+        const c = pn.namedChild(k)
+        if (c) pre.push(c)
+      }
+    }
+  }
+  const dartLinkMember = (sel: any): string | null => {
+    const kids: any[] = sel.type === "selector" ? sel.namedChildren : [sel]
+    for (const c of kids) {
+      if (c.type === "unconditional_assignable_selector" || c.type === "conditional_assignable_selector" ||
+          c.type === "cascade_selector") {
+        const id = c.namedChildren.find((x: any) => x.type === "identifier") ??
+          c.namedChildren.find((x: any) => x.type === "type_identifier")
+        if (id) return id.text
+      }
+    }
+    return null
+  }
+  const dartChain = (argsSel: any): { head: any; links: string[] } => {
+    const links: string[] = []
+    let c: any = argsSel.previousNamedSibling
+    while (c) {
+      if (c.type === "selector") {
+        const m = dartLinkMember(c)
+        if (!m) break
+        links.unshift(m)
+        c = c.previousNamedSibling
+      } else if (c.type === "unconditional_assignable_selector" || c.type === "conditional_assignable_selector") {
+        const id = c.namedChildren.find((x: any) => x.type === "identifier") ??
+          c.namedChildren.find((x: any) => x.type === "type_identifier")
+        if (!id) break
+        links.unshift(id.text)
+        c = c.previousNamedSibling
+      } else break
+    }
+    return { head: c, links }
+  }
+  const dartHeadText = (head: any): string | null =>
+    head && (head.type === "identifier" || head.type === "type_identifier") ? head.text : null
+  const dartIsCap = (t: string | null): boolean =>
+    !!t && t.length > 0 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
+  const dartIsIndexSel = (sel: any): boolean => {
+    if (dartLinkMember(sel) !== null) return false
+    if (sel.namedChildren.some((c: any) => c.type === "argument_part")) return false
+    const stack: any[] = [sel]
+    let g = 0
+    while (stack.length > 0 && g++ < 32) {
+      const c = stack.pop()!
+      if (!c.isNamed && (c.text === "[" || c.text === "?[")) return true
+      for (let k = 0; k < c.childCount; k++) { const ch = c.child(k); if (ch) stack.push(ch) }
+    }
+    return false
+  }
+  const dartLhsWrite = (sel: any): boolean => {
+    let p: any = sel.parent
+    let g = 0
+    while (p && g++ < 16) {
+      if (p.type === "assignment_expression") {
+        let op: string | null = null
+        for (let k = 0; k < p.childCount; k++) {
+          const c = p.child(k)
+          if (c && !c.isNamed && c.text.includes("=")) { op = c.text; break }
+        }
+        if (op !== "=") return false
+        const lhs = p.namedChild(0)
+        if (lhs && lhs.startIndex <= sel.startIndex && lhs.endIndex >= sel.endIndex) return true
+        return false
+      }
+      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
+          p.type === "program" || p.type === "declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+  const dartInInterp = (n: any): boolean => {
+    let p: any = n.parent
+    let g = 0
+    while (p && g++ < 8) {
+      if (p.type === "template_substitution") return true
+      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
+          p.type === "program" || p.type === "declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+  const dartDeclParent = (t: string): boolean =>
+    t === "formal_parameter" || t === "constructor_param" ||
+    t === "function_signature" || t === "method_signature" ||
+    t === "getter_signature" || t === "setter_signature" ||
+    t === "type_alias" || t === "label"
+  const dartDeclaredName = (n: any): boolean => {
+    const parent = n.parent
+    if (!parent) return false
+    const pt = parent.type
+    if (pt !== "initialized_variable_definition" && pt !== "static_final_declaration") return false
+    let eq = -1
+    let mine = -1
+    for (let k = 0; k < parent.childCount; k++) {
+      const c = parent.child(k)
+      if (!c) continue
+      if (!c.isNamed && c.text === "=" && eq === -1) eq = k
+      if (c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) mine = k
+    }
+    if (mine === -1) return false
+    if (eq === -1) return true
+    return mine < eq
   }
 
   const stack: any[] = [root]
@@ -6760,6 +7041,20 @@ async function main() {
   for (const rp of activeRepos) {
     repoPins[rp] = execSync("git rev-parse HEAD", { cwd: path.join(CORPUS_ROOT, rp) }).toString().trim()
   }
+  // M49 W16 (defect 1): a lane-batch child inherits the parent's frozen state,
+  // so a corpus commit mid-sweep can no longer split the journal. The parent
+  // read these pins before any child started, and the parent owns the evidence
+  // write; a child's own live read is only a fallback for repos the parent
+  // never pinned (there are none in a canonical sweep).
+  const isChildRun = !!CHILD_SLICE
+  if (isChildRun) {
+    const inherited = resolveSweepPins(repoPins, process.env[SWEEP_PINS_ENV], isChildRun)
+    const moved = Object.keys(inherited).filter(r => inherited[r] !== repoPins[r])
+    Object.assign(repoPins, inherited)
+    if (moved.length > 0) {
+      console.log(`[state] inherited the parent's pin for ${moved.length} repo(s) that moved after the parent read them: ${moved.slice(0, 6).join(", ")}${moved.length > 6 ? ", …" : ""}`)
+    }
+  }
   const repoFor = (lang: string) => {
     if (REPO) return REPO
     const mapped = LANG_REPOS[lang]
@@ -6813,8 +7108,57 @@ async function main() {
   // lanes), and the parent — which measures nothing itself — resumes every
   // lane from the journal and owns the evidence write and the baseline gate.
   // ---------------------------------------------------------------------
-  const stateKey = sweepStateKey(repoPins, `${SAMPLE_PER_LANG}/lang ${lanes.map(l => `${l.repo}:${l.lang}`).sort().join(",")}`)
+  const stateKey = resolveSweepState(
+    sweepStateKey(repoPins, `${SAMPLE_PER_LANG}/lang ${lanes.map(l => `${l.repo}:${l.lang}`).sort().join(",")}`),
+    process.env[SWEEP_STATE_ENV],
+    isChildRun,
+  )
   const LANE_JOURNAL = `${LANE_JOURNAL_PREFIX}-${stateKey}.json`
+  // M49 W16 (defect 2): measure the PIN. A lane whose repo is not exactly at
+  // its pin is measured in a detached worktree of that pin — materialized once
+  // per (state, repo) and removed once the parent has written the evidence.
+  // The substitution is logged here and carried in the evidence's `pinDrift`,
+  // so a measurement can never claim a pin it did not read.
+  const FROZEN_ROOT = path.join(os.tmpdir(), `m14-frozen-corpus-${stateKey}`)
+  const frozenTrees = new Map<string, string>()
+  const laneDirCache = new Map<string, string>()
+  const pinDrift: Record<string, string> = {}
+  const laneRepoDir = (repo: string): string => {
+    const cached = laneDirCache.get(repo)
+    if (cached) return cached
+    const live = path.join(CORPUS_ROOT, repo)
+    const pin = repoPins[repo]
+    if (!pin) throw new Error(`differential: no pin recorded for corpus repo ${repo}`)
+    const head = execSync("git rev-parse HEAD", { cwd: live }).toString().trim()
+    let dirty = false
+    try {
+      dirty = execSync("git status --porcelain --untracked-files=normal", { cwd: live, stdio: ["ignore", "pipe", "ignore"] }).toString().trim().length > 0
+    } catch { dirty = true }
+    if (!pinNeedsFrozenTree(head, pin, dirty)) {
+      laneDirCache.set(repo, live)
+      return live
+    }
+    const reason = pinDriftReason(head, pin, dirty)
+    pinDrift[repo] = `live checkout ${reason} (pin ${pin.slice(0, 10)})`
+    const dest = path.join(FROZEN_ROOT, repo)
+    if (!frozenTrees.has(repo)) {
+      if (!fs.existsSync(path.join(dest, ".git"))) {
+        fs.mkdirSync(FROZEN_ROOT, { recursive: true })
+        try {
+          execSync(`git worktree add --detach ${JSON.stringify(dest)} ${pin}`, { cwd: live, stdio: ["ignore", "pipe", "pipe"] })
+        } catch (e: any) {
+          // A sibling batch may have won the race for this repo's tree.
+          if (!fs.existsSync(path.join(dest, ".git"))) {
+            throw new Error(`differential: ${repo} is not at its pin (${reason}) and its pinned tree could not be materialized: ${e?.message ?? e}`)
+          }
+        }
+      }
+      frozenTrees.set(repo, dest)
+      console.log(`[frozen] ${repo}@${pin.slice(0, 10)} — live checkout is ${reason}; measuring the pinned tree at ${dest}`)
+    }
+    laneDirCache.set(repo, dest)
+    return dest
+  }
   // Canonical sweeps only: a --repo probe routes EVERY language at one repo,
   // where most languages legitimately have no files (`files=0 SKIPPED` — not
   // measured, so not journaled), which is not a lane the completeness check
@@ -6849,7 +7193,7 @@ async function main() {
       console.log(`[batch] ${lanes.length} lane(s), ${missing} to measure, ${batches} batch(es) of <=${BATCH_SIZE} — one fresh wasm module per batch (state ${stateKey})`)
       for (let b = 0; b < batches; b++) {
         const args = [...process.argv.slice(2), `--lane-batch=${b}/${batches}`]
-        const r = spawnSync(process.execPath, [process.argv[1], ...args], { stdio: "inherit", cwd: ROOT, env: process.env })
+        const r = spawnSync(process.execPath, [process.argv[1], ...args], { stdio: "inherit", cwd: ROOT, env: { ...process.env, [SWEEP_STATE_ENV]: stateKey, [SWEEP_PINS_ENV]: JSON.stringify(repoPins) } })
         if (r.error) throw new Error(`differential: batch ${b}/${batches} could not start: ${r.error.message}`)
         if (r.status !== 0) throw new Error(`differential: batch ${b}/${batches} exited ${r.status} — a lane in it failed (log above); NOT writing evidence from an incomplete sweep`)
       }
@@ -6882,7 +7226,7 @@ async function main() {
       continue
     }
     const cfg = LANGS[lang]
-    const repoDir = path.join(CORPUS_ROOT, langRepo)
+    const repoDir = laneRepoDir(langRepo)
     const repoPin = repoPins[langRepo]
     const files: string[] = []
     const scan = (d: string) => {
@@ -7560,6 +7904,16 @@ async function main() {
   // reaching it discards the canonical run's completed-lane record as well.
   // Probe runs keep everything they were for — the per-lane diffs above, and
   // the baseline comparison below — and simply do not claim the artifact.
+  // M49 W16: a probe's pinned trees are scratch too — remove them before exit,
+  // so diagnosing one lane never leaves a corpus checkout behind.
+  const removeFrozenTrees = (): void => {
+    if (frozenTrees.size === 0) return
+    for (const [repo, dest] of frozenTrees) {
+      try { execSync(`git worktree remove --force ${JSON.stringify(dest)}`, { cwd: path.join(CORPUS_ROOT, repo), stdio: ["ignore", "pipe", "pipe"] }) } catch { /* leave it; /tmp is scratch */ }
+    }
+    try { fs.rmSync(FROZEN_ROOT, { recursive: true, force: true }) } catch { /* empty dir left behind */ }
+    console.log(`[frozen] removed ${frozenTrees.size} pinned-tree worktree(s): ${[...frozenTrees.keys()].join(", ")}`)
+  }
   const SCOPED_RUN = !!REPO || process.argv.includes("--sample")
   if (SCOPED_RUN) {
     const measured = Object.keys(report).length + Object.keys(reportSecond).length
@@ -7568,9 +7922,17 @@ async function main() {
       + `The artifact belongs to the canonical ${SAMPLE_PER_LANG}-file, ${Object.keys(LANGS).length}-language sweep; `
       + `a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.`,
     )
+    removeFrozenTrees()
     process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)
   }
 
+  // M49 W16 (defect 3): the artifact names a commit; the code that produced it
+  // must BE that commit. Read once, carry it in the evidence as a check and as
+  // data, and refuse to exit 0 while it is dirty.
+  const codeInputs = readCodeInputs(ROOT)
+  if (!codeInputs.clean) {
+    console.error(`[code-inputs] ${codeInputs.dirty.length} measured input(s) differ from ${codeInputs.head.slice(0, 10)}: ${codeInputs.dirty.join(", ")}`)
+  }
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
     issueId: "M14.0.F5",
@@ -7578,6 +7940,14 @@ async function main() {
     claimLevel: "L1",
     layers: ["differential"],
     checks: [
+      {
+        id: "differential-code-inputs",
+        description: "the analyzers, oracle and specs that produced these rows are this commit's",
+        status: codeInputs.clean ? "pass" : "fail",
+        detail: codeInputs.clean
+          ? `every measured input clean at head ${codeInputs.head.slice(0, 10)}`
+          : `${codeInputs.dirty.length} modified measured input(s) at head ${codeInputs.head.slice(0, 10)}: ${codeInputs.dirty.slice(0, 6).join(", ")}${codeInputs.dirty.length > 6 ? ", …" : ""}`,
+      },
       ...evaluation.checks.map(check => {
         const lang = check.id.replace("differential-", "")
         return { ...check, description: `${check.description} @${repoPins[repoFor(lang)]?.slice(0, 10) ?? "?"}` }
@@ -7591,9 +7961,17 @@ async function main() {
       { description: "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness" },
       { description: "seeded sample of files per language, deterministic; not exhaustive over the corpus" },
       { description: "coverage/fabrication baselines recorded; wave M14.1 must reduce missing/unexplained counts" },
+      { description: "a lane whose corpus checkout was not at its pin is measured in a detached worktree of the pin (see data.pinDrift); the measurement is of committed content, so an in-flight working-tree edit in a corpus repo is deliberately excluded from the differential" },
+      { description: "the measured code is this checkout's working tree, so `differential-code-inputs` fails — and the run exits 6 — when any analyzer, oracle or spec input differs from `regeneratedAtCommit`; a dirty tree can measure lanes but cannot claim them" },
     ],
     data: {
       corpusPins: repoPins,
+      // M49 W16: the code the rows describe. `clean: false` means the numbers
+      // above belong to uncommitted code and name no commit.
+      codeInputs,
+      // M49 W16: pins whose live checkout did not match, and what was measured
+      // instead. Empty means every lane read exactly its pin.
+      pinDrift,
       samplingRule: `seeded ${SAMPLE_PER_LANG} files/language (primary + second corpus lanes)`,
       report,
       secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
@@ -7613,9 +7991,22 @@ async function main() {
     },
   })
   console.log(`evidence written: validation/m14/results/M14.0.F5.json (resumed ${resumedLanes} lane(s) from journal)`)
+  if (!codeInputs.clean) {
+    console.error(
+      `DIFFERENTIAL CODE INPUTS DIRTY: ${codeInputs.dirty.length} measured input(s) differ from ${codeInputs.head.slice(0, 10)} — `
+      + `these rows describe uncommitted code, so they are not a claim about any commit; commit the analyzer/oracle change and re-run `
+      + `(dirty: ${codeInputs.dirty.slice(0, 8).join(", ")}${codeInputs.dirty.length > 8 ? ", …" : ""})`,
+    )
+    removeFrozenTrees()
+    process.exit(6)
+  }
   // Full sweep completed: the crash-resume journal served its purpose (only for
   // the journals this run actually used — a probe run never touched one).
   if (useJournal) { try { fs.rmSync(LANE_JOURNAL, { force: true }) } catch { /* already gone */ } }
+  // M49 W16: the pinned trees measured by this sweep are scratch space, removed
+  // now that the evidence is written. A crash leaves them behind for the
+  // resumed run, which finds them again under the same state key.
+  removeFrozenTrees()
 
   // Improvement-forcing gate: missing/unexplained counts may never grow.
   // Baseline updates are explicit and are not silently treated as validation.
