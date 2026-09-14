@@ -3601,7 +3601,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   }
   // SW-B candidates (head + leaf), resolved post-walk against declared
   // enum cases; matched leaf calls convert to instantiates.
-  const swEnumCtorCandidates: Array<{ head: string; leaf: string }> = []
+  const swEnumCtorCandidates: Array<{ head: string | null; owner: string | null; leaf: string; removeCalls: boolean }> = []
+  // SW-G: class -> superclass map for super.init targets.
+  const swSuperByClass = new Map<string, string>()
   // hasSelfReceiver): navigation > (navigation | self_expression) — stops at
   // the first non-receiver child (call_expression/try_expression).
   const hasSelfReceiver = (n: any): boolean => {
@@ -3704,11 +3706,11 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         }
       }
       if (isEnum || isExtension) {
-        // SWIFTD14/15 oracle mirror: extension bases are ALL conformances
-        // (no superclass possible); enum bases are conformances except a
-        // stdlib raw-value first base (analyzer records it as meta.rawType).
-        const skipFirst = isEnum && bases.length > 0 && SWIFT_ENUM_RAW.has(bases[0])
-        for (let i = skipFirst ? 1 : 0; i < bases.length; i++) push("implements", bases[i])
+      // SWIFTD14/15 oracle mirror: extension bases are ALL conformances
+      // (no superclass possible); enum bases are conformances except a
+      // stdlib raw-value first base (analyzer records it as meta.rawType).
+      const skipFirst = isEnum && bases.length > 0 && SWIFT_ENUM_RAW.has(bases[0])
+      for (let i = skipFirst ? 1 : 0; i < bases.length; i++) push("implements", bases[i])
       } else {
         // Mirror the analyzer: a class's first base is extends only when it
         // is NOT a known corpus protocol; a known protocol first-base (or any
@@ -3716,6 +3718,11 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         const firstIsSuperclass =
           isClass &&
           (bases.length > 0 ? !(corpusProtocols?.has(bases[0]) ?? false) : true)
+        // SW-G mirror: record class -> superclass for super.init targets.
+        if (firstIsSuperclass && bases.length > 0) {
+          const nmNode = n.namedChildren.find((c: any) => c.type === "type_identifier")
+          if (nmNode) swSuperByClass.set(nmNode.text, bases[0])
+        }
         for (let i = 0; i < bases.length; i++) {
           const isExtends = firstIsSuperclass && i === 0
           push(isExtends ? "extends" : "implements", bases[i])
@@ -3753,30 +3760,88 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         // and `contains MockScheduledCallbackHandler -> assert` proves the type
         // DECLARES that method). The bare branch below keeps the filter.
         const leaf = navLeaf(callee)
-        if (leaf && leaf !== "$0") push("calls", leaf)
-        // SW-B mirror: record enum-construction candidates (capitalized
-        // DIRECT receiver + leaf) for post-walk resolution. Receiver is
-        // second-to-last in document order; never descend into nested
-        // calls (arguments are not chain members).
-        if (leaf && leaf !== "$0") {
-          const seen: any[] = [callee]
-          const st: any[] = [callee]
-          while (st.length > 0) {
-            const x = st.pop()!
-            if (x !== callee && x.type === "call_expression") continue
-            for (let k = x.namedChildCount - 1; k >= 0; k--) {
-              const c = x.namedChild(k)
-              if (c) { st.push(c); seen.push(c) }
+        // Enclosing nominal type (class/struct/actor/enum/extension/protocol)
+        // for owner-relative rules (SW-G self, SW-H Self).
+        const enclosingType = (() => {
+          let o: any = n.parent
+          let og = 0
+          while (o && og++ < 14) {
+            if (o.type === "class_declaration") {
+              for (let k = 0; k < o.namedChildCount; k++) {
+                const c = o.namedChild(k)
+                if (c && c.type === "type_identifier") return c.text
+              }
+              for (let k = 0; k < o.namedChildCount; k++) {
+                const c = o.namedChild(k)
+                if (c && c.type === "user_type") {
+                  let lf: any = null
+                  for (let j = 0; j < c.namedChildCount; j++) {
+                    const x = c.namedChild(j)
+                    if (x && x.type === "type_identifier") lf = x
+                  }
+                  if (lf) return lf.text
+                }
+              }
+              return null
+            }
+            if (o.type === "protocol_declaration") {
+              for (let k = 0; k < o.namedChildCount; k++) {
+                const c = o.namedChild(k)
+                if (c && c.type === "type_identifier") return c.text
+              }
+              return null
+            }
+            o = o.parent
+          }
+          return null
+        })()
+        let consumed = false
+        // SW-G mirror: super/self/Self.init(...) constructs (dart DT-D).
+        if (leaf === "init") {
+          const firstC = callee.namedChildren.find((c: any) => true)
+          let recv: string | null = null
+          if (firstC) {
+            if (firstC.type === "super_expression") recv = "super"
+            else if (firstC.type === "self_expression") recv = "self"
+            else if ((firstC.type === "simple_identifier" || firstC.type === "identifier" || firstC.type === "type_identifier") && firstC.text === "Self") recv = "Self"
+          }
+          if (recv && enclosingType) {
+            const target = recv === "super" ? swSuperByClass.get(enclosingType) ?? null : enclosingType
+            if (target) {
+              push("instantiates", target)
+              consumed = true
             }
           }
-          seen.sort((a: any, b: any) => a.startIndex - b.startIndex)
-          const parts: string[] = []
-          for (const x of seen) {
-            if (x.type === "simple_identifier" || x.type === "identifier" || x.type === "type_identifier") parts.push(x.text)
-          }
-          const receiver = parts.length >= 2 ? parts[parts.length - 2] : null
-          if (receiver && isCapitalized(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
-            swEnumCtorCandidates.push({ head: receiver, leaf })
+        }
+        if (!consumed) {
+          if (leaf && leaf !== "$0") push("calls", leaf)
+          // SW-B mirror: record enum-construction candidates (capitalized
+          // DIRECT receiver + leaf) for post-walk resolution. Receiver is
+          // second-to-last in document order; never descend into nested
+          // calls (arguments are not chain members).
+          if (leaf && leaf !== "$0") {
+            const seen: any[] = [callee]
+            const st: any[] = [callee]
+            while (st.length > 0) {
+              const x = st.pop()!
+              if (x !== callee && x.type === "call_expression") continue
+              for (let k = x.namedChildCount - 1; k >= 0; k--) {
+                const c = x.namedChild(k)
+                if (c) { st.push(c); seen.push(c) }
+              }
+            }
+            seen.sort((a: any, b: any) => a.startIndex - b.startIndex)
+            const parts: string[] = []
+            for (const x of seen) {
+              if (x.type === "simple_identifier" || x.type === "identifier" || x.type === "type_identifier") parts.push(x.text)
+            }
+            const receiver = parts.length >= 2 ? parts[parts.length - 2] : null
+            if (receiver && isCapitalized(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
+              swEnumCtorCandidates.push({ head: receiver, owner: null, leaf, removeCalls: true })
+            } else if (receiver === "Self" && enclosingType) {
+              // SW-H mirror: Self.a(v) in an enum builds the enclosing enum.
+              swEnumCtorCandidates.push({ head: null, owner: enclosingType, leaf, removeCalls: true })
+            }
           }
         }
       } else if (callee) {
@@ -3786,6 +3851,48 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         if (target && !SWIFT_BUILTINS.has(target) && !target.startsWith("XCT")) {
           if (isCapitalized(target)) push("instantiates", target)
           else push("calls", target)
+        }
+      }
+      // SW-H mirror: implicit enum-case construction (`.a(v)` parses the
+      // callee as a leading-dot prefix_expression — no simple callee).
+      if (!callee) {
+        const pre = n.namedChildren.find((c: any) => c.type === "prefix_expression")
+        const dotFirst = pre ? pre.child(0) : null
+        if (pre && dotFirst && !dotFirst.isNamed && dotFirst.type === ".") {
+          let leaf: string | null = null
+          for (let k = 0; k < pre.namedChildCount; k++) {
+            const c = pre.namedChild(k)
+            if (c && (c.type === "simple_identifier" || c.type === "identifier")) { leaf = c.text; break }
+          }
+          if (leaf) {
+            let own: any = n.parent
+            let og = 0
+            let onm: string | null = null
+            while (own && og++ < 14) {
+              if (own.type === "class_declaration") {
+                for (let k = 0; k < own.namedChildCount; k++) {
+                  const c = own.namedChild(k)
+                  if (c && c.type === "type_identifier") { onm = c.text; break }
+                }
+                if (onm) break
+                for (let k = 0; k < own.namedChildCount; k++) {
+                  const c = own.namedChild(k)
+                  if (c && c.type === "user_type") {
+                    let lf: any = null
+                    for (let j = 0; j < c.namedChildCount; j++) {
+                      const x = c.namedChild(j)
+                      if (x && x.type === "type_identifier") lf = x
+                    }
+                    if (lf) { onm = lf.text; break }
+                  }
+                }
+                if (onm) break
+                break
+              }
+              own = own.parent
+            }
+            if (onm) swEnumCtorCandidates.push({ head: null, owner: onm, leaf, removeCalls: false })
+          }
         }
       }
     }
@@ -3925,14 +4032,17 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     }
     if (enumCases.size > 0) {
       for (const cand of swEnumCtorCandidates) {
-        if (!enumCases.has(`${cand.head}.${cand.leaf}`)) continue
-        for (let k = edges.length - 1; k >= 0; k--) {
-          if (edges[k].label === "calls" && edges[k].target === cand.leaf) {
-            edges.splice(k, 1)
-            break
+        const key = cand.head ?? cand.owner
+        if (!key || !enumCases.has(`${key}.${cand.leaf}`)) continue
+        if (cand.removeCalls) {
+          for (let k = edges.length - 1; k >= 0; k--) {
+            if (edges[k].label === "calls" && edges[k].target === cand.leaf) {
+              edges.splice(k, 1)
+              break
+            }
           }
         }
-        push("instantiates", cand.head)
+        push("instantiates", key)
       }
     }
   }
