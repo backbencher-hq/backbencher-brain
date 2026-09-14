@@ -2993,7 +2993,10 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
           if (base) dartSuperByClass.set(nm, base)
         }
       }
-      if (pn.type === "constructor_signature") {
+      // All four constructor signature kinds (generative, factory, const,
+      // redirecting) — the analyzer's namedSegment covers them all.
+      if (pn.type === "constructor_signature" || pn.type === "factory_constructor_signature" ||
+          pn.type === "constant_constructor_signature" || pn.type === "redirecting_factory_constructor_signature") {
         const dids: string[] = []
         for (let k = 0; k < pn.namedChildCount; k++) {
           const c = pn.namedChild(k)
@@ -3053,6 +3056,20 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
   const dartIsIndexSel = (sel: any): boolean => {
     if (dartLinkMember(sel) !== null) return false
     if (sel.namedChildren.some((c: any) => c.type === "argument_part")) return false
+    const stack: any[] = [sel]
+    let g = 0
+    while (stack.length > 0 && g++ < 32) {
+      const c = stack.pop()!
+      if (!c.isNamed && (c.text === "[" || c.text === "?[")) return true
+      for (let k = 0; k < c.childCount; k++) { const ch = c.child(k); if (ch) stack.push(ch) }
+    }
+    return false
+  }
+  // Assignment-target index shape (`xs[3] = 4` wraps base+index in
+  // assignable_expression): member-less assignable holding brackets.
+  const dartIsIndexAssignable = (sel: any): boolean => {
+    if (sel.type !== "unconditional_assignable_selector" && sel.type !== "conditional_assignable_selector") return false
+    if (sel.namedChildren.some((c: any) => c.type === "identifier" || c.type === "type_identifier")) return false
     const stack: any[] = [sel]
     let g = 0
     while (stack.length > 0 && g++ < 32) {
@@ -3128,9 +3145,10 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         // DARTD14 mirror: mixin on-base is a DIRECT type_identifier child
         // (mixin_declaration > [mixin, identifier, type_identifier, ...]) —
         // never a superclass child, so the branch below never sees it.
+        // DT-B: resolved (alias-free) — `on _i1.Base` leaked the alias.
         if (t === "mixin_declaration") {
-          const onBase = n.namedChildren.find((c: any) => c.type === "type_identifier")
-          if (onBase) push("extends", onBase.text)
+          const onNames = resolvedRawNames(n).filter((x) => x !== nm)
+          for (const b of onNames) push("extends", b)
         }
         const sup = n.namedChildren.find((c: any) => c.type === "superclass")
         if (sup) {
@@ -3141,13 +3159,13 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
             push("extends", base)
             break
           }
-          // mixins under superclass (extends A with M)
+          // mixins under superclass (extends A with M) — DT-B resolved
           const mx = sup.namedChildren.find((c: any) => c.type === "mixins")
-          if (mx) for (const m of typeLeaves(mx)) push("uses", m)
+          if (mx) for (const m of resolvedRawNames(mx)) push("uses", m)
         }
-        // mixins directly on the class (class A with M implements C)
+        // mixins directly on the class (class A with M implements C) — DT-B resolved
         const mxDirect = n.namedChildren.find((c: any) => c.type === "mixins")
-        if (mxDirect) for (const m of typeLeaves(mxDirect)) push("uses", m)
+        if (mxDirect) for (const m of resolvedRawNames(mxDirect)) push("uses", m)
         // interfaces — DAD2 mirror: resolved names only (alias prefixes
         // dropped, generic args excluded).
         const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
@@ -3162,7 +3180,7 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         const ifc = n.namedChildren.find((c: any) => c.type === "interfaces")
         if (ifc) for (const m of resolvedRawNames(ifc)) push("implements", m)
         const mx = n.namedChildren.find((c: any) => c.type === "mixins")
-        if (mx) for (const m of typeLeaves(mx)) push("uses", m)
+        if (mx) for (const m of resolvedRawNames(mx)) push("uses", m)
       }
     }
     if (t === "constructor_invocation" || t === "new_expression" || t === "const_object_expression") {
@@ -3174,31 +3192,82 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
     // analyzer emits instantiates for the redirect target (probed on the
     // generated jni_bindings.dart where these are the only unexplained
     // instantiates; the redirect target may be private `_`-prefixed so no
-    // capitalization filter applies).
+    // capitalization filter applies). DT-C: alias-qualified targets
+    // (`= _i1.Impl.make`) resolve to the class (second-to-last part).
     if (t === "redirecting_factory_constructor_signature") {
-      const rt = n.namedChildren.find((c: any) => c.type === "type_identifier")
-      if (rt) push("instantiates", rt.text)
+      const parts: string[] = []
+      let pastEq = false
+      for (let k = 0; k < n.childCount; k++) {
+        const c = n.child(k)
+        if (!c) continue
+        if (!pastEq) {
+          if (!c.isNamed && c.type === "=") pastEq = true
+          continue
+        }
+        if (c.isNamed && (c.type === "type_identifier" || c.type === "identifier")) parts.push(c.text)
+      }
+      const target = parts.length <= 1 ? parts[0] : parts[parts.length - 2]
+      if (target) push("instantiates", target)
     }
+    // DT-A/DT-F mirror: selector with arguments. Chain walk decides
+    // construction vs call (named ctors, prefix construction); bare calls
+    // keep the DARTD1 rule verbatim.
     if (t === "selector") {
       const hasArgs = n.namedChildren.some((c: any) => c.type === "argument_part")
       if (hasArgs) {
-        const prev = n.previousNamedSibling
-        if (prev) {
-          let leaf: string | null = null
-          if (prev.type === "unconditional_assignable_selector" || prev.type === "conditional_assignable_selector" || prev.type === "selector") {
-            const id = prev.namedChildren.find((c: any) => c.type === "identifier")
-            leaf = id ? id.text : (() => { const stk: any[] = [prev]; let last: string | null = null; while (stk.length) { const x = stk.pop()!; if (x.type === "identifier" || x.type === "type_identifier") last = x.text; for (let k = 0; k < x.namedChildCount; k++) { const c = x.namedChild(k); if (c) stk.push(c) } } return last })()
-          } else if (prev.type === "identifier" || prev.type === "type_identifier") {
-            leaf = prev.text
+        const { head, links } = dartChain(n)
+        if (links.length === 0) {
+          const prev = n.previousNamedSibling
+          if (prev) {
+            let leaf: string | null = null
+            if (prev.type === "unconditional_assignable_selector" || prev.type === "conditional_assignable_selector" || prev.type === "selector") {
+              const id = prev.namedChildren.find((c: any) => c.type === "identifier")
+              leaf = id ? id.text : (() => { const stk: any[] = [prev]; let last: string | null = null; while (stk.length) { const x = stk.pop()!; if (x.type === "identifier" || x.type === "type_identifier") last = x.text; for (let k = 0; k < x.namedChildCount; k++) { const c = x.namedChild(k); if (c) stk.push(c) } } return last })()
+            } else if (prev.type === "identifier" || prev.type === "type_identifier") {
+              leaf = prev.text
+            }
+            if (leaf && !DART_BUILTINS.has(leaf)) {
+              if (isCapitalized(leaf) && (prev.type === "identifier" || prev.type === "type_identifier")) {
+                push("instantiates", leaf)
+              } else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(leaf)) {
+                push("calls", leaf)
+              }
+            }
           }
-          if (leaf && !DART_BUILTINS.has(leaf)) {
-            if (isCapitalized(leaf) && (prev.type === "identifier" || prev.type === "type_identifier")) {
-              push("instantiates", leaf)
-            } else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(leaf)) {
-              // Dart identifiers may contain $ (json_serializable generates
-              // _$FooFromJson / _$FooToJson helpers); the analyzer emits
-              // calls for them, so the oracle must too.
-              push("calls", leaf)
+        } else {
+          const method = links[links.length - 1]
+          const headText = dartHeadText(head)
+          const before = links.length > 1 ? links[links.length - 2] : headText
+          if (DART_BUILTINS.has(method)) {
+            // filtered
+          } else if (
+            links.length === 1 && isCapitalized(method) && headText !== null &&
+            !isCapitalized(headText) && head !== null &&
+            (head.type === "identifier" || head.type === "type_identifier")
+          ) {
+            push("instantiates", method)
+          } else if (before !== null && isCapitalized(before) && dartNamedCtors.has(`${before}.${method}`)) {
+            push("instantiates", before)
+          } else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(method)) {
+            push("calls", method)
+          }
+        }
+      } else {
+        // DT-F mirror: member reads. Callee links (followed by the
+        // argument-carrying selector), LHS writes and builtins excluded;
+        // capitalized heads with in-file named ctors tear off construction.
+        const member = dartLinkMember(n)
+        if (member && !DART_BUILTINS.has(member)) {
+          const next = n.nextNamedSibling
+          const nextIsArgs = !!next && next.type === "selector" &&
+            next.namedChildren.some((c: any) => c.type === "argument_part")
+          if (!nextIsArgs && !dartLhsWrite(n)) {
+            const head = n.previousNamedSibling
+            const headText = dartHeadText(head)
+            if (headText !== null && isCapitalized(headText) && dartNamedCtors.has(`${headText}.${member}`)) {
+              push("instantiates", headText)
+            } else {
+              push("uses", member)
             }
           }
         }
@@ -3210,6 +3279,13 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
       // calls addAll (headers is a bare getter), and `..a(x)..b(y)` calls
       // BOTH a and b (previously only the FIRST cascade_selector identifier
       // was emitted, fabricating getter junk and missing later calls).
+      // DT-F: selectors NOT followed by an argument_part are getter reads,
+      // unless the section assigns (`..b = 1`).
+      let assigns = false
+      for (let k = 0; k < n.childCount; k++) {
+        const c = n.child(k)
+        if (c && !c.isNamed && c.text === "=") { assigns = true; break }
+      }
       const idText = (sel: any): string | null => {
         const stk: any[] = [sel]
         let last: string | null = null
@@ -3226,10 +3302,95 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         if (c.type !== "cascade_selector" && c.type !== "unconditional_assignable_selector" &&
             c.type !== "conditional_assignable_selector" && c.type !== "selector") continue
         const next = n.namedChild(i + 1)
-        if (!next || next.type !== "argument_part") continue
-        const id = idText(c)
-        if (id && !DART_BUILTINS.has(id) && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(id)) push("calls", id)
+        if (next && next.type === "argument_part") {
+          const id = idText(c)
+          if (id && !DART_BUILTINS.has(id) && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(id)) push("calls", id)
+        } else if (!assigns) {
+          const id = idText(c)
+          if (id && !DART_BUILTINS.has(id) && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(id)) push("uses", id)
+        }
       }
+    }
+    // DT-D mirror: constructor redirection in initializer lists.
+    if (t === "initializer_list_entry") {
+      let hs = false
+      let ht = false
+      const fr = n.child(0)
+      if (fr && !fr.isNamed && (fr.text === "super" || fr.text === "this")) {
+        hs = fr.text === "super"
+        ht = fr.text === "this"
+      } else {
+        const fn0 = n.namedChild(0)
+        if (fn0 && (fn0.type === "super" || fn0.type === "this")) {
+          hs = fn0.type === "super"
+          ht = fn0.type === "this"
+        }
+      }
+      if (hs || ht) {
+        let own: any = n.parent
+        let og = 0
+        while (own && og++ < 12) {
+          if (own.type === "class_definition") break
+          own = own.parent
+        }
+        const onm = own && own.type === "class_definition" ? own.childForFieldName?.("name")?.text : null
+        if (onm) {
+          if (hs) {
+            const base = dartSuperByClass.get(onm)
+            if (base) push("instantiates", base)
+          } else {
+            push("instantiates", onm)
+          }
+        }
+      }
+    }
+    // DT-D mirror: `this.named(...)` redirects parse as `redirection`
+    // (`:` `this` `.` `named` `arguments`).
+    if (t === "redirection") {
+      let rS = false
+      let rT = false
+      for (let k = 0; k < n.namedChildCount; k++) {
+        const c = n.namedChild(k)
+        if (!c) continue
+        if (c.type === "this") { rT = true; break }
+        if (c.type === "super") { rS = true; break }
+        if (c.type === "identifier" || c.type === "type_identifier" || c.type === "arguments") continue
+        break
+      }
+      if (rS || rT) {
+        let own: any = n.parent
+        let og = 0
+        while (own && og++ < 12) {
+          if (own.type === "class_definition") break
+          own = own.parent
+        }
+        const onm = own && own.type === "class_definition" ? own.childForFieldName?.("name")?.text : null
+        if (onm) {
+          if (rS) {
+            const base = dartSuperByClass.get(onm)
+            if (base) push("instantiates", base)
+          } else {
+            push("instantiates", onm)
+          }
+        }
+      }
+    }
+    // DT-F mirrors: subscript bases, interpolation reads, `$x` placeholders.
+    if (t === "identifier") {
+      const pt = n.parent ? n.parent.type : ""
+      if (!dartDeclParent(pt) && pt !== "label" && !dartDeclaredName(n)) {
+        const nx = n.nextNamedSibling
+        if (nx && ((nx.type === "selector" && dartIsIndexSel(nx)) || dartIsIndexAssignable(nx))) {
+          push("uses", n.text)
+        } else if (dartInInterp(n)) {
+          push("uses", n.text)
+        }
+      }
+    }
+    if (t === "identifier_dollar_escaped") {
+      const raw = String(n.text)
+      const nm = raw.startsWith("$") ? raw.slice(1) : raw
+      if (nm) push("uses", nm)
     }
     for (let k = 0; k < n.namedChildCount; k++) { const c = n.namedChild(k); if (c) stack.push(c) }
   }
