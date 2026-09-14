@@ -206,6 +206,15 @@
         "evidenceFile": "reviews/objc/first-review.md",
         "verifiedAtCommit": "630a3660"
     }
+,
+    {
+        "id": "DT1",
+        "title": "Dart first review wave (issue #827): DT-A named construction, DT-B heritage aliases, DT-C redirect alias, DT-D super/this redirections, DT-F member reads, DT-E/DT-R1 ruled",
+        "status": "verified",
+        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirror in deriveDartEdges. Fully gated: fixture dart/member-value-reads (new), 10 mutants, spec DT-A-DT-F/DT-E/DT-R1. Lanes: proxicall + dart-http, pinned + 5 rotations, 0/0. F3 all pass, F4 516/516, R1 107/107, R2 15/15. Bare unqualified reads deferred to review 2.",
+        "evidenceFile": "reviews/dart/first-review.md",
+        "verifiedAtCommit": "8a9b36d9"
+    }
   ],
   "waves": [
     {
