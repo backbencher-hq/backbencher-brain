@@ -34,9 +34,35 @@ expression / untyped param list / lambda params / reserved identifiers).
 The patch is surgical: the grammar is a fork of tree-sitter-java
 (v0.23.4 pinned), so the Groovy surface is layered onto a proven Java base.
 
-Result: **33/33 construct matrix clean** and **0/400 grails-core sample
-files with grammar errors or missing tokens** (the old wasm had 8 errors on
-the baseline fixture set alone).
+Result as written in M12.06: "33/33 construct matrix clean" and "0/400 grails-core
+sample files with grammar errors or missing tokens". **The 0/400 figure was
+false and is corrected below (2026-09-14, M49 W17).** The patch is real and it
+did move the needle — the pinned grammar parses untyped params, safe-nav `?.`,
+spread `*.`, elvis `?:`, traits, `[:]` maps, GString nested quoting, Spock string
+method names and single-arg command chains, all of which the stock amaanq build
+rejects — but it does not deliver the four cells below, and it never delivered a
+clean corpus.
+
+> **Correction (M49 W17, issue #742).** Measured over all **6,564** tracked
+> `*.groovy` files through the production `parseFile` pipeline:
+> **3,874 error files (59.0%)** — 3,172 with a true `ERROR` node (48.3%) and
+> 2,014 with a `MISSING` token (30.7%). The **same 400 files this section names
+> measure 250/400 (62.5%)**. A 15-cell construct probe against the committed
+> wasm (`wasm/tree-sitter-groovy.wasm`, `93fb188ab031`) passes 11 and **fails
+> four the patch claims to fix**, each named in the patch list above: `as` casts,
+> newline-terminated field declarations, an unbraced body followed by another
+> statement, and enum constructor arguments. `MISSING ;` is the single largest
+> derived failure class (2,698 nodes corpus-wide) — i.e. the newline-terminator
+> work is the largest remaining gap, not a solved one.
+>
+> Why it survived from M12 to now: the claim had **no executable evidence**.
+> `script/m12/` carries a `*-corpus-errors.ts` for 35 languages and none for
+> java, kotlin, scala or groovy, and `script/verify-m12-final-audit.ts` passes
+> regardless. The measurement now exists —
+> `script/m12/jvm-corpus-errors.ts` writes
+> `validation/m12/results/groovy-corpus-errors.json` — and its failure classes
+> are derived from the parse tree rather than hard-coded, so the number in this
+> document cannot drift from the measurement again.
 
 ## Symbol contract
 
@@ -135,7 +161,22 @@ override resolution uses the shared `findDeclaringParent` BFS over the
 - 400 tracked `*.groovy` files (deterministic first-400 sorted, pinned
   revision, clean repo)
 - Files / symbols / relationships / errors: **400 / 2,953 / 14,053 / 0
-  grammar errors** (0.0% — patched grammar; **0 missing tokens**)
+  grammar errors** as recorded in M12 — **superseded**, see the correction
+  above. Re-measured on the identical 400 paths with the committed wasm:
+  **250/400 files with parse errors** (51.0% `ERROR`, 36.8% `MISSING`).
+- Full corpus, all 6,564 tracked `*.groovy` files: **3,874 error files (59.0%)**,
+  0 crashes, 34 files where the tree walk and the production pipeline disagree
+  (a zero-width `ERROR` node leaves `rootNode.hasError` false — see issue filed
+  from `script/m14/tmp/groovy-pipeline-mismatch.ts`).
+- Evidence: `validation/m12/results/groovy-corpus-errors.json`,
+  reproducible with `bun script/m12/jvm-corpus-errors.ts groovy [--full]`.
+- **Sampling caveat (why the old 400-file figure was never representative):**
+  "deterministic first-400 sorted" sorts paths alphabetically, so the sample
+  covers only the lexicographically-first top-level modules and **excludes 60+
+  modules entirely** — including `grails-test-examples` (2,024 files),
+  `grails-data-hibernate7` (520) and `grails-spring-security` (390). The sample
+  measured 62.5% while covering 6% of the corpus; the corpus measures 59.0%.
+  See `script/m14/tmp/groovy-sample-bias.ts`.
 
 ## Evidence pointers
 
