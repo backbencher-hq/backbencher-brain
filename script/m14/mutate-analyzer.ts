@@ -3193,6 +3193,41 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "writeOnly", target: "slot", confidence: 0.9, metadata: { isMemberRead: true } }] }),
   },
   {
+    id: "dart/drop-bare-member-reads",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops Uses edges for BARE identifier member reads (#752 CONV-DT-1: `return count;` on a declared field emitted nothing while `return this.count;` did) — caught by the bare-member-read-uses fixture's expectRelationships (bare/chained)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? x.meta ?? {}).isBareRead)) }),
+  },
+  {
+    id: "dart/bare-read-gate-bypass",
+    language: "dart",
+    defectClass: "relationship-fabrication",
+    description: "#752 gate regression: re-injects the two edges the gates exist to stop — uses(shadowed->count) (a name the CURRENT function binds locally, CGD15 gate B) and uses(Store->count) (the field DECLARATION read as a use, gate A) — caught by the bare-member-read-uses fixture's forbidRelationships",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "shadowed", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "Store", target: "count", confidence: 0.6, metadata: { isBareRead: true } }] }),
+  },
+  {
+    id: "swift/drop-bare-member-reads",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "drops Uses edges for BARE identifier member reads (#754 CONV-SW-1: `return count` on a declared property emitted nothing while `return self.count` did) — caught by the bare-member-read-uses fixture's expectRelationships (bare/plus/computed)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isBareRead)) }),
+  },
+  {
+    id: "swift/bare-read-extension-blindness",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "#754 corpus regression: drops bare reads sourced from EXTENSION members — the pre-fix defect where `extension Foo` carried its name under `user_type`, the shallow lookup left the declaration nameless, and every bare read in every extension was silently dropped (nio FileType/IPv4Header/EventLoop/ByteBuffer). Caught by the bare-member-read-uses fixture's extBare->total expect",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isBareRead && x.source === "extBare")) }),
+  },
+  {
+    id: "swift/bare-read-gate-bypass",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "#754 gate regression: re-injects the four edges the gates exist to stop — uses(zero->count) (assignment LHS is a write), uses(computed->local) (a computed property's `let` is a local, CGD15 value-scope gate), uses(pick->fast) (an implicit member expression: base inferred, not Store) and uses(label->group) (an argument label names a parameter, not the member) — caught by the bare-member-read-uses fixture's forbidRelationships",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "zero", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "computed", target: "local", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "pick", target: "fast", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "label", target: "group", confidence: 0.6, metadata: { isBareRead: true } }] }),
+  },
+  {
     id: "swift/drop-implements-edge",
     language: "swift",
     defectClass: "relationship-loss",
@@ -4536,17 +4571,3 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
-  {
-    id: "dart/drop-bare-member-reads",
-    language: "dart",
-    defectClass: "relationship-loss",
-    description: "drops Uses edges for BARE identifier member reads (#752 CONV-DT-1: `return count;` on a declared field emitted nothing while `return this.count;` did) — caught by the bare-member-read-uses fixture's expectRelationships (bare/chained)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? x.meta ?? {}).isBareRead)) }),
-  },
-  {
-    id: "dart/bare-read-gate-bypass",
-    language: "dart",
-    defectClass: "relationship-fabrication",
-    description: "#752 gate regression: re-injects the two edges the gates exist to stop — uses(shadowed->count) (a name the CURRENT function binds locally, CGD15 gate B) and uses(Store->count) (the field DECLARATION read as a use, gate A) — caught by the bare-member-read-uses fixture's forbidRelationships",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "shadowed", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "Store", target: "count", confidence: 0.6, metadata: { isBareRead: true } }] }),
-  },

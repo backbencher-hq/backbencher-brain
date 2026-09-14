@@ -3649,6 +3649,145 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   return edges
 }
 
+// Swift #754 mirror: bare member reads. Mirrors the analyzer rule for rule —
+// the name must resolve to a DECLARED MEMBER of the enclosing type (member
+// inventory from the analyzer's own symbols; ownerName IS the enclosing type),
+// must not be a local/param the current function binds (CGD15), and must not
+// sit in a declaration, chain-leaf, callee or write-LHS position. Truth still
+// derives every EDGE from tree structure; only the inventory is shared.
+export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const membersByOwner = new Map<string, Set<string>>()
+  for (const s of symbols ?? []) {
+    if (!s || typeof s.name !== "string" || !s.ownerName) continue
+    let set = membersByOwner.get(s.ownerName)
+    if (!set) { set = new Set<string>(); membersByOwner.set(s.ownerName, set) }
+    set.add(s.name)
+  }
+  const push = (name: string): void => {
+    const key = "uses\u0000" + name
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push({ label: "uses", from: "", target: name })
+  }
+  // Mirrors NOT_A_READ in the analyzer: declarations, plus the two positions
+  // that name something other than a member of the enclosing type — an
+  // argument label (names a parameter) and an implicit member expression
+  // (`.regular`, whose base the type checker infers).
+  const NOT_A_READ = new Set([
+    "pattern", "parameter", "function_declaration", "protocol_function_declaration",
+    "class_declaration", "protocol_declaration", "struct_declaration",
+    "enum_declaration", "extension_declaration", "actor_declaration",
+    "typealias_declaration", "associatedtype_declaration", "type_annotation",
+    "user_type", "import_declaration", "attribute", "enum_entry",
+    "value_argument_label",
+  ])
+  const TYPE_NODES = new Set([
+    "class_declaration", "protocol_declaration", "struct_declaration",
+    "enum_declaration", "extension_declaration", "actor_declaration",
+  ])
+  const FUNC_SCOPES = new Set([
+    "function_declaration", "protocol_function_declaration",
+    "init_declaration", "deinit_declaration",
+  ])
+  const VALUE_SCOPES = new Set(["lambda_literal", "property_declaration"])
+  const isWrite = (n: any): boolean => {
+    let a: any = n.parent
+    while (
+      a && (a.type === "directly_assignable_expression" ||
+        a.type === "navigation_expression" || a.type === "navigation_suffix")
+    ) a = a.parent
+    if (a && a.type === "assignment") {
+      const lhs = a.namedChild(0)
+      return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+    }
+    return false
+  }
+  const ownNameSpan = (scope: any): number => {
+    if (scope.type === "property_declaration") {
+      let pat: any = null
+      for (let i = 0; i < scope.namedChildCount; i++) {
+        const c = scope.namedChild(i)
+        if (c && c.type === "pattern") { pat = c; break }
+      }
+      if (pat) {
+        for (let i = 0; i < pat.namedChildCount; i++) {
+          const c = pat.namedChild(i)
+          if (c && c.type === "simple_identifier") return c.startIndex
+        }
+      }
+    }
+    return -1
+  }
+  const collectBound = (node: any, out: Set<string>): void => {
+    const own = ownNameSpan(node)
+    const w: any[] = [node]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m.type === "simple_identifier" && m.startIndex !== own) {
+        const pt = m.parent ? m.parent.type : ""
+        if (pt === "parameter" || pt === "pattern") out.add(m.text)
+      }
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) w.push(c)
+      }
+    }
+  }
+  const extendLocals = (locals: Set<string>, scope: any): Set<string> => {
+    const bound = new Set<string>()
+    collectBound(scope, bound)
+    if (bound.size === 0) return locals
+    const next = new Set(locals)
+    for (const nm of bound) next.add(nm)
+    return next
+  }
+  const firstName = (node: any, type: string): any => {
+    const s: any[] = [node]
+    while (s.length > 0) {
+      const x = s.pop()!
+      if (x.type === type) return x
+      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
+    }
+    return null
+  }
+  const walk = (n: any, ty: string | null, locals: Set<string>): void => {
+    const t = n.type
+    let cTy = ty
+    let cLocals = locals
+    if (TYPE_NODES.has(t)) {
+      const nameNode = firstName(n, "type_identifier") || firstName(n, "simple_identifier")
+      if (nameNode) cTy = nameNode.text
+    } else if (FUNC_SCOPES.has(t)) {
+      cLocals = extendLocals(locals, n)
+    } else if (VALUE_SCOPES.has(t)) {
+      cLocals = extendLocals(locals, n)
+    }
+    if (t === "simple_identifier") {
+      const txt = n.text
+      const pt = n.parent ? n.parent.type : ""
+      const isMember = !!cTy && (membersByOwner.get(cTy)?.has(txt) ?? false)
+      const isImplicitMember = pt === "prefix_expression" && String(n.parent ? n.parent.text : "").startsWith(".")
+      if (
+        !NOT_A_READ.has(pt) &&
+        !isImplicitMember &&
+        pt !== "navigation_suffix" &&
+        pt !== "call_expression" &&
+        !isWrite(n) &&
+        !cLocals.has(txt) &&
+        isMember
+      ) push(txt)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c, cTy, cLocals)
+    }
+  }
+  walk(root, null, new Set<string>())
+  return edges
+}
+
 // Objective-C tree-truth oracle (objective-c managed-OO wave #267, selector
 // identity wave #2). Mirrors RealObjectiveCAnalyzer's emission contract:
 //   - extends: superclass (the first identifier/type_identifier AFTER the
@@ -7874,6 +8013,11 @@ async function main() {
       }
       if (lang === "swift") {
         for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
+          ;(truth as any[]).push(e)
+        }
+        // #754: bare member-read uses — without this the new edges read as
+        // analyzer-only (the #752 dart precedent).
+        for (const e of deriveSwiftBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
       }
