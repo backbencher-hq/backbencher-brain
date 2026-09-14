@@ -108,7 +108,12 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
     const s4 = byStep.get("S4-real-index")
     check("R3: S4 real-index passes with non-empty counts", s4?.status === "pass" && (verdict.indexCounts?.symbols ?? 0) > 0, s4?.detail)
     const s5 = byStep.get("S5-server-leg")
-    check("R3: S5 honestly blocked in dry-run", s5?.status === "blocked", s5?.detail)
+    // The protocol honors RECORDED server-leg evidence, exactly like S6:
+    // wave-<lang>.json verified → S5 passes; missing → honestly blocked.
+    // (History: S5 was hardcoded blocked, which capped fully-verified
+    // languages at I1 even with both legs green on disk.)
+    const javaServerEv = path.join(ROOT, "validation", "m29", "results", "wave-java.json")
+    check("R3: S5 honors recorded evidence", s5?.status === (existsSync(javaServerEv) ? (JSON.parse(readFileSync(javaServerEv, "utf8")) as { status?: string }).status === "verified" ? "pass" : "fail" : "blocked"), s5?.detail)
     const s6 = byStep.get("S6-editor-leg")
     // The protocol honors RECORDED editor evidence (R2 execution writes it).
     // When java's S6 evidence exists, S6 reads pass and the cap stays I1
@@ -117,8 +122,9 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
     if (existsSync(javaEditorEv)) {
       const ev = JSON.parse(readFileSync(javaEditorEv, "utf8")) as { status?: string }
       check("R3: S6 honors recorded evidence", s6?.status === (ev.status === "verified" ? "pass" : "fail"), s6?.detail)
-      check("R3: cap stays I1 while S5 is R2-scoped", verdict.ideCap === "I1", `got ${verdict.ideCap}`)
-      check("R3: blockers = S5 only", verdict.blockers.length === 1, `got ${verdict.blockers.length}`)
+      // Both legs recorded and verified → the cap is the top of the ladder.
+      check("R3: cap reaches I3 with both legs verified", verdict.ideCap === "I3", `got ${verdict.ideCap}`)
+      check("R3: no blockers with both legs verified", verdict.blockers.length === 0, `got ${verdict.blockers.length}`)
     } else {
       check("R3: S6 honestly blocked without recorded evidence", s6?.status === "blocked", s6?.detail)
       check("R3: blockers recorded", verdict.blockers.length === 2, `got ${verdict.blockers.length}`)

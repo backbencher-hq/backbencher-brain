@@ -13,7 +13,7 @@
 //
 // CLI: npx tsx script/m29/wave-execute.ts [--languages a,b,c]
 
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdirSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
@@ -242,19 +242,28 @@ export function staleRelevantPaths(language: string): string[] {
   ]
 }
 
-/** Approved set discipline: read the approval record; it is the execution
- *  authority. `--languages` may narrow (execute a subset) but never extend. */
+/** Approved set discipline: read the approval recordS (wave 1 and wave 2 —
+ *  every owner-approved wave joins the union; the union is the execution
+ *  authority). `--languages` may narrow (execute a subset) but never extend. */
 export function approvedLanguages(): string[] {
-  const approvalPath = path.join(ROOT, "validation/m29/results/wave-1-approval.json")
-  const approval = JSON.parse(readFileSync(approvalPath, "utf8")) as { languages: string[] }
+  const resultsDir = path.join(ROOT, "validation/m29/results")
+  const approvalFiles = existsSync(resultsDir)
+    ? readdirSync(resultsDir).filter((f) => /^wave-\d+-approval\.json$/.test(f)).sort()
+    : []
+  if (approvalFiles.length === 0) throw new Error("no wave approval record found (validation/m29/results/wave-N-approval.json)")
+  const languages: string[] = []
+  for (const f of approvalFiles) {
+    const approval = JSON.parse(readFileSync(path.join(resultsDir, f), "utf8")) as { languages: string[] }
+    for (const lang of approval.languages) if (!languages.includes(lang)) languages.push(lang)
+  }
   const args = process.argv.slice(2)
   const idx = args.indexOf("--languages")
   if (idx !== -1) {
     const requested = args[idx + 1]!.split(",").map((s) => s.trim()).filter(Boolean)
-    for (const lang of requested) assertLanguageApproved(lang, approval)
+    for (const lang of requested) assertLanguageApproved(lang, { languages })
     return requested
   }
-  return approval.languages
+  return languages
 }
 
 async function main(): Promise<void> {

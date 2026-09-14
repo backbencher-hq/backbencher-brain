@@ -42,6 +42,16 @@ export const CLAIM_LEVELS: Record<LaunchLanguage, string> = {
   typescript: "I1",
   javascript: "I1",
   python: "I1",
+  // Wave 2 (owner-approved 2026-09-14): the packs are authored and S1–S4
+  // pass; the S5/S6 legs record the honest level per language on execution.
+  // I1 is the claim the current evidence supports — never higher.
+  zig: "I1",
+  go: "I1",
+  rust: "I1",
+  c: "I1",
+  cpp: "I1",
+  vue: "I1",
+  svelte: "I1",
 }
 
 /** Human-readable expansion of a claim level (contract §2 ladder). */

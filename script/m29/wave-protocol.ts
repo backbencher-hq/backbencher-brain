@@ -204,9 +204,24 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
 
   // S5: the per-language server leg. Real only against the language's OWN
   // index with per-language assertions — that is R2's execution evidence.
-  // In a dry-run it is a declared blocker, never a silent pass.
-  steps.push({ step: "S5-server-leg", status: "blocked", detail: "requires R2's per-language server leg (real bb_lsp over the language's own index)" })
-  blockers.push("S5-server-leg requires R2 execution")
+  // Like S6 below, the runner honors the RECORDED leg (wave-<lang>.json,
+  // written by R2's execution): verified → pass, failed → fail, missing →
+  // a declared blocker. Never a silent pass; never a hardcoded blocked when
+  // evidence exists (that bug capped verified languages at I1).
+  const serverLegPath = path.join(ROOT, "validation/m29/results", `wave-${language}.json`)
+  if (existsSync(serverLegPath)) {
+    try {
+      const leg = JSON.parse(readFileSync(serverLegPath, "utf8")) as { status?: string }
+      steps.push({ step: "S5-server-leg", status: leg.status === "verified" ? "pass" : "fail", detail: `recorded S5 leg status: ${String(leg.status)}` })
+      if (leg.status !== "verified") blockers.push("S5-server-leg recorded leg is not verified")
+    } catch {
+      steps.push({ step: "S5-server-leg", status: "fail", detail: "recorded S5 leg unreadable" })
+      blockers.push("S5-server-leg recorded leg unreadable")
+    }
+  } else {
+    steps.push({ step: "S5-server-leg", status: "blocked", detail: "requires R2's per-language server leg (real bb_lsp over the language's own index)" })
+    blockers.push("S5-server-leg requires R2 execution")
+  }
 
   // S6: editor-verified evidence (R2's in-editor leg). The runner only
   // honors recorded wave evidence — it never assumes it.

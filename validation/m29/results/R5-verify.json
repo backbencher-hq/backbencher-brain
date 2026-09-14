@@ -11,9 +11,9 @@
     "mutantsTotal": 4,
     "ok": true
   },
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
   "evidenceFile": "R5-verify.json",
-  "generatedAt": "2026-09-14T16:03:21.564Z",
+  "generatedAt": "2026-09-14T21:46:47.906Z",
   "details": []
 }
