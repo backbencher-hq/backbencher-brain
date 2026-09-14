@@ -367,6 +367,30 @@
         "question": "Ultimate review: is `\"hello \\(name)\"` covered? Dart/PHP needed blankets.",
         "resolution": "Already covered by composition: `\\(o.prop)` members via SW-A, bare members via handleBareUses (wrappers fixture proves uses[V->count] from Text), locals silent by design. No separate rule; pinned indirectly.",
         "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-G",
+        "node_type": "call_expression with super/self/Self.init callee",
+        "status": "FIXED",
+        "question": "Second review: `super.init(x)`, `self.init(0)` emitted calls->init (dangling \u2014 constructors are literally `constructor`) or nothing \u2014 every initializer delegation invisible as construction (dart DT-D parity).",
+        "resolution": "super builds the superclass (walk-recorded first-base map), self/Self the enclosing type; the dangling leaf call is dropped. Unresolvable (no base) stays silent. Oracle mirrors via heritage prescan + ancestor climb. Gated by fixture swift/init-delegation + 3 mutants.",
+        "issue": "M49.SW2 swift second review"
+      },
+      {
+        "id": "SW-H",
+        "node_type": "prefix enum-case calls, Self enum calls",
+        "status": "FIXED",
+        "question": "Second review: `.success(v)` implicit construction (prefix-expression callee, no identifier \u2014 silent) and `Self.failure(x)` (calls->failure) never built the enum, though both unambiguously construct it in enum context.",
+        "resolution": "Candidates resolve against the ENCLOSING enum's cases (implicit) or Self+owner (explicit); non-enum owners and non-cases stay silent/calls. Oracle mirrors both shapes. Gated by fixture + 2 mutants.",
+        "issue": "M49.SW2 swift second review"
+      },
+      {
+        "id": "SW-R3",
+        "node_type": "suppression constraints, deinit/observers, nested nominals",
+        "status": "RULED",
+        "question": "Second review: `struct X: ~Copyable` error-recovers (the struct symbol itself is lost); deinit/willSet/didSet bodies source to the TYPE (no method symbol exists); nested types attribute owners exactly; `Optional.some(x)` stays a leaf call.",
+        "resolution": "~Copyable is a pinned-grammar boundary (both blind, corpora unaffected \u2014 same class as #expect/raw-strings). Observer/deinit bodies keep the type-fallback source (DARTD9 analog, consistent both sides). Nested nominals already exact. stdlib-enum qualified construction (Optional.some) stays out of scope: only in-file enum knowledge decides (cross-file named knowledge would need the companion).",
+        "issue": "M49.SW2 swift second review"
       }
     ]
   }
