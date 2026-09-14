@@ -2803,8 +2803,8 @@ const MUTANTS: Mutant[] = [
     id: "groovy/as-cast-drop",
     language: "groovy",
     defectClass: "relationship-loss",
-    description: "G1 regression: drops the mis-parse `as`-cast branch — `o as String` lexes as local_variable_declaration(as, String) with no juxt_function_call, so without the branch the cast_type refs vanish — as-cast fixture expects run->String/run->Set",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).declaredOn === "as_cast")) }),
+    description: "G1 regression: drops every `as`-coercion cast_type ref — `o as String`, `[] as Set`, `x as T[]` — as-cast expects run->String/run->Set, cast-types expects its C-cast refs, grammar-rebuild-constructs expects convert->String (declaredOn binary_expression since the #742 rebuild; the pre-rebuild mis-parse marker `as_cast` no longer exists, which is why the filter is keyed on the structural relationshipType)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).relationshipType !== "cast_type") }),
   },
   {
     id: "groovy/implicit-override-drop",
