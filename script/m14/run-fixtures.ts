@@ -428,6 +428,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       const actual: string[] = (result.metadata as any)?.detectedFrameworks ?? []
       if (!actual.includes(want)) problems.push(`expected framework "${want}" not detected; got: ${JSON.stringify(actual)}`)
     }
+    // S1.24 (M49 #741): `expectFrameworks` is a must-include list, so a detector
+    // that over-matches (substring instead of root-prefix) passes every fixture
+    // that pins only positives — the go fixture's header already CLAIMS an
+    // "exact detected set" the runner could not check. This is the symmetric
+    // negative, matching forbidSymbols/forbidRelationships.
+    for (const want of exp.forbidFrameworks ?? []) {
+      const actual: string[] = (result.metadata as any)?.detectedFrameworks ?? []
+      if (actual.includes(want)) problems.push(`forbidden framework detected: "${want}"; got: ${JSON.stringify(actual)}`)
+    }
     for (const want of exp.expectErrors ?? []) {
       // analyzers place parse errors at result.errors (older contract) or in
       // metadata.errors (rust/others) — search BOTH (unified 2026-09-05 by

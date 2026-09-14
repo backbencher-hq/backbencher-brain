@@ -824,6 +824,27 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ((s as any).qualified_calls ? { ...s, qualified_calls: [...(s as any).qualified_calls, ...(s as any).qualified_calls] } : s)) }),
   },
   {
+    id: "scala/spring-detection-loss",
+    language: "scala",
+    defectClass: "framework-loss",
+    description: "M49 #741 (CONV-S-1) regression: the Spring entries are removed from detectedFrameworks again — scala reverts to being the only JVM language blind to Spring (scala/framework-detection expectFrameworks pins it; framework payload derives no oracle truth, so the fixture is the only gate)",
+    transform: r => {
+      const md: any = r.metadata ?? {}
+      const kept = (md.detectedFrameworks ?? []).filter((f: string) => !f.startsWith("Spring") && f !== "Jackson" && f !== "jsoniter-scala" && f !== "sttp")
+      return { ...r, metadata: { ...md, detectedFrameworks: kept } }
+    },
+  },
+  {
+    id: "scala/framework-substring-fabrication",
+    language: "scala",
+    defectClass: "framework-fabrication",
+    description: "M49 #741 negative-direction regression: fabricates a framework the fixture forbids, emulating a detector that matches a root as a SUBSTRING rather than a module-path prefix (the user-code imports com.mycompany.springframework.* / mycats.* / org.springlike.* would then fabricate frameworks). Only scala/framework-detection's forbidFrameworks pin can catch it - expectFrameworks is must-include and would pass",
+    transform: r => {
+      const md: any = r.metadata ?? {}
+      return { ...r, metadata: { ...md, detectedFrameworks: [...(md.detectedFrameworks ?? []), "Play Framework"] } }
+    },
+  },
+  {
     id: "scala/drop-typeParameters",
     language: "scala",
     defectClass: "symbol-payload-loss",
