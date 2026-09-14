@@ -215,6 +215,15 @@
         "evidenceFile": "reviews/dart/first-review.md",
         "verifiedAtCommit": "8a9b36d9"
     }
+,
+    {
+        "id": "PHP1",
+        "title": "PHP first review wave (issue #835): PHP-A receiver reads, PHP-H static reads, PHP-D const fetch, PHP-E tear-offs, PHP-F interpolation, PHP-B subscripts, PHP-C captures, PHP-O1/O2 oracle holes",
+        "status": "verified",
+        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirrors in derivePhpEdges. Fully gated: fixture php/member-value-reads (new), 11 mutants, spec PHP-A-H/O1-O2/R1-R3. Lanes: phpunit + phpmyadmin, pinned + 5 rotations, 0/0. F3 all pass, F4 529/529, R1 112/112, R2 15/15. Seam trace in-wave (P1-php.json): flags join F1, relId dedup verified, line NULL. Bare $vars deferred to review 2.",
+        "evidenceFile": "reviews/php/first-review.md",
+        "verifiedAtCommit": "241e3a4e"
+    }
   ],
   "waves": [
     {
