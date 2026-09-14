@@ -136,6 +136,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // declarations (probe: file-A glue@0/14 suppresses file-B clean@24).
     // Fresh instances (engine per-file path) were never affected.
     this.cgd19HeaderIdx.clear();
+    // CGD40 (M49 W17): the line-anchor gate needs the raw file text — a
+    // directive line spliced into code by parse recovery is physically a
+    // '#' line even with no surviving preproc_* ancestor.
+    this.analyzeContent = content
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -270,7 +274,29 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               return false
             })()
             const isMacroName = !!(p.type === "preproc_def" || p.type === "preproc_function_def")
-            if (isProto || isMacroName || !(isGlueFdName || this.isCgd19SuppressedVarDecl(n))) {
+            // CGD37 (M49 W17, measured jq src/builtin.c): a declaration inside
+            // a compound_statement is a FUNCTION-BODY local even when parse-
+            // recovery glue swallowed the enclosing function_definition —
+            // tree-sitter-c folds gen_last_1's body into one top-level
+            // `declaration` with a nested compound_statement, so no
+            // function_definition ancestor exists and `inFn` never rises.
+            // The oracle's isFunctionLocal excludes on the compound ancestor
+            // ALONE, so the analyzer must too: otherwise the body reads
+            // resolve order-independently through declaredNames and emit
+            // `uses -> <local>` edges attributed to source=global (last_var,
+            // init, call_arg, rangevar...). C has no file-scope blocks: a
+            // decl inside a compound is NEVER file-scope. Macro definitions
+            // stay textually file-scoped (C-D2); fn-def names and prototypes
+            // have no compound ancestor between name and function_definition.
+            const isInsideCompoundStatement = (() => {
+              let c: Node | null = n
+              while (c) {
+                if (c.type === "compound_statement") return true
+                c = c.parent
+              }
+              return false
+            })()
+            if (isProto || isMacroName || !(isInsideCompoundStatement || isGlueFdName || this.isCgd19SuppressedVarDecl(n))) {
               declaredNames.add(n.text)
             }
           }
@@ -804,6 +830,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // specifier/enumerator). Conditional CODE inside `#ifdef` blocks
           // still walks and emits — test files are one giant #ifdef block.
           !(this.isDirectiveConditionText(node)) &&
+          // CGD40-mirror (M49 W17, measured jq src/builtin.c L2056-2061):
+          // parse recovery SPLICES directive lines into continuing code —
+          // `#undef LIBM_DDD` survives as an argument_list operand with no
+          // preproc_* ancestor, so isDirectiveConditionText is blind. The
+          // preprocessor is line-anchored text (C-D2): a mention whose
+          // PHYSICAL source line starts with '#' is directive text. Mirrors
+          // the oracle's CGD40 use-truth gate one-for-one.
+          !(this.isHashLineMention(node)) &&
           // A call-target identifier already emits a `calls` edge from the
           // call_expression branch — skipping it here avoids the redundant
           // `uses` pair (family contract: one edge per pair).
@@ -1958,6 +1992,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       cur = cur.parent
     }
     return false
+  }
+
+  // CGD40-mirror helper (see the use-emission gate): the C preprocessor is
+  // line-anchored text (C-D2). A mention whose PHYSICAL source line starts
+  // with '#' is directive text even when parse recovery spliced the node
+  // into surviving code containers (no preproc_* ancestor remains for
+  // isDirectiveConditionText). One lastIndexFrom(0) per mention — measured
+  // negligible on the vdbe.c perf budget.
+  private analyzeContent = ""
+  private isHashLineMention(node: Node): boolean {
+    const bol = this.analyzeContent.lastIndexOf("\n", node.startIndex - 1) + 1
+    let i = bol
+    while (i < node.startIndex && (this.analyzeContent[i] === " " || this.analyzeContent[i] === "\t")) i++
+    return this.analyzeContent[i] === "#"
   }
 
   // CGD12: is this plain `identifier` really a TYPE position? The pinned
