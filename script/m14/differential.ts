@@ -8290,3 +8290,165 @@ async function main() {
 if (process.argv[1]?.endsWith("differential.ts")) {
   main().catch(e => { console.error(e); process.exit(1) })
 }
+// Dart #752 mirror: bare identifier member reads. The oracle mirrors the
+// analyzer rule for rule — the name must resolve to a DECLARED MEMBER of the
+// enclosing type (name inventory from the analyzer's own symbols, the zig
+// deriveZigBareUses precedent), must not be a local/param of the current
+// function (CGD15), and must not sit in a declaration-name, selector-link,
+// callee-head or write-LHS position. Truth still derives every EDGE from tree
+// structure; only the member inventory is shared ground truth.
+export function deriveDartBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const membersByOwner = new Map<string, Set<string>>()
+  for (const s of symbols ?? []) {
+    if (!s || typeof s.name !== "string" || !s.ownerName) continue
+    let set = membersByOwner.get(s.ownerName)
+    if (!set) { set = new Set<string>(); membersByOwner.set(s.ownerName, set) }
+    set.add(s.name)
+  }
+  const push = (name: string): void => {
+    const key = "uses\u0000" + name
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push({ label: "uses", from: "", target: name })
+  }
+  const DECL_PARENTS = new Set([
+    "formal_parameter", "constructor_param", "function_signature", "method_signature",
+    "getter_signature", "setter_signature", "type_alias", "label",
+    "initialized_identifier", "static_final_declaration",
+    "class_definition", "enum_declaration", "mixin_declaration", "extension_declaration",
+  ])
+  const LINK_PARENTS = new Set([
+    "unconditional_assignable_selector", "conditional_assignable_selector",
+    "cascade_selector", "selector",
+  ])
+  const firstIdentifier = (node: any): any => {
+    const s: any[] = [node]
+    while (s.length > 0) {
+      const x = s.pop()!
+      if (x.type === "identifier") return x
+      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
+    }
+    return null
+  }
+  const hasType = (node: any, type: string): boolean => {
+    const s: any[] = [node]
+    while (s.length > 0) {
+      const x = s.pop()!
+      if (x.type === type) return true
+      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
+    }
+    return false
+  }
+  const declaredName = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    const pt = p.type
+    if (pt !== "initialized_variable_definition" && pt !== "static_final_declaration") return false
+    let eqIdx = -1
+    let myIdx = -1
+    for (let i = 0; i < p.childCount; i++) {
+      const c = p.child(i)
+      if (!c) continue
+      if (!c.isNamed && c.text === "=" && eqIdx === -1) eqIdx = i
+      if (c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) myIdx = i
+    }
+    if (myIdx === -1) return false
+    if (eqIdx === -1) return true
+    return myIdx < eqIdx
+  }
+  const isWrite = (n: any): boolean => {
+    let p: any = n.parent
+    let guard = 0
+    while (p && guard++ < 16) {
+      if (p.type === "assignment_expression") {
+        let opText: string | null = null
+        for (let i = 0; i < p.childCount; i++) {
+          const c = p.child(i)
+          if (c && !c.isNamed && c.text.includes("=")) { opText = c.text; break }
+        }
+        if (opText !== "=") return false
+        const lhs = p.namedChild(0)
+        return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+      }
+      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
+          p.type === "program" || p.type === "declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+  const collectLocals = (node: any, out: Set<string>): void => {
+    const w: any[] = [node]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m.type === "identifier" && declaredName(m)) out.add(m.text)
+      if (
+        m.type === "formal_parameter" || m.type === "constructor_param" ||
+        m.type === "simple_formal_parameter" || m.type === "super_formal_parameter" ||
+        m.type === "catch_clause_parameter" || m.type === "catch_parameters"
+      ) {
+        const id = firstIdentifier(m)
+        if (id) out.add(id.text)
+      }
+      for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
+    }
+  }
+  const enclosingClass = (n: any): string | null => {
+    let p: any = n.parent
+    let guard = 0
+    while (p && guard++ < 64) {
+      if (p.type === "class_definition" || p.type === "enum_declaration") {
+        return p.childForFieldName?.("name")?.text ?? null
+      }
+      if (p.type === "extension_declaration" || p.type === "mixin_declaration") {
+        const id = firstIdentifier(p)
+        return id ? id.text : null
+      }
+      p = p.parent
+    }
+    return null
+  }
+  const walk = (n: any, locals: Set<string>): void => {
+    const t = n.type
+    let childLocals = locals
+    if (t === "function_body" || t === "function_expression_body" || t === "block") {
+      const bound = new Set<string>()
+      collectLocals(n, bound)
+      const sig = n.previousNamedSibling
+      if (sig) collectLocals(sig, bound)
+      if (bound.size > 0) {
+        childLocals = new Set(locals)
+        for (const nm of bound) childLocals.add(nm)
+      }
+    }
+    if (t === "identifier") {
+      const txt = n.text
+      const pt = n.parent ? n.parent.type : ""
+      const nx = n.nextNamedSibling
+      const nextIsCall = !!nx && nx.type === "selector" && hasType(nx, "argument_part")
+      const owner = enclosingClass(n)
+      const isMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+      if (
+        !LINK_PARENTS.has(pt) &&
+        !DECL_PARENTS.has(pt) &&
+        !declaredName(n) &&
+        !nextIsCall &&
+        !isWrite(n) &&
+        !locals.has(txt) &&
+        isMember
+      ) push(txt)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, childLocals) }
+  }
+  walk(root, new Set<string>())
+  return edges
+}
+
+        // #752: bare member-read uses — mirrors the analyzer's identifier-read
+        // contract rule for rule (declared-member resolution from the shared
+        // symbol inventory, CGD15 local shadowing, declaration/selector/callee/
+        // write gates). Without this the new edges read as analyzer-only.
+        for (const e of deriveDartBareUses(root, result?.symbols ?? [])) {
+          ;(truth as any[]).push(e)
+        }

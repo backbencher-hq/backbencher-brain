@@ -4536,3 +4536,17 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
+  {
+    id: "dart/drop-bare-member-reads",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "drops Uses edges for BARE identifier member reads (#752 CONV-DT-1: `return count;` on a declared field emitted nothing while `return this.count;` did) — caught by the bare-member-read-uses fixture's expectRelationships (bare/chained)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? x.meta ?? {}).isBareRead)) }),
+  },
+  {
+    id: "dart/bare-read-gate-bypass",
+    language: "dart",
+    defectClass: "relationship-fabrication",
+    description: "#752 gate regression: re-injects the two edges the gates exist to stop — uses(shadowed->count) (a name the CURRENT function binds locally, CGD15 gate B) and uses(Store->count) (the field DECLARATION read as a use, gate A) — caught by the bare-member-read-uses fixture's forbidRelationships",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "shadowed", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "Store", target: "count", confidence: 0.6, metadata: { isBareRead: true } }] }),
+  },

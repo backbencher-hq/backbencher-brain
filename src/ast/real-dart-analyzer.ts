@@ -978,6 +978,21 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (seg) namedCtors.add(`${s.ownerName}.${seg}`)
       }
     }
+    // DT-F+ (#752): declared members per owning type. A BARE identifier read
+    // (`return count;`) is only a member read when it resolves to a member of
+    // the enclosing type — otherwise every local/loop variable fabricates a
+    // uses edge (a false edge is worse than a missing one, #299). Built once
+    // from the symbol table; O(symbols) like namedCtors above.
+    const membersByOwner = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      if (!s.ownerName) continue
+      let set = membersByOwner.get(s.ownerName)
+      if (!set) {
+        set = new Set<string>()
+        membersByOwner.set(s.ownerName, set)
+      }
+      set.add(s.name)
+    }
     // DT-D (first review): superclass per class (resolved, alias-free) for
     // `super(...)` initializer targets. Superclass-child clauses only —
     // mixin-application bases are vanishingly rare as super targets.
@@ -1060,12 +1075,31 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       return owner
     }
 
-    const processNode = (n: Node, current: string | null, owner: string | null): void => {
+    const processNode = (
+      n: Node,
+      current: string | null,
+      owner: string | null,
+      locals: Set<string>,
+    ): void => {
       const prev = current
       const prevOwner = owner
       const t = n.type
       current = resolveCurrent(n, current)
       owner = resolveOwner(n, owner)
+      // DT-F+ (#752 gate B): names the CURRENT FUNCTION binds locally are not
+      // member reads (CGD15 parity). A function body's bindings are its own
+      // declarators plus the formal parameters of the preceding signature
+      // sibling (Dart puts the body AFTER the signature in the container).
+      let childLocals = locals
+      if (t === "function_body" || t === "function_expression_body" || t === "block") {
+        const bound = this.collectDartLocals(n)
+        const sig = n.previousNamedSibling
+        if (sig) for (const nm of this.collectDartLocals(sig)) bound.add(nm)
+        if (bound.size > 0) {
+          childLocals = new Set(locals)
+          for (const nm of bound) childLocals.add(nm)
+        }
+      }
       // Dart grammar: a function_body/function_expression_body is a named
       // child of the CONTAINER (class_body, extension_body, program) that
       // FOLLOWS the signature node it belongs to — the previous named sibling
@@ -1208,6 +1242,46 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
+        }
+      }
+
+      // DT-F+ (#752): BARE identifier member reads. The selector branch above
+      // only sees dotted reads (`this.count`, `obj.count`), so a plain
+      // `return count;` on a declared field emitted NOTHING (probe-confirmed:
+      // uses edges on x = 0). Mirrors java #739 / javascript #744. Gate A: the
+      // name must resolve to a DECLARED MEMBER of the enclosing type; gate B:
+      // it must not be a local/param of the current function.
+      if (t === "identifier") {
+        const txt = n.text
+        const ptype = n.parent?.type ?? ""
+        const memberLink =
+          ptype === "unconditional_assignable_selector" ||
+          ptype === "conditional_assignable_selector" ||
+          ptype === "cascade_selector" ||
+          ptype === "selector"
+        // A bare callee head (`go(n)`) is a CALL, not a value read — the
+        // argument-carrying selector owns it (the calls branch above).
+        const next = n.nextNamedSibling
+        const nextIsCall = !!next && next.type === "selector" &&
+          !!this.findChildByType(next, "argument_part")
+        const declName = this.isDartDeclNameParent(ptype) || this.isDartDeclaredName(n)
+        const isWrite = this.selectorIsLhsWrite(n)
+        const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+        if (
+          !memberLink &&
+          !nextIsCall &&
+          !declName &&
+          !isWrite &&
+          !locals.has(txt) &&
+          isDeclaredMember
+        ) {
+          relationships.push({
+            source: callSource,
+            target: txt,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.6,
+            metadata: { isBareRead: true },
+          })
         }
       }
 
@@ -1387,14 +1461,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
-        if (child) processNode(child, current, owner)
+        if (child) processNode(child, current, owner, childLocals)
       }
 
       current = prev
       owner = prevOwner
     }
 
-    processNode(node, null, null)
+    processNode(node, null, null, new Set<string>())
   }
 
   // ============================================================================
@@ -1684,7 +1758,41 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return ptype === "formal_parameter" || ptype === "constructor_param" ||
       ptype === "function_signature" || ptype === "method_signature" ||
       ptype === "getter_signature" || ptype === "setter_signature" ||
-      ptype === "type_alias" || ptype === "label"
+      ptype === "type_alias" || ptype === "label" ||
+      // #752: field / static-field declaration names (`int count = 0;`,
+      // `static final int x = 1;`) — the declaration is a BIND, not a read.
+      ptype === "initialized_identifier" || ptype === "static_final_declaration" ||
+      ptype === "class_definition" || ptype === "enum_declaration" ||
+      ptype === "mixin_declaration" || ptype === "extension_declaration"
+  }
+
+  /**
+   * DT-F+ (#752): the names a function scope binds locally — its own
+   * declarators plus formal / constructor / catch parameters. Used by the
+   * bare-member-read gate so a name the CURRENT FUNCTION binds suppresses the
+   * member read (CGD15 parity: a local is not a member, #299 — a false edge is
+   * worse than a missing one). O(subtree), no regex.
+   */
+  private collectDartLocals(root: Node): Set<string> {
+    const out = new Set<string>()
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier" && this.isDartDeclaredName(n)) out.add(n.text)
+      if (
+        n.type === "formal_parameter" || n.type === "constructor_param" ||
+        n.type === "simple_formal_parameter" || n.type === "super_formal_parameter" ||
+        n.type === "catch_clause_parameter" || n.type === "catch_parameters"
+      ) {
+        const id = this.findChildByType(n, "identifier")
+        if (id) out.add(id.text)
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
   }
 
   /**
