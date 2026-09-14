@@ -89,6 +89,10 @@ const BUILTIN_BARE_CALLS = new Set([
   // `defer { }` parses as call_expression(simple_identifier "defer", lambda_literal)
   // in the pinned grammar — it is a control keyword, never a real function call.
   "defer",
+  // SW-E (ultimate review): `type(of:)` is a stdlib free function like
+  // print/assert — a bare `type` call is the metatype query, never user
+  // code. Member reads (`x.type` is invalid Swift) are unaffected.
+  "type",
 ])
 
 interface OverrideTask {
@@ -171,6 +175,9 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emittedCalls = new Set<string>()
     const emittedUses = new Set<string>()
     const emittedContains = new Set<string>()
+    // SW-B candidates: navigation calls with capitalized heads, resolved
+    // post-walk against declared enum cases (symbols must be whole first).
+    const enumCtorCandidates: Array<{ source: string; head: string; leaf: string }> = []
 
     const stack: WalkFrame[] = [
       { node: rootNode, parentSymbol: null, typeName: null },
@@ -231,10 +238,20 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
         }
       } else if (curr.type === "call_expression") {
-        this.handleCall(curr, relationships, parentSymbol, emittedCalls)
+        this.handleCall(curr, relationships, parentSymbol, emittedCalls, enumCtorCandidates)
       } else if (curr.type === "navigation_expression") {
         // `self.x` member READ -> uses (source = enclosing type, target = leaf).
         this.handleSelfUse(curr, relationships, newTypeName, parentSymbol, emittedUses)
+        // SW-A (ultimate review): NON-self member reads (`store.items`,
+        // `a.b.c` links, `C.shared`) — the self rule and the bare-member
+        // rule both miss them. Suffix members read unless callee/write.
+        this.handleMemberUses(curr, relationships, parentSymbol, newTypeName, emittedUses)
+      } else if (curr.type === "key_path_expression") {
+        // SW-D (ultimate review): key-path members (`\.name`, `\C.name`)
+        // always read the member identity (even `obj[keyPath: \.x] = v`
+        // reads WHICH member to set through). `\.self` names the whole
+        // value, never a member.
+        this.handleKeyPathUses(curr, relationships, parentSymbol, newTypeName, emittedUses)
       }
 
       // ---- pattern / metadata flags (unchanged from M11 behavior) ----
@@ -305,6 +322,44 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // #754: BARE member reads (after the walk, so the symbol table is whole).
     this.handleBareUses(rootNode, relationships, symbols, emittedUses)
+
+    // SW-B (ultimate review): enum-case construction (`Result.success(1)`
+    // builds Result). Convert recorded candidates whose (head, leaf) is a
+    // declared enum case: drop the dangling leaf call, emit instantiates.
+    // Static factory methods (`C.create()`) are not cases — stays calls.
+    if (enumCtorCandidates.length > 0) {
+      const enumCases = new Set<string>()
+      for (const s of symbols) {
+        if (s.kind === ASTEngine.SymbolKind.EnumMember && s.ownerName) {
+          enumCases.add(`${s.ownerName}.${s.name}`)
+        }
+      }
+      if (enumCases.size > 0) {
+        for (const cand of enumCtorCandidates) {
+          if (!enumCases.has(`${cand.head}.${cand.leaf}`)) continue
+          for (let i = relationships.length - 1; i >= 0; i--) {
+            const r = relationships[i]
+            if (r.type === ASTEngine.RelationshipType.Calls && r.source === cand.source && String(r.target) === cand.leaf) {
+              relationships.splice(i, 1)
+              break
+            }
+          }
+          const key = `${cand.source}\u0000instantiates\u0000${cand.head}`
+          if (!emittedCalls.has(key)) {
+            emittedCalls.add(key)
+            relationships.push({
+              type: ASTEngine.RelationshipType.Instantiates,
+              source: cand.source,
+              target: cand.head,
+              isExternal: true,
+              weight: 0.7,
+              confidence: 0.95,
+              metadata: { isEnumConstruction: true },
+            })
+          }
+        }
+      }
+    }
 
     for (const p in patternsObj) {
       metadata.patterns!.push(p)
@@ -750,6 +805,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     parent: ASTEngine.UniversalSymbol | null,
     emittedCalls: Set<string>,
+    enumCtorCandidates?: Array<{ source: string; head: string; leaf: string }>,
   ) {
     const source = parent ? parent.name : "root"
 
@@ -767,6 +823,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Member call -> leaf target (`users.first` -> `first`, `[1,2].map` -> `map`).
       const leaf = this.navigationLeaf(funcNode)
       if (!leaf || leaf === "$0") return
+      // SW-B (ultimate review): record enum-construction CANDIDATES
+      // (`Result.success(1)` may build Result, not call success) — resolved
+      // post-walk against declared enum cases (symbols must be whole first).
+      // The receiver is second-to-last in the chain (`P.Foo.bar` -> Foo).
+      if (enumCtorCandidates) {
+        const chain = this.navigationChain(funcNode)
+        const receiver = chain.length >= 2 ? chain[chain.length - 2] : null
+        if (receiver && this.isTypeName(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
+          enumCtorCandidates.push({ source, head: receiver, leaf })
+        }
+      }
       this.emitCall(relationships, source, leaf, emittedCalls)
       return
     }
@@ -1045,7 +1112,22 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "simple_identifier") {
         const txt = n.text
         const pt = n.parent?.type ?? ""
-        const isMember = !!cTy && (membersByOwner.get(cTy)?.has(txt) ?? false)
+        // SW-F (ultimate review): projected values (`$count` for @State
+        // `count`) read the wrapped member. `$0`-style closure shorthands
+        // (all digits) are never members.
+        let lookup = txt
+        if (lookup.startsWith("$")) {
+          const rest = lookup.slice(1)
+          if (!rest || this.isAllDigits(rest)) {
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c) walk(c, cTy, cFn, cLocals)
+            }
+            return
+          }
+          lookup = rest
+        }
+        const isMember = !!cTy && (membersByOwner.get(cTy)?.has(lookup) ?? false)
         // A chain leaf (`self.x`, `obj.x`) is owned by handleSelfUse; a bare
         // CALLEE (`go(...)`) is owned by handleCall; a leading-dot implicit
         // member (`.regular`) infers its base, so it is not a read of THIS type.
@@ -1057,16 +1139,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           pt !== "call_expression" &&
           !isWrite(n) &&
           !cLocals.has(txt) &&
+          !cLocals.has(lookup) &&
           isMember
         ) {
           const source = cFn || cTy || "root"
-          const key = `${source}\u0000uses\u0000${txt}`
+          const key = `${source}\u0000uses\u0000${lookup}`
           if (!emittedUses.has(key)) {
             emittedUses.add(key)
             relationships.push({
               type: ASTEngine.RelationshipType.Uses,
               source,
-              target: txt,
+              target: lookup,
               isExternal: false,
               weight: 0.7,
               confidence: 0.6,
@@ -1552,6 +1635,173 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const txt = spec.text.trim()
     return txt && !txt.includes(" ") ? txt : null
+  }
+
+  /** SW-F: all-ASCII-digits check without regex (family contract). */
+  private isAllDigits(text: string): boolean {
+    if (text.length === 0) return false
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charCodeAt(i)
+      if (c < 48 || c > 57) return false
+    }
+    return true
+  }
+
+  /**
+   * SW-B: document-order member texts of a navigation chain
+   * (`P.Foo.bar` -> [P, Foo, bar]). The DIRECT receiver of the leaf method
+   * is second-to-last — the ultimate head is wrong for 3+ chains. Never
+   * descends into nested call_expressions (arguments are not chain
+   * members: `a.b[x]` must yield [a, b], never [a, b, x]).
+   */
+  private navigationChain(node: Node): string[] {
+    const out: string[] = []
+    const stack: Node[] = [node]
+    const seen: Node[] = []
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n !== node && n.type === "call_expression") continue
+      seen.push(n)
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    seen.sort((a, b) => a.startIndex - b.startIndex)
+    for (const n of seen) {
+      if (n.type === "simple_identifier" || n.type === "identifier" || n.type === "type_identifier") {
+        out.push(n.text)
+      }
+    }
+    return out
+  }
+
+  /** SW-B: capitalized type-name signal (SWIFTD17 rule, shared). */
+  private isTypeName(text: string): boolean {
+    if (text.length === 0) return false
+    const code = text.charCodeAt(0)
+    return code >= 65 && code <= 90
+  }
+
+  /**
+   * SW-A (ultimate review): NON-self navigation member reads. Every
+   * navigation_suffix member reads unless (a) it is the invoked callee (its
+   * navigation is the func of a non-subscript call and it is the last
+   * suffix), (b) the chain is self-rooted (handleSelfUse owns those),
+   * (c) it sits in an assignment-LHS span (SCD1), (d) it is an implicit-dot
+   * member (`.regular` — base inferred, bare-uses parity), or (e) it names
+   * self/Self/$0. Shares emittedUses with handleSelfUse (first metadata
+   * wins) and sources identically (method > type > owner > name > root).
+   */
+  private handleMemberUses(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+    typeName: string | null,
+    emittedUses: Set<string>,
+  ): void {
+    if (this.hasSelfReceiver(node)) return
+    const source =
+      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Constructor)
+        ? parent.name
+        : null) ||
+      typeName ||
+      (parent?.ownerName ? parent.ownerName : null) ||
+      parent?.name ||
+      "root"
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || c.type !== "navigation_suffix") continue
+      const m = this.findChildByType(c, "simple_identifier") || this.findChildByType(c, "identifier")
+      if (!m || !m.text) continue
+      const member = m.text
+      if (member === "$0" || member === "self" || member === "Self") continue
+      // Callee: this navigation invokes through this suffix (non-subscript).
+      const par = node.parent
+      if (par && par.type === "call_expression" && !this.isSubscriptRead(par)) {
+        let last = false
+        for (let j = node.namedChildCount - 1; j >= 0; j--) {
+          const s = node.namedChild(j)
+          if (s && s.type === "navigation_suffix") {
+            last = s.startIndex === c.startIndex && s.endIndex === c.endIndex
+            break
+          }
+        }
+        if (last) continue
+      }
+      // Implicit-dot root (`.regular`): the base is inferred, not THIS type.
+      let outer: Node | null = node
+      while (outer && outer.parent && outer.parent.type === "navigation_expression") outer = outer.parent
+      const firstTok = outer ? outer.child(0) : null
+      if (firstTok && !firstTok.isNamed && firstTok.type === ".") continue
+      // SCD1 write gate (same climb as handleSelfUse/handleBareUses).
+      let a = node.parent
+      while (a && (a.type === "directly_assignable_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) a = a.parent
+      if (a && a.type === "assignment") {
+        const lhs = a.namedChild(0)
+        if (lhs && lhs.startIndex <= c.startIndex && lhs.endIndex >= c.endIndex) continue
+      }
+      const key = `${source}\u0000uses\u0000${member}`
+      if (emittedUses.has(key)) continue
+      emittedUses.add(key)
+      relationships.push({
+        type: ASTEngine.RelationshipType.Uses,
+        source,
+        target: member,
+        isExternal: false,
+        weight: 0.7,
+        confidence: 0.9,
+        metadata: { isMemberRead: true },
+      })
+    }
+  }
+
+  /**
+   * SW-D (ultimate review): key-path members (`\.name`, `\C.name`) always
+   * read the member identity.
+   */
+  private handleKeyPathUses(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    parent: ASTEngine.UniversalSymbol | null,
+    typeName: string | null,
+    emittedUses: Set<string>,
+  ): void {
+    const source =
+      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Constructor)
+        ? parent.name
+        : null) ||
+      typeName ||
+      (parent?.ownerName ? parent.ownerName : null) ||
+      parent?.name ||
+      "root"
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "navigation_suffix") {
+        const m = this.findChildByType(n, "simple_identifier") || this.findChildByType(n, "identifier")
+        if (m && m.text && m.text !== "self" && m.text !== "Self") {
+          const key = `${source}\u0000uses\u0000${m.text}`
+          if (!emittedUses.has(key)) {
+            emittedUses.add(key)
+            relationships.push({
+              type: ASTEngine.RelationshipType.Uses,
+              source,
+              target: m.text,
+              isExternal: false,
+              weight: 0.7,
+              confidence: 0.9,
+              metadata: { isMemberRead: true, isKeyPath: true },
+            })
+          }
+        }
+        continue
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
   }
 
   /** Leaf name of a navigation_expression: `users.first` -> `first`. */
