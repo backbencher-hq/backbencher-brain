@@ -633,9 +633,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // with the SAME "name" field (master-review wave-2 probe
         // 2026-09-07) — both emit uses -> the field name. Emit uses for
         // READS only: a member_access that is the FIRST child of an
-        // assignment_expression is a WRITE (never a read); a
-        // member_call_expression / nullsafe_member_call_expression
-        // receiver is a call target, not a read.
+        // assignment_expression is a WRITE (never a read).
+        // PHP-A (first review): the old isCallReceiver gate skipped the
+        // receiver of a member call — but receivers ARE read (`$this->dep`
+        // in `$this->dep->run()` must be evaluated to dispatch `run`; the
+        // nullsafe chain already emitted its links, so plain chains were
+        // inconsistently silent). Only the call's own NAME is the call
+        // target (handled by the call branches, never as member_access).
         // SCD1 family parity (M37 #599 pre-wave follow-up): the pinned
         // grammar parses compound-assign as a DIFFERENT node —
         // augmented_assignment_expression ($this->count += $step) — so the
@@ -647,8 +651,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // identity (===) never holds — compare by byte range instead.
         const lhs = parent ? parent.namedChild(0) : null
         const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
-        const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
-        if (!isWrite && !isCallReceiver) {
+        if (!isWrite) {
           const nameNode = n.childForFieldName("name")
           const member = nameNode ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
           if (member && member.text && !member.text.startsWith("$")) {
@@ -660,6 +663,109 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { phpSpecific: true, isMemberRead: true },
             })
           }
+        }
+      } else if (type === "scoped_property_access_expression") {
+        // PHP-H (first review): static property reads (`C::$total`,
+        // `self::$x`, `parent::$x`, `static::$x`) parse as
+        // scoped_property_access with a variable_name member — the scoped
+        // CALLS (`C::create()`) were always covered, the READS never were.
+        // Same write gate as member reads; the scope (type/relative_scope)
+        // is never a value read.
+        const lhs = parent ? parent.namedChild(0) : null
+        const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+        if (!isWrite) {
+          const varNode = this.findChildByType(n, "variable_name")
+          const member = varNode ? this.variableBareName(varNode) : undefined
+          if (member) {
+            relationships.push({
+              source: inFunction || "global",
+              target: member,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { phpSpecific: true, isMemberRead: true, isStaticRead: true },
+            })
+          }
+        }
+      } else if (type === "class_constant_access_expression") {        // PHP-D (first review): constant fetches (`Suit::Hearts`,
+        // `parent::VERSION`, `C::MAX`) — the scoped CALLS were covered, the
+        // constant READS never were (dart emits enum members the same way).
+        // `::class` is a keyword, not a member — always skipped. The grammar
+        // defines NO name field here — children are positional [scope, name],
+        // so the constant is the LAST name child (the scope `Suit`/`C` is a
+        // type, never a read).
+        let member: string | undefined
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c && c.type === "name") { member = c.text; break }
+        }
+        if (member && member.toLowerCase() !== "class") {
+          relationships.push({
+            source: inFunction || "global",
+            target: member,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { phpSpecific: true, isMemberRead: true, isConstFetch: true },
+          })
+        }
+      } else if (type === "variable_name" && parent && parent.type === "subscript_expression") {
+        // PHP-B (first review): subscript bases (`$a['k']`, `$a[$k]`,
+        // `$a['j'] = 5`) — an index operation presupposes a value (dart
+        // DT-F parity). Only the FIRST named child (the base) reads; the
+        // index is a bare value (review-2 inventory). Write-position bases
+        // read the array address (OC-E parity).
+        const first = parent.namedChild(0)
+        if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) {
+          const base = this.variableBareName(n)
+          if (base && base !== "this") {
+            relationships.push({
+              source: inFunction || "global",
+              target: base,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { phpSpecific: true, isSubscriptBase: true },
+            })
+          }
+        }
+      } else if (type === "variable_name" && parent && parent.type === "anonymous_function_use_clause") {
+        // PHP-C (first review): closure captures (`use ($factor)`) copy
+        // outer values — every name in the clause is a genuine read.
+        // Arrow-fn implicit captures need inventory (review 2).
+        const base = this.variableBareName(n)
+        if (base && base !== "this") {
+          relationships.push({
+            source: inFunction || "global",
+            target: base,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { phpSpecific: true, isClosureCapture: true },
+          })
+        }
+      } else if (type === "variable_name" && this.isInsideInterpolation(n)) {
+        // PHP-F (first review): string interpolation reads (`"hello $name"`,
+        // `"sum {$n}"`) — every variable inside an encapsed/dynamic string
+        // is evaluated (dart DT-F blanket parity). `$this` is implicit.
+        const base = this.variableBareName(n)
+        if (base && base !== "this") {
+          relationships.push({
+            source: inFunction || "global",
+            target: base,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { phpSpecific: true, isInterpolationRead: true },
+          })
+        }
+      } else if (type === "name" && parent && parent.type === "dynamic_variable_name") {
+        // PHP-F: `"${o}"` parses the variable as a bare name inside a
+        // dynamic_variable_name — unambiguously a read there.
+        const base = n.text
+        if (base && base !== "this") {
+          relationships.push({
+            source: inFunction || "global",
+            target: base,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { phpSpecific: true, isInterpolationRead: true },
+          })
         }
       }
 
@@ -688,6 +794,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     if (PHP_BUILTINS.has(callName)) return
+    // PHP-E (first review): first-class callable `foo(...)` never invokes —
+    // the sole `...` argument creates a Closure. A tear-off references.
+    if (this.isFirstClassTearOff(node)) {
+      relationships.push({
+        source: inFunction || "global",
+        target: callName,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isTearOff: true },
+      })
+      return
+    }
     relationships.push({
       source: inFunction || "global",
       target: callName,
@@ -695,6 +813,30 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       confidence: 0.9,
       metadata: { phpSpecific: true },
     })
+  }
+
+  /**
+   * PHP-E: first-class callable syntax — the call's arguments consist solely
+   * of the `...` placeholder (`$this->handler(...)`, `strlen(...)`,
+   * `Widget::make(...)`). Mixed forms (`$f($x, ...)`) genuinely invoke (and
+   * error-recover in the pinned grammar); only the sole-placeholder shape
+   * is a non-invoking reference.
+   */
+  private isFirstClassTearOff(node: Node): boolean {
+    const args = this.findChildByType(node, "arguments")
+    if (!args) return false
+    let sawPlaceholder = false
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (!c) continue
+      if (c.type === "variadic_placeholder") {
+        if (sawPlaceholder) return false
+        sawPlaceholder = true
+        continue
+      }
+      return false
+    }
+    return sawPlaceholder
   }
 
   private processMethodCall(
@@ -705,6 +847,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = node.childForFieldName("name")
     const methodName = nameNode?.text
     if (!methodName) return
+    // PHP-E: `$this->handler(...)` is a tear-off reference, never a call.
+    if (this.isFirstClassTearOff(node)) {
+      relationships.push({
+        source: inFunction || "global",
+        target: methodName,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isTearOff: true },
+      })
+      return
+    }
     relationships.push({
       source: inFunction || "global",
       target: methodName,
@@ -722,6 +875,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = node.childForFieldName("name")
     const methodName = nameNode?.text
     if (!methodName) return
+    // PHP-E: `Widget::make(...)` is a tear-off reference, never a call.
+    if (this.isFirstClassTearOff(node)) {
+      relationships.push({
+        source: inFunction || "global",
+        target: methodName,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isTearOff: true },
+      })
+      return
+    }
     relationships.push({
       source: inFunction || "global",
       target: methodName,
@@ -1011,9 +1175,27 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /**
+   * PHP-F: bounded ancestor climb — is this node inside string
+   * interpolation (encapsed_string / dynamic_variable_name)?
+   */
+  private isInsideInterpolation(n: Node): boolean {
+    let p: Node | null | undefined = n.parent
+    let guard = 0
+    while (p && guard++ < 8) {
+      if (p.type === "encapsed_string" || p.type === "dynamic_variable_name") return true
+      // PHP bodies are compound_statement (function_body is not a node in
+      // the pinned grammar) — interpolation never spans statements.
+      if (p.type === "compound_statement" ||
+          p.type === "class_declaration" || p.type === "program" ||
+          p.type === "function_definition" || p.type === "method_declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+
   /** Bare name from a variable_name node (its `name` child, else strip `$`). */
-  private variableBareName(node: Node): string {
-    const nameChild = this.findChildByType(node, "name")
+  private variableBareName(node: Node): string {    const nameChild = this.findChildByType(node, "name")
     if (nameChild) return nameChild.text
     const t = node.text
     return t.startsWith("$") ? t.slice(1) : t
