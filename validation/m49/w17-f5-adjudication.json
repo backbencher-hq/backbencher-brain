@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "wave": "M49 W17 X1",
+  "artifact": "M14.0.F5",
+  "sweptAt": "2026-09-14T03:21:57Z",
+  "replicaHead": "29a3d7a149ab06065377032e2f50b59bd7367485",
+  "codeInputs": { "clean": true, "dirty": [], "head": "29a3d7a149ab06065377032e2f50b59bd7367485" },
+  "adjudicator": "fixtures/m49-work/adjudicate.py",
+  "summary": {
+    "checks": 43,
+    "flagged": 8,
+    "webLanes": "js/ts/vue/svelte 100% coverage, 0% unexplained, both corpora, plus lodash:javascript flagged on count-drift only (unexplained 0%)",
+    "firstTime": "differential-code-inputs check passes; codeInputs clean AT the named commit"
+  },
+  "lanes": [
+    {
+      "lane": "differential-cpp",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "baselineRow": null,
+      "baselineRecorded": false,
+      "classification": "unpinned-baseline count-drift (W11 class)",
+      "heuristic": "heuristic-class count growth on a lane the baseline never recorded; unexplained 0%"
+    },
+    {
+      "lane": "differential-c",
+      "detail": "60 files, coverage 99.9%, unexplained 1.6%",
+      "baselineRow": null,
+      "baselineRecorded": false,
+      "classification": "documented c floor (CGD31-38) + unpinned baseline",
+      "heuristic": "macro-mangled ERROR regions in generated amalgamations; floor pinned by the c wave"
+    },
+    {
+      "lane": "differential-rust",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "baselineRow": null,
+      "baselineRecorded": false,
+      "classification": "unpinned-baseline count-drift (W11 class)",
+      "heuristic": "unexplained 0%"
+    },
+    {
+      "lane": "differential-zig",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "baselineRow": null,
+      "baselineRecorded": false,
+      "classification": "unpinned-baseline count-drift (W11 class)",
+      "heuristic": "unexplained 0%"
+    },
+    {
+      "lane": "differential-csharp",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "baselineRow": null,
+      "baselineRecorded": false,
+      "classification": "unpinned-baseline count-drift (W11 class)",
+      "heuristic": "unexplained 0%"
+    },
+    {
+      "lane": "differential-swift",
+      "detail": "60 files, coverage 100%, unexplained 0%",
+      "baselineRow": null,
+      "baselineRecorded": false,
+      "classification": "unpinned-baseline count-drift (W11 class)",
+      "heuristic": "unexplained 0%"
+    },
+    {
+      "lane": "differential-lodash:javascript",
+      "detail": "55 files, coverage 100%, unexplained 0%",
+      "baselineRow": { "missing": 0, "unexplained": 0, "heuristic": 0, "perf": { "avgMsPerFile": 193.7 } },
+      "baselineRecorded": true,
+      "sampleSetPinned": false,
+      "classification": "unpinned count delta, 0% unexplained (same lane as W14/W16; perf outlier is the load-14 machine, avg 193.7->2089.5ms on a 60-file lane)",
+      "heuristic": "no fabrication; count moved on an unpinned drawn set"
+    },
+    {
+      "lane": "differential-jq:c",
+      "detail": "45 files, coverage 99.9%, unexplained 0.8%",
+      "baselineRow": { "missing": 4, "unexplained": 28, "heuristic": 0, "perf": { "avgMsPerFile": 82.9 } },
+      "baselineRecorded": true,
+      "sampleSetPinned": false,
+      "classification": "REAL SIGNAL for the c wave — third corpus this wave showing sub-1% unexplained (sqlite 1.6%, jq 0.8%)",
+      "heuristic": "unexplained dropped 28 -> <1% but did not reach 0; per-file truth for the residual is in the artifact's samples"
+    }
+  ],
+  "decision": "7 of 8 flags are the registered W11 unpinned-baseline class (6 with EMPTY baseline rows, 1 unpinned drawn set) plus the documented c floor; nothing here is a web-family defect and nothing is a fabrication. The one actionable item is jq:c 0.8% unexplained, handed to the c wave.",
+  "remedy": "pin baselines with `--update-baseline` at a stable tree after adjudication, so rotations score against a recorded drawn set (W11 remedy, shared across families)"
+}
