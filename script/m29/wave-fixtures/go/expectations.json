@@ -1,0 +1,9 @@
+{
+  "language": "go",
+  "hover": { "symbol": "Greet", "contains": ["Greet"], "evidenceClassRequired": true },
+  "hoverLine": 12,
+  "definition": { "symbol": "Greeter", "minLocations": 1 },
+  "references": { "symbol": "Greet", "minCount": 2 },
+  "documentSymbols": ["Greeter"],
+  "declaredAbsence": { "symbol": "nonexistent_symbol_xyz", "note": "absence must be declared, never fabricated" }
+}
