@@ -10,6 +10,12 @@
 //                                                install commands
 //   ide/vscode/src/status-model.ts            -> the extension's shipped claim
 //                                                levels + level legend
+//   src/lsp/launch_languages.ts               -> the LSP launch set (the single
+//                                                owner). The extension's shipped
+//                                                claim table is a DIFFERENT record
+//                                                and may cover fewer languages —
+//                                                the page labels both and declares
+//                                                the gap instead of merging them.
 //   docs/m24/TOOL-DOC.md                      -> protocol-level claim table
 //                                                (third independent source)
 //   validation/m29/results/PRECISION-LEDGER.json -> evidence-computed claims,
@@ -151,6 +157,27 @@ const extensionClaims = [...claimBlock.slice(0, claimBlock.indexOf("}")).matchAl
   language: m[1]!,
   level: m[2]!,
 }))
+
+// The LSP launch set has ONE owner (src/lsp/launch_languages.ts — its own header
+// says so) and it is read from there, never inferred: the set used to live
+// duplicated in hover.ts/server.ts and M29.R2 recorded that as a drift hazard.
+const launchOwnerSrc = read("src/lsp/launch_languages.ts")
+const launchOwnerBlock = launchOwnerSrc.slice(launchOwnerSrc.indexOf("export const LAUNCH_LANGUAGES"))
+const launchLanguages = [...launchOwnerBlock.slice(0, launchOwnerBlock.indexOf("]")).matchAll(/"([a-z]+)"/g)].map((m) => m[1]!)
+must(launchLanguages.length > 0, "src/lsp/launch_languages.ts: LAUNCH_LANGUAGES not parsed")
+
+// Two records describe the same set (the extension's status model and the LSP
+// owner). They agree today; if they ever diverge, fail loudly rather than let
+// the page pick a winner silently.
+const statusLanguages = extensionClaims.map((c) => c.language)
+must(
+  JSON.stringify(statusLanguages) === JSON.stringify(launchLanguages),
+  `extension status model has ${statusLanguages.length} languages, the LSP launch-set owner has ${launchLanguages.length}`,
+)
+
+// The extension's shipped claim table is a different record and may legitimately
+// cover fewer languages than the LSP launches. The gap is declared on the page.
+const unclaimedLaunchLanguages = launchLanguages.filter((l) => !shippedClaims.some((c) => c.language === l))
 
 // Both level ladders, rendered verbatim with their sources: they are defined
 // differently by the two documents, so the site shows each one as recorded.
@@ -382,6 +409,7 @@ const facts = {
   generatedFrom: [
     README_REL,
     "ide/vscode/src/status-model.ts",
+    "src/lsp/launch_languages.ts",
     "ide/vscode/package.json",
     "docs/m24/TOOL-DOC.md",
     ledgerSource,
@@ -392,7 +420,9 @@ const facts = {
     sessionRel,
   ],
   extension,
-  launchLanguages: extensionClaims.map((c) => c.language),
+  launchLanguages,
+  launchLanguagesSource: "src/lsp/launch_languages.ts",
+  unclaimedLaunchLanguages,
   shippedClaims,
   shippedClaimSources: [README_REL, "ide/vscode/src/status-model.ts", "docs/m24/TOOL-DOC.md"],
   extensionClaims,

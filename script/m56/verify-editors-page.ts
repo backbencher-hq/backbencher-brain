@@ -157,7 +157,36 @@ check(
   mismatch.length === 0,
   [...new Set(mismatch)].join(", "),
 )
-check("E1: every launch language is covered by the shipped matrix", facts.shippedClaims.length === facts.launchLanguages.length, `claims=${facts.shippedClaims.length} launch=${facts.launchLanguages.length}`)
+// The page's launch set must come from the ONE owner, re-derived here rather
+// than trusted.
+const ownerSrc = read("src/lsp/launch_languages.ts")
+const ownerBlock = ownerSrc.slice(ownerSrc.indexOf("export const LAUNCH_LANGUAGES"))
+const ownerLaunchSet = [...ownerBlock.slice(0, ownerBlock.indexOf("]")).matchAll(/"([a-z]+)"/g)].map((m) => m[1]!)
+check(
+  "E1: the page's launch set equals the single owner (src/lsp/launch_languages.ts)",
+  JSON.stringify(facts.launchLanguages) === JSON.stringify(ownerLaunchSet),
+  `page=${(facts.launchLanguages as string[]).length} owner=${ownerLaunchSet.length}`,
+)
+
+// The LSP launch set and the extension's shipped claim table are two different
+// records and MAY disagree — but never silently. Every launch language must be
+// either covered by the shipped matrix or named in the declared-unclaimed list,
+// and that list must be EXACTLY the difference: no padding, no omission. This
+// replaced a bare length equality, which could only be satisfied by growing the
+// marketplace claim table to match the server — the wrong fix for a gap the
+// extension has not closed yet.
+const shippedSet = new Set((facts.shippedClaims as any[]).map((c: any) => c.language as string))
+const declaredUnclaimed = (facts.unclaimedLaunchLanguages ?? []) as string[]
+const expectedGap = (facts.launchLanguages as string[]).filter((l) => !shippedSet.has(l))
+const silentlyUncovered = expectedGap.filter((l) => !declaredUnclaimed.includes(l))
+const padded = declaredUnclaimed.filter((l) => !expectedGap.includes(l))
+check(
+  "E1: every launch language is either covered by the shipped matrix or declared unclaimed",
+  silentlyUncovered.length === 0 && padded.length === 0,
+  `claims=${shippedSet.size} launch=${(facts.launchLanguages as string[]).length} unclaimed=${declaredUnclaimed.length}` +
+    (silentlyUncovered.length ? ` · silently uncovered: ${silentlyUncovered.join(",")}` : "") +
+    (padded.length ? ` · not a launch language or already claimed: ${padded.join(",")}` : ""),
+)
 check("E1: shipped levels are declared in the README legend", (facts.shippedClaims as any[]).every((c: any) => facts.shippedClaimLegend.some((l: any) => l.level === c.level)))
 
 // --- 3. evidence check ------------------------------------------------------------
@@ -309,6 +338,16 @@ const renderedLevels = built ? [...new Set(html.match(/\bI[0-5]\b/g) ?? [])] : [
 const undeclaredLevels = renderedLevels.filter((l) => !declaredLevels.has(l))
 check("E1: no rendered claim level exists that the legends and evidence do not define", built && undeclaredLevels.length === 0, undeclaredLevels.join(", "))
 
+// A declared gap that nobody renders is not a declaration. The page must state
+// it and name every launch language the shipped matrix has no row for.
+const gapString = declaredUnclaimed.join(", ")
+const gapRendered = built && declaredUnclaimed.length > 0 && html.includes(gapString) && /declared gap/i.test(html)
+check(
+  "E1: the declared gap is rendered on the page and names every unclaimed launch language",
+  gapRendered,
+  declaredUnclaimed.length === 0 ? "no gap to render" : `expected the page to name: ${gapString}`,
+)
+
 // --- 6. negatives -----------------------------------------------------------------
 
 // N1 (real, subprocess): drift the generated data and prove the generator
@@ -385,6 +424,26 @@ check("E1: no rendered claim level exists that the legends and evidence do not d
 // N5 (synthetic): the rendered-level detector reacts to an undeclared level.
 if (built) {
   negative("N5: the rendered-level detector reacts to an undeclared level", (html + " I5 ").match(/\bI[0-5]\b/g)!.some((l) => !declaredLevels.has(l)) === !declaredLevels.has("I5"))
+}
+
+// N6 (synthetic, predicate-level): the exact defect the coverage rule exists to
+// catch — a launch language that is neither claimed nor declared unclaimed.
+// Built from a constructed list so the mutant stays valid at any data state.
+{
+  const launch = facts.launchLanguages as string[]
+  const probeShipped = new Set(launch.slice(1)) // pretend the first language is claimed
+  const probeDeclared: string[] = [] // and declared nowhere
+  const probeUncovered = launch.filter((l) => !probeShipped.has(l) && !probeDeclared.includes(l))
+  negative(
+    "N6: a launch language covered by neither the matrix nor the declared list is caught",
+    probeUncovered.length === 1 && probeUncovered[0] === launch[0],
+    `uncovered=${probeUncovered.join(",")}`,
+  )
+  const probePadded = ["not-a-launch-language"]
+  negative(
+    "N6: a padded declared-unclaimed list (an entry that is not the gap) is caught",
+    probePadded.filter((l) => !(launch.filter((x) => !probeShipped.has(x))).includes(l)).length === 1,
+  )
 }
 
 // --- verdict + evidence -----------------------------------------------------------
