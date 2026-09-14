@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m56/M56-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-13T03:22:34.594Z",
+  "updatedAt": "2026-09-14T23:43:55.707Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -39,10 +39,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "f3cd03e0594a15b4861d237cfc20fdcf83a4d144",
         "verifierCommand": "npx tsx script/m56/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-13T03:20:14.624Z",
+        "generatedAt": "2026-09-14T23:43:54.772Z",
         "passed": 38,
         "failed": 0,
         "negativeCases": 13
@@ -67,13 +67,13 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "bbcdbb2622d97d3e4772ab0f57fddba6e7d23c52",
         "verifierCommand": "npx tsx script/m56/verify-editors-page.ts",
         "evidenceFile": "E1.json",
-        "generatedAt": "2026-09-13T03:21:01.622Z",
-        "passed": 27,
+        "generatedAt": "2026-09-14T23:37:05.234Z",
+        "passed": 31,
         "failed": 0,
-        "negativeCases": 5
+        "negativeCases": 7
       },
       "scope": "editors and IDEs surface: bb_lsp features, four editor integrations, per-language claim matrix, declared exclusions, publishing status, real stills",
       "acceptanceCriteria": [
@@ -207,10 +207,10 @@
       "status": "verified",
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "bbcdbb2622d97d3e4772ab0f57fddba6e7d23c52",
         "verifierCommand": "npx tsx script/m56/verify-ia.ts",
         "evidenceFile": "I1.json",
-        "generatedAt": "2026-09-13T03:22:26.626Z",
+        "generatedAt": "2026-09-14T23:37:06.589Z",
         "passed": 30,
         "failed": 0,
         "negativeCases": 7
@@ -279,11 +279,16 @@
         "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m56/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "generatedAt": "2026-09-13T03:22:49.465Z",
+        "generatedAt": "2026-09-13T03:25:34.249Z",
         "passed": 47,
         "failed": 0,
         "negativeCases": 14
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.591Z",
+    "contentSha256": "89a9f38e64023b200d8f92cf72e9de4e4a7444e16a9a8ef12b3e24a8ef3ab41b"
+  }
 }
