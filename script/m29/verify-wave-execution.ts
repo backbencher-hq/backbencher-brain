@@ -19,7 +19,7 @@
 // Run: npx tsx script/m29/verify-wave-execution.ts
 // Evidence: validation/m29/results/R2.json (machine-emitted)
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync, mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
@@ -28,6 +28,26 @@ import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
 
+/** Every owner-approved wave record (wave-1, wave-2, …): the union is the
+ *  execution authority, mirroring the executor's approvedLanguages(). */
+function approvalRecord(): { languages: string[]; approvedBy?: string; ownerStatement?: string; waves: string[] } | null {
+  const dir = path.join(ROOT, "validation/m29/results")
+  if (!existsSync(dir)) return null
+  const files = readdirSync(dir).filter((f) => /^wave-\d+-approval\.json$/.test(f)).sort()
+  if (files.length === 0) return null
+  const languages: string[] = []
+  let approvedBy: string | undefined
+  let ownerStatement: string | undefined
+  for (const f of files) {
+    try {
+      const rec = JSON.parse(readFileSync(path.join(dir, f), "utf8")) as { languages?: string[]; approvedBy?: string; ownerStatement?: string }
+      for (const lang of rec.languages ?? []) if (!languages.includes(lang)) languages.push(lang)
+      approvedBy ??= rec.approvedBy
+      ownerStatement ??= rec.ownerStatement
+    } catch {}
+  }
+  return { languages, approvedBy, ownerStatement, waves: files }
+}
 const APPROVAL = path.join(ROOT, "validation/m29/results/wave-1-approval.json")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
 
@@ -75,10 +95,7 @@ const WARM_BUDGETS: Record<string, number> = {
 }
 
 // --- R1: the approval record governs ----------------------------------------
-let approval: { languages: string[]; approvedBy?: string; ownerStatement?: string } | null = null
-try {
-  approval = JSON.parse(readFileSync(APPROVAL, "utf8"))
-} catch {}
+let approval = approvalRecord()
 check("R1: approval record exists and is readable", approval !== null)
 check("R1: approval names an owner", typeof approval?.approvedBy === "string" && approval.approvedBy.length > 0)
 check("R1: approval names languages", Array.isArray(approval?.languages) && approval.languages.length > 0)

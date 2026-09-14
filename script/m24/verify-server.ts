@@ -231,8 +231,9 @@ async function testLanguages(): Promise<void> {
   check("G5: languageForPath maps .py to python (M29 wave 1)", languageForPath("src/main.py") === "python")
   check("G5: languageForPath maps .js to javascript (M29 wave 1)", languageForPath("src/main.js") === "javascript")
   check(
-    "G5: launch set matches the owner-approved wave record exactly",
-    JSON.stringify([...LAUNCH_LANGUAGES].sort()) === JSON.stringify(["groovy", "java", "javascript", "kotlin", "python", "scala", "typescript"]),
+    "G5: launch set matches the owner-approved wave records exactly (wave 1 + wave 2)",
+    JSON.stringify([...LAUNCH_LANGUAGES].sort()) ===
+      JSON.stringify(["c", "cpp", "go", "groovy", "java", "javascript", "kotlin", "python", "rust", "scala", "svelte", "typescript", "vue", "zig"]),
   )
 }
 

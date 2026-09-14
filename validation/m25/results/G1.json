@@ -2,16 +2,18 @@
   "issue": "M25.G1",
   "code": "G1",
   "milestone": "M25",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 72,
   "passed": 72,
   "failed": 0,
   "negativeCases": 11,
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "workingTreeRelevantChanges": [
+    "ide/vscode/src/status-model.ts"
+  ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-14T16:07:50.091Z",
+  "generatedAt": "2026-09-14T21:45:05.849Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
