@@ -665,6 +665,21 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (isRoot("slick") || isRoot("org.slick")) frameworksObj["Slick"] = true
       if (isRoot("fs2")) frameworksObj["FS2"] = true
       if (isRoot("org.scalatest")) frameworksObj["ScalaTest"] = true
+      // S1.24 (M49 #741, CONV-S-1): Spring was invisible to scala while java,
+      // kotlin and groovy all detect it — the only JVM language blind to the
+      // dominant enterprise ecosystem (and to the JSON/HTTP libraries that come
+      // with a mixed JVM shop). Same unambiguous root-prefix rule as above:
+      // `com.mycompany.springframework` is user code and stays undetected.
+      // Names follow kotlin's for the same ecosystem ("Spring Boot" /
+      // "Spring Framework"), which is also scala's own Title-Case list style;
+      // java and groovy instead emit the lowercase key "spring". That
+      // divergence is recorded in the spec (D21) rather than silently resolved
+      // here — one analyzer must not unilaterally rename a family payload.
+      if (isRoot("org.springframework.boot")) frameworksObj["Spring Boot"] = true
+      if (isRoot("org.springframework")) frameworksObj["Spring Framework"] = true
+      if (isRoot("com.fasterxml.jackson")) frameworksObj["Jackson"] = true
+      if (isRoot("com.github.plokhotnyuk.jsoniter_scala")) frameworksObj["jsoniter-scala"] = true
+      if (isRoot("com.softwaremill.sttp")) frameworksObj["sttp"] = true
     }
   }
 
