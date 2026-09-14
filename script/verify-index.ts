@@ -57,6 +57,16 @@ class NoteBook:
 )
 writeFileSync(path.join(root, "README.md"), `# Fixture project\n\nNothing to see here.\n`)
 writeFileSync(path.join(root, "src", "data.json"), `{"a": 1, "b": [1, 2, 3]}\n`)
+// #816 regression fixture: a manifest key named `name` competes with a member
+// the TypeScript file DECLARES. Before the fix the resolver (a bare
+// `WHERE name = ? LIMIT 1`, no ORDER BY) returned the package.json key, so
+// `greet --uses--> name` and `Greeter --contains--> name` both pointed into the
+// manifest and were stamped is_cross_language=1 / bridge `name-resolution`.
+writeFileSync(path.join(root, "package.json"), `{\n  "name": "verify-fixture",\n  "version": "1.0.0"\n}\n`)
+writeFileSync(
+  path.join(root, "src", "greeter.ts"),
+  `export class Greeter {\n  private name = "x"\n  greet(): string {\n    return this.name\n  }\n}\n`,
+)
 
 // ── index ────────────────────────────────────────────────────────────────
 console.log("indexing fixture project...")
@@ -98,7 +108,33 @@ check("ts Calculator at line 5", calc != null && calc.line_start === 5, JSON.str
 const noteBook = raw.prepare("SELECT name, line_start, symbol_type FROM brain_symbol WHERE name = 'NoteBook' AND symbol_type = 'class'").get() as any
 check("py NoteBook at line 6", noteBook != null && noteBook.line_start === 6, JSON.stringify(noteBook))
 
-// 5. no junk names like $, ./, object_
+// 5. #816 regression: name resolution must prefer the NEAREST candidate and
+//    must never fabricate a cross-language edge into a manifest key. Proven
+//    load-bearing by reverting the resolver's ORDER BY: the unordered
+//    `LIMIT 1` picks package.json's `name` in this exact fixture and both
+//    assertions below fail (see the #816 note in src/ast/parallel-indexer.ts).
+const greetUses = raw
+  .prepare(`SELECT target_symbol_id FROM brain_relationship WHERE source_symbol_id LIKE '%src/greeter.ts:greet:%' AND relationship_type = 'uses'`)
+  .all() as any[]
+check(
+  "#816 greet's member read resolves inside its own file",
+  greetUses.length === 1 && String(greetUses[0].target_symbol_id).includes("src/greeter.ts:name"),
+  JSON.stringify(greetUses),
+)
+const greetContains = raw
+  .prepare(`SELECT target_symbol_id FROM brain_relationship WHERE source_symbol_id LIKE '%src/greeter.ts:Greeter:%' AND relationship_type = 'contains' AND target_symbol_id LIKE '%name%'`)
+  .all() as any[]
+check(
+  "#816 Greeter contains its own member, not a manifest key",
+  greetContains.length === 1 && String(greetContains[0].target_symbol_id).includes("src/greeter.ts:name"),
+  JSON.stringify(greetContains),
+)
+const manifestXlang = raw
+  .prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE is_cross_language = 1 AND target_symbol_id LIKE '%package.json%'`)
+  .get() as any
+check("#816 no cross-language edge fabricated into a manifest", manifestXlang.c === 0, `got ${manifestXlang.c}`)
+
+// 6. no junk names like $, ./, object_
 const junk = raw.prepare("SELECT name FROM brain_symbol WHERE name NOT LIKE 'add' AND name NOT LIKE 'Calculator' AND name NOT LIKE 'value' AND name NOT LIKE 'create_note' AND name NOT LIKE 'NoteBook' AND name NOT LIKE 'notes' AND name NOT LIKE 'total'").all() as any[]
 console.log(`  (other symbols: ${junk.map((j) => j.name).join(", ")})`)
 
