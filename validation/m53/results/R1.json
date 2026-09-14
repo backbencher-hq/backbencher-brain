@@ -288,7 +288,7 @@
       "ok": true
     }
   ],
-  "currentCommit": "f2ea7a0bfd1ec33d5cfdb157a80644608466f0d7",
+  "currentCommit": "c8923f82189abcd0aa09a9df37311ce71cbd5716",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-14T04:52:40.534Z"
+  "generatedAt": "2026-09-14T15:13:43.986Z"
 }
