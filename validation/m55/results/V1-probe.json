@@ -1280,5 +1280,5 @@
       "error": "bb/graph: symbol 'nonexistent_symbol_xyz' not found — no graph exists (declared error; run `bb index` or check the name)"
     }
   },
-  "generatedAt": "2026-09-13T23:38:04.424Z"
+  "generatedAt": "2026-09-14T03:28:40.388Z"
 }
