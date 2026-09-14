@@ -67,7 +67,23 @@ const CORPUS_ROOT = "$HOME/fixtures/repositories"
 // state in FRESH evidence. A lane is only reusable when the state that
 // produced it matches: corpus pins + the analyzer/oracle source that derived
 // it. Different state ⇒ a different journal file ⇒ nothing to resume.
-const LANE_JOURNAL_PREFIX = "/tmp/m14-f5-lane-journal"
+// M49 W17: WHERE the sweep's scratch lives is a correctness property, not a
+// preference. Three files carry a sweep's identity across runs and restarts —
+// the resume journal, the cold-pool rotation state, and the pinned corpus
+// trees — and all three lived in `os.tmpdir()`. This machine rebooted twice
+// while a canonical sweep was in flight (a ~2h run), and systemd's tmp recovery
+// took all three with it: the measured lanes were gone, the rotation counter
+// reset (so the next sweep drew a DIFFERENT sample than the baseline it would
+// be compared against, which reports as movement), and nothing said so. A
+// durable `BB_M14_WORK` is now the sweep's scratch root; the default is
+// unchanged, so a machine with a persistent /tmp behaves exactly as before.
+export const M14_WORK_ENV = "BB_M14_WORK"
+export function sweepWorkRoot(env: string | undefined, fallback: string): string {
+  const v = (env ?? "").trim()
+  return v || fallback
+}
+const WORK_ROOT = sweepWorkRoot(process.env[M14_WORK_ENV], os.tmpdir())
+const LANE_JOURNAL_PREFIX = path.join(WORK_ROOT, "m14-f5-lane-journal")
 function sweepStateKey(repoPins: Record<string, string>, sampling: string): string {
   const h = createHash("sha256")
   for (const repo of Object.keys(repoPins).sort()) h.update(`${repo}@${repoPins[repo]}\n`)
@@ -351,7 +367,7 @@ function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
 // a corpus's cumulative coverage stalls (no new files in N waves = the pool is
 // exhausted = sample >= corpus, fine) or the state file is missing on a
 // canonical run (silent revert to the old blind behavior).
-const COLD_POOL_STATE = "/tmp/m14-f5-cold-pool.json"
+const COLD_POOL_STATE = path.join(WORK_ROOT, "m14-f5-cold-pool.json")
 function loadColdPool(): { seen: Record<string, string[]>; rotations: Record<string, number> } {
   try { return JSON.parse(fs.readFileSync(COLD_POOL_STATE, "utf8")) } catch { return { seen: {}, rotations: {} } }
 }
@@ -7119,7 +7135,7 @@ async function main() {
   // per (state, repo) and removed once the parent has written the evidence.
   // The substitution is logged here and carried in the evidence's `pinDrift`,
   // so a measurement can never claim a pin it did not read.
-  const FROZEN_ROOT = path.join(os.tmpdir(), `m14-frozen-corpus-${stateKey}`)
+  const FROZEN_ROOT = path.join(WORK_ROOT, `m14-frozen-corpus-${stateKey}`)
   const frozenTrees = new Map<string, string>()
   const laneDirCache = new Map<string, string>()
   const pinDrift: Record<string, string> = {}
