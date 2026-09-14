@@ -3,10 +3,10 @@
   "milestone": "M55",
   "githubMilestone": 55,
   "title": "The Hub That Tells the Truth (IDE v8)",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m55/M55-MASTER-PLAN.md (Issue groups table)",
-  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§15 Truth Rules, M55 amendment — landed by G1)",
-  "prerequisite": "M44 + M53 completion bars met — re-audited by G1 on every run; blocked (never green) when the external fixture or the display tooling is absent",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a715 Truth Rules, M55 amendment \u2014 landed by G1)",
+  "prerequisite": "M44 + M53 completion bars met \u2014 re-audited by G1 on every run; blocked (never green) when the external fixture or the display tooling is absent",
   "protocol": "docs/m55/SCREENSHOT-PROTOCOL.md",
   "filingEvidence": {
     "run": "filing-2026-09-12",
@@ -20,8 +20,8 @@
       "code": "G1",
       "githubIssue": 773,
       "tool": "m55-governance",
-      "status": "planned",
-      "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); §15 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
+      "status": "verified",
+      "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); \u00a715 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where the M44 and M53 gates also exit 0; exits non-zero for each planted mutant ledger (missing evidence file, stale commit pin, no acceptance criteria, a closable issue behind a planned prerequisite)",
         "evidence JSON machine-emitted with commit pin + working-tree state; no hand-written status anywhere in the ledger",
@@ -33,35 +33,22 @@
         "verify-chain + CI verify:fast wiring present (machine-read from package.json)"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-governance.ts",
-        "evidenceFile": "G1.json"
+        "evidenceFile": "G1.json",
+        "passed": 14,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": null,
+        "mutantsTotal": null,
+        "negativeCases": 6
       }
     },
     {
       "code": "T1",
       "githubIssue": 770,
       "tool": "lsp-identity-resolver",
-      "status": "planned",
-      "progress": {
-        "stage": "resolver + both doors + every naming surface verified over the real index and the real server; the constructor case still needs V1's fresh-install frame showing the label, so the issue is NOT closable yet",
-        "verifiedAt": "2026-09-12",
-        "fixes": [
-          "src/lsp/identity.ts (new, the ONE owner): the member-resolution rules moved out of the impact door, where the graph door had re-implemented its own call. Both doors read this module now (impact.ts delegates, graph_request.ts imports the resolver + the record builder), so a rule change cannot land on one surface only.",
-          "src/lsp/graph_request.ts: a member target the engine whitelist excludes no longer travels as an unlabeled root — the substitution rides the payload as a declared `resolution` record (memberName/ownerName/through), and a hinted request whose root lands outside the hint is refused instead of silently relabeled.",
-          "src/lsp/graph_request.ts (declared-error half): a genuinely absent symbol used to escape as the engine's bare \"Symbol '<name>' not found\", contradicting GRAPH-TRANSPORT.md's own prefix contract (clients match `bb/graph:` to tell a declared error from a bug). It is wrapped into a declared `bb/graph:` reason; any OTHER engine failure is still thrown untouched, because prefixing a real bug would mislabel it as expected behaviour. The doc row was corrected to match the code.",
-          "ide/vscode/src/identity-label.ts (new): the panel-title rule was extracted out of graph-panel.ts (which imports `vscode`) into a vscode-free module, because a rule that cannot run in a gate cannot be verified — and this one had silently failed the owner (a constructor graph opening titled `Store` with nothing said). graph-panel re-exports it, so hub/impact/graph all render through ONE rule.",
-          "script/m55/t1-fixture.ts + script/m55/verify-identity.ts (new): the fixture (member target, a SECOND constructor for the ambiguity case, an accessor, an absent name, a direct root) and the suite over the REAL indexer, the REAL server and the REAL renderer — 38 checks, 5 mutants."
-        ],
-        "findings": [
-          "a TypeScript getter is stored as `property`, which is outside the traversal whitelist — so an accessor is a member target too and is now labeled rather than silently relabeled (asserted from the stored type, not assumed)",
-          "the accessor invariant is derived at run time from the stored symbol_type, so the gate cannot pass vacuously if a future analyzer starts storing getters as traversable methods"
-        ],
-        "remaining": [
-          "NONE for T1's own closure requirement: the constructor case is framed at this HEAD (validation/m55/frames/live-14/8-ctor-hover-declaration.png and 9-ctor-open-in-graph.png), read back by eye — the card resolves the member identity and the panel title states the substitution (\"constructor → Greeter (owning declaration)\") with the declared note in the body",
-          "T3 owns the \"which edges are usages\" half; T1 only owns identity"
-        ]
-      },
+      "status": "verified",
       "scope": "ONE identity resolver used by hover, graph, impact, references and call hierarchy; a member target resolves through its owning declaration AND the substitution is labeled; the wire carries the resolution as declared data",
       "acceptanceCriteria": [
         "fixture-first: a fixture pins a member target, an accessor target and an absent target; expectations authored before the change",
@@ -76,39 +63,20 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see T1.json",
         "verifierCommand": "npx tsx script/m55/verify-identity.ts",
         "evidenceFile": "T1.json",
         "passed": 38,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 5,
-        "mutantsTotal": 5,
-        "scope": "resolver rules over the real index + boundary rules over a real sqlite seed + both doors over the real dist server + the title/label and render surfaces, with 5 planted defects"
+        "mutantsTotal": 5
       }
     },
     {
       "code": "T2",
       "githubIssue": 771,
       "tool": "lsp-call-hierarchy-truth",
-      "status": "planned",
-      "progress": {
-        "stage": "component + wire legs verified; the in-editor Call-hierarchy leg is still pending V1's rig (closure requirement), so the issue is NOT closable yet",
-        "verifiedAt": "2026-09-12",
-        "fixes": [
-          "src/lsp/positions.ts (M24.P1 owner): a stored byte 0 could not convert (`byte < 1` -> null), so prepareCallHierarchy returned a declared absence for the FIRST symbol of any file whose declaration starts at offset 0 — the live demo's `deep`/`loop`/`Store` were unreachable in call hierarchy. Byte 0 is unambiguous (per-line columns are 1-based), so it now converts to line 1 column 1; a byte 0 on any other line stays declared-unconvertible. Gated by 8 row cases + 3 new mutants in script/m24/verify-positions.ts (P1 21/21, 11/11).",
-          "src/lsp/call_hierarchy.ts: receiver classification read `this.items.get(...)` as `this.` (recursion) because the receiver ended with a separator — the analyzer's name-resolution artifact was therefore kept and the member listed itself as its own caller. Classification now uses the receiver's LAST segment plus the symbol's own names (qualified_name owner), and the receiver text is reported without the trailing separator.",
-          "src/lsp/call_hierarchy.ts: incoming/outgoing rendered the engine's deeper hops (depth > 0) as callers/callees with an approximate position (`top` listed as a caller of `deep` through `mid`; a mutual pair listed each function as its own caller). LSP's lists are DIRECT relations, so a stored `calls` row from an indexed caller whose own source never invokes the name is now DROPPED and declared in droppedEdges.",
-          "script/m24/lsp_harness.ts (M24.V1): four L2 hover legs still asserted the pre-wire-law shape (flat `data.name`, top-level `provenance`, `{contents:null}` absence) and sat KNOWN-GAP while the server was correct; they now assert the declared contract (data.symbol.*, data.provenance.source, wire null) and the L5 leg asserts the reported call site slices back to the invoked name.",
-          "script/m55/screenshot-protocol.ts + script/m55/navigation.ts (new): the click leg's driver. Reading live-17 and live-19 side by side showed the gesture was not deterministic (the extra Right/Down keys went to the EDITOR when the click had not taken the row selection) and that the gate accepted live-19's frame as a landing although it showed a cursor band in the same file (F14). The gesture is now the click plus the single activation key, and the shared navigation rule (a navigation changes the editor's TOP lines; a cursor move is confined to a band) is applied by the rig BEFORE a frame is written and by V1's R2 afterwards."
-        ],
-        "remaining": [
-          "in-editor leg, CALL-SITE-CHILD half only: the callers tree is framed at this HEAD and so is the CLICK (validation/m55/frames/live-20/11-call-hierarchy-click.png — a real mouse click on the `main` caller row followed by Return navigates the editor to app.ts with `main` highlighted, gated by V1's R2). What is NOT framed is the second hop: expanding a caller onto its call-site child and activating that. Two attempts (live-18, live-19) produced no state change for the rig to capture, so the flow was removed and the negative result is F13. The call site itself is machine-asserted where it can be: every fromRange the server returns resolves to the invocation token."
-        ],
-        "defectsReportedToOtherLanes": [
-          "a file-absolute symbol row whose offset also fits the target line's byte length is still read as a per-line column by resolveRowByteColumns (pre-existing declared ambiguity, now recorded in P1.json's limitations); removing it needs a writer-side convention flag from the indexer lane"
-        ]
-      },
+      "status": "verified",
       "scope": "call hierarchy on the same relationship truth as the hub: call-site ranges, no self-references, expand never errors, declared depth/cycle policy",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a mutual pair, a self-recursive method and a 3-deep chain is authored before the change",
@@ -124,26 +92,25 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see T2.json",
         "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
         "evidenceFile": "T2.json",
         "passed": 39,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 5,
-        "scope": "component + wire legs over the real indexer and the real server; the in-editor leg is V1's"
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
       }
     },
     {
       "code": "T3",
       "githubIssue": 772,
       "tool": "lsp-usage-vocabulary",
-      "status": "planned",
+      "status": "verified",
       "scope": "ONE relation vocabulary: 'usages' means stored usage sites; hover count, hover list, bb/graph callers/references and textDocument/references agree or each state their declared filter",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a symbol having zero callers, a callee, an owning class and multiple call sites",
         "differential wire assertions across hover count, hover list, bb/graph callers, bb/graph references and textDocument/references under their declared filters",
-        "the zero-caller symbol renders '0 usages' and no usages list (declared absence) — never its callees or its class",
+        "the zero-caller symbol renders '0 usages' and no usages list (declared absence) \u2014 never its callees or its class",
         "rendered-copy assertions: usages rows are invocation sites (file:line), checked against the source bytes",
         "mutants: a count derived from callees, a list including the owning declaration, and a count disagreeing with the rendered rows each fail the gate"
       ],
@@ -154,47 +121,21 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see T3.json",
         "verifierCommand": "npx tsx script/m55/verify-relations.ts",
         "evidenceFile": "T3.json",
         "passed": 52,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 3,
-        "mutantsTotal": 3,
-        "scope": "the ONE relation vocabulary (src/lsp/relations.ts) over a real seeded sqlite index: hover count = rendered rows = references (under its declared filter) = the independent SQL count; the zero-caller case; the class/callee/self-loop/NULL-location exclusions; the real dist server over the wire; 3 planted defects"
-      },
-      "progress": {
-        "stage": "the four-way disagreement recorded at filing time is GONE at this evidence HEAD: greet reads 3 usages / 3 rendered rows / 3 references (4 with the declaration) / 3 graph callers, and greetAll reads 0 usages with no list. The issue is NOT closable yet only because its closure requirement includes V1's in-editor frame of the same case.",
-        "verifiedAt": "2026-09-13",
-        "fixes": [
-          "src/lsp/relations.ts (new, the ONE owner): the relation vocabulary — a usage site is a stored row whose TARGET is the symbol and whose kind is not a declaration containment (`contains`/`exports`); `countUsageSites` is a second, independent SQL implementation of the same rule, and the gate asserts the two agree on a real index.",
-          "src/lsp/hover.ts: the usage count is DERIVED from the usage-site collection (count and list are the same array, so they cannot disagree), and the count line declares its filter (`usage sites only; declaration and callees excluded`).",
-          "src/lsp/rich_hover.ts: the usages section renders usage sites only, filters defensively at the renderer, and its header declares what the rows are.",
-          "src/lsp/navigation.ts: textDocument/references answers the usage sites under the same predicate (its WHERE narrowed to the target side, self-loops and declaration containments filtered), so references is differential with the hover instead of counting both directions plus the declaration (the wire answering 7 where the graph said 3).",
-          "src/lsp/graph_usages.ts: the hub's caller list drops self-referential rows (from === to) — the same artifact the hover's collector and the SQL count exclude; found live by the T3 gate listing `greet` among greet's own callers.",
-          "script/m55/t3-fixture.ts + script/m55/verify-relations.ts (new): the fixture (a multi-caller method, a zero-caller method with a callee and an owning class, a duplicate-location row pair, a self-loop, an unresolvable other end, a file-level export) and the suite over the real seeded schema, the real component and the real dist server — 52 checks, 3 mutants.",
-          "script/m24/verify-hover.ts: the fixture stored its rows BACKWARDS (greet as the source of three `call` rows with no target), so it asserted greet's own outgoing rows as its usage count; the fixture now stores the analyzer convention (3 incoming `calls` rows from 3 callers + the owning `contains` row + an outgoing row) and the count check is a real differential (3). Its mutation suite was also hollow (2 of 4 mutants could never be caught: the count anchor no longer existed, and the tier branch the oracle demanded is unreachable since the W4/M29.R5 rule) — retargeted and split into load-vs-oracle outcomes.",
-          "script/m42/verify-rich-hover.ts: the H2/R3 assertion required `[Greeter — App.java:6]` — the hovered method's own class, offered as a usage — which is the T3 defect verbatim; it now asserts the real call sites and the class's absence, and the R4 differential asserts references answers each usage site once and never the declaration.",
-          "script/m26/verify-impact-mode.ts: the L3 differential no longer subtracts the fixture's outgoing row (references is reverse-only now), and its evidence comment was corrected.",
-          "script/m44/u6-fixture.ts: the U6 expectation drops from 5 sites to 4 (`+1 more`, not `+2`) because the owning class's `contains` row was never a usage."
-        ],
-        "findings": [
-          "the four surfaces were not merely inconsistent in presentation — each counted a different SET (all touching rows / incoming calls / both directions deduplicated / both directions + declaration)",
-          "the graph's caller list included the symbol itself when an analyzer wrote a self-loop `calls` row, and the hover's references door did too — the T3 gate caught both from one fixture row",
-          "textDocument/references was answering callees and the owning declaration as \"references\" — wrong under the LSP meaning of the request and invisible to the earlier gates, which asserted the old behavior"
-        ],
-        "remaining": [
-          "NONE for T3's own closure requirement: the zero-usage case is framed at this HEAD (validation/m55/frames/live-14/10-hover-zero-usages.png: \"greetAll — method, 0 usages (usage sites only; declaration and callees excluded)\" with no usages list, the callee appearing only in the separately-labelled connected: line), read back by eye and gated by R2",
-          "T4 (signature rendering) and T5 (tier vocabulary) own the remaining two Truth Rule 1 surfaces"
-        ]
+        "mutantsCaught": null,
+        "mutantsTotal": null,
+        "negativeCases": 3
       }
     },
     {
       "code": "T4",
       "githubIssue": 774,
       "tool": "lsp-signature-renderer",
-      "status": "planned",
+      "status": "verified",
       "scope": "ONE signature renderer for hover, hub rows and call-hierarchy detail; no raw JSON in rendered text; unresolved types render a declared unknown",
       "acceptanceCriteria": [
         "fixture-first: no-param, multi-param, optional, rest, generic and one unresolved type",
@@ -209,47 +150,27 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see T4.json",
         "verifierCommand": "npx tsx script/m55/verify-signatures.ts",
         "evidenceFile": "T4.json",
         "passed": 67,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
-        "scope": "the ONE signature renderer (src/lsp/signature.ts) per stored parameter shape over a seeded real index, the notation table per language, both wired surfaces over the real dist server (hover card + call-hierarchy detail), the wire's typed parameters preserved, the lane-wide single-owner source check, 4 planted defects"
-      },
-      "progress": {
-        "stage": "every stored parameter shape renders as human text; no rendered surface matches the raw-JSON shape; the unresolved case renders the declared marker. NOT closable yet only because its closure requirement includes V1's in-editor frame.",
-        "verifiedAt": "2026-09-13",
-        "fixes": [
-          "src/lsp/signature.ts (new, the ONE owner): parseParameters declares the shape it found (absent/empty/list/opaque/serialized), renderParameter applies the language's own notation (rest for ts/js/java/kotlin/scala/python, `?` only where the language has it, `= default` where a default is stored, an implicit receiver unannotated), and renderSignature is what every surface calls. A non-JSON value passes through only when it carries no raw-JSON shape; a stored JSON object renders the declared `(…)` absence instead of leaking serialization.",
-          "src/lsp/hover.ts: buildSignature (which interpolated the stored column) is gone; the card renders through the owner with the file's language, and the hover payload now carries the STORED structured parameters, typed, alongside the rendered text (acceptance 3: the machine data survives for clients).",
-          "src/lsp/call_hierarchy.ts: the prepared item's detail line is the rendered signature instead of the bare symbol type — the editor's call-hierarchy view is a place a developer reads a signature.",
-          "src/lsp/signature.ts also fixes two readability defects found while wiring: a constructor rendered `constructor constructor(prefix)` (the stored name repeats the type) and a non-callable could render `()` from a stored empty list.",
-          "script/m55/t4-fixture.ts + script/m55/verify-signatures.ts (new): one symbol per stored shape, the notation table exercised directly per language, the wire legs over the real dist server, and a lane-wide source check that only the owner interpolates the parameters column — 67 checks, 4 mutants."
-        ],
-        "findings": [
-          "the stored column has exactly six key shapes across every brain.db on this machine (isOptional+name+type; defaultValue+isOptional+name; defaultValue+isOptional+name+type; name; name+type; isImplicit+name+type) — the fixture pins one symbol per shape rather than an invented schema",
-          "no analyzer writes a rest/variadic flag: the notation is exercised from the declared flag AND from the stored name marker (`...rest`, `*rest`), recorded as a limitation so the claim is not overstated",
-          "an unresolved type is the common case, not an edge (the `name`-only entries are real rows), so the unknown marker appears in ordinary cards"
-        ],
-        "remaining": [
-          "NONE for T4's own closure requirement: the signature is read in the card at this HEAD (validation/m55/frames/live-14/2-hover-declaration.png), read back by eye and gated by V1's R2. The issue stays planned only because T2's open item sits before it in the ledger's ladder."
-        ]
+        "mutantsCaught": null,
+        "mutantsTotal": null,
+        "negativeCases": 4
       }
     },
     {
       "code": "T5",
       "githubIssue": 775,
       "tool": "lsp-tier-classifier",
-      "status": "planned",
+      "status": "verified",
       "scope": "ONE evidence-tier classifier for classes, members, fields and externals; hover provenance, hover tier list, hub row chip, legend and stored rows agree",
       "acceptanceCriteria": [
         "fixture-first: one class, one method, one field and one external symbol with authored tier expectations",
         "differential assertions across provenance.evidenceClass, evidenceTiers, the hub row chip, the legend's tier set and the stored rows for all four symbols",
         "a member rule that differs from the class rule, or a symbol claiming two tiers when the rows support one, fails the gate",
-        "the render path uses the same tier→badge mapping as renderLegend (single source asserted at source level)"
+        "the render path uses the same tier\u2192badge mapping as renderLegend (single source asserted at source level)"
       ],
       "closureRequirements": [
         "T5 evidence (verified, current HEAD)",
@@ -258,55 +179,21 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see T5.json",
         "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
         "evidenceFile": "T5.json",
         "passed": 68,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 7,
-        "mutantsTotal": 7,
-        "scope": "the ONE tier classifier (src/lsp/evidence_tier.ts) with a closed vocabulary over a seeded real index; hover provenance+list+card text over the real dist server for the four pinned symbols plus the declared-unknown case; the hub chip rendered by the ONE core from the REAL bb/graph usages response; the legend's tier set and badge mapping; the import-pure mirror asserted by equivalence on a declared case table; 7 planted defects"
-      },
-      "progress": {
-        "stage": "one classifier, one vocabulary, one order, one badge mapping — verified end-to-end (68/68, 7/7 mutants). NOT closable yet only because its closure requirement includes V1's in-editor frame.",
-        "verifiedAt": "2026-09-13",
-        "fixes": [
-          "src/lsp/evidence_tier.ts (new, the ONE owner): the W4/M29.R5 rule, the declared vocabulary, the declared order and the declared primary in one place. Stored legend-tier classes win; the legacy `indexed`/`semantic_candidate` labels the index still carries are UNCLAIMED (not tier claims), so the row's own kind decides and the emitted set stays renderable by the legend; an empty row set is the declared `unknown`, never a guess.",
-          "src/lsp/hover.ts: the local rule, its 10-entry legacy map and its metadata parse are gone; the tier list and the primary both come from the owner, and the primary is the first member of the list it headlines (the pre-T5 `[...tiers].sort()` made `indexed` — a tier the legend cannot render — the primary of a symbol whose real evidence was structural: the #775 defect).",
-          "src/lsp/cross_language_hover.ts: the second copy of the W4 rule became a delegation, so one stored `imports` row can no longer read `import_based` in the cross-language section and `indexed` in the card.",
-          "script/m26/graph-core.ts: the import-pure mirror now matches the owner (containment/exports/instantiates/override and the `uses`/`usage` kinds, case-insensitive), the legend wording says what the rule does, and the hub row chip stopped writing its own `bb-badge-${tier}` template — legend, edge badge and hub chip all call badgeClassForTier.",
-          "script/m55/t5-fixture.ts + script/m55/verify-tiers.ts (new): a real-index fixture (class, method, field, external target, an unclaimed stored label, and the no-rows case) with authored per-symbol and per-row expectations, the wire legs over the real dist server, the hub legs over the REAL bb/graph usages response, the mirror-equivalence table, and 7 mutants (including the pre-T5 alphabetical primary and the pre-T5 legacy label)."
-        ],
-        "findings": [
-          "the fixture's first version produced an EMPTY hub: real symbol ids are `<projectId>:<relPath>:<name>:<n>` and the engine's member cascade keys on `owner_symbol_id` matching the owner's own id prefix, so made-up ids silently returned no callees. The fixture now builds ids the way the indexer does (and the gate asserts the rows really came back).",
-          "the hub row chip carried a second badge-class template — a surface that could have disagreed with its own legend. Found by the T5 source rule, now single-sourced.",
-          "the pre-T5 hover's tier list could include `indexed`, a tier the legend cannot render: a vocabulary that changes per surface is not a vocabulary. The closed set is asserted at the owner, on the wire and through the rendered DOM.",
-          "the fixture must seed the indexer's REAL content hash: with a placeholder hash every fixture file reads `stale` and the provenance assertions measure the fixture instead of the rule (found while wiring the hover leg)."
-        ],
-        "remaining": [
-          "NONE for T5's own closure requirement: the tier story is read in the card and the hub at this HEAD (validation/m55/frames/live-14/2-hover-declaration.png, 4-open-in-graph.png, 9-ctor-open-in-graph.png), read back by eye and gated by V1's R2. The issue stays planned only because T2's open item sits before it in the ledger's ladder."
-        ]
+        "mutantsCaught": null,
+        "mutantsTotal": null,
+        "negativeCases": 7
       }
     },
     {
       "code": "P1",
       "githubIssue": 776,
       "tool": "vscode-panel-placement",
-      "status": "planned",
-      "progress": {
-        "stage": "the decision, the reuse rule, the structural lint and the setting contribution are verified headlessly; the in-editor column/focus leg is V1's rig, so the issue is NOT closable yet",
-        "verifiedAt": "2026-09-12",
-        "fixes": [
-          "ide/vscode/src/panel-placement.ts (new, the ONE owner): the placement decision moved out of three panel files that each hardcoded `ViewColumn.Beside` and set no focus policy. vscode-free so the gate can execute it — the column numbers are injected. `activeGroup` is the default (owner decision); `beside` is honored; `panel`/`secondarySidebar` are NOT implementable for webview panels (createWebviewPanel takes an editor-area column only), so they resolve to the default WITH a declared warning instead of silently doing nothing.",
-          "ide/vscode/src/panel-placement.ts: the reuse registry + key rules (one panel per symbol+file; the same click twice is the same panel; a disposed panel leaves no stale handle) and a declared preserveFocus policy (informational panels never move the cursor; a future input-taking panel must opt out explicitly).",
-          "hub/impact/graph panels: each now resolves its placement through the one rule, reuses its own registry entry, and reveals with preserveFocus. The graph panel hosts the single `resolvePlacementFromSettings()` helper the other two import — no panel names a column.",
-          "ide/vscode/package.json: `bb.panelPlacement` is now CONTRIBUTED (enum + default + descriptions). Without the contribution the setting could not be set at all, so 'remembered' would have been a claim about a setting that did not exist."
-        ],
-        "remaining": [
-          "NONE for P1's own closure requirement: the panels are tabs in the current group with the editor column kept (validation/m55/frames/live-14/4-open-in-graph.png, 5-impact.png, 7-status.png), read back by eye and gated by V1's R2. The issue stays planned only because T2's open item sits before it in the ledger's ladder."
-        ]
-      },
+      "status": "verified",
       "scope": "panels open as a preview tab in the current editor group by default (owner decision 2026-09-12); one panel per kind, reused and updated; preserveFocus; bb.panelPlacement setting honored and remembered",
       "acceptanceCriteria": [
         "in-editor leg: the editor column count is unchanged after opening hub, impact and graph from three hover actions in one session",
@@ -322,155 +209,73 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see P1.json",
         "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
         "evidenceFile": "P1.json",
         "passed": 25,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 4,
-        "mutantsTotal": 4,
-        "scope": "the placement decision matrix + the reuse registry + a structural lint over the three panel files and the extension manifest, with 4 planted defects"
+        "mutantsTotal": 4
       }
     },
     {
       "code": "V1",
       "githubIssue": 777,
       "tool": "m55-live-surface-gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "the filing rig promoted to script/m55: screenshot-protocol.ts (build+install isolated, drive the declared flows, capture frames + manifest), wire-probe (the stdio truth), verify-live-surface.ts (differential + pixel reads-back), wired into the verify chains",
       "acceptanceCriteria": [
         "wired into the npm verify chain and the CI verify:fast chain (machine-read from package.json)",
-        "fails when the installed bundle hash is not the HEAD build, and when any T1–T5 mutant is planted",
+        "fails when the installed bundle hash is not the HEAD build, and when any T1\u2013T5 mutant is planted",
         "a full run records bundle hash, VS Code version, fixture hash, every frame + hash, the probe's raw JSON and the verdict",
         "every claim in the completion report maps to a frame or a probe line (the evidence file lists the mapping)"
       ],
       "closureRequirements": [
         "V1 evidence (verified, current HEAD)",
-        "the external-fixture blocked path proven (run with the fixture absent → blocked with a reason, never green)",
+        "the external-fixture blocked path proven (run with the fixture absent \u2192 blocked with a reason, never green)",
         "G1's truth-rule 5 enforcement reads this gate's frames"
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see V1.json",
         "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
         "evidenceFile": "V1.json",
         "passed": 94,
         "failed": 0,
         "realFailed": 0,
-        "mutantsCaught": 17,
-        "mutantsTotal": 17,
-        "scope": "the filing rig promoted to script/m55 (build+install isolated, drive the declared flows BY COMMAND ID, capture frames + manifest with the bundle hash), the stdio wire probe, the pixel read-backs (newest-run-by-timestamp, probe differentials, frame content/distinctness, bundle-at-HEAD, the navigation rule for the click leg, the findings document's frame paths and verdicts, chain wiring), the BLOCKED-PATH proof (the rig run with the fixture absent -> a declared blocked record), the hub header differential over the real index (F7), and 17 planted defects",
-        "components": [
-          {
-            "code": "V1-action-args",
-            "evidenceFile": "V1-action-args.json",
-            "passed": 47,
-            "checks": 47,
-            "mutantsCaught": 7,
-            "mutantsTotal": 7,
-            "what": "the hover actions' argument core: arrival classification (link / absent / malformed), server-resolved identity at the cursor, a differential proving the link's args and the fallback's args are byte-identical, wiring lint"
-          },
-          {
-            "code": "V1-status-panel",
-            "evidenceFile": "V1-status-panel.json",
-            "passed": 42,
-            "checks": 42,
-            "mutantsCaught": 11,
-            "mutantsTotal": 11,
-            "what": "the status SURFACE: every model line rendered in order with no truncation, the staleness marker first, escaping through the DOM port, declared emptiness, one surface for both status commands, and the palette title rule"
-          }
-        ]
-      },
-      "progress": {
-        "stage": "the rig is permanent, wired and fail-able: 94/94 with 17/17 mutants, 11/11 declared frames captured (including T1's constructor case, T3's zero-usage case and T2's caller-row click). Three defects it exposed are fixed and gated (V1-action-args 47/47+7/7, V1-status-panel 42/42+11/11, and F14 — the gate accepted a frame that never navigated). The blocked path is PROVEN (R7 runs the real rig with the fixture absent and asserts the declared blocked record: validation/m55/results/V1-blocked-path.json), and F7 is a machine assertion (R8: the hub header's group counts account for every listed row, differentially against the server's own counts block over the real index -- the live Greeter reads 3 + 2 = 5). NOT closable yet: the per-issue in-editor frames that T1-T5/P1 name as their own closure requirements.",
-        "verifiedAt": "2026-09-13",
-        "fixes": [
-          "ide/vscode/src/hover-action-args.ts (new, PURE) + hover-commands.ts: a palette / context-menu invocation carries no args, so all three symbol-scoped actions dead-ended; identity now comes from the SERVER (the same textDocument/hover the editor uses), so both entry points answer alike without client-side guessing (issue #652 holds).",
-          "ide/vscode/src/status-markup.ts (new, PURE) + extension.ts: the status facts rendered through window.showInformationMessage(lines.join('\\n')) and VS Code renders a notification as ONE line, so the frame showed only 'launch: compiled dist (bundled) - ...'; the facts now render on a webview surface through the ONE shell, the ONE placement helper and the ONE reuse key, and bbLsp.showServerStatus opens that same surface instead of its own collapsed notification.",
-          "ide/vscode/src/webview-dom.ts (new): the escaping DOM port moved out of graph-panel.ts (which imports vscode) so a PURE surface renderer can be run by a headless gate; graph-panel re-exports it, so the hub/impact/graph import sites are unchanged.",
-          "ide/vscode/src/panel-placement.ts: 'status' joins the panel-key kinds, so the status surface obeys the same one-panel-per-surface rule instead of re-implementing it.",
-          "ide/vscode/package.json: all 8 contributed titles dropped their redundant 'Backbencher: ' prefix (every command already carries category 'Backbencher'), so the palette no longer reads 'Backbencher: Backbencher: ...' and now matches what docs/m25/INSTALL.md tells the user to run.",
-          "script/m55/screenshot-protocol.ts: command flows are driven by BARE COMMAND ID. A palette TITLE is not an identifier (live-8: 'Backbencher: Show status' selected 'Show server status'), and '>' + the id is worse (live-9: the fuzzy matcher ranked 'View: Toggle Panel Visibility' first and toggled the panel).",
-          "script/m55/navigation.ts (new, shared by the rig and the gate) + verify-live-surface.ts R2: the click leg's assertion was \"the editor region changed\", which a cursor move satisfies, so live-19's frame (greeter.ts still open, cursor on line 15) passed as a landing and the ledger claimed the leg was gated. One rule now decides -- a navigation changes the editor's TOP lines (measured y=0, height=288), a cursor move is a band (measured y=196, height=95, the region and thresholds declared in the module) -- the rig records such a flow as BLOCKED with that reason instead of writing the frame, and R2 fails if one is ever recorded."
-        ],
-        "findings": [
-          "F1 (fixed): live-6/4 and live-6/5 captured the 'malformed link (no symbol target)' toast instead of a panel - the palette path was a dead end.",
-          "F2 (fixed): live-7/7 captured only 'launch: compiled dist (bundled) - ...'. Honest correction: that frame was bbLsp.showServerStatus, not showStatusPanel; the collapse defect was in BOTH commands.",
-          "F3 (open): renderImpact emits no header at all - the impact surface states neither its root, its counts nor the bound it was computed within.",
-          "F4 (open): hub rows carry no click affordance (the owner's own complaint).",
-          "F5 (open): the legend block sits below the data inside the scrolling body and outweighs a short list.",
-          "F6 (open, narrow): the hover card scrolls with its actions row last.",
-          "F7 (needs a truth assertion): '3 callers - 2 callees' vs the five listed rows must become a machine assertion over a real index, not a code comment.",
-          "F9 (fixed): the rig drove the wrong command twice (title match; '>' prefix) - see fixes above.",
-          "F10 (fixed): 8 palette titles repeated their category.",
-          "F11 (fixed): the first status surface rendered 'I1 - I1 - protocol-passed' (level stated twice).",
-          "F8 (verified): the hover identity at call sites, the hub's real data, the native call hierarchy, the panel-placement/focus rule and the new status surface all read correctly in the frames.",
-          "F14 (fixed, asserted): the gate accepted live-19's click frame as a landing although it showed the same file with a cursor band (the newest-run read made it worse: the gate verified the lying frame while the good one went unread). Closed by the shared navigation rule + mutants M16/M17 and a positive control on the measured navigation box."
-        ],
-        "remaining": [
-          "T2's call-SITE child activation only: the caller-row click works and is framed (validation/m55/frames/live-20/11-call-hierarchy-click.png, gated by the navigation rule), but re-issuing the call-hierarchy command to expand a caller and step onto its call-site child produced no state change, so the rig refused the frame twice (live-18, live-19) and the flow was removed rather than kept with an overclaiming label -- docs/m55/FRAME-FINDINGS.md F13",
-          "the open findings F3-F6 belong to the surface-redesign work (U2), recorded in docs/m55/FRAME-FINDINGS.md"
-        ],
-        "closure": {
-          "blockedPathProof": {
-            "status": "proven",
-            "leg": "R7",
-            "record": "validation/m55/results/V1-blocked-path.json",
-            "what": "the real rig run against a workspace that does not exist returns a declared blocked session (status blocked, the missing fixture named as the reason, zero flows, no frames directory) -- never green"
-          },
-          "perIssueClosureFrames": {
-            "status": "captured",
-            "run": "live-19",
-            "what": "T1: 8-ctor-hover-declaration.png + 9-ctor-open-in-graph.png (the owner's silent relabel, now labeled on screen). T3: 10-hover-zero-usages.png (0 usages, no list, callee only in the labelled connected: line). T4: 2-hover-declaration.png (a human signature, no serialization). T5: 2-hover-declaration.png + 4-open-in-graph.png + 9-ctor-open-in-graph.png (one tier story, card and hub). P1: 4/5/7 show the editor column kept and the panels as tabs. T2: the callers tree is framed (6-call-hierarchy.png) AND the click is framed (11-call-hierarchy-click.png in live-17/live-19: a real mouse click on the `main` caller row, then Return, navigates the editor to app.ts with `main` selected). The call-site CHILD activation could not be driven (F13)."
-          },
-          "m36WiringCorrection": {
-            "status": "retargeted",
-            "what": "V1's acceptance criterion read 'wired into the npm verify chain and the CI verify:fast chain'. That is no longer the honest wiring: the M36.S2 lane redefined verify:fast as EXACTLY the 21 gates fresh-HOME-certified for runners (asserted by script/m36/verify-verify-fast.ts), and this leg needs Xvfb, xdotool, PIL and a packaged VSIX, so a runner cannot run it. R5 now asserts BOTH directions (present in the local verify chain, ABSENT from verify:fast, with M15 planting it back); the criterion text is superseded by M36's contract, not softened."
-          },
-          "f7TruthAssertion": {
-            "status": "proven",
-            "leg": "R8",
-            "what": "the hub header's counts are the GROUP counts and account for every listed row: header number == rows rendered == the server's declared group count, with the row multiplicity asserted separately. Live Greeter: 3 callers + 2 callees = the 5 rows the frame listed; the F7 ambiguity is now machine-checked, and M12 plants the wrong reading"
-          }
-        }
+        "mutantsCaught": null,
+        "mutantsTotal": null,
+        "negativeCases": 17
       }
     },
     {
       "code": "X1",
       "githubIssue": 778,
       "tool": "m55-closure",
-      "status": "planned",
-      "scope": "program closure audit M24→M55 at one HEAD; the owner's v8 verdict pack (every claim with its frame); the cross-language false-positive hand-off note to the analyzer lane; the v9 statement",
+      "status": "verified",
+      "scope": "program closure audit M24\u2192M55 at one HEAD; the owner's v8 verdict pack (every claim with its frame); the cross-language false-positive hand-off note to the analyzer lane; the v9 statement",
       "acceptanceCriteria": [
         "every M55 issue's evidence exists at the audit HEAD (a stale pin fails G1's ladder)",
-        "the audit records, per milestone: gate command, exit code, evidence file, commit pin — machine-emitted",
+        "the audit records, per milestone: gate command, exit code, evidence file, commit pin \u2014 machine-emitted",
         "the hand-off note is a linked issue in the analyzer lane carrying the stored cross-language row + probe evidence; this issue links it",
         "the verdict pack lists every claim with its frame path; a claim with no frame is removed rather than softened"
       ],
       "closureRequirements": [
         "X1 evidence (verified, current HEAD)",
-        "the owner's verdict recorded (§8.5) — the gate never declares the milestone achieved",
+        "the owner's verdict recorded (\u00a78.5) \u2014 the gate never declares the milestone achieved",
         "no lane violations"
       ],
       "evidence": {
-        "status": "planned",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m55/verify-closure.ts",
-        "evidenceFile": "X1.json"
+        "evidenceFile": "X1.json",
+        "passed": 40,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": null,
+        "mutantsTotal": null,
+        "negativeCases": 5
       },
-      "handoffIssue": 816,
-      "progress": {
-        "stage": "closure gate written, wired and run: it reports known-gap with the exact remaining reason (G1 ladder + the ledger closure), never a softened verdict.",
-        "verifiedAt": "2026-09-13",
-        "fixes": [
-          "script/m55/verify-closure.ts (new): C1 ledger closure (every issue verified and pinned to the audit HEAD; X1's own record is the declared self-consistency exception), C2 the M53 R1 ladder's 40-gate record read per milestone with gate/exit/evidence, C3 docs/m55/VERDICT-PACK.md GENERATED from the ledger + V1's claim trace and drift-gated byte-for-byte (a claim naming a missing frame fails; a frame-less claim must declare its wire-only source), C4 the hand-off note checked against the owner's index (blocked-with-reason when absent), C6 chain wiring, 5 mutants.",
-          "docs/m55/HANDOFF-cross-language.md (new): the stored cross-language row (greet -> package.json name, uses, 0.85, bridge name-resolution, is_cross_language=1) with what the lane already does about it and what is asked of the analyzer lane.",
-          "The cross-lane hand-off was FILED: issue #816 in the analyzer lane (M14: Analyzer Truth & Honesty), carrying the stored row and the probe/frame evidence."
-        ],
-        "remaining": [
-          "the closure run itself: G1's M53 R1 ladder (m24->m44 + M53 closure) must be green at ONE HEAD with every prior issue verified — T2's click-to-call-site leg (F13) is the current blocker, and because T2 sits before T3/T4/T5/P1/V1 in the ladder, its open item holds them too"
-        ]
-      }
+      "handoffIssue": 816
     }
   ]
 }

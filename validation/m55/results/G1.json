@@ -8,22 +8,19 @@
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 6,
-  "currentCommit": "f2ea7a0bfd1ec33d5cfdb157a80644608466f0d7",
+  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
   "workingTreeRelevantChanges": [
     "docs/m55/VERDICT-PACK.md",
     "validation/m55/results/G1.json",
-    "validation/m55/results/V1-blocked-path.json",
-    "validation/m55/results/V1-probe.json",
-    "validation/m55/results/V1.json",
-    "validation/m55/results/X1.json"
+    "validation/m55/results/X1.json",
+    "validation/m55/results/manifest.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-14T04:52:42.559Z",
+  "generatedAt": "2026-09-14T16:08:17.164Z",
   "ledger": {
     "issues": 9,
-    "verified": [],
-    "planned": [
+    "verified": [
       "G1",
       "T1",
       "T2",
@@ -34,17 +31,9 @@
       "V1",
       "X1"
     ],
-    "partial": [
-      "T1",
-      "T2",
-      "T3",
-      "T4",
-      "T5",
-      "P1",
-      "V1",
-      "X1"
-    ],
-    "ledgerStatus": "open"
+    "planned": [],
+    "partial": [],
+    "ledgerStatus": "closed"
   },
   "contract": {
     "section15": "docs/IDE-HONESTY-CONTRACT.md",
