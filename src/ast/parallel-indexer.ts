@@ -1795,10 +1795,26 @@ export async function storeResults(
  
    // Pre-prepare target resolution statement — reused for every relationship.
    // file_id is needed to compute the honest is_cross_file flag at insert time.
+   // M49 #816: proximity-ordered and deterministic. The previous form was
+   // `WHERE s.project_id = ? AND s.name = ? LIMIT 1` — no ORDER BY and no
+   // language awareness, so among same-named symbols SQLite returned an
+   // arbitrary row (row order is not a contract; it changes with inserts,
+   // ANALYZE and VACUUM). Measured on a two-file TypeScript project that
+   // DECLARES `name` in its own file (src/greeter.ts:name:2 exists as a
+   // symbol): `greet --uses--> name` and `Greeter --contains--> name` both
+   // resolved to the `name` KEY OF package.json, and were then stamped
+   // is_cross_language=1 with bridge mechanism `name-resolution` — so a
+   // same-file declared member lost to a JSON manifest key, and the stored
+   // graph asserted a cross-language containment that does not exist.
+   //
+   // Prefer the nearest candidate: same file, then same language, then any;
+   // ties broken by id so the same input always yields the same graph.
    const resolveTargetStmt = rawDb.prepare(
      `SELECT s.id, s.file_id, f.language FROM brain_symbol s
       LEFT JOIN brain_file f ON f.id = s.file_id
-      WHERE s.project_id = ? AND s.name = ? LIMIT 1`
+      WHERE s.project_id = ? AND s.name = ?
+      ORDER BY (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+      LIMIT 1`
    )
 
    // #737 diagnostics wiring: every batch call site runs through the `stmt`
@@ -2470,7 +2486,7 @@ export async function storeResults(
              }
  
              // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later
-             const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf) as any
+             const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
@@ -2556,7 +2572,12 @@ export async function storeResults(
                relType,
                rel.confidence || 1.0,
                rel.context || null,
-               0,
+               // M59.O2: the analyzer's own call-site line — never a fabricated
+               // 0. NULL when the analyzer could not derive one, so every
+               // reader must handle "unknown" instead of a number that silently
+               // meant "unknown" (graph-engine's `row.lineNumber || node.line`
+               // turned that 0 into the caller symbol's declaration line).
+               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null,
                relIsCrossFile,
                rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
                rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
