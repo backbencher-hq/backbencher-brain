@@ -3397,6 +3397,161 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+// Dart #752 mirror: bare identifier member reads. The oracle mirrors the
+// analyzer rule for rule — the name must resolve to a DECLARED MEMBER of the
+// enclosing type (name inventory from the analyzer's own symbols, the zig
+// deriveZigBareUses precedent), must not be a local/param of the current
+// function (CGD15), and must not sit in a declaration-name, selector-link,
+// callee-head or write-LHS position. Truth still derives every EDGE from tree
+// structure; only the member inventory is shared ground truth.
+export function deriveDartBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const membersByOwner = new Map<string, Set<string>>()
+  for (const s of symbols ?? []) {
+    if (!s || typeof s.name !== "string" || !s.ownerName) continue
+    let set = membersByOwner.get(s.ownerName)
+    if (!set) { set = new Set<string>(); membersByOwner.set(s.ownerName, set) }
+    set.add(s.name)
+  }
+  const push = (name: string): void => {
+    const key = "uses\u0000" + name
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push({ label: "uses", from: "", target: name })
+  }
+  const DECL_PARENTS = new Set([
+    "formal_parameter", "constructor_param", "function_signature", "method_signature",
+    "getter_signature", "setter_signature", "type_alias", "label",
+    "initialized_identifier", "static_final_declaration",
+    "class_definition", "enum_declaration", "mixin_declaration", "extension_declaration",
+  ])
+  const LINK_PARENTS = new Set([
+    "unconditional_assignable_selector", "conditional_assignable_selector",
+    "cascade_selector", "selector",
+  ])
+  const firstIdentifier = (node: any): any => {
+    const s: any[] = [node]
+    while (s.length > 0) {
+      const x = s.pop()!
+      if (x.type === "identifier") return x
+      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
+    }
+    return null
+  }
+  const hasType = (node: any, type: string): boolean => {
+    const s: any[] = [node]
+    while (s.length > 0) {
+      const x = s.pop()!
+      if (x.type === type) return true
+      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
+    }
+    return false
+  }
+  const declaredName = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    const pt = p.type
+    if (pt !== "initialized_variable_definition" && pt !== "static_final_declaration") return false
+    let eqIdx = -1
+    let myIdx = -1
+    for (let i = 0; i < p.childCount; i++) {
+      const c = p.child(i)
+      if (!c) continue
+      if (!c.isNamed && c.text === "=" && eqIdx === -1) eqIdx = i
+      if (c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) myIdx = i
+    }
+    if (myIdx === -1) return false
+    if (eqIdx === -1) return true
+    return myIdx < eqIdx
+  }
+  const isWrite = (n: any): boolean => {
+    let p: any = n.parent
+    let guard = 0
+    while (p && guard++ < 16) {
+      if (p.type === "assignment_expression") {
+        let opText: string | null = null
+        for (let i = 0; i < p.childCount; i++) {
+          const c = p.child(i)
+          if (c && !c.isNamed && c.text.includes("=")) { opText = c.text; break }
+        }
+        if (opText !== "=") return false
+        const lhs = p.namedChild(0)
+        return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+      }
+      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
+          p.type === "program" || p.type === "declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+  const collectLocals = (node: any, out: Set<string>): void => {
+    const w: any[] = [node]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m.type === "identifier" && declaredName(m)) out.add(m.text)
+      if (
+        m.type === "formal_parameter" || m.type === "constructor_param" ||
+        m.type === "simple_formal_parameter" || m.type === "super_formal_parameter" ||
+        m.type === "catch_clause_parameter" || m.type === "catch_parameters"
+      ) {
+        const id = firstIdentifier(m)
+        if (id) out.add(id.text)
+      }
+      for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
+    }
+  }
+  const enclosingClass = (n: any): string | null => {
+    let p: any = n.parent
+    let guard = 0
+    while (p && guard++ < 64) {
+      if (p.type === "class_definition" || p.type === "enum_declaration") {
+        return p.childForFieldName?.("name")?.text ?? null
+      }
+      if (p.type === "extension_declaration" || p.type === "mixin_declaration") {
+        const id = firstIdentifier(p)
+        return id ? id.text : null
+      }
+      p = p.parent
+    }
+    return null
+  }
+  const walk = (n: any, locals: Set<string>): void => {
+    const t = n.type
+    let childLocals = locals
+    if (t === "function_body" || t === "function_expression_body" || t === "block") {
+      const bound = new Set<string>()
+      collectLocals(n, bound)
+      const sig = n.previousNamedSibling
+      if (sig) collectLocals(sig, bound)
+      if (bound.size > 0) {
+        childLocals = new Set(locals)
+        for (const nm of bound) childLocals.add(nm)
+      }
+    }
+    if (t === "identifier") {
+      const txt = n.text
+      const pt = n.parent ? n.parent.type : ""
+      const nx = n.nextNamedSibling
+      const nextIsCall = !!nx && nx.type === "selector" && hasType(nx, "argument_part")
+      const owner = enclosingClass(n)
+      const isMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+      if (
+        !LINK_PARENTS.has(pt) &&
+        !DECL_PARENTS.has(pt) &&
+        !declaredName(n) &&
+        !nextIsCall &&
+        !isWrite(n) &&
+        !locals.has(txt) &&
+        isMember
+      ) push(txt)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, childLocals) }
+  }
+  walk(root, new Set<string>())
+  return edges
+}
+
 // Swift tree-truth oracle (swift managed-OO wave #266). Mirrors
 // RealSwiftAnalyzer's M12.21 leaf-target contract exactly:
 //   - extends:  FIRST inheritance base of class/struct/actor (superclass),
@@ -4366,12 +4521,89 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     if (t === ownName && raw !== t) return undefined
     return t
   }
+  // PHP-E mirror: sole-`...` arguments never invoke (first-class callable).
+  const phpIsTearOff = (n: any): boolean => {
+    const args = n.namedChildren.find((c: any) => c.type === "arguments")
+    if (!args) return false
+    let saw = false
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (!c) continue
+      if (c.type === "variadic_placeholder") {
+        if (saw) return false
+        saw = true
+        continue
+      }
+      return false
+    }
+    return saw
+  }
   // Mirror RealPhpAnalyzer.extractIncludePath (probe-verified shapes).
   const cleanString = (t: string): string => {
     const m = t.match(/^['"](.*)['"]$/s)
     return m ? m[1] : t
   }
   const collapseWhitespace = (t: string): string => t.replace(/\s+/g, "")
+  // PHP-O2 (first review): verified in-file overrides. The analyzer emits
+  // overrides[B.foo->A.foo] @0.95 when the in-file base declares the same
+  // method; the oracle derived nothing, so every verified pair was an
+  // unexplained edge waiting for a sample to hit it. Prescan classes
+  // (name -> heritage-resolved base + declared methods); external-base
+  // guesses stay oracle-silent by design (0.5, below the lane filter).
+  {
+    const methodsByClass = new Map<string, Set<string>>()
+    const baseByClass = new Map<string, string>()
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const pn = pre.pop()!
+      if (!pn) continue
+      if (pn.type === "class_declaration" || pn.type === "interface_declaration" ||
+          pn.type === "trait_declaration" || pn.type === "enum_declaration") {
+        const nm = pn.namedChildren.find((c: any) => c.type === "name")?.text
+        if (nm) {
+          if (!methodsByClass.has(nm)) methodsByClass.set(nm, new Set<string>())
+          const bc = pn.namedChildren.find((c: any) => c.type === "base_clause")
+          if (bc && pn.type === "class_declaration") {
+            const first = bc.namedChild(0)
+            if (first) {
+              const t = heritageOrSkip(first.text, nm)
+              if (t) baseByClass.set(nm, t)
+            }
+          }
+        }
+      }
+      if (pn.type === "method_declaration") {
+        const mn = pn.childForFieldName?.("name")?.text ??
+          pn.namedChildren.find((c: any) => c.type === "name")?.text
+        if (mn) {
+          let own: any = pn.parent
+          let og = 0
+          while (own && og++ < 12) {
+            if (own.type === "class_declaration" || own.type === "interface_declaration" ||
+                own.type === "trait_declaration" || own.type === "enum_declaration") break
+            own = own.parent
+          }
+          const onm = own ? own.namedChildren.find((c: any) => c.type === "name")?.text : null
+          if (onm) {
+            if (!methodsByClass.has(onm)) methodsByClass.set(onm, new Set<string>())
+            methodsByClass.get(onm)!.add(mn)
+          }
+        }
+      }
+      for (let k = pn.namedChildCount - 1; k >= 0; k--) {
+        const c = pn.namedChild(k)
+        if (c) pre.push(c)
+      }
+    }
+    for (const [cls, base] of baseByClass) {
+      const baseSet = methodsByClass.get(base)
+      const clsSet = methodsByClass.get(cls)
+      if (!baseSet || !clsSet) continue
+      for (const m of clsSet) {
+        if (baseSet.has(m)) push("overrides", `${base}.${m}`)
+      }
+    }
+  }
   const extractPhpIncludePath = (node: any): string | undefined => {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -4444,7 +4676,10 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         }
       }
     }
-    if (t === "use_declaration" && inBody) {
+    // PHP-O1 (first review): trait uses live at CLASS-body level, never
+    // inside a function body — the old inBody gate silenced every one of
+    // them on the oracle side while the analyzer always emits them.
+    if (t === "use_declaration") {
       // Trait use inside a class body
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -4467,16 +4702,25 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         // edge). Without this mirror the oracle fabricated calls:add_action/
         // add_filter truth on every procedural WP-style file.
         const isWpHook = target === "add_action" || target === "add_filter"
-        if (!isWpHook && !PHP_BUILTINS.has(target)) push("calls", target)
+        // PHP-E mirror: sole-`...` is a tear-off reference, never a call.
+        if (phpIsTearOff(n)) {
+          if (!isWpHook && !PHP_BUILTINS.has(target)) push("uses", target)
+        } else if (!isWpHook && !PHP_BUILTINS.has(target)) push("calls", target)
       }
     }
     if (t === "member_call_expression" || t === "nullsafe_member_call_expression") {
       const nameNode = n.childForFieldName?.("name")
-      if (nameNode) push("calls", nameNode.text)
+      if (nameNode) {
+        if (phpIsTearOff(n)) push("uses", nameNode.text)
+        else push("calls", nameNode.text)
+      }
     }
     if (t === "scoped_call_expression") {
       const nameNode = n.childForFieldName?.("name")
-      if (nameNode) push("calls", nameNode.text)
+      if (nameNode) {
+        if (phpIsTearOff(n)) push("uses", nameNode.text)
+        else push("calls", nameNode.text)
+      }
     }
     if (t === "object_creation_expression") {
       // Mirror the analyzer: named/qualified target -> leaf; self/static ->
@@ -4500,23 +4744,80 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       }
     }
     if ((t === "member_access_expression" || t === "nullsafe_member_access_expression") && inBody) {
-      // Member READS only: assignment/augmented-assignment LHS is a write;
-      // member_call receiver is a call target (mirrors the analyzer's
-      // read/write + call-receiver gate — M37.13 added
-      // augmented_assignment_expression to this oracle gate after the
-      // analyzer's SCD1 fix showed the oracle fabricating phantom uses for
-      // `$this->count += $step` when the member is never read elsewhere).
-      // PHPD11 mirror (M37 #606 master-review wave-2): PHP 8 nullsafe reads
-      // `$this->svc?->name` parse as nullsafe_member_access_expression with
-      // the SAME "name" field (probe-verified 2026-09-07); both sides were
-      // dropping the trailing member read the non-null form emits.
+      // Member READS only: assignment/augmented-assignment LHS is a write.
+      // PHP-A mirror: call receivers ARE reads (the old isCallReceiver gate
+      // is dropped on both sides — `$this->dep` in `$this->dep->run()`).
       const lhs = parent ? parent.namedChild(0) : null
       const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
-      const isCallReceiver = parent && (parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression")
-      if (!isWrite && !isCallReceiver) {
+      if (!isWrite) {
         const nameNode = n.childForFieldName?.("name")
         if (nameNode) push("uses", nameNode.text)
       }
+    }
+    // PHP-H mirror: static property reads (`C::$total`, `self::$x`) with
+    // the same write gate; the scope is never a read.
+    if (t === "scoped_property_access_expression" && inBody) {
+      const lhs = parent ? parent.namedChild(0) : null
+      const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      if (!isWrite) {
+        const varNode = n.namedChildren.find((c: any) => c.type === "variable_name")
+        if (varNode) {
+          // Mirror variableBareName: `name` child, else strip `$`.
+          const nmNode = varNode.namedChildren.find((c: any) => c.type === "name")
+          const raw = nmNode ? nmNode.text : varNode.text
+          const nm = raw.startsWith("$") ? raw.slice(1) : raw
+          if (nm) push("uses", nm)
+        }
+      }
+    }
+    // PHP-D mirror: constant fetches (`Suit::Hearts`, `parent::VERSION`);
+    // `::class` is a keyword, never a member. No name field exists —
+    // positional [scope, name], so the constant is the LAST name child.
+    if (t === "class_constant_access_expression" && inBody) {
+      let member: string | undefined
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c && c.type === "name") { member = c.text; break }
+      }
+      if (member && member.toLowerCase() !== "class") push("uses", member)
+    }
+    // PHP-B mirror: subscript bases (first named child only; the index is
+    // a bare value). Write-position bases read the address.
+    if (t === "variable_name" && parent && parent.type === "subscript_expression" && inBody) {
+      const first = parent.namedChild(0)
+      if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) {
+        const raw = n.namedChildren.find((c: any) => c.type === "name")?.text ?? n.text
+        const base = raw.startsWith("$") ? raw.slice(1) : raw
+        if (base && base !== "this") push("uses", base)
+      }
+    }
+    // PHP-C mirror: closure captures.
+    if (t === "variable_name" && parent && parent.type === "anonymous_function_use_clause" && inBody) {
+      const raw = n.namedChildren.find((c: any) => c.type === "name")?.text ?? n.text
+      const base = raw.startsWith("$") ? raw.slice(1) : raw
+      if (base && base !== "this") push("uses", base)
+    }
+    // PHP-F mirrors: interpolation reads.
+    if (t === "variable_name" && inBody) {
+      let p: any = n.parent
+      let g = 0
+      let inside = false
+      while (p && g++ < 8) {
+        if (p.type === "encapsed_string" || p.type === "dynamic_variable_name") { inside = true; break }
+        if (p.type === "function_body" || p.type === "compound_statement" ||
+            p.type === "class_declaration" || p.type === "program" ||
+            p.type === "function_definition" || p.type === "method_declaration") break
+        p = p.parent
+      }
+      if (inside) {
+        const raw = n.namedChildren.find((c: any) => c.type === "name")?.text ?? n.text
+        const base = raw.startsWith("$") ? raw.slice(1) : raw
+        if (base && base !== "this") push("uses", base)
+      }
+    }
+    if (t === "name" && parent && parent.type === "dynamic_variable_name" && inBody) {
+      const base = n.text
+      if (base && base !== "this") push("uses", base)
     }
     const nextBody = inBody || t === "method_declaration" || t === "function_definition"
     const nextCls = t === "class_declaration" ? (stack as any)._curCls : cls
@@ -8010,6 +8311,13 @@ async function main() {
         for (const e of deriveDartEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // #752: bare member-read uses — mirrors the analyzer's identifier-read
+        // contract rule for rule (declared-member resolution from the shared
+        // symbol inventory, CGD15 local shadowing, declaration/selector/callee/
+        // write gates). Without this the new edges read as analyzer-only.
+        for (const e of deriveDartBareUses(root, result?.symbols ?? [])) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "swift") {
         for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
@@ -8217,6 +8525,7 @@ async function main() {
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
     else report[lang] = row
     console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%)`)
+
     // M37.21 #610 operational lesson (web-tree-sitter WASM heap aborts kill
     // the sweep mid-run — twice during the JVM wave): persist each completed
     // lane immediately so a crash never loses finished lanes again. The
@@ -8434,165 +8743,3 @@ async function main() {
 if (process.argv[1]?.endsWith("differential.ts")) {
   main().catch(e => { console.error(e); process.exit(1) })
 }
-// Dart #752 mirror: bare identifier member reads. The oracle mirrors the
-// analyzer rule for rule — the name must resolve to a DECLARED MEMBER of the
-// enclosing type (name inventory from the analyzer's own symbols, the zig
-// deriveZigBareUses precedent), must not be a local/param of the current
-// function (CGD15), and must not sit in a declaration-name, selector-link,
-// callee-head or write-LHS position. Truth still derives every EDGE from tree
-// structure; only the member inventory is shared ground truth.
-export function deriveDartBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
-  const seen = new Set<string>()
-  const membersByOwner = new Map<string, Set<string>>()
-  for (const s of symbols ?? []) {
-    if (!s || typeof s.name !== "string" || !s.ownerName) continue
-    let set = membersByOwner.get(s.ownerName)
-    if (!set) { set = new Set<string>(); membersByOwner.set(s.ownerName, set) }
-    set.add(s.name)
-  }
-  const push = (name: string): void => {
-    const key = "uses\u0000" + name
-    if (seen.has(key)) return
-    seen.add(key)
-    edges.push({ label: "uses", from: "", target: name })
-  }
-  const DECL_PARENTS = new Set([
-    "formal_parameter", "constructor_param", "function_signature", "method_signature",
-    "getter_signature", "setter_signature", "type_alias", "label",
-    "initialized_identifier", "static_final_declaration",
-    "class_definition", "enum_declaration", "mixin_declaration", "extension_declaration",
-  ])
-  const LINK_PARENTS = new Set([
-    "unconditional_assignable_selector", "conditional_assignable_selector",
-    "cascade_selector", "selector",
-  ])
-  const firstIdentifier = (node: any): any => {
-    const s: any[] = [node]
-    while (s.length > 0) {
-      const x = s.pop()!
-      if (x.type === "identifier") return x
-      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
-    }
-    return null
-  }
-  const hasType = (node: any, type: string): boolean => {
-    const s: any[] = [node]
-    while (s.length > 0) {
-      const x = s.pop()!
-      if (x.type === type) return true
-      for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) s.push(c) }
-    }
-    return false
-  }
-  const declaredName = (n: any): boolean => {
-    const p = n.parent
-    if (!p) return false
-    const pt = p.type
-    if (pt !== "initialized_variable_definition" && pt !== "static_final_declaration") return false
-    let eqIdx = -1
-    let myIdx = -1
-    for (let i = 0; i < p.childCount; i++) {
-      const c = p.child(i)
-      if (!c) continue
-      if (!c.isNamed && c.text === "=" && eqIdx === -1) eqIdx = i
-      if (c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) myIdx = i
-    }
-    if (myIdx === -1) return false
-    if (eqIdx === -1) return true
-    return myIdx < eqIdx
-  }
-  const isWrite = (n: any): boolean => {
-    let p: any = n.parent
-    let guard = 0
-    while (p && guard++ < 16) {
-      if (p.type === "assignment_expression") {
-        let opText: string | null = null
-        for (let i = 0; i < p.childCount; i++) {
-          const c = p.child(i)
-          if (c && !c.isNamed && c.text.includes("=")) { opText = c.text; break }
-        }
-        if (opText !== "=") return false
-        const lhs = p.namedChild(0)
-        return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
-      }
-      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
-          p.type === "program" || p.type === "declaration") return false
-      p = p.parent
-    }
-    return false
-  }
-  const collectLocals = (node: any, out: Set<string>): void => {
-    const w: any[] = [node]
-    while (w.length > 0) {
-      const m = w.pop()!
-      if (m.type === "identifier" && declaredName(m)) out.add(m.text)
-      if (
-        m.type === "formal_parameter" || m.type === "constructor_param" ||
-        m.type === "simple_formal_parameter" || m.type === "super_formal_parameter" ||
-        m.type === "catch_clause_parameter" || m.type === "catch_parameters"
-      ) {
-        const id = firstIdentifier(m)
-        if (id) out.add(id.text)
-      }
-      for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
-    }
-  }
-  const enclosingClass = (n: any): string | null => {
-    let p: any = n.parent
-    let guard = 0
-    while (p && guard++ < 64) {
-      if (p.type === "class_definition" || p.type === "enum_declaration") {
-        return p.childForFieldName?.("name")?.text ?? null
-      }
-      if (p.type === "extension_declaration" || p.type === "mixin_declaration") {
-        const id = firstIdentifier(p)
-        return id ? id.text : null
-      }
-      p = p.parent
-    }
-    return null
-  }
-  const walk = (n: any, locals: Set<string>): void => {
-    const t = n.type
-    let childLocals = locals
-    if (t === "function_body" || t === "function_expression_body" || t === "block") {
-      const bound = new Set<string>()
-      collectLocals(n, bound)
-      const sig = n.previousNamedSibling
-      if (sig) collectLocals(sig, bound)
-      if (bound.size > 0) {
-        childLocals = new Set(locals)
-        for (const nm of bound) childLocals.add(nm)
-      }
-    }
-    if (t === "identifier") {
-      const txt = n.text
-      const pt = n.parent ? n.parent.type : ""
-      const nx = n.nextNamedSibling
-      const nextIsCall = !!nx && nx.type === "selector" && hasType(nx, "argument_part")
-      const owner = enclosingClass(n)
-      const isMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
-      if (
-        !LINK_PARENTS.has(pt) &&
-        !DECL_PARENTS.has(pt) &&
-        !declaredName(n) &&
-        !nextIsCall &&
-        !isWrite(n) &&
-        !locals.has(txt) &&
-        isMember
-      ) push(txt)
-    }
-    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, childLocals) }
-  }
-  walk(root, new Set<string>())
-  return edges
-}
-
-        // #752: bare member-read uses — mirrors the analyzer's identifier-read
-        // contract rule for rule (declared-member resolution from the shared
-        // symbol inventory, CGD15 local shadowing, declaration/selector/callee/
-        // write gates). Without this the new edges read as analyzer-only.
-        for (const e of deriveDartBareUses(root, result?.symbols ?? [])) {
-          ;(truth as any[]).push(e)
-        }
