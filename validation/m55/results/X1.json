@@ -12,24 +12,22 @@
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "f2ea7a0bfd1ec33d5cfdb157a80644608466f0d7",
+  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
   "workingTreeRelevantChanges": [
     "docs/m55/VERDICT-PACK.md",
     "validation/m55/results/G1.json",
-    "validation/m55/results/V1-blocked-path.json",
-    "validation/m55/results/V1-probe.json",
-    "validation/m55/results/V1.json",
-    "validation/m55/results/X1.json"
+    "validation/m55/results/X1.json",
+    "validation/m55/results/manifest.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-14T04:52:43.639Z",
+  "generatedAt": "2026-09-14T15:48:59.693Z",
   "audit": {
-    "head": "f2ea7a0bfd1ec33d5cfdb157a80644608466f0d7",
+    "head": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
-      "pin": "f2ea7a0bfd1ec33d5cfdb157a80644608466f0d7",
+      "pin": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
       "green": 40,
       "total": 40,
       "milestones": {
@@ -296,7 +294,7 @@
         "code": "G1",
         "githubIssue": 773,
         "evidence": "G1.json",
-        "status": "planned"
+        "status": "verified"
       },
       {
         "code": "T1",
