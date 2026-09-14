@@ -1862,7 +1862,7 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
   return edges
 }
 
-export function deriveCCalls(root: any): { label: string; from: string; target: string }[] {
+export function deriveCCalls(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   // CGD1 mirror (M37 #601): compound/plain assignment LHS is a WRITE — the
@@ -2233,7 +2233,30 @@ export function deriveCCalls(root: any): { label: string; from: string; target: 
             }
             return false
           })()
-          const varDeclSuppressed = !fnNameDecl && isSuppressedErrorDecl(n)
+          // CGD38 (M49 W17, measured jq src/jv.c L1963): a FILE-SCOPE
+          // enumerator is real even inside an ERROR-glued span. The enum
+          // sits between glued function headers, so the CGD19 first-glue
+          // position test suppresses it — but the analyzer's extractEnum has
+          // no ERROR gate (mirrors extractStruct, CGD14b), so its members
+          // are real EnumMember symbols and uses of them resolve
+          // (ITER_FINISHED at jv.c L1963/1966/1976/1981 inside the
+          // 19013..57718 recovery span). Discriminator: no compound_statement
+          // ancestor — enums in bodies stay CGD20 execution artifacts.
+          // CGD38a refinement (measured jq src/jv_dtoa.c `emin`): a
+          // function-local enum glued OUT of its body by parse recovery
+          // (enumerator_list wrapped in preproc_ifdef/preproc_else) has NO
+          // compound ancestor anymore either — and the analyzer never
+          // creates its members (extractEnum reads only DIRECT
+          // enumerator_list children; the preproc wrappers exclude them).
+          // Admitting it fabricated `uses emin` truth with no analyzer
+          // symbol. Rule: the exemption applies ONLY when the enumerator is
+          // a DIRECT child of its enumerator_list (no preproc wrapper
+          // between) — exactly the shapes extractEnum can see.
+          const isFileScopeEnumerator = n.parent?.type === "enumerator"
+            && n.parent?.parent?.type === "enumerator_list"
+            && n.parent?.parent?.parent?.type === "enum_specifier"
+            && !isFunctionLocal(n)
+          const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
           if (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || (!isFunctionLocal(n) && !varDeclSuppressed))) {
             declaredNames.add(n.text)
           }
@@ -2352,7 +2375,45 @@ export function deriveCCalls(root: any): { label: string; from: string; target: 
       // CGD-PREPROC: condition-text mentions emit no truth even when the
       // name is declared elsewhere (a `#if SQLITE_WASI` reference to an
       // external flag is not a code-level use).
-      if (p && p.type !== "call_expression" && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n)) {
+      // CGD39 (M49 W17, measured jq src/jv_dtoa.c NO_HEX_FP/ROUND_BIASED/
+      // Sudden_Underflow): a bare identifier dissolved into a TOP-LEVEL
+      // ERROR blob (ERROR directly under translation_unit — no surviving
+      // code container, no preproc_* ancestor) is parse-recovery debris:
+      // the `#ifdef X` line lost every grammatical anchor, so
+      // isDirectiveConditionText is blind and no reading of the mention is
+      // possible. The analyzer is correctly silent (valueless guard defines
+      // are not symbols) — micro-repro w17-jqc-valueless2.ts: analyzer=[]
+      // oracle=[uses].
+      // CGD39a (measured jq src/builtin.c LIBM_* L2056-2061, src/lexer.c
+      // yynoreturn L565, src/parser.c YY_INITIAL_VALUE): an ERROR nested
+      // INSIDE surviving containers (argument_list < call_expression,
+      // declaration, function_definition) is a swallowed FRAGMENT of a real
+      // code line — the mention keeps its container reading and the
+      // analyzer's declaredNames-macro contract emits there. Truth MUST
+      // mirror (pre-CGD39 those lanes were covered). Scope: only
+      // ERROR-parented mentions whose ERROR hangs off the translation_unit
+      // are suppressed; everything else keeps the normal gates.
+      const isTopLevelErrorDebris = p?.type === "ERROR" && p.parent?.type === "translation_unit"
+      // CGD40 (M49 W17, measured jq src/jv_dtoa.c ROUND_BIASED L4038 +
+      // src/builtin.c #undef LIBM_* L2056-2061): parse recovery SPLICES
+      // directive lines into continuing code — the `#ifndef ROUND_BIASED`
+      // mention survives as an operand of the surrounding if-condition's
+      // binary_expression, structurally identical to a real use. The C
+      // preprocessor is line-anchored text (C-D2), so the honest
+      // discriminator is PHYSICAL: a mention whose source line starts with
+      // '#' is directive text no matter where recovery glued the node. The
+      // analyzer's own CGD11 is blind to the spliced shape (no preproc_*
+      // ancestor survives) — its L2056-2061 emissions are artifacts the
+      // same rule suppresses on the analyzer side.
+      const isHashLine = sourceText !== undefined
+        ? (() => {
+            const bol = sourceText.lastIndexOf("\n", n.startIndex - 1) + 1
+            let i = bol
+            while (i < n.startIndex && (sourceText[i] === " " || sourceText[i] === "\t")) i++
+            return sourceText[i] === "#"
+          })()
+        : false
+      if (p && p.type !== "call_expression" && !isTopLevelErrorDebris && !isHashLine && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n)) {
         const name = n.text
         // CGD15: a function-local BINDING of the name (param or local
         // declaration in the enclosing function) shadows the file-scope
@@ -7591,7 +7652,9 @@ async function main() {
         }
       }
       if (lang === "c") {
-        for (const e of deriveCCalls(root)) {
+        // CGD40: the line-anchor gate needs the raw text (directive lines
+        // spliced into code by parse recovery are physically '#' lines).
+        for (const e of deriveCCalls(root, content)) {
           ;(truth as any[]).push(e)
         }
       }
