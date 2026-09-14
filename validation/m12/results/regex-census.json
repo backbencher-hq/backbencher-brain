@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-13T22:30:33.242Z",
+  "generatedAt": "2026-09-14T19:44:14.788Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
   "totalRegexUsages": 20,
@@ -246,7 +246,7 @@
       "usages": [
         {
           "file": "real-php-analyzer.ts",
-          "line": 1054,
+          "line": 1236,
           "column": 26,
           "source": "/^\\\\+/",
           "operation": "replace",

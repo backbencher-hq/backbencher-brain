@@ -60,7 +60,8 @@
       "value_binding_pattern",
       "while_statement",
       "willset_clause",
-      "willset_didset_block"
+      "willset_didset_block",
+      "key_path_expression"
     ]
   },
   "internal_silent": {
@@ -112,7 +113,6 @@
       "inheritance_constraint",
       "integer_literal",
       "interpolated_expression",
-      "key_path_expression",
       "key_path_string_expression",
       "lambda_function_type",
       "lambda_function_type_parameters",
@@ -311,6 +311,62 @@
         "status": "FIXED",
         "question": "OO family closure #613 family sweep (shared-blind-spot): bare capitalized calls emit instantiates \u2014 but the M12.21 `target.length > 1` carve-out mislabels single-letter constructions. Is length meaningful for the construction rule?",
         "resolution": "No \u2014 Swift naming reserves single capital letters for types (never free functions), so `E()` where `struct E: Error` is construction (instantiates ONLY). The carve-out had no rationale and was shared by analyzer + oracle (F5-blind): 15 sites in swift-nio corpus tests all degraded to calls. Guard removed on both sides; single-letter-construction fixture + swift/single-letter-as-calls mutant pin it."
+      },
+      {
+        "id": "SW-A",
+        "node_type": "navigation_suffix (non-self members)",
+        "status": "FIXED",
+        "question": "Ultimate review: cross-type member reads (`store.items.count`, `a.b.c` links, `C.shared`, `o.items[k]`) invisible on both sides \u2014 self-uses and bare-uses both missed them (dart DT-F / objc OC-E / php PHP-A parity).",
+        "resolution": "Suffix members read unless callee (last suffix of a non-subscript func-nav), self-chained (handleSelfUse owns), LHS-span writes (SCD1), implicit-dot roots, or self/Self/$0. Shares emittedUses (first metadata wins). Confidence 0.9. Gated by fixture swift/member-value-reads + mutants swift/drop-member-read-uses, swift/emit-member-write-as-uses.",
+        "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-B",
+        "node_type": "call_expression with enum-case callee",
+        "status": "FIXED",
+        "question": "Ultimate review: `Result.success(1)` dangled as calls->success (no such method; dart DT-A disease) while bare `Suit()` correctly instantiated.",
+        "resolution": "Candidates (capitalized direct receiver + leaf) recorded in-call, resolved post-walk against declared enum cases (in-file exactness; static factories and cross-file/Self heads stay calls). Dangling leaf dropped, instantiates emitted. Oracle mirrors with its own prescan (enums parse as class_declaration + enum token, caught by probe). Gated by fixture + mutants swift/enum-ctor-leaf-call, swift/static-factory-instantiates.",
+        "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-D",
+        "node_type": "key_path_expression",
+        "status": "FIXED",
+        "question": "Ultimate review: `\\.name`, `\\C.name`, `o[keyPath: \\.slot]` \u2014 key-path members invisible on both sides (pervasive in SwiftUI: ForEach id, bindings).",
+        "resolution": "Key-path suffix members always read (even the set-through form reads WHICH member). self/Self skipped. Gated by fixture (moved from silent list to handled).",
+        "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-E",
+        "node_type": "bare type(of:) calls",
+        "status": "FIXED",
+        "question": "Ultimate review: `type(of: x)` emitted calls->type \u2014 a stdlib free function like print/assert, never user code.",
+        "resolution": "Added to BUILTIN_BARE_CALLS + oracle SWIFT_BUILTINS. Member positions unaffected. Gated by fixture forbid + mutant swift/type-call-restored.",
+        "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-F",
+        "node_type": "simple_identifier with $ prefix",
+        "status": "FIXED",
+        "question": "Ultimate review: `$count` (projected @State value) missed the member table (`count` declared, `$count` read) \u2014 silent on both sides. `$0` shorthands must stay silent.",
+        "resolution": "Bare-uses + oracle mirror strip leading $ (all-digit rests skipped) for lookup AND target. Gated by fixture + mutant swift/projected-read-dropped.",
+        "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-R1",
+        "node_type": "macro expansions, operators, implicit captures",
+        "status": "RULED",
+        "question": "Ultimate review: `#assert(x)` freestanding macros error-recover (no edges either side); `a + b` silent; closure implicit captures silent (locals); metatypes (`is`/`as`/`C.self`) silent.",
+        "resolution": "Macros are a pinned-grammar boundary (definitions patterned, use-sites blind \u2014 corpora unaffected). Operators are arithmetic dispatch. Implicit captures are locals by design (explicit structural captures differ per language: php use-lists emit, Swift has none). Metatypes are types, not values. All consistent both sides.",
+        "issue": "M49.SW1 swift ultimate review"
+      },
+      {
+        "id": "SW-R2",
+        "node_type": "string interpolation (investigated, no work needed)",
+        "status": "RULED",
+        "question": "Ultimate review: is `\"hello \\(name)\"` covered? Dart/PHP needed blankets.",
+        "resolution": "Already covered by composition: `\\(o.prop)` members via SW-A, bare members via handleBareUses (wrappers fixture proves uses[V->count] from Text), locals silent by design. No separate rule; pinned indirectly.",
+        "issue": "M49.SW1 swift ultimate review"
       }
     ]
   }

@@ -3578,6 +3578,8 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     // SWIFTD16 mirror: fixed-width stdlib numerics filtered like Int/Double.
     "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
     "Int8", "Int16", "Int32", "Int64",
+    // SW-E mirror: `type(of:)` is a stdlib free function like print/assert.
+    "type",
   ])
   // SWIFTD15 mirror: stdlib raw-value types of a raw-representable enum.
   // The oracle must skip the SAME first base the analyzer records as
@@ -3597,8 +3599,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     const k = key(label, target)
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
   }
-
-  // self on the navigation RECEIVER chain only (mirrors the analyzer's
+  // SW-B candidates (head + leaf), resolved post-walk against declared
+  // enum cases; matched leaf calls convert to instantiates.
+  const swEnumCtorCandidates: Array<{ head: string; leaf: string }> = []
   // hasSelfReceiver): navigation > (navigation | self_expression) — stops at
   // the first non-receiver child (call_expression/try_expression).
   const hasSelfReceiver = (n: any): boolean => {
@@ -3665,8 +3668,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
 
   // SWIFTD17 mirror helper: is this call_expression a SUBSCRIPT access
   // (call_suffix with a `[` value_arguments) rather than a method call?
-  const isSubscript = (n: any): boolean => {
-    const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
+  const isSubscript = (n: any): boolean => {    const suffix = n.namedChildren.find((c: any) => c.type === "call_suffix")
     if (!suffix) return false
     const va = suffix.namedChildren.find((c: any) => c.type === "value_arguments" && c.text.startsWith("["))
     return !!va
@@ -3752,6 +3754,31 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         // DECLARES that method). The bare branch below keeps the filter.
         const leaf = navLeaf(callee)
         if (leaf && leaf !== "$0") push("calls", leaf)
+        // SW-B mirror: record enum-construction candidates (capitalized
+        // DIRECT receiver + leaf) for post-walk resolution. Receiver is
+        // second-to-last in document order; never descend into nested
+        // calls (arguments are not chain members).
+        if (leaf && leaf !== "$0") {
+          const seen: any[] = [callee]
+          const st: any[] = [callee]
+          while (st.length > 0) {
+            const x = st.pop()!
+            if (x !== callee && x.type === "call_expression") continue
+            for (let k = x.namedChildCount - 1; k >= 0; k--) {
+              const c = x.namedChild(k)
+              if (c) { st.push(c); seen.push(c) }
+            }
+          }
+          seen.sort((a: any, b: any) => a.startIndex - b.startIndex)
+          const parts: string[] = []
+          for (const x of seen) {
+            if (x.type === "simple_identifier" || x.type === "identifier" || x.type === "type_identifier") parts.push(x.text)
+          }
+          const receiver = parts.length >= 2 ? parts[parts.length - 2] : null
+          if (receiver && isCapitalized(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
+            swEnumCtorCandidates.push({ head: receiver, leaf })
+          }
+        }
       } else if (callee) {
         const target = callee.text
         // SWIFTD16 mirror: XCTest assertion functions (capitalized free
@@ -3790,6 +3817,56 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         const leaf = navLeaf(n)
         if (leaf) push("uses", leaf)
       }
+      // SW-A mirror: NON-self navigation member reads. Direct suffixes only
+      // (nested navigations visit separately); self-chains belong to the
+      // self rule above. Skip callee suffixes (last suffix of a func-nav of
+      // a non-subscript call), implicit-dot roots, LHS writes, self/Self/$0.
+      if (!hasSelf) {
+        const par = n.parent
+        const isFuncOfCall = par && par.type === "call_expression" && !isSubscript(par)
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || c.type !== "navigation_suffix") continue
+          const m = c.namedChildren.find((x: any) => x.type === "simple_identifier" || x.type === "identifier")
+          if (!m || !m.text || m.text === "$0" || m.text === "self" || m.text === "Self") continue
+          if (isFuncOfCall) {
+            let isLast = true
+            for (let j = n.namedChildCount - 1; j >= 0; j--) {
+              const s = n.namedChild(j)
+              if (s && s.type === "navigation_suffix") {
+                isLast = s.startIndex === c.startIndex && s.endIndex === c.endIndex
+                break
+              }
+            }
+            if (isLast) continue
+          }
+          let outer: any = n
+          while (outer && outer.parent && outer.parent.type === "navigation_expression") outer = outer.parent
+          const firstTok = outer ? outer.child(0) : null
+          if (firstTok && !firstTok.isNamed && firstTok.type === ".") continue
+          let a2: any = n.parent
+          while (a2 && (a2.type === "directly_assignable_expression" || a2.type === "navigation_expression" || a2.type === "navigation_suffix")) a2 = a2.parent
+          if (a2 && a2.type === "assignment") {
+            const lhs2 = a2.namedChild(0)
+            if (lhs2 && lhs2.startIndex <= c.startIndex && lhs2.endIndex >= c.endIndex) continue
+          }
+          push("uses", m.text)
+        }
+      }
+    }
+    // SW-D mirror: key-path members always read the member identity.
+    if (t === "key_path_expression") {
+      const st: any[] = [n]
+      while (st.length > 0) {
+        const x = st.pop()!
+        if (!x) continue
+        if (x.type === "navigation_suffix") {
+          const m = x.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier")
+          if (m && m.text && m.text !== "self" && m.text !== "Self") push("uses", m.text)
+          continue
+        }
+        for (let k = x.namedChildCount - 1; k >= 0; k--) { const c = x.namedChild(k); if (c) st.push(c) }
+      }
     }
     if (t === "import_declaration") {
       // mirror handleImport: first simple_identifier/type_identifier/identifier
@@ -3799,6 +3876,64 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
       if (c) stack.push({ n: c, parentType: t })
+    }
+  }
+  // SW-B post-walk: enum-case construction converts matched leaf calls.
+  // Enums parse as class_declaration with an `enum` token (SWIFTD1) —
+  // match on the token, not a dedicated node type.
+  if (swEnumCtorCandidates.length > 0) {
+    const enumCases = new Set<string>()
+    const hasEnumTok = (n: any): boolean => {
+      for (let k = 0; k < n.childCount; k++) {
+        const c = n.child(k)
+        if (c && !c.isNamed && c.type === "enum") return true
+      }
+      return false
+    }
+    const pre: any[] = [root]
+    while (pre.length > 0) {
+      const pn = pre.pop()!
+      if (!pn) continue
+      if (pn.type === "class_declaration" && hasEnumTok(pn)) {
+        let enm: string | null = null
+        for (let k = 0; k < pn.namedChildCount; k++) {
+          const c = pn.namedChild(k)
+          if (c && c.type === "type_identifier") { enm = c.text; break }
+        }
+        if (enm) {
+          const est: any[] = [pn]
+          while (est.length > 0) {
+            const en = est.pop()!
+            if (!en) continue
+            if (en.type === "enum_entry") {
+              for (let k = 0; k < en.namedChildCount; k++) {
+                const c = en.namedChild(k)
+                if (c && c.type === "simple_identifier") { enumCases.add(`${enm}.${c.text}`); break }
+              }
+            }
+            for (let k = en.namedChildCount - 1; k >= 0; k--) {
+              const c = en.namedChild(k)
+              if (c) est.push(c)
+            }
+          }
+        }
+      }
+      for (let k = pn.namedChildCount - 1; k >= 0; k--) {
+        const c = pn.namedChild(k)
+        if (c) pre.push(c)
+      }
+    }
+    if (enumCases.size > 0) {
+      for (const cand of swEnumCtorCandidates) {
+        if (!enumCases.has(`${cand.head}.${cand.leaf}`)) continue
+        for (let k = edges.length - 1; k >= 0; k--) {
+          if (edges[k].label === "calls" && edges[k].target === cand.leaf) {
+            edges.splice(k, 1)
+            break
+          }
+        }
+        push("instantiates", cand.head)
+      }
     }
   }
   return edges
@@ -3922,7 +4057,26 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
     if (t === "simple_identifier") {
       const txt = n.text
       const pt = n.parent ? n.parent.type : ""
-      const isMember = !!cTy && (membersByOwner.get(cTy)?.has(txt) ?? false)
+      // SW-F mirror: projected values read the wrapped member ($0-style
+      // closure shorthands never resolve).
+      let lookup = txt
+      if (lookup.startsWith("$")) {
+        const rest = lookup.slice(1)
+        let allDigits = rest.length > 0
+        for (let k = 0; k < rest.length; k++) {
+          const cc = rest.charCodeAt(k)
+          if (cc < 48 || cc > 57) { allDigits = false; break }
+        }
+        if (!allDigits) {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) walk(c, cTy, cLocals)
+          }
+          return
+        }
+        lookup = rest
+      }
+      const isMember = !!cTy && (membersByOwner.get(cTy)?.has(lookup) ?? false)
       const isImplicitMember = pt === "prefix_expression" && String(n.parent ? n.parent.text : "").startsWith(".")
       if (
         !NOT_A_READ.has(pt) &&
@@ -3931,8 +4085,9 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
         pt !== "call_expression" &&
         !isWrite(n) &&
         !cLocals.has(txt) &&
+        !cLocals.has(lookup) &&
         isMember
-      ) push(txt)
+      ) push(lookup)
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
