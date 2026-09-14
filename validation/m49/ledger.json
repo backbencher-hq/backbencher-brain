@@ -233,6 +233,15 @@
         "evidenceFile": "reviews/swift/ultimate-review.md",
         "verifiedAtCommit": "e8427668"
     }
+,
+    {
+        "id": "SW2",
+        "title": "Swift second review wave (issue #838): SW-G init delegation, SW-H implicit/Self enum construction",
+        "status": "verified",
+        "notes": "Hostile second battery over pass-1 deferrals; oracle mirrors in deriveSwiftEdges. Fully gated: fixture swift/init-delegation (new), 5 mutants, spec SW-G/SW-H + SW-R3. Lanes: swift-nio + alamofire, pinned + 5 rotations, 0/0/0. F3 all pass, F4 550/550, R1 117/117, R2 15/15. Seam trace extended (P1-swift.json secondReview).",
+        "evidenceFile": "reviews/swift/second-review.md",
+        "verifiedAtCommit": "a3faaa23"
+    }
   ],
   "waves": [
     {
