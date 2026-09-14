@@ -1763,13 +1763,28 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // this/super ALSO resolve to the method now — the TYPE-owner exception
     // (JAD2, "the swift precedent") was ruled out family-wide, and swift moved
     // with java in the same ruling.
-    const stack: { node: Node; owner: string | null; method: string | null }[] = [
-      { node: rootNode, owner: null, method: null },
+    // M49 #739 (CONV-J-1): owner -> declared member names, resolved ONCE.
+    // A bare identifier read is only a member read when it resolves to a
+    // declared member of the enclosing type, and `symbols.some()` per
+    // identifier would be O(N*S) on large files. Inherited members are NOT
+    // walked (no hierarchy BFS here), so a subclass read of an inherited
+    // field loses an edge rather than gaining a fabricated one — missing is
+    // strictly better than false (M49 #299 precision rule).
+    const membersByOwner = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      const o = s.ownerName || s.scope
+      if (!o) continue
+      const set = membersByOwner.get(o)
+      if (set) set.add(s.name)
+      else membersByOwner.set(o, new Set([s.name]))
+    }
+    const stack: { node: Node; owner: string | null; method: string | null; locals: Set<string> }[] = [
+      { node: rootNode, owner: null, method: null, locals: new Set<string>() },
     ]
     const seen = new Set<string>()
     while (stack.length > 0) {
       const item = stack.pop()!
-      const { node, owner, method } = item
+      const { node, owner, method, locals } = item
 
       if (
         node.type === "class_declaration" ||
@@ -1785,7 +1800,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nextOwner = nameNode ? nameNode.text : owner
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: nextOwner, method: null })
+          // #739: a type body opens a FRESH binding scope — an enclosing
+          // method's locals must not suppress member reads in a nested class.
+          if (child) stack.push({ node: child, owner: nextOwner, method: null, locals: new Set<string>() })
         }
         continue
       }
@@ -1794,6 +1811,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // classes re-enter the type branch above; their bodies keep their own
       // methods. A body-less method (interface) has no reads to attribute.
       let nextMethod = method
+      let nextLocals = locals
       if (
         node.type === "method_declaration" ||
         node.type === "constructor_declaration" ||
@@ -1804,6 +1822,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           node.type === "constructor_declaration" || node.type === "compact_constructor_declaration"
             ? "constructor"
             : nameNode?.text ?? method
+        // #739 GATE B (CGD15 family rule): a name the CURRENT function binds
+        // locally is not a member read. Without this, `int count = 5; return
+        // count;` inside a method that also declares a field `count` would
+        // fabricate uses(shadowed->count) — the false-edge class the ruling
+        // ranks worse than a missing edge.
+        nextLocals = this.collectBoundNames(node)
       }
 
       if (node.type === "field_access") {
@@ -1891,11 +1915,119 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+      // M49 #739 (CONV-J-1): BARE identifier reads. Pre-fix only field_access
+      // and array_access were scanned, so `return count;` on a declared field
+      // emitted NOTHING while `return this.count;` emitted uses(m->count) —
+      // probe-confirmed on the pinned grammar (java dotted=1, bare=0). Mirrors
+      // the #744 javascript bare-read block; csharp already emits both shapes.
+      // GATE A: the name must resolve to a DECLARED MEMBER of the enclosing
+      // type (membersByOwner above). GATE B: it must not be bound by the
+      // current function (`locals`) and must not be a write, a callee, a
+      // declaration's own name, or an annotation's name.
+      if (node.type === "identifier") {
+        const txt = node.text
+        if (txt !== "this" && txt !== "super") {
+          const parent = node.parent
+          const memberish =
+            parent?.type === "field_access" ||
+            parent?.type === "method_invocation" ||
+            parent?.type === "scoped_identifier" ||
+            parent?.type === "array_access"
+          const annotationName =
+            parent?.type === "marker_annotation" || parent?.type === "annotation"
+          const declName =
+            (parent?.type === "variable_declarator" ||
+              parent?.type === "formal_parameter" ||
+              parent?.type === "method_declaration" ||
+              parent?.type === "constructor_declaration" ||
+              parent?.type === "class_declaration" ||
+              parent?.type === "interface_declaration" ||
+              parent?.type === "enum_declaration" ||
+              parent?.type === "record_declaration" ||
+              parent?.type === "annotation_type_declaration" ||
+              parent?.type === "enum_constant" ||
+              parent?.type === "catch_formal_parameter" ||
+              parent?.type === "enhanced_for_statement") &&
+            parent.childForFieldName("name")?.startIndex === node.startIndex
+          let isWrite = false
+          if (parent?.type === "assignment_expression") {
+            const lhs = parent.childForFieldName("left") ?? parent.namedChild(0)
+            isWrite = !!lhs && lhs.startIndex === node.startIndex
+          }
+          const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+          const readSource = method ?? owner
+          const key = readSource ? `${readSource}.#${txt}` : null
+          if (
+            !memberish &&
+            !annotationName &&
+            !declName &&
+            !isWrite &&
+            !locals.has(txt) &&
+            isDeclaredMember &&
+            readSource &&
+            key &&
+            !seen.has(key)
+          ) {
+            seen.add(key)
+            relationships.push({
+              source: readSource,
+              target: txt,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.6,
+              metadata: { isBareRead: true },
+            })
+          }
+        }
+      }
+
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, owner, method: nextMethod })
+        if (child) stack.push({ node: child, owner, method: nextMethod, locals: nextLocals })
       }
     }
+  }
+
+  /**
+   * M49 #739 GATE B: the names a function body BINDS — parameters, locals,
+   * catch/enhanced-for/lambda/resource bindings. A bare read of any of these
+   * is not a member read (CGD15 family rule shared with c/cpp).
+   *
+   * Deliberately method-wide rather than block-scoped: a local declared AFTER
+   * a use still suppresses that use, which can only LOSE an edge, never
+   * fabricate one — the correct direction under the precision rule. Nested
+   * type bodies reset this set (the class branch above), so a nested class's
+   * member reads are never suppressed by the enclosing method.
+   */
+  private collectBoundNames(fnNode: Node): Set<string> {
+    const names = new Set<string>()
+    const stack: Node[] = [fnNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (
+        n.type === "variable_declarator" ||
+        n.type === "formal_parameter" ||
+        n.type === "catch_formal_parameter" ||
+        n.type === "enhanced_for_statement" ||
+        n.type === "resource"
+      ) {
+        const nm = n.childForFieldName("name") || this.findChildByType(n, "identifier")
+        if (nm) names.add(nm.text)
+      } else if (n.type === "lambda_expression") {
+        const params = n.childForFieldName("parameters")
+        if (params) {
+          if (params.type === "identifier") names.add(params.text)
+          else for (let i = 0; i < params.namedChildCount; i++) {
+            const c = params.namedChild(i)
+            if (c) names.add(c.text)
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return names
   }
 
   private childText(node: Node, type: string): string | null {

@@ -877,6 +877,33 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isArrayAccess) }),
   },
   {
+    id: "java/drop-bare-member-reads",
+    language: "java",
+    defectClass: "relationship-loss",
+    description: "drops Uses edges for BARE identifier member reads (#739 CONV-J-1: `return count;` on a declared field emitted nothing while `return this.count;` did; caught by the bare-member-read-uses fixture's expectRelationships)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isBareRead) }),
+  },
+  {
+    id: "java/bare-read-type-attribution",
+    language: "java",
+    defectClass: "attribution-corruption",
+    description: "re-sources bare member reads from the enclosing METHOD to the enclosing TYPE (the M49 W15 #814 rule moved java/swift to METHOD source family-wide) — caught by the bare-member-read-uses fixture, which expects from=bare/dotted",
+    transform: r => {
+      const ownerOf = new Map<string, string>()
+      for (const s of r.symbols ?? []) {
+        if (s.ownerName) ownerOf.set(s.name, s.ownerName)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map(x =>
+          (x.metadata ?? {}).isBareRead && ownerOf.has(String(x.source))
+            ? { ...x, source: ownerOf.get(String(x.source))! }
+            : x,
+        ),
+      }
+    },
+  },
+  {
     id: "java/drop-ctor-delegation",
     language: "java",
     defectClass: "relationship-loss",
