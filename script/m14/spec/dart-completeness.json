@@ -88,7 +88,12 @@
       "unconditional_assignable_selector",
       "uri",
       "void_type",
-      "while_statement"
+      "while_statement",
+      "redirection",
+      "template_substitution",
+      "identifier_dollar_escaped",
+      "assignable_expression",
+      "initializer_list_entry"
     ]
   },
   "internal_silent": {
@@ -101,7 +106,6 @@
       "assert_statement",
       "assertion",
       "assertion_arguments",
-      "assignable_expression",
       "assignment_expression",
       "assignment_expression_without_cascade",
       "await_expression",
@@ -134,7 +138,6 @@
       "for_element",
       "for_loop_parts",
       "hex_integer_literal",
-      "identifier_dollar_escaped",
       "identifier_list",
       "if_element",
       "if_null_expression",
@@ -168,7 +171,6 @@
       "postfix_operator",
       "prefix_operator",
       "record_pattern",
-      "redirection",
       "relational_expression",
       "relational_operator",
       "rethrow_builtin",
@@ -183,7 +185,6 @@
       "super",
       "switch_block",
       "switch_statement_default",
-      "template_substitution",
       "this",
       "throw_expression",
       "throw_expression_without_cascade",
@@ -244,7 +245,7 @@
         "node_type": "local_function_declaration,lambda_expression,function_expression",
         "status": "RULED",
         "question": "Local functions, lambdas, and function expressions are not module-level symbols.",
-        "resolution": "NO locals/lambdas as symbols (M12.11 family contract). A local_function_declaration still becomes the call-source context for calls inside it; lambda_expression and function_expression are silent internals. SUPERSEDED (2026-09, DARTD8): a local_function_declaration is now a silent fold — calls inside it attribute to the enclosing real function (csharp/python/go parity), and it never becomes a call-source context either."
+        "resolution": "NO locals/lambdas as symbols (M12.11 family contract). A local_function_declaration still becomes the call-source context for calls inside it; lambda_expression and function_expression are silent internals. SUPERSEDED (2026-09, DARTD8): a local_function_declaration is now a silent fold \u2014 calls inside it attribute to the enclosing real function (csharp/python/go parity), and it never becomes a call-source context either."
       },
       {
         "id": "DARTD3",
@@ -272,13 +273,13 @@
         "node_type": "field/variable declarations (declaration > <list>)",
         "status": "FIXED",
         "question": "Where is a field's declared type in the parse tree, and how is it extracted without an O(class)^2 ancestor scan?",
-        "resolution": "The explicit type is always a DIRECT child of the declaration container in front of the list (probed dart-typedecl-shapes.ts: instance/static/final/multi-name/top-level all place type_identifier on declaration; inferred `static const x = Ctor(...)` carries none). extractFieldType scans node + declList direct children only. The old parent fallback iterated every class_body member per field — 13.6 s on phosphor_icons_regular.dart (1,512 fields x 3k-member scan); fixed to 252 ms (50x). Same trap hasModifier documents; a bound is not needed since direct-child scans are O(1)."
+        "resolution": "The explicit type is always a DIRECT child of the declaration container in front of the list (probed dart-typedecl-shapes.ts: instance/static/final/multi-name/top-level all place type_identifier on declaration; inferred `static const x = Ctor(...)` carries none). extractFieldType scans node + declList direct children only. The old parent fallback iterated every class_body member per field \u2014 13.6 s on phosphor_icons_regular.dart (1,512 fields x 3k-member scan); fixed to 252 ms (50x). Same trap hasModifier documents; a bound is not needed since direct-child scans are O(1)."
       },
       {
         "id": "DARTD7",
         "node_type": "relationship multiplicity",
         "status": "FIXED",
-        "question": "Calls/instantiates emit ONE row per call site — N sites of the same callee push N identical (type,source,target,confidence) rows. Is multiplicity payload or noise?",
+        "question": "Calls/instantiates emit ONE row per call site \u2014 N sites of the same callee push N identical (type,source,target,confidence) rows. Is multiplicity payload or noise?",
         "resolution": "Noise: 192,761 redundant rows across proxicall (35% of 545,208); oracle/fixtures are presence-based so multiplicity was invisible to every gate. Dedup exact rows at emission (first metadata wins): total corpus relationships 545,208 -> 351,722, dup rows 0. Unique-set semantics mirror the rust #383/go GOD9 qualified_calls lesson."
       },
       {
@@ -292,14 +293,14 @@
         "id": "DARTD9",
         "node_type": "class-member field initializers (no enclosing function)",
         "status": "FIXED",
-        "question": "Instantiates/calls with no function context fell back to the MODULE (file basename) as source — every const field of an icon class attributed to the file, a name that is not a symbol.",
+        "question": "Instantiates/calls with no function context fell back to the MODULE (file basename) as source \u2014 every const field of an icon class attributed to the file, a name that is not a symbol.",
         "resolution": "extractCallRelationships tracks the enclosing class/mixin/enum/extension and uses it before the module fallback: field initializers attribute to the owning class (IconSet -> IconData); the module remains only for true top-level initializers. Csharp parity: parentContext?.rawName || 'global'."
       },
       {
         "id": "DARTD10",
         "node_type": "top-level getter_signature / setter_signature",
         "status": "FIXED",
-        "question": "Top-level getters/setters fell through every dispatch branch (owner undefined, t not function_signature) — silently dropped as symbols while their bodies' calls attributed to a non-declared source.",
+        "question": "Top-level getters/setters fell through every dispatch branch (owner undefined, t not function_signature) \u2014 silently dropped as symbols while their bodies' calls attributed to a non-declared source.",
         "resolution": "Bare top-level getter/setter signatures route to processTopLevelFunction as Property symbols with meta.isTopLevelAccessor/isGetter/isSetter (corpus: translate.dart's `List<String> get _deepLKeys` now declared; non-declared call-source tail 0)."
       },
       {
@@ -313,42 +314,42 @@
         "id": "DARTD12",
         "node_type": "getter/setter pairs (method_signature > getter_signature + setter_signature, same name)",
         "status": "FIXED",
-        "question": "M37 master-review 2 (2026-09-06): seenMembers dedup keyed owner:name without kind — every accessor pair collapsed to one Property symbol (setters carry the value param)",
+        "question": "M37 master-review 2 (2026-09-06): seenMembers dedup keyed owner:name without kind \u2014 every accessor pair collapsed to one Property symbol (setters carry the value param)",
         "answer": "owner:name:kind key; fixture expectSymbolCount value/property/Counter equals:2; mutant dart/accessor-pair-collapsed"
       },
       {
         "id": "DARTD13",
         "node_type": "formal_parameter type extraction (tree-sitter-dart has NO type field)",
         "status": "FIXED",
-        "question": "M37 master-review 2: childForFieldName('type') never matched (probed dart-param-children.ts) — 8,094 corpus params degraded to dynamic; this-params carry type on the sibling field",
+        "question": "M37 master-review 2: childForFieldName('type') never matched (probed dart-param-children.ts) \u2014 8,094 corpus params degraded to dynamic; this-params carry type on the sibling field",
         "answer": "span-matched leading type child (type_identifier/function_type/nullable_type/void_type) + post-pass this-param->field-type binding (O(symbols), no parent scans); expectParameters pins total:double nv:int sides:int; mutant dart/param-types-degraded"
       },
       {
         "id": "DARTD14",
         "node_type": "mixin_declaration on-clause heritage (mixin M on Base implements I)",
         "status": "FIXED",
-        "question": "M37 master-review 2: on-base is a DIRECT type_identifier child (probed dart-mixin-shape.ts) — heritage extractor only looked for superclass children, so mixin on-bases emitted zero edges",
+        "question": "M37 master-review 2: on-base is a DIRECT type_identifier child (probed dart-mixin-shape.ts) \u2014 heritage extractor only looked for superclass children, so mixin on-bases emitted zero edges",
         "answer": "extractClassHeritage handles mixin_declaration direct type_identifier as extends + interfaces/mixins via existing branches; oracle derives the same truth; mutants dart/mixin-on-heritage-dropped"
       },
       {
         "id": "DARTD15",
         "node_type": "enhanced enum heritage (enum Poly implements Shape / with M)",
         "status": "FIXED",
-        "question": "M37 master-review 2: enum_declaration case never called extractClassHeritage — enhanced-enum implements/with edges vanished; in-file interface methods also produced no overrides",
+        "question": "M37 master-review 2: enum_declaration case never called extractClassHeritage \u2014 enhanced-enum implements/with edges vanished; in-file interface methods also produced no overrides",
         "answer": "enum_declaration calls extractClassHeritage; overrides pass covers implements; oracle enum_declaration branch mirrors; mutant dart/enum-heritage-dropped"
       },
       {
         "id": "DARTD16",
         "node_type": "cross-file overrides (@override methods whose bases are declared outside the file)",
         "status": "FIXED",
-        "question": "M37 master-review 2: 34,306 corpus @override sites produced 32 edges — production never passes overrideCompanion (parseFile callers pass no context) and the pass only checked the direct extends base. Fields also faked overrides via un-gated external fallback",
+        "question": "M37 master-review 2: 34,306 corpus @override sites produced 32 edges \u2014 production never passes overrideCompanion (parseFile callers pass no context) and the pass only checked the direct extends base. Fields also faked overrides via un-gated external fallback",
         "answer": "3-pass resolution (in-file BFS over extends+implements+with -> companion -> annotation-gated external first-parent at conf 0.8); fields can never override; oracle n/a (overrides not compared for dart); mutants dart/external-override-dropped + dart/field-override-fabricated"
       },
       {
         "id": "DARTD17",
         "node_type": "cascade_section chained selectors (b..a.b.c(1))",
         "status": "FIXED",
-        "question": "M37 master-review 2: cascade calls resolved to the cascade_selector's first identifier (a) — the leaf method (c) lives in nested unconditional_assignable_selector children",
+        "question": "M37 master-review 2: cascade calls resolved to the cascade_selector's first identifier (a) \u2014 the leaf method (c) lives in nested unconditional_assignable_selector children",
         "answer": "callee chain = last identifier across selector children excluding argument_part (args excluded so b..foo(a.bar) stays foo); covered by existing cascade pins"
       },
       {
@@ -356,14 +357,70 @@
         "node_type": "cascade_section (multi-invocation)",
         "status": "FIXED",
         "question": "OO family closure #613 (dart-http corpus): a cascade section may hold several invocations (..a(x)..b(y)); which selectors are calls?",
-        "answer": "Each selector IMMEDIATELY followed by its own argument_part sibling is an invocation — ..headers.addAll(x) calls addAll (headers is a bare getter), and ..transform(x)..listen(y) calls BOTH (the earlier keep-last-only logic dropped transform). Same per-invocation model mirrored in deriveDartEdges (it previously emitted only the cascade_selector first identifier = getter junk). pinned: family-closure-cascades fixture + dart/cascade-multi-invocation-dropped mutant."
+        "answer": "Each selector IMMEDIATELY followed by its own argument_part sibling is an invocation \u2014 ..headers.addAll(x) calls addAll (headers is a bare getter), and ..transform(x)..listen(y) calls BOTH (the earlier keep-last-only logic dropped transform). Same per-invocation model mirrored in deriveDartEdges (it previously emitted only the cascade_selector first identifier = getter junk). pinned: family-closure-cascades fixture + dart/cascade-multi-invocation-dropped mutant."
       },
       {
         "id": "DARTD19",
         "node_type": "redirecting_factory_constructor_signature (factory X() = _Y;)",
         "status": "FIXED",
         "question": "OO family closure #613 (dart-http generated jni_bindings.dart): does a redirecting factory attribute construction to the implementation class?",
-        "answer": "Yes — factory X() = _Y; emits instantiates X -> _Y (the analyzer already did; the deriveDartEdges oracle lacked the mirror, making those the only unexplained instantiates in dart-http at 200-file depth). Oracle now pushes the redirect target (private _-prefixed names allowed, so no capitalization filter). pinned: family-closure-cascades fixture + dart/factory-redirect-instantiates-dropped mutant."
+        "answer": "Yes \u2014 factory X() = _Y; emits instantiates X -> _Y (the analyzer already did; the deriveDartEdges oracle lacked the mirror, making those the only unexplained instantiates in dart-http at 200-file depth). Oracle now pushes the redirect target (private _-prefixed names allowed, so no capitalization filter). pinned: family-closure-cascades fixture + dart/factory-redirect-instantiates-dropped mutant."
+      },
+      {
+        "id": "DT-A",
+        "node_type": "selector + argument_part (named construction)",
+        "status": "FIXED",
+        "question": "First review: `Foo.named()` emitted a dangling calls->named (no such method exists; constructors are literally named 'constructor') while bare `Foo()` correctly instantiated. Same for prefix `p.Foo()` (calls->Foo) and tear-off `Foo.named` (silent).",
+        "resolution": "Receiver-chain walk: capitalized head + in-file named ctor (constructor-symbol knowledge) instantiates the class and drops the leaf call; prefix-qualified capitalized methods instantiate (generated mock code builds this way); static methods (C.create) and unknown cross-file X.y() stay leaf calls. Tear-offs of known named ctors instantiate. Gated by fixture dart/member-value-reads + mutants dart/named-ctor-leaf-call, dart/prefix-ctor-as-call.",
+        "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-B",
+        "node_type": "mixin on-base, with-clause (alias resolution)",
+        "status": "FIXED",
+        "question": "First review: `mixin M on _i1.Base` extended _i1 and `with _i2.Mixin` used _i2 \u2014 the DAD1/DAD2 alias-resolution contract stopped at superclass/interfaces and never reached on/with clauses (both sides leaked identically).",
+        "resolution": "on-bases (all of them) and with-mixins now resolve alias-free on both sides. Gated by fixture dart/member-value-reads extends/uses pins + forbid _i1/_i2 + mutant dart/mixin-on-with-alias-leak.",
+        "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-C",
+        "node_type": "redirecting_factory_constructor_signature (alias)",
+        "status": "FIXED",
+        "question": "First review: `factory Z.make() = _i1.Impl.make` instantiated _i1 (raw first type_identifier) on both sides \u2014 DARTD19 only covered unqualified targets.",
+        "resolution": "The redirect class is second-to-last after `=` (singletons stay whole), mirrored in the oracle. Gated by fixture instantiates[C->Impl] + forbid _i1 + mutant dart/redirect-alias-leak.",
+        "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-D",
+        "node_type": "initializer_list_entry, redirection (super/this)",
+        "status": "FIXED",
+        "question": "First review: `B() : super(1)`, `super.named(2)` and `this.named(0)` emitted nothing on either side \u2014 every constructor delegation in the language was invisible (super calls take two shapes: initializer entries and redirection nodes).",
+        "resolution": "super() entries instantiate the resolved superclass (prescan; mixin-application bases excluded as vanishingly rare); this() entries/redirections instantiate the own class. Gated by fixture instantiates[constructor->A/B] + mutants dart/drop-super-ctor-instantiates, dart/drop-this-redirect-instantiates.",
+        "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-E",
+        "node_type": "conditional selector chains (investigated, no defect)",
+        "status": "RULED",
+        "question": "First review: does `a?.b.c()` fabricate calls->b (conditional link read as invocation)? The battery initially suggested it.",
+        "resolution": "No defect \u2014 direct probe shows calls->c only on both sides (the three-selector chain resolves the leaf correctly). Pinned as calls->bump in the fixture to lock the conditional-invocation shape.",
+        "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-F",
+        "node_type": "selector/cascade/subscript/interpolation reads",
+        "status": "FIXED",
+        "question": "First review: member reads were invisible on both sides (this./obj./static/conditional access, cascade getters, subscript bases, interpolation) \u2014 the managed-OO family contract (csharp CS-R1, objc OC-E) unimplemented, lanes blind by circular consistency.",
+        "resolution": "Reads emit uses@0.9 on both sides: argument-less selectors (callee links, plain-= LHS writes and builtins excluded), argument-less cascade selectors (cascade `=` assigns excluded), subscript bases (index-selector shapes incl. assignable-expression targets; declaration names bind via =-position rule), and string interpolation (template-substitution blanket + $x placeholders, labels excluded). Unqualified bare value reads (RHS, args, returns, conditions) need scope inventory and defer to review 2. Gated by fixture (14 uses pins, 1 write forbid) + 4 mutants.",
+        "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT-R1",
+        "node_type": "operator invocations, enum-constant constructions",
+        "status": "RULED",
+        "question": "First review: `a + b` / `a == b` and enum `a(1)` constant constructions emit nothing on either side.",
+        "resolution": "Silent by design (both sides): operator dispatch is arithmetic, not a named dependency; enum-constant invocations are declarations (their constants are read via member uses, e.g. uses->a). Documented, not gated.",
+        "issue": "M49.DT1 dart first review"
       }
     ],
     "lastUpdated": "2026-09-06 (M37 master-review 2: DARTD12-DARTD17)"
