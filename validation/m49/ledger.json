@@ -224,6 +224,15 @@
         "evidenceFile": "reviews/php/first-review.md",
         "verifiedAtCommit": "241e3a4e"
     }
+,
+    {
+        "id": "SW1",
+        "title": "Swift ultimate review wave (issue #836): SW-A member reads, SW-B enum construction, SW-D keypaths, SW-E type filter, SW-F projected values",
+        "status": "verified",
+        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes (main-harness-equivalent setup); oracle mirrors in deriveSwiftEdges/BareUses. Fully gated: fixture swift/member-value-reads (new), 6 mutants, spec SW-A/B/D/E/F + SW-R1/R2. Lanes: swift-nio + alamofire, pinned + 5 rotations, 0/0/0. F3 all pass, F4 545/545, R1 115/115, R2 15/15. Seam trace in-wave (P1-swift.json): flags join F1, contains-zero noted, heuristic tier intact.",
+        "evidenceFile": "reviews/swift/ultimate-review.md",
+        "verifiedAtCommit": "e8427668"
+    }
   ],
   "waves": [
     {
