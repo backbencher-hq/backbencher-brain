@@ -23,6 +23,9 @@
     "recall": 1,
     "corpusSymbols": 7812,
     "corpusRelationships": 30483,
+    "grammarErrorFiles": 0,
+    "grammarErrorFilesMeasuredOver": 400,
+    "grammarErrorEvidence": "validation/m12/results/java-corpus-errors.json",
     "measuredAt": "2026-08-13T17:44:00.000Z",
     "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44"
    }
@@ -43,7 +46,10 @@
     "recall": 1,
     "corpusSymbols": 11286,
     "corpusRelationships": 43364,
-    "grammarErrorFiles": 51,
+    "grammarErrorFiles": 8,
+    "grammarErrorFilesMeasuredOver": 300,
+    "grammarErrorFilesRecheckNote": "CORRECTED 2026-09-14 (M49 W17): the recorded value here was 51 of 300 (17.0%). Re-measured on the identical 300 sample paths through the production parseFile pipeline it is 8 of 300 (2.7%) - the claim overstated its own grammar failures by 6.4x, so it was stale in the safe direction (the wasm was upgraded since the note was written). Evidence: validation/m12/results/kotlin-corpus-errors.json, reproducible with `bun script/m12/jvm-corpus-errors.ts kotlin`. See also validation/m12/results/java-corpus-errors.json (0/400) and scala-corpus-errors.json (0/400, confirming its own claim) - the first executable evidence any of the four JVM languages has had.",
+    "grammarErrorEvidence": "validation/m12/results/kotlin-corpus-errors.json",
     "note": "cross-file override targets resolved inside the analyzer via the optional AnalyzeContext companion index (owner type -> declared method names) built by the harness pre-pass; without context the analyzer keeps its deterministic first-parent per-file default; production wiring of the same context tracked by M12.44; 51/300 corpus files have tree-sitter-kotlin grammar ERROR nodes (fun interface, object delegation, one hidden-MISSING when-entry case) reported as warnings",
     "measuredAt": "2026-08-13T17:44:00.000Z"
    }
@@ -87,6 +93,9 @@
     "corpusSymbols": 25008,
     "corpusRelationships": 79260,
     "grammarErrorFiles": 0,
+    "grammarErrorFilesMeasuredOver": 400,
+    "grammarErrorEvidence": "validation/m12/results/scala-corpus-errors.json",
+    "grammarRecheckNote": "VERIFIED 2026-09-14 (M49 W17) on the identical 400 sample paths through the production parseFile pipeline: 0/400, 0 ERROR nodes, 0 MISSING tokens, 0 crashes - this claim reproduces exactly. It and java's were the two JVM claims that held up; groovy's 0/400 and kotlin's 51/300 did not.",
     "note": "grammar upgraded to tree-sitter-scala v0.26.2 (wasm/ + ~/.bb/wasm) \u2014 the wired grammar failed on 90.7% of the scala3 corpus (cannot parse match/for/sealed trait/private params/enum/extension/given/opaque); v0.26.2 parses all 400 sample files with 0 errors and every construct in the Scala 2+3 matrix. Analyzer rewritten against v0.26.2 AST: abstract function_declaration methods, instance_expression constructors (instantiates), extension/given/enum-case/constructor-property symbols, single-pass call extraction (no duplicates), locals in function bodies suppressed (Kotlin contract), overrides via companion index. Edge-case verification added fixture EdgeCases.scala (curried calls, function-type params, as/=> renamed imports) and fixed a cross-language denylist bug that dropped legitimate Scala symbols named process/window/module. Differential 124/124 (1.000/1.000); analyzer fully regex-free.",
     "measuredAt": "2026-08-14T02:16:04.129Z"
    }
@@ -107,9 +116,13 @@
     "recall": 1,
     "corpusSymbols": 2953,
     "corpusRelationships": 14053,
-    "grammarErrorFiles": 0,
-    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; 0/400 grammar errors and 0 missing tokens; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free",
-    "measuredAt": "2026-08-14T04:12:26.115Z"
+    "grammarErrorFiles": 3874,
+    "grammarErrorFilesMeasuredOver": 6564,
+    "grammarErrorRatePct": 59.0,
+    "grammarErrorBreakdown": { "errorNodeFiles": 3172, "missingNodeFiles": 2014 },
+    "grammarErrorEvidence": "validation/m12/results/groovy-corpus-errors.json",
+    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free. CORRECTED 2026-09-14 (M49 W17): the previous claim here was \"0/400 grammar errors and 0 missing tokens\", and it does not reproduce \u2014 not on the 400-file sample and not on the corpus. Measured through the production parseFile pipeline over all 6,564 tracked *.groovy files: 3,874 error files (59.0%), 3,172 with a true ERROR node (48.3%) and 2,014 with a MISSING token (30.7%). The same 400 files the old claim named measure 250/400 (62.5%). The claim had no executable evidence: script/m12/ carried a *-corpus-errors.ts for 35 languages and none for java, kotlin, scala or groovy, and the prose number drifted unmeasured from M12 until now. The missing script now exists (script/m12/groovy-corpus-errors.ts, failure classes derived from the parse tree, cross-checked against the pipeline), and the patched grammar genuinely does cover the constructs it claims EXCEPT as- casts, newline-terminated field declarations, unbraced bodies followed by another statement, and enum constructor arguments \u2014 see issue #742.",
+    "measuredAt": "2026-09-14T20:00:00.000Z"
    }
   },
   {
