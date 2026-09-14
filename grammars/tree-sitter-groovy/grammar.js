@@ -72,12 +72,40 @@ module.exports = grammar(Java, {
 
     [$.primary_expression, $.method_invocation],
     [$.field_access, $.method_invocation],
+    // #742: a closure's implicit-parameter list (`{ a, b -> ... }`) begins
+    // exactly like a variable_declarator_id, so the parse is genuinely
+    // ambiguous until the arrow is seen.
+    [$.closure, $._variable_declarator_id],
+    // #742: `{ a, b -> ... }` param lists parse through the same state as
+    // expression statements / lambda starts until the arrow disambiguates.
+    [$.lambda_expression, $.expression_statement],
+    [$.closure, $.lambda_expression],
+    [$.closure, $.lambda_expression, $.expression_statement],
+    [$.lambda_expression, $.statement],
+    [$.enum_constant, $._variable_declarator_id],
+    [$.enum_constant, $._variable_declarator_id, $._unannotated_type],
+    [$.primary_expression, $._variable_declarator_id, $.closure],
+    // #742: `(Type) x as Y` — cast vs as-coercion share the prefix
+    [$.cast_expression, $.binary_expression],
     [$.array_access, $.expression],
     [$.record_pattern, $._unannotated_type],
     [$.instanceof_expression],
     [$._type, $.array_type],
     [$.annotated_type, $.array_type],
 
+    [$.null_literal, $.reserved_word],
+    [$.method_invocation, $._juxt_argument_list],
+    [$.generic_type, $._juxt_argument_list],
+    [$.annotated_type, $._juxt_argument_list],
+    [$.array_access, $._juxt_argument_list],
+    [$.primary_expression, $._unannotated_type, $._juxt_argument_list],
+    [$.primary_expression, $._juxt_argument_list],
+    [$.expression, $._juxt_argument_list],
+    [$.expression, $.method_invocation],
+    [$.method_invocation, $._juxt_function_name],
+    [$.primary_expression, $.generic_type, $._juxt_argument_list],
+    [$.expression, $.method_invocation, $._juxt_function_name],
+    [$._unannotated_type, $._juxt_argument_list],
     [$.primary_expression, $._juxt_function_name],
     [$.primary_expression, $.method_invocation, $._juxt_function_name],
     [$.primary_expression, $._variable_declarator_id, $._unannotated_type, $._juxt_function_name],
@@ -202,6 +230,41 @@ module.exports = grammar(Java, {
       optional(seq('else', field('alternative', $.statement))),
     )),
 
+    // Groovy statements are newline-terminated (`if (x) throw new E()` is
+    // idiomatic and legal); Java's inherited throw requires a literal ';',
+    // which forced missing-token recovery on every such line.
+    throw_statement: $ => seq('throw', $.expression, DELIMITER),
+
+    // Annotation members are newline-terminated too.
+    annotation_type_element_declaration: $ => seq(
+      optional($.modifiers),
+      field('type', $._unannotated_type),
+      field('name', choice($.identifier, $._reserved_identifier)),
+      '(', ')',
+      field('dimensions', optional($.dimensions)),
+      optional($._default_value),
+      DELIMITER,
+    ),
+
+    // Same for `super(...)` / `this(...)` constructor-delegation lines
+    // (mirrors the inherited Java rule, but newline-terminated).
+    explicit_constructor_invocation: $ => seq(
+      choice(
+        seq(
+          field('type_arguments', optional($.type_arguments)),
+          field('constructor', choice($.this, $.super)),
+        ),
+        seq(
+          field('object', choice($.primary_expression)),
+          '.',
+          field('type_arguments', optional($.type_arguments)),
+          field('constructor', $.super),
+        ),
+      ),
+      field('arguments', $.argument_list),
+      DELIMITER,
+    ),
+
     break_statement: $ => seq('break', optional($.identifier), DELIMITER),
 
     continue_statement: $ => seq('continue', optional($.identifier), DELIMITER),
@@ -228,6 +291,8 @@ module.exports = grammar(Java, {
       original,
       ...[
         ['in', PREC.REL],
+        // #742: the spaceship operator (Groovy's Comparable compareTo).
+        ['<=>', PREC.REL],
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
           field('left', $.expression),
@@ -246,6 +311,21 @@ module.exports = grammar(Java, {
         field('left', $.expression),
         // @ts-ignore
         field('operator', '?:'),
+        field('right', $.expression),
+      )),
+      // #742: Groovy `as` coercion — `x as Type`, `(...) as Type[]`, and the
+      // regex matchers `=~` / `==~`. Ubiquitous in real Groovy; without them
+      // every such line fails into ERROR/missing-token recovery.
+      prec.right(PREC.CAST, seq(
+        field('left', $.expression),
+        // @ts-ignore
+        field('operator', 'as'),
+        field('type', $._type),
+      )),
+      prec.left(PREC.REL, seq(
+        field('left', $.expression),
+        // @ts-ignore
+        field('operator', choice('=~', '==~')),
         field('right', $.expression),
       )),
     ),
@@ -345,7 +425,9 @@ module.exports = grammar(Java, {
 
     argument_list: $ => seq(
       '(',
-      commaSep(choice($.expression, $.map_item)),
+      // #742: spread call arguments — `convert(*args)` — are legal in the
+      // parenthesised form as well as the command-chain form.
+      commaSep(choice($.expression, $.map_item, $.spread_argument)),
       optional(','),
       ')',
     ),
@@ -355,16 +437,57 @@ module.exports = grammar(Java, {
       field('args', alias($._juxt_argument_list, $.argument_list)),
     )),
 
+    // #742 residual: Groovy's single-quoted string is a full string literal,
+    // not Java's one-character `char`. Java's inherited rule requires at least
+    // one character (`repeat1`), so the very common empty literal `''` failed
+    // to parse — it is the largest single first-error signature in the
+    // grails-core corpus (`@ID`, i.e. annotations like
+    // `@Builder(builderStrategy = SimpleStrategy, prefix = '')`). Tripled
+    // quotes still lex as the multiline form because the lexer prefers the
+    // longest match.
+    character_literal: _ => token(seq(
+      "'",
+      repeat(choice(
+        /[^\\'\n]/,
+        /\\./,
+        /\\\n/,
+      )),
+      "'",
+    )),
+
+    reserved_word: _ => 'null',
+
     _juxt_function_name: $ => choice(
       $.identifier,
       $.primary_expression,
       $.string_literal,
+      // #742: `assertNull null.encodeAsBase64()` — `null` (and Java's
+      // `true`/`false` literals) are legal command-chain callees (Groovy
+      // allows any expression there).
+      $.reserved_word,
+      $.true,
+      $.false,
     ),
 
     // Command-chain arguments (comma-separated; whitespace-separated multi-arg
     // chains like `processBuilder "ls" "-la"` are a documented limitation —
     // whitespace-as-token conflicts with the extras handling).
-    _juxt_argument_list: $ => commaSep1(choice($._literal, $.map_item, $.identifier)),
+    _juxt_argument_list: $ => commaSep1(choice(
+      $._literal,
+      $.map_item,
+      $.identifier,
+      // #742: `assertNull null.encodeAsBase64().x` — a dotted chain starting
+      // on a literal is a legal command-chain argument.
+      $.field_access,
+      $.method_invocation,
+      // #742: a trailing closure is the canonical Groovy command-argument
+      // (`findAll { }`, `"/url" { mappings }`).
+      $.closure,
+      $.spread_argument,
+    )),
+
+    // #742: Groovy spread call argument — `foo(*list)`.
+    spread_argument: $ => prec(2, seq('*', $.expression)),
 
     // Groovy enum bodies may list members without a trailing semicolon after
     // the constants (Java requires the ';'). Kept as a non-empty choice so the
@@ -388,9 +511,11 @@ module.exports = grammar(Java, {
     // Groovy class-body fields are newline-terminated, not ';'-terminated
     // (Java requires ';' — the inherited rule only parses via missing-token
     // recovery on newline-terminated fields, which is not a clean parse).
+    // Groovy also allows *untyped* fields with modifiers (`static mapWith =
+    // 'neo4j'`, `static mapping = { ... }`) — `def`-like, type elided.
     field_declaration: $ => seq(
       optional($.modifiers),
-      field('type', $._unannotated_type),
+      optional(field('type', $._unannotated_type)),
       $._variable_declarator_list,
       DELIMITER,
     ),
@@ -414,6 +539,16 @@ module.exports = grammar(Java, {
 
     closure: $ => prec(1, seq(
       '{',
+      // Groovy closures take an implicit parameter list: `{ it }` (default),
+      // `{ a, b -> ... }` (named, arrow form), `{ -> ... }` (zero-arg), or
+      // typed (`{ MethodNode mn -> ... }`). Without it, `each { key, value ->
+      // ... }` — ubiquitous in real code — forces ERROR recovery.
+      optional(seq(
+        repeat(seq(optional($._unannotated_type), $.identifier, ',')),
+        optional($._unannotated_type),
+        $.identifier,
+        '->',
+      )),
       repeat(choice($.statement, $.juxt_function_call)),
       // Single-line bodies may end in a bare expression (`{ x + 1 }`) or a
       // return with no trailing delimiter (`{ return id }`).

@@ -945,16 +945,36 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const walk = (n: Node): void => {
       switch (n.type) {
+        case "binary_expression": {
+          // Groovy `as` coercion — `o as String`, `[] as Set`,
+          // `[mimeType] as MimeType[]`. Since the #742 grammar rebuild the
+          // pinned grammar parses this CORRECTLY as
+          // binary_expression(left, type) with the `as` operator; the cast
+          // target is the `type` field. The pre-rebuild grammar mis-parsed it
+          // as a local_variable_declaration whose "type" was the `as` keyword
+          // (that branch is kept below only so an older wasm still emits);
+          // this case is the real one now, and is what the as-cast fixture
+          // asserts.
+          const asType = n.childForFieldName("type")
+          if (asType && n.childForFieldName("left")) {
+            emit(n, [asType], "as_coercion", "cast_type")
+            // Do not descend further for this node: the generic type-clause
+            // scan below does not apply to expressions.
+            const lt = n.childForFieldName("left")
+            if (lt) walk(lt)
+            break
+          }
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c) }
+          break
+        }
         case "field_declaration":
         case "formal_parameter":
         case "local_variable_declaration": {
-          // G1 (review wave, probe-verified mis-parse): `def y = o as String`
-          // lexes as local_variable_declaration(type_identifier("as"),
-          // variable_declarator(String)) — there is no juxt_function_call.
-          // The "type" is the `as` keyword itself; the real target sits in
-          // the declarator (lexed as a bare identifier, which
-          // collectTypeNames would never see). Emit it as a cast edge;
-          // the `as` keyword exclusion stays for every other path.
+          // LEGACY (pre-#742-rebuild wasm only): `def y = o as String` used to
+          // lex as local_variable_declaration(type_identifier("as"),
+          // variable_declarator(String)). The rebuilt grammar parses the
+          // coercion as binary_expression (case above), so this branch is
+          // inert with the shipped wasm; kept for the older-build path.
           if (n.type === "local_variable_declaration") {
             let asKw: Node | null = null
             let asDecl: Node | null = null
