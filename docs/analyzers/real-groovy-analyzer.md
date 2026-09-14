@@ -63,6 +63,30 @@ clean corpus.
 > `validation/m12/results/groovy-corpus-errors.json` — and its failure classes
 > are derived from the parse tree rather than hard-coded, so the number in this
 > document cannot drift from the measurement again.
+>
+> **Rebuild (M49 W18, issue #742 — closes the last environment claim).** W17
+> registered the grammar fix as *blocked on a wasm rebuild needing emscripten*.
+> That was wrong: the grammar source is vendored in-repo
+> (`grammars/tree-sitter-groovy/`) and the local `tree-sitter` CLI builds wasm
+> with its bundled WASI toolchain (`tree-sitter generate && tree-sitter build
+> --wasm`). Rebuilt, the pinned grammar now passes the **full 15/15 construct
+> matrix** (all four cells above now pass), `MISSING ;` corpus-wide is **340
+> nodes** (from 2,698), and the measured corpus failure falls from **58.5% to
+> 24.5%** (tree walk) / **59.0% to 25.0%** (production pipeline); the recorded
+> 400-file sample falls from **250/400 (62.5%) to 115/400 (28.7%)**. Constructs
+> added by the rebuild: `as` coercion, `=~`/`==~`, closure parameter lists
+> (including typed), untyped modifier fields, newline-terminated `throw` /
+> `super(…)` / annotation members, spread call arguments, and the **empty
+> single-quoted string** `''` (Java's inherited `character_literal` is
+> `repeat1`). Pins: fixture `groovy/grammar-rebuild-constructs`, groovy fixtures
+> 46/46, and all 550 mutants caught (`groovy/as-cast-drop` had been silently
+> surviving on a dead mis-parse marker and was re-keyed). Residual class —
+> slashy strings `/…/`, spread-map `f(*:map)`, GString nested quoting — is
+> registered separately; see `reviews/m49-w18-groovy-grammar-rebuild.md`.
+>
+> The corpus is therefore **not clean** at 21.9% error files; what changed is
+> that the largest classes named here are fixed and measured, and the remaining
+> work is ordinary grammar work rather than an environment claim.
 
 ## Symbol contract
 

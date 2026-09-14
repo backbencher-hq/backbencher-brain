@@ -116,13 +116,25 @@
     "recall": 1,
     "corpusSymbols": 2953,
     "corpusRelationships": 14053,
-    "grammarErrorFiles": 3874,
+    "grammarErrorFiles": 1643,
     "grammarErrorFilesMeasuredOver": 6564,
-    "grammarErrorRatePct": 59.0,
-    "grammarErrorBreakdown": { "errorNodeFiles": 3172, "missingNodeFiles": 2014 },
+    "grammarErrorRatePct": 25.0,
+    "grammarErrorBreakdown": {
+     "errorNodeFiles": 1596,
+     "missingNodeFiles": 208
+    },
     "grammarErrorEvidence": "validation/m12/results/groovy-corpus-errors.json",
-    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free. CORRECTED 2026-09-14 (M49 W17): the previous claim here was \"0/400 grammar errors and 0 missing tokens\", and it does not reproduce \u2014 not on the 400-file sample and not on the corpus. Measured through the production parseFile pipeline over all 6,564 tracked *.groovy files: 3,874 error files (59.0%), 3,172 with a true ERROR node (48.3%) and 2,014 with a MISSING token (30.7%). The same 400 files the old claim named measure 250/400 (62.5%). The claim had no executable evidence: script/m12/ carried a *-corpus-errors.ts for 35 languages and none for java, kotlin, scala or groovy, and the prose number drifted unmeasured from M12 until now. The missing script now exists (script/m12/groovy-corpus-errors.ts, failure classes derived from the parse tree, cross-checked against the pipeline), and the patched grammar genuinely does cover the constructs it claims EXCEPT as- casts, newline-terminated field declarations, unbraced bodies followed by another statement, and enum constructor arguments \u2014 see issue #742.",
-    "measuredAt": "2026-09-14T20:00:00.000Z"
+    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free. CORRECTED 2026-09-14 (M49 W17): the previous claim here was \"0/400 grammar errors and 0 missing tokens\", and it does not reproduce \u2014 not on the 400-file sample and not on the corpus. Measured through the production parseFile pipeline over all 6,564 tracked *.groovy files: 3,874 error files (59.0%), 3,172 with a true ERROR node (48.3%) and 2,014 with a MISSING token (30.7%). The same 400 files the old claim named measure 250/400 (62.5%). The claim had no executable evidence: script/m12/ carried a *-corpus-errors.ts for 35 languages and none for java, kotlin, scala or groovy, and the prose number drifted unmeasured from M12 until now. The missing script now exists (script/m12/groovy-corpus-errors.ts, failure classes derived from the parse tree, cross-checked against the pipeline), and the patched grammar genuinely does cover the constructs it claims EXCEPT as- casts, newline-terminated field declarations, unbraced bodies followed by another statement, and enum constructor arguments \u2014 see issue #742. REBUILT 2026-09-15 (M49 W18): the W17 remedy on #742 said the fix was blocked on a wasm rebuild needing emscripten; that was WRONG \u2014 the grammar is vendored in-repo (grammars/tree-sitter-groovy) and the local tree-sitter CLI builds wasm with its bundled WASI toolchain. The rebuilt grammar fixes ALL FOUR cells above plus as-coercion on complex left-hand sides, =~/==~ regex operators, closure parameter lists (typed and untyped), untyped modifier fields (static mapWith = ...), newline-terminated throw / super(...) / annotation members, spread call arguments, and the empty single-quoted string (Java inherits repeat1 in character_literal, so the very common prefix = '' could not lex \u2014 the largest first-error signature in the corpus). Measured on the identical corpus through the production parseFile pipeline: 3,874 error files (59.0%) -> 1,643 (25.0%); the recorded 400-file sample 250/400 (62.5%) -> 115/400 (28.7%); corpus-wide MISSING ; nodes 2,698 -> 340; construct matrix 11/15 -> 15/15. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast marker and was re-keyed to the structural cast_type relationshipType). Residual class \u2014 slashy strings /.../, spread-map f(*:map), GString nested quoting \u2014 registered as #841; see reviews/m49-w18-groovy-grammar-rebuild.md.",
+    "measuredAt": "2026-09-15T01:20:00.000Z",
+    "grammarErrorFilesBeforeRebuild": 3874,
+    "grammarErrorRatePctBeforeRebuild": 59.0,
+    "sampleErrorFilesBeforeRebuild": 250,
+    "sampleErrorFiles": 115,
+    "sampleSize": 400,
+    "grammarMissingSemicolonNodesBeforeRebuild": 2698,
+    "grammarMissingSemicolonNodes": 340,
+    "wasmBeforeRebuildSha256Prefix": "93fb188ab031",
+    "wasmAfterRebuildSha256Prefix": "85bae7cd2848"
    }
   },
   {

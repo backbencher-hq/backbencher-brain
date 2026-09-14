@@ -154,7 +154,7 @@ function main() {
       739: "java bare member reads — FIXED+CLOSED (3256a83e: fixture+2 mutants, lane 39/39)",
       740: "kotlin member reads — FIXED+CLOSED (29f0c1e5: fixture+3 mutants, kotlinx lane 100/0/0)",
       741: "scala framework detection — FIXED+CLOSED (c6df719b: fixture+2 mutants incl. forbid-direction, lane 100/0/0)",
-      742: "groovy grammar — OPEN, environment-blocked: wasm rebuild needs emcc (absent), no prebuilt upstream wasm exists; evidence + census landed e62728cd/4856458f, 59.0% parse failure measured",
+      742: "groovy grammar — FIXED+CLOSED (M49 W18, wasm 93fb188a→85bae7cd): the 'environment-blocked, needs emcc' disposition was WRONG — the grammar is vendored in-repo and the local tree-sitter CLI builds wasm with its bundled WASI toolchain. Rebuilt: construct matrix 11/15→15/15, recorded 400-file sample 250/400→115/400, full corpus 59.0%→25.0% (3874→1643 of 6564) via the production pipeline, MISSING ; 2698→340. Pins: fixture groovy/grammar-rebuild-constructs, 46/46 fixtures, all 550 mutants caught (groovy/as-cast-drop had been silently surviving). Residual class registered as #841. See reviews/m49-w18-groovy-grammar-rebuild.md",
     },
     openIssues: open.jvm,
     verdict: open.jvm.length === 0 && cells.blocked.length === 0 ? "complete" : "open",
