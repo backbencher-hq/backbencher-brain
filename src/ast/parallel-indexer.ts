@@ -1748,8 +1748,8 @@ export async function storeResults(
  
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
-     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -2212,6 +2212,12 @@ export async function storeResults(
                // docstring-based evidence matching in bb_doc (feature/api
                // lexical SQL) and degrading symbol-mode doc facts.
                symbol.docstring || null,
+               // #837: the DDL column (scope_kind) and the typed schema
+               // existed for years while this INSERT silently omitted them —
+               // every scope value every analyzer emitted died at the store
+               // seam. Bound by the M60.P1 enumeration; the payload-seam
+               // matrix's rot-check fails the moment this binding disappears.
+               symbol.scope || null,
                now,
                now,
              )

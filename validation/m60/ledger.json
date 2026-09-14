@@ -41,41 +41,45 @@
       "id": "G1",
       "issue": 828,
       "title": "Governance: the standing rules R1-R4 and the gate that enforces them",
-      "status": "open",
+      "status": "verified",
       "evidenceFile": "validation/m60/results/G1.json",
-      "notes": "Gate must be shown load-bearing: a negative that creates a findings doc without an issue must fail; a family marked closed with a non-alive payload cell must fail."
+      "verifiedAtCommit": "HEAD",
+      "notes": "script/m60/verify-standing-rules.ts: rules written where every milestone reads them (ledger standingRules), machinery pure + negative-tested (6 negatives: BLOCKED forbids closed, open-issue forbids closed, empty computes closed; R3 scan flags violation, passes compliant, ignores non-finding). R3 live scan drove real registrations: #839 (W9 zig binding), #840 (W16 sweep-state); #825/#801 citations added. R1 live check found M7/M8/M39 finished-but-open and M56/M58 undocumented — registry docs/milestones.md created, all open milestones now documented. Wired into package.json verify."
     },
     {
       "id": "P1",
       "issue": 829,
       "title": "Payload-seam matrix: 33 fields x 21 languages x 4 seam stages, enumerated and wired into the closure gate",
-      "status": "open",
+      "status": "verified",
       "evidenceFile": "validation/m60/results/P1.json",
-      "notes": "First enumeration already bounded the surface and found, in one pass: `comments` (9 producers, 0 production readers), `from` (read, never produced), `gravityScore` (read without producer), `line_number` (3 of 41 producers, stored 0 for 189,499 rows). Census is textual and bounds the surface; each cell still needs a semantic reachability check."
+      "verifiedAtCommit": "HEAD",
+      "notes": "script/m60/payload-matrix.ts: fields parsed from types.ts (fatal on undeclared/rotting spec), every needle verified live, fatal two-direction rot-checks (a binding appearing or disappearing both fail). Reproduces the plan's PoC rows and adds: verdict taxonomy alive/alive-partial/ruled-dead/BLOCKED; per-language emit cells (672, 337 alive); two UNDECLARED store bindings surfaced (symbol.docstring, symbol.complexity). Found and fixed #837: scope_kind DDL'd but never INSERTed — bound, live-verified (scope837-verify), negative proven."
     },
     {
       "id": "J1",
       "issue": 830,
       "title": "JVM remainder under verify-first: #739 java, #740 kotlin, #741 scala, #742 groovy",
-      "status": "open",
+      "status": "verified",
       "evidenceFile": "validation/m60/results/J1.json",
-      "notes": "#739/#740 are the same class already fixed and closed for JavaScript (#744) — port the existing oracle-mirrored mutant-gated pattern. #741/#742 need real waves."
+      "verifiedAtCommit": "HEAD",
+      "notes": "#739/#740 fixed+closed earlier waves. #741 fixed+closed this wave (c6df719b: Spring/Jackson/jsoniter/sttp detection, fixture + 2 mutants incl. forbidFrameworks direction, lane 100/0/0). #742 OPEN: reproduce-corrected to 59.0%, census + corpus-errors evidence landed (e62728cd/4856458f); fix needs a groovy wasm rebuild — no emcc on this box and no prebuilt upstream wasm exists (checked tree-sitter-grammars et al.); remedy registered on the issue. J1.json carries the per-issue disposition."
     },
     {
       "id": "W1",
       "issue": 831,
       "title": "Web remainder: #816 name-resolution FP, #818 dart lane re-measure, closure re-asserted through the matrix",
-      "status": "open",
+      "status": "verified",
       "evidenceFile": "validation/m60/results/W1.json",
-      "notes": "Both open web-lane issues are outside the web analyzer layer (#816 name-resolution, #818 measurement of an uncommitted analyzer). Web closure is re-asserted via P1's matrix, not via the closure report prose."
+      "verifiedAtCommit": "HEAD",
+      "notes": "#816 fixed+closed this wave (15c918af: nearest-candidate deterministic target resolution in parallel-indexer, pinned in verify-index.ts incl. manifest-key case, pin proven by revert, no residual path in 3 harder shapes). #818 closed (DT wave landed; dart lane 100/0/0 at HEAD). Web closure re-asserted through the P1 matrix: web-family languages carry zero BLOCKED cells."
     },
     {
       "id": "X1",
       "issue": 832,
       "title": "Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required",
-      "status": "open",
+      "status": "pending",
       "evidenceFile": "validation/m60/results/X1.json",
-      "notes": "X1 is the proof of R1/R4/R5. It closes only when the fold record exists in M49 and the M14 hand-off milestone is registered — and when a new finding raised during closure is filed as an issue rather than as a milestone."
+      "notes": "script/m60/verify-family-closure-truth.ts implemented and emitting X1/J1/W1.json; the closure verdict is COMPUTED (closed-computable vs not-closed). Current verdict: not-closed — honest blockers: (1) #742 groovy grammar fix is environment-blocked (wasm rebuild needs emcc); (2) M49 sub-gates red on the co-agent's in-flight swift/php waves (open review folders, DT1/PHP1/SW1/SW2 ledger codes, php census row); (3) R4 fold record not yet written into the M49 ledger (lands at milestone close by design). Fold + M14 hand-off decision belong to the owner at close."
     }
   ]
 }
