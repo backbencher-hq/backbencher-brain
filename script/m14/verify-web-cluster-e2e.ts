@@ -2,10 +2,18 @@
  * #384 — Web-embedded cluster e2e gate
  *
  * Indexes a polyglot web project through the real CLI and asserts:
- * 1. Symbols extracted from ts, js, vue files
+ * 1. Symbols extracted from EVERY language of the web-embedded seam
+ *    (ts, tsx-shaped vue, js, svelte, css, html, json)
  * 2. Imports persisted per language
  * 3. Cross-language edges (ts→js calls) flagged
  * 4. Vue template component usage detected
+ *
+ * M49 W17: the ledger's "Web embedded" cell declares that seam as
+ * ts/tsx + js + html + css + vue/svelte + json, but the fixture stopped at
+ * ts/js/vue/css — so html, json and svelte were **claimed** by the ledger and
+ * **measured by nothing**. The fixture now carries all seven, and the symbol
+ * assertion is driven off the same list, so a language dropped from the seam
+ * fails here instead of silently shrinking the claim.
  *
  * CLI: npx tsx script/m14/verify-web-cluster-e2e.ts
  */
@@ -37,6 +45,26 @@ function writeProject() {
     `<script setup lang="ts">\nimport { ref } from 'vue'\nimport type { Widget } from './types'\n\nconst widgets = ref<Widget[]>([])\nconst label = ref('')\n</script>\n\n<template>\n  <div class="app"><span>{{ label }}</span></div>\n</template>\n`)
   
   fs.writeFileSync(path.join(TMP, "src", "styles.css"), ".app { display: flex; }\n")
+
+  // M49 W17: the four seam languages the fixture omitted. Each one has to
+  // produce at least one symbol through the real CLI, or the ledger's claim
+  // about the seam is not backed by a measurement.
+  fs.writeFileSync(path.join(TMP, "src", "Counter.svelte"),
+    "<script lang=\"ts\">\n" +
+    "  export let start: number = 0\n" +
+    "  let count = start\n" +
+    "  function bump(): void { count += 1 }\n" +
+    "</script>\n" +
+    "\n" +
+    "<button on:click={bump}>{count}</button>\n")
+
+  fs.writeFileSync(path.join(TMP, "src", "index.html"),
+    "<!doctype html>\n<html lang=\"en\">\n  <head><title>Widgets</title></head>\n" +
+    "  <body>\n    <div id=\"app\" class=\"app\"></div>\n" +
+    "    <script type=\"module\" src=\"/src/api.ts\"></script>\n  </body>\n</html>\n")
+
+  fs.writeFileSync(path.join(TMP, "src", "config.json"),
+    JSON.stringify({ widgets: { limit: 25, filter: "active" }, theme: "dark" }, null, 2) + "\n")
 }
 
 async function main() {
@@ -50,11 +78,28 @@ async function main() {
   const failures: string[] = []
   const expect = (cond: boolean, msg: string) => { if (!cond) failures.push(msg) }
 
-  // symbols from each language
-  for (const lang of ["typescript", "javascript", "vue", "css"]) {
+  // Symbols from EVERY language of the declared seam. The list is the ledger's
+  // claim, spelled once: dropping a language from it would shrink the seam
+  // silently, so the gate also asserts the list itself (below).
+  const SEAM_LANGS = ["typescript", "javascript", "vue", "svelte", "css", "html", "json"]
+  for (const lang of SEAM_LANGS) {
     const c = db.prepare(`SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE f.language=?`).get(lang) as any
     expect(c.c > 0, `symbols persisted for ${lang} (got ${c.c})`)
   }
+  expect(SEAM_LANGS.length === 7, `the seam covers all seven languages (got ${SEAM_LANGS.length})`)
+
+  // The svelte component is not only indexed — its script symbols land on the
+  // component, which is the thing that makes a `<Counter />` usage resolvable.
+  const counter = db.prepare(
+    `SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+     WHERE f.language='svelte' AND s.name='bump'`).get() as any
+  expect(counter.c > 0, `svelte script symbol persisted (bump: ${counter.c})`)
+
+  // The JSON seam is real indexing, not a file row: a config probe symbol must
+  // exist, so "json is in the cluster" cannot be satisfied by an empty parse.
+  const jsonSym = db.prepare(
+    `SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE f.language='json'`).get() as any
+  expect(jsonSym.c > 0, `json symbols persisted (got ${jsonSym.c})`)
 
   // imports per language
   const jsImps = db.prepare(`SELECT COUNT(*) c FROM brain_import bi JOIN brain_file f ON f.id=bi.file_id WHERE f.path LIKE '%.js'`).get() as any
@@ -85,10 +130,11 @@ async function main() {
     claimLevel: "L1",
     layers: ["cluster-e2e"],
     checks: [
-      { id: "web-cluster-e2e", description: "polyglot web project indexed via real CLI, all assertions pass", status: failures.length ? ("fail" as const) : ("pass" as const) },
+      { id: "web-cluster-e2e", description: "polyglot web project (ts/js/vue/svelte/css/html/json) indexed via the real CLI, all assertions pass", status: failures.length ? ("fail" as const) : ("pass" as const) },
     ],
     limitations: [
       { description: "covers web-embedded cluster only; other clusters built during their waves" },
+      { description: "the seam languages are asserted as a LIST plus a symbol floor (a probe name for svelte, any symbol for json): this proves each language is indexed and persisted, not that every construct in it is extracted — the per-language F3 fixtures carry that" },
     ],
     data: { failures },
   })
