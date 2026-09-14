@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "title": "Family Truth Reconciliation — the standing rules, and the JVM/web remainder",
+  "ownerOrdered": true,
+  "terminalMilestone": true,
+  "purpose": "M14, M37 and M49 each certify the JVM and Web families as done, while 14 M49-CONV issues remain open across every family. The mechanism is scope: each milestone measured its own artifact (M14 the analyzer oracle, M37 the families against each other, M49 external claims against code) and none measured payload truth across the seam emit -> store -> query -> tool, so every new dimension looked like a new phase instead of an unfinished one. M60 closes the remainder, converts 'family closed' from prose into a computed boolean (green gate AND zero non-alive payload cells), and establishes the standing rules that bind every milestone so no new milestone is minted to carry work that belongs to an existing one. Fold target: M49. Hand-off: M14-clean receives one milestone for all remaining analyzers.",
+  "dependsOn": ["M59"],
+  "foldTarget": "M49",
+  "handOff": "M14",
+  "invariant": "A family may be called closed only when its closure gate is green AND every payload cell of every onboarded language in it is alive — produced by the analyzer, preserved by the store, reachable at query, and truthful at the tool. Any closure claim not backed by a live gate is itself a defect. No new milestone may be created to carry work that belongs to an existing one.",
+  "standingRules": [
+    {
+      "id": "R1",
+      "rule": "No new milestone for work that belongs to an existing one; findings become issues under existing milestones.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R2",
+      "rule": "A family is closed only when its closure gate is green AND its payload matrix has zero non-alive cells.",
+      "enforcedBy": "G1+P1"
+    },
+    {
+      "id": "R3",
+      "rule": "Every finding document must be registered as an issue before it is worked. A doc is not a queue.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R4",
+      "rule": "Fold contract: at close, M60's family results are recorded into M49 as the evidence its jvm/web closure claims are true.",
+      "enforcedBy": "X1"
+    },
+    {
+      "id": "R5",
+      "rule": "M14-clean receives one milestone covering all remaining analyzers, each carrying the accumulated checks of every prior milestone.",
+      "enforcedBy": "X1"
+    }
+  ],
+  "issues": [
+    {
+      "id": "G1",
+      "issue": 828,
+      "title": "Governance: the standing rules R1-R4 and the gate that enforces them",
+      "status": "open",
+      "evidenceFile": "validation/m60/results/G1.json",
+      "notes": "Gate must be shown load-bearing: a negative that creates a findings doc without an issue must fail; a family marked closed with a non-alive payload cell must fail."
+    },
+    {
+      "id": "P1",
+      "issue": 829,
+      "title": "Payload-seam matrix: 33 fields x 21 languages x 4 seam stages, enumerated and wired into the closure gate",
+      "status": "open",
+      "evidenceFile": "validation/m60/results/P1.json",
+      "notes": "First enumeration already bounded the surface and found, in one pass: `comments` (9 producers, 0 production readers), `from` (read, never produced), `gravityScore` (read without producer), `line_number` (3 of 41 producers, stored 0 for 189,499 rows). Census is textual and bounds the surface; each cell still needs a semantic reachability check."
+    },
+    {
+      "id": "J1",
+      "issue": 830,
+      "title": "JVM remainder under verify-first: #739 java, #740 kotlin, #741 scala, #742 groovy",
+      "status": "open",
+      "evidenceFile": "validation/m60/results/J1.json",
+      "notes": "#739/#740 are the same class already fixed and closed for JavaScript (#744) — port the existing oracle-mirrored mutant-gated pattern. #741/#742 need real waves."
+    },
+    {
+      "id": "W1",
+      "issue": 831,
+      "title": "Web remainder: #816 name-resolution FP, #818 dart lane re-measure, closure re-asserted through the matrix",
+      "status": "open",
+      "evidenceFile": "validation/m60/results/W1.json",
+      "notes": "Both open web-lane issues are outside the web analyzer layer (#816 name-resolution, #818 measurement of an uncommitted analyzer). Web closure is re-asserted via P1's matrix, not via the closure report prose."
+    },
+    {
+      "id": "X1",
+      "issue": 832,
+      "title": "Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required",
+      "status": "open",
+      "evidenceFile": "validation/m60/results/X1.json",
+      "notes": "X1 is the proof of R1/R4/R5. It closes only when the fold record exists in M49 and the M14 hand-off milestone is registered — and when a new finding raised during closure is filed as an issue rather than as a milestone."
+    }
+  ]
+}
