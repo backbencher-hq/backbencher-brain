@@ -411,7 +411,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Relationship passes -------------------------------------------------
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
-    this.extractCallRelationships(rootNode, relationships, moduleName)
+    this.extractCallRelationships(rootNode, relationships, moduleName, symbols)
     // Deduplicate identical rows: calls/instantiates emit ONE row PER CALL
     // SITE, so N sites of the same callee in one function push N identical
     // (type,source,target,confidence) rows — 192,761 redundant rows across
@@ -544,11 +544,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // expression-bodied factories (`factory X.y() => X(...)`) construct via
     // the normal constructor-invocation path in the calls pass.
     if (isFactory && sig.type === "redirecting_factory_constructor_signature") {
-      const redirectNode = this.findChildByType(sig, "type_identifier")
-      if (redirectNode) {
+      // DT-C: the redirect target may be alias-qualified
+      // (`= _i1.Impl.make` — the raw first type_identifier is the import
+      // alias, not the class). Collect the qualified name AFTER the `=`
+      // token only (parameters precede it and carry their own identifiers).
+      // Parts: [Class, ctor] or [alias, Class, ctor] — the class is
+      // second-to-last (singletons like `= _$Y` stay whole).
+      const parts: string[] = []
+      let pastEquals = false
+      for (let i = 0; i < sig.childCount; i++) {
+        const c = sig.child(i)
+        if (!c) continue
+        if (!pastEquals) {
+          if (!c.isNamed && c.type === "=") pastEquals = true
+          continue
+        }
+        if (c.isNamed && (c.type === "type_identifier" || c.type === "identifier")) parts.push(c.text)
+      }
+      const redirectTarget = parts.length <= 1 ? parts[0] : parts[parts.length - 2]
+      if (redirectTarget) {
         relationships.push({
           source: owner,
-          target: redirectNode.text,
+          target: redirectTarget,
           type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.95,
           metadata: { isFactoryRedirection: true },
@@ -948,7 +965,42 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
+    symbols: ASTEngine.UniversalSymbol[],
   ): void {
+    // DT-A (first review): in-file named constructors (`Foo.named`) — the
+    // calls below consult this set so construction wins over the dangling
+    // leaf call. Cross-file named ctors stay leaf calls (translation-unit
+    // boundary, documented).
+    const namedCtors = new Set<string>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Constructor && s.ownerName) {
+        const seg = (s.metadata as any)?.namedSegment
+        if (seg) namedCtors.add(`${s.ownerName}.${seg}`)
+      }
+    }
+    // DT-D (first review): superclass per class (resolved, alias-free) for
+    // `super(...)` initializer targets. Superclass-child clauses only —
+    // mixin-application bases are vanishingly rare as super targets.
+    const superByClass = new Map<string, string>()
+    {
+      const pre: Node[] = [node]
+      while (pre.length > 0) {
+        const cn = pre.pop()!
+        if (!cn) continue
+        if (cn.type === "class_definition") {
+          const nm = cn.childForFieldName?.("name")?.text
+          const sup = this.findChildByType(cn, "superclass")
+          if (nm && sup) {
+            const base = this.resolvedHeritageNames(sup)[0]
+            if (base) superByClass.set(nm, base)
+          }
+        }
+        for (let i = cn.namedChildCount - 1; i >= 0; i--) {
+          const ch = cn.namedChild(i)
+          if (ch) pre.push(ch)
+        }
+      }
+    }
     // Current call source = enclosing function/method/constructor leaf name.
     const resolveCurrent = (n: Node, current: string | null): string | null => {
       // Local functions are NOT call contexts (family contract: locals fold
@@ -1048,27 +1100,73 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // selector + argument_part = call site (Dart has no invocation_expression)
+      // selector + argument_part = call site (Dart has no invocation_expression).
+      // DT-A: the receiver chain decides construction vs call. `Foo.named()`
+      // (capitalized head + in-file named ctor) and `p.Foo()` (prefix +
+      // capitalized method) instantiate; static methods (`C.create()`) and
+      // unknown cross-file `X.y()` stay leaf calls.
       if (t === "selector" && this.findChildByType(n, "argument_part")) {
-        const leaf = this.resolveSelectorCallee(n)
-        if (leaf) {
-          if (this.isDartGlobalBuiltin(leaf)) {
+        const { head, links } = this.invocationChain(n)
+        if (links.length === 0) {
+          const leaf = this.resolveSelectorCallee(n)
+          if (leaf) {
+            if (this.isDartGlobalBuiltin(leaf)) {
+              // filtered
+            } else if (isCapitalized(leaf) && this.selectorIsBareCall(n)) {
+              // Capitalized identifier directly before argument_part = Dart
+              // constructor invocation (types are capitalized): `Counter(1)`,
+              // `MyWidget(...)`, `Duration(seconds: 1)`.
+              relationships.push({
+                source: callSource,
+                target: leaf,
+                type: ASTEngine.RelationshipType.Instantiates,
+                confidence: 0.95,
+                metadata: {},
+              })
+            } else {
+              relationships.push({
+                source: callSource,
+                target: leaf,
+                type: ASTEngine.RelationshipType.Calls,
+                confidence: 0.9,
+                metadata: {},
+              })
+            }
+          }
+        } else {
+          const method = links[links.length - 1]
+          const before = links.length > 1 ? links[links.length - 2] : this.headNameText(head)
+          const headText = this.headNameText(head)
+          if (this.isDartGlobalBuiltin(method)) {
             // filtered
-          } else if (isCapitalized(leaf) && this.selectorIsBareCall(n)) {
-            // Capitalized identifier directly before argument_part = Dart
-            // constructor invocation (types are capitalized): `Counter(1)`,
-            // `MyWidget(...)`, `Duration(seconds: 1)`.
+          } else if (
+            links.length === 1 && isCapitalized(method) && headText !== null &&
+            !isCapitalized(headText) && head !== null &&
+            (head.type === "identifier" || head.type === "type_identifier")
+          ) {
+            // Prefix-qualified construction: `p.Foo(...)` builds Foo.
             relationships.push({
               source: callSource,
-              target: leaf,
+              target: method,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
-              metadata: {},
+              metadata: { isNamedConstructor: true, isPrefixQualified: true },
+            })
+          } else if (
+            before !== null && isCapitalized(before) && namedCtors.has(`${before}.${method}`)
+          ) {
+            // Named construction: `Foo.named()`, `P.Foo.bar()` (in-file).
+            relationships.push({
+              source: callSource,
+              target: before,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.95,
+              metadata: { isNamedConstructor: true },
             })
           } else {
             relationships.push({
               source: callSource,
-              target: leaf,
+              target: method,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               metadata: {},
@@ -1077,7 +1175,164 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // cascade calls: `list.add(1)..remove(2)` → calls remove/clear.
+      // DT-F: member reads — a selector WITHOUT its own argument_part reads
+      // its member (`obj.method` tear-off, `this.count`, `C.total`,
+      // `a?.value`). The callee link (immediately followed by the
+      // argument-carrying selector) belongs to the call; assignment-LHS
+      // plain-`=` members are writes; builtins stay filtered. A capitalized
+      // head with an in-file named ctor is a constructor tear-off
+      // (`Foo.named` builds Foo — DT-A).
+      if (t === "selector" && !this.findChildByType(n, "argument_part")) {
+        const member = this.linkMember(n)
+        if (member && !this.isDartGlobalBuiltin(member)) {
+          const next = n.nextNamedSibling
+          const nextIsArgs = !!next && next.type === "selector" && !!this.findChildByType(next, "argument_part")
+          if (!nextIsArgs && !this.selectorIsLhsWrite(n)) {
+            const head = n.previousNamedSibling
+            const headText = this.headNameText(head)
+            if (headText !== null && isCapitalized(headText) && namedCtors.has(`${headText}.${member}`)) {
+              relationships.push({
+                source: callSource,
+                target: headText,
+                type: ASTEngine.RelationshipType.Instantiates,
+                confidence: 0.95,
+                metadata: { isNamedConstructor: true, isTearOff: true },
+              })
+            } else {
+              relationships.push({
+                source: callSource,
+                target: member,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.9,
+                metadata: { isMemberRead: true },
+              })
+            }
+          }
+        }
+      }
+
+      // DT-D: constructor redirection in initializer lists — `B() : super(1)`,
+      // `B.named() : super.named(2)` construct the superclass (resolved,
+      // alias-free); `B() : this.named(x)` constructs the own class.
+      if (t === "initializer_list_entry") {
+        let headIsSuper = false
+        let headIsThis = false
+        const firstRaw = n.child(0)
+        if (firstRaw && !firstRaw.isNamed && (firstRaw.text === "super" || firstRaw.text === "this")) {
+          headIsSuper = firstRaw.text === "super"
+          headIsThis = firstRaw.text === "this"
+        } else {
+          const firstNamed = n.namedChild(0)
+          if (firstNamed && (firstNamed.type === "super" || firstNamed.type === "this")) {
+            headIsSuper = firstNamed.type === "super"
+            headIsThis = firstNamed.type === "this"
+          }
+        }
+        if (headIsSuper && owner) {
+          const base = superByClass.get(owner)
+          if (base) {
+            relationships.push({
+              source: callSource,
+              target: base,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.95,
+              metadata: { isSuperConstructor: true },
+            })
+          }
+        } else if (headIsThis && owner) {
+          relationships.push({
+            source: callSource,
+            target: owner,
+            type: ASTEngine.RelationshipType.Instantiates,
+            confidence: 0.95,
+            metadata: { isRedirectingConstructor: true },
+          })
+        }
+      }
+
+      // DT-D (continued): `this.named(...)` redirects parse as a `redirection`
+      // node (`:` `this` `.` `named` `arguments`) rather than an initializer
+      // entry. Same targets: this -> own class, super -> superclass.
+      if (t === "redirection" && owner) {
+        let rSuper = false
+        let rThis = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "this") { rThis = true; break }
+          if (c.type === "super") { rSuper = true; break }
+          if (c.type === "identifier" || c.type === "type_identifier" || c.type === "arguments") continue
+          break
+        }
+        if (rSuper) {
+          const base = superByClass.get(owner)
+          if (base) {
+            relationships.push({
+              source: callSource,
+              target: base,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.95,
+              metadata: { isSuperConstructor: true },
+            })
+          }
+        } else if (rThis) {
+          relationships.push({
+            source: callSource,
+            target: owner,
+            type: ASTEngine.RelationshipType.Instantiates,
+            confidence: 0.95,
+            metadata: { isRedirectingConstructor: true },
+          })
+        }
+      }
+
+      // DT-F: subscript bases (`xs[0]`, `xs?[0]`, `m['k']`) — the grammar
+      // parses the index as a bare `selector` sibling holding `[`
+      // (no assignable member, no argument_part). An index operation
+      // presupposes a value, so the base reads without inventory.
+      // Declaration names (`int xs[3]`) bind, never read.
+      if (t === "identifier") {
+        const parent = n.parent
+        const ptype = parent?.type ?? ""
+        if (!this.isDartDeclNameParent(ptype) && ptype !== "label" && !this.isDartDeclaredName(n)) {
+          const nx = n.nextNamedSibling
+          if (nx && ((nx.type === "selector" && this.isIndexSelector(nx)) || this.isIndexAssignable(nx))) {
+            relationships.push({
+              source: callSource,
+              target: n.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { isSubscriptBase: true },
+            })
+          } else if (this.isInsideTemplateSubstitution(n)) {
+            // DT-F: string interpolation reads (`'hello $name'`,
+            // `'sum ${n + 1}'`) — every bare identifier inside a template
+            // substitution is evaluated. Declaration-shaped names still bind.
+            relationships.push({
+              source: callSource,
+              target: n.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { isInterpolationRead: true },
+            })
+          }
+        }
+      }
+
+      // DT-F: `$name` interpolation placeholder (distinct node type).
+      if (t === "identifier_dollar_escaped") {
+        const raw = n.text
+        const name = raw.startsWith("$") ? raw.slice(1) : raw
+        if (name) {
+          relationships.push({
+            source: callSource,
+            target: name,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            metadata: { isInterpolationRead: true },
+          })
+        }
+      }
       // DARTD17: `b..a.b.c(1)` — the cascade_selector names only the FIRST
       // segment (`a`); the deeper chain lives in nested
       // unconditional_assignable_selector children (probed cascade-shape.ts).
@@ -1089,22 +1344,22 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // args), and multi-invocation sections call every method, not just the
       // last (dart-http corpus: echo_server's `..transform(..)..listen(..)`
       // previously dropped the transform call).
+      // DT-F: selectors NOT followed by an argument_part are getter reads
+      // (`..length` → uses->length), unless the section assigns (`..b = 1`
+      // writes b — gated on a direct anonymous `=` child).
       if (t === "cascade_section") {
-        const hasArgs = (() => {
-          for (let i = 0; i < n.namedChildCount; i++) {
-            const c = n.namedChild(i)
-            if (c && c.type === "argument_part") return true
-          }
-          return false
-        })()
-        if (hasArgs) {
-          for (let i = 0; i < n.namedChildCount; i++) {
-            const c = n.namedChild(i)
-            if (!c) continue
-            if (c.type !== "cascade_selector" && c.type !== "unconditional_assignable_selector" &&
-                c.type !== "conditional_assignable_selector" && c.type !== "selector") continue
-            const next = n.namedChild(i + 1)
-            if (!next || next.type !== "argument_part") continue
+        let sectionAssigns = false
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c && !c.isNamed && c.text === "=") { sectionAssigns = true; break }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type !== "cascade_selector" && c.type !== "unconditional_assignable_selector" &&
+              c.type !== "conditional_assignable_selector" && c.type !== "selector") continue
+          const next = n.namedChild(i + 1)
+          if (next && next.type === "argument_part") {
             const id = this.lastIdentifier(c)
             if (id && !this.isDartGlobalBuiltin(id)) {
               relationships.push({
@@ -1113,6 +1368,17 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 metadata: { isCascade: true },
+              })
+            }
+          } else if (!sectionAssigns) {
+            const id = this.lastIdentifier(c)
+            if (id && !this.isDartGlobalBuiltin(id)) {
+              relationships.push({
+                source: callSource,
+                target: id,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.9,
+                metadata: { isMemberRead: true, isCascade: true },
               })
             }
           }
@@ -1161,10 +1427,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const mx = this.findChildByType(app, "mixins")
         if (mx) {
           patterns["Mixins"] = true
-          for (const ti of this.allTypeIdentifiers(mx)) {
+          // DT-B: resolved (alias-free) mixin names — `with _i2.M` leaked
+          // the alias as a mixin use.
+          for (const ti of this.resolvedHeritageNames(mx)) {
             relationships.push({
               source: className,
-              target: ti.text,
+              target: ti,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
               metadata: { isMixin: true },
@@ -1177,20 +1445,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // DARTD14: mixin `on`-base — `mixin M on Base implements I` parses the
     // on-base as a DIRECT type_identifier child of mixin_declaration (probed
     // dart-mixin-shape.ts: [mixin, identifier, type_identifier, interfaces]).
-    // The superclass/interfaces branches below never see it.
+    // The superclass/interfaces branches below never see it. DT-B: resolved
+    // (alias-free) names — `on _i1.Base` leaked the alias as the base.
     if (node.type === "mixin_declaration") {
-      for (let i = 0; i < node.namedChildCount; i++) {
-        const c = node.namedChild(i)
-        if (c && c.type === "type_identifier") {
-          relationships.push({
-            source: className,
-            target: c.text,
-            type: ASTEngine.RelationshipType.Extends,
-            confidence: 1.0,
-            metadata: { isMixinOn: true },
-          })
-          break
-        }
+      const onNames = this.resolvedHeritageNames(node).filter((t) => t !== className)
+      for (const base of onNames) {
+        relationships.push({
+          source: className,
+          target: base,
+          type: ASTEngine.RelationshipType.Extends,
+          confidence: 1.0,
+          metadata: { isMixinOn: true },
+        })
       }
     }
 
@@ -1230,10 +1496,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!mixinsNode) mixinsNode = this.findChildByType(node, "mixins")
     if (mixinsNode) {
       patterns["Mixins"] = true
-      for (const ti of this.allTypeIdentifiers(mixinsNode)) {
+      // DT-B: resolved (alias-free) mixin names (same `_i2.M` leak as above).
+      for (const ti of this.resolvedHeritageNames(mixinsNode)) {
         relationships.push({
           source: className,
-          target: ti.text,
+          target: ti,
           type: ASTEngine.RelationshipType.Uses,
           confidence: 1.0,
           metadata: { isMixin: true },
@@ -1323,6 +1590,171 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return result
+  }
+
+  /**
+   * DT-A/DT-F: the member identifier of a link selector
+   * (`unconditional_assignable_selector` / `conditional_assignable_selector`
+   * child holding `method` in `obj.method`, `?.value`, `..length`).
+   */
+  private linkMember(sel: Node): string | null {
+    const probe: Node[] = sel.type === "selector" ? this.namedChildrenOf(sel) : [sel]
+    for (const c of probe) {
+      if (c.type === "unconditional_assignable_selector" || c.type === "conditional_assignable_selector" ||
+          c.type === "cascade_selector") {
+        const id = this.findChildByType(c, "identifier") ?? this.findChildByType(c, "type_identifier")
+        if (id) return id.text
+      }
+    }
+    return null
+  }
+
+  private namedChildrenOf(n: Node): Node[] {
+    const out: Node[] = []
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) out.push(c)
+    }
+    return out
+  }
+
+  /**
+   * DT-A: receiver chain of an invocation, walking back through
+   * link-selector siblings from the argument-carrying selector.
+   * `P.Foo.bar()` -> head `P`, links [`Foo`, `bar`]; bare `foo()` ->
+   * head `foo`, no links.
+   */
+  private invocationChain(argsSelector: Node): { head: Node | null; links: string[] } {
+    const links: string[] = []
+    let c: Node | null | undefined = argsSelector.previousNamedSibling
+    while (c) {
+      if (c.type === "selector") {
+        const m = this.linkMember(c)
+        if (!m) break
+        links.unshift(m)
+        c = c.previousNamedSibling
+      } else if (
+        c.type === "unconditional_assignable_selector" || c.type === "conditional_assignable_selector"
+      ) {
+        const id = this.findChildByType(c, "identifier") ?? this.findChildByType(c, "type_identifier")
+        if (!id) break
+        links.unshift(id.text)
+        c = c.previousNamedSibling
+      } else break
+    }
+    return { head: c, links }
+  }
+
+  private headNameText(head: Node | null): string | null {
+    if (head && (head.type === "identifier" || head.type === "type_identifier")) return head.text
+    return null
+  }
+
+  /**
+   * DT-F: true when the selector sits in an assignment LHS write position
+   * with a plain `=` operator (`a.b = c` writes b; `a.b += c` and `a.b ??= c`
+   * read it). Span-matched like the C analyzer's LHS gate.
+   */
+  private selectorIsLhsWrite(sel: Node): boolean {
+    let p: Node | null | undefined = sel.parent
+    let guard = 0
+    while (p && guard++ < 16) {
+      if (p.type === "assignment_expression") {
+        // Plain `=` writes the LHS; compound (`+=`, `??=`, ...) reads it.
+        // Pure string comparison — never regex (family contract).
+        let opText: string | null = null
+        for (let i = 0; i < p.childCount; i++) {
+          const c = p.child(i)
+          if (c && !c.isNamed && c.text.includes("=")) { opText = c.text; break }
+        }
+        if (opText !== "=") return false
+        const lhs = p.namedChild(0)
+        if (lhs && lhs.startIndex <= sel.startIndex && lhs.endIndex >= sel.endIndex) return true
+        return false
+      }
+      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
+          p.type === "program" || p.type === "declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+
+  /** DT-F: declaration-name positions whose identifiers are binds, never reads. */
+  private isDartDeclNameParent(ptype: string): boolean {
+    return ptype === "formal_parameter" || ptype === "constructor_param" ||
+      ptype === "function_signature" || ptype === "method_signature" ||
+      ptype === "getter_signature" || ptype === "setter_signature" ||
+      ptype === "type_alias" || ptype === "label"
+  }
+
+  /**
+   * DT-F: is this identifier the DECLARED name of its definition
+   * (`var q = ...`, `int xs[3]`, `int xs[3] = ...`)? Names precede the
+   * first `=` child; values follow it. Definitions without `=` bind every
+   * identifier they directly hold.
+   */
+  private isDartDeclaredName(n: Node): boolean {
+    const parent = n.parent
+    if (!parent) return false
+    const ptype = parent.type
+    if (ptype !== "initialized_variable_definition" && ptype !== "static_final_declaration") return false
+    let eqIdx = -1
+    let myIdx = -1
+    for (let i = 0; i < parent.childCount; i++) {
+      const c = parent.child(i)
+      if (!c) continue
+      if (!c.isNamed && c.text === "=" && eqIdx === -1) eqIdx = i
+      if (c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) myIdx = i
+    }
+    if (myIdx === -1) return false
+    if (eqIdx === -1) return true
+    return myIdx < eqIdx
+  }
+
+  /** DT-F: is this selector an index operation (`xs[0]` parses the index
+   *  as a member-less selector holding brackets)? Member selectors name a
+   *  member; argument selectors invoke. Bounded shape scan, never regex. */
+  private isIndexSelector(sel: Node): boolean {
+    if (this.linkMember(sel) !== null) return false
+    if (this.findChildByType(sel, "argument_part")) return false
+    return this.subtreeHasBracket(sel)
+  }
+
+  /** DT-F: is this assignable an index target (`xs[3] = 4` wraps the base
+   *  and index in assignable_expression)? Same member-less + bracket test
+   *  applied to the node itself. */
+  private isIndexAssignable(sel: Node): boolean {
+    if (sel.type !== "unconditional_assignable_selector" && sel.type !== "conditional_assignable_selector") return false
+    if (this.findChildByType(sel, "identifier") ?? this.findChildByType(sel, "type_identifier")) return false
+    return this.subtreeHasBracket(sel)
+  }
+
+  private subtreeHasBracket(sel: Node): boolean {
+    const stack: Node[] = [sel]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 32) {
+      const c = stack.pop()!
+      if (!c.isNamed && (c.text === "[" || c.text === "?[")) return true
+      // All children (anonymous brackets are invisible to named traversal).
+      for (let i = 0; i < c.childCount; i++) {
+        const ch = c.child(i)
+        if (ch) stack.push(ch)
+      }
+    }
+    return false
+  }
+
+  /** DT-F: bounded ancestor climb — is this node inside string interpolation? */
+  private isInsideTemplateSubstitution(n: Node): boolean {
+    let p: Node | null | undefined = n.parent
+    let guard = 0
+    while (p && guard++ < 8) {
+      if (p.type === "template_substitution") return true
+      if (p.type === "function_body" || p.type === "block" || p.type === "class_body" ||
+          p.type === "program" || p.type === "declaration") return false
+      p = p.parent
+    }
+    return false
   }
 
   private isSignatureNode(type: string): boolean {
