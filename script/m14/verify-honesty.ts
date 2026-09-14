@@ -169,6 +169,13 @@ if (fs.existsSync(f5)) {
     const ci = payload?.data?.codeInputs
     if (!ci || typeof ci !== "object") return "the artifact does not declare the code inputs it measured"
     if (ci.clean !== true) return `measured over uncommitted code (${Array.isArray(ci.dirty) ? ci.dirty.length : "?"} input(s))`
+    // Clean is not enough: code can be clean at a DIFFERENT commit than the one
+    // the artifact names (measured in one checkout, landed from another), which
+    // is the same lie one step subtler. The head it read must be the lineage.
+    const lineage = payload?.regeneratedAtCommit
+    if (typeof lineage === "string" && lineage !== "__LEGACY__" && ci.head !== lineage) {
+      return `measured code at ${String(ci.head).slice(0, 10)} but names ${lineage.slice(0, 10)}`
+    }
     return null
   }
   const verdict = codeInputsVerdict(f5Payload)
@@ -177,9 +184,23 @@ if (fs.existsSync(f5)) {
   // The rule has to be able to fail, or it is decoration: the three shapes it
   // must separate are an artifact that says nothing, one that admits dirt, and
   // one that declares clean inputs.
+  const A = "a".repeat(40), B = "b".repeat(40)
   if (codeInputsVerdict({ data: {} }) === null) fail("code-input rule cannot fail on an artifact that declares nothing")
   if (codeInputsVerdict({ data: { codeInputs: { clean: false, dirty: ["src/ast/x.ts"] } } }) === null) fail("code-input rule cannot fail on declared dirt")
-  if (codeInputsVerdict({ data: { codeInputs: { clean: true, dirty: [] } } }) !== null) fail("code-input rule rejects a clean declaration")
+  if (codeInputsVerdict({
+    regeneratedAtCommit: A,
+    data: { codeInputs: { clean: true, dirty: [], head: B } },
+  }) === null) fail("code-input rule cannot fail on clean code from another commit")
+  if (codeInputsVerdict({
+    regeneratedAtCommit: A,
+    data: { codeInputs: { clean: true, dirty: [], head: A } },
+  }) !== null) fail("code-input rule rejects clean code at the named commit")
+  // A legacy artifact predates the rule and declares no head; it must not be
+  // failed for the absence of a field the harness did not yet write.
+  if (codeInputsVerdict({
+    regeneratedAtCommit: "__LEGACY__",
+    data: { codeInputs: { clean: true, dirty: [] } },
+  }) !== null) fail("code-input rule rejects a legacy declaration")
 }
 
 // 6. evidence freshness: an artifact is current iff the inputs it asserts
