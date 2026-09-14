@@ -223,7 +223,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // name-bearing leaves so primitives are correctly silent.
     try {
       this.extractDeclaredTypeRefs(rootNode, relationships)
-      this.collectExpressionUses(rootNode, relationships)
+      this.collectExpressionUses(rootNode, relationships, symbols)
     } catch (e) {
       // Graceful degradation
     }
@@ -2313,11 +2313,36 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   referenced identifier. Kotlin's grammar produces a real template node
    *   (unlike groovy's opaque GStrings — the groovy S1 ruling), so the read
    *   is visible and must be captured.
+   * - CONV-K-1 (#740): BARE and DOTTED member reads. Property reads are the
+   *   most common read form in kotlin and produced NOTHING — `return x` and
+   *   `return this.x` both emitted zero uses (probe-confirmed live), while
+   *   only the indexing (K1) and template (K4) forms were ever claimed. Gate
+   *   A: the name must resolve to a DECLARED MEMBER of the enclosing type.
+   *   Gate B (CGD15): a name the enclosing function/lambda binds as a
+   *   parameter or local is not a member read — without it `val x = 9` inside
+   *   a method fabricates uses(method -> x) on a property it only shadows.
+   *   Both gates are the real work; the emission is a line.
    * Deduped per (source, target) so repeated indexing in one function emits
    * one honest edge, not a fan of identical edges.
    */
-  private collectExpressionUses(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+  private collectExpressionUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
     const emitted = new Set<string>()
+    // Declared members per owning type — gate A's inventory. `ownerName` IS
+    // the enclosing type name (the family-wide symbol contract).
+    const membersByOwner = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      if (!s.ownerName) continue
+      let set = membersByOwner.get(s.ownerName)
+      if (!set) {
+        set = new Set<string>()
+        membersByOwner.set(s.ownerName, set)
+      }
+      set.add(s.name)
+    }
     const resolveSource = (start: Node | null): string => {
       let p: Node | null = start
       while (p) {
@@ -2350,6 +2375,96 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { relationshipType: "expression_use" },
       })
     }
+    // Enclosing TYPE for gate A. Stops at the nearest type-bearing declaration,
+    // mirroring the class/object scoping the symbol table uses.
+    const resolveOwner = (start: Node | null): string | null => {
+      let p: Node | null = start
+      while (p) {
+        if (p.type === "class_declaration" || p.type === "object_declaration") {
+          const nm = this.findChildByType(p, ["type_identifier", "simple_identifier"])
+          return nm ? nm.text : null
+        }
+        p = p.parent
+      }
+      return null
+    }
+    // Gate B (CGD15). Bindings are `parameter` / `class_parameter` /
+    // `variable_declaration` — the LAST of which is also how a MEMBER property
+    // names itself, so bindings are only collected from scopes INSIDE a
+    // function or lambda; a class-level property declaration is a member, not
+    // a local. Memoised per scope node.
+    const boundCache = new Map<number, Set<string>>()
+    const boundOf = (scope: Node): Set<string> => {
+      const hit = boundCache.get(scope.id)
+      if (hit) return hit
+      const out = new Set<string>()
+      const w: Node[] = [scope]
+      while (w.length > 0) {
+        const m = w.pop()!
+        if (m.type === "simple_identifier") {
+          const pt = m.parent?.type ?? ""
+          if (pt === "parameter" || pt === "class_parameter" || pt === "variable_declaration") {
+            out.add(m.text)
+          }
+        }
+        for (let i = m.namedChildCount - 1; i >= 0; i--) {
+          const c = m.namedChild(i)
+          if (c) w.push(c)
+        }
+      }
+      boundCache.set(scope.id, out)
+      return out
+    }
+    const isLocallyBound = (n: Node, name: string): boolean => {
+      let p: Node | null = n.parent
+      while (p) {
+        if (
+          p.type === "function_declaration" || p.type === "lambda_literal" ||
+          p.type === "primary_constructor" || p.type === "secondary_constructor"
+        ) {
+          if (boundOf(p).has(name)) return true
+        }
+        if (p.type === "class_declaration" || p.type === "object_declaration") break
+        p = p.parent
+      }
+      return false
+    }
+    // Assignment LHS is a WRITE (KAD1's rule, generalised to the bare and
+    // dotted forms): climb the assignable path, then gate by SPAN.
+    const isWriteLhs = (n: Node): boolean => {
+      let a: Node | null = n.parent
+      while (
+        a && (a.type === "directly_assignable_expression" ||
+          a.type === "navigation_expression" || a.type === "navigation_suffix")
+      ) a = a.parent
+      if (a && a.type === "assignment") {
+        const lhs = a.namedChild(0)
+        return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+      }
+      return false
+    }
+    // Positions that DECLARE rather than read: a property/local name
+    // (`variable_declaration`), a parameter, or a type name. A navigation leaf
+    // (`this.x`, `a.b`) and a chain base ARE read positions and are NOT here.
+    const NOT_A_READ = new Set([
+      "parameter", "class_parameter", "variable_declaration", "type_identifier",
+      "user_type", "nullable_type", "import_header", "package_header",
+      "function_declaration", "class_declaration", "object_declaration",
+      "property_declaration", "value_parameter",
+    ])
+    const emitMemberRead = (n: Node, target: string): void => {
+      const source = resolveSource(n.parent)
+      const key = `${source}|${target}|uses`
+      if (emitted.has(key)) return
+      emitted.add(key)
+      relationships.push({
+        source,
+        target,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.6,
+        metadata: { isBareRead: true, relationshipType: "expression_use" },
+      })
+    }
     const walk = (n: Node): void => {
       if (n.type === "indexing_expression" || n.type === "directly_assignable_expression") {
         // Receiver is the first named child when the node carries an
@@ -2372,6 +2487,23 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (recv && hasIndexing && !isWrite) emitUse(n, recv.text)
       } else if (n.type === "interpolated_identifier") {
         emitUse(n, n.text)
+      } else if (n.type === "simple_identifier") {
+        // CONV-K-1 (#740): bare / dotted / chain-base member reads. A bare
+        // CALLEE (`go(x)`) is owned by the call graph; a declaration name and
+        // a write LHS are not reads (both gates below).
+        const txt = n.text
+        const pt = n.parent?.type ?? ""
+        const owner = resolveOwner(n.parent)
+        const isMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+        if (
+          !NOT_A_READ.has(pt) &&
+          pt !== "call_expression" &&
+          !isWriteLhs(n) &&
+          !isLocallyBound(n, txt) &&
+          isMember
+        ) {
+          emitMemberRead(n, txt)
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
