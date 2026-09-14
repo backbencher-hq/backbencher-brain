@@ -152,10 +152,34 @@ pass("regression baselines present (grammar, fixtures, differential)")
 // 5. corpus pins
 const f5 = path.join(M14, "results", "M14.0.F5.json")
 if (fs.existsSync(f5)) {
-  const pins = JSON.parse(fs.readFileSync(f5, "utf8"))?.data?.corpusPins ?? {}
+  const f5Payload = JSON.parse(fs.readFileSync(f5, "utf8"))
+  const pins = f5Payload?.data?.corpusPins ?? {}
   const pinsValid = Object.entries(pins).every(([, sha]: any) => /^[0-9a-f]{40}$/.test(sha))
   if (!pinsValid || !Object.keys(pins).length) fail("differential evidence lacks valid corpus commit pins")
   else pass(`corpus pins present (${Object.keys(pins).join(", ")})`)
+
+  // M49 W16: pins answer "which corpus content", and for the same reason the
+  // artifact must answer "which CODE". It names a commit in `regeneratedAtCommit`
+  // while the rows come from the working tree, so a sweep over uncommitted
+  // analyzers produced numbers that were true of no commit — observed live: the
+  // W16 F5 carried a 479-line uncommitted dart analyzer edit behind a 50.6%
+  // unexplained dart lane, while the committed analyzer on the same pinned
+  // corpus measures 0%. The harness now records the dirt it read.
+  const codeInputsVerdict = (payload: any): string | null => {
+    const ci = payload?.data?.codeInputs
+    if (!ci || typeof ci !== "object") return "the artifact does not declare the code inputs it measured"
+    if (ci.clean !== true) return `measured over uncommitted code (${Array.isArray(ci.dirty) ? ci.dirty.length : "?"} input(s))`
+    return null
+  }
+  const verdict = codeInputsVerdict(f5Payload)
+  if (verdict) fail(`differential evidence ${verdict} — regenerate from a clean tree`)
+  else pass("differential evidence declares its code inputs clean at the commit it names")
+  // The rule has to be able to fail, or it is decoration: the three shapes it
+  // must separate are an artifact that says nothing, one that admits dirt, and
+  // one that declares clean inputs.
+  if (codeInputsVerdict({ data: {} }) === null) fail("code-input rule cannot fail on an artifact that declares nothing")
+  if (codeInputsVerdict({ data: { codeInputs: { clean: false, dirty: ["src/ast/x.ts"] } } }) === null) fail("code-input rule cannot fail on declared dirt")
+  if (codeInputsVerdict({ data: { codeInputs: { clean: true, dirty: [] } } }) !== null) fail("code-input rule rejects a clean declaration")
 }
 
 // 6. evidence freshness: an artifact is current iff the inputs it asserts
