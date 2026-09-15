@@ -1,259 +1,217 @@
 {
-  "checks": [
-    {
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
-      "ok": true,
-      "name": "S6: launch order resolves a server"
-    },
-    {
-      "detail": "1",
-      "ok": true,
-      "name": "S6: vim.lsp.start launched bb_lsp"
-    },
-    {
-      "detail": "table: 0x7cf17093c7f0",
-      "ok": true,
-      "name": "S6: client initialized"
-    },
-    {
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
-      "ok": true,
-      "name": "S6: capabilities advertised"
-    },
-    {
-      "detail": "```\npublic method greet() → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excl",
-      "ok": true,
-      "name": "S6: hover renders the symbol"
-    },
-    {
-      "detail": "```\npublic method greet() → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excl",
-      "ok": true,
-      "name": "S6: hover carries evidence tier (contract §2)"
-    },
-    {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 5,\n      line = 16\n    },\n    start = {\n      character = 4,\n      line = 14\n    }\n  },\n  uri = \"file://$HOME",
-      "ok": true,
-      "name": "S6: definition resolves"
-    },
-    {
-      "detail": "2",
-      "ok": true,
-      "name": "S6: references returns locations"
-    },
-    {
-      "detail": "{ \"Greeter\", \"Greeter\" }",
-      "ok": true,
-      "name": "S6: documentSymbols include the class"
-    },
-    {
-      "detail": "{}",
-      "ok": true,
-      "name": "S6: declared absence is honored (no fabricated symbols)"
-    }
-  ],
+  "session": [],
   "raw": {
     "documentSymbol": [
       {
+        "detail": "Greeter",
         "selectionRange": {
-          "start": {
-            "line": 7,
-            "character": 0
-          },
           "end": {
             "line": 22,
             "character": 1
+          },
+          "start": {
+            "line": 7,
+            "character": 0
           }
         },
-        "kind": 5,
-        "detail": "Greeter",
-        "range": {
-          "start": {
-            "line": 7,
-            "character": 0
-          },
-          "end": {
-            "line": 22,
-            "character": 1
-          }
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:Greeter:8",
+          "notIndexed": false
         },
         "name": "Greeter",
+        "kind": 5,
         "children": [
           {
+            "detail": "items",
             "selectionRange": {
-              "start": {
-                "line": 8,
-                "character": 31
-              },
               "end": {
                 "line": 8,
                 "character": 36
+              },
+              "start": {
+                "line": 8,
+                "character": 31
               }
             },
-            "kind": 10,
-            "detail": "items",
-            "range": {
-              "start": {
-                "line": 8,
-                "character": 31
-              },
-              "end": {
-                "line": 8,
-                "character": 36
-              }
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:items:9",
+              "notIndexed": false
             },
             "name": "items",
+            "kind": 10,
             "children": [],
-            "data": {
-              "evidenceTier": "indexed",
-              "notIndexed": false,
-              "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:items:9"
+            "range": {
+              "end": {
+                "line": 8,
+                "character": 36
+              },
+              "start": {
+                "line": 8,
+                "character": 31
+              }
             }
           },
           {
+            "detail": "greet",
             "selectionRange": {
-              "start": {
-                "line": 14,
-                "character": 4
-              },
               "end": {
                 "line": 16,
                 "character": 5
+              },
+              "start": {
+                "line": 14,
+                "character": 4
               }
             },
-            "kind": 6,
-            "detail": "greet",
-            "range": {
-              "start": {
-                "line": 14,
-                "character": 4
-              },
-              "end": {
-                "line": 16,
-                "character": 5
-              }
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:greet:15",
+              "notIndexed": false
             },
             "name": "greet",
+            "kind": 6,
             "children": [],
-            "data": {
-              "evidenceTier": "indexed",
-              "notIndexed": false,
-              "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:greet:15"
+            "range": {
+              "end": {
+                "line": 16,
+                "character": 5
+              },
+              "start": {
+                "line": 14,
+                "character": 4
+              }
             }
           },
           {
-            "selectionRange": {
-              "start": {
-                "line": 18,
-                "character": 4
-              },
-              "end": {
-                "line": 21,
-                "character": 5
-              }
-            },
-            "kind": 6,
             "detail": "main",
-            "range": {
-              "start": {
-                "line": 18,
-                "character": 4
-              },
+            "selectionRange": {
               "end": {
                 "line": 21,
                 "character": 5
+              },
+              "start": {
+                "line": 18,
+                "character": 4
               }
             },
-            "name": "main",
-            "children": [],
             "data": {
               "evidenceTier": "indexed",
-              "notIndexed": false,
-              "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:main:19"
+              "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:main:19",
+              "notIndexed": false
+            },
+            "name": "main",
+            "kind": 6,
+            "children": [],
+            "range": {
+              "end": {
+                "line": 21,
+                "character": 5
+              },
+              "start": {
+                "line": 18,
+                "character": 4
+              }
             }
           }
         ],
-        "data": {
-          "evidenceTier": "indexed",
-          "notIndexed": false,
-          "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:Greeter:8"
+        "range": {
+          "end": {
+            "line": 22,
+            "character": 1
+          },
+          "start": {
+            "line": 7,
+            "character": 0
+          }
         }
       },
       {
-        "selectionRange": {
-          "start": {
-            "line": 10,
-            "character": 4
-          },
-          "end": {
-            "line": 12,
-            "character": 5
-          }
-        },
-        "kind": 9,
         "detail": "Greeter",
-        "range": {
-          "start": {
-            "line": 10,
-            "character": 4
-          },
+        "selectionRange": {
           "end": {
             "line": 12,
             "character": 5
+          },
+          "start": {
+            "line": 10,
+            "character": 4
           }
         },
-        "name": "Greeter",
-        "children": [],
         "data": {
           "evidenceTier": "indexed",
-          "notIndexed": false,
-          "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:Greeter:11"
+          "id": "798320b85f73d615907c7b7f94170fbdfa3a2041:main.java:Greeter:11",
+          "notIndexed": false
+        },
+        "name": "Greeter",
+        "kind": 9,
+        "children": [],
+        "range": {
+          "end": {
+            "line": 12,
+            "character": 5
+          },
+          "start": {
+            "line": 10,
+            "character": 4
+          }
         }
       }
     ],
     "definition": {
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java",
       "range": {
-        "start": {
-          "line": 14,
-          "character": 4
-        },
         "end": {
           "line": 16,
           "character": 5
+        },
+        "start": {
+          "line": 14,
+          "character": 4
         }
-      },
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java"
+      }
     },
-    "workspaceAbsence": [],
-    "hover": {
-      "contents": {
-        "value": "```\npublic method greet() → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.java:19](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D))_",
-        "kind": "markdown"
-      },
-      "range": {
-        "start": {
-          "line": 14,
-          "character": 4
-        },
-        "end": {
-          "line": 16,
-          "character": 5
+    "references": [
+      {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java",
+        "range": {
+          "end": {
+            "line": 21,
+            "character": 5
+          },
+          "start": {
+            "line": 18,
+            "character": 4
+          }
         }
       },
+      {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java",
+        "range": {
+          "end": {
+            "line": 16,
+            "character": 5
+          },
+          "start": {
+            "line": 14,
+            "character": 4
+          }
+        }
+      }
+    ],
+    "hover": {
       "data": {
         "provenance": {
-          "evidenceClass": "structural",
-          "engine": "bb_lsp hover@m24.l2",
-          "source": "bb_index",
           "limitations": [
             "index-sourced; no compiler-backed types (complement stance)"
           ],
-          "stale": false
+          "stale": false,
+          "evidenceClass": "structural",
+          "engine": "bb_lsp hover@m24.l2",
+          "source": "bb_index"
         },
         "symbol": {
-          "definition": {
-            "line": 14,
-            "character": 4
-          },
           "stale": false,
           "qualifiedName": "greet",
           "symbolType": "method",
@@ -263,7 +221,7 @@
             "structural"
           ],
           "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
-          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.java:19](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D)",
+          "name": "greet",
           "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D)",
           "crossLanguageSection": "",
           "annotationSection": "",
@@ -271,47 +229,89 @@
           "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java",
           "lineStart": 15,
           "lineEnd": 17,
-          "parameters": [],
-          "name": "greet"
-        }
-      }
-    },
-    "references": [
-      {
-        "range": {
-          "start": {
-            "line": 18,
-            "character": 4
-          },
-          "end": {
-            "line": 21,
-            "character": 5
-          }
-        },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java"
-      },
-      {
-        "range": {
-          "start": {
+          "definition": {
             "line": 14,
             "character": 4
           },
-          "end": {
-            "line": 16,
-            "character": 5
-          }
+          "parameters": [],
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.java:19](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D)"
+        }
+      },
+      "contents": {
+        "value": "```\npublic method greet() → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.java:19](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A18%2C%22character%22%3A4%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fjava%2Fmain.java%22%2C%22line%22%3A14%2C%22character%22%3A4%7D%5D))_",
+        "kind": "markdown"
+      },
+      "range": {
+        "end": {
+          "line": 16,
+          "character": 5
         },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/java/main.java"
+        "start": {
+          "line": 14,
+          "character": 4
+        }
       }
-    ]
+    },
+    "workspaceAbsence": []
   },
-  "session": [],
+  "checks": [
+    {
+      "name": "S6: launch order resolves a server",
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
+      "ok": true
+    },
+    {
+      "name": "S6: vim.lsp.start launched bb_lsp",
+      "detail": "1",
+      "ok": true
+    },
+    {
+      "name": "S6: client initialized",
+      "detail": "table: 0x7f8212ef91c0",
+      "ok": true
+    },
+    {
+      "name": "S6: capabilities advertised",
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "ok": true
+    },
+    {
+      "name": "S6: hover renders the symbol",
+      "detail": "```\npublic method greet() → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excl",
+      "ok": true
+    },
+    {
+      "name": "S6: hover carries evidence tier (contract §2)",
+      "detail": "```\npublic method greet() → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excl",
+      "ok": true
+    },
+    {
+      "name": "S6: definition resolves",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 5,\n      line = 16\n    },\n    start = {\n      character = 4,\n      line = 14\n    }\n  },\n  uri = \"file://$HOME",
+      "ok": true
+    },
+    {
+      "name": "S6: references returns locations",
+      "detail": "2",
+      "ok": true
+    },
+    {
+      "name": "S6: documentSymbols include the class",
+      "detail": "{ \"Greeter\", \"Greeter\" }",
+      "ok": true
+    },
+    {
+      "name": "S6: declared absence is honored (no fabricated symbols)",
+      "detail": "{}",
+      "ok": true
+    }
+  ],
   "language": "java",
   "status": "verified",
-  "commit": "5950a04bb5fb09736fe09c7f0b5f3b512666ebaf",
+  "commit": "e764ac5c663044cad7b5494f80b523dea6f0af1e",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T21:45:48.737Z",
-    "contentSha256": "481b7cc3f270281c381d191a7d1d0a3f78087570c74fa7bbe1fd2019a03ef496"
+    "sealedAt": "2026-09-15T21:52:33.818Z",
+    "contentSha256": "affa83a9038de9ee53317af75ac8ce56bd3eca2c92856539f64d2e35469b7270"
   }
 }
