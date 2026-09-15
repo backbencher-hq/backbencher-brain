@@ -25,7 +25,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { createHash } from "node:crypto"
 import { join, resolve } from "node:path"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
@@ -110,7 +110,7 @@ function forkEvidence(): Record<string, string> {
   for (const f of readdirSync(RESULTS_DIR)) {
     if (!f.startsWith("F-") || !f.endsWith(".json")) continue
     try {
-      const rec = JSON.parse(readFileSync(join(RESULTS_DIR, f), "utf8")) as Record<string, unknown>
+      const rec = parseSealedRecord(join(RESULTS_DIR, f)) as Record<string, unknown>
       const name = String(rec["fork"] ?? f.slice(2, -5))
       forks[name] = String(rec["status"] ?? "unknown")
     } catch {

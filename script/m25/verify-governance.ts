@@ -23,7 +23,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 type Issue = {
@@ -283,7 +283,7 @@ function main(): void {
     for (const f of readdirSync(dir)) {
       if (!f.startsWith(prefix) || !f.endsWith(".json")) continue
       try {
-        records.push(JSON.parse(readFileSync(path.join(dir, f), "utf8")) as Record<string, unknown>)
+        records.push(parseSealedRecord(path.join(dir, f)) as Record<string, unknown>)
       } catch {
         // unreadable evidence is surfaced by the cross-check above
       }

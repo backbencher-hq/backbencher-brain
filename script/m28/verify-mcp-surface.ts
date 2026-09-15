@@ -20,7 +20,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -144,7 +144,7 @@ function main(): void {
   check("V1: bb_annotations declared as read mutability", annotationsRow?.includes("| read |") === true, annotationsRow ?? "missing")
 
   // --- G2: honesty of the union claim ------------------------------------------
-  const u1Evidence = JSON.parse(readFileSync(path.join(ROOT, "validation/m28/results/U1.json"), "utf8"))
+  const u1Evidence = parseSealedRecord(path.join(ROOT, "validation/m28/results/U1.json"))
   check("V1: union claim cites the real U1 numbers", fresh.includes(`${u1Evidence.passed}/${u1Evidence.passed} checks`) && fresh.includes(`${u1Evidence.mutantsCaught}/${u1Evidence.mutantsTotal} mutants`), fresh.split("Claim:")[1]?.slice(0, 160) ?? "")
 
   // --- G3: write + byte-identical drift gate -------------------------------------
