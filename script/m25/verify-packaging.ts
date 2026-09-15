@@ -206,6 +206,13 @@ try {
     scala: ["tree-sitter-scala.wasm"],
     python: ["tree-sitter-python.wasm"],
     groovy: ["tree-sitter-groovy.wasm"],
+    zig: ["tree-sitter-zig.wasm"],
+    go: ["tree-sitter-go.wasm"],
+    rust: ["tree-sitter-rust.wasm"],
+    c: ["tree-sitter-c.wasm"],
+    cpp: ["tree-sitter-cpp.wasm"],
+    vue: ["tree-sitter-vue.wasm"],
+    svelte: ["tree-sitter-svelte.wasm"],
   }
   const expectedWasms = ["tree-sitter.wasm", ...launchLanguages.flatMap((l) => {
     const f = GRAMMAR_BY_LANGUAGE[l]

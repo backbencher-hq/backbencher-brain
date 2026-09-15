@@ -26,17 +26,17 @@
       "caught": true
     }
   ],
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m28/verify-union.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-14T16:01:02.501Z",
+  "generatedAt": "2026-09-15T00:41:23.050Z",
   "claimLevel": "verified — MCP answers and IDE answers are machine-proven identical on the shared fixture",
   "limitations": [
     "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.425Z",
-    "contentSha256": "e7efe64342c6be356b4bdb2d44ee8e27d0cc0603a034815df1d2a8d450f86fe0"
+    "sealedAt": "2026-09-15T00:41:23.050Z",
+    "contentSha256": "a31a54a85ec353c9983a88d6118ba5236fac41ff61423d53ad92d93c22793bbc"
   }
 }

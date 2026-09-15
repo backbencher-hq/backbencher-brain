@@ -11,6 +11,7 @@
 //           docs/m25/FORK-CAPABILITY-MATRIX.md (generated FROM the evidence)
 import { spawn } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { writeSealed } from "../lib/evidence.ts"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
@@ -94,7 +95,7 @@ async function main() {
         generatedAt: new Date().toISOString(),
         limitations: ["fork unavailable on this machine — claim level stays unset; no inheritance from other forks"],
       }
-      writeFileSync(path.join(RESULTS, evidenceFile), JSON.stringify(rec, null, 2) + "\n")
+      writeSealed(path.join(RESULTS, evidenceFile), rec)
       records.push(rec)
       continue
     }
@@ -211,7 +212,7 @@ async function main() {
       generatedAt: new Date().toISOString(),
       limitations,
     }
-    writeFileSync(path.join(RESULTS, evidenceFile), JSON.stringify(rec, null, 2) + "\n")
+    writeSealed(path.join(RESULTS, evidenceFile), rec)
     records.push(rec)
     console.log(`E6: ${fork.name} ${rec.status.toUpperCase()} (${passed}/${checks.length})`)
   }

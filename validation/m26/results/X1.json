@@ -2,13 +2,22 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 50,
-  "passed": 50,
-  "failed": 0,
-  "failures": [],
+  "passed": 42,
+  "failed": 8,
+  "failures": [
+    "X1: W1 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: W2 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: W3 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: W4 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: W5 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: W6 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: V1 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: D1 evidence byte-identical (modulo generatedAt/currentCommit)"
+  ],
   "negativeCases": 3,
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -177,10 +186,10 @@
       }
     ]
   },
-  "generatedAt": "2026-09-14T15:59:08.150Z",
+  "generatedAt": "2026-09-15T00:39:12.818Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.421Z",
-    "contentSha256": "93ceb7eaeeee49521627f64f9b6579e0319a7ba5aabfa1414e6d1797e2337a3b"
+    "sealedAt": "2026-09-15T00:39:12.818Z",
+    "contentSha256": "67a374059a0b644bead224c73a4f5cbb8939c162ec63cff32d2c78d4d0cb2d21"
   }
 }

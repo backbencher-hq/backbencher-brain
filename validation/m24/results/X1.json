@@ -7,10 +7,10 @@
   "passed": 69,
   "failed": 0,
   "negativeCases": 6,
-  "currentCommit": "87b5ab6a295fde6fd84a867bbed68bb54e4c08e4",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m24/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-15T00:27:24.396Z",
+  "generatedAt": "2026-09-15T00:31:35.282Z",
   "suite": [
     {
       "code": "P1",
@@ -108,7 +108,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T00:27:24.397Z",
-    "contentSha256": "402f90c1905abdbbe5830cfc5c12248ceb826c991f8bbb96e6250d9c35427877"
+    "sealedAt": "2026-09-15T00:31:35.283Z",
+    "contentSha256": "837a1a7909aa44012bc016ecd02c107476077d845b0f074bf287abd6fc2e8875"
   }
 }

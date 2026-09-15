@@ -62,9 +62,10 @@ export class StdioLsp {
     root: string,
     env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
     serverPath: string = M55_SERVER,
+    cwdOverride: string = M55_ROOT,
   ) {
     this.child = spawn(process.execPath, [serverPath, "--dir", root], {
-      cwd: M55_ROOT,
+      cwd: cwdOverride,
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });

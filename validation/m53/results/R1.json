@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "verified",
-  "passed": 40,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 31,
+  "failed": 9,
   "gatesTotal": 40,
   "gates": [
     {
@@ -31,9 +31,9 @@
     {
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (37/37 passed, 3 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "FAIL: X1: D1 verifier passes at HEAD — exit=1",
+      "ok": false
     },
     {
       "name": "m26-webview-core",
@@ -94,9 +94,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (50/50 passed, 3 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (42/50 passed, 3 negative)",
+      "ok": false
     },
     {
       "name": "m27-nvim",
@@ -122,9 +122,9 @@
     {
       "name": "m27-closure",
       "script": "script/m27/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (31/31 passed, 4 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (26/31 passed, 4 negative)",
+      "ok": false
     },
     {
       "name": "m28-union",
@@ -157,9 +157,9 @@
     {
       "name": "m28-closure",
       "script": "script/m28/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (31/31 passed, 4 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (26/31 passed, 4 negative)",
+      "ok": false
     },
     {
       "name": "m29-wave-protocol",
@@ -171,9 +171,9 @@
     {
       "name": "m29-precision-ledger",
       "script": "script/m29/verify-precision-ledger.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (16/16 passed, 5 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (13/16 passed, 5 negatives)",
+      "ok": false
     },
     {
       "name": "m29-precision-improvements",
@@ -185,16 +185,16 @@
     {
       "name": "m29-m29-docs",
       "script": "script/m29/verify-m29-docs.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (13/13 passed, 3 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (11/13 passed, 3 negatives)",
+      "ok": false
     },
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (26/32 passed, 3 negatives)",
+      "ok": false
     },
     {
       "name": "m42-enrichment",
@@ -241,9 +241,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (24/30 passed, 7 negatives)",
+      "ok": false
     },
     {
       "name": "m44-hub-tree",
@@ -283,17 +283,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (38/48 passed, 7 negatives)",
+      "ok": false
     }
   ],
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-14T16:08:15.212Z",
+  "generatedAt": "2026-09-15T00:51:14.051Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.574Z",
-    "contentSha256": "2688b6403cbf51710f514e66f8ed342e99d755507988d0f64beeec6c03236e1a"
+    "sealedAt": "2026-09-15T00:51:14.052Z",
+    "contentSha256": "3a4aed3dd7c48f1388550e5af0a1eb470fd3f292a7431804a98e89cba3d99dba"
   }
 }
