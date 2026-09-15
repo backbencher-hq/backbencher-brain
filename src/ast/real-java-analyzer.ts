@@ -863,6 +863,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: callExpression.split(".").pop() || callExpression,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
+                // M59 (#825): the line is where the CALL IS WRITTEN — the name
+                // field of the method_invocation, not the invocation node's own
+                // start. Measured with the M59 oracle on real java: a
+                // `method_invocation` starts at its RECEIVER, so `a.b()\n  .c()`
+                // put c on the line a.b() opened on. java, kotlin and groovy
+                // share this node shape, so this is the family pattern.
+                ...this.lineField(node.childForFieldName("name"), node),
                 metadata: { javaCallExpression: callExpression, ...(argumentCount !== undefined ? { argumentCount } : {}) },
               })
             } else {
@@ -880,6 +887,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: callExpression.split(".").pop() || callExpression,
                   type: ASTEngine.RelationshipType.Calls,
                   confidence: 0.7,
+                  // M59 (#825): same rule as the in-method branch above.
+                  ...this.lineField(node.childForFieldName("name"), node),
                   metadata: { javaCallExpression: callExpression, callSite: parentContext?.node?.type ?? node.parent?.type, inInitializer: true },
                 })
               }
@@ -909,6 +918,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target,
           type: ASTEngine.RelationshipType.Calls,
           confidence: 1.0,
+          // M59 (#825): the delegation is written exactly where the node is, and
+          // `super`/`this` are unnamed keyword children — the invocation node's
+          // own line is the only site that carries the name.
+          line_number: node.startPosition.row + 1,
           metadata: { relationshipType: "constructor_invocation", constructorReceiver: ctorKind, callExpression: text },
         })
       }
@@ -929,6 +942,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: typeName,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            // M59 (#825): the instantiated type is NAMED by its type node — that
+            // node's line, not the statement's, which matters for
+            // `new\n  Foo()` and for a type named inside a multi-line argument.
+            line_number: typeNode.startPosition.row + 1,
             metadata: { relationshipType: "instantiates", isNew: true },
           })
           // M37.21 #610 (user-suspect #1, probe-verified): an anonymous class
@@ -1696,6 +1713,26 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       startIndex: node.startIndex,
       endIndex: node.endIndex,
     }
+  }
+
+  /**
+   * M59 (#825): the `line_number` field for a relationship, taken from the node
+   * that CARRIES THE NAME the edge is about.
+   *
+   * java shared scala's defect class in full: a `method_invocation` starts at
+   * its receiver, a type expression's start is not the line of the types inside
+   * it, and a definition node can start at its modifiers. The rule that holds in
+   * all cases is one sentence — the line belongs to the name, never to the
+   * construct that contains it — so callers pass the NAME node and this returns
+   * nothing at all when there is none (never 0: #820/#821, 0 means "unknown" to
+   * every reader, so unknown must be absent).
+   *
+   * `fallback` exists for sites where the analyzed construct has no name-bearing
+   * child at all (a `this(...)`/`super(...)` delegation, a `new` with a diamond).
+   */
+  private lineField(nameNode: Node | null | undefined, fallback?: Node | null): { line_number?: number } {
+    const n = nameNode ?? fallback
+    return n ? { line_number: n.startPosition.row + 1 } : {}
   }
 
   private findChildByType(node: Node, type: string): Node | null {

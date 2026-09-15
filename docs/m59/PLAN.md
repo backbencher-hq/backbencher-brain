@@ -111,7 +111,7 @@ other 20 languages would otherwise copy.
 
 ### 3b. The scala reference implementation, corrected and completed (2026-09-15, #825)
 
-Scala was the only language emitting a line, and it was wrong in **four** places, all one defect: the
+Scala was the only language emitting a line, and it was wrong in **five** places, all one defect: the
 line belonged to the enclosing construct instead of to the name. Each was found by the oracle against
 source, fixed, and pinned.
 
@@ -134,7 +134,8 @@ zero failures out of 9,010 checked — the 20 that survived the call-site fix ar
 | 1 | a `call_expression` starts at its **receiver**, so every call in a multi-line chain took the chain's opening line | cats-effect `Example.scala`: `.as(ExitCode(2))` written on 23 reported on 22 | line from the **callee leaf** |
 | 2 | a **type request** took the enclosing type expression's line | `type Shape[T] = Shape.Cases[(\n …Cons…]` put Cons/Lst/Unit on the `type` line | `collectTypeNames` returns `{name, line}` pairs |
 | 3 | an **inheritance list** took the line the `extends` clause opened on | `trait IterableLike[+A]\n extends FromIterable\n with IterableOps[A] …` put all three on 106 | `extractSupertypes` returns `{name, line}` pairs |
-| 4 | a definition with a **leading annotation** took the annotation's line (tree-sitter-scala starts the definition node at its annotation — measured, not assumed) | `@tailrec\n def loop` gave the symbol line 4 for a `def` on 5 | `declarationLineNode()` — start after the annotations |
+| 4 | a definition with a **leading annotation** took the annotation's line (tree-sitter-scala starts the definition node at its annotation — measured, not assumed) | `@tailrec\n def loop` gave the symbol line 4 for a `def` on 5 | `declarationLineNode()` — start after the annotations and after any trailing **comment** between them (`@Param(…)\n // why\n var size` selected the comment node) |
+| 5 | an **import** whose target is named by a RENAMED selector written below the `import` line took the statement's first line | cats-effect `TestInstances.scala`: `import cats.effect.kernel.testkit.{` opens on 21, the segment that names the edge's target is on 29 | `handleImport` records the line of the module's LAST segment |
 
 Mechanism 4 is a **contract decision**, not a bug fix: an annotation is a modifier, so the declaration
 line is where the declaration is written. The symbol range and the `contains` edge move together so
@@ -166,6 +167,48 @@ every `build.gradle`. That is what caps the oracle's groovy row at 20 files wher
 40. Out of scope for #825 (path detection, not line attribution) but it is the single most common
 Groovy file in the world and the whole sample silently depended on it.
 
+### 3e. java's call-site lines, and the last stored `0` (2026-09-15, #821 + #825)
+
+**The java half of #825.** java emitted a line on **none** of its 1,920 relationships on the 40-file
+sample. The two classes the tools layer needs first — the call site and the instantiation — now take
+their line from the node that NAMES them: the `method_invocation`'s `name` field (java shares scala's
+defect exactly: the node starts at the RECEIVER, so `base\n .trim()\n .toUpperCase()` used to be three
+calls on one line) and, for `instantiates`, the type node. Measured after: **328 of 1,920 java
+relationships carry a line, 0 inconsistent**, and the rest of java's classes (declared-type references,
+heritage, contains) are still open — stated as open rather than implied done.
+
+**#821, closed and proven on a real index.** 62 rows still stored `line_number = 0` on cats-effect
+(markdown 35, yaml 12, scala 15). Three writers produced them, all the same mistake — writing `0` for
+"unknown", a number every downstream reader believes:
+
+| site | was | now |
+|---|---|---|
+| `parallel-indexer.ts` buffered universal `contains` (owner→member) | literal `0` | the member's own declaration line (`symbolStartLine`), the same contract the scala `contains` edges use |
+| `cross-language-intelligence-persister.ts` relationship insert | `relationship.source.range?.startLine \|\| 0` | the range's line when positive, else `NULL` |
+| same file, synthesised cross-service data flows | literal `0` | `NULL` — a synthesised flow has no source line |
+
+On the real index: **62 → 0** rows storing 0, `line_number > 0` 26,779 → **26,868**. The store probe now
+**fails the run** if any row stores `0`, so the class cannot return silently.
+
+**Two instrument defects in the store probe**, the same pair the oracle had (§3c), plus two of its own:
+
+1. The Tier A boundary excluded `$` on both sides, so `s"$to.interruptibleMany"`, `s"$word, $name"`,
+   `${Bracket…}($a)($b)` were reported as failures when the name is written right there. With the
+   synthesised-name state this took the probe's own verdict on the cats-effect index from **535
+   inconsistent to 1** — 534 of its 535 "analyzer failures" were the instrument.
+2. It fell back to the **source** symbol's name when the target was internal, checking the wrong claim
+   entirely (now the target symbol is joined in); and it read index stats from fields that do not exist
+   (`stats.totalSymbols` on a `ParallelIndexingStats`), so every run printed `symbols=undefined`.
+
+The last real defect it found, now fixed and pinned: an import edge whose target is named by a RENAMED
+selector written below the `import` line (`cats.effect.kernel.testkit.{ … TestInstances => … }`,
+cats-effect `TestInstances.scala`: the module opens on 21, the segment that names the target is on 29).
+`handleImport` now records the line of the module's LAST segment and the edge uses it.
+
+**End-to-end on cats-effect (404 files, real worker pool, real DB, throwaway data dir):**
+28,340 relationships, **26,868 carrying a line**, 0 storing 0, 1,472 `NULL`; checked against source:
+**25,775 consistent, 0 inconsistent**, 863 not checkable (synthesised names).
+
 ## Why every previous gate passed while this was true
 
 Two mechanisms, both removed by #824:
@@ -183,11 +226,11 @@ Two mechanisms, both removed by #824:
 |---|---|
 | #819 oracle | delivered, mutation-proven |
 | #820 store write | landed, measured on a real index |
-| #821 remaining hardcoded `0` | **open** — 62 `contains` rows (buffered path + `repairInEdges` + cross-language persister) |
+| #821 remaining hardcoded `0` | **closed** — the buffered `contains` insert and both cross-language persister sites write the analyzer's line or `NULL`; measured 62 → **0** rows storing 0 on a real index, and the store probe fails the run if one reappears |
 | #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
 | #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
 | #824 delete false certification | **open** |
-| #825 analyzer lane emission | **partly done** — scala is now the *correct and complete* reference (0 of 9,010 landed lines fail the source check; 100% of its 9,319 relationships carry one; 4 mechanisms fixed, each fixture- and mutant-pinned). Still open: java/kotlin/groovy/xml emit **0 lines across 86,257 relationships** (21-language sweep, 820 files) |
+| #825 analyzer lane emission | **partly done** — scala is the *correct and complete* reference (0 of 9,010 landed lines fail the source check; 100% of its 9,319 relationships carry one; 5 mechanisms fixed, each fixture- and mutant-pinned) and java's **call-site + instantiation** classes now emit (328 of 1,920 java relationships, 0 inconsistent). Still open: java's declared-type/heritage/contains lines, and kotlin/groovy/xml/the other 17 languages emit **0 lines across 85,929 relationships** (21-language sweep, 820 files) |
 | #826 closure gate | **open** |
 
 ## Evidence

@@ -133,6 +133,48 @@ function revertToEnclosingTypeLine(r: any) {
   }
 }
 
+// M59 (#825), java half: the pre-fix state EXACTLY. Before this round the java
+// analyzer emitted no line at all on any relationship (measured: java carried 0
+// of its 1,920 lines on the 40-file oracle sample), so the faithful regression is
+// "the field is gone", not a wrong number.
+function dropJavaCallsiteLines(r: any) {
+  const rels: any[] = r.relationships ?? []
+  if (rels.length === 0) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      const t = String(x.type ?? x.relationshipType ?? "")
+      if (t !== "calls" && t !== "instantiates") return x
+      if (!("line_number" in x)) return x
+      const { line_number: _drop, ...rest } = x
+      return rest
+    }),
+  }
+}
+
+// M59 (#825), import half: the PRE-FIX import line EXACTLY. The edge's target is
+// the dotted module; the pre-fix line was that import statement's own start, so
+// an import whose last segment is written later (a renamed selector inside a
+// multi-line brace import) claimed a line its name is not on.
+function revertImportToStatementStartLine(r: any) {
+  const imports: any[] = r.imports ?? []
+  if (imports.length === 0) return r
+  const byModule = new Map<string, number>()
+  for (const imp of imports) {
+    const ln = imp?.range?.startLine
+    if (typeof imp?.module === "string" && typeof ln === "number") byModule.set(imp.module, ln)
+  }
+  if (byModule.size === 0) return r
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isImportDep) return x
+      const ln = byModule.get(String(x.target))
+      return ln === undefined ? x : { ...x, line_number: ln }
+    }),
+  }
+}
+
 // M59 (#825): the PRE-FIX call-site line semantics. A call_expression starts at
 // its RECEIVER, so every call inside one multi-line chain was stamped with the
 // line the chain opened on — on the real cats-effect Example.scala that put 5
@@ -877,6 +919,20 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: restores the receiver-start line, collapsing every call in a multi-line chain onto the line the chain opened on. Exactly the defect the fix removed — on cats-effect Example.scala `.as(ExitCode(2))` written on 23 was reported on 22. Caught by scala/callsite-lines-825, whose forbid entries name `.as` on line 12 and `.filter` on line 16, the pre-fix positions.",
     transform: revertToChainOpeningLine,
+  },
+  {
+    id: "java/callsite-lines-dropped",
+    language: "java",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: java's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 1,920 java relationships carried one). Caught by java/callsite-lines-825, which pins trim 15, toUpperCase 16, instantiates Chains 20 and StringBuilder 24 and the two append calls at 25/26.",
+    transform: dropJavaCallsiteLines,
+  },
+  {
+    id: "scala/import-statement-start-line",
+    language: "scala",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: an import reference goes back to the line the import STATEMENT starts on, so a target named by a segment written later claims the wrong line — the exact pre-fix behaviour, found on cats-effect TestInstances.scala where the renamed segment `TestInstances => KernelTestkitTestInstances` is nine lines below the `import`. Caught by scala/import-multiline-825 (`scala.collection.mutable` is named on 12, the statement opens on 11).",
+    transform: revertImportToStatementStartLine,
   },
   {
     id: "scala/annotation-start-line",

@@ -2257,7 +2257,15 @@ export async function storeResults(
                    "contains",
                    1.0,
                    null,
-                   0,
+                   // M59/#821: this auto-generated containment edge has no call
+                   // site, but it does have a NAVIGABLE site — the member's own
+                   // declaration line, which is exactly what the symbol row above
+                   // got. It was a hardcoded 0, so 62 real rows (markdown
+                   // headings, YAML keys, scala members) landed in the DB
+                   // claiming line 0: a number that silently means "unknown" and
+                   // that graph-engine's `row.lineNumber || node.line` turned into
+                   // an unrelated line. Never 0 — the analyzer's line or NULL.
+                   symbolStartLine,
                    0,
                    0,
                    null,
