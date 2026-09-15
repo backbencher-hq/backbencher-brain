@@ -127,6 +127,16 @@ async function audit(name: string): Promise<Record<string, any>> {
       const tree = parser.parse(src)
       const root = tree?.rootNode
       if (root) {
+        // #841 round-2 instrument fix (third measurement trap, after W18's two):
+        // a GLR-resolved parse can leave a zero-width phantom ERROR node at EOF
+        // while rootNode.hasError is FALSE — production parseFile (which gates on
+        // hasError) reports the file clean, as do both direct probes. Walking
+        // ERROR nodes without the hasError guard counted phantom nodes as
+        // failures (generate-build-artifact-hashes.groovy: hasError=false,
+        // parseFile errors=[], 1 phantom ERROR @L84 with empty text). The walk
+        // below now runs only when the authoritative signal says the file has
+        // an error, so instrument and pipeline can never disagree again.
+        if ((root as any).hasError) {
         const stack: any[] = [root]
         const missing = new Set<string>()
         while (stack.length > 0) {
@@ -152,6 +162,7 @@ async function audit(name: string): Promise<Record<string, any>> {
           }
         }
         missingTokens = [...missing]
+        }
       }
     } catch (error: any) {
       crashes.push({ file, error: String(error?.message ?? error).slice(0, 300) })
