@@ -167,6 +167,66 @@ every `build.gradle`. That is what caps the oracle's groovy row at 20 files wher
 40. Out of scope for #825 (path detection, not line attribution) but it is the single most common
 Groovy file in the world and the whole sample silently depended on it.
 
+**Filed as #850**, with the consequence that mattered most: at 6 files per lane the walk picked six
+`.gradle` files first and the oracle's groovy row was **empty** — a whole language lane silently
+unmeasured. The oracle now excludes extensions the product cannot parse **explicitly**, printing and
+recording the count (`excluded N file(s) ... not in the product's language registry (#850)`) instead of
+sampling files that cannot produce evidence.
+
+### 3f. kotlin and groovy: the line contract reaches the last two JVM analyzers (2026-09-15, #825)
+
+Both started where java did: **0 lines on every relationship** (kotlin 0 of 12,274 on a 60-file sample,
+groovy 0 of 761 on 40 files). Both now carry a line on **every** relationship, from the node that NAMES
+it, and both inherit scala's contract rather than inventing a dialect:
+
+| language | before | after | what was missing |
+|---|---|---|---|
+| kotlin | 0 / 12,274 | **12,274 / 12,274** | calls (incl. `leading_dot_call`-shaped chains), instantiates, references (declared/return/import/object literal/callable/as/check), `uses`, `contains`, `overrides`, `extends`/`implements` |
+| groovy | 0 / 761 | **761 / 761** | calls (`method_invocation`, `juxt_call`, `leading_dot_call`, ctor delegation), instantiates, declared-type refs, `uses` (field and array reads), `contains`, `overrides`, heritage, imports |
+
+**kotlin's heritage exception, measured.** A kotlin supertype list wraps — the class header names only
+the FIRST entry. kotlinx-coroutines `TestScope.kt` is the shape: `internal class TestScopeImpl(context:
+CoroutineContext) :` (183) / `AbstractCoroutine<Unit>(context, …), TestScope {` (184). The parents now
+take their own line from the `user_type` node inside each `delegation_specifier`; a header-line
+implementation would open the class keyword for every wrapped parent. Verified on that real file
+(`.as`-style source check: 5 heritage edges, 5 consistent, 0 failed) and pinned by
+`kotlin/heritage-lines-825`, with two mutants (`kotlin/heritage-lines-dropped` = the exact pre-fix state,
+`kotlin/heritage-class-header-line` = the wrap-blind naive port).
+
+**groovy's symbol ranges carried the java defect.** The pinned grammar puts `modifiers` first, so
+`@Deprecated\nclass Wrapped` started at 18 — every symbol line, and every `contains` edge naming it, sat
+on the annotation. groovy now uses the same `declarationLineNode()` + `symbolRange()` pair as java
+(`[modifiers@18, identifier@19, class_body@19]` → 19), so the member at 23 and its method at 26 are
+named on their own lines, and the overriding declaration — not its `@Override` — carries the
+`overrides` edge. Pinned by `groovy/lines-825` (11 pins, 7 forbid entries) with three mutants:
+`groovy/lines-dropped` (the exact pre-fix state), `groovy/annotation-start-line`,
+`groovy/chain-opening-line` (the scala mechanism re-checked on groovy's shape: `.configure(m)` written
+on 30 must not be stamped with the chain-opening 29).
+
+**Two shapes were found while probing and deliberately NOT pinned as expected** — both filed:
+
+- **#851** — a newline-continued PROPERTY read (`this\n  .label`) is shaped as `leading_dot_call` and
+the analyzer emits a **`calls` edge to the property**, losing the read. The line fixture avoids the
+shape so its pins stay honest; the defect needs the oracle's `deriveGroovyEdges` to learn the same
+rule (it has no `leading_dot_call` handling at all) before it can be fixed with the usual apparatus.
+- **#852** — the same shape written dotted AND continued on the next line (`helper.build(2)` then
+`.configure(3)`) turns the whole expression into a `juxt_function_call` and emits **both** a dotted
+`calls` target (`f -> helper.build`, where the family contract is the bare leaf, and the same method is
+already `-> build` from the line above) **and** a spurious `uses f -> build` — `collectFieldAccessUses`
+has no callee-position guard, so the dotted callee leaks as a member READ. Edge-set change, same
+apparatus required, so filed rather than half-fixed.
+
+Both languages' corpus lanes were re-run at this HEAD and are unchanged (kotlin 8/300 = 2.7%, groovy
+29/400 = 7.2% parse-error files), so none of this touched parsing.
+
+Full evidence at this HEAD — the oracle sweep at **840 files** (40 per language, 88,627 relationships):
+**11,230 consistent, 0 inconsistent, 227 not-checkable**, of which the JVM family is
+java **1,920/1,920** · kotlin **6,787/6,787** · scala **1,989/1,989** · groovy **761/761** — every
+relationship the four analyzers emit now carries a line, and every claim survives the source check.
+(The other 17 languages account for the remaining 77,170 relationships, none of which carry a line:
+that is #825's remaining scope, not a JVM-family gap.) Fixtures **428/428** across 21 languages ·
+mutants **564/564 caught, 0 survived** · `tsc` clean.
+
 ### 3e. java's call-site lines, and the last stored `0` (2026-09-15, #821 + #825)
 
 **The java half of #825 — complete.** java emitted a line on **none** of its 1,920 relationships on the
@@ -250,7 +310,7 @@ Two mechanisms, both removed by #824:
 | #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
 | #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
 | #824 delete false certification | **open** |
-| #825 analyzer lane emission | **partly done** — scala (1,989 of 1,989) and java (1,920 of 1,920) both carry a line on **every** relationship, 0 inconsistent, each mechanism fixture- and mutant-pinned (scala 5, java 1 contract + its class list). Still open: kotlin, groovy and the other 17 languages emit **0 lines across 84,337 relationships** (21-language sweep, 820 files) |
+| #825 analyzer lane emission | **JVM family done, others open** — at the 840-file oracle sweep, scala **1,989/1,989** · java **1,920/1,920** · kotlin **6,787/6,787** · groovy **761/761** carry a line on **every** relationship, **0 inconsistent** (groovy also 2,864/2,864 at a 150-file sample). Every mechanism is fixture- and mutant-pinned (scala 5 mutants, java 3, kotlin 2, groovy 3). Still open: the other 17 languages emit **0 lines across 77,170 relationships**, and xml — the only other emitter — has not had its lines checked against source |
 | #826 closure gate | **open** |
 
 ## Evidence

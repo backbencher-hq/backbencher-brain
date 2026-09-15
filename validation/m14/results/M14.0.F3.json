@@ -32,13 +32,13 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "48/48 fixtures pass",
+      "detail": "49/49 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "38/38 fixtures pass",
+      "detail": "39/39 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "828ab45f448628fc11f39bc8699439971a419275",
-  "committedAt": "2026-09-15T17:24:46+02:00",
+  "commit": "7cccce80e591b98c6c907ea234b01a1195d452b6",
+  "committedAt": "2026-09-15T17:50:00+02:00",
   "data": {
     "details": [
       {
@@ -1358,6 +1358,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/method-refs",
         "ok": true,
         "problems": []
@@ -1529,6 +1534,11 @@
       },
       {
         "fixture": "kotlin/generic-parameters",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/heritage-lines-825",
         "ok": true,
         "problems": []
       },
@@ -2286,7 +2296,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 48
+        "pass": 49
       },
       "haskell": {
         "fail": 0,
@@ -2302,7 +2312,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 38
+        "pass": 39
       },
       "objc": {
         "fail": 0,
@@ -2363,8 +2373,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-15T15:43:47.256Z",
-  "regeneratedAtCommit": "828ab45f448628fc11f39bc8699439971a419275",
+  "regeneratedAt": "2026-09-15T16:37:58.796Z",
+  "regeneratedAtCommit": "7cccce80e591b98c6c907ea234b01a1195d452b6",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

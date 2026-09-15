@@ -68,7 +68,7 @@ function tierAConsistent(lines: string[], line: number, token: string): boolean 
  * conflation this file's header forbids. Matching is by SHAPE only, so the
  * allowlist cannot smuggle a real name past the check.
  */
-const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+)$/
+const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+)$/
 const UNKNOWN_TARGETS = new Set(["?", "<unknown>", "<anonymous>", ""])
 
 function isCheckable(token: string | null, target: unknown): token is string {

@@ -167,6 +167,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: leaf,
                 type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.7,
+                // M59 (#825): the constructed type is named by the callee leaf.
+                ...this.lineField(this.calleeLeafNode(n), n),
                 metadata: { kotlinSpecific: true, isInstantiation: true },
               })
             } else {
@@ -175,6 +177,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: leaf,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
+                // M59 (#825): the call is written at the callee leaf.
+                ...this.lineField(this.calleeLeafNode(n), n),
                 metadata: { kotlinSpecific: true },
               })
             }
@@ -196,6 +200,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             target,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 1.0,
+            // M59 (#825): `super(...)`/`this(...)` are unnamed keyword children,
+            // so the delegation node's own line is the site that carries it.
+            line_number: n.startPosition.row + 1,
             metadata: {
               relationshipType: "constructor_invocation",
               constructorReceiver: target,
@@ -269,6 +276,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59 (#825): a containment edge's navigable site is the member's own
+          // declaration line, from the symbol so the two cannot disagree.
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isContained: true },
         })
       }
@@ -392,6 +402,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence,
+            // M59 (#825): the override occurs at the OVERRIDING declaration.
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { isOverride: true, overrideParent, reasonCode, evidenceClass: evidence, overrideSig },
           })
         }
@@ -403,6 +415,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: imp.module || "",
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
+        // M59 (#825): the imported module is named on the import statement.
+        ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
         metadata: { isImportDep: true },
       })
     }
@@ -632,7 +646,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name: tName.text,
               kind: ASTEngine.SymbolKind.Type,
-              range: this.nodeToRange(n),
+              range: this.symbolRange(n),
               scope: this.currentScope(ctx),
               visibility: this.determineVisibility(tModifiers, ctx),
               ownerName: pClass,
@@ -680,7 +694,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: anonName,
             kind: ASTEngine.SymbolKind.Class,
-            range: this.nodeToRange(n),
+            range: this.symbolRange(n),
             scope: this.currentScope(ctx),
             visibility: this.determineVisibility(this.extractModifiers(n, ctx), ctx),
             ownerName: pClass,
@@ -768,7 +782,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol: ASTEngine.UniversalSymbol = {
       name: functionName,
       kind: parentClass ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
-      range: this.nodeToRange(node),
+      range: this.symbolRange(node),
       scope: this.currentScope(ctx),
       visibility,
       isAsync: isSuspend,
@@ -989,7 +1003,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol: ASTEngine.UniversalSymbol = {
       name: className,
       kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(node),
+      range: this.symbolRange(node),
       // Scope = package + enclosing types, EXCLUDING this class's own name,
       // so a class is never a container of itself.
       scope: this.enclosingScope(ctx),
@@ -1006,6 +1020,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
+        // M59 (#825): parallel line array — one line per supertype, in the
+        // same order. Heritage edges take their line from here, not from the
+        // class header (which names only the first supertype).
+        superTypeLines: superTypeKinds.map((s) => s.line),
         inheritance: superTypes,
         typeParameters,
         isData,
@@ -1041,7 +1059,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol: ASTEngine.UniversalSymbol = {
       name: objectName,
       kind: ASTEngine.SymbolKind.Class, // Using Class for objects
-      range: this.nodeToRange(node),
+      range: this.symbolRange(node),
       scope: this.enclosingScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       ownerName: parentClass,
@@ -1052,6 +1070,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
+        // M59 (#825): parallel line array — one line per supertype.
+        superTypeLines: superTypeKinds.map((s) => s.line),
         isObject: true,
         isCompanionObject: (() => { for (let i = 0; i < modifiers.length; i++) if (modifiers[i] === "companion") return true; return false; })(),
         kotlinSpecific: true,
@@ -1097,6 +1117,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Previously invisible: no isExtension marker, no relationship (M14.1 fix;
     // positional because the pinned kotlin wasm exposes zero named fields).
     let extensionReceiver: string | undefined
+    let extensionReceiverNode: Node | undefined
     {
       let receiverNode: any = undefined
       for (let i = 0; i < node.namedChildCount; i++) {
@@ -1118,13 +1139,16 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (receiverNode) {
         const t = receiverNode.text
         extensionReceiver = t.endsWith("?") ? t.slice(0, -1) : t
+        // M59 (#825): kept so the extension edge can name the line the receiver
+        // TYPE is written on rather than the declaration's line.
+        extensionReceiverNode = receiverNode
       }
     }
 
     const symbol: ASTEngine.UniversalSymbol = {
       name: propertyName,
       kind: ASTEngine.SymbolKind.Property,
-      range: this.nodeToRange(node),
+      range: this.symbolRange(node),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       decorators: annotations,
@@ -1155,6 +1179,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: extensionReceiver,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        // M59 (#825): the receiver type is named by its receiver node.
+        ...this.lineField(extensionReceiverNode, node),
         metadata: {
           relationshipType: "kotlin_extension_property",
           isExtension: true,
@@ -1399,6 +1425,93 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
 
+  /**
+   * M59 (#825): the `line_number` field for a relationship, taken from the node
+   * that CARRIES THE NAME the edge is about. java and scala settled this rule
+   * (the line belongs to the name, never to the construct that contains it) and
+   * kotlin shares their node shapes, so it is the same contract, ported.
+   *
+   * Returns nothing at all when no node is available — never 0: #820/#821, a
+   * stored 0 is a claim that the relationship occurs on line 0.
+   */
+  private lineField(nameNode: Node | null | undefined, fallback?: Node | null): { line_number?: number } {
+    const n = nameNode ?? fallback
+    return n ? { line_number: n.startPosition.row + 1 } : {}
+  }
+
+  /**
+   * M59 (#825): the node that NAMES a kotlin call.
+   *
+   * Measured from the pinned wasm rather than assumed: a kotlin
+   * `call_expression`'s named children are `navigation_expression` and
+   * `call_suffix`, and the navigation expression SPANS the receiver — for
+   * `s\n .trim()\n .toUpperCase()` the node opens on line 5 while
+   * `.toUpperCase()` (the name, and the `()` that follows it) is written on 7.
+   * The last identifier inside the navigation expression is the callee leaf,
+   * which is where the call is written.
+   */
+  private calleeLeafNode(callNode: Node): Node | null {
+    const nav = callNode.namedChild(0)
+    if (!nav) return null
+    let last: Node | null = null
+    const visit = (n: Node): void => {
+      if (n.type === "simple_identifier" || n.type === "type_identifier") last = n
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) visit(c)
+      }
+    }
+    visit(nav)
+    return last ?? nav
+  }
+
+  /**
+   * M59 (#825): the node whose start is the DECLARATION's own line.
+   *
+   * An annotation is a modifier — `@Test`/`@Bean` decorate the declaration, they
+   * are not where it is written. Measured on the 40-file kotlin oracle sample:
+   * with the node's own start, `contains` and `overrides` edges landed on the
+   * ANNOTATION line for every annotated member (102 of the sample's 241
+   * inconsistent claims started at an `@Test`/`@Bean` line). java measured the
+   * same defect at 27% of its symbols and scala settled the contract; kotlin
+   * inherits one rule, not a third variant.
+   *
+   * The symbol range and the edges that name it move together, so a symbol and
+   * its `contains`/`overrides` lines can never disagree.
+   */
+  private declarationLineNode(node: Node): Node {
+    // The NAME identifies the declaration, and the line belongs to the name.
+    // Preferred over "first non-trivia child" because a class's own children put
+    // its primary CONSTRUCTOR in the same list: measured on the kotlin sample,
+    // `private data class SuspendedObject(\n  val transaction: JdbcTransaction)`
+    // put the class symbol on line 94 — the constructor PARAMETER's line — while
+    // its name is written on 93. Taking the name node is exact for every
+    // declaration shape (class, function, property, parameter, enum entry,
+    // typealias) instead of depending on child order.
+    const name = this.findChildByType(node, ["type_identifier", "simple_identifier"])
+    if (name) return name
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "modifiers" || c.type === "annotation") continue
+      if (c.type === "comment" || c.type === "line_comment" || c.type === "block_comment") continue
+      return c
+    }
+    return node
+  }
+
+  /** The range of a SYMBOL: annotations skipped (see declarationLineNode). */
+  private symbolRange(node: Node): ASTEngine.UniversalSymbol["range"] {
+    const decl = this.declarationLineNode(node)
+    const base = this.nodeToRange(node)
+    return {
+      ...base,
+      startLine: decl.startPosition.row + 1,
+      startColumn: decl.startPosition.column + 1,
+      startIndex: decl.startIndex,
+    }
+  }
+
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
@@ -1428,7 +1541,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol: ASTEngine.UniversalSymbol = {
       name: interfaceName,
       kind: ASTEngine.SymbolKind.Interface,
-      range: this.nodeToRange(node),
+      range: this.symbolRange(node),
       scope: this.enclosingScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       isAbstract: true, // All interfaces are abstract
@@ -1440,6 +1553,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
+        // M59 (#825): parallel line array — one line per supertype, in the
+        // same order. Heritage edges take their line from here, not from the
+        // class header (which names only the first supertype).
+        superTypeLines: superTypeKinds.map((s) => s.line),
         inheritance: superTypes,
         typeParameters,
         methodCount: this.countMethods(node, ctx),
@@ -1472,7 +1589,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbol: ASTEngine.UniversalSymbol = {
       name: enumName,
       kind: ASTEngine.SymbolKind.Enum,
-      range: this.nodeToRange(node),
+      range: this.symbolRange(node),
       scope: this.enclosingScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       ownerName: parentClass,
@@ -1483,6 +1600,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         annotations: annotations.map((a) => this.kotlinShortAnnotationName(a)),
         superTypes,
         superTypesAreConstructorCalls: superTypeKinds.map((s) => s.isConstructorCall),
+        // M59 (#825): parallel line array — one line per supertype.
+        superTypeLines: superTypeKinds.map((s) => s.line),
         enumValues,
         valueCount: enumValues.length,
         hasEnumMethods: this.countMethods(node, ctx) > 0,
@@ -1508,7 +1627,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbols.push({
         name: enumValue,
         kind: ASTEngine.SymbolKind.EnumMember,
-        range: this.nodeToRange(entryNode),
+        range: this.symbolRange(entryNode),
         scope: this.currentScope(ctx),
         visibility: "public",
         ownerName: enumName,
@@ -1579,10 +1698,21 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The self-contains edge A->A is family-normal (java post-C3 emits it
     // identically).
     const constructorName = parentClass || "constructor"
+    // M59 (#825): a PRIMARY constructor is written in the class header, so its
+    // navigable line is the class-name line. Its own node starts at the
+    // PARAMETER LIST, which is one line down on a wrapped header — measured on
+    // Exposed SpringTransactionManager.kt: `private data class SuspendedObject(`
+    // on 93, `val transaction: JdbcTransaction,` on 94, and the constructor
+    // symbol (named after the class, family convention) claimed 94 where the
+    // name it carries is not written. A secondary constructor keeps its own
+    // line, which IS where it is written.
+    const ctorDeclNode = isPrimaryConstructor
+      ? (node.parent && (node.parent.type === "class_declaration" || node.parent.type === "object_declaration") ? node.parent : node)
+      : node
     const symbol: ASTEngine.UniversalSymbol = {
       name: constructorName,
       kind: ASTEngine.SymbolKind.Constructor,
-      range: this.nodeToRange(node),
+      range: this.symbolRange(ctorDeclNode),
       scope: this.currentScope(ctx),
       visibility: this.determineVisibility(modifiers, ctx),
       parameters,
@@ -1612,7 +1742,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         symbols.push({
           name: nameNode.text,
           kind: ASTEngine.SymbolKind.Property,
-          range: this.nodeToRange(paramNode),
+          range: this.symbolRange(paramNode),
           scope: this.currentScope(ctx),
           visibility: this.determineVisibility(this.extractModifiers(paramNode, ctx), ctx),
           ownerName: parentClass,
@@ -1890,9 +2020,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * constructor invocation `Base()` is an extended CLASS; a bare type `Repo`
    * is an IMPLEMENTED interface. Position alone is wrong - a class whose
    * first (or only) supertype is an interface was labelled extends.
+   *
+   * M59 (#825): each entry also carries the line the SUPERtype is NAMED on.
+   * A kotlin supertype list wraps (`class A :\n    B(),\n    C`), so the
+   * class header's line names only the first entry. Same rule as java's
+   * `extractJavaInheritance` and scala's `extractSupertypes`.
    */
-  private extractSuperTypesWithKinds(node: Node): { name: string; isConstructorCall: boolean }[] {
-    const out: { name: string; isConstructorCall: boolean }[] = []
+  private extractSuperTypesWithKinds(node: Node): { name: string; isConstructorCall: boolean; line: number }[] {
+    const out: { name: string; isConstructorCall: boolean; line: number }[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c?.type === "delegation_specifier") {
@@ -1900,7 +2035,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         let userType = this.findChildByType(c, ["user_type"])
         if (!userType && invocation) userType = this.findChildByType(invocation, ["user_type"])
         if (userType) {
-          out.push({ name: this.cleanKotlinBaseType(userType.text), isConstructorCall: !!invocation })
+          out.push({
+            name: this.cleanKotlinBaseType(userType.text),
+            isConstructorCall: !!invocation,
+            line: userType.startPosition.row + 1,
+          })
         }
       }
     }
@@ -2149,9 +2288,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
     const emitted = new Set<string>()
-    const collectTypeNames = (n: Node, out: string[]): void => {
+    // M59 (#825): `{name, line}` pairs, not bare names — the line must be the
+    // line the TYPE IS NAMED, not the line the enclosing type expression starts
+    // on (a kotlin type can wrap: `Map<String,\n  List<X>>`). Same shape scala
+    // and java settled on for the same reason.
+    const collectTypeNames = (n: Node, out: Array<{ name: string; line: number }>): void => {
       if (n.type === "type_identifier") {
-        if (!out.includes(n.text)) out.push(n.text)
+        if (!out.some((x) => x.name === n.text)) out.push({ name: n.text, line: n.startPosition.row + 1 })
         return
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -2181,9 +2324,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const source = sourceOverride ?? resolveSource(decl)
       for (const tr of typeRoots) {
         if (!tr) continue
-        const names: string[] = []
+        const names: Array<{ name: string; line: number }> = []
         collectTypeNames(tr, names)
-        for (const t of names) {
+        for (const { name: t, line } of names) {
           const key = `${source}|${t}|${kind}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -2192,6 +2335,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: t,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
+            // M59 (#825): the line the referenced TYPE is named on.
+            line_number: line,
             metadata: { relationshipType: relType, declaredOn: decl.type },
           })
         }
@@ -2372,6 +2517,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         target,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        // M59 (#825): a read happens where the name is written. `n` is the
+        // expression the walk found, which is the site that carries it.
+        line_number: n.startPosition.row + 1,
         metadata: { relationshipType: "expression_use" },
       })
     }
@@ -2462,6 +2610,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         target,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.6,
+        // M59 (#825): a bare member read IS its identifier node.
+        line_number: n.startPosition.row + 1,
         metadata: { isBareRead: true, relationshipType: "expression_use" },
       })
     }
@@ -2809,8 +2959,17 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     return complexity
   }
-  private extractFunctionCalls(node: Node): string[] {
-    const calls: string[] = []
+  /**
+   * M59 (#825): `{name, node}` pairs, not bare names.
+   *
+   * The compose containment edges are derived from the CALLS inside a
+   * `@Composable` body, and their target is the called name — so the line must
+   * come from the call node that carries it. Returning the node is the cheapest
+   * way to keep that true as the walk changes; the previous string-only return
+   * left those edges with no line at all (unknown, which is honest but useless).
+   */
+  private extractFunctionCalls(node: Node): Array<{ name: string; node: Node }> {
+    const calls: Array<{ name: string; node: Node }> = []
     const stack: Node[] = [node]
 
     while (stack.length > 0) {
@@ -2819,7 +2978,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Navigation-aware leaf extraction — qualified compose calls
         // (theme.MyScreen()) have no direct identifier child.
         const full = this.buildKotlinCallExpression(n)
-        calls.push(full.split(".").pop() || full)
+        calls.push({ name: full.split(".").pop() || full, node: this.calleeLeafNode(n) ?? n })
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
@@ -2855,6 +3014,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: receiverType,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            // M59 (#825): the receiver type is named by its receiver node.
+            ...this.lineField(receiverNode, n),
             metadata: {
               relationshipType: "kotlin_extension_function",
               isExtension: true,
@@ -2871,11 +3032,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (bodyNode) {
             const bodyCalls = this.extractFunctionCalls(bodyNode)
             for (let i = 0; i < bodyCalls.length; i++) {
-              const call = bodyCalls[i]
+              const call = bodyCalls[i].name
               if (call.length > 0 && call[0] >= "A" && call[0] <= "Z") {
                 relationships.push({
                   source: nameNode.text,
                   target: call,
+                  // M59 (#825): the UI component is named at its call site.
+                  line_number: bodyCalls[i].node.startPosition.row + 1,
                   type: ASTEngine.RelationshipType.Contains,
                   confidence: 0.8,
                   metadata: {
@@ -2917,6 +3080,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: callName,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
+                // M59 (#825): the dispatcher is named at the call itself.
+                ...this.lineField(this.calleeLeafNode(n), n),
                 metadata: {
                   relationshipType: "coroutine_dispatch",
                   isAsync: true,
@@ -2953,6 +3118,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (cls.metadata?.isAnonymousObject) continue
         if (cls.metadata?.superTypes) {
           const ctorCalls: boolean[] | undefined = cls.metadata?.superTypesAreConstructorCalls
+          // M59 (#825): the line the SUPERtype is named on — a wrapped
+          // supertype list puts each parent on its own line, so the class
+          // header's line is only correct for the first entry. Never 0:
+          // absent when unknown (#820/#821).
+          const superLines: number[] | undefined = cls.metadata?.superTypeLines
           for (let j = 0; j < cls.metadata.superTypes.length; j++) {
             // Kotlin semantics: supertype with constructor invocation `Base()`
             // = extends (class); bare type `Repo` = implements (interface).
@@ -2965,6 +3135,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: cls.metadata.superTypes[j],
               type: isExtends ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
+              ...(typeof superLines?.[j] === "number" ? { line_number: superLines[j] } : {}),
               metadata: { relationshipType: isExtends ? "kotlin_extends" : "kotlin_implements" },
             })
           }

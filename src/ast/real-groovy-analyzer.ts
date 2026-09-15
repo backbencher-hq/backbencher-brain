@@ -36,6 +36,9 @@ interface OverrideTask {
   signature: string
   ownerFqn: string
   explicit?: boolean
+  // M59 (#825): the OVERRIDING declaration's own line (annotations skipped), so
+  // an `@Override` method reports the method, not the annotation.
+  line?: number
 }
 
 interface StackItem {
@@ -158,6 +161,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
+            // M59 (#825): the line the imported MODULE is named on (java's rule).
+            ...this.lineField(nameNode, node),
             metadata: { isGroovyImport: true, isWildcard },
           })
         }
@@ -197,6 +202,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: this.baseTypeName(sc),
                   type: ASTEngine.RelationshipType.Extends,
                   confidence: 1.0,
+                  // M59 (#825): the SUPERtype's own line, never the class header's.
+                  ...this.lineField(sc, node),
                   metadata: { relationshipType: "extends" },
                 })
               }
@@ -210,6 +217,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: this.baseTypeName(tid),
                   type: ASTEngine.RelationshipType.Extends,
                   confidence: 1.0,
+                  // M59 (#825): each interface parent is named on its OWN line.
+                  ...this.lineField(tid, node),
                   metadata: { relationshipType: "extends_interface" },
                 })
               }
@@ -224,6 +233,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: this.baseTypeName(sc),
                   type: ASTEngine.RelationshipType.Extends,
                   confidence: 1.0,
+                  ...this.lineField(sc, node),
                   metadata: { relationshipType: "extends_trait" },
                 })
               }
@@ -239,6 +249,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: this.baseTypeName(tid),
                 type: ASTEngine.RelationshipType.Implements,
                 confidence: 1.0,
+                // M59 (#825): each interface is named on its OWN line.
+                ...this.lineField(tid, node),
                 metadata: { relationshipType: "implements" },
               })
             }
@@ -249,7 +261,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind,
             comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
             genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
-            range: this.nodeToRange(node),
+            // M59 (#825): annotations skipped — the class is written on its own line.
+            range: this.symbolRange(node),
             visibility,
             decorators: classAnnotations,
             ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
@@ -275,7 +288,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                   symbols.push({
                     name: pName.text,
                     kind: ASTEngine.SymbolKind.Property,
-                    range: this.nodeToRange(p),
+                    range: this.symbolRange(p),
                     returnType: pType ? this.baseTypeName(pType) : undefined,
                     visibility: "public",
                     ownerName: name,
@@ -375,6 +388,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               signature,
               ownerFqn: newContext.fqn,
               explicit: true,
+              line: this.declarationLineNode(node).startPosition.row + 1,
             })
           } else if (newContext && !isConstructor &&
                      modifiers.indexOf("static") === -1 && visibility !== "private") {
@@ -384,6 +398,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               signature,
               ownerFqn: newContext.fqn,
               explicit: false,
+              line: this.declarationLineNode(node).startPosition.row + 1,
             })
           }
 
@@ -392,7 +407,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
             comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
             complexity: this.calculateGroovyMethodComplexity(node),
-            range: this.nodeToRange(node),
+            // M59 (#825): annotations skipped — `@Override` is not where the
+            // overriding method is written.
+            range: this.symbolRange(node),
             visibility,
             genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
             parameters,
@@ -449,7 +466,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: idNode.text,
             kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
-            range: this.nodeToRange(child),
+            range: this.symbolRange(child),
             visibility,
             ownerName,
             ownerKind,
@@ -464,7 +481,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.EnumMember,
-            range: this.nodeToRange(node),
+            range: this.symbolRange(node),
             visibility: "public",
             ownerName,
             ownerKind: ASTEngine.SymbolKind.Enum,
@@ -497,6 +514,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: methodName,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.7,
+              // M59 (#825): the method NAME's line, not the receiver's — a
+              // multi-line chain opens on the receiver (scala's measured defect).
+              ...this.lineField(nameNode, node),
               metadata: { groovyCallExpression: callExpr },
             })
           }
@@ -512,6 +532,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: first.type,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 1.0,
+            ...this.lineField(first, node),
             metadata: { relationshipType: "constructor_invocation" },
           })
         }
@@ -526,6 +547,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: nameNode.text,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.7,
+            ...this.lineField(nameNode, node),
             metadata: { relationshipType: "juxt_call" },
           })
         }
@@ -542,6 +564,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: nameNode.text,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.7,
+            ...this.lineField(nameNode, node),
             metadata: { relationshipType: "leading_dot_call" },
           })
         }
@@ -564,6 +587,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: this.baseTypeName(typeNode),
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            // M59 (#825): the constructed TYPE's own line.
+            ...this.lineField(typeNode, node),
             metadata: { relationshipType: "instantiates", isNew: true },
           })
           // M37.21 #610 (JD18 family lesson from java/scala, probe-verified
@@ -582,7 +607,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             const anonSym: ASTEngine.UniversalSymbol = {
               name: anonName,
               kind: ASTEngine.SymbolKind.Class,
-              range: this.nodeToRange(node),
+              range: this.symbolRange(node),
               visibility: parentContext.visibility || "public",
               ownerName: parentContext.name,
               ownerKind: parentContext.kind,
@@ -649,6 +674,10 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59 (#825): the member's DECLARATION line, and the same line the
+          // member's own range carries — a symbol and the edge naming it must
+          // never disagree (java/scala contract). Never 0 (#820/#821).
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isContained: true },
         })
       }
@@ -888,6 +917,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
           confidence,
+          // M59 (#825): the overriding declaration's line — captured while the
+          // node was in hand, not resolved later by name (namesakes collide).
+          ...(task.line ? { line_number: task.line } : {}),
           metadata: { relationshipType: "method_override", isGroovyOverride: true, reasonCode },
         })
       }
@@ -905,20 +937,24 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emitted = new Set<string>()
     const TYPE_STOP = new Set(["variable_declarator", "closure", "block", "closure_expression"])
 
-    const collectTypeNames = (n: Node, out: string[]): void => {
+    // M59 (#825): collects the NAME TOGETHER WITH ITS NODE, so the reference
+    // edge can carry the line the type is named on rather than the line the
+    // enclosing declaration (or type expression) opened on.
+    type NamedNode = { name: string; node: Node }
+    const collectTypeNames = (n: Node, out: NamedNode[]): void => {
       if (n.type === "type_identifier") {
         // `def` is the dynamic-type keyword; `as` is how the grammar lexes
         // the keyword inside its mis-parsed dangling as-expression
         // (`= [] as Set` becomes local_variable_declaration(as, Set)).
         // Both are type_identifier TOKENS but never types.
-        if (n.text !== "def" && n.text !== "as" && !out.includes(n.text)) out.push(n.text)
+        if (n.text !== "def" && n.text !== "as" && !out.some((o) => o.name === n.text)) out.push({ name: n.text, node: n })
         return
       }
       if (n.type === "record_pattern") {
         // The pattern's type is its FIRST named child (identifier):
         // `Point(int x, int y)` under instanceof or a switch case label.
         const t = n.namedChild(0)
-        if (t && t.type === "identifier" && t.text !== "this" && !out.includes(t.text)) out.push(t.text)
+        if (t && t.type === "identifier" && t.text !== "this" && !out.some((o) => o.name === t.text)) out.push({ name: t.text, node: t })
         return
       }
       if (n.type === "type_arguments") {
@@ -963,17 +999,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emit = (decl: Node, roots: Node[], kind: string, relType = "declared_type"): void => {
       const source = resolveSource(decl)
       for (const r of roots) {
-        const names: string[] = []
+        const names: NamedNode[] = []
         collectTypeNames(r, names)
         for (const t of names) {
-          const key = `${source}|${t}|${kind}`
+          const key = `${source}|${t.name}|${kind}`
           if (emitted.has(key)) continue
           emitted.add(key)
           relationships.push({
             source,
-            target: t,
+            target: t.name,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
+            // M59 (#825): the line the TYPE is named on. A wrapped generic
+            // (`List<\n    Map<String, Int>>`) opens on an earlier line than its
+            // arguments, so the enclosing type expression's line is wrong for
+            // every nested name (scala's measured defect class).
+            ...this.lineField(t.node, decl),
             metadata: { relationshipType: relType, declaredOn: decl.type },
           })
         }
@@ -1022,12 +1063,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               else if (c.type === "variable_declarator") asDecl = c
             }
             if (asKw && asDecl) {
-              const names: string[] = []
+              const names: NamedNode[] = []
               const tstack: Node[] = [asDecl]
               while (tstack.length > 0) {
                 const m = tstack.pop()!
                 if (m.type === "type_identifier" || m.type === "identifier") {
-                  if (m.text !== "as" && m.text !== "def" && !names.includes(m.text)) names.push(m.text)
+                  if (m.text !== "as" && m.text !== "def" && !names.some((o) => o.name === m.text)) names.push({ name: m.text, node: m })
                 } else {
                   for (let i = 0; i < m.namedChildCount; i++) {
                     const c = m.namedChild(i)
@@ -1039,14 +1080,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               // the C-cast branch.
               const source = resolveSource(n)
               for (const t of names) {
-                const key = `${source}|${t}|as_cast`
+                const key = `${source}|${t.name}|as_cast`
                 if (emitted.has(key)) continue
                 emitted.add(key)
                 relationships.push({
                   source,
-                  target: t,
+                  target: t.name,
                   type: ASTEngine.RelationshipType.References,
                   confidence: 0.95,
+                  ...this.lineField(t.node, n),
                   metadata: { relationshipType: "cast_type", declaredOn: "as_cast" },
                 })
               }
@@ -1128,6 +1170,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: first.text,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.9,
+                ...this.lineField(first, n),
                 metadata: { relationshipType: "method_reference" },
               })
             }
@@ -1246,6 +1289,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: parts[parts.length - 1],
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
+              // M59 (#825): the `field` field of the access node names the
+              // member — measured populated in the pinned grammar
+              // (`repo.items` -> [identifier, identifier], field=identifier),
+              // so a multi-line receiver chain does not drag the read onto the
+              // receiver's line.
+              ...this.lineField(node.childForFieldName("field"), node),
               metadata: { isFieldAccess: true },
             })
           }
@@ -1275,6 +1324,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: first.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
+              ...this.lineField(first, node),
               metadata: { isArrayAccess: true },
             })
           }
@@ -1581,6 +1631,51 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       endColumn: node.endPosition.column + 1,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
+    }
+  }
+
+  /**
+   * M59 (#825): the `line_number` field for a relationship, taken from the node
+   * that NAMES the relationship's target — never from the construct that merely
+   * contains it. Returns nothing at all when no node is available: #820/#821,
+   * a stored 0 is a claim that the relationship occurs on line 0.
+   */
+  private lineField(nameNode: Node | null | undefined, fallback?: Node | null): { line_number?: number } {
+    const n = nameNode ?? fallback
+    return n ? { line_number: n.startPosition.row + 1 } : {}
+  }
+
+  /**
+   * M59 (#825): the node whose start is the DECLARATION's own line.
+   *
+   * An annotation is a modifier — `@Service` decorates the class, it is not
+   * where the class is written. Measured on the pinned grammar, not assumed:
+   * `class_declaration` for `@Service\nclass Svc` has children
+   * `[modifiers@5, identifier@6, class_body@6]`, so the class symbol's line was
+   * the ANNOTATION line. Same shape and same rule as java's
+   * `declarationLineNode` and scala's `declarationLineNode` — one rule for the
+   * whole JVM family rather than three dialects of it.
+   */
+  private declarationLineNode(node: Node): Node {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "modifiers" || c.type === "annotation" || c.type === "marker_annotation") continue
+      if (c.type === "comment" || c.type === "block_comment" || c.type === "line_comment") continue
+      return c
+    }
+    return node
+  }
+
+  /** The range of a SYMBOL (not of an import, an error or a raw node): annotations skipped. */
+  private symbolRange(node: Node) {
+    const decl = this.declarationLineNode(node)
+    const base = this.nodeToRange(node)
+    return {
+      ...base,
+      startLine: decl.startPosition.row + 1,
+      startColumn: decl.startPosition.column + 1,
+      startIndex: decl.startIndex,
     }
   }
 }
