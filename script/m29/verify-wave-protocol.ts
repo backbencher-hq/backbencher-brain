@@ -53,6 +53,17 @@ function mutant(label: string, caught: boolean, detail = ""): void {
 
 const step = (name: string, status: Step["status"]): Step => ({ step: name, status, detail: "" })
 
+/** A VOLATILE PIN in a byte-gated artifact: the live HEAD, or a wall-clock
+ *  timestamp. Either one re-stales the drift gate on the very commit that
+ *  records it (the "self-staling byte-gated doc" class, M61.V6 / #847 — the
+ *  m53 integration receipt states the invariant in prose). */
+function volatilePin(doc: string, head: string): string | null {
+  const short = head.slice(0, 8)
+  if (short.length === 8 && doc.includes(short)) return `live HEAD ${short}`
+  const iso = doc.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)
+  return iso ? `wall-clock timestamp ${iso[0]}` : null
+}
+
 // --- R1: the binding moves exactly per the tier rules ------------------------
 {
   const full: Step[] = [
@@ -116,6 +127,17 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
     // languages at I1 even with both legs green on disk.)
     const javaServerEv = path.join(ROOT, "validation", "m29", "results", "wave-java.json")
     check("R3: S5 honors recorded evidence", s5?.status === (existsSync(javaServerEv) ? (parseSealedRecord(javaServerEv) as { status?: string }).status === "verified" ? "pass" : "fail" : "blocked"), s5?.detail)
+    // R5-M5 — the SILENT CAPABILITY CAP class (M61.V6 / #847). Incident: this
+    // step was hardcoded "blocked" here, which capped fully-verified languages
+    // at I1 even with both legs green on disk: the cap lied downward and
+    // recorded no blocker. The permanent proof: a HARDCODED status that the
+    // recorded evidence disagrees with must fire the detector above.
+    {
+      const hardcodedS5 = verdict.steps.map((s) => (s.step === "S5-server-leg" ? { ...s, status: "blocked" as const } : s))
+      const honest = existsSync(javaServerEv) && (parseSealedRecord(javaServerEv) as { status?: string }).status === "verified" ? "pass" : "blocked"
+      const detectorFires = hardcodedS5.find((s) => s.step === "S5-server-leg")!.status !== honest
+      mutant("silent capability cap: a hardcoded blocked S5 caps a fully-evidenced language", detectorFires)
+    }
     const s6 = byStep.get("S6-editor-leg")
     // The protocol honors RECORDED editor evidence (R2 execution writes it).
     // When java's S6 evidence exists, S6 reads pass and the cap stays I1
@@ -184,6 +206,20 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
   const tampered = structuredClone(spec!)
   delete tampered.data.languages["typescript"]
   mutant("ledger entry removed without the gate noticing", analyzerConformance(tampered, "typescript").conformant === false)
+}
+
+// --- R5-M6: a byte-gated doc carrying a VOLATILE PIN re-stales ----------------
+// (M61.V6 / #847 — the self-staling-byte-gated-doc class. A byte-compared
+// artifact that embeds the live HEAD, or a wall-clock timestamp, re-stales on
+// the very commit that records it, so its drift gate can never go green: the
+// gate reports a lie forever. The m53 receipt states the invariant in prose;
+// this gate enforces it on the bytes it owns.)
+{
+  const head = execCommit()
+  const pin = volatilePin(generateWaveDoc(), head)
+  check("R4: the generated doc carries no volatile pin (live HEAD / wall clock)", pin === null, pin ?? undefined)
+  mutant("byte-gated doc embedding the live HEAD re-stales", volatilePin(`${generateWaveDoc()}\n<!-- pin ${head.slice(0, 8)} -->\n`, head) !== null)
+  mutant("byte-gated doc embedding a wall-clock timestamp re-stales", volatilePin(`${generateWaveDoc()}\n<!-- 2026-01-02T03:04 -->\n`, head) !== null)
 }
 
 // --- Persist evidence --------------------------------------------------------

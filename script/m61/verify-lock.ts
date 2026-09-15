@@ -393,6 +393,9 @@ try {
   })
 
   // M4: the break path is unconditional -> a stale lock is stolen unasked.
+  // M61.V6 / #847 — the concurrent-clobber class, made extinct. Incident: two
+  // gate runs interleaved on one evidence file; a second writer must REFUSE
+  // loudly, never silently steal a stale lock and clobber the record.
   await runMutant("silent-steal", 'if (process.env.BB_GATE_BREAK_STALE_LOCK === "1") {', "if (true) {", (mod) => {
     const dir = path.join(tmp, "m4")
     ;(mod.acquireLock as typeof acquireLock)(dir, { gate: "seed" }).release()
