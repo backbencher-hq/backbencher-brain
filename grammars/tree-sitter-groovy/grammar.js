@@ -69,6 +69,18 @@ module.exports = grammar(Java, {
     [$.argument_list, $.formal_parameters],
     [$.enum_constant, $.generic_type],
     [$.enum_constant, $._unannotated_type],
+    // #841 residual: `enum E { A<T> … }` — an identifier followed by `<` inside
+    // an enum body is an enum constant, a generic type, or the type of a typed
+    // member; the generator demands the three-way conflict now that
+    // method_declaration accepts a type before its type parameters.
+    [$.enum_constant, $._unannotated_type, $.generic_type],
+    // …and its class-body twin: `modifiers identifier '<'` — the same
+    // identifier-before-`<` three-way ambiguity, there between a typed member,
+    // a declarator and a generic type.
+    [$._variable_declarator_id, $._unannotated_type, $.generic_type],
+    // …and the enum-body form of the same four-way ambiguity (a modifier-led
+    // constant vs a modifier-led typed member vs a declarator vs a generic).
+    [$.enum_constant, $._variable_declarator_id, $._unannotated_type, $.generic_type],
 
     [$.primary_expression, $.method_invocation],
     [$.field_access, $.method_invocation],
@@ -444,7 +456,28 @@ module.exports = grammar(Java, {
 
     method_declaration: $ => seq(
       optional($.modifiers),
-      $._method_header,
+      choice(
+        $._method_header,
+        // #841 residual — Groovy writes the return type BEFORE the type
+        // parameters: `def <T extends AsyncListener> T createListener(Class<T>)`
+        // (grails-core GrailsAsyncContext.groovy:51). Java's `_method_header` is
+        // the opposite order, so before the F6 narrow of `field_declaration` the
+        // only parse that fitted was a bogus FIELD named `def` followed by the
+        // method — error-free but wrong, and the narrow turned it into a real
+        // ERROR (found by the m12 groovy census, 29 → 30 of 400). Both orders
+        // are accepted; the type-parameters-first form is Groovy's own
+        // (`<T> T m()`), the type-first form is the one above.
+        seq(
+          field('type', $._unannotated_type),
+          field('type_parameters', $.type_parameters),
+          // …and the METHOD's own return type follows the parameters, so the
+          // Groovy shape carries two types (`def` then `T`). Without this the
+          // `T` had nowhere to go and landed in an ERROR node.
+          field('type', $._unannotated_type),
+          $._method_declarator,
+          optional($.throws),
+        ),
+      ),
       // Groovy one-liner method bodies are bare expressions (def add(a,b) { a + b })
       // — Java's block only accepts statements, so accept the closure form too.
       choice(field('body', $.block), field('body', $.closure), ';', '\n', '\0'),
@@ -690,6 +723,19 @@ module.exports = grammar(Java, {
     // the constants (Java requires the ';'). Kept as a non-empty choice so the
     // rule never matches the empty string (tree-sitter constraint): either the
     // Java form (`;` then members) or newline-separated members with no `;`.
+    //
+    // #841 residual (found by the M14.0.F6 fixture-coverage gate, 2026-09-15):
+    // `HAPPY, GLOOMY` at the top of an enum body IS the constant list, but it is
+    // ALSO a legal Groovy untyped field with two declarators (the conflict pair
+    // [enum_constant, _variable_declarator_id] declared above). Allowing the
+    // member list to begin with NO delimiter let GLR end the constant list at
+    // the first constant and read the rest as members — `enum Mood { HAPPY,
+    // GLOOMY … }` parsed with ONE enum_constant and `GLOOMY` a field, so the
+    // analyzer's enum_constant handling went dead and constants stopped
+    // producing symbols. Requiring a DELIMITER before the member list closes
+    // that route without losing the Groovy form: a member may still follow
+    // constants with no ';', it just has to start on a new line (which is what
+    // real code does).
     enum_body_declarations: ($, original) => choice(
       original,
       repeat1(choice(
@@ -717,11 +763,40 @@ module.exports = grammar(Java, {
     // Scope is safe: field_declaration only occurs in class bodies, never in
     // method statements. The trade: `int a int b` on one line now parses as two
     // fields where real Groovy would reject it — accepted, documented here.
-    field_declaration: $ => seq(
-      optional($.modifiers),
-      optional(field('type', $._unannotated_type)),
-      $._variable_declarator_list,
-      optional(DELIMITER),
+    // #841 residual (found by the M14.0.F6 fixture-coverage gate, 2026-09-15):
+    // DYNAMIC precedence on the enum constant, so that when a body is genuinely
+    // ambiguous — `HAPPY, GLOOMY` is both a constant list and (as `GLOOMY Mood`)
+    // a typed field plus a constructor — the reading with MORE constants wins.
+    // Together with the narrowed field below this resolves every enum shape
+    // tested: constants-only, constants+members, constants with class bodies,
+    // the Java `;` form, and typed fields in the body.
+    enum_constant: ($, original) => prec.dynamic(1, original),
+
+    // #841 residual: the TYPE-ELIDED branch is now modifier-led. Every construct that motivated
+    // it IS modifier-led (`static mapWith = 'neo4j'`, `static mapping = { … }`,
+    // `public xs = []`), and `def x` never needed it (the lexer reads `def` as an
+    // identifier, so it arrives through the typed branch). What the unrestricted
+    // form bought was `A, B` — a bare identifier list read as ONE untyped field
+    // with two declarators — and that is the enum-constant syntax: it let
+    // `enum Mood { HAPPY, GLOOMY … }` parse with ZERO enum_constant nodes while
+    // the declared conflict [enum_constant, _variable_declarator_id] resolved
+    // statically toward the field (tree-sitter reports it `unnecessary`, so GLR
+    // never split). Consequence measured before this: the analyzer's
+    // enum_constant handling was dead code and enum constants produced no
+    // symbol. No legitimate class-body construct is lost: a bare name list with
+    // no modifier is not a Groovy field.
+    field_declaration: $ => choice(
+      seq(
+        optional($.modifiers),
+        field('type', $._unannotated_type),
+        $._variable_declarator_list,
+        optional(DELIMITER),
+      ),
+      seq(
+        $.modifiers,
+        $._variable_declarator_list,
+        optional(DELIMITER),
+      ),
     ),
 
     constant_declaration: $ => seq(
