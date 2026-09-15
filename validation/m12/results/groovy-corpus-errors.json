@@ -11,20 +11,20 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 400,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 29,
-  "cleanFiles": 371,
+  "errorFiles": 28,
+  "cleanFiles": 372,
   "missingNodeFiles": 3,
-  "errorNodeFiles": 29,
+  "errorNodeFiles": 28,
   "errorRates": {
-    "any": 7.2,
+    "any": 7,
     "missing": 0.8,
-    "error": 7.2
+    "error": 7
   },
-  "grammarErrorFiles": 29,
+  "grammarErrorFiles": 28,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 12593,
+  "wallMs": 11754,
   "missingTokens": {
     ";": 2,
     "identifier": 1,
@@ -84,7 +84,6 @@
     "ID ID {": 1,
     "}": 1,
     "ID ID() {": 1,
-    "ID <ID> ID ID(ID ID, ID<ID> ID) ID ID": 1,
     "ID ID = ID?.ID() { ID ID -> ID.ID.ID(ID) }": 1,
     "ID (ID && ID.ID() { ID ID -> ID.ID.ID(ID) }) {": 1,
     "ID.ID { ID ID, ID ID -> ID.ID.ID(ID, ID) }": 1,
@@ -298,16 +297,6 @@
       "firstKind": "ERROR",
       "firstLine": "def \"a bean named after a default method from a directly implemented interface does not override it\"() {",
       "pipelineErrors": 14
-    },
-    {
-      "file": "grails-bootstrap/src/main/groovy/grails/config/ConfigMap.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 67,
-      "firstKind": "ERROR",
-      "firstLine": "def <T> T getRequiredProperty(String key, Class<T> targetType) throws IllegalStateException",
-      "pipelineErrors": 6
     },
     {
       "file": "grails-bootstrap/src/main/groovy/grails/io/ResourceUtils.groovy",
