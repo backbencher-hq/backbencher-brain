@@ -145,6 +145,18 @@ module.exports = grammar(Java, {
     // #841: enum constants vs typed declarators share `Name(` and `Name Name`
     // prefixes once the field delimiter is optional; GLR decides.
     [$.enum_constant, $._variable_declarator_id, $.generic_type],
+    // #841: quoted attribute names (`c.@"f"`, `c.@'f'`) make the '.'+'string'
+    // prefix shared between field_access and GString template pieces; GLR
+    // decides once the following token separates them.
+    [$.field_access, $.template_expression],
+    // #841: with '.' a legal statement FOLLOW (leading_dot_call), the juxt
+    // argument machinery's type-vs-expression prefix ambiguity becomes
+    // reachable at the dot; GLR decides (established pattern in this file).
+    [$.primary_expression, $._unannotated_type, $.scoped_type_identifier, $._juxt_argument_list],
+    // #841: the chain tail (`if (c) x.f()
+    //     .g()` — the if-consequence expression may extend over the dot or
+    // end and let leading_dot_call take it); GLR decides.
+    [$.expression, $.object_creation_expression, $.field_access, $.template_expression, $.method_invocation],
   ]),
 
   extras: $ => [
@@ -398,7 +410,29 @@ module.exports = grammar(Java, {
     statement: ($, original) => choice(
       original,
       $.juxt_function_call,
+      // #841: Groovy 3 leading-dot chain continuation — `Options.builder()
+      //     .standalone(false)` with the dot starting a line. The statement
+      // above is delimiter-complete before the dot (the newline was consumed
+      // as its DELIMITER), so without this form the '.' is orphaned and the
+      // parser ERROR-recovers (AsciiDocEngine L55, DocPublisher L459, … —
+      // ~14 corpus files). Dynamic precedence is negative so that wherever a
+      // same-line continuation is still syntactically possible (the newline
+      // can be eaten as an extra inside the unfinished expression), the GLR
+      // keeps the chain-in-one-expression reading and this form only wins
+      // when the previous statement is genuinely complete. AST tradeoff,
+      // documented: after a complete statement the dotted segment becomes its
+      // own statement node instead of extending the previous expression —
+      // the call is still analyzer-visible and attributed to the enclosing
+      // scope, which is what the symbol graph consumes.
+      $.leading_dot_call,
     ),
+
+    leading_dot_call: $ => prec.dynamic(-2, prec.right(seq(
+      '.',
+      field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.character_literal)),
+      optional(field('arguments', $.argument_list)),
+      optional(field('body', $.closure)),
+    ))),
 
     // Groovy asserts are newline-terminated.
     assert_statement: ($, original) => seq(
@@ -410,22 +444,28 @@ module.exports = grammar(Java, {
 
     // Spock specs declare test methods with string names:
     //   def "addition is commutative"() { ... }
+    // #841: single-quoted names too — `void 'createPromise with a null list'()` —
+    // the single-quote form lexes as character_literal (which the #742 round
+    // already turned into a full string), so the name choice needs it.
     _method_declarator: ($, original) => seq(
-      field('name', choice($.identifier, $._reserved_identifier, $.string_literal)),
+      field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.character_literal)),
       field('parameters', $.formal_parameters),
       field('dimensions', optional($.dimensions)),
     ),
 
     // Groovy member access adds safe navigation (?.) and spread-dereference (*.)
     // to Java's plain dot.
+    // #841: attribute access `.@` — `c.@field`, `c.@"field"`, `c.@'field'` —
+    // bypasses getters and hits the backing field directly; the field name may
+    // be a quoted string. (Corpus: GrailsDependencyValidatorPlugin, SoftwareVersion.)
     field_access: $ => seq(
       field('object', choice($.primary_expression, $.super)),
       optional(seq(
         choice('.', '?.', '*.'),
         $.super,
       )),
-      choice('.', '?.', '*.'),
-      field('field', choice($.identifier, $._reserved_identifier, $.this)),
+      choice('.', '?.', '*.', '.@'),
+      field('field', choice($.identifier, $._reserved_identifier, $.this, $.string_literal, $.character_literal)),
     ),
 
     function_definition: $ => seq(
@@ -643,15 +683,19 @@ module.exports = grammar(Java, {
     )),
 
     // Groovy's empty-map literal is `[:]` — a lone colon inside brackets.
+    // #841: `[*: m]` spread-map entries copy m's entries into the new map —
+    // distinct node so analyzers can tell copied keys from literal ones.
     map_literal: $ => choice(
       seq('[', ':', ']'),
       seq(
         '[',
-        commaSep($.map_item),
+        commaSep(choice($.map_item, $.spread_map_item)),
         optional(','),
         ']',
       ),
     ),
+
+    spread_map_item: $ => seq('*:', $.expression),
 
     _multiline_string_literal: $ => choice(
       seq(
