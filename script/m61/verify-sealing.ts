@@ -185,21 +185,35 @@ try {
   // can-fail proof. A probe that stays false means the mutant was inert and
   // the suite could NOT have caught the defect class.
   const libSource = readFileSync(path.join(ROOT, "script/lib/evidence.ts"), "utf8")
+  // Mutant copies are written BESIDE their source (script/lib/) so the copy's
+  // own relative imports resolve. Writing them into script/m61/ broke every
+  // mutant import the moment evidence.ts gained `import ... from "./lock.ts"`
+  // — the failure that made this gate exit 1 while the m53 ladder (which does
+  // not list the M61 gates) still showed green.
+  const MUTANT_DIR = path.join(ROOT, "script/lib")
+  for (const f of readdirSync(MUTANT_DIR)) {
+    if (f.startsWith(".mutant-evidence-")) rmSync(path.join(MUTANT_DIR, f), { force: true })
+  }
   const runMutant = async (name: string, from: string, to: string, probe: (mod: Record<string, unknown>) => boolean): Promise<void> => {
     if (!libSource.includes(from)) {
       check(`M: ${name} (mutation anchor exists)`, false, "anchor not found — the mutant is stale")
       return
     }
     const mutated = libSource.replace(from, to)
-    const mutantPath = path.join(ROOT, "script/m61", `.mutant-evidence-${name.replace(/[^a-z0-9]+/gi, "-")}.ts`)
+    const mutantPath = path.join(MUTANT_DIR, `.mutant-evidence-${name.replace(/[^a-z0-9]+/gi, "-")}.ts`)
     writeFileSync(mutantPath, mutated)
     try {
       const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
       check(`M: ${name}`, probe(mod) === true, "the mutant did NOT manifest the defect — the suite could not fail")
     } catch (e) {
-      // A mutant that crashes the library also breaks the R-checks that gate
-      // on it — the defect class is still caught by the suite.
-      check(`M: ${name}`, true, `(mutant crashed — still caught: ${(e as Error).message})`)
+      // A mutant that crashes the library at RUNTIME also breaks the R-checks
+      // that gate on it — the defect class is still caught by the suite. A
+      // mutant that cannot even LOAD (module resolution, syntax) is NOT a
+      // can-fail proof — it silently disarms the check, so it fails here.
+      const code = (e as NodeJS.ErrnoException).code ?? ""
+      const cannotLoad = code.startsWith("ERR_MODULE") || code === "ERR_UNKNOWN_FILE_EXTENSION" || e instanceof SyntaxError
+      if (cannotLoad) check(`M: ${name}`, false, `the mutant could not load (${code || (e as Error).name}) — the can-fail proof is disarmed`)
+      else check(`M: ${name}`, true, `(mutant crashed at runtime — still caught: ${(e as Error).message})`)
     } finally {
       rmSync(mutantPath, { force: true })
     }
@@ -243,7 +257,7 @@ try {
   const legacyDoorInner = "(parsed as Record<string, unknown>)[SEAL_KEY] === undefined"
   const legacyDoorDouble = libSource.replace(legacyDoorOuter, "if (result.kind !== \"missing\") {").replace(legacyDoorInner, "true")
   {
-    const mutantPath = path.join(ROOT, "script/m61", ".mutant-evidence-legacy-door-double.ts")
+    const mutantPath = path.join(MUTANT_DIR, ".mutant-evidence-legacy-door-double.ts")
     writeFileSync(mutantPath, legacyDoorDouble)
     try {
       const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
@@ -259,7 +273,7 @@ try {
     }
   }
   {
-    const mutantPath = path.join(ROOT, "script/m61", ".mutant-evidence-legacy-door-single.ts")
+    const mutantPath = path.join(MUTANT_DIR, ".mutant-evidence-legacy-door-single.ts")
     writeFileSync(mutantPath, libSource.replace(legacyDoorOuter, "if (result.kind !== \"missing\") {"))
     try {
       const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
