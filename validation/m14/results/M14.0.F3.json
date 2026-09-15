@@ -26,7 +26,7 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "40/40 fixtures pass",
+      "detail": "41/41 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "123ec91b7e7228f17364fba7915353ae5460967d",
-  "committedAt": "2026-09-15T16:46:37+02:00",
+  "commit": "828ab45f448628fc11f39bc8699439971a419275",
+  "committedAt": "2026-09-15T17:24:46+02:00",
   "data": {
     "details": [
       {
@@ -1044,6 +1044,11 @@
       },
       {
         "fixture": "java/ctor-value-injection",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/declaration-lines-825",
         "ok": true,
         "problems": []
       },
@@ -2289,7 +2294,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 40
+        "pass": 41
       },
       "javascript": {
         "fail": 0,
@@ -2358,8 +2363,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-15T15:05:31.819Z",
-  "regeneratedAtCommit": "123ec91b7e7228f17364fba7915353ae5460967d",
+  "regeneratedAt": "2026-09-15T15:43:47.256Z",
+  "regeneratedAtCommit": "828ab45f448628fc11f39bc8699439971a419275",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

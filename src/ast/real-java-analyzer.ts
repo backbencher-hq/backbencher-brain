@@ -124,7 +124,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // O(1) Quick Lookups
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
-    const overrideTasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean }[] = []
+    const overrideTasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean; line: number }[] = []
 
     interface Scope {
       node: Node
@@ -223,6 +223,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: moduleName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
+            // M59 (#825): the line the imported module is NAMED on.
+            ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
             metadata: { isJavaImport: true, isWildcard: isAsterisk, isStatic },
           })
         }
@@ -245,12 +247,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           const inheritance = this.extractJavaInheritance(node)
           const parents: string[] = []
-          if (inheritance.extendsClass) parents.push(inheritance.extendsClass)
+          if (inheritance.extendsClass) parents.push(inheritance.extendsClass.name)
           for (let i = 0; i < inheritance.extendsInterfaces.length; i++) {
-            parents.push(inheritance.extendsInterfaces[i])
+            parents.push(inheritance.extendsInterfaces[i].name)
           }
           for (let i = 0; i < inheritance.implementsInterfaces.length; i++) {
-            parents.push(inheritance.implementsInterfaces[i])
+            parents.push(inheritance.implementsInterfaces[i].name)
           }
           classHierarchy.set(fqn, parents)
 
@@ -260,9 +262,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let k = 0; k < inheritance.permitsSubtypes.length; k++) {
             relationships.push({
               source: name,
-              target: inheritance.permitsSubtypes[k],
+              target: inheritance.permitsSubtypes[k].name,
               type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
+              // M59 (#825): the subtype is named in the `permits` clause.
+              line_number: inheritance.permitsSubtypes[k].line,
               metadata: { relationshipType: "permits" },
             })
           }
@@ -270,9 +274,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (inheritance.extendsClass) {
             relationships.push({
               source: name,
-              target: inheritance.extendsClass,
+              target: inheritance.extendsClass.name,
               type: ASTEngine.RelationshipType.Inheritance,
               confidence: 1.0,
+              // M59 (#825): the parent's OWN line — a long `extends A\n implements B`
+              // list puts each parent on its own line, and the clause's start line
+              // named only the first of them.
+              line_number: inheritance.extendsClass.line,
               metadata: { relationshipType: type === "interface_declaration" ? "extends_interface" : "extends" },
             })
           }
@@ -280,18 +288,20 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let k = 0; k < inheritance.extendsInterfaces.length; k++) { const iface = inheritance.extendsInterfaces[k]
             relationships.push({
               source: name,
-              target: iface,
+              target: iface.name,
               type: ASTEngine.RelationshipType.Inheritance,
               confidence: 1.0,
+              line_number: iface.line,
               metadata: { relationshipType: "extends_interface" },
             })
           }
           for (let k = 0; k < inheritance.implementsInterfaces.length; k++) { const iface = inheritance.implementsInterfaces[k]
             relationships.push({
               source: name,
-              target: iface,
+              target: iface.name,
               type: ASTEngine.RelationshipType.Implementation,
               confidence: 1.0,
+              line_number: iface.line,
               metadata: { relationshipType: "implements" },
             })
           }
@@ -320,6 +330,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: tableName,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
+              // M59 (#825): the table is named inside `@Table`, so that is the
+              // line the name is written on.
+              ...(this.annotationLine(node, "Table") ? { line_number: this.annotationLine(node, "Table")! } : {}),
               metadata: { isDatabase: true, relationshipType: "mapped_table", table: tableName },
             })
           }
@@ -344,6 +357,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: targetService,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 1.0,
+                // M59 (#825): the service is named inside `@FeignClient`.
+                ...(this.annotationLine(node, "FeignClient") ? { line_number: this.annotationLine(node, "FeignClient")! } : {}),
                 metadata: { isFeignClient: true, microservice: targetService },
               })
             }
@@ -351,10 +366,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           const javadoc = this.extractJavadocComment(node)
           const sym: ASTEngine.UniversalSymbol = {
-            name,
-            kind,
-            range: this.nodeToRange(node),
-            visibility,
+              name,
+              kind,
+              // M59 (#825): the declaration's line, annotations skipped.
+              range: this.symbolRange(node),
+              visibility,
             comments: javadoc ? [javadoc] : [],
             decorators: annotations,
             genericParameters: this.getJavaGenericParameters(node),
@@ -402,11 +418,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   }
                 } else {
                   compReturnType = this.extractJavaParameterType(comp)
-                }
-                const compSym: ASTEngine.UniversalSymbol = {
-                  name: compName.text,
-                  kind: ASTEngine.SymbolKind.Property,
-                  range: this.nodeToRange(comp),
+                }                  const compSym: ASTEngine.UniversalSymbol = {
+                    name: compName.text,
+                    kind: ASTEngine.SymbolKind.Property,
+                    // M59 (#825): a record component's own line (its modifiers,
+                    // which carry any parameter annotations, are skipped).
+                    range: this.symbolRange(comp),
                   returnType: compReturnType,
                   visibility: "public",
                   ownerName: name,
@@ -482,13 +499,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!isConstructor && parentContext) {
             const retTypeNode = node.childForFieldName("type")
             if (retTypeNode) {
-              for (const t of this.collectJavaTypeNames(retTypeNode)) {
+              for (const { name: t, line } of this.collectJavaTypeNames(retTypeNode)) {
                 if (t === "var") continue
                 relationships.push({
                   source: parentContext.name,
                   target: t,
                   type: ASTEngine.RelationshipType.References,
                   confidence: 0.95,
+                  // M59 (#825): the line the return TYPE is named on.
+                  line_number: line,
                   metadata: { relationshipType: "declared_type", declaredOn: "return_type" },
                 })
               }
@@ -578,6 +597,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: fullRoute,
                 type: ASTEngine.RelationshipType.Exports,
                 confidence: 1.0,
+                // M59 (#825): the route text is written inside the mapping
+                // annotation, so that is the line that carries the name.
+                ...(this.annotationLine(node, mappingAnnotation) ? { line_number: this.annotationLine(node, mappingAnnotation)! } : {}),
                 metadata: { isApiEndpoint: true, httpMethod, route: fullRoute },
               })
             } else {
@@ -605,6 +627,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
+              // M59 (#825): the column is named inside its mapping annotation.
+              ...(this.annotationLine(node, dbMapping) ? { line_number: this.annotationLine(node, dbMapping)! } : {}),
               metadata: { isDatabase: true, relationshipType: "mapped_column" },
             })
           }
@@ -639,6 +663,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                signature,
                ownerFqn: parentContext.fqn,
                explicit: true,
+               // M59 (#825): the OVERRIDING declaration's own line (annotations
+               // skipped, so an `@Override` method does not report the
+               // annotation) — captured here while the node is in hand rather
+               // than resolved later by name, which could match namesakes.
+               line: this.declarationLineNode(node).startPosition.row + 1,
              })
           } else if (parentContext && !isConstructor &&
                      modifiers.indexOf("static") === -1 && visibility !== "private") {
@@ -648,6 +677,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                signature,
                ownerFqn: parentContext.fqn,
                explicit: false,
+               line: this.declarationLineNode(node).startPosition.row + 1,
              })
           }
 
@@ -655,12 +685,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Ctor identity: the symbol KEEPS ITS DECLARED NAME (the class name),
           // matching the csharp family convention. The pre-fix "constructor"
           // literal collided across classes (contains:A->constructor and
-          // contains:B->constructor are indistinguishable; every ctor overload
-          // collapsed). The kind field still says Constructor.
+          // contains:B->constructor are indistinguishable; every ctor overload          // collapsed). The kind field still says Constructor.
           const sym: ASTEngine.UniversalSymbol = {
             name,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
-            range: this.nodeToRange(node),
+              // M59 (#825): the declaration's line, annotations skipped.
+              range: this.symbolRange(node),
             comments: methodDoc ? [methodDoc] : [],
             complexity: this.calculateJavaMethodComplexity(node),
             visibility: effectiveVisibility,
@@ -733,12 +763,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // edge from the owning class.
         const fieldTypeNode = node.childForFieldName("type")
         if (fieldTypeNode && parentContext) {
-          for (const t of this.collectJavaTypeNames(fieldTypeNode)) {
+          for (const { name: t, line } of this.collectJavaTypeNames(fieldTypeNode)) {
             relationships.push({
               source: parentContext.name,
               target: t,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
+              // M59 (#825): the line the field's TYPE is named on.
+              line_number: line,
               metadata: { relationshipType: "declared_type", declaredOn: type },
             })
           }
@@ -767,6 +799,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
+                // M59 (#825): the column is named inside its mapping annotation.
+                ...(this.annotationLine(node, dbMapping) ? { line_number: this.annotationLine(node, dbMapping)! } : {}),
                 metadata: { isDatabase: true, relationshipType: "mapped_column" },
               })
             }
@@ -781,6 +815,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: configKey,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 1.0,
+                  // M59 (#825): the key is written inside `@Value`.
+                  ...(this.annotationLine(node, "Value") ? { line_number: this.annotationLine(node, "Value")! } : {}),
                   metadata: { isConfiguration: true, relationshipType: "config_property" }
                 })
               }
@@ -810,12 +846,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       else if (type === "enum_constant") {
         const nameNode = this.findChildByType(node, "identifier")
-        if (nameNode && parentContext) {
-          symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.EnumMember,
-            range: this.nodeToRange(node),
-            visibility: "public",
+        if (nameNode && parentContext) {            symbols.push({
+              name: nameNode.text,
+              kind: ASTEngine.SymbolKind.EnumMember,
+              // M59 (#825): the constant's own line, annotations skipped.
+              range: this.symbolRange(node),
+              visibility: "public",
             ownerName: parentContext.name,
             ownerKind: parentContext.kind,
             metadata: { nodeType: type }
@@ -1022,6 +1058,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: typeName.endsWith("[]") ? typeName.slice(0, typeName.length - 2) : typeName,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
+              // M59 (#825): the cast/instanceof/class-literal type is named by
+              // its type node.
+              ...this.lineField(typeNode, node),
               metadata: {
                 relationshipType:
                   type === "cast_expression" ? "cast_target" : type === "instanceof_expression" ? "instanceof_check" : "class_literal",
@@ -1049,6 +1088,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: typeName,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.95,
+                // M59 (#825): the pattern's type is named by the pattern node.
+                ...this.lineField(c, node),
                 metadata: { relationshipType: "record_pattern" },
               })
             }
@@ -1070,6 +1111,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: typeName,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
+              // M59 (#825): `new T[...]` names T on the element-type node.
+              ...this.lineField(elemNode, node),
               metadata: { relationshipType: "array_creation" },
             })
           }
@@ -1102,6 +1145,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: recvName,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
+              // M59 (#825): the referenced type is named by the receiver.
+              ...this.lineField(recv, node),
               metadata: { relationshipType: "method_reference_receiver", javaCallExpression: node.text },
             })
           }
@@ -1112,6 +1157,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: kids[kids.length - 1].text,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.8,
+            // M59 (#825): the referenced method is named by its own node.
+            ...this.lineField(kids[kids.length - 1], node),
             metadata: { javaCallExpression: node.text },
           })
         }
@@ -1136,6 +1183,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: typeName,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.95,
+                // M59 (#825): the case pattern's type is named by its node.
+                ...this.lineField(tnode, node),
                 metadata: { relationshipType: "switch_pattern" },
               })
             }
@@ -1157,7 +1206,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Map, String, X).
         const typeNode = node.childForFieldName("type") || this.findChildByType(node, "catch_type") || this.findChildByType(node, "type_identifier")
         if (typeNode) {
-          for (const t of this.collectJavaTypeNames(typeNode)) {
+          for (const { name: t, line } of this.collectJavaTypeNames(typeNode)) {
             // JLS 14.4: `var` is NOT a type — it is reserved type inference
             // with the inferred type unknown at parse level. The cast and
             // record_pattern paths already filtered it; the declared-variable
@@ -1169,6 +1218,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: t,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
+              // M59 (#825): the line the declared TYPE is named on.
+              line_number: line,
               metadata: { relationshipType: "declared_type", declaredOn: type },
             })
           }
@@ -1180,12 +1231,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < node.namedChildCount; i++) {
           const child = node.namedChild(i)
           if (!child) continue
-          for (const t of this.collectJavaTypeNames(child)) {
+          for (const { name: t, line } of this.collectJavaTypeNames(child)) {
             relationships.push({
               source: parentContext?.name || parentContext?.symbolRef?.name || "global",
               target: t,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
+              // M59 (#825): the line the THROWN type is named on.
+              line_number: line,
               metadata: { relationshipType: "throws_type" },
             })
           }
@@ -1270,6 +1323,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59 (#825): a containment edge has no call site, but it does have a
+          // navigable one — the member's own declaration line, taken from the
+          // symbol so the edge and the symbol cannot disagree. Omitted, never
+          // zeroed, when the symbol has no line (#820/#821).
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isContained: true },
         })
       }
@@ -1368,7 +1426,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   
   private resolveOverrides(
-    tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean }[],
+    tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; explicit?: boolean; line: number }[],
     classHierarchy: Map<string, string[]>,
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
     relationships: ASTEngine.UniversalRelationship[],
@@ -1493,6 +1551,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
           confidence,
+          // M59 (#825): the override occurs at the OVERRIDING declaration, which
+          // the task carries from the node itself. Omitted, never zeroed, when it
+          // is somehow absent (#821).
+          ...(task.line ? { line_number: task.line } : {}),
           metadata: { relationshipType: "method_override", isJavaOverride: true, reasonCode },
         })
       }
@@ -1735,6 +1797,71 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return n ? { line_number: n.startPosition.row + 1 } : {}
   }
 
+  /**
+   * M59 (#825): the node whose start is the DECLARATION's own line.
+   *
+   * An annotation is a modifier — `@SuppressWarnings("unused")` decorates the
+   * class, it is not where the class is written. Measured, not assumed: on a
+   * 300-file real java sample, **25 of 93 symbols (27%)** had their line on an
+   * annotation, so a tool navigating to a java symbol landed on `@Override` or
+   * `@SuppressWarnings` instead of the declaration. tree-sitter-java nests the
+   * annotations in a `modifiers` child, which is what is skipped here; the
+   * contract is scala's (settled first and pinned there), applied to java's node
+   * shape so kotlin and groovy can copy one rule instead of two.
+   *
+   * The symbol range and its `contains` edge move together, exactly as in scala:
+   * a symbol and the edge that names it must never disagree about the line.
+   */
+  private declarationLineNode(node: Node): Node {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "modifiers" || c.type === "annotation" || c.type === "marker_annotation") continue
+      if (c.type === "comment" || c.type === "block_comment" || c.type === "line_comment") continue
+      return c
+    }
+    return node
+  }
+
+  /**
+   * M59 (#825): the line of the ANNOTATION that names this edge's target.
+   *
+   * Annotation-derived edges (a JPA table, a mapped column, a FeignClients
+   * service, a `@Value` config key, a route) carry a target whose NAME IS WRITTEN
+   * INSIDE THE ANNOTATION. The declaration's line is not where that name is, so
+   * pointing the edge at the declaration would fail the very source check this
+   * milestone exists for — the check looks for the target name on the claimed
+   * line. Returns undefined when the annotation is absent, and callers omit the
+   * field rather than writing 0 (#821).
+   */
+  private annotationLine(node: Node, name: string): number | undefined {
+    const mods = this.findChildByType(node, "modifiers") ?? node
+    for (let i = 0; i < mods.namedChildCount; i++) {
+      const c = mods.namedChild(i)
+      if (!c) continue
+      if (c.type !== "annotation" && c.type !== "marker_annotation") continue
+      const id =
+        c.childForFieldName?.("name") ??
+        this.findChildByType(c, "identifier") ??
+        this.findChildByType(c, "scoped_identifier")
+      const leaf = id ? String(id.text).split(".").pop() : ""
+      if (leaf === name) return c.startPosition.row + 1
+    }
+    return undefined
+  }
+
+  /** The range of a SYMBOL (not of an import or an error): annotations skipped. */
+  private symbolRange(node: Node) {
+    const decl = this.declarationLineNode(node)
+    const base = this.nodeToRange(node)
+    return {
+      ...base,
+      startLine: decl.startPosition.row + 1,
+      startColumn: decl.startPosition.column + 1,
+      startIndex: decl.startIndex,
+    }
+  }
+
   private findChildByType(node: Node, type: string): Node | null {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -1760,14 +1887,24 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * element types. Union catch types are visited via their catch_type parent.
    * Primitives never match these node shapes and are correctly excluded.
    */
-  private collectJavaTypeNames(node: Node): string[] {
-    const out: string[] = []
+  /**
+   * M59 (#825): `{name, line}` pairs, not bare names.
+   *
+   * Every edge these names feed is a `references` edge, and its line must be the
+   * line the TYPE IS NAMED — not the line the enclosing type expression starts
+   * on. java writes long type expressions across lines (`Map<String,\n  List<X>>`),
+   * so the two differ in exactly the places a tool would point at the wrong code.
+   * The shape is the one scala settled on for the same reason: collect the node
+   * with the name, then the line cannot be taken from the parent by accident.
+   */
+  private collectJavaTypeNames(node: Node): Array<{ name: string; line: number }> {
+    const out: Array<{ name: string; line: number }> = []
     const seen = new Set<string>()
     const visit = (n: Node): void => {
       if (n.type === "type_identifier" || n.type === "scoped_type_identifier") {
         if (!seen.has(n.text)) {
           seen.add(n.text)
-          out.push(n.text)
+          out.push({ name: n.text, line: n.startPosition.row + 1 })
         }
         return
       }
@@ -1898,6 +2035,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: parts[parts.length - 1],
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
+              // M59 (#825): the READ is where the field NAME is written — the
+              // `field` node, not the field_access (which starts at its
+              // receiver, the same defect class as the call site).
+              ...this.lineField(node.childForFieldName("field"), node),
               metadata: { isFieldAccess: true },
             })
           }
@@ -1946,6 +2087,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
+                // M59 (#825): the array read is named by the array expression.
+                ...this.lineField(arrayNode, node),
                 metadata: { isArrayAccess: true },
               })
             }
@@ -2011,6 +2154,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
+              // M59 (#825): the bare read IS its identifier node.
+              line_number: node.startPosition.row + 1,
               metadata: { isBareRead: true },
             })
           }
@@ -2245,23 +2390,32 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return typeNode.text
   }
 
+  /**
+   * M59 (#825): every parent is `{name, line}` — the line the PARENT IS NAMED on.
+   *
+   * java writes a long heritage list on separate lines
+   * (`class A extends B\n    implements C, D`), so a clause-start line named only
+   * the first entry. Same rule as scala's `extractSupertypes` and the reason the
+   * shape is pairs rather than names.
+   */
   private extractJavaInheritance(classNode: Node) {
+    type Parent = { name: string; line: number }
     const inheritance = {
-      extendsClass: null as string | null,
+      extendsClass: null as Parent | null,
       // interface_declaration > extends_interfaces > type_list: EVERY parent is an extends (JLS 9.1.3)
-      extendsInterfaces: [] as string[],
-      implementsInterfaces: [] as string[],
+      extendsInterfaces: [] as Parent[],
+      implementsInterfaces: [] as Parent[],
       // sealed class permits clause (JLS 8.1.1.2): permitted subtypes are
       // CHILDREN of the sealed class, not ancestors — kept out of parents[]
       // and surfaced separately so callers can emit directional edges.
-      permitsSubtypes: [] as string[]
+      permitsSubtypes: [] as Parent[]
     }
     const superclass = this.findChildByType(classNode, "superclass")
     if (superclass) {
       const typeIdentifier = this.findChildByType(superclass, "scoped_type_identifier") ||
                              this.findChildByType(superclass, "generic_type") ||
                              this.findChildByType(superclass, "type_identifier")
-      if (typeIdentifier) inheritance.extendsClass = this.extractJavaTypeBaseName(typeIdentifier)
+      if (typeIdentifier) inheritance.extendsClass = { name: this.extractJavaTypeBaseName(typeIdentifier), line: typeIdentifier.startPosition.row + 1 }
     }
     const superInterfaces = this.findChildByType(classNode, "super_interfaces") || this.findChildByType(classNode, "extends_interfaces")
     if (superInterfaces) {
@@ -2271,7 +2425,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < targetList.namedChildCount; i++) {
         const interfaceType = targetList.namedChild(i)
         if (interfaceType && (interfaceType.type === "type_identifier" || interfaceType.type === "generic_type" || interfaceType.type === "scoped_type_identifier")) {
-          bucket.push(this.extractJavaTypeBaseName(interfaceType))
+          bucket.push({ name: this.extractJavaTypeBaseName(interfaceType), line: interfaceType.startPosition.row + 1 })
         }
       }
     }
@@ -2281,7 +2435,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < permitsList.namedChildCount; i++) {
         const subtype = permitsList.namedChild(i)
         if (subtype && (subtype.type === "type_identifier" || subtype.type === "generic_type" || subtype.type === "scoped_type_identifier")) {
-          inheritance.permitsSubtypes.push(this.extractJavaTypeBaseName(subtype))
+          inheritance.permitsSubtypes.push({ name: this.extractJavaTypeBaseName(subtype), line: subtype.startPosition.row + 1 })
         }
       }
     }
@@ -2315,6 +2469,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: valMatch.substring(2, valMatch.length - 1).split(":")[0],
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 1.0,
+                  // M59 (#825): the key is written in the PARAMETER's own
+                  // `@Value` — the parameter is the node that carries it.
+                  ...(this.annotationLine(param, "Value") ? { line_number: this.annotationLine(param, "Value")! } : {}),
                   metadata: { isConfiguration: true, relationshipType: "config_property" }
                 })
               }

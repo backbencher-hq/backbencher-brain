@@ -169,13 +169,32 @@ Groovy file in the world and the whole sample silently depended on it.
 
 ### 3e. java's call-site lines, and the last stored `0` (2026-09-15, #821 + #825)
 
-**The java half of #825.** java emitted a line on **none** of its 1,920 relationships on the 40-file
-sample. The two classes the tools layer needs first — the call site and the instantiation — now take
-their line from the node that NAMES them: the `method_invocation`'s `name` field (java shares scala's
-defect exactly: the node starts at the RECEIVER, so `base\n .trim()\n .toUpperCase()` used to be three
-calls on one line) and, for `instantiates`, the type node. Measured after: **328 of 1,920 java
-relationships carry a line, 0 inconsistent**, and the rest of java's classes (declared-type references,
-heritage, contains) are still open — stated as open rather than implied done.
+**The java half of #825 — complete.** java emitted a line on **none** of its 1,920 relationships on the
+40-file sample. Every class now takes its line from the node that NAMES it:
+
+| class | node the line comes from |
+|---|---|
+| `calls` (in a method, and in initializers/field initialisers) | the `method_invocation`'s `name` field — java starts the node at its RECEIVER, so `base\n .trim()\n .toUpperCase()` was three calls on one line |
+| `instantiates` | the type node that names the constructed type |
+| `references` (declared types) | the type node that carries the name — `collectJavaTypeNames` now returns `{name, line}`, as scala's does |
+| `extends` / `implements` / `permits` | the parent's OWN line; a long heritage list names one parent per line |
+| `overrides` | the OVERRIDING declaration's line, captured from the node when the task is created |
+| `contains` | the member's own declaration line, from the symbol, so the edge and the symbol cannot disagree |
+| `uses` (field reads, array reads, bare reads) | the name node (`field`, the array expression, the identifier) — never the field_access, which starts at its receiver |
+| annotation-derived edges (mapped table/column, `@Value` key, `@FeignClient` service, route) | the ANNOTATION that contains the name — the declaration's line would fail the source check this milestone exists for |
+| imports | the module node |
+
+Measured after: **1,920 of 1,920 java relationships carry a line, 0 inconsistent** — java is at parity
+with scala, on a real 40-file sample, with the whole class list covered rather than the two the tools
+layer asked for first.
+
+**The annotation contract, applied to java (measured, not assumed).** java's declarations start at their
+`modifiers` (which is where tree-sitter-java nests annotations), so a symbol line could land on
+`@SuppressWarnings`. On a 300-file real java sample **25 of 93 symbols (27%)** did. After the contract:
+**1 of 4,024**. The symbol range and its `contains`/`overrides` lines move together, exactly as in scala,
+so a symbol and the edges that name it can never disagree. This is a **contract decision** — an
+annotation is a modifier, it is not where the declaration is written — taken once for the family in
+scala and applied to java's node shape so kotlin and groovy inherit one rule, not two.
 
 **#821, closed and proven on a real index.** 62 rows still stored `line_number = 0` on cats-effect
 (markdown 35, yaml 12, scala 15). Three writers produced them, all the same mistake — writing `0` for
@@ -206,8 +225,9 @@ cats-effect `TestInstances.scala`: the module opens on 21, the segment that name
 `handleImport` now records the line of the module's LAST segment and the edge uses it.
 
 **End-to-end on cats-effect (404 files, real worker pool, real DB, throwaway data dir):**
-28,340 relationships, **26,868 carrying a line**, 0 storing 0, 1,472 `NULL`; checked against source:
-**25,775 consistent, 0 inconsistent**, 863 not checkable (synthesised names).
+28,340 relationships, **27,056 carrying a line** (scala 26,564 · java 214 · markdown 35 · yaml 12),
+0 storing 0, 1,284 `NULL`; checked against source: **25,960 consistent, 0 inconsistent**, 865 not
+checkable (synthesised names).
 
 ## Why every previous gate passed while this was true
 
@@ -230,7 +250,7 @@ Two mechanisms, both removed by #824:
 | #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
 | #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
 | #824 delete false certification | **open** |
-| #825 analyzer lane emission | **partly done** — scala is the *correct and complete* reference (0 of 9,010 landed lines fail the source check; 100% of its 9,319 relationships carry one; 5 mechanisms fixed, each fixture- and mutant-pinned) and java's **call-site + instantiation** classes now emit (328 of 1,920 java relationships, 0 inconsistent). Still open: java's declared-type/heritage/contains lines, and kotlin/groovy/xml/the other 17 languages emit **0 lines across 85,929 relationships** (21-language sweep, 820 files) |
+| #825 analyzer lane emission | **partly done** — scala (1,989 of 1,989) and java (1,920 of 1,920) both carry a line on **every** relationship, 0 inconsistent, each mechanism fixture- and mutant-pinned (scala 5, java 1 contract + its class list). Still open: kotlin, groovy and the other 17 languages emit **0 lines across 84,337 relationships** (21-language sweep, 820 files) |
 | #826 closure gate | **open** |
 
 ## Evidence

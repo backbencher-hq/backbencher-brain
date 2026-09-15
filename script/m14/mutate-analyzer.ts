@@ -921,6 +921,13 @@ const MUTANTS: Mutant[] = [
     transform: revertToChainOpeningLine,
   },
   {
+    id: "java/annotation-start-line",
+    language: "java",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: an annotated java declaration goes back to the line of its ANNOTATION — the exact pre-fix behaviour, measured on a 300-file real java sample where 25 of 93 symbols landed on `@SuppressWarnings`/`@Override` instead of the declaration. The symbol range and its `contains` edge move together, so java/declaration-lines-825 catches it twice: `contains Annotated -> legacy` is pinned at 24 and forbidden at 23 (@Deprecated), and the symbol range is pinned at 21 and the `extends` edge is forbidden at 20.",
+    transform: revertToAnnotationStartLine,
+  },
+  {
     id: "java/callsite-lines-dropped",
     language: "java",
     defectClass: "line-attribution",
