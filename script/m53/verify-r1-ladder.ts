@@ -16,6 +16,7 @@
 import { execFileSync, spawnSync } from "node:child_process"
 import { writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m53/results/R1.json")
@@ -136,7 +137,7 @@ const result = {
   generatedAt: new Date().toISOString(),
 }
 mkdirSync(path.dirname(OUT), { recursive: true })
-writeFileSync(OUT, JSON.stringify(result, null, 2) + "\n")
+writeSealed(OUT, result)
 console.log(`R1: ${result.status.toUpperCase()} (${result.passed}/${results.length} gates green)`)
 console.log(`Evidence: ${OUT}`)
 process.exit(failed.length === 0 ? 0 : 1)

@@ -26,5 +26,10 @@
   ],
   "passed": true,
   "complexityPolicy": "one production parseFile pass per acceptance file; the HCL analyzer uses one iterative DFS over the tree plus a single recursive expression walk, with Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol relationship scan",
-  "corpusPolicy": "tracked .tf/.tfvars/.hcl files from clean terraform@2e1710bf; four named diagnostic fixtures (deliberate typo / invalid-fixture testdata) are excluded and measured separately by hcl-corpus-errors.ts"
+  "corpusPolicy": "tracked .tf/.tfvars/.hcl files from clean terraform@2e1710bf; four named diagnostic fixtures (deliberate typo / invalid-fixture testdata) are excluded and measured separately by hcl-corpus-errors.ts",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.884Z",
+    "contentSha256": "7ddc605a52c52453822aa5974be7ce4b8584aad149ad5460685bdc715be1aeeb"
+  }
 }

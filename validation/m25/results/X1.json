@@ -70,5 +70,10 @@
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
     "The §6 table's M24 rows point at the M24 closure gate's caught mutants (server-side classes); this gate re-proves the extension-surface classes directly."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.417Z",
+    "contentSha256": "d0e2de72d7c88d55953334e49b98847b0d52a198702c4a8cc3476ab6e8e11994"
+  }
 }

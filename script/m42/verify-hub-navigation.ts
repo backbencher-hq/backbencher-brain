@@ -30,6 +30,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H6.json")
@@ -382,6 +383,6 @@ const result = {
 }
 const dir = path.join(ROOT, "validation/m42/results")
 mkdirSync(dir, { recursive: true })
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE, result)
 console.log(`\nH6: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

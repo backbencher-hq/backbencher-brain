@@ -2,13 +2,58 @@
   "milestone": "M19",
   "updatedAt": "2026-08-26T06:47:00.000Z",
   "issues": [
-    { "code": "C1", "evidence": "C1.json", "closed": true, "note": "gate emits its own evidence" },
-    { "code": "S1", "evidence": "S1.json", "closed": true, "note": "curve measured from current evidence: rake 779 sym/1.928s, lodash 1,048 sym/3.414s, element-plus 27,751 sym/51.579s; giant corpora file-counted" },
-    { "code": "S2", "evidence": "S2.json", "closed": true, "note": "verified 17/17: four clean deferred ASP.NET slices with RSS plus full-finalization Paperclip control; deferred phases remain explicit" },
-    { "code": "S3", "evidence": "S3.json", "closed": true, "note": "verified-partial 23/23: live MEGA index, fresh batch, disjoint worker/RSS controls; full cold ten-slice timing explicitly not claimed" },
-    { "code": "Q1", "evidence": "Q1.json", "closed": true, "note": "retrieval at scale verified 7/7; NOCASE index + bounded content search shipped" },
-    { "code": "Q2", "evidence": "Q2.json", "closed": true, "note": "fallback at scale verified 13/13; labeled degradation + tfidf exclusion proven" },
-    { "code": "B1", "evidence": "B1.json", "closed": true, "note": "verified 24/24: docs match measured S2/S3 evidence and preserve deferred/partial limitations" },
-    { "code": "X9", "evidence": "X9.json", "closed": true, "note": "mutation harness verified 6/6: poison, hollow, scale, corpus, restore" }
-  ]
+    {
+      "code": "C1",
+      "evidence": "C1.json",
+      "closed": true,
+      "note": "gate emits its own evidence"
+    },
+    {
+      "code": "S1",
+      "evidence": "S1.json",
+      "closed": true,
+      "note": "curve measured from current evidence: rake 779 sym/1.928s, lodash 1,048 sym/3.414s, element-plus 27,751 sym/51.579s; giant corpora file-counted"
+    },
+    {
+      "code": "S2",
+      "evidence": "S2.json",
+      "closed": true,
+      "note": "verified 17/17: four clean deferred ASP.NET slices with RSS plus full-finalization Paperclip control; deferred phases remain explicit"
+    },
+    {
+      "code": "S3",
+      "evidence": "S3.json",
+      "closed": true,
+      "note": "verified-partial 23/23: live MEGA index, fresh batch, disjoint worker/RSS controls; full cold ten-slice timing explicitly not claimed"
+    },
+    {
+      "code": "Q1",
+      "evidence": "Q1.json",
+      "closed": true,
+      "note": "retrieval at scale verified 7/7; NOCASE index + bounded content search shipped"
+    },
+    {
+      "code": "Q2",
+      "evidence": "Q2.json",
+      "closed": true,
+      "note": "fallback at scale verified 13/13; labeled degradation + tfidf exclusion proven"
+    },
+    {
+      "code": "B1",
+      "evidence": "B1.json",
+      "closed": true,
+      "note": "verified 24/24: docs match measured S2/S3 evidence and preserve deferred/partial limitations"
+    },
+    {
+      "code": "X9",
+      "evidence": "X9.json",
+      "closed": true,
+      "note": "mutation harness verified 6/6: poison, hollow, scale, corpus, restore"
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.368Z",
+    "contentSha256": "870c00bb9f48f5185415b6a30004e37f79b477a8ebb57ae6efefd46b9473cd7f"
+  }
 }

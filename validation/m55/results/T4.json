@@ -68,5 +68,10 @@
     "Java/Kotlin/Scala have no `?` optionality notation, so an isOptional flag without a stored default renders the parameter plainly rather than in invented syntax; the shape that carries optionality in those languages (a default value) renders as `= default`. Recorded as a declared gap, not a silent drop.",
     "The expanded call-hierarchy items (callers/callees) come from the traversal engine's nodes, which carry no parameters column: their detail stays the declared identity line (type · relationship · call sites), not a signature. The prepared item — the symbol the developer invoked the view on — carries the rendered signature.",
     "The hub's usage rows render no signature today (their payload has no parameters field); when a row gains one it must render through this owner (R4 asserts the source-level rule for the whole lane)."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.582Z",
+    "contentSha256": "912f23f666474a2fb236e8e9db729d37084609397120ebb85e1a273b79b465e7"
+  }
 }

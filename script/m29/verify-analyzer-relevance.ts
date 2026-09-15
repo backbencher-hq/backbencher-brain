@@ -24,6 +24,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const RESULTS = path.join(ROOT, "validation/m29/results")
@@ -151,7 +152,7 @@ const evidence = {
     "Static rule check over the live staleRelevantPaths module plus one differential against a stored leg pin; the legs' own S1-S6 gates re-run per execution.",
   ],
 }
-writeFileSync(path.join(RESULTS, evidence.evidenceFile), `${JSON.stringify(evidence, null, 2)}\n`)
+writeSealed(path.join(RESULTS, evidence.evidenceFile), evidence)
 
 console.log(`\nanalyzer-relevance: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks.length})`)
 console.log(`Evidence: ${path.join(RESULTS, evidence.evidenceFile)}`)

@@ -23,5 +23,10 @@
   "evidenceFile": "V1.json",
   "generatedAt": "2026-09-14T16:01:17.017Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.425Z",
+    "contentSha256": "58f300b891e0d97c4c27045a25be82cc165f8497716439f35428aa200a082fcc"
+  }
 }

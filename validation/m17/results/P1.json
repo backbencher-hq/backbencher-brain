@@ -15,5 +15,10 @@
     "recorded": 70,
     "persistedDb": 70
   },
-  "negativeLine": "Proves persistence equivalence (no truncation), not pattern-detection heuristic quality."
+  "negativeLine": "Proves persistence equivalence (no truncation), not pattern-detection heuristic quality.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.355Z",
+    "contentSha256": "0caedd68ab918b5becc5c29bd9d3a2b08780d5a5b63386f1782812bb67a70646"
+  }
 }

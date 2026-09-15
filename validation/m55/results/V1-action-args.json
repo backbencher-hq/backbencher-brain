@@ -21,5 +21,10 @@
   "verifierCommand": "npx tsx script/m55/verify-action-args.ts",
   "evidenceFile": "V1-action-args.json",
   "generatedAt": "2026-09-13T23:37:57.418Z",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.583Z",
+    "contentSha256": "ea1a57b137fe9115fb3b278e1a33de0200d12a5a6767c20ffa737817881916f0"
+  }
 }

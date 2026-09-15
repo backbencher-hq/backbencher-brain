@@ -38,6 +38,7 @@ import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const IMPACT = join(ROOT, "src", "lsp", "impact.ts")
@@ -403,7 +404,7 @@ async function main(): Promise<void> {
     }
     const dir = join(ROOT, "validation/m26/results")
     mkdirSync(dir, { recursive: true })
-    writeFileSync(join(dir, "W5.json"), JSON.stringify(evidence, null, 2) + "\n")
+    writeSealed(join(dir, "W5.json"), JSON.stringify(evidence, null, 2) + "\n")
     console.log(`W5: ${evidence.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
     process.exit(failed === 0 ? 0 : 1)
   } finally {

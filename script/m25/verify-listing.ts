@@ -25,6 +25,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { createHash } from "node:crypto"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const README_PATH = join(ROOT, "ide/vscode/README.md")
@@ -274,7 +275,7 @@ const result = {
 // --- Evidence ----------------------------------------------------------------
 
 const evidenceDir = RESULTS_DIR
-writeFileSync(join(evidenceDir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(evidenceDir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
 
 console.log(`\nD1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negative)`)
 console.log(`Evidence: ${join(evidenceDir, "D1.json")}`)

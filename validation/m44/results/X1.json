@@ -53,5 +53,10 @@
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
     "The launch bar's owner-held items (OpenVSX publish token, Windsurf install decision, the §8.5 verdict, darwin/win CI persistence) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
     "Co-agent lanes (M14/M37/M40/M41…) are outside this program's closure; their gates live in their own milestones."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.555Z",
+    "contentSha256": "73f83683980afbf0c883bb0e14097b90ae4c31751f241774f799159da0fd6045"
+  }
 }

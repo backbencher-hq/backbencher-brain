@@ -334,5 +334,10 @@
   ],
   "language": "c",
   "status": "verified",
-  "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36"
+  "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.437Z",
+    "contentSha256": "47514e08327b263fbaf42681caf43e242c39c11f4aef1dd8f397fe04794c838a"
+  }
 }

@@ -420,5 +420,10 @@
   "limitations": [
     "Native Linux leg executed on this machine (linux); the other two OSes are machine-emitted blocked records (E7-darwin.json, E7-windows.json) — the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist.",
     "The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY; the native Linux leg itself exercises linux semantics (drive letters, % variables on win32)."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.414Z",
+    "contentSha256": "f1eedecb283cf420106b3c345c1c13b580f96eff0ef0ec7f90107df285930d0f"
+  }
 }

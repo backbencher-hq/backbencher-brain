@@ -33,6 +33,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_REL_MAIN2, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import {
+import { writeSealed } from "../lib/evidence.ts"
   connectedGroups,
   connectedSummarySection,
   richSitesForSymbol,
@@ -389,6 +390,6 @@ const result = {
     "Editor-leg (link clicking in a real session) is asserted in the E5-pattern session at H2 acceptance; this file proves the server surface.",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE, result)
 console.log(`\nH2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants)`)
 if (failed > 0) process.exitCode = 1

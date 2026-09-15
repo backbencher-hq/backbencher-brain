@@ -18,5 +18,10 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-09-14T16:00:14.886Z"
+  "generatedAt": "2026-09-14T16:00:14.886Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.423Z",
+    "contentSha256": "bc6e116871b2fee2380b62d8fd49c1a267c034a9650a498de7f125889522a8f1"
+  }
 }

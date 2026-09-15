@@ -514,5 +514,10 @@
         "negativeCases": 2
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.378Z",
+    "contentSha256": "93050469cfb0ff4b1b296d6ad6f89c783045d4f6cc82f770b48d192a79bac26f"
+  }
 }

@@ -15,5 +15,10 @@
   "limitations": [
     "The harness asserts the DOM contract (classes, data attributes, counts) over a stub DOM; CSS/paint is per-editor presentation.",
     "Full-budget A4 profile: the pinned fixture's traversal truncation is declared, so the marker assertions are the expected failures there."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.419Z",
+    "contentSha256": "d8a83173c0024d664221a6ac341e1265c56755f5b98b805186bb99590a366bc3"
+  }
 }

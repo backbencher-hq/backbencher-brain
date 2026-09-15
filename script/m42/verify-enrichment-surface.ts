@@ -30,6 +30,7 @@ import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h
 import { statSync, readdirSync } from "node:fs"
 import Database from "better-sqlite3"
 import {
+import { writeSealed } from "../lib/evidence.ts"
   describeEnrichment,
   describeFrequency,
   enrichmentIsStale,
@@ -282,6 +283,6 @@ const result = {
     "Overhead budget is a pure-layer proxy (2000 cycles); the in-editor 50ms hover budget with an enriched fixture is asserted in the E5 session.",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE, result)
 console.log(`\nH3: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants)`)
 if (failed > 0) process.exitCode = 1

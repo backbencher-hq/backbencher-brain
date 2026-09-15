@@ -105,5 +105,10 @@
     "Giant file counts are DISCOVERY here - indexing them is S2/S3.",
     "Element-plus is the largest INDEXED anchor; intellij is not indexed in this verifier."
   ],
-  "generatedAt": "2026-08-26T03:43:23.058Z"
+  "generatedAt": "2026-08-26T03:43:23.058Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.366Z",
+    "contentSha256": "c8ec780339893824203d393ba4f43ad70920e7d9a5bc26e8f68a3705b21c6752"
+  }
 }

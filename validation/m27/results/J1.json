@@ -40,5 +40,10 @@
   "limitations": [
     "LSP4IJ template is verified at configuration level (schema, launch order, mappings, capability subset over the wire); the IDE session itself is not machine-driven here.",
     "Graph webview out of scope outside VS Code (D-6); the capability matrix records the delta."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.422Z",
+    "contentSha256": "094e43e68346ecfb7793269344a284682dcba0a263dab64fdc8068926c07ec77"
+  }
 }

@@ -207,5 +207,10 @@
   "limitations": [
     "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed.",
     "S5/S6 legs exercise the six owner-approved languages; languages outside the approval record are not onboarded this wave (the binding forbids it)."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.431Z",
+    "contentSha256": "746e7be2176044c42865087891f198b70ee3549457400b5734db7d1f6b67f71a"
+  }
 }

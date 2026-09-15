@@ -29,6 +29,7 @@
 import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const CORE = path.join(ROOT, "script/m26/graph-core.ts")
@@ -376,7 +377,7 @@ async function main(): Promise<void> {
   }
   const dir = path.join(ROOT, "validation/m26/results")
   mkdirSync(dir, { recursive: true })
-  writeFileSync(path.join(dir, "W1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(dir, "W1.json"), JSON.stringify(result, null, 2) + "\n")
   console.log(`W1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

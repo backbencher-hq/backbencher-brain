@@ -423,5 +423,10 @@
     "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
     "ramGb": "15.4",
     "node": "v20.19.5"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.432Z",
+    "contentSha256": "224f2e2fa069b167607f1db39bc4063b8aae3806528a3ff50e41351279274d9b"
   }
 }

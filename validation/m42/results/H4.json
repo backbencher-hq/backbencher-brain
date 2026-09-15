@@ -23,5 +23,10 @@
   "generatedAt": "2026-09-14T16:08:00.655Z",
   "limitations": [
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.546Z",
+    "contentSha256": "0d8394806ca75efaa4b735d7dbb965522bc54ceebfc660fc7b215e9f2ba91975"
+  }
 }

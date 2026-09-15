@@ -20,5 +20,10 @@
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
     "The wiring proof reads package.json at run time; a chain edit that renames the script keys ('verify', 'verify:fast') would need this gate updated."
   ],
-  "details": []
+  "details": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.433Z",
+    "contentSha256": "0be1f94ae2bd0c6baad9d42f3cc1c3a73732634447b585de5d7ba3843b2f2f11"
+  }
 }

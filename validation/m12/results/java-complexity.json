@@ -52,5 +52,10 @@
     "selection": "first 400 tracked *.java files sorted lexicographically (git ls-files) — deterministic at pinned revision",
     "fileList": "validation/m12/results/java-corpus-sample.txt",
     "repoState": "dirty (unrelated .agents/skills deletions; Java sources intact)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.908Z",
+    "contentSha256": "f946534371349aecfdae41c68cc231a5d7415b16dc773f191080c6a72ff095f5"
   }
 }

@@ -13,5 +13,10 @@
   "errors": [],
   "crashes": [],
   "passed": true,
-  "policy": "tracked XML and XSD documents from a pinned clean Grails repository; standalone DTD files are excluded because the wired XML document grammar requires a document element, while external DTD references are tested in Doctype.xml"
+  "policy": "tracked XML and XSD documents from a pinned clean Grails repository; standalone DTD files are excluded because the wired XML document grammar requires a document element, while external DTD references are tested in Doctype.xml",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.116Z",
+    "contentSha256": "06dddc151ca1b45aa07bd07ca0080e156d579be8ac870da620ae912700b2c8e0"
+  }
 }

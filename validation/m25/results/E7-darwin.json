@@ -9,5 +9,10 @@
   "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-darwin.json",
-  "generatedAt": "2026-09-14T16:05:46.891Z"
+  "generatedAt": "2026-09-14T16:05:46.891Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.413Z",
+    "contentSha256": "8ea25bd12e29456a3c31227c67cc19171ab801da23594491aacc638f5974cb7f"
+  }
 }

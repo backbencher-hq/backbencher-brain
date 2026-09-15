@@ -43,6 +43,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const CORE = path.join(ROOT, "ide/vscode/src/hover-action-args.ts")
@@ -303,7 +304,7 @@ const result = {
   failures,
 }
 mkdirSync(path.dirname(EVIDENCE), { recursive: true })
-writeFileSync(EVIDENCE, `${JSON.stringify(result, null, 2)}\n`)
+writeSealed(EVIDENCE, result)
 console.log(`\nV1-action-args: ${status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 console.log(`Evidence: ${EVIDENCE}`)
 if (failures.length > 0) {

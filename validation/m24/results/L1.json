@@ -2,11 +2,11 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
   "sourceFingerprint": "686a511db46773a80f0bee24123c9742a499a78426588e82132c6d2f08278033",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-09-14T21:52:53.616Z",
+  "generatedAt": "2026-09-14T23:48:51.999Z",
   "passed": 33,
   "failed": 0,
   "failures": [],
@@ -23,5 +23,10 @@
     "no completion, diagnostics, or rename (complement stance)",
     "feature handlers land in L2-L5; capabilities advertise only registered handlers",
     "stdio framing is byte-stream based with Content-Length parsing"
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-15T00:06:48.551Z",
+    "contentSha256": "5f3ee0352fbde1838cc2d31e77ea16544733de0cc6b8bedeee7c618bbaa6c8ec"
+  }
 }

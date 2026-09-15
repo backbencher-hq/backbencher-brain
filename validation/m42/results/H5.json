@@ -34,5 +34,10 @@
     "DOM assertions cover structure/classes/data attributes over a stub DOM; CSS/paint and the webview toggle script's runtime are per-editor presentation (the E5 leg covers the real editor).",
     "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here.",
     "U2/U3 (hub list/tree presentation redesign) extend this DOM contract; U1 pins the grouped data + row-per-group rendering."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.547Z",
+    "contentSha256": "4a494a9a0df4e1fee07001e73d719992331455d7c2f41d1912234e649c3fb810"
+  }
 }

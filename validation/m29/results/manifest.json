@@ -45,7 +45,7 @@
       "githubIssue": 536,
       "tool": "wave-protocol",
       "status": "verified",
-      "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract \u00a79 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
+      "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract §9 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
       "acceptanceCriteria": [
         "Wave gate runner script; per-step pass/fail output",
         "Binding enforced: claim level capped by #419 state mechanically",
@@ -246,7 +246,7 @@
       "githubIssue": 543,
       "tool": "closure-gate",
       "status": "verified",
-      "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence \u2014 the owner declares the idea achieved, per the spot-check ritual.",
+      "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence — the owner declares the idea achieved, per the spot-check ritual.",
       "acceptanceCriteria": [
         "Ladder audit: M24-M29 bars green at current HEAD, machine-checked",
         "All claim levels re-validated against evidence freshness",
@@ -265,9 +265,14 @@
         "passed": 32,
         "failed": 0,
         "realFailed": 0,
-        "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, \u00a78.5)",
+        "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
         "negativeCases": 3
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.434Z",
+    "contentSha256": "d1d7286d692f97c66e9b6c89ca586e7d9b31600d0b8267d66583339dd757ee33"
+  }
 }

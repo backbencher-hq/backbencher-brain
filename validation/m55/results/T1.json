@@ -19,5 +19,10 @@
   "verifierCommand": "npx tsx script/m55/verify-identity.ts",
   "evidenceFile": "T1.json",
   "generatedAt": "2026-09-13T23:37:40.638Z",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.581Z",
+    "contentSha256": "3b7e59b06ded113792000de8f0bb1a8d2f9b630a543d650c3eecdec09dc9d4ab"
+  }
 }

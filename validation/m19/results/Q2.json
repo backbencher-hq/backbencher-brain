@@ -39,5 +39,10 @@
     "The giant index has 0 vector embeddings (S3 bounded them off by design); 0% coverage is reported, never hidden.",
     "tfidf/vector-path exclusion is verified on a deterministic temp index (fixed engine vectors) — the mechanism, not a 1M-row cosine."
   ],
-  "generatedAt": "2026-08-26T17:11:55.992Z"
+  "generatedAt": "2026-08-26T17:11:55.992Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.366Z",
+    "contentSha256": "5f53ecab614ab9290a8155e8fae9a8a1719fe19b0b92172d0c58d4a0a6d46d21"
+  }
 }

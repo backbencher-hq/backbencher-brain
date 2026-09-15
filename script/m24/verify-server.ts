@@ -24,6 +24,7 @@ import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { fileURLToPath } from "node:url"
 import {
+import { writeSealed } from "../lib/evidence.ts"
   BbLspServer,
   createServer,
   languageForPath,
@@ -488,7 +489,7 @@ async function main(): Promise<void> {
     ],
   }
 
-  writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(EVIDENCE_PATH, evidence)
   console.log(`\nL1: ${status.toUpperCase()} (${passed}/${passed + failed} passed, ${mutantsCaught}/${MUTANTS.length} mutants caught, ${negativeCases} negative)`)
   console.log(`Evidence: ${EVIDENCE_PATH}`)
   if (!ok) process.exitCode = 1

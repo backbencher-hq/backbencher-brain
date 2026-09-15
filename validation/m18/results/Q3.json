@@ -681,5 +681,10 @@
     "delta": 0.28571428571428575
   },
   "generatedAt": "2026-08-25T00:15:03.459Z",
-  "negativeLine": "Precision here means the answer cites the gold source; it does NOT prove the prose is factually complete. Stat routes (how many/classes/files) are covered by M16/M17 A8; this issue exercises the semantic/ask path only."
+  "negativeLine": "Precision here means the answer cites the gold source; it does NOT prove the prose is factually complete. Stat routes (how many/classes/files) are covered by M16/M17 A8; this issue exercises the semantic/ask path only.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.358Z",
+    "contentSha256": "91a23f11c0e33bd1328bca4ea29005fa69921c3192ca0e58254e34509987e925"
+  }
 }

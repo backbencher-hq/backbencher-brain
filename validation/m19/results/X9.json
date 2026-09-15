@@ -18,5 +18,10 @@
   "negatives": [
     "This proves tamper response and evidence integrity, not analyzer perfection or giant-repository timing completion."
   ],
-  "generatedAt": "2026-08-26T17:15:55.891Z"
+  "generatedAt": "2026-08-26T17:15:55.891Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.368Z",
+    "contentSha256": "1dc88a060fc857d84fbe409a4a208782ba57b3ab36c5f7b8d5e61502f63064bd"
+  }
 }

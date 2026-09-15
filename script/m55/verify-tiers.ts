@@ -45,6 +45,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { T5_EXPECT, T5_ROW_TIER, T5_ROWS, T5_SYMBOLS, nameColumn, rowsForExternal, rowsForSymbol, seedT5Db, writeT5Workspace } from "./t5-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const OWNER = path.join(ROOT, "src/lsp/evidence_tier.ts")
@@ -563,7 +564,7 @@ const result = {
 }
 
 try {
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nEV T5 evidence written: ${path.relative(ROOT, EVIDENCE)}`)
 } catch (e) {
   console.log(`\nEV T5 evidence write failed: ${String(e)}`)

@@ -23,5 +23,10 @@
     "Live OpenVSX publish is honestly blocked awaiting owner credentials (OVSX_PAT); the dry-run records the real packaged artifact and the exact publish command — see E4-openvsx.json.",
     "The VSIX is built from the working tree at HEAD after a clean dist rebuild; a CI job (E7 OS matrix) remains the declared place for scheduled reproducibility runs.",
     "Marketplace (vsce publish to Visual Studio marketplace) is out of E4 scope: the issue names OpenVSX as the one-registry path for VS Code + forks; a marketplace listing is a declared owner decision, not silently skipped."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.409Z",
+    "contentSha256": "02c5ee540f190fe7d9d84e01a3748550ca3e5332ca79c1b77a43f4390d3ab188"
+  }
 }

@@ -25,5 +25,10 @@
   "limitations": [
     "The fallback requires an exact single-name member match and a traversable owner; ambiguous names keep the declared error (documented narrowness, never a guess).",
     "Cross-file owners resolve the same way (owner_symbol_id is workspace-global); the fixture covers the same-file shape the owner session exercised."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.554Z",
+    "contentSha256": "db9febd52d02328c25db4fb11a0cfcc2dde6a1a1cfbec12937c6393e0b3b02fd"
+  }
 }

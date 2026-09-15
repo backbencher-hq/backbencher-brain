@@ -54,5 +54,10 @@
   "limitations": [
     "Launch launch-language pairs with no stored rows are declared absent (doc generated per scan).",
     "Coverage scan reads real project dbs read-only; unreadable dbs are skipped and counted in realDbsScanned."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.420Z",
+    "contentSha256": "6a840e926d41aabccdcad1fc966770a31dae40e8115bdb6aae1cdda2053651dd"
+  }
 }

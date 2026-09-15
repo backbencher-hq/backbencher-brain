@@ -20,5 +20,10 @@
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M26 bar; it does not verify editor adapters.",
     "A run with relevant uncommitted M27 files is recorded as known-gap; verified status requires a clean relevant tree."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.422Z",
+    "contentSha256": "53c9d295d67b6de2a5e5e34e1faa614768df18bef2f3c43e5b32b578c057ef14"
+  }
 }

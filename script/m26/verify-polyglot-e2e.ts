@@ -33,6 +33,7 @@ import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { pathToFileURL, fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const FIXTURES = join(ROOT, "test/fixtures/polyglot")
@@ -228,7 +229,7 @@ async function main(): Promise<void> {
     evidenceFile: "A1.json",
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(join(dir, "A1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "A1.json"), JSON.stringify(result, null, 2) + "\n")
   console.log(`\nA1: ${result.status.toUpperCase()} (${passed}/${checks} passed, 1 mutant)`)
   if (result.status !== "verified") process.exitCode = 1
 }

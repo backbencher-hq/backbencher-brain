@@ -14,6 +14,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(import.meta.dirname ?? ".", "../..")
 const RESULTS = join(ROOT, "validation/m27/results")
@@ -245,6 +246,6 @@ const result = {
   generatedAt: new Date().toISOString(),
 }
 mkdirSync(RESULTS, { recursive: true })
-writeFileSync(join(RESULTS, "X1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(RESULTS, "X1.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`\nX1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
 if (result.status !== "verified") process.exitCode = 1

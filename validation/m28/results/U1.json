@@ -33,5 +33,10 @@
   "claimLevel": "verified — MCP answers and IDE answers are machine-proven identical on the shared fixture",
   "limitations": [
     "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.425Z",
+    "contentSha256": "e7efe64342c6be356b4bdb2d44ee8e27d0cc0603a034815df1d2a8d450f86fe0"
+  }
 }

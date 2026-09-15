@@ -17,5 +17,10 @@
   "limitations": [
     "Real-server leg covers node-source runtime; dist/bun legs are exercised by the standing M24 harness suite.",
     "Legacy callers (no schemaVersion) are rejected by design; advertisement is the discovery mechanism."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.419Z",
+    "contentSha256": "e06177934fa2ba8c537f5cc77efef9eb9b8d3744e334a0fd365436c704099d58"
+  }
 }

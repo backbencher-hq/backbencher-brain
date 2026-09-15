@@ -37,6 +37,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { T4_EXPECT, T4_SYMBOLS, seedT4Db, writeT4Workspace } from "./t4-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const SIGNATURE = path.join(ROOT, "src/lsp/signature.ts")
@@ -303,7 +304,7 @@ const result = {
 }
 
 try {
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nEV T4 evidence written: ${path.relative(ROOT, EVIDENCE)}`)
 } catch (e) {
   console.log(`\nEV T4 evidence write failed: ${String(e)}`)

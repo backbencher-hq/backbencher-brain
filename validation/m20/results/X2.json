@@ -60,5 +60,10 @@
   "limitations": [
     "Wall-clock measurements are environment-dependent (concurrent co-agent indexing may inflate times); they prove completion and scale, not a performance guarantee.",
     "Corpus coverage is limited to the repositories present on this machine at run time."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.376Z",
+    "contentSha256": "7dce18cf6cfc655be29cbaaa3f9983c7a31de8071d92ac096f86ec3710942413"
+  }
 }

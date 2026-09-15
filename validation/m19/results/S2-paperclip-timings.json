@@ -41,5 +41,10 @@
       "errors": []
     }
   ],
-  "partialBatches": []
+  "partialBatches": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.366Z",
+    "contentSha256": "9ed6361843f9d8e4551a7d8206a20c7b0046e6c9bb56f06a8efcabd6c5c1b05a"
+  }
 }

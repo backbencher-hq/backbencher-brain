@@ -339,5 +339,10 @@
     "Peak RSS is required for ASP.NET slices; the separate Paperclip full-finalization control records both runner and /usr/bin/time RSS, but it does not substitute for missing ASP.NET slice RSS.",
     "The DB lives in the local brain store for each project; counts are read at verify time, not hardcoded."
   ],
-  "generatedAt": "2026-08-26T17:15:18.613Z"
+  "generatedAt": "2026-08-26T17:15:18.613Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.367Z",
+    "contentSha256": "89cef2cd28b6e91724cdf274fccbcffdc8f02b8f605fc597d1f15c77367df0bd"
+  }
 }

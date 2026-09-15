@@ -25,6 +25,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { createHash } from "node:crypto"
 import { computeCap, analyzerConformance, type SpecLedger, type Step } from "./wave-protocol.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -266,7 +267,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
       commit: gitCommit(),
       generatedAt: new Date().toISOString(),
     }
-    writeFileSync(path.join(ROOT, "validation/m29/results/R4.json"), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results/R4.json"), JSON.stringify(result, null, 2) + "\n")
     console.log(`R4: ledger written (inputsHash ${inputsHash.slice(0, 10)})`)
   } else {
     console.log(json)

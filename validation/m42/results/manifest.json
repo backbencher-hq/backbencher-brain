@@ -5,15 +5,15 @@
   "title": "The Interactive Hover (IDE v6)",
   "status": "closed",
   "authority": "docs/m42/M42-MASTER-PLAN.md (Issues / Issue groups table)",
-  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a712 Hover Interaction Rules, M42 amendment)",
-  "prerequisite": "M29 completion bar met \u2014 verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§12 Hover Interaction Rules, M42 amendment)",
+  "prerequisite": "M29 completion bar met — verified 9/9, X1 32/32 at HEAD (re-audited by G1 on every run)",
   "issues": [
     {
       "code": "G1",
       "githubIssue": 648,
       "tool": "governance-gate",
       "status": "verified",
-      "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract \u00a712)",
+      "scope": "Ledger + closure gate + M29 completion-bar re-audit + Hover Interaction Rules machine-gated (contract §12)",
       "acceptanceCriteria": [
         "ledger structurally sound, dependency order enforced, X1 last",
         "gate proves it CAN fail: hollow-verified, missing evidence, forged M29 bar each rejected",
@@ -239,5 +239,10 @@
         "note": "full-ladder audit M24-M42 green at HEAD; launch record audited; owner spot-check pack prepared (verdict stays with the owner)"
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.549Z",
+    "contentSha256": "e43430dcbae23dde10c6ccbfbec1c2ec6241c22a6dd016fd8a58d3170a2ef2c5"
+  }
 }

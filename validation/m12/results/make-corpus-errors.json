@@ -24,5 +24,10 @@
   "crashes": [],
   "errors": [],
   "passed": true,
-  "policy": "Every tracked Makefile in the six pinned clean repos is audited through the production parseFile pipeline. The analyzer never crashes, never synthesizes phantom rows, and the vendored tree-sitter-make grammar models the full corpus with zero ERROR/MISSING nodes. Clean acceptance files are those with zero parse errors."
+  "policy": "Every tracked Makefile in the six pinned clean repos is audited through the production parseFile pipeline. The analyzer never crashes, never synthesizes phantom rows, and the vendored tree-sitter-make grammar models the full corpus with zero ERROR/MISSING nodes. Clean acceptance files are those with zero parse errors.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.925Z",
+    "contentSha256": "ef445ab5b65fbe81e49e4a869813410557955a1273b24da59577e23e766ba5b7"
+  }
 }

@@ -22,5 +22,10 @@
   "verifierCommand": "npx tsx script/m55/verify-status-panel.ts",
   "evidenceFile": "V1-status-panel.json",
   "generatedAt": "2026-09-13T23:37:58.863Z",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.586Z",
+    "contentSha256": "a93cceba478f240a1554410d36e6f7a0ea4f79d8b72ebd8fea043ffdc36aeeb2"
+  }
 }

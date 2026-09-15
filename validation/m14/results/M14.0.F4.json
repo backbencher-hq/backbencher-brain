@@ -4625,5 +4625,10 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Mutation-testing harness"
+  "title": "Mutation-testing harness",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.308Z",
+    "contentSha256": "a8b5fb9bc42f51c55dcaa5e18d7b8178d0098ae5a5fce6e2a10d8a566440f207"
+  }
 }

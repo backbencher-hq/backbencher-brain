@@ -7,5 +7,10 @@
   "verdict": "ZERO-TOUCH + merge-required-before-release",
   "checks": 7,
   "failed": 0,
-  "generatedAt": "2026-09-11T17:45:18.784Z"
+  "generatedAt": "2026-09-11T17:45:18.784Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.574Z",
+    "contentSha256": "9054529431139144939cd367b11827a86b8f52ebe5d0b7bf2d8532f0a1acceb1"
+  }
 }

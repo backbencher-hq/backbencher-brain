@@ -23,5 +23,10 @@
   "limitations": [
     "CSP is enforced by the host webview at render time; this suite proves the emitted document's policy and escaping, not browser behavior.",
     "The future webview provider must consume buildWebviewHtml(); a provider that hand-rolls its own HTML is a governance violation (single-owner rule)."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.421Z",
+    "contentSha256": "a03832581408570a5dac47c2386033b87d296553e10d8a0db4d4a698b8b734af"
+  }
 }

@@ -14,5 +14,10 @@
     "askFunctions": 319,
     "dbFunctions": 319
   },
-  "negativeLine": "Parity proven on rake (Ruby); cross-language union already covered by M16 A1-A4."
+  "negativeLine": "Parity proven on rake (Ruby); cross-language union already covered by M16 A1-A4.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.354Z",
+    "contentSha256": "53243903ce158badf09a85ecd9c31bf4026a8c1974f44040df7254e23a762748"
+  }
 }

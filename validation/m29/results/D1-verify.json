@@ -20,5 +20,10 @@
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
     "The wave doc's registry list is generated from WAVE_LANGUAGES; adding a language to the registry regenerates the doc (drift gate enforces regeneration)."
   ],
-  "details": []
+  "details": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.427Z",
+    "contentSha256": "d589b77522340431e49c0344b9b1332ceb3cb14bf384a70941ff11029e90e39e"
+  }
 }

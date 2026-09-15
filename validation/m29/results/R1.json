@@ -16,5 +16,10 @@
     "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
     "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
     "Dry-run observation recorded honestly: the real indexer logs a post-index health-check warning (index marked partial) in the temp data dir; file/symbol/relationship counts are real and non-empty, and the S4 pass rests on the counts, not the health score."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.430Z",
+    "contentSha256": "aee91e4b54aa883370ae16b02e9853258fa34278afa87b1b39ff8b3ecd72354a"
+  }
 }

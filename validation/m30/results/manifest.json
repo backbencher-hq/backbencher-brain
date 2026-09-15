@@ -414,5 +414,10 @@
         "document limitations"
       ]
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.464Z",
+    "contentSha256": "99f8e781b200b0a49ce4084d39823780d422eebae3e4fcaca603653416d07e99"
+  }
 }
