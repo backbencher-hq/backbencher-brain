@@ -219,13 +219,48 @@ apparatus required, so filed rather than half-fixed.
 Both languages' corpus lanes were re-run at this HEAD and are unchanged (kotlin 8/300 = 2.7%, groovy
 29/400 = 7.2% parse-error files), so none of this touched parsing.
 
-Full evidence at this HEAD — the oracle sweep at **840 files** (40 per language, 88,627 relationships):
-**11,230 consistent, 0 inconsistent, 227 not-checkable**, of which the JVM family is
+Full evidence at this HEAD — the oracle sweep at **880 files** (40 per language over 22 lanes, 89,196
+relationships): **11,799 consistent, 0 inconsistent, 227 not-checkable**, of which the JVM family is
 java **1,920/1,920** · kotlin **6,787/6,787** · scala **1,989/1,989** · groovy **761/761** — every
 relationship the four analyzers emit now carries a line, and every claim survives the source check.
 (The other 17 languages account for the remaining 77,170 relationships, none of which carry a line:
-that is #825's remaining scope, not a JVM-family gap.) Fixtures **428/428** across 21 languages ·
-mutants **564/564 caught, 0 survived** · `tsc` clean.
+that is #825's remaining scope, not a JVM-family gap.) Plus xml **569/569**. Fixtures **429/429** across
+22 lanes ·
+mutants **565/565 caught, 0 survived** · `tsc` clean.
+
+### 3g. xml: the second emitter, checked and pinned at last (2026-09-15, #825)
+
+xml was the only analyzer besides scala that ALREADY emitted a line — and it was invisible to the
+milestone's own oracle, because `LANGUAGES` in `script/m59/oracle-callsite.ts` lists the 21 onboarded
+language lanes and xml is not one of them. Measured before it was added: **27 of 27 xml relationships
+carried a line and nothing had ever checked one against source**.
+
+Added to the oracle, 40 files, 569 relationships, and it produced **7 inconsistent claims** — every one
+the same shape:
+
+```
+contains project -> default   claimedLine 2   sourceLine: <project xmlns="http://maven.apache.org/POM/4.0.0"
+```
+
+The target `default` is a **synthesised element name**: the DEFAULT namespace has no written prefix, so
+for `xmlns="…"` the analyzer names the namespace `default`, which appears nowhere in the source. Tier A
+could neither pass nor fail it, so it was being counted as a failure — the same tier-conflation the
+oracle's header forbids (kotlin's `component1` had already been moved to `notCheckable` for exactly
+this reason). The fix is NOT an allowlist entry for the string `default` (that would let a real,
+wrongly-lined `default` claim hide behind it): the analyzer's namespace edge now carries
+`attributeName` — the name AS WRITTEN (`xmlns`, `xmlns:sec`) — and the oracle checks **that** token when
+the edge's metadata says `role: "xml_namespace"`. Narrowed by a metadata marker, never by a name.
+
+After: xml **569 of 569 consistent, 0 inconsistent, 0 not-checkable**, with four new boundary
+self-tests asserting both directions (the synthesised name must still fail, the attribute name must
+match, `xmlns:pfx` must match, and a wrong line must still fail).
+
+**xml had no fixture lane at all** — no `validation/m14/fixtures/xml/` directory, no entry in
+`run-fixtures.ts`, so nothing could have caught a regression in the one emitter that already worked.
+The lane and `xml/lines-825` now exist (22 lanes, 429 fixtures), pinning every element line, every
+attribute line (an attribute takes the line it is WRITTEN on, never the enclosing element's — the start
+tag in the fixture is split across four lines precisely to make that falsifiable), the synthesised
+default-namespace edge and a prefixed one, with `xml/lines-dropped` as its mutant.
 
 ### 3e. java's call-site lines, and the last stored `0` (2026-09-15, #821 + #825)
 
@@ -310,7 +345,7 @@ Two mechanisms, both removed by #824:
 | #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
 | #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
 | #824 delete false certification | **open** |
-| #825 analyzer lane emission | **JVM family done, others open** — at the 840-file oracle sweep, scala **1,989/1,989** · java **1,920/1,920** · kotlin **6,787/6,787** · groovy **761/761** carry a line on **every** relationship, **0 inconsistent** (groovy also 2,864/2,864 at a 150-file sample). Every mechanism is fixture- and mutant-pinned (scala 5 mutants, java 3, kotlin 2, groovy 3). Still open: the other 17 languages emit **0 lines across 77,170 relationships**, and xml — the only other emitter — has not had its lines checked against source |
+| #825 analyzer lane emission | **JVM family done, others open** — at the 840-file oracle sweep, scala **1,989/1,989** · java **1,920/1,920** · kotlin **6,787/6,787** · groovy **761/761** carry a line on **every** relationship, **0 inconsistent** (groovy also 2,864/2,864 at a 150-file sample). Every mechanism is fixture- and mutant-pinned (scala 5 mutants, java 3, kotlin 2, groovy 3). Still open: the other 17 languages emit **0 lines across 77,170 relationships**. xml is now closed too — added to the oracle (569/569 consistent, 0 inconsistent at 40 files) and given the fixture lane it never had (`xml/lines-825`, 22 lanes / 429 fixtures) |
 | #826 closure gate | **open** |
 
 ## Evidence

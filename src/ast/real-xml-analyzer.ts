@@ -258,6 +258,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRelationship(ownerName, name, ASTEngine.RelationshipType.Contains, {
       role: isNamespace ? "xml_namespace" : "xml_attribute",
       value,
+      // M59 (#825): the name as WRITTEN. For `xmlns="…"` the edge's target is the
+      // synthesised element name `default` (the default namespace has no written
+      // prefix), which appears nowhere in the source — so a source check on the
+      // target is unfixable by construction. Carrying `xmlns` (or `xmlns:pfx`)
+      // lets the claim be checked against what is actually on the line.
+      attributeName,
     }, node)
   }
 
