@@ -2268,10 +2268,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // identifier leaf, mirroring the field_expression path.
         let calledName = ""
         let isQualified = false
+        // M59 (#825): the emitted line must be the CALLEE's line, not the
+        // call_expression's. A call_expression starts at its receiver, so in a
+        // multi-line chain every call in the chain inherits the line the chain
+        // opened on: measured on cats-effect Example.scala, `…replicateA_(2)
+        // .as(ExitCode(2))` — written on line 23 — was reported on line 22,
+        // because the parenthesised group that opens the chain starts there.
+        // The callee leaf's own position is the line the call is written on.
+        let calleeNode: Node | null = null
         if (fnNode.type === "generic_function") {
-          const kids: string[] = []
+          const leaves: Node[] = []
           const findLeaves = (nn: Node): void => {
-            if (nn.type === "identifier") { kids.push(nn.text); return }
+            if (nn.type === "identifier") { leaves.push(nn); return }
             if (nn.type === "type_arguments") return
             for (let i = 0; i < nn.namedChildCount; i++) {
               const c = nn.namedChild(i)
@@ -2279,23 +2287,29 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
           findLeaves(fnNode)
-          if (kids.length > 0) {
-            calledName = kids[kids.length - 1]
-            isQualified = kids.length > 1
+          if (leaves.length > 0) {
+            calleeNode = leaves[leaves.length - 1]
+            calledName = calleeNode.text
+            isQualified = leaves.length > 1
           }
         } else {
           calledName = fnNode.text
+          calleeNode = fnNode
           isQualified = fnNode.type === "field_expression"
           if (isQualified) {
             // obj.method — the leaf identifier is the method name
-            const kids: string[] = []
+            const leaves: Node[] = []
             for (let i = 0; i < fnNode.namedChildCount; i++) {
               const c = fnNode.namedChild(i)
-              if (c && c.type === "identifier") kids.push(c.text)
+              if (c && c.type === "identifier") leaves.push(c)
             }
-            calledName = kids.length > 0 ? kids[kids.length - 1] : calledName
+            if (leaves.length > 0) {
+              calleeNode = leaves[leaves.length - 1]
+              calledName = calleeNode.text
+            }
           }
         }
+        const calleeLine = (calleeNode ?? node).startPosition.row + 1
       // Top-level (script-style) calls have no enclosing symbol. Attributing
       // them to a "(script)" sentinel mirrors handleInstantiation — dropping
       // them silently hollowed out top-level call graphs.
@@ -2333,7 +2347,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // a companion-apply GUESS (documented 0.7 contract), never an
             // implicit-1.0 structural edge.
             confidence: 0.7,
-            line_number: node.startPosition.row + 1,
+            line_number: calleeLine,
             metadata: { isInstantiation: true },
           })
         } else {
@@ -2344,7 +2358,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // S1.4: method calls carry the documented 0.9 confidence (docs
             // promise 0.9 for calls; the classifier reads it explicitly).
             confidence: 0.9,
-            line_number: node.startPosition.row + 1,
+            line_number: calleeLine,
             metadata: {},
           })
         }
