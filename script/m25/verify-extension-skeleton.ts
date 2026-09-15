@@ -314,6 +314,6 @@ const result = {
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m25/results"), { recursive: true })
-writeSealed(path.join(ROOT, "validation/m25/results/E1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m25/results/E1.json"), result)
 console.log(`E1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

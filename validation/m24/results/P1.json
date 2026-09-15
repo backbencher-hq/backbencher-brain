@@ -64,11 +64,11 @@
       "detail": "caught: absolute offset inside a later line: want {\"line\":3,\"column\":1}, got {\"line\":3,\"column\":0}"
     }
   ],
-  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
+  "currentCommit": "87b5ab6a295fde6fd84a867bbed68bb54e4c08e4",
   "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-14T23:48:30.260Z",
+  "generatedAt": "2026-09-15T00:28:29.565Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -77,7 +77,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T00:06:48.553Z",
-    "contentSha256": "e03b262d25ff1136e94e136c43054c76367e46285e2cc025e4660c303b010fc6"
+    "sealedAt": "2026-09-15T00:28:29.565Z",
+    "contentSha256": "6aa51fbcda184f9b809b2bf0e58c13deb1ffd98ce27b09a10bc221651010aa2a"
   }
 }

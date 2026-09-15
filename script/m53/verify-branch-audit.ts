@@ -70,7 +70,7 @@ function main(): void {
   const branchHead = git(["rev-parse", "--verify", branchRef])
   if (branchHead.startsWith("__GIT_ERROR__")) {
     console.log("R3: BLOCKED — origin/m48-recovery not present; nothing to audit")
-    writeSealed(OUT, JSON.stringify({ status: "blocked", reason: "branch absent", head: git(["rev-parse", "HEAD"]).trim(), generatedAt: new Date().toISOString() }, null, 2) + "\n")
+    writeSealed(OUT, { status: "blocked", reason: "branch absent", head: git(["rev-parse", "HEAD"]).trim(), generatedAt: new Date().toISOString() })
     return
   }
   const base = git(["merge-base", mainRef, branchRef]).trim()

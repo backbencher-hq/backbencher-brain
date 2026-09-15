@@ -404,7 +404,7 @@ async function main(): Promise<void> {
     }
     const dir = join(ROOT, "validation/m26/results")
     mkdirSync(dir, { recursive: true })
-    writeSealed(join(dir, "W5.json"), JSON.stringify(evidence, null, 2) + "\n")
+    writeSealed(join(dir, "W5.json"), evidence)
     console.log(`W5: ${evidence.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
     process.exit(failed === 0 ? 0 : 1)
   } finally {

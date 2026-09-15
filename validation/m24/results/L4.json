@@ -2,11 +2,11 @@
   "issue": "493",
   "code": "L4",
   "status": "verified",
-  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
+  "currentCommit": "87b5ab6a295fde6fd84a867bbed68bb54e4c08e4",
   "sourceFingerprint": "16e57df5c96a0602f38de94674c1a4777b40b68b420f5d4acaa40391d7fb535b",
   "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
   "evidenceFile": "L4.json",
-  "generatedAt": "2026-09-14T23:49:11.279Z",
+  "generatedAt": "2026-09-15T00:27:07.730Z",
   "passed": 18,
   "failed": 0,
   "failures": [],
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T00:06:48.552Z",
-    "contentSha256": "4ce041e570e221e35828b1eb553d73b885db6d9f28ad3511a78df9eb364a25a4"
+    "sealedAt": "2026-09-15T00:27:07.731Z",
+    "contentSha256": "9bda238e20ffeac5a44d67936150549a29307141799113fd9b8439068e910da9"
   }
 }

@@ -24,6 +24,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 type Issue = {
   code: string
@@ -233,7 +234,7 @@ function validateM24Bar(m24Ledger: Ledger): string[] {
 }
 
 function main(): void {
-  const ledger = JSON.parse(readFileSync(ledgerPath, "utf8")) as Ledger
+  const ledger = parseSealedRecord(ledgerPath) as Ledger
   const plan = readFileSync(planPath, "utf8")
   const contract = readFileSync(contractPath, "utf8")
   const statusTracker = readFileSync(statusTrackerPath, "utf8")
@@ -356,7 +357,7 @@ function main(): void {
   // --- M24 completion-bar re-audit (version-ladder discipline) -------------
   let m24Ledger: Ledger | null = null
   try {
-    m24Ledger = JSON.parse(readFileSync(m24LedgerPath, "utf8")) as Ledger
+    m24Ledger = parseSealedRecord(m24LedgerPath) as Ledger
   } catch {}
   check("G1: M24 ledger is readable", m24Ledger !== null)
   if (m24Ledger) {
@@ -365,7 +366,7 @@ function main(): void {
 
     let m24X1: Record<string, unknown> | null = null
     try {
-      m24X1 = JSON.parse(readFileSync(m24X1Path, "utf8")) as Record<string, unknown>
+      m24X1 = parseSealedRecord(m24X1Path) as Record<string, unknown>
     } catch {}
     let ancestor = false
     if (m24X1 && typeof m24X1.currentCommit === "string") {
@@ -481,7 +482,7 @@ function main(): void {
       continue
     }
     try {
-      const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as Record<string, unknown>
+      const persisted = parseSealedRecord(evidencePath) as Record<string, unknown>
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
       const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
@@ -588,7 +589,7 @@ function main(): void {
   mkdirSync(evidenceDir, { recursive: true })
   const evidencePath = path.join(evidenceDir, result.evidenceFile)
   writeSealed(evidencePath, result)
-  const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof result
+  const persisted = parseSealedRecord(evidencePath) as typeof result
   check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
   const finalFailed2 = checks - passed

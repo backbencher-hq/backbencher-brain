@@ -27,6 +27,7 @@ import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const CORPUS = path.join(ROOT, ".tools", "m29-giant-corpus")
 const MANIFEST = path.join(CORPUS, "..", "m29-giant-corpus-manifest.json")
@@ -147,7 +148,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
   if (!existsSync(MANIFEST)) {
     return { status: "blocked", reason: "giant corpus missing — run npx tsx script/m29/generate-giant-corpus.ts first" }
   }
-  const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as CorpusManifest
+  const manifest = parseSealedRecord(MANIFEST) as CorpusManifest
   const distServer = path.join(ROOT, "dist", "lsp", "server.js")
   if (!existsSync(distServer)) {
     return { status: "blocked", reason: "dist missing — run npm run build first" }
@@ -439,7 +440,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
         // nvim may exit non-zero after qa!; results still count.
       }
       if (existsSync(editorOut)) {
-        const parsed = JSON.parse(readFileSync(editorOut, "utf8")) as { session?: Record<string, unknown>; measurements?: FeatureMeasurement[] }
+        const parsed = parseSealedRecord(editorOut) as { session?: Record<string, unknown>; measurements?: FeatureMeasurement[] }
         const eviolations = budgetViolationsFrom(parsed.measurements ?? [], hostNoise)
         inEditor = {
           status: "measured",
@@ -486,7 +487,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
 // CLI entry.
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   void runGiantBudget().then((result) => {
-    writeSealed(path.join(ROOT, "validation/m29/results/R3.json"), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results/R3.json"), result)
     console.log(`R3: ${String(result.status).toUpperCase()}`)
     const budgets = (result.budgets ?? {}) as Record<string, { budgetViolations?: string[]; overColdHoverBudget?: boolean }>
     for (const [k, v] of Object.entries(budgets)) {

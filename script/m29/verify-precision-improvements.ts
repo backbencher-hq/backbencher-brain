@@ -29,6 +29,7 @@ import path from "node:path"
 import { probeFixture, seedTierFixture } from "./r5-tier-fixture.ts"
 import { createRequire } from "node:module"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const require = createRequire(import.meta.url)
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -119,7 +120,7 @@ check("F0: dist is fresh (rebuilt after the last hover.ts change)", distMtime >=
 // ---------------------------------------------------------------------------
 let tierRatio: any = null
 try {
-  tierRatio = (JSON.parse(readFileSync(R3, "utf8")) as any).budgets.tierRatio
+  tierRatio = (parseSealedRecord(R3) as any).budgets.tierRatio
 } catch {}
 check("F2: tier-ratio measurement recorded in R3.json", !!tierRatio && typeof tierRatio.inferredRatioBeforePct === "number")
 check("F2: the improvement is real (inferredAfter < inferredBefore)", !!tierRatio && tierRatio.inferredAfter < tierRatio.inferredBefore, tierRatio ? `${tierRatio.inferredBefore} -> ${tierRatio.inferredAfter} of ${tierRatio.totalRelationships}` : undefined)
@@ -130,7 +131,7 @@ check("F2: the improvement is real (inferredAfter < inferredBefore)", !!tierRati
 // publishes; regenerating the ledger reconciles them (one owner of truth).
 let ledgerBeforePct: number | null = null
 try {
-  ledgerBeforePct = (JSON.parse(readFileSync(LEDGER_JSON, "utf8")) as any).giantScale.tierRatio.inferredRatioBeforePct
+  ledgerBeforePct = (parseSealedRecord(LEDGER_JSON) as any).giantScale.tierRatio.inferredRatioBeforePct
 } catch {}
 check("F2: before-ratio matches the published ledger motivation", typeof ledgerBeforePct === "number" && tierRatio?.inferredRatioBeforePct === ledgerBeforePct, `live=${tierRatio?.inferredRatioBeforePct} ledger=${ledgerBeforePct}`)
 check("F2: the published motivation is in the declared band (>= 40% inferred before the fix)", typeof ledgerBeforePct === "number" && ledgerBeforePct >= 40, String(ledgerBeforePct))
@@ -198,6 +199,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeSealed(path.join(ROOT, "validation/m29/results/R5-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R5-verify.json"), result)
 console.log(`R5: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 4 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

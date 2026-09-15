@@ -26,6 +26,7 @@ import { tmpdir } from "node:os"
 import { createHash } from "node:crypto"
 import { join, resolve } from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const README_PATH = join(ROOT, "ide/vscode/README.md")
@@ -139,7 +140,7 @@ function negative(name: string, ok: boolean, detail = ""): void {
 console.log("M25.D1 verifier — marketplace listing truthfulness (issue #506)\n")
 
 const readme = readFileSync(README_PATH, "utf8")
-const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as {
+const manifest = parseSealedRecord(MANIFEST_PATH) as {
   issues: Array<{ code: string; status: string; evidence?: { status?: string } }>
 }
 const ledger: Record<string, string | undefined> = {}
@@ -275,7 +276,7 @@ const result = {
 // --- Evidence ----------------------------------------------------------------
 
 const evidenceDir = RESULTS_DIR
-writeSealed(join(evidenceDir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(evidenceDir, "D1.json"), result)
 
 console.log(`\nD1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negative)`)
 console.log(`Evidence: ${join(evidenceDir, "D1.json")}`)

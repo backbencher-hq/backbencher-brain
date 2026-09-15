@@ -195,7 +195,7 @@ const result = {
     "Runs on this machine's Linux only; macOS/Windows install-doc execution is E7 scope.",
   ],
 }
-writeSealed(join(ROOT, "validation/m25/results", "D1-install.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(ROOT, "validation/m25/results", "D1-install.json"), result)
 
 console.log(`\nD1-install: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed)`)
 console.log(`Evidence: ${join(ROOT, "validation/m25/results/D1-install.json")}`)

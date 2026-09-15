@@ -48,6 +48,7 @@ import { M55_ROOT } from "./lsp-wire.ts"
 // importing the governance gate itself would execute its whole body (the
 // closure gate hung doing exactly that). One rule, one map, no side effects.
 import { ISSUE_RELEVANT_FILES } from "./relevance.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = M55_ROOT
 const RESULTS = path.join(ROOT, "validation/m55/results")
@@ -440,7 +441,7 @@ mutant(
 
 // --- C6: wiring ---------------------------------------------------------------------
 console.log("\nC6: wiring — the closure gate is in the milestone's chain")
-const pkg = JSON.parse(readFileSync(PACKAGE, "utf8")) as { scripts: Record<string, string> }
+const pkg = parseSealedRecord(PACKAGE) as { scripts: Record<string, string> }
 check("C6: the gate is in the m55 chain (machine-read from package.json)", (pkg.scripts["verify:m55"] ?? "").includes("m55/verify-closure"), "package.json scripts['verify:m55']")
 mutant(
   "M5: a closure gate dropped from the milestone chain",

@@ -35,6 +35,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ISSUE_RELEVANT_FILES } from "./relevance.ts";
 import { readEvidenceAllowingLegacy as readSealedRecord, writeSealed } from "../lib/evidence.ts";
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..");
 const LEDGER = path.join(ROOT, "validation/m55/results/manifest.json");
@@ -272,7 +273,7 @@ function git(args: string[]): string {
 }
 
 function main(): void {
-  const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as Ledger;
+  const ledger = parseSealedRecord(LEDGER) as Ledger;
   const plan = readFileSync(PLAN, "utf8");
   const protocol = readFileSync(PROTOCOL, "utf8");
   const contract = readFileSync(CONTRACT, "utf8");

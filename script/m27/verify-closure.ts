@@ -15,6 +15,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = join(import.meta.dirname ?? ".", "../..")
 const RESULTS = join(ROOT, "validation/m27/results")
@@ -57,7 +58,7 @@ function runVerifier(script: string): { exit: number; stdout: string } {
 
 function fingerprint(file: string): string | null {
   try {
-    const j = JSON.parse(readFileSync(file, "utf8"))
+    const j = parseSealedRecord(file)
     delete j.generatedAt
     delete j.currentCommit
     return JSON.stringify(j)
@@ -157,7 +158,7 @@ for (const { code, evidence } of SUITE) {
 
 // --- Pass 3: v3 completion-bar audit at HEAD ----------------------------------------
 console.log("\npass 3: v3 completion-bar audit (master plan items 1-5)")
-const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as { issues: Array<{ code: string; status: string; evidence?: { status?: string } }> }
+const manifest = parseSealedRecord(MANIFEST_PATH) as { issues: Array<{ code: string; status: string; evidence?: { status?: string } }> }
 const ledgerMap: BarInput["ledger"] = {}
 for (const i of manifest.issues) ledgerMap[i.code] = { status: i.status, evidence: i.evidence }
 
@@ -246,6 +247,6 @@ const result = {
   generatedAt: new Date().toISOString(),
 }
 mkdirSync(RESULTS, { recursive: true })
-writeSealed(join(RESULTS, "X1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(RESULTS, "X1.json"), result)
 console.log(`\nX1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
 if (result.status !== "verified") process.exitCode = 1

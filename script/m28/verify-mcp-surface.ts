@@ -21,6 +21,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const LEDGER = path.join(ROOT, "validation/m28/results/manifest.json")
@@ -129,7 +130,7 @@ function main(): void {
   } catch {}
 
   const tools = registryCache
-  const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as { issues: Array<{ code: string; status: string; evidence?: any }> }
+  const ledger = parseSealedRecord(LEDGER) as { issues: Array<{ code: string; status: string; evidence?: any }> }
 
   // --- G1: sourced from the registry -----------------------------------------
   const fresh = generateSurface(tools, ledger)
@@ -192,7 +193,7 @@ function main(): void {
     failures,
   }
   mkdirSync(path.join(ROOT, "validation/m28/results"), { recursive: true })
-  writeSealed(path.join(ROOT, "validation/m28/results", result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(ROOT, "validation/m28/results", result.evidenceFile), result)
   console.log(`V1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 }

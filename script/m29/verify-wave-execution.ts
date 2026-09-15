@@ -28,6 +28,7 @@ import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 /** Every owner-approved wave record (wave-1, wave-2, …): the union is the
  *  execution authority, mirroring the executor's approvedLanguages(). */
@@ -115,7 +116,7 @@ for (const lang of approval?.languages ?? []) {
     legSummaries.push({ language: lang, status: "missing", steps: 0, budgetsOk: false })
     continue
   }
-  const leg = JSON.parse(readFileSync(legPath, "utf8")) as WaveLeg
+  const leg = parseSealedRecord(legPath) as WaveLeg
   check(`R2: ${lang} S5 status verified`, leg.status === "verified", leg.status)
   // Freshness per the ledger model: the leg is stale only if a RELEVANT
   // input changed since its commit (exact-HEAD equality would stale on
@@ -159,7 +160,7 @@ if (existsSync(NVIM) && approval) {
       check(`R3: ${lang} expectations exist`, false, expPath)
       continue
     }
-    const expect = JSON.parse(readFileSync(expPath, "utf8")) as Record<string, unknown> & { hoverLine?: number; hover?: { symbol?: string } }
+    const expect = parseSealedRecord(expPath) as Record<string, unknown> & { hoverLine?: number; hover?: { symbol?: string } }
     const hoverChar = hoverCharacter(packDir, ext, expect.hoverLine ?? 0, expect.hover?.symbol ?? "")
     expect["ext"] = ext
     expect["hoverCharacter"] = hoverChar
@@ -203,7 +204,7 @@ if (existsSync(NVIM) && approval) {
       editorSummaries.push({ language: lang, status: "failed", checks: 0, failed: 0 })
       continue
     }
-    const driverResult = JSON.parse(readFileSync(driverOut, "utf8")) as EditorLeg
+    const driverResult = parseSealedRecord(driverOut) as EditorLeg
     rmSync(enrichedDir, { recursive: true, force: true })
     rmSync(dataDir, { recursive: true, force: true })
     const result = driverResult
@@ -211,7 +212,7 @@ if (existsSync(NVIM) && approval) {
     // Final evidence: driver session + verifier-computed status, written by
     // this script to the path the R1 protocol runner reads.
     const outPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
-    writeSealed(outPath, JSON.stringify({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }, null, 2) + "\n")
+    writeSealed(outPath, { ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() })
     for (const c of result.checks) {
       check(`R3/${lang}: ${c.name}`, c.ok, c.detail)
     }
@@ -269,8 +270,8 @@ if (existsSync(NVIM) && approval) {
     const pa = path.join(ROOT, "validation/m29/results", `wave-${a}.json`)
     const pb = path.join(ROOT, "validation/m29/results", `wave-${b}.json`)
     if (existsSync(pa) && existsSync(pb)) {
-      const la = JSON.parse(readFileSync(pa, "utf8")) as WaveLeg
-      const lb = JSON.parse(readFileSync(pb, "utf8")) as WaveLeg
+      const la = parseSealedRecord(pa) as WaveLeg
+      const lb = parseSealedRecord(pb) as WaveLeg
       mutant("leg language/filename swap goes unnoticed", !(la.language === b || lb.language === a))
     } else {
       mutant("leg language/filename swap goes unnoticed", true, "legs missing — skipped")
@@ -314,6 +315,6 @@ const result = {
 }
 const evidenceDir = path.join(ROOT, "validation/m29/results")
 mkdirSync(evidenceDir, { recursive: true })
-writeSealed(path.join(evidenceDir, "R2.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(evidenceDir, "R2.json"), result)
 console.log(`R2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)

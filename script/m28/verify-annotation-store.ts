@@ -229,6 +229,6 @@ const result = {
 
 const { writeFileSync, mkdirSync } = await import("node:fs")
 mkdirSync(path.join(ROOT, "validation/m28/results"), { recursive: true })
-writeSealed(path.join(ROOT, "validation/m28/results/A1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m28/results/A1.json"), result)
 console.log(`A1: ${result.status.toUpperCase()} (${passed}/${passed + failedTotal} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 if (failedTotal > 0) process.exit(1)

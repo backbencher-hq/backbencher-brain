@@ -29,6 +29,7 @@ import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 export const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 export const SPEC_LEDGER = path.join(ROOT, "validation/m14/results/M14.0.SPEC.json")
@@ -183,7 +184,7 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
   // S1: analyzer conformance from the committed SPEC ledger.
   let spec: SpecLedger | null = null
   try {
-    spec = JSON.parse(readFileSync(SPEC_LEDGER, "utf8")) as SpecLedger
+    spec = parseSealedRecord(SPEC_LEDGER) as SpecLedger
   } catch {
     // spec stays null — S1 records the reason below
   }
@@ -212,7 +213,7 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
   const serverLegPath = path.join(ROOT, "validation/m29/results", `wave-${language}.json`)
   if (existsSync(serverLegPath)) {
     try {
-      const leg = JSON.parse(readFileSync(serverLegPath, "utf8")) as { status?: string }
+      const leg = parseSealedRecord(serverLegPath) as { status?: string }
       steps.push({ step: "S5-server-leg", status: leg.status === "verified" ? "pass" : "fail", detail: `recorded S5 leg status: ${String(leg.status)}` })
       if (leg.status !== "verified") blockers.push("S5-server-leg recorded leg is not verified")
     } catch {
@@ -229,7 +230,7 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
   const waveEvidence = path.join(ROOT, "validation/m29/results", `wave-editor-${language}.json`)
   if (existsSync(waveEvidence)) {
     try {
-      const ev = JSON.parse(readFileSync(waveEvidence, "utf8")) as { status?: string }
+      const ev = parseSealedRecord(waveEvidence) as { status?: string }
       steps.push({ step: "S6-editor-leg", status: ev.status === "verified" ? "pass" : "fail", detail: `recorded evidence status: ${String(ev.status)}` })
     } catch {
       steps.push({ step: "S6-editor-leg", status: "fail", detail: "recorded evidence unreadable" })

@@ -24,7 +24,6 @@ import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { fileURLToPath } from "node:url"
 import {
-import { writeSealed } from "../lib/evidence.ts"
   BbLspServer,
   createServer,
   languageForPath,
@@ -32,6 +31,7 @@ import { writeSealed } from "../lib/evidence.ts"
   LAUNCH_LANGUAGES,
   ErrorCodes,
 } from "../../src/lsp/server"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "server.ts")
