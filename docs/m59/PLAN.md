@@ -454,6 +454,71 @@ python/go emit 1 edge (analyzer-side). The gate prints those states and never co
 on the cats-effect index, 28 of them line-bearing; 0 rows share a primary-key id, so this is identity by
 spelling, not a broken PK).
 
+### 3j. The standing tool-layer acceptance harness (M59.ACC, 2026-09-16)
+
+The instrument that makes every future analyzer wave measurable in one command, instead of every tool
+question becoming a fresh investigation. `script/m59/acceptance-tool-callsites.ts` runs four parts:
+
+| part | what it establishes | how it can fail |
+|---|---|---|
+| **A** fixture, 4 line-emitting languages | the TOOL (`graphTraversal`, bb_graph's engine) returns all 4 call sites at the 4 lines the fixture writes | tool returned fewer/other lines |
+| **B** fixture, 2 line-less languages | the tool reports `line: null` — a number here is the #823 substitution returning | any numeric line |
+| **C** real corpus | every site the tool reports is the line its OWN row stores (no fabrication), the token is written on that source line (Tier A), and the site count is not below a conservative source lower bound | fabricated / wrong line / missing |
+| **D** mutation, in-run RED-GREEN | one audited row's line is corrupted → the SAME audit must turn red; one audited row is deleted → it must leave the answer; both restored → clean | a mutation that does not change the verdict |
+
+**Fresh full run at this HEAD** (404-file cats-effect index built inside the run, 173s, 32,956
+relationships):
+
+```
+A  java · kotlin · scala · groovy      PASS  4 sites at the 4 fixture lines, each
+B  typescript · python                 PASS  line: null, no substituted number
+C  1037 sites / 12 callees      fabricated 0   wrong-line 0   missing-from-tool 0
+   missing-from-index 1  -> filed as #855 (analyzer lane, scala, TimeT.scala:148)
+D  corrupt an audited line            PASS  clean (0+0) -> red (0+1) -> clean (0+0)
+D  delete an audited row              PASS  present -> absent -> present (sites 21 -> 20 -> 21)
+All checks passed (13).
+```
+
+**The five instrument defects this cost, recorded so they are not repeated** — every one produced a
+FALSE verdict against correct product behaviour, which is the failure mode that makes a harness worse
+than no harness:
+
+1. **`.` excluded from the token boundary** — accused **2,552 of 2,698 real sites** of being on the
+   wrong line, because `.unsafeRunSync()`, `IO.raiseError(...)` and `.as(ExitCode.Success)` are
+   qualified calls. Same class as the oracle's `$` defect (§3c), found the same way: by reading the
+   accused lines instead of the number.
+2. **Transitive callers audited as direct claims** — `callers` deliberately carries depth ≥ 1 (callers
+   of the caller); auditing `main → run` against the name `as` produced **1,559 false wrong-line
+   verdicts**. Now filtered to `to === root.id && depth === 0`, and each row is checked against **its
+   own** target name (a cascade member edge names a member, not the root).
+3. **One callee name shared by all language fixtures** — `resolveGraphRoot` picks one symbol per name,
+   so the typescript/python assertions read the **java** caller's edges and "failed" two languages that
+   were behaving correctly. Each fixture now uses a unique callee name.
+4. **Block comments not tracked** — `/* … F.pure(a)) <-> F.pure(Right(a))*/` and a commented-out
+   benchmark body were counted as call sites, producing 3 false "missing" verdicts. Comment state is
+   now carried across lines with inline `/* … */` stripped.
+5. **Mutations aimed at rows the audit never read** (and a saturated `LIMIT 200` answer) — the first
+   version corrupted an arbitrary row for the symbol and "passed" 200 → 200 → 200 while proving
+   nothing. Mutations now act on rows taken from the audit's own row list, and the mutation candidate
+   is chosen with headroom below the LIMIT.
+
+One more, caught before it ran: the first draft contained `check(..., corruptedDetected || true, ...)` —
+a tautology in the mutation check. A gate that cannot fail is decoration; it was removed, not softened.
+
+**What the harness caught about the product in the same run:** deleting one site row left the site still
+visible in the answer, because that site has a **duplicate row** under a different target spelling
+(#854) — the count-based assertion was replaced by a rowId-based one, and #854 got a second independent
+confirmation of its impact on real answers.
+
+**Scope, declared by the run itself:** Part C's lower bound undercounts on purpose, so a *mismatch* is
+proof of a missing site while a *match* is not proof of completeness; languages whose analyzer emits no
+line are reported separately and never counted as passing. The harness mutates rows (Part D), so it
+**refuses to run against a non-temp data dir** unless explicitly overridden — a real index must never be
+the subject of a mutation test.
+
+**Not wired into `npm run verify` on purpose:** it indexes a real repo (~3 min). It is the on-demand
+acceptance instrument, run before and after each analyzer wave.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
@@ -485,6 +550,8 @@ asking a different question.
   predicate aimed at a collapsed world to prove it can fail
 - `validation/m59/results/line-key-idempotency.json` — #822: edits leave no stale rows, no duplicates
 - `validation/m59/results/honest-callsite.json` · `legacy-zero-heal.json` — #823 / #821 gates
+- `validation/m59/results/acceptance-tool-callsites.json` — the standing harness: fixtures, corpus
+  audit, both mutations, and the lower-bound self-test, all in one run-authored file
 - `validation/m44/results/U1.json` · `U3.json` · `U4.json` — the three gates re-run at HEAD with the
   hand-supplied lines deleted; each now carries `failures: []` and pins to the current commit
 - `reviews/m49-callsite-line-gap.md` — the contract handoff to the analyzer lane
@@ -498,6 +565,8 @@ npx tsx script/m59/verify-store-line-landing.ts
 npx tsx script/m59/probe-multiplicity.ts
 npx tsx script/m59/verify-rel-multiplicity.ts
 npx tsx script/m59/verify-line-key-idempotency.ts
+# M59.ACC — the standing tool-layer acceptance harness (fresh index, ~3 min)
+npx tsx script/m59/acceptance-tool-callsites.ts
 # #823 / #821 — the tool stops fabricating; legacy zeros cannot return
 npx tsx script/m59/verify-honest-callsite.ts
 npx tsx script/m59/verify-legacy-zero-heal.ts
