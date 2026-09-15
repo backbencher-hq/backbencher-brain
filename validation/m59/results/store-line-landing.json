@@ -1,8 +1,8 @@
 {
   "probe": "M59.O3",
-  "at": "2026-09-15T15:16:10.476Z",
+  "at": "2026-09-15T15:49:09.576Z",
   "repo": "$HOME/fixtures/repositories/cats-effect",
-  "tempDataDir": "/tmp/m59-data-i1osnu",
+  "tempDataDir": "/tmp/m59-data-IzaiEP",
   "indexStats": {
     "files": 404,
     "symbols": 7550,
@@ -12,14 +12,14 @@
   },
   "db": {
     "total": 28340,
-    "withLine": 26868,
+    "withLine": 27056,
     "zero": 0,
-    "null": 1472
+    "null": 1284
   },
   "byType": [
     {
       "rt": "references",
-      "n": 12187
+      "n": 12237
     },
     {
       "rt": "calls",
@@ -27,7 +27,7 @@
     },
     {
       "rt": "contains",
-      "n": 5278
+      "n": 5398
     },
     {
       "rt": "instantiates",
@@ -35,15 +35,15 @@
     },
     {
       "rt": "uses",
-      "n": 1218
+      "n": 1229
     },
     {
       "rt": "extends",
-      "n": 630
+      "n": 635
     },
     {
       "rt": "overrides",
-      "n": 573
+      "n": 575
     },
     {
       "rt": "implements",
@@ -56,12 +56,12 @@
       "n": 26564
     },
     {
-      "lang": "markdown",
-      "n": 35
+      "lang": "java",
+      "n": 214
     },
     {
-      "lang": "java",
-      "n": 27
+      "lang": "markdown",
+      "n": 35
     },
     {
       "lang": "yaml",
@@ -69,10 +69,10 @@
     }
   ],
   "sourceCheck": {
-    "checked": 26638,
-    "consistent": 25775,
+    "checked": 26825,
+    "consistent": 25960,
     "inconsistent": 0,
-    "notCheckable": 863,
+    "notCheckable": 865,
     "targetUnresolved": 0,
     "failures": [],
     "boundarySelfTest": {
