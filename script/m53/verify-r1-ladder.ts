@@ -97,15 +97,23 @@ function runGate(script: string, extraArgs: string[] = []): { rc: number; verdic
   return { rc: r.status ?? 1, verdict }
 }
 
-// --- Self-test --------------------------------------------------------------
+// --- The can-fail proof (the degenerate aggregate) ----------------------------
 // Proves the aggregation flips on a failing gate WITHOUT re-running the whole
 // ladder: the always-failing gate is executed for real (rc must be 1) and the
 // same aggregate() the ladder uses must mark the run not-ok.
-if (process.argv.includes("--self-test")) {
+//
+// M61.V6 (#847): this proof used to run only under `--self-test`, so R1.json
+// carried counts and no can-fail proof — the verifier lint's registry flagged
+// it as a promise owed to this issue. It now runs on EVERY ladder invocation
+// and its result is recorded in the evidence.
+const aggregate = (rs: Array<{ rc: number }>): number => rs.filter((g) => g.rc !== 0).length
+function selfTest(): { flipped: boolean; rc: number } {
   const bogus = runGate("script/m53/does-not-exist-gate.ts")
-  const aggregate = (rs: Array<{ rc: number }>) => rs.filter((g) => g.rc !== 0).length
-  const flipped = aggregate([{ rc: 0 }, { rc: bogus.rc }]) > 0 && bogus.rc !== 0
-  if (!flipped) {
+  return { flipped: bogus.rc !== 0 && aggregate([{ rc: 0 }, { rc: bogus.rc }]) > 0, rc: bogus.rc }
+}
+if (process.argv.includes("--self-test")) {
+  const st = selfTest()
+  if (!st.flipped) {
     console.error("SELF-TEST FAILED: an always-failing gate did NOT flip the R1 verdict")
     process.exit(1)
   }
@@ -123,13 +131,23 @@ const results = GATES.map(([name, script]) => {
 })
 
 const failed = results.filter((g) => !g.ok)
+// The can-fail proof, recorded every run (M61.V6 / #847).
+const st = selfTest()
+const mutantsCaught = st.flipped ? 1 : 0
+const mutantsTotal = 1
+const checksList = [`${st.flipped ? "ok" : "FAIL"}: M: degenerate-aggregate — a bogus gate (rc=${st.rc}) flips the R1 verdict`]
+const ok = failed.length === 0 && st.flipped
 const result = {
   issue: "M53.R1",
   code: "R1",
   milestone: "M53",
-  status: failed.length === 0 ? "verified" : "known-gap",
+  status: ok ? "verified" : "known-gap",
   passed: results.length - failed.length,
   failed: failed.length,
+  mutantsCaught,
+  mutantsTotal,
+  checksList,
+  canFail: { name: "degenerate-aggregate", flipped: st.flipped, bogusRc: st.rc },
   gatesTotal: results.length,
   gates: results,
   currentCommit: gitHead(),
@@ -138,6 +156,6 @@ const result = {
 }
 mkdirSync(path.dirname(OUT), { recursive: true })
 writeSealed(OUT, result)
-console.log(`R1: ${result.status.toUpperCase()} (${result.passed}/${results.length} gates green)`)
+console.log(`R1: ${result.status.toUpperCase()} (${result.passed}/${results.length} gates green, ${mutantsCaught}/${mutantsTotal} can-fail proof)`)
 console.log(`Evidence: ${OUT}`)
-process.exit(failed.length === 0 ? 0 : 1)
+process.exit(ok ? 0 : 1)

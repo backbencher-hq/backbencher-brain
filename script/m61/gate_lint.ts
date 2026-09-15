@@ -243,6 +243,46 @@ export function commandGate(command: string): string | undefined {
   return m ? m[1] : undefined
 }
 
+/**
+ * G7: STATIC IMPORT ORDER (issue #847, the TDZ bug class).
+ *
+ * The incident this memorializes: script/m29/verify-wave-execution.ts imported
+ * its per-language relevance rule with a dynamic `import(...)` placed BELOW the
+ * rule's first use. The ReferenceError landed in the staleness catch, so every
+ * wave leg silently read stale — the gate lied by failing quietly.
+ *
+ * The shape is: a dynamic import whose specifier is a LANE module (a relative
+ * path). Static imports are hoisted by ESM, so an `import` statement further
+ * down a file is legal — it is NOT this class and is not flagged (flagging it
+ * would drown the real signal in style noise, and a rule that cries wolf stops
+ * being read). A dynamic import is NOT hoisted: it runs where it is written,
+ * which is exactly how the incident's ReferenceError landed in the nearest
+ * catch. The house convention is therefore STATIC imports for lane modules, and
+ * the lint holds it.
+ *
+ * Deliberate non-relative dynamic imports (the mutant harnesses loading a
+ * generated copy from a computed URL) are a different thing and are not flagged.
+ *
+ * Pure over (file, source) so the verifier can mutate it and feed doctored
+ * sources as the can-fail proof.
+ */
+export function importOrderFindings(file: string, src: string): string[] {
+  const out: string[] = []
+  const lines = src.split("\n")
+  const isComment = (l: string) => /^\s*(\/\/|\/\*|\*|#!)/.test(l)
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]!
+    if (isComment(l)) continue
+    for (const m of l.matchAll(/\bimport\s*\(\s*["'`](\.\.?\/[^"'`]+)["'`]\s*\)/g)) {
+      // A TYPE-position `typeof import("…")` is erased at compile time — it can
+      // never throw at runtime, so it is not this class.
+      if (/typeof\s+$/.test(l.slice(0, m.index ?? 0))) continue
+      out.push(`${file}:${i + 1}: dynamic import of a lane module ("${m[1]}") — import it statically (the TDZ class)`)
+    }
+  }
+  return out
+}
+
 // --- the lint --------------------------------------------------------------------
 
 export type LintReport = {
@@ -338,6 +378,13 @@ export function lint(reg: Registry): LintReport {
       if (!g) continue
       tierOf.set(g, [...(tierOf.get(g) ?? []), t.name])
     }
+  }
+
+  // G7: static import order. A lane gate that imports a lane module dynamically
+  // below its first use is the TDZ class (#847): the failure lands in whatever
+  // catch is nearest and the gate reads stale instead of failing.
+  for (const s of scripts) {
+    for (const f of importOrderFindings(s.rel, s.source)) failures.push(`G7: ${f}`)
   }
 
   const gates: LintReport["gates"] = []

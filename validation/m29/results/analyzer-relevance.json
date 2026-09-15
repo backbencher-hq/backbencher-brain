@@ -96,16 +96,16 @@
   "failed": 0,
   "realFailed": 0,
   "failures": [],
-  "currentCommit": "216d1c67e1ad70dac9f6ec1cef41f2e58024d649",
+  "currentCommit": "4dfd8c4148d043ff3d1aa720a3b89474f9d677b3",
   "verifierCommand": "npx tsx script/m29/verify-analyzer-relevance.ts",
   "evidenceFile": "analyzer-relevance.json",
-  "generatedAt": "2026-09-15T20:40:02.570Z",
+  "generatedAt": "2026-09-15T22:31:42.184Z",
   "limitations": [
     "Static rule check over the live staleRelevantPaths module plus one differential against a stored leg pin; the legs' own S1-S6 gates re-run per execution."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T20:40:02.571Z",
-    "contentSha256": "c698f02313639bd9c0275512f5a5df92ac7eeb349392b877f3b0a06a53dc0d8a"
+    "sealedAt": "2026-09-15T22:31:42.185Z",
+    "contentSha256": "46ae2be369337500a5fe46f649f0b5fe6b3b09b9f8def55918c83eb50346ecfa"
   }
 }

@@ -29,12 +29,27 @@ const SERVER = path.join(ROOT, "dist", "lsp", "server.js")
 
 let checks = 0
 let failed = 0
+const canFail: string[] = []
 function check(name: string, ok: boolean, detail = ""): boolean {
   checks++
   if (!ok) failed++
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`)
   return ok
 }
+// M61.V6 (#847): the differential's can-fail proof, LABELLED and RECORDED. The
+// verifier lint's registry flagged this gate as proof-less because its
+// "negative" was the differential itself — real, but not a planted defect any
+// derivation could see.
+function mutant(name: string, caught: boolean, detail = ""): void {
+  canFail.push(`${caught ? "ok" : "FAIL"}: M: ${name}`)
+  check(`M: ${name}`, caught, detail)
+}
+
+/** The differential's rule: a count BELOW its declared floor is a regression.
+ *  Above the floor is a declared improvement, not a failure — the rule is a
+ *  floor, never an equality. Pure, so the mutants below can exercise it. */
+const regressionsOf = (d: Record<string, { now: number; floor: number }>): string[] =>
+  Object.entries(d).filter(([, v]) => v.now < v.floor).map(([k]) => k)
 
 // --- byte-accurate LSP client (Buffer framing; string decode corrupts
 // multi-byte UTF-8 split across chunks — found the hard way at M25) --------
@@ -192,8 +207,12 @@ async function main(): Promise<void> {
     references: { now: refCount, floor: floors.refCount },
     impactRoots: { now: (imp1?.result?.root ? 1 : 0) + (imp2?.result?.root ? 1 : 0), floor: floors.impactRoots },
   }
-  const regressed = Object.entries(diff).filter(([, d]) => (d as any).now < (d as any).floor)
-  check("R2.13: differential — nothing below the M44-era floor", regressed.length === 0, regressed.length === 0 ? "all floors met or exceeded" : `regressed: ${regressed.map(([k]) => k).join(",")}`)
+  const regressed = regressionsOf(diff)
+  check("R2.13: differential — nothing below the M44-era floor", regressed.length === 0, regressed.length === 0 ? "all floors met or exceeded" : `regressed: ${regressed.join(",")}`)
+
+  // The can-fail proof of the differential rule (M61.V6 / #847).
+  mutant("differential blind to a below-floor count", regressionsOf({ symbols: { now: 3, floor: 30 } }).length === 1)
+  mutant("differential flags a declared improvement (above-floor counted as regression)", regressionsOf({ symbols: { now: 300, floor: 30 } }).length === 0)
 
   // --- evidence --------------------------------------------------------------
   mkdirSync(path.dirname(OUT), { recursive: true }) // kept: dir may be fresh
@@ -210,6 +229,9 @@ async function main(): Promise<void> {
     differential: diff,
     checks,
     failed,
+    mutantsCaught: canFail.filter((c) => c.startsWith("ok")).length,
+    mutantsTotal: canFail.length,
+    checksList: canFail,
     generatedAt: new Date().toISOString(),
   }
   // M61.V1: one write path — the record is sealed at write (found unsealed by

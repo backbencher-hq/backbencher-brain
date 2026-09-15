@@ -221,6 +221,9 @@ try {
 
   // M1: a lax verifier (skips the comparison) must let tampered content
   // through the trusted read — R3 would fail against this library.
+  // M61.V6 / #847 — the unsealed-evidence-trust class, made extinct. Incident:
+  // 690 evidence records were written as bare JSON, so a clobbered, half-written
+  // or hand-edited record was believed by every downstream gate.
   await runMutant("lax-verify-accepts-tamper", "if (actual !== seal.contentSha256) {", "if (false) {", (mod) => {
     const p = path.join(tmp, "m1.json")
     ;(mod.writeSealed as typeof writeSealed)(p, record)

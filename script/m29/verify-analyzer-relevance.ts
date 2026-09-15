@@ -45,10 +45,15 @@ function check(name: string, ok: boolean, detail?: string): void {
 
 // --- the rule under test, read from the live module -------------------------
 // Import the REAL staleRelevantPaths: gating a copy would let the copy drift.
-const { staleRelevantPaths } = await import("./wave-execute.ts")
+// M61.V6 (#847): these were DYNAMIC imports (`await import("./…")`). The TDZ
+// bug class this milestone makes extinct — a lane module imported dynamically
+// instead of statically — was found HERE by the new G7 lint rule on its first
+// run. Static imports are hoisted, so they are also the correct form for a
+// dependency used later in the module body.
+import { staleRelevantPaths } from "./wave-execute.ts"
 
 // The wave registry (language -> extension) as the R1 protocol declares it.
-const { WAVE_LANGUAGES } = await import("./wave-protocol.ts")
+import { WAVE_LANGUAGES } from "./wave-protocol.ts"
 
 // language -> the analyzer module the indexer lane owns (the wave-2 rule).
 function analyzerFileFor(language: string): string {
