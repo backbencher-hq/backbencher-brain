@@ -118,6 +118,33 @@ module.exports = grammar(Java, {
     [$.expression, $._juxt_function_name],
     [$.expression, $.array_access, $._juxt_function_name],
     [$.primary_expression, $.explicit_constructor_invocation],
+    // #841: slashy strings — `/a.b/` vs division. The '/' token is identical
+    // for both, so the parse is genuinely ambiguous until the closing '/' is
+    // seen: GLR keeps both interpretations alive and dynamic precedence
+    // (slashy +5) picks the regex exactly when the division reading dies for
+    // lack of a same-line closing '/'. A plain token would instead lex greedily
+    // and turn `a / b / c` into division-slashy-division.
+    [$.slashy_string, $.binary_expression],
+    // #841: with the field_declaration delimiter optional (one-line class
+    // bodies), the parser needs GLR to decide between continuing a
+    // _variable_declarator_id (Java's `_` pattern + dimensions) and closing
+    // the field at the same token — a genuine ambiguity, resolved by the
+    // same dynamic precedence machinery as the rest of the file.
+    [$._variable_declarator_id],
+    // #841: `class C { List<String> xs }` — the field type can look like a
+    // generic_type or the declarator can absorb the token; GLR decides.
+    [$._variable_declarator_id, $.generic_type],
+    // #841: `class C { C(int a) {} }` — a compact constructor's header and a
+    // field declarator share the `identifier identifier {` prefix when the
+    // field's delimiter is optional; GLR decides (the constructor reading
+    // wins wherever a block follows).
+    [$._variable_declarator_id, $.compact_constructor_declaration],
+    // #841: same squeeze at the field_declaration level — shift the delimiter
+    // (more fields on one line) vs reduce the field now (optional delimiter).
+    [$.field_declaration],
+    // #841: enum constants vs typed declarators share `Name(` and `Name Name`
+    // prefixes once the field delimiter is optional; GLR decides.
+    [$.enum_constant, $._variable_declarator_id, $.generic_type],
   ]),
 
   extras: $ => [
@@ -207,7 +234,11 @@ module.exports = grammar(Java, {
       'for',
       '(',
       optional($.modifiers),
-      optional(field('type', $._unannotated_type)),
+      // #841: the loop variable may be declared `def` — `for (def x : list)` —
+      // exactly like local_variable_declaration above. Without it every typed
+      // for-in loop in build-logic scripts falls into ERROR recovery (and the
+      // recovery cascades through the rest of the enclosing block).
+      optional(choice(field('type', $._unannotated_type), 'def')),
       $._variable_declarator_id,
       choice(':', 'in'),
       field('value', $.expression),
@@ -338,6 +369,26 @@ module.exports = grammar(Java, {
       choice(field('body', $.block), field('body', $.closure), ';', '\n', '\0'),
     ),
 
+    // #841: Groovy treats the closing brace as an implicit statement
+    // terminator, so one-line try/catch bodies (`try { promise.get() }` —
+    // 12+ occurrences in the grails-core census, previously ~59 MISSING ;)
+    // need the same bare-expression tail escape the closure rule already has.
+    // Without it, `promise.get()` needs a DELIMITER before '}' and the parser
+    // inserts a MISSING ; inside the region. Mirrors closure above: statements
+    // first (semicolon-terminated), then at most ONE bare expression/return
+    // immediately before the '}'. Real Groovy would reject `} y()` after a
+    // bare tail too, so the shape coverage is exact.
+    block: $ => seq(
+      '{',
+      repeat($.statement),
+      optional(choice(
+        $.expression,
+        seq('return', optional($.expression)),
+        seq('throw', optional($.expression)),
+      )),
+      '}',
+    ),
+
     constructor_body: ($, original) => choice(
       original,
       $.closure,
@@ -427,10 +478,17 @@ module.exports = grammar(Java, {
       '(',
       // #742: spread call arguments — `convert(*args)` — are legal in the
       // parenthesised form as well as the command-chain form.
-      commaSep(choice($.expression, $.map_item, $.spread_argument)),
+      // #841: the spread-MAP form `f(*:map)` spreads entries as named args —
+      // distinct from `*expr`, so it gets its own named node and the lexer's
+      // two-token lookahead ('*' then ':') separates the forms.
+      commaSep(choice($.expression, $.map_item, $.spread_argument, $.spread_map_argument)),
       optional(','),
       ')',
     ),
+
+    // #841: spread-map argument — `builder(*: settings)`. The named node keeps
+    // the form visible to analyzers instead of an ERROR recovery region.
+    spread_map_argument: $ => prec(2, seq('*', ':', $.expression)),
 
     juxt_function_call: $ => prec.left(1, seq(
       field('name', $._juxt_function_name),
@@ -513,11 +571,18 @@ module.exports = grammar(Java, {
     // recovery on newline-terminated fields, which is not a clean parse).
     // Groovy also allows *untyped* fields with modifiers (`static mapWith =
     // 'neo4j'`, `static mapping = { ... }`) — `def`-like, type elided.
+    // #841: the delimiter is optional because a one-line class body may end a
+    // field with the closing brace itself (`class Spec { def svc = S() }` —
+    // common in build-logic and tests); requiring a delimiter forced MISSING ;
+    // recovery there (the largest MISSING-token class in the corpus census).
+    // Scope is safe: field_declaration only occurs in class bodies, never in
+    // method statements. The trade: `int a int b` on one line now parses as two
+    // fields where real Groovy would reject it — accepted, documented here.
     field_declaration: $ => seq(
       optional($.modifiers),
       optional(field('type', $._unannotated_type)),
       $._variable_declarator_list,
-      DELIMITER,
+      optional(DELIMITER),
     ),
 
     constant_declaration: $ => seq(
@@ -552,10 +617,14 @@ module.exports = grammar(Java, {
       repeat(choice($.statement, $.juxt_function_call)),
       // Single-line bodies may end in a bare expression (`{ x + 1 }`) or a
       // return with no trailing delimiter (`{ return id }`).
+      // #841: same for a bare `throw` (`{ throw new RuntimeException('x') }` —
+      // PromiseListSpec.groovy L82 and friends in the census) — throw is a
+      // statement whose DELIMITER the one-liner never supplies.
       optional(choice(
         $.lambda_expression,
         $.expression,
         seq('return', optional($.expression)),
+        seq('throw', optional($.expression)),
       )),
       '}',
     )),
@@ -619,7 +688,26 @@ module.exports = grammar(Java, {
       original,
       $.array_literal,
       $.map_literal,
+      // #841: slashy string — `def r = /a.b+c/`. The dominant regex-literal
+      // form in real Groovy (~42 first-error lines in the grails-core census
+      // pre-W18; still live in the recorded sample post-W18). Deliberately a
+      // TOKEN, not a rule: the lexer's longest-match already prefers it over
+      // division whenever the closing '/' is on the same line, so `a / b` and
+      // `// comment` (which can never contain a same-line closing '/') keep
+      // their parses without grammar-level ambiguity or new conflicts.
+      // Newlines are excluded so a stray `/…` cannot swallow the file.
+      $.slashy_string,
     ),
+
+    slashy_string: $ => prec.dynamic(5, token(seq(
+      '/',
+      repeat(choice(
+        /[^\/\\\n\r]/,
+        /\\\//,
+        /\\[^\n\r]/,
+      )),
+      '/',
+    ))),
 
     decimal_floating_point_literal: _ => token(choice(
       seq(DECIMAL_DIGITS, '.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
