@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 38,
-  "failed": 2,
+  "status": "verified",
+  "passed": 40,
+  "failed": 0,
   "gatesTotal": 40,
   "gates": [
     {
@@ -171,9 +171,9 @@
     {
       "name": "m29-precision-ledger",
       "script": "script/m29/verify-precision-ledger.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (13/16 passed, 5 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (16/16 passed, 5 negatives)",
+      "ok": true
     },
     {
       "name": "m29-precision-improvements",
@@ -185,9 +185,9 @@
     {
       "name": "m29-m29-docs",
       "script": "script/m29/verify-m29-docs.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (11/13 passed, 3 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (13/13 passed, 3 negatives)",
+      "ok": true
     },
     {
       "name": "m29-closure",
@@ -288,12 +288,12 @@
       "ok": true
     }
   ],
-  "currentCommit": "7fe8212b4dd8bec623185d14da9c749c53851b31",
+  "currentCommit": "6666e7f5d30c465dd75b4fcc7e66bd81ca09d249",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-15T17:06:05.619Z",
+  "generatedAt": "2026-09-15T17:35:26.474Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T17:06:05.619Z",
-    "contentSha256": "6e9c981086cf85284c814cab16316e27ff15b22656a7962958080ecf7fdea39e"
+    "sealedAt": "2026-09-15T17:35:26.475Z",
+    "contentSha256": "2b7e61146cd2335c86b0a9f6abe6ab416dc91942c199187ad6ab8fabaf999251"
   }
 }
