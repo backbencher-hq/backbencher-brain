@@ -1,0 +1,1052 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-14T13:18:27.102Z",
+  "corpus": "$HOME/fixtures/repositories",
+  "filesPerLang": 4,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent"
+  },
+  "mutation": {
+    "file": "scala:scala3/tests/warn/12974.scala",
+    "trueLine": 19,
+    "mutatedLine": 26,
+    "caught": true
+  },
+  "totals": {
+    "java": {
+      "files": 4,
+      "rels": 1627,
+      "withLine": 0,
+      "noLine": 1627,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "kotlin": {
+      "files": 4,
+      "rels": 77,
+      "withLine": 0,
+      "noLine": 77,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "scala": {
+      "files": 4,
+      "rels": 66,
+      "withLine": 7,
+      "noLine": 59,
+      "consistent": 7,
+      "inconsistent": 0
+    },
+    "groovy": {
+      "files": 0,
+      "rels": 0,
+      "withLine": 0,
+      "noLine": 0,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "typescript": {
+      "files": 4,
+      "rels": 59,
+      "withLine": 0,
+      "noLine": 59,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "javascript": {
+      "files": 4,
+      "rels": 1144,
+      "withLine": 0,
+      "noLine": 1144,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "vue": {
+      "files": 4,
+      "rels": 246,
+      "withLine": 0,
+      "noLine": 246,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "svelte": {
+      "files": 4,
+      "rels": 5,
+      "withLine": 0,
+      "noLine": 5,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "c": {
+      "files": 4,
+      "rels": 233,
+      "withLine": 0,
+      "noLine": 233,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "cpp": {
+      "files": 4,
+      "rels": 220,
+      "withLine": 0,
+      "noLine": 220,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "rust": {
+      "files": 4,
+      "rels": 79,
+      "withLine": 0,
+      "noLine": 79,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "go": {
+      "files": 4,
+      "rels": 143,
+      "withLine": 0,
+      "noLine": 143,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "zig": {
+      "files": 4,
+      "rels": 584,
+      "withLine": 0,
+      "noLine": 584,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "csharp": {
+      "files": 4,
+      "rels": 176,
+      "withLine": 0,
+      "noLine": 176,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "dart": {
+      "files": 4,
+      "rels": 639,
+      "withLine": 0,
+      "noLine": 639,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "swift": {
+      "files": 4,
+      "rels": 51,
+      "withLine": 0,
+      "noLine": 51,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "objc": {
+      "files": 4,
+      "rels": 1837,
+      "withLine": 0,
+      "noLine": 1837,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "php": {
+      "files": 4,
+      "rels": 2830,
+      "withLine": 0,
+      "noLine": 2830,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "ruby": {
+      "files": 4,
+      "rels": 196,
+      "withLine": 0,
+      "noLine": 196,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "python": {
+      "files": 4,
+      "rels": 498,
+      "withLine": 0,
+      "noLine": 498,
+      "consistent": 0,
+      "inconsistent": 0
+    },
+    "haskell": {
+      "files": 4,
+      "rels": 348,
+      "withLine": 0,
+      "noLine": 348,
+      "consistent": 0,
+      "inconsistent": 0
+    }
+  },
+  "perFile": {
+    "java": [
+      {
+        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/AggregateFunction.java",
+        "language": "java",
+        "rels": 49,
+        "withLine": 0,
+        "noLine": 49,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/ScalarFunction.java",
+        "language": "java",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/SqlFunction.java",
+        "language": "java",
+        "rels": 255,
+        "withLine": 0,
+        "noLine": 255,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/Sqlite.java",
+        "language": "java",
+        "rels": 1319,
+        "withLine": 0,
+        "noLine": 1319,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "kotlin": [
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/example/android/build.gradle.kts",
+        "language": "kotlin",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/example/android/settings.gradle.kts",
+        "language": "kotlin",
+        "rels": 18,
+        "withLine": 0,
+        "noLine": 18,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/example/android/app/build.gradle.kts",
+        "language": "kotlin",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/android/build.gradle.kts",
+        "language": "kotlin",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "scala": [
+      {
+        "file": "scala3/tests/warn/12974.scala",
+        "language": "scala",
+        "rels": 35,
+        "withLine": 2,
+        "noLine": 33,
+        "consistent": 2,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/14034b.scala",
+        "language": "scala",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/15981.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 1,
+        "noLine": 8,
+        "consistent": 1,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/warn/17284.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 4,
+        "noLine": 1,
+        "consistent": 4,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "groovy": [],
+    "typescript": [
+      {
+        "file": "vue-core/vitest.config.ts",
+        "language": "typescript",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/scripts/setup-vitest.ts",
+        "language": "typescript",
+        "rels": 48,
+        "withLine": 0,
+        "noLine": 48,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/global.d.ts",
+        "language": "typescript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/vite-debug/main.ts",
+        "language": "typescript",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "javascript": [
+      {
+        "file": "zig/lib/docs/main.js",
+        "language": "javascript",
+        "rels": 774,
+        "withLine": 0,
+        "noLine": 774,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/lib/build-web/main.js",
+        "language": "javascript",
+        "rels": 361,
+        "withLine": 0,
+        "noLine": 361,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/.eslintrc.js",
+        "language": "javascript",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/babel.config.js",
+        "language": "javascript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "vue": [
+      {
+        "file": "vue-element-admin/src/App.vue",
+        "language": "vue",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/zip/index.vue",
+        "language": "vue",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/theme/index.vue",
+        "language": "vue",
+        "rels": 21,
+        "withLine": 0,
+        "noLine": 21,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/complex-table.vue",
+        "language": "vue",
+        "rels": 184,
+        "withLine": 0,
+        "noLine": 184,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "svelte": [
+      {
+        "file": "svelte/playgrounds/sandbox/scripts/main.template.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-online/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-innerwidth/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-dimensions/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "c": [
+      {
+        "file": "zig/bootstrap.c",
+        "language": "c",
+        "rels": 47,
+        "withLine": 0,
+        "noLine": 47,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/tools/macos-headers.c",
+        "language": "c",
+        "rels": 181,
+        "withLine": 0,
+        "noLine": 181,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/main.c",
+        "language": "c",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/test/standalone/windows_entry_points/winmain.c",
+        "language": "c",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "cpp": [
+      {
+        "file": "zig/test/standalone/libcxx/mt_doit.cpp",
+        "language": "cpp",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/test/standalone/libcxx/st_doit.cpp",
+        "language": "cpp",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/test/standalone/c_compiler/test.cpp",
+        "language": "cpp",
+        "rels": 32,
+        "withLine": 0,
+        "noLine": 32,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/src/zig_clang_cc1_main.cpp",
+        "language": "cpp",
+        "rels": 184,
+        "withLine": 0,
+        "noLine": 184,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "rust": [
+      {
+        "file": "tree-sitter-clean/bindings/rust/build.rs",
+        "language": "rust",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/rust/lib.rs",
+        "language": "rust",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/build.rs",
+        "language": "rust",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/binary.rs",
+        "language": "rust",
+        "rels": 33,
+        "withLine": 0,
+        "noLine": 33,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "go": [
+      {
+        "file": "tree-sitter-clean/bindings/go/binding.go",
+        "language": "go",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/checkpoint.go",
+        "language": "go",
+        "rels": 34,
+        "withLine": 0,
+        "noLine": 34,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/commands.go",
+        "language": "go",
+        "rels": 104,
+        "withLine": 0,
+        "noLine": 104,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/experiments.go",
+        "language": "go",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "zig": [
+      {
+        "file": "zls/build.zig",
+        "language": "zig",
+        "rels": 237,
+        "withLine": 0,
+        "noLine": 237,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/ErrorBuilder.zig",
+        "language": "zig",
+        "rels": 183,
+        "withLine": 0,
+        "noLine": 183,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/add_analysis_cases.zig",
+        "language": "zig",
+        "rels": 50,
+        "withLine": 0,
+        "noLine": 50,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis_check.zig",
+        "language": "zig",
+        "rels": 114,
+        "withLine": 0,
+        "noLine": 114,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "csharp": [
+      {
+        "file": "sqlite/tool/GetFile.cs",
+        "language": "csharp",
+        "rels": 84,
+        "withLine": 0,
+        "noLine": 84,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sqlite/tool/Replace.cs",
+        "language": "csharp",
+        "rels": 38,
+        "withLine": 0,
+        "noLine": 38,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/AssemblyInfo.cs",
+        "language": "csharp",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "powershell/test/xUnit/csharp/TestProgressRawUI.cs",
+        "language": "csharp",
+        "rels": 53,
+        "withLine": 0,
+        "noLine": 53,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "dart": [
+      {
+        "file": "proxicall/translate.dart",
+        "language": "dart",
+        "rels": 574,
+        "withLine": 0,
+        "noLine": 574,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/test/url_launcher_windows_test.dart",
+        "language": "dart",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/pigeons/messages.dart",
+        "language": "dart",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/lib/url_launcher_windows.dart",
+        "language": "dart",
+        "rels": 23,
+        "withLine": 0,
+        "noLine": 23,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "swift": [
+      {
+        "file": "tree-sitter-clean/Package.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "swift-nio/Package.swift",
+        "language": "swift",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "swift-nio/dev/stackdiff/Package.swift",
+        "language": "swift",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "swift-nio/dev/stackdiff/Tests/StacksTests/AggregateStackTests.swift",
+        "language": "swift",
+        "rels": 41,
+        "withLine": 0,
+        "noLine": 41,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "objc": [
+      {
+        "file": "zig/test/standalone/ios/main.m",
+        "language": "objective-c",
+        "rels": 25,
+        "withLine": 0,
+        "noLine": 25,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sdwebimage/Tests/Tests/SDAnimatedImageTest.m",
+        "language": "objective-c",
+        "rels": 760,
+        "withLine": 0,
+        "noLine": 760,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sdwebimage/Tests/Tests/SDCategoriesTests.m",
+        "language": "objective-c",
+        "rels": 61,
+        "withLine": 0,
+        "noLine": 61,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "sdwebimage/Tests/Tests/SDImageCacheTests.m",
+        "language": "objective-c",
+        "rels": 991,
+        "withLine": 0,
+        "noLine": 991,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "php": [
+      {
+        "file": "slim/tests/AppTest.php",
+        "language": "php",
+        "rels": 1845,
+        "withLine": 0,
+        "noLine": 1845,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/CallableResolverTest.php",
+        "language": "php",
+        "rels": 384,
+        "withLine": 0,
+        "noLine": 384,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/MiddlewareDispatcherTest.php",
+        "language": "php",
+        "rels": 447,
+        "withLine": 0,
+        "noLine": 447,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/ResponseEmitterTest.php",
+        "language": "php",
+        "rels": 154,
+        "withLine": 0,
+        "noLine": 154,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "ruby": [
+      {
+        "file": "swift-nio/scripts/analyze_performance_results.rb",
+        "language": "ruby",
+        "rels": 72,
+        "withLine": 0,
+        "noLine": 72,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/pkg/brew/ripgrep-bin.rb",
+        "language": "ruby",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/HomebrewFormula/ripgrep-bin.rb",
+        "language": "ruby",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/helper.rb",
+        "language": "ruby",
+        "rels": 90,
+        "withLine": 0,
+        "noLine": 90,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "python": [
+      {
+        "file": "zig/tools/lldb_pretty_printers.py",
+        "language": "python",
+        "rels": 361,
+        "withLine": 0,
+        "noLine": 361,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/tools/stage1_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/tools/stage2_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/tools/std_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 76,
+        "withLine": 0,
+        "noLine": 76,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "haskell": [
+      {
+        "file": "shellcheck/shellcheck-dev.hs",
+        "language": "haskell",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/shellcheck.hs",
+        "language": "haskell",
+        "rels": 142,
+        "withLine": 0,
+        "noLine": 142,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/test/shellcheck.hs",
+        "language": "haskell",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/AST.hs",
+        "language": "haskell",
+        "rels": 180,
+        "withLine": 0,
+        "noLine": 180,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ]
+  },
+  "skipped": [
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/example/android/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/example/android/settings.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/example/android/app/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/android/build.gradle"
+    }
+  ]
+}
