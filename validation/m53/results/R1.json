@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 35,
-  "failed": 5,
+  "status": "verified",
+  "passed": 40,
+  "failed": 0,
   "gatesTotal": 40,
   "gates": [
     {
@@ -24,16 +24,16 @@
     {
       "name": "m25-harness-core",
       "script": "script/m25/verify-harness-core.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (26/27 passed, 6/6 mutants caught)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (27/27 passed, 6/6 mutants caught)",
+      "ok": true
     },
     {
       "name": "m25-closure",
       "script": "script/m25/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (36/37 passed, 3 negative)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (37/37 passed, 3 negative)",
+      "ok": true
     },
     {
       "name": "m26-webview-core",
@@ -192,9 +192,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (28/32 passed, 3 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true
     },
     {
       "name": "m42-enrichment",
@@ -241,9 +241,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (24/30 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
+      "ok": true
     },
     {
       "name": "m44-hub-tree",
@@ -283,17 +283,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (42/48 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
+      "ok": true
     }
   ],
-  "currentCommit": "866ba066f0785786fe24ba009c0cb33bfdca69b4",
+  "currentCommit": "9815de0887fcb988f5bae8a700d88d4684df792a",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-15T18:52:40.338Z",
+  "generatedAt": "2026-09-15T19:23:23.579Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T18:52:40.339Z",
-    "contentSha256": "edf11bd852519cfcda86f64acf5a671ac1dc38b617652e952d8ee9b4b7d68fc3"
+    "sealedAt": "2026-09-15T19:23:23.580Z",
+    "contentSha256": "06caa0bcc40f31b7e222723173d454b94d8c25837368eff6227d86ba2d3b8a7e"
   }
 }

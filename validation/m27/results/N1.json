@@ -27,10 +27,10 @@
     }
   ],
   "nvim": "NVIM v0.12.5",
-  "currentCommit": "866ba066f0785786fe24ba009c0cb33bfdca69b4",
+  "currentCommit": "9815de0887fcb988f5bae8a700d88d4684df792a",
   "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
   "evidenceFile": "N1.json",
-  "generatedAt": "2026-09-15T18:41:37.530Z",
+  "generatedAt": "2026-09-15T19:11:35.126Z",
   "claimLevel": "I3 — real editor session, machine-driven, real server over stdio",
   "limitations": [
     "Fixture seeded with the shared-core convention (real hash + stat) — the same shape M25.E5 uses.",
@@ -38,7 +38,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T18:41:37.531Z",
-    "contentSha256": "aa31688b89c7693247873ec3186ebc363370fac9ae2d84fcd46c6a8ddc110b6c"
+    "sealedAt": "2026-09-15T19:11:35.128Z",
+    "contentSha256": "4c7fad5f779cbb7cb78ceb9c5d1e3c02ccd59fc1b0abb59784d90ce6b547e0c8"
   }
 }

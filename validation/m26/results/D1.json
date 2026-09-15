@@ -20,12 +20,12 @@
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 3,
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "866ba066f0785786fe24ba009c0cb33bfdca69b4",
+  "currentCommit": "9815de0887fcb988f5bae8a700d88d4684df792a",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-15T18:40:51.130Z",
+  "generatedAt": "2026-09-15T19:10:38.338Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T18:40:51.130Z",
-    "contentSha256": "e1921cf1fa784e4ed0c95f402396a01908e3b13070ca0abf8a42c9de73269bd1"
+    "sealedAt": "2026-09-15T19:10:38.338Z",
+    "contentSha256": "5840562eee2b2b5e96350c8e1e8bb079985fc6967125cbc8ad60a74062f201d3"
   }
 }
