@@ -175,7 +175,7 @@ export interface GraphEdge {
   confidence: number
   isCrossLanguage: boolean
   bridgeMechanism?: string
-  callSite: { file: string; line: number } // source-side location of the edge
+  callSite: { file: string; line: number | null } // source-side location of the edge; null = the analyzer could not derive one — never a fabricated number
   depth: number
   /** brain_relationship row id. Every edge traces to its stored row
    *  (M26.W2 evidence requirement); an edge without one must never be
