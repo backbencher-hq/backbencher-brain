@@ -618,10 +618,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: imp.module || "",
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
-        // M59 (#825): an import reference occurs at its import statement;
-        // handleImport already records that range. Omitted, not zeroed, when
-        // absent (#820).
-        ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
+        // M59 (#825): an import reference occurs where its TARGET is written —
+        // the module's last segment (handleImport records that line), falling
+        // back to the statement's start. Omitted, never zeroed, when neither is
+        // known (#820).
+        ...(imp.moduleLine || imp.range?.startLine ? { line_number: imp.moduleLine || imp.range!.startLine } : {}),
         metadata: { isImportDep: true },
       })
     }
@@ -835,12 +836,25 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the declaration is written. Skipping leading annotations (and `modifiers`
    * wrappers) gives the declaration keyword line, which is what a tool must
    * point at and what the tier contract can check against the source.
+   *
+   * COMMENTS are skipped for the same reason, and that is not hypothetical —
+   * measured on cats-effect's QueueBenchmark.scala, where
+   *
+   *     @Param(Array("32768")) // must be a power of 2
+   *     var size: Int = _
+   *
+   * gives `var_definition` the named children `annotation, comment, identifier,
+   * type_identifier, wildcard`: skipping only the annotation selected the
+   * trailing COMMENT, so the symbol and its `contains` edge landed on the
+   * annotation's line (47, column 26) instead of the declaration's (48, column
+   * 6). A comment is text ABOUT the declaration, never the declaration.
    */
   private declarationLineNode(node: Node): Node {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "annotation" || c.type === "modifiers") continue
+      if (c.type === "comment" || c.type === "block_comment" || c.type === "line_comment") continue
       return c
     }
     return node
@@ -2490,13 +2504,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const parts: string[] = []
     const selectors: { local: string; imported: string }[] = []
+    // M59 (#825): the line the TARGET of the import edge is written on. The
+    // target is the dotted module, and its LAST segment is the name the edge
+    // names — which is not always on the statement's first line. Measured on
+    // cats-effect TestInstances.scala: the module `cats.effect.kernel.testkit`
+    // opens on 21 while the renamed segment
+    // (`TestInstances => KernelTestkitTestInstances`) that the analyzer appends
+    // to it is written on 29, so the edge claimed a line its own name is not on.
+    // Tracking the last segment's line is exact for every form (plain, renamed,
+    // aliased) because `parts` IS the target.
+    let moduleLine = node.startPosition.row + 1
 
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
       if (!child) continue
 
       if (child.type === "identifier" || child.type === ".") {
-        if (child.type === "identifier") parts.push(child.text)
+        if (child.type === "identifier") { parts.push(child.text); moduleLine = child.startPosition.row + 1 }
       } else if (child.type === "namespace_wildcard") {
         selectors.push({ local: "*", imported: "*" })
       } else if (child.type === "namespace_selectors") {
@@ -2516,6 +2540,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             const local = sel.namedChild(1)
             if (imported && local) {
               parts.push(imported.text)
+              moduleLine = imported.startPosition.row + 1
               selectors.push({ local: local.text, imported: imported.text })
             }
           }
@@ -2528,6 +2553,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const alias = child.namedChild(1)
         if (original && original.type === "identifier") {
           parts.push(original.text)
+          moduleLine = original.startPosition.row + 1
           selectors.push({ local: alias && alias.type === "identifier" ? alias.text : original.text, imported: original.text })
         }
       }
@@ -2547,6 +2573,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     imports.push({
       module: pathStr,
+      // M59 (#825): the line the module's last segment is written on (see above).
+      moduleLine,
       // S1.25 (M49 #715): family consumers read `items` (engine.ts
       // ImportInfo.items: string[]) — scala was the ONLY family member
       // populating the legacy `specifiers` shape, so downstream import
