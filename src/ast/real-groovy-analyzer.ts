@@ -301,7 +301,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           pushedScope = true
         }
       } else if (type === "method_declaration" || type === "constructor_declaration" || type === "function_definition") {
-        const isConstructor = type === "constructor_declaration"
+        const isConstructorRaw = type === "constructor_declaration"
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "string_literal")
         if (nameNode) {
           const rawName = nameNode.type === "string_literal"
@@ -318,6 +318,19 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const visibility = this.extractVisibility(node)
           const annotations = this.extractAnnotations(node)
 
+          // #841 round 3 (def-method contract): a class-body method declared
+          // `def name() {}` parses as constructor_declaration because Java's
+          // method header requires a type and `def` is not one — the grammar
+          // squeezes `def` into a separate bogus field and the remainder reads
+          // as a constructor. A constructor's name MUST equal its class; when
+          // it does not, this is a def-returning method, not a constructor
+          // (emits kind=method on both wasms; the grammar-level fix regressed
+          // `def x = …` fields and was reverted — see git history).
+          const enclosingName = scopeStack.length > 0 && scopeStack[scopeStack.length - 1].kind === ASTEngine.SymbolKind.Class
+            ? scopeStack[scopeStack.length - 1].name
+            : undefined
+          const isMisnamedCtor = isConstructorRaw && enclosingName !== undefined && rawName !== enclosingName
+          const isConstructor = isConstructorRaw && !isMisnamedCtor
           const parameters: ASTEngine.Parameter[] = []
           const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
           if (paramList) {
@@ -425,6 +438,14 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (child?.type !== "variable_declarator") continue
           const idNode = this.findChild(child, (n) => n.type === "identifier")
           if (!idNode || !ownerName) continue
+          // #841 round 3 (def-squeeze phantom): when a `def name() {}` method
+          // is force-split, the grammar also manufactures a bogus field whose
+          // declared "name" is literally the keyword `def` (the type token it
+          // absorbed). No real Groovy field can be named `def` — reserved — so
+          // such symbols are parse artifacts, never emitted. The same shape
+          // legitimately carries the SQUEEZED METHOD's calls, which attribute
+          // to the enclosing class context below.
+          if (idNode.text === "def") continue
           symbols.push({
             name: idNode.text,
             kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
@@ -506,6 +527,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.7,
             metadata: { relationshipType: "juxt_call" },
+          })
+        }
+      } else if (type === "leading_dot_call") {
+        // #841 round 3: Groovy 3 leading-dot chain continuation. When the
+        // previous statement is complete the newline-terminated segment
+        // becomes its own statement node (documented grammar tradeoff); the
+        // call must still be analyzer-visible and attributed to the enclosing
+        // scope, exactly like a same-line method_invocation.
+        const nameNode = node.childForFieldName("name")
+        if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
+          relationships.push({
+            source: parentContext?.name ?? "(script)",
+            target: nameNode.text,
+            type: ASTEngine.RelationshipType.Calls,
+            confidence: 0.7,
+            metadata: { relationshipType: "leading_dot_call" },
           })
         }
       } else if (type === "object_creation_expression") {

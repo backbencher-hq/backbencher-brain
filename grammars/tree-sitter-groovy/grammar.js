@@ -152,11 +152,71 @@ module.exports = grammar(Java, {
     // #841: with '.' a legal statement FOLLOW (leading_dot_call), the juxt
     // argument machinery's type-vs-expression prefix ambiguity becomes
     // reachable at the dot; GLR decides (established pattern in this file).
-    [$.primary_expression, $._unannotated_type, $.scoped_type_identifier, $._juxt_argument_list],
-    // #841: the chain tail (`if (c) x.f()
+    [$.primary_expression, $._unannotated_type, $.scoped_type_identifier, $._juxt_argument_list],      // #841: the chain tail (`if (c) x.f()
     //     .g()` — the if-consequence expression may extend over the dot or
     // end and let leading_dot_call take it); GLR decides.
     [$.expression, $.object_creation_expression, $.field_access, $.template_expression, $.method_invocation],
+    // #841 round 3: `f(List<String>)` — the type reading vs a comparison
+    // chain `f(List < String) > (...)`; the comparison dies at `> (`.
+    [$.expression, $._unannotated_type],
+    // #841 round 3: `Map<String, T> m` / `foo(Map < String …)` — the type
+    // prefix is shared between generic_type, a bare type operand, and a
+    // primary expression (the established juxt ambiguity, now with the
+    // type-value reading added); GLR decides.
+    [$.primary_expression, $._unannotated_type, $.generic_type],
+    // #841 round 3: string/GString call names (`delegate."$k"(v)`) make a
+    // string a possible callee, so `"lit" (args)` — a string callee vs a
+    // string command-arg — needs GLR.
+    [$._literal, $.method_invocation, $._juxt_function_name],
+    // #841 round 3: `x.f(Boolean)` — the callee/object prefix is shared
+    // between a method invocation, a primary expression, and a type operand
+    // (`f(Boolean)` where Boolean is the class literal); GLR decides.
+    [$.primary_expression, $.method_invocation, $._unannotated_type],
+    // #841 round 3: `(x) -> …` lambda vs `(Type) x` cast vs `(x)` expression
+    // — the parenthesized prefix is shared once types are value expressions.
+    [$.lambda_expression, $.primary_expression, $._unannotated_type],
+    // #841 round 3: string callee vs string argument (`"lit"."m"()` paths).
+    [$._literal, $.method_invocation],
+    // #841 round 3: command-chain callee/object vs type operand vs
+    // method-invocation object — the juxt quartet with types added.
+    [$.primary_expression, $.method_invocation, $._unannotated_type, $._juxt_function_name],
+    // #841 round 3: `"lit".field` — string object field access vs a bare
+    // string literal (juxt paths).
+    [$._literal, $.field_access],
+    // #841 round 3: string/GString object vs bare primary in the access
+    // prefix (juxt paths).
+    [$.primary_expression, $.field_access],
+    // #841 round 3: `Map<String, T>` type prefix vs `map.field` access in
+    // the juxt/type paths; GLR decides.
+    [$.field_access, $.generic_type],
+    // #841 round 3: object prefix shared between field access, primary, and
+    // type operand (`Map.Entry` as type vs access); GLR decides.
+    [$.primary_expression, $.field_access, $._unannotated_type],
+    // #841 round 3: `org.springframework.X` scoped type vs dotted access
+    // chain; GLR decides.
+    [$.primary_expression, $.field_access, $._unannotated_type, $.scoped_type_identifier],
+    // #841 round 3: `Outer.@Inner f` style prefix vs `x.@field` attribute
+    // access; GLR decides.
+    [$.field_access, $._unannotated_type],
+    // #841 round 3: GString call name (`obj."$k"(v)`) shares the dotted
+    // GString prefix with template pieces and field access; GLR decides.
+    [$.field_access, $.template_expression, $.method_invocation],
+    // #841 round 3: GString literal vs template-piece vs dotted-access
+    // prefix (juxt paths).
+    [$._literal, $.field_access, $.template_expression],
+    // #841 round 3: `new Outer().new Inner()` — the object-creation rule is
+    // self-nesting through the primary '.' prefix; GLR decides.
+    [$.object_creation_expression],
+    // #841 round 3: GString template vs method-invocation object prefix
+    // (`"$k".m()`); GLR decides.
+    [$.template_expression, $.method_invocation],
+    // #841 round 3: `super.m()[i]` — self-nesting through the super prefix.
+    [$.method_invocation],
+    // #841 round 3: closure-body starts (`{ x …`) share the declarator/expr
+    // prefix — the established quartet with closure added.
+    [$.primary_expression, $._variable_declarator_id, $._unannotated_type, $.closure],
+    // #841 round 3: `super.x.@y[i]` — self-nesting through the super prefix.
+    [$.field_access],
   ]),
 
   extras: $ => [
@@ -207,6 +267,15 @@ module.exports = grammar(Java, {
       original,
       $.closure,
       $.range_expression,
+      // #841 round 3: primitive types in value position — `type == boolean`,
+      // `getMethod('setActive', boolean)`. Token-level superset: these lex as
+      // fixed keywords, so no dotted-access ambiguity exists (the earlier
+      // full type_expression node regressed dotted chains and was reverted —
+      // `String[]`/`List<String>` value operands remain a documented gap).
+      $.boolean_type,
+      $.integral_type,
+      $.floating_point_type,
+      $.void_type,
     ),
 
     lambda_expression: $ => seq(
@@ -425,7 +494,25 @@ module.exports = grammar(Java, {
       // the call is still analyzer-visible and attributed to the enclosing
       // scope, which is what the symbol graph consumes.
       $.leading_dot_call,
+      // #841 round 3: operator-first line continuations — real Groovy
+      // continues an expression across a newline with the operator LEADING
+      // the next line (`return a > 1` / `  && ClassUtils.isPresent(b)`,
+      // `.onError(c)` / `  as Promise<List<T>>`, `.getProperty(p, List)` /
+      // `  ?: []`). The newline was already consumed as the previous
+      // statement's DELIMITER, so like leading_dot_call these become their
+      // own statement node; dynamic precedence -2 keeps same-line
+      // continuation winning wherever syntactically possible. AST tradeoff,
+      // documented: the continued operand is analyzer-visible as its own
+      // node instead of ERROR-recovering the whole region.
+      $.operator_continuation,
     ),
+
+    operator_continuation: $ => prec.dynamic(-2, prec.right(choice(
+      seq(field('operator', choice('&&', '||')), field('operand', $.expression)),
+      seq('as', field('type', $._type)),
+      seq('?:', field('default', $.expression)),
+    ))),
+
 
     leading_dot_call: $ => prec.dynamic(-2, prec.right(seq(
       '.',
@@ -464,7 +551,10 @@ module.exports = grammar(Java, {
         choice('.', '?.', '*.'),
         $.super,
       )),
-      choice('.', '?.', '*.', '.@'),
+      // #841 round 3: `.&` method reference — `this.&baz`, `obj.&method` —
+      // first-class closure values in Groovy (method pointers). Lexically the
+      // '.&' token is longest-match over '.' + '&', so `a & b.c` is untouched.
+      choice('.', '?.', '*.', '.@', '.&'),
       field('field', choice($.identifier, $._reserved_identifier, $.this, $.string_literal, $.character_literal)),
     ),
 
@@ -479,7 +569,10 @@ module.exports = grammar(Java, {
 
     method_invocation: $ => prec.right(seq(
       choice(
-        field('name', choice($.identifier, $._reserved_identifier)),
+        // #841 round 3: GString (`delegate."$entry.key"(v)`) and quoted
+        // (`bean."autowire"`) method names — dynamic dispatch by name. Also
+        // slashy names: `mock./print.*/(* _)` names methods by regex.
+        field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.template_expression, $.slashy_string)),
         seq(
           field('object', choice($.primary_expression, $.super)),
           // Groovy adds safe navigation (?.) and spread-dereference (*.) to
@@ -490,7 +583,7 @@ module.exports = grammar(Java, {
             '.',
           )),
           field('type_arguments', optional($.type_arguments)),
-          field('name', choice($.identifier, $._reserved_identifier)),
+          field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.template_expression, $.slashy_string)),
         ),
       ),
       choice(
@@ -559,6 +652,9 @@ module.exports = grammar(Java, {
       $.identifier,
       $.primary_expression,
       $.string_literal,
+      // #841 round 3: interaction-DSL callees name methods by regex —
+      // `./print.*/(* _)`.
+      $.slashy_string,
       // #742: `assertNull null.encodeAsBase64()` — `null` (and Java's
       // `true`/`false` literals) are legal command-chain callees (Groovy
       // allows any expression there).
@@ -578,6 +674,9 @@ module.exports = grammar(Java, {
       // on a literal is a legal command-chain argument.
       $.field_access,
       $.method_invocation,
+      // #841 round 3: `assertEquals "test", new String(bytes.decodeBase64())`
+      // — constructor calls are legal command arguments.
+      $.object_creation_expression,
       // #742: a trailing closure is the canonical Groovy command-argument
       // (`findAll { }`, `"/url" { mappings }`).
       $.closure,
@@ -648,10 +747,19 @@ module.exports = grammar(Java, {
       // `{ a, b -> ... }` (named, arrow form), `{ -> ... }` (zero-arg), or
       // typed (`{ MethodNode mn -> ... }`). Without it, `each { key, value ->
       // ... }` — ubiquitous in real code — forces ERROR recovery.
-      optional(seq(
-        repeat(seq(optional($._unannotated_type), $.identifier, ',')),
-        optional($._unannotated_type),
-        $.identifier,
+      optional(choice(
+        seq(
+          repeat(seq(optional(choice($._unannotated_type, 'def')), $.identifier, ',')),
+          // #841 round 3: typed closure params may be declared `def`
+          // (`out./print.*/(* _) >> { def args -> … }`, GrailsConsoleSpec) —
+          // def is not a type in the grammar's eyes, so the param list needs
+          // it explicitly.
+          optional(choice($._unannotated_type, 'def')),
+          $.identifier,
+          '->',
+        ),
+        // #841 round 3: zero-arg arrow form `{ -> ... }`
+        // (GrailsApplicationLifeCycleAdapter `return { -> }`).
         '->',
       )),
       repeat(choice($.statement, $.juxt_function_call)),
@@ -665,13 +773,19 @@ module.exports = grammar(Java, {
         $.expression,
         seq('return', optional($.expression)),
         seq('throw', optional($.expression)),
+        // #841 round 3: bare one-liner assert — `'groovy'.each { assert
+        // manager.getCache(it) }` — assert is newline-terminated as a
+        // statement, so before '}' it needs the tail escape too.
+        seq('assert', $.expression, optional(seq(':', $.expression))),
       )),
       '}',
     )),
 
     range_expression: $ => prec.right(PREC.RANGE, seq(
       field('start', $.expression),
-      '..',
+      // #841 round 3: exclusive range `..<` — `sequence[i..<(i + degree)]`.
+      // '..<' is longest-match over '..' + '<', so comparisons are untouched.
+      choice('..', '..<'),
       field('end', $.expression),
     )),
 
