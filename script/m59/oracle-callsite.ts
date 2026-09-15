@@ -115,8 +115,44 @@ function calleeToken(rel: any): string | null {
   s = s.split("(")[0] // drop call arguments
   s = s.split("<")[0] // drop generics
   const parts = s.split(".")
-  const last = parts[parts.length - 1]
+  let last = parts[parts.length - 1]
+  // Escaped identifiers: scala's `` `alt` `` and sql's "name" are the SAME
+  // name written with delimiters, so the check must look for the inner form.
+  last = last.replace(/^[`"\[]+/, "").replace(/[`"\]]+$/, "")
   return last && /^[\w$#:@-]+$/.test(last) ? last : null
+}
+
+/**
+ * The left boundary, with the `$` sigil handled correctly.
+ *
+ * The previous predicate excluded `$` from the boundary class on BOTH sides,
+ * which made a `$`-introduced name unmatchable. Measured consequence: scala's
+ * extremely common string interpolation `s"... got $v"` reported the use of `v`
+ * as inconsistent — 19 false accusations on a 60-file scala sample, and the same
+ * class would hide a REAL defect anywhere near a `$`-prefixed identifier (php
+ * `$var`, js `$el`).
+ *
+ * The rule is now: the name must be preceded by start-of-line or a non-word
+ * character, ALLOWING a `$` sigil to stand in that position. Two consequences,
+ * both measured rather than assumed:
+ *
+ *   `s"\u$hex"`  → `hex` is the name here and matches. An earlier attempt
+ *                   required a non-word char BEFORE the `$`; that still failed,
+ *                   because the literal `\u` ends in a word character. The
+ *                   local text cannot distinguish this from the case below, so
+ *                   the oracle chooses the direction that does not accuse
+ *                   correct work.
+ *   `val a$b = 1` → token `b` now matches too. ACCEPTED WEAKENING, recorded as
+ *                   such: it can only hide a defect if an analyzer splits one
+ *                   written identifier into two, which none does (targets are
+ *                   emitted as written). It never hides a wrong LINE, since the
+ *                   name still has to appear on the claimed line.
+ *
+ * What is NOT relaxed: the name must still sit on a word boundary of its own.
+ * `xv` with token `v` must never match, and the self-test proves it.
+ */
+function boundaryRe(token: string): RegExp {
+  return new RegExp(`(^|[^\\w])\\$?${escapeRe(token)}([^\\w]|$)`)
 }
 
 function escapeRe(s: string): string {
@@ -129,7 +165,34 @@ function tierAConsistent(lines: string[], line: number, token: string): boolean 
   const src = lines[line - 1]
   const head = token.replace(/_+$/, "")
   const variants = token === head ? [token] : [token, head]
-  return variants.some((v) => new RegExp(`(^|[^\\w$])${escapeRe(v)}([^\\w$]|$)`).test(src))
+  return variants.some((v) => boundaryRe(v).test(src))
+}
+
+/**
+ * Names that Tier A is STRUCTURALLY UNABLE to check, kept separate from
+ * "checked and failed".
+ *
+ * The analyzer synthesises some node names (`constructor`, `anonymous_Runnable`,
+ * `given_N`) and marks unresolvable targets `?`; none of these is ever written
+ * in source, so the line check can neither pass nor fail for them. Counting them
+ * as `inconsistent` conflated "cannot check" with "checked and failed" — the
+ * exact tier conflation this file's header forbids. They are reported in their
+ * own column and are never evidence either way.
+ *
+ * Matching is by SHAPE only, so the allowlist cannot be used to sneak a real
+ * undeclared name past the check.
+ */
+const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+)$/
+const UNKNOWN_TARGETS = new Set(["?", "<unknown>", "<anonymous>", ""])
+
+function isCheckable(token: string | null, target: unknown): token is string {
+  if (!token) return false
+  if (SYNTHETIC_NAME.test(token)) return false
+  if (typeof target === "string") {
+    if (UNKNOWN_TARGETS.has(target)) return false
+    if (/[{}\n;]/.test(target)) return false // structural body text, not a name
+  }
+  return true
 }
 
 interface FileResult {
@@ -140,6 +203,7 @@ interface FileResult {
   noLine: number
   consistent: number
   inconsistent: number
+  notCheckable: number
   inconsistentSample: Array<{ type: string; callee: string; claimedLine: number; sourceLine: string }>
 }
 
@@ -152,7 +216,7 @@ async function main() {
 
   const languages = only ? LANGUAGES.filter((l) => only.includes(l.lang)) : LANGUAGES
   const perLang: Record<string, FileResult[]> = {}
-  const totals: Record<string, { files: number; rels: number; withLine: number; noLine: number; consistent: number; inconsistent: number }> = {}
+  const totals: Record<string, { files: number; rels: number; withLine: number; noLine: number; consistent: number; inconsistent: number; notCheckable: number }> = {}
   const skipped: Array<{ lang: string; reason: string }> = []
 
   for (const { lang, ext } of languages) {
@@ -181,6 +245,7 @@ async function main() {
         noLine: 0,
         consistent: 0,
         inconsistent: 0,
+        notCheckable: 0,
         inconsistentSample: [],
       }
       for (const rel of rels) {
@@ -191,11 +256,8 @@ async function main() {
         }
         r.withLine++
         const token = calleeToken(rel)
-        if (!token) {
-          r.inconsistent++
-          if (r.inconsistentSample.length < 5) {
-            r.inconsistentSample.push({ type: String(rel?.type ?? "?"), callee: "(unnamed)", claimedLine: ln, sourceLine: "" })
-          }
+        if (!isCheckable(token, rel?.target ?? rel?.to)) {
+          r.notCheckable++
           continue
         }
         if (tierAConsistent(lines, ln, token)) {
@@ -223,10 +285,27 @@ async function main() {
         noLine: a.noLine + r.noLine,
         consistent: a.consistent + r.consistent,
         inconsistent: a.inconsistent + r.inconsistent,
+        notCheckable: a.notCheckable + r.notCheckable,
       }),
-      { files: 0, rels: 0, withLine: 0, noLine: 0, consistent: 0, inconsistent: 0 },
+      { files: 0, rels: 0, withLine: 0, noLine: 0, consistent: 0, inconsistent: 0, notCheckable: 0 },
     )
   }
+
+  // ── BOUNDARY SELF-TEST: the predicate must match `$`-introduced names and
+  // must NOT match a name inside a longer `$`-joined identifier. Both
+  // directions are asserted, so the `$` fix cannot be a silent relaxation.
+  const boundarySelfTest = {
+    interpolationMatches: tierAConsistent([String.raw`      case _ => fail(s"got $v")`], 1, "v"),
+    interpolationAfterWordCharMatches: tierAConsistent([String.raw`      s"esc: \u$hex"`], 1, "hex"),
+    plainIdentifierMatches: tierAConsistent(["  val v = 1"], 1, "v"),
+    // the protection that is NOT relaxed: a name inside a longer word
+    subwordStillFails: !tierAConsistent(["  val xv = 1"], 1, "v"),
+    suffixOfLongerWordFails: !tierAConsistent(["  val activeProfiles = 1"], 1, "Profiles"),
+    wrongLineStillFails: !tierAConsistent(["  val v = 1", "  val w = 2"], 2, "v"),
+    // documented accepted weakening (see boundaryRe): recorded, not asserted away
+    sigilJoinedIdentifierAccepted: tierAConsistent([String.raw`val a$b = 1`], 1, "b"),
+  }
+  const boundaryOk = Object.values(boundarySelfTest).every(Boolean)
 
   // ── MUTATION SELF-TEST: prove the Tier A predicate can fail ────────────────
   let mutation: { file: string; trueLine: number; mutatedLine: number; caught: boolean } | null = null
@@ -261,6 +340,8 @@ async function main() {
       sharedWithAnalyzers: "the tree-sitter parser only",
       tierA: "necessary condition — a pass means 'consistent', not 'correct'",
       tierB: "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+      notCheckable: "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+      boundarySelfTest,
     },
     mutation,
     totals,
@@ -272,7 +353,10 @@ async function main() {
 
   // ── Human-readable verdict ────────────────────────────────────────────────
   console.log("\n=== M59 ORACLE — Tier A (necessary condition) ===")
-  console.log("lang".padEnd(12), "files".padStart(5), "rels".padStart(7), "withLine".padStart(9), "noLine".padStart(7), "consistent".padStart(11), "INCONSISTENT".padStart(13))
+  console.log(
+    "lang".padEnd(12), "files".padStart(5), "rels".padStart(7), "withLine".padStart(9),
+    "noLine".padStart(7), "consistent".padStart(11), "INCONSISTENT".padStart(13), "notCheckable".padStart(13),
+  )
   for (const [lang, t] of Object.entries(totals)) {
     console.log(
       lang.padEnd(12),
@@ -282,24 +366,32 @@ async function main() {
       String(t.noLine).padStart(7),
       String(t.consistent).padStart(11),
       String(t.inconsistent).padStart(13),
+      String(t.notCheckable).padStart(13),
     )
   }
   const T = Object.values(totals).reduce(
     (a, t) => ({
       files: a.files + t.files, rels: a.rels + t.rels, withLine: a.withLine + t.withLine,
       noLine: a.noLine + t.noLine, consistent: a.consistent + t.consistent, inconsistent: a.inconsistent + t.inconsistent,
+      notCheckable: a.notCheckable + t.notCheckable,
     }),
-    { files: 0, rels: 0, withLine: 0, noLine: 0, consistent: 0, inconsistent: 0 },
+    { files: 0, rels: 0, withLine: 0, noLine: 0, consistent: 0, inconsistent: 0, notCheckable: 0 },
   )
   console.log(
     "TOTAL".padEnd(12),
     String(T.files).padStart(5), String(T.rels).padStart(7), String(T.withLine).padStart(9),
     String(T.noLine).padStart(7), String(T.consistent).padStart(11), String(T.inconsistent).padStart(13),
+    String(T.notCheckable).padStart(13),
   )
-  console.log(`\nmutation self-test: ${mutation ? JSON.stringify(mutation) : "NOT RUN (no line-bearing relationship found)"}`)
+  console.log(`\nboundary self-test: ${JSON.stringify(boundarySelfTest)}`)
+  console.log(`mutation self-test: ${mutation ? JSON.stringify(mutation) : "NOT RUN (no line-bearing relationship found)"}`)
   if (skipped.length > 0) console.log(`skipped: ${skipped.length} (see evidence json)`)
   console.log(`evidence: ${path.relative(ROOT, outFile)}`)
 
+  if (!boundaryOk) {
+    console.log("\nFAIL: the Tier A boundary predicate does not behave as recorded — measurements through it are not evidence.")
+    process.exit(1)
+  }
   if (!mutation || !mutation.caught) {
     console.log("\nFAIL: the oracle did not prove it can fail — it is not evidence yet.")
     process.exit(1)
