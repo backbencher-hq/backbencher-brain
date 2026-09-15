@@ -90,7 +90,7 @@ export function completionBarViolations(input: BarInput): string[] {
   const forkRecords = ["F-CURSOR.json", "F-ANTIGRAVITY.json", "F-WINDSURF.json"]
   const forkVerified = forkRecords.filter((f) => {
     if (!input.evidencePresent(f)) return false
-    const rec = JSON.parse(readFileSync(join(RESULTS, f), "utf8")) as { status?: string }
+    const rec = parseSealedRecord(join(RESULTS, f)) as { status?: string }
     return rec.status === "verified"
   })
   if (forkVerified.length < 1) v.push("bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)")
@@ -239,7 +239,7 @@ const barInput: BarInput = {
   osFields: Object.fromEntries(
     ["E5.json", "F-CURSOR.json", "F-ANTIGRAVITY.json", "F-WINDSURF.json", "E7-linux.json"].map((f) => {
       try {
-        const rec = JSON.parse(readFileSync(join(RESULTS, f), "utf8")) as { os?: string }
+        const rec = parseSealedRecord(join(RESULTS, f)) as { os?: string }
         return [f, rec.os]
       } catch {
         return [f, undefined]

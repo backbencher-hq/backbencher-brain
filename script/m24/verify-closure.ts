@@ -178,7 +178,7 @@ for (const lang of LAUNCH_LANGUAGES) {
 }
 // The six feature operations must all be measured with budgets met on at
 // least one verified harness leg.
-const v1 = JSON.parse(readFileSync(path.join(RESULTS, "V1.json"), "utf8"))
+const v1 = parseSealedRecord(path.join(RESULTS, "V1.json"))
 const verifiedLeg = (v1.runs ?? []).find((r: any) => r.status === "verified")
 for (const feat of SIX_FEATURES) {
   const op = feat === "callHierarchy" ? "prepareCallHierarchy" : feat
@@ -191,7 +191,7 @@ check("X1: P2 (freshness) permanent in npm run verify", pkg.includes("script/m24
 check("X1: closure gate wired into npm run verify", pkg.includes("script/m24/verify-closure.ts"))
 // Item 3: closure gate green incl. §6 mutant set — this run proves it.
 // Item 4: docs state claim levels + limitations, no banned vocabulary.
-check("X1: D1 evidence verified (claim levels + limitations)", (JSON.parse(readFileSync(path.join(RESULTS, "D1.json"), "utf8")).status ?? "") === "verified")
+check("X1: D1 evidence verified (claim levels + limitations)", (parseSealedRecord(path.join(RESULTS, "D1.json")).status ?? "") === "verified")
 check("X1: doc states claim levels", doc.includes("Claim levels"))
 check("X1: doc states limitations", doc.includes("## Limitations"))
 // Item 5: ledger clean — no PENDING cell.
@@ -230,7 +230,7 @@ check("X1: full evidence set regenerates byte-identical", byteIdentical)
 
 // A survived mutant planted in an evidence copy must be detectable by the
 // audit's own survivor rule (mutantsCaught < mutantsTotal).
-const l2Ev = JSON.parse(readFileSync(path.join(RESULTS, "L2.json"), "utf8"))
+const l2Ev = parseSealedRecord(path.join(RESULTS, "L2.json"))
 const l2Clone = structuredClone(l2Ev)
 const verdictClone = l2Clone.verdict ?? {}
 verdictClone.mutantsCaught = (verdictClone.mutantsTotal ?? 1) - 1 // plant a survivor

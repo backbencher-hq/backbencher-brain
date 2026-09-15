@@ -32,7 +32,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { createRequire } from "node:module"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const DOC = join(ROOT, "docs", "m26", "GRAPH.md")
@@ -154,7 +154,7 @@ function generateDoc(facts: {
   L.push("")
   L.push("| issue | claim level |")
   L.push("| --- | --- |")
-  const ledger = JSON.parse(readFileSync(join(ROOT, "validation", "m26", "results", "manifest.json"), "utf8"))
+  const ledger = parseSealedRecord(join(ROOT, "validation", "m26", "results", "manifest.json"))
   for (const issue of ledger.issues as Array<{ code: string; status: string }>) {
     L.push("| " + issue.code + " | " + issue.status + " |")
   }
@@ -224,7 +224,7 @@ function main(): void {
   check("G4: truncation policy carries the live impact budget", generated.includes("`" + facts.impactBudget.maxNodes + "` reverse-dependency nodes at traversal depth") && generated.includes("`" + facts.impactBudget.maxDepth + "` (src/lsp/impact.ts)"))
 
   // --- G5: claim levels reflect the ledger -----------------------------------
-  const ledger = JSON.parse(readFileSync(join(ROOT, "validation", "m26", "results", "manifest.json"), "utf8"))
+  const ledger = parseSealedRecord(join(ROOT, "validation", "m26", "results", "manifest.json"))
   for (const issue of ledger.issues as Array<{ code: string; status: string }>) {
     check("G5: verification table states " + issue.code + " per ledger", generated.includes("| " + issue.code + " | " + issue.status + " |"))
   }

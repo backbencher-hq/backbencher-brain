@@ -14,7 +14,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = join(import.meta.dirname ?? ".", "../..")
@@ -155,7 +155,7 @@ for (const { code, evidence } of SUITE) {
   let aggCaught = -1
   let aggTotal = -1
   try {
-    const rec = JSON.parse(readFileSync(join(RESULTS, evidence), "utf8")) as { mutantsCaught?: number; mutantsTotal?: number }
+    const rec = parseSealedRecord(join(RESULTS, evidence)) as { mutantsCaught?: number; mutantsTotal?: number }
     aggCaught = rec.mutantsCaught ?? -1
     aggTotal = rec.mutantsTotal ?? -1
   } catch {}
@@ -178,7 +178,7 @@ function evidenceFor(code: string): Record<string, unknown> | null {
   const entry = SUITE.find((s) => s.code === code)
   if (!entry) return null
   try {
-    return JSON.parse(readFileSync(join(RESULTS, entry.evidence), "utf8")) as Record<string, unknown>
+    return parseSealedRecord(join(RESULTS, entry.evidence)) as Record<string, unknown>
   } catch {
     return null
   }
