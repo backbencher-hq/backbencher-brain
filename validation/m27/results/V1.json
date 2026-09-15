@@ -18,17 +18,17 @@
       "caught": true
     }
   ],
-  "currentCommit": "9815de0887fcb988f5bae8a700d88d4684df792a",
+  "currentCommit": "216d1c67e1ad70dac9f6ec1cef41f2e58024d649",
   "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-15T19:11:56.881Z",
+  "generatedAt": "2026-09-15T21:35:15.709Z",
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
     "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T19:11:56.882Z",
-    "contentSha256": "eaefd66c50f7925d22df5655f2c69fa60288755397bfb679dcb90acd5b8184e7"
+    "sealedAt": "2026-09-15T21:35:15.709Z",
+    "contentSha256": "44568831895a50fadc2a8340c8ad20e011445798d19eff08107f4ff6546070d8"
   }
 }
