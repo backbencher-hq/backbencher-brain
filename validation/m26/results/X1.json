@@ -8,7 +8,7 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 3,
-  "currentCommit": "bdb34e6d50d0877d25075bdc0429e3c141d1e045",
+  "currentCommit": "866ba066f0785786fe24ba009c0cb33bfdca69b4",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -177,10 +177,10 @@
       }
     ]
   },
-  "generatedAt": "2026-09-15T17:56:30.906Z",
+  "generatedAt": "2026-09-15T18:40:51.161Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T17:56:30.907Z",
-    "contentSha256": "e126feff23e4132c51d658986c06dda1427cf3c15c136374e64d849d7d2cd955"
+    "sealedAt": "2026-09-15T18:40:51.162Z",
+    "contentSha256": "313bf29dd44e568fe5eaf2b3ba783a162bca93150ed7122ecfa589e2e093cbd1"
   }
 }
