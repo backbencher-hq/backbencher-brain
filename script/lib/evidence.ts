@@ -33,6 +33,7 @@
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { type AcquireOptions, withLock } from "./lock.ts"
 
 /** The seal envelope carried in every sealed record under the key `bbSeal`. */
 export interface EvidenceSeal {
@@ -107,17 +108,27 @@ export function verifySeal(
 
 /** The ONE write path: seal the record, then write atomically (temp file +
  *  rename in the same directory, so a crash never leaves a half-written
- *  record at the target path). Returns the seal that was written. `now` is
- *  injectable for deterministic tests. */
-export function writeSealed(filePath: string, record: Record<string, unknown>, now = new Date()): EvidenceSeal {
+ *  record at the target path) UNDER THE DIR LOCK (M61.V2, D-2) so two gates
+ *  can never interleave writes in one results dir. Returns the seal that was
+ *  written. `now` is injectable for deterministic tests; `lock` carries the
+ *  bounded-wait options (a contended dir refuses loudly instead of writing). */
+export function writeSealed(
+  filePath: string,
+  record: Record<string, unknown>,
+  now = new Date(),
+  lock: AcquireOptions = {},
+): EvidenceSeal {
   const seal = sealFor(record, now)
   const sealed: Record<string, unknown> = { ...record, [SEAL_KEY]: seal }
   const content = `${JSON.stringify(sealed, null, 2)}\n`
-  mkdirSync(path.dirname(filePath), { recursive: true })
-  const tmp = `${filePath}.tmp-${process.pid}`
-  writeFileSync(tmp, content)
-  renameSync(tmp, filePath)
-  return seal
+  const dir = path.dirname(filePath)
+  mkdirSync(dir, { recursive: true })
+  return withLock(dir, () => {
+    const tmp = `${filePath}.tmp-${process.pid}`
+    writeFileSync(tmp, content)
+    renameSync(tmp, filePath)
+    return seal
+  }, lock)
 }
 
 /** The ONE trusted read: parse, then verify the seal. A record that fails any
@@ -179,7 +190,10 @@ export function sealLegacyFile(filePath: string, now = new Date()): EvidenceSeal
   if (parsed[SEAL_KEY] !== undefined) return null
   const seal = sealFor(parsed, now)
   const sealed = { ...parsed, [SEAL_KEY]: seal }
-  writeFileSync(filePath, `${JSON.stringify(sealed, null, 2)}\n`)
+  // Under the same dir lock as every other evidence write (M61.V2).
+  withLock(path.dirname(filePath), () => {
+    writeFileSync(filePath, `${JSON.stringify(sealed, null, 2)}\n`)
+  })
   return seal
 }
 

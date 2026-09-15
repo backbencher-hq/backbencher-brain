@@ -1,6 +1,6 @@
 {
   "status": "verified",
-  "head": "48e9ef8fbe6cb64d4a66365df7e3db9243b8e1ab",
+  "head": "5e9b8b527f3be411d77e64056097ff483ff86868",
   "repo": "$HOME/bb-demo-hub",
   "index": {
     "files": 8,
@@ -22,7 +22,7 @@
       "floor": 85
     },
     "references": {
-      "now": 6,
+      "now": 3,
       "floor": 2
     },
     "impactRoots": {
@@ -32,10 +32,10 @@
   },
   "checks": 13,
   "failed": 0,
-  "generatedAt": "2026-09-11T14:49:30.834Z",
+  "generatedAt": "2026-09-15T18:26:18.840Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.574Z",
-    "contentSha256": "b27e6674dcd367ac07c05fc72fae08bd9716e8e37b084e4aaa4d07b5c3d80f0c"
+    "sealedAt": "2026-09-15T18:26:18.841Z",
+    "contentSha256": "07b7c32c1dc93ccd49f2faf87f5cfb3e2f788fb45d7532204ac18138d3a9af31"
   }
 }

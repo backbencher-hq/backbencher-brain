@@ -19,6 +19,7 @@
 import { spawn } from "node:child_process"
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const DEMO = "$HOME/bb-demo-hub"
@@ -195,7 +196,7 @@ async function main(): Promise<void> {
   check("R2.13: differential — nothing below the M44-era floor", regressed.length === 0, regressed.length === 0 ? "all floors met or exceeded" : `regressed: ${regressed.map(([k]) => k).join(",")}`)
 
   // --- evidence --------------------------------------------------------------
-  mkdirSync(path.dirname(OUT), { recursive: true })
+  mkdirSync(path.dirname(OUT), { recursive: true }) // kept: dir may be fresh
   const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
   const evidence = {
     status: failed === 0 ? "verified" : "failed",
@@ -207,7 +208,9 @@ async function main(): Promise<void> {
     failed,
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(OUT, JSON.stringify(evidence, null, 2) + "\n")
+  // M61.V1: one write path — the record is sealed at write (found unsealed by
+  // the V2 adoption audit, which is exactly what it exists for).
+  writeSealed(OUT, evidence)
   console.log(`\nR2: ${failed === 0 ? "VERIFIED" : "FAILED"} (${checks - failed}/${checks} passed)`)
   if (failed > 0) process.exitCode = 1
 }
