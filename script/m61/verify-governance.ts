@@ -26,30 +26,28 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import path from "node:path"
 import { readEvidence, readEvidenceAllowingLegacy, writeSealed } from "../lib/evidence.ts"
 import { lockExists } from "../lib/lock.ts"
+import { canFailProofs } from "./gate_lint.ts"
+import {
+  EXPECTED_CODES,
+  EXPECTED_ISSUE_NUMBERS,
+  PREREQUISITE_RECORDS,
+  V_GATES,
+  entryDrift,
+  isClosable,
+  laneViolations,
+  ledgerEntryFrom,
+  validateLedger,
+  type Ledger,
+  type LedgerIssue,
+} from "./governance_core.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m61/results")
 const LEDGER_PATH = path.join(EVIDENCE_DIR, "manifest.json")
 
-// The milestone's own gate set, in closure order. G1 is first (governance),
-// V1…V6 in dependency order, X1 last (the program-closure audit).
-const EXPECTED_CODES = ["G1", "V1", "V2", "V3", "V4", "V5", "V6", "X1"]
-const EXPECTED_ISSUE_NUMBERS = [848, 842, 843, 844, 845, 846, 847, 849]
-const V_GATES: Array<[string, string]> = [
-  ["V1", "script/m61/verify-sealing.ts"],
-  ["V2", "script/m61/verify-lock.ts"],
-  ["V3", "script/m61/verify-reproducibility.ts"],
-  ["V4", "script/m61/verify-lint.ts"],
-  ["V5", "script/m61/verify-claims.ts"],
-  ["V6", "script/m61/verify-extinction.ts"],
-]
-/** Records that are a verified prerequisite because they are OTHER lanes' bars. */
-const PREREQUISITE_RECORDS: Array<[string, string]> = [
-  ["M29 bar", "validation/m29/results/X1.json"],
-  ["M44 bar", "validation/m44/results/X1.json"],
-  ["M53 lane integration", "validation/m53/results/X1.json"],
-  ["M53 lane ladder (R1)", "validation/m53/results/R1.json"],
-]
+// The gate set, the theme gates re-executed on every run, and the prerequisite
+// records are declared in ONE owner: ./governance_core.ts (imported above). X1
+// audits with the same declarations.
 
 let checks = 0
 let passed = 0
@@ -77,120 +75,9 @@ function gitCommit(): string {
 }
 const currentCommit = gitCommit()
 
-// --- The pure decision cores (mutated by the negatives below) ----------------------
-
-export type LedgerIssue = {
-  code: string
-  githubIssue: number
-  tool: string
-  status: string
-  scope: string
-  acceptanceCriteria: string[]
-  closureRequirements: string[]
-  artifacts: string[]
-  evidence?: {
-    status?: string
-    verifierCommand?: string
-    evidenceFile?: string
-    passed?: number
-    failed?: number
-    realFailed?: number
-    negativeCases?: number
-    mutantsCaught?: number
-    mutantsTotal?: number
-  }
-}
-export type Ledger = {
-  schemaVersion: number
-  milestone: string
-  githubMilestone: number
-  title: string
-  status: string
-  authority: string
-  governingContract: string
-  prerequisite: string
-  laneDiscipline: string
-  issues: LedgerIssue[]
-}
-
-/** D-7: the lane. The milestone's own scripts and results, the lane's shared
- *  libraries, its docs, and the chain manifest — nothing from another
- *  milestone's directory (M51/M52/M55/… are read-only), and nothing outside
- *  script/ + validation/ + docs/. */
-export const LANE_ALLOWED: RegExp[] = [/^script\/m61\//, /^script\/lib\//, /^validation\//, /^docs\/m61\//, /^docs\/IDE-/, /^package\.json$/]
-
-/** A declared path may be a shell command (`npx tsx script/…`) — normalize it. */
-export function lanePathOf(p: string): string {
-  return p.replace(/^(npx\s+tsx|bun\s+run|npx|node)\s+/, "").trim()
-}
-
-export function laneViolations(l: Partial<Ledger>): string[] {
-  const out: string[] = []
-  for (const i of l.issues ?? []) {
-    const paths = [i.artifacts ?? [], i.evidence?.verifierCommand ? [i.evidence.verifierCommand] : [], i.evidence?.evidenceFile ? [`validation/m61/results/${i.evidence.evidenceFile}`] : []].flat()
-    for (const raw of paths) {
-      const p = lanePathOf(raw)
-      if (!LANE_ALLOWED.some((re) => re.test(p))) out.push(`${i.code}: ${raw} escapes the lane (D-7: script/m61, script/lib, validation/, docs/m61, docs/IDE-*)`)
-    }
-  }
-  return out
-}
-
-/** A non-planned issue is closable only when its evidence block is complete and
- *  proves BOTH a green run (passed > 0, failed 0) AND a can-fail proof — the
- *  declared mutant totals, or explicit negative cases. */
-export function isClosable(issue: LedgerIssue): boolean {
-  if (issue.status === "planned") return false
-  const e = issue.evidence
-  if (!e) return false
-  const realFailed = typeof e.realFailed === "number" ? e.realFailed : e.failed
-  const canFail =
-    (typeof e.mutantsCaught === "number" && e.mutantsCaught > 0 && e.mutantsTotal === e.mutantsCaught) ||
-    (typeof e.negativeCases === "number" && e.negativeCases > 0)
-  return Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile && (e.passed ?? 0) > 0 && realFailed === 0 && canFail)
-}
-
-export function validateLedger(l: Partial<Ledger>, planText: string, expectedCodes: string[], expectedNumbers: number[]): string[] {
-  const errors: string[] = []
-  if (l.schemaVersion !== 1) errors.push("schemaVersion")
-  if (l.milestone !== "M61" || l.githubMilestone !== 61) errors.push("milestone")
-  if (!l.authority || !planText.includes("Issues / Issue groups")) errors.push("authority")
-  if (!l.governingContract || !/IDE-HONESTY-CONTRACT\.md/.test(l.governingContract)) errors.push("contract")
-  if (!l.prerequisite || !/M29/.test(l.prerequisite) || !/M44/.test(l.prerequisite) || !/re-audit/i.test(l.prerequisite)) errors.push("prerequisite")
-  if (!l.laneDiscipline || !/script\/m61/.test(l.laneDiscipline)) errors.push("lane-discipline")
-  const issues = l.issues ?? []
-  const allVerified = issues.length > 0 && issues.every((i) => i.status === "verified")
-  if (l.status !== (allVerified ? "closed" : "open")) errors.push("status")
-  if (issues.length !== expectedCodes.length) errors.push("issue-count")
-  const codes = new Set<string>()
-  const numbers = new Set<number>()
-  for (const issue of issues) {
-    if (!expectedCodes.includes(issue.code)) errors.push(`code:${issue.code}`)
-    if (codes.has(issue.code)) errors.push(`duplicate-code:${issue.code}`)
-    codes.add(issue.code)
-    if (!Number.isInteger(issue.githubIssue) || !expectedNumbers.includes(issue.githubIssue) || numbers.has(issue.githubIssue)) errors.push(`github-issue:${issue.code}`)
-    numbers.add(issue.githubIssue)
-    if (!issue.tool || !issue.scope) errors.push(`identity:${issue.code}`)
-    if (!Array.isArray(issue.artifacts) || issue.artifacts.length === 0) errors.push(`artifacts:${issue.code}`)
-    if (!Array.isArray(issue.acceptanceCriteria) || issue.acceptanceCriteria.length < 2) errors.push(`acceptance:${issue.code}`)
-    if (!Array.isArray(issue.closureRequirements) || issue.closureRequirements.length < 2) errors.push(`closure:${issue.code}`)
-    if (issue.status !== "planned" && !isClosable(issue)) errors.push(`hollow-${issue.status}:${issue.code}`)
-    if (issue.status === "planned" && issue.evidence) errors.push(`planned-evidence:${issue.code}`)
-    if (!["planned", "verified", "known-gap", "blocked"].includes(issue.status)) errors.push(`state:${issue.code}`)
-  }
-  const order = issues.map((i) => i.code)
-  if (order.length === expectedCodes.length) {
-    if (order[0] !== "G1") errors.push("order:g1-first")
-    if (order[order.length - 1] !== "X1") errors.push("order:x1-last")
-    for (let n = 1; n <= 6; n++) {
-      const a = order.indexOf(`V${n}`)
-      const b = order.indexOf(`V${n + 1}`)
-      if (n < 6 && !(a >= 0 && b >= 0 && a < b)) errors.push(`order:v${n}-before-v${n + 1}`)
-    }
-  }
-  errors.push(...laneViolations(l))
-  return errors
-}
+// --- The pure decision cores live in ONE owner: ./governance_core.ts ----------------
+// The closure rule, the D-7 lane rule, the ledger validator and the X1 audit rules
+// are imported, so the gate that ENFORCES and the gate that AUDITS share them.
 
 // --- Load artifacts ---------------------------------------------------------------
 
@@ -346,6 +233,13 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
   const wiredFull = (unwired.scripts["verify"] ?? "").includes("script/m61/verify-lint.ts")
   negative("a gate dropped from both chains passes the wiring check", !(wiredFast && wiredFull))
 }
+{
+  // The projection rule, exercised: an entry that a human typed is DRIFT.
+  const rec = readEvidence<Record<string, unknown>>(path.join(EVIDENCE_DIR, "V1.json")).record ?? {}
+  const derived = ledgerEntryFrom(rec, canFailProofs(rec))
+  negative("a hand-typed count passes the drift check", entryDrift({ ...derived, passed: (derived.passed ?? 0) + 3 }, derived).length > 0)
+  negative("an understated can-fail proof passes the drift check", entryDrift({ ...derived, mutantsTotal: 0 }, derived).length > 0)
+}
 
 // --- Evidence ---------------------------------------------------------------------
 const realFailed = barResults.filter((r) => r.rc !== 0).length
@@ -369,7 +263,7 @@ const buildEvidence = () => ({
   generatedAt: new Date().toISOString(),
   limitations: [
     "Bar re-audit re-executes V1–V6 (the milestone's own gates). The LANE bar (m24→m44) is re-audited transitively through the persisted closures and the ladder record listed in the prerequisite block — re-running the 40-gate ladder here would cost ~40 minutes per governance run and is X1's job.",
-    "The ledger's declared passed/failed numbers are informational; this gate cross-checks each trusted record's seal and status, not its counts, so a gate whose count legitimately moves does not produce a false alarm.",
+    "Every ledger entry is a PROJECTION of the record it points at, re-derived on each run through the same can-fail derivation the verifier lint uses: a count that moves in a record moves in the ledger without a hand edit, and a hand-typed entry is a loud drift failure (then repaired by the projection).",
     "D-7 lane discipline is enforced over the ledger's declared paths and this milestone's own working tree; the co-agent lanes' history is untouched by design.",
   ],
 })
@@ -379,37 +273,57 @@ const selfRead = readEvidence(path.join(EVIDENCE_DIR, "G1.json"))
 check("R: this gate's own evidence verifies through the trusted read", selfRead.ok)
 writeSealed(path.join(EVIDENCE_DIR, "G1.json"), buildEvidence())
 
-// --- The ledger's own entry: written from the measurements above, never asserted ---
-// A hand-typed number for G1 is overwritten on the next run, so it can never be
-// the thing that closes this item. After the patch the ledger is validated WHOLE
-// (this entry included) — the last word on whether M61 is closed, and still the
-// owner's to accept.
+// --- The ledger's entries are DERIVED from the records, never hand-typed ----------
+// Every non-planned issue's entry is a PROJECTION of the record it points at — the
+// same can-fail derivation the verifier lint uses — so the ledger cannot state a
+// count its record does not. The drift check runs on the ledger AS READ: a hand
+// edit is loud here, and the projection then repairs it (self-healing, the m53
+// convention). G1's own entry is measured by this run, never inherited: a ledger
+// that kept `verified` from an earlier green run while this run is a known-gap
+// would persist the inconsistency into the authority record itself.
+console.log("\nledger projection: every entry is the derivation of its record")
+const entryOf = (record: Record<string, unknown>) => ledgerEntryFrom(record, canFailProofs(record))
+const driftFindings: string[] = []
+for (const issue of ledger.issues) {
+  if (issue.code === "G1" || issue.status === "planned") continue
+  const file = issue.evidence?.evidenceFile
+  const abs = file ? path.join(EVIDENCE_DIR, file) : ""
+  if (!file || !existsSync(abs)) {
+    driftFindings.push(`${issue.code}: record missing (${file ?? "no evidenceFile"})`)
+    continue
+  }
+  const read = readEvidence<Record<string, unknown>>(abs)
+  if (!read.ok) {
+    driftFindings.push(`${issue.code}: record unreadable (${read.kind})`)
+    continue
+  }
+  const derived = entryOf(read.record)
+  const drift = entryDrift(issue.evidence, derived)
+  if (drift.length > 0) driftFindings.push(`${issue.code}: ${drift.join(", ")}`)
+  issue.evidence = derived
+}
+check("G1: every ledger entry is the derivation of the record it points at (no hand-typed counts)", driftFindings.length === 0, driftFindings.slice(0, 4).join(" | "))
+
+// --- The ledger's own entry: measured by this run, written from ONE snapshot -------
 {
   const g1 = ledger.issues.find((i) => i.code === "G1")!
-  g1.evidence = {
-    status: passed === checks ? "verified" : "known-gap",
-    verifierCommand: "npx tsx script/m61/verify-governance.ts",
-    evidenceFile: "G1.json",
-    passed,
-    failed: checks - passed,
-    realFailed: barResults.filter((r) => r.rc !== 0).length,
-    negativeCases: negatives,
-    mutantsCaught: negatives,
-    mutantsTotal: negatives,
-  }
+  const staged = buildEvidence()
+  Object.assign(g1, { status: staged.status, evidence: entryOf(staged as unknown as Record<string, unknown>) })
   ledger.status = ledger.issues.every((i) => i.status === "verified") ? "closed" : "open"
-  writeSealed(LEDGER_PATH, ledger)
   const fullErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS)
-  check("G1: the ledger validates WHOLE after this run writes its own measured entry", fullErrors.length === 0, fullErrors.slice(0, 6).join(" | "))
-  // The numbers in the ledger and in G1.json must be the SAME numbers — a
-  // second place stating a count is a second place that can drift.
-  const g1Record = readEvidence<{ passed?: number; negativeCases?: number }>(path.join(EVIDENCE_DIR, "G1.json")).record
-  check(
-    "G1: the ledger's G1 entry and G1.json state identical counts (no second source of truth)",
-    g1Record?.passed === passed && (g1Record?.negativeCases ?? negatives) === negatives,
-    `ledger ${passed}/${negatives} vs record ${g1Record?.passed}/${g1Record?.negativeCases}`,
-  )
-  writeSealed(path.join(EVIDENCE_DIR, "G1.json"), buildEvidence())
+  check("G1: the ledger validates WHOLE with this run's own measured entry", fullErrors.length === 0, fullErrors.slice(0, 6).join(" | "))
+  const drift = entryDrift(g1.evidence, entryOf(staged as unknown as Record<string, unknown>))
+  check("G1: the G1 entry is the record's own derivation (not hand-assembled)", drift.length === 0, drift.join(" | "))
+  // Recapture the counters AFTER those checks — the record counts every check
+  // that ran (the m29 rule) — re-derive the entry from the final record, and
+  // write BOTH artifacts from that one snapshot, last: no check runs after them
+  // (G8: a record that disagrees with its own run is the defect this milestone
+  // exists to kill, and the intermediate write above is not the record).
+  const final = buildEvidence()
+  Object.assign(g1, { status: final.status, evidence: entryOf(final as unknown as Record<string, unknown>) })
+  ledger.status = ledger.issues.every((i) => i.status === "verified") ? "closed" : "open"
+  writeSealed(path.join(EVIDENCE_DIR, "G1.json"), final)
+  writeSealed(LEDGER_PATH, ledger)
 }
 
 console.log(`\nM61.G1: ${passed === checks ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} checks, ${negatives} negatives)`)
