@@ -55,11 +55,28 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const blockFrameStack: Array<Set<string>> = []
     const globals = new Set<string>()
     const classMembers = new Map<string, Set<string>>()
+    // OC-F (second review): same-file enum case names — `case Red:` and
+    // `x == Alpha` reference enum members as values. NS_ENUM/NS_OPTIONS
+    // definitions live in headers (out of unit, silent by design); in-file
+    // enums (plain + typedef, OC-D symbols) resolve here. Flat set: a name
+    // bound anywhere nearer (locals/params/ivars/globals) wins first.
+    const enumCases = new Set<string>()
     {
       const preStack: Node[] = [rootNode]
       while (preStack.length > 0) {
         const pn = preStack.pop()!
         if (!pn || pn.isMissing) continue
+        if (pn.type === "enum_specifier") {
+          const elist = this.findChild(pn, (n) => n.type === "enumerator_list")
+          if (elist) {
+            for (let ei = 0; ei < elist.namedChildCount; ei++) {
+              const en = elist.namedChild(ei)
+              if (!en || en.type !== "enumerator") continue
+              const nm = this.findChild(en, (n) => n.type === "identifier")
+              if (nm && nm.text.trim()) enumCases.add(nm.text)
+            }
+          }
+        }
         if (pn.type === "class_interface" || pn.type === "class_implementation") {
           const cn = this.findChild(pn, (n) => n.type === "identifier" || n.type === "type_identifier")
           if (cn) {
@@ -101,6 +118,9 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const cm = classMembers.get(owner)
       if (cm && cm.has(name)) return true
       if (globals.has(name)) return true
+      // OC-F: same-file enum cases resolve last (locals/params/ivars and
+      // globals shadow them — a nearer binding always wins).
+      if (enumCases.has(name)) return true
       return false
     }
 
@@ -326,6 +346,11 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           valueFrame = new Set<string>()
           nextOwner = ""
           nextBindable = true
+          // OC-H (second review): file-scope function names are resolvable
+          // value reads (`cb = helper` decay, recursion references) — bare
+          // `helper` can never invoke a method (receivers required), so the
+          // global attribution is exact. Locals shadow via frame-first order.
+          globals.add(nameNode.text)
           symbols.push({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Function,
@@ -641,7 +666,21 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
        }
       else if (node.type === "call_expression") {
         const funcNode = this.findChild(node, (n) => n.type === "identifier")
-        if (funcNode && activeScope !== "global" && isInBody) {
+        // OC-G (second review): `@protocol(P)` parses as at_expression >
+        // call_expression with callee `protocol` — a compiler directive,
+        // not an invocation (OC-R2 @selector parity: directives name,
+        // never call). `@encode` already stays silent by shape.
+        const inAtDirective = (() => {
+          let p: Node | null | undefined = node.parent
+          let g = 0
+          while (p && g++ < 3) {
+            if (p.type === "at_expression") return true
+            if (p.type === "message_expression" || p.type === "call_expression") return false
+            p = p.parent
+          }
+          return false
+        })()
+        if (funcNode && activeScope !== "global" && isInBody && !(inAtDirective && funcNode.text === "protocol")) {
             relationships.push({
               source: activeScope,
               target: funcNode.text,

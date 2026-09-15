@@ -1116,6 +1116,63 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "groovy/drop-interpolation-reads",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "G7 regression: Groovy string interpolation goes back to contributing ZERO reads — the exact pre-fix state, measured at 8 symbols / 15 relationships on groovy/interpolation-reads-g7 against 9 / 22 after the fix. The whole interpolation surface becomes invisible again, which is what the pinned grammar did by construction (Java's `string_fragment` swallowed `$` and `{` as opaque text, so there was no node to read). Caught by groovy/interpolation-reads-g7, which pins all six interpolation edges — `uses render -> templateField`@23, `uses render -> style`@23 (the `$name` short form in the same string), `uses render -> name`@24, `calls render -> notify`@24, `uses nestedBinding -> templateField`@41 and `calls optionTag -> lookup`@62 for the raw-nested-quote form.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).isInterpolationRead),
+    }),
+  },
+  {
+    id: "groovy/interpolation-reads-unbound",
+    language: "groovy",
+    defectClass: "relationship-fabrication",
+    description: "G7 gate regression: the interpolation emitter loses its LOCAL-BINDING gate, so every interpolated name is read — including names the current callable binds, which have no symbol at all. This is the defect class a naive fix ships, and it is the expensive one: `\"$it\"` inside a closure is the most common Groovy interpolation there is, so the corpus would gain a phantom edge per occurrence. Re-injected by name because a suppressed name is by definition absent from the output it would have polluted; the lines are the fixture's own source lines. Caught by groovy/interpolation-reads-g7's forbidRelationships, which names `uses render -> local`@25, `uses render -> count`@25 (parameter), `uses render -> user`@24 (parameter, and the RECEIVER of `user.name`), `uses nestedBinding -> outerLocal`@39 (a `def` inside a nested closure), `uses implicitIt -> it`@48 and `uses optionTag -> label`/`selected`/`registry`@62.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "uses", source: "render", target: "local", confidence: 0.9, line_number: 25, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "render", target: "count", confidence: 0.9, line_number: 25, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "render", target: "user", confidence: 0.9, line_number: 24, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "nestedBinding", target: "outerLocal", confidence: 0.9, line_number: 39, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "implicitIt", target: "it", confidence: 0.9, line_number: 48, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "optionTag", target: "label", confidence: 0.9, line_number: 62, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "optionTag", target: "selected", confidence: 0.9, line_number: 62, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "optionTag", target: "registry", confidence: 0.9, line_number: 62, metadata: { isInterpolationRead: true } },
+      ],
+    }),
+  },
+  {
+    id: "groovy/interpolation-callee-read",
+    language: "groovy",
+    defectClass: "relationship-noise",
+    description: "G7 regression, the other direction: the interpolation emitter stops deferring to the member/call walks, so an identifier those walks already own is read a second time — `${obj.prop}` becomes BOTH a field read and a bare read, and a callee leaks as a read. java/kotlin/scala all suppress a callee-position leaf, and groovy does too after #852, so this is a contract violation rather than extra evidence. Caught by groovy/interpolation-reads-g7: `uses optionTag -> lookup` is forbidden (its `calls optionTag -> lookup`@62 must stand alone), as is `calls render -> name` for the mirror-image mislabel of a member read.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "uses", source: "optionTag", target: "lookup", confidence: 0.9, line_number: 62, metadata: { isInterpolationRead: true, isFieldAccess: true } },
+      ],
+    }),
+  },
+  {
+    id: "groovy/interpolation-reads-single-quoted",
+    language: "groovy",
+    defectClass: "relationship-fabrication",
+    description: "G7 regression: the interpolation emitter reads the TEXT of a plain string, so a SINGLE-quoted literal interpolates — which Groovy never does. The grammar fix makes this reachable for the first time (the single-quoted forms used to inherit Java's `string_interpolation` alternative, removed in the G7 round precisely because it would make `'''${x}'''` interpolate). Caught by groovy/interpolation-reads-g7's forbid entries `uses control -> templateField` and `uses control -> style`, which name the single-quoted control on line 32.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "uses", source: "control", target: "templateField", confidence: 0.9, line_number: 32, metadata: { isInterpolationRead: true } },
+        { type: "uses", source: "control", target: "style", confidence: 0.9, line_number: 32, metadata: { isInterpolationRead: true } },
+      ],
+    }),
+  },
+  {
     id: "groovy/annotation-start-line",
     language: "groovy",
     defectClass: "line-attribution",
@@ -4978,6 +5035,27 @@ const MUTANTS: Mutant[] = [
         { source: "hook", target: "obj", type: "calls", confidence: 0.9, metadata: { bareCall: true } },
       ],
     }),
+  },
+  {
+    id: "objc/drop-enum-case-reads",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "OC-F regression: same-file enum cases stop reading (labels, comparisons, returns) — objc second-review Light/Dark pins die",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && (x.target === "Light" || x.target === "Dark"))) }),
+  },
+  {
+    id: "objc/emit-protocol-directive-call",
+    language: "objc",
+    defectClass: "relationship-fabrication",
+    description: "OC-G regression: @protocol(P) invokes again — objc second-review protocol forbid dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "hooks", target: "protocol", confidence: 0.95, metadata: { isCFunctionCall: true } }] }),
+  },
+  {
+    id: "objc/drop-function-decay-reads",
+    language: "objc",
+    defectClass: "relationship-loss",
+    description: "OC-H regression: file-scope function names stop resolving as values — objc second-review cfn uses pin dies (calls pin survives)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.target === "cfn")) }),
   },
   {
     id: "python/drop-instance-attribute-properties",
