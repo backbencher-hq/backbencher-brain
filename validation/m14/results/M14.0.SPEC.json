@@ -235,14 +235,14 @@
       "status": "pass"
     },
     {
-      "description": "scala: 10 ruled, 10 pending owner",
+      "description": "scala: 10 ruled, 11 pending owner",
       "id": "design-decisions-tracked",
       "language": "scala",
       "status": "pass"
     },
     {
       "description": "every named node type classified (scala)",
-      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 20 decisions",
+      "detail": "189 types, 134 handled, 8 silent, 9 gaps, 21 decisions",
       "id": "section-a-structural",
       "language": "scala",
       "status": "pass"
@@ -1049,14 +1049,14 @@
       "status": "pass"
     },
     {
-      "description": "dart: 6 ruled, 13 pending owner",
+      "description": "dart: 8 ruled, 18 pending owner",
       "id": "design-decisions-tracked",
       "language": "dart",
       "status": "pass"
     },
     {
       "description": "every named node type classified (dart)",
-      "detail": "222 types, 86 handled, 105 silent, 5 gaps, 19 decisions",
+      "detail": "222 types, 91 handled, 101 silent, 5 gaps, 26 decisions",
       "id": "section-a-structural",
       "language": "dart",
       "status": "pass"
@@ -1271,14 +1271,14 @@
       "status": "pass"
     },
     {
-      "description": "php: 8 ruled, 5 pending owner",
+      "description": "php: 11 ruled, 14 pending owner",
       "id": "design-decisions-tracked",
       "language": "php",
       "status": "pass"
     },
     {
       "description": "every named node type classified (php)",
-      "detail": "177 types, 59 handled, 98 silent, 2 gaps, 13 decisions",
+      "detail": "177 types, 65 handled, 92 silent, 2 gaps, 25 decisions",
       "id": "section-a-structural",
       "language": "php",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
-  "committedAt": "2026-09-13T21:35:05+02:00",
+  "commit": "144db7186a0b95c286ce6d8c9420f882b1bde3d1",
+  "committedAt": "2026-09-14T20:17:31+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1751,7 +1751,12 @@
           "DARTD16",
           "DARTD17",
           "DARTD18",
-          "DARTD19"
+          "DARTD19",
+          "DT-A",
+          "DT-B",
+          "DT-C",
+          "DT-D",
+          "DT-F"
         ],
         "ruledDecisions": [
           "DARTD1",
@@ -1759,11 +1764,13 @@
           "DARTD3",
           "DARTD4",
           "DARTD5",
-          "DARTD11"
+          "DARTD11",
+          "DT-E",
+          "DT-R1"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "222 types, 86 handled, 105 silent, 5 gaps, 19 decisions",
+            "detail": "222 types, 91 handled, 101 silent, 5 gaps, 26 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2281,7 +2288,16 @@
           "PHPD6",
           "PHPD8",
           "PHPD10",
-          "PHPD11"
+          "PHPD11",
+          "PHP-A",
+          "PHP-H",
+          "PHP-D",
+          "PHP-E",
+          "PHP-F",
+          "PHP-B",
+          "PHP-C",
+          "PHP-O1",
+          "PHP-O2"
         ],
         "ruledDecisions": [
           "PHPD1",
@@ -2291,11 +2307,14 @@
           "M3710-COMPANION",
           "PHPD7",
           "PHPD9",
-          "PHPD19"
+          "PHPD19",
+          "PHP-R1",
+          "PHP-R2",
+          "PHP-R3"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "177 types, 59 handled, 98 silent, 2 gaps, 13 decisions",
+            "detail": "177 types, 65 handled, 92 silent, 2 gaps, 25 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2530,7 +2549,8 @@
           "ScalaD-J",
           "ScalaD-K",
           "ScalaD-L",
-          "ScalaD-M"
+          "ScalaD-M",
+          "ScalaD-N"
         ],
         "ruledDecisions": [
           "D1",
@@ -2546,7 +2566,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 20 decisions",
+            "detail": "189 types, 134 handled, 8 silent, 9 gaps, 21 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2923,8 +2943,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-09-13T20:13:52.125Z",
-  "regeneratedAtCommit": "26ac0114609c2ad92351e9188b195c603c7fe0b9",
+  "regeneratedAt": "2026-09-14T18:24:28.111Z",
+  "regeneratedAtCommit": "144db7186a0b95c286ce6d8c9420f882b1bde3d1",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
