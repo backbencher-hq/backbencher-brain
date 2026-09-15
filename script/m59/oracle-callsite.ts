@@ -40,11 +40,18 @@ const SKIP_DIRS = new Set([
 ])
 
 // The 21 onboarded languages (reviews/onboarding.md) → extensions to sample.
-const LANGUAGES: Array<{ lang: string; ext: string[] }> = [
+const LANGUAGES: Array<{ lang: string; ext: string[]; unsupportedExt?: string[] }> = [
   { lang: "java", ext: [".java"] },
   { lang: "kotlin", ext: [".kt", ".kts"] },
   { lang: "scala", ext: [".scala"] },
-  { lang: "groovy", ext: [".groovy", ".gradle"] },
+  // #850: the product's language registry maps `groovy`/`gsp`, NOT `gradle`, so
+  // every `build.gradle` in the corpus is rejected by detectLanguage before a
+  // grammar is chosen. Sampling them made the groovy lane produce ZERO evidence
+  // (measured: with --files-per-lang=6 the walk picked 6 .gradle files first and
+  // all 6 were skipped as "Unsupported file type"). The extension stays listed
+  // as the INTENDED surface and the files are excluded explicitly, with the
+  // reason recorded in the evidence — never silently dropped.
+  { lang: "groovy", ext: [".groovy", ".gradle"], unsupportedExt: [".gradle"] },
   { lang: "typescript", ext: [".ts"] },
   { lang: "javascript", ext: [".js", ".mjs", ".cjs"] },
   { lang: "vue", ext: [".vue"] },
@@ -182,7 +189,11 @@ function tierAConsistent(lines: string[], line: number, token: string): boolean 
  * Matching is by SHAPE only, so the allowlist cannot be used to sneak a real
  * undeclared name past the check.
  */
-const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+)$/
+// `component1..N` are kotlin's synthesised data-class accessors: the analyzer
+// creates real symbols for them, and they are never written in source, so a
+// source check can neither pass nor fail for them (measured: 18 kotlin claims
+// were exactly this).
+const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+)$/
 const UNKNOWN_TARGETS = new Set(["?", "<unknown>", "<anonymous>", ""])
 
 function isCheckable(token: string | null, target: unknown): token is string {
@@ -219,8 +230,24 @@ async function main() {
   const totals: Record<string, { files: number; rels: number; withLine: number; noLine: number; consistent: number; inconsistent: number; notCheckable: number }> = {}
   const skipped: Array<{ lang: string; reason: string }> = []
 
-  for (const { lang, ext } of languages) {
-    const files = walkFiles(CORPUS, new Set(ext), filesPerLang)
+  for (const { lang, ext, unsupportedExt } of languages) {
+    // Walk with the extra headroom the unsupported extensions would consume,
+    // then drop them — so a language whose surface contains files the product
+    // cannot parse still yields its full sample instead of an empty lane.
+    const drop = new Set(unsupportedExt ?? [])
+    const pool = drop.size > 0 ? walkFiles(CORPUS, new Set(ext), filesPerLang * 8) : null
+    const files = (pool ?? walkFiles(CORPUS, new Set(ext), filesPerLang))
+      .filter((f) => !drop.has(path.extname(f)))
+      .slice(0, filesPerLang)
+    if (pool) {
+      const excluded = pool.filter((f) => drop.has(path.extname(f))).length
+      if (excluded > 0) {
+        skipped.push({
+          lang,
+          reason: `excluded ${excluded} file(s) with extension ${[...drop].join("/")}: not in the product's language registry (#850) — excluded BEFORE sampling so the lane still measures the supported surface`,
+        })
+      }
+    }
     if (files.length === 0) {
       skipped.push({ lang, reason: `no ${ext.join("/")} files found under ${CORPUS}` })
       continue
@@ -308,21 +335,48 @@ async function main() {
   const boundaryOk = Object.values(boundarySelfTest).every(Boolean)
 
   // ── MUTATION SELF-TEST: prove the Tier A predicate can fail ────────────────
-  let mutation: { file: string; trueLine: number; mutatedLine: number; caught: boolean } | null = null
+  //
+  // The mutation must be CONSTRUCTED, not guessed: this used to take the first
+  // relationship's line and shift it by +7, which is only a counterexample if
+  // line+7 happens not to contain the name. On the kotlin sample it landed on a
+  // line that did contain it, so the self-test reported `caught: false` and
+  // failed a run whose verdicts were fine — a flaky gate is worse than none.
+  // Now the wrong line is chosen BECAUSE the name is absent from it, and both
+  // directions are checked (the true line must pass, the wrong line must fail).
+  let mutation:
+    | { file: string; token: string; trueLine: number; trueLineConsistent: boolean; mutatedLine: number; mutatedLineHasToken: boolean; caught: boolean }
+    | null = null
+  const skippedForMutation: string[] = []
   for (const [lang, results] of Object.entries(perLang)) {
     for (const r of results) {
       const abs = path.join(CORPUS, r.file)
       if (!existsSync(abs)) continue
-      const lines = readFileSync(abs, "utf8").split("\n")
-      const res: any = await ASTEngine.parseFile(abs, readFileSync(abs, "utf8"))
-      const rel = (res?.relationships ?? []).find((x: any) => typeof x?.line_number === "number" && x.line_number > 0 && calleeToken(x))
-      if (!rel) continue
-      const token = calleeToken(rel)!
-      const trueLine = rel.line_number
-      const mutatedLine = trueLine + 7
-      const caught = !tierAConsistent(lines, mutatedLine, token)
-      mutation = { file: `${lang}:${r.file}`, trueLine, mutatedLine, caught }
-      break
+      const text = readFileSync(abs, "utf8")
+      const lines = text.split("\n")
+      const res: any = await ASTEngine.parseFile(abs, text)
+      const rels: any[] = res?.relationships ?? []
+      for (const rel of rels) {
+        if (typeof rel?.line_number !== "number" || rel.line_number <= 0) continue
+        const token = calleeToken(rel)
+        if (!token) continue
+        const trueLine = rel.line_number
+        if (trueLine > lines.length) continue
+        if (!tierAConsistent(lines, trueLine, token)) continue // not a clean control
+        const wrong = lines.findIndex((l, i) => i + 1 !== trueLine && !boundaryRe(token).test(l))
+        if (wrong < 0) continue
+        mutation = {
+          file: `${lang}:${r.file}`,
+          token,
+          trueLine,
+          trueLineConsistent: true,
+          mutatedLine: wrong + 1,
+          mutatedLineHasToken: boundaryRe(token).test(lines[wrong]),
+          caught: !tierAConsistent(lines, wrong + 1, token),
+        }
+        break
+      }
+      if (mutation) break
+      skippedForMutation.push(`${lang}:${r.file}`)
     }
     if (mutation) break
   }
