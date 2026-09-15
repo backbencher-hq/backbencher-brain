@@ -49,6 +49,36 @@ function revertToKeywordTarget(r: any) {
   }
 }
 
+// M59 (#825): the PRE-FIX call-site line semantics. A call_expression starts at
+// its RECEIVER, so every call inside one multi-line chain was stamped with the
+// line the chain opened on — on the real cats-effect Example.scala that put 5
+// distinct calls on line 22 when 6 of them are written on line 23. Simulated
+// generically off the result: within each source symbol, collapse every
+// call/instantiation line onto that symbol's earliest one. Written this way so
+// it stays a faithful stand-in on any fixture rather than a name-hardcoded
+// filter that can silently stop matching.
+function revertToChainOpeningLine(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const isCallish = (x: any) =>
+    x.type === "calls" || x.relationshipType === "calls" || x.metadata?.isInstantiation === true
+  const earliest = new Map<string, number>()
+  for (const x of rels) {
+    if (!isCallish(x) || typeof x.line_number !== "number") continue
+    const k = String(x.source ?? x.from ?? "?")
+    const cur = earliest.get(k)
+    if (cur === undefined || x.line_number < cur) earliest.set(k, x.line_number)
+  }
+  if (earliest.size === 0) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!isCallish(x) || typeof x.line_number !== "number") return x
+      const m = earliest.get(String(x.source ?? x.from ?? "?"))
+      return m === undefined ? x : { ...x, line_number: m }
+    }),
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -756,6 +786,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "symbol-identity",
     description: "M49 W15 family-parity regression: a self-receiver member read targets the literal keyword `this` again instead of the member leaf — the edge names no symbol and the member read disappears (scala/member-read-target forbids target `this`); scala's lane cannot see it (F5 compares label+target and scala does not compare uses at all), which is exactly why the parity gate exists",
     transform: revertToKeywordTarget,
+  },
+  {
+    id: "scala/callsite-line-revert",
+    language: "scala",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: restores the receiver-start line, collapsing every call in a multi-line chain onto the line the chain opened on. Exactly the defect the fix removed — on cats-effect Example.scala `.as(ExitCode(2))` written on 23 was reported on 22. Caught by scala/callsite-lines-825, whose forbid entries name `.as` on line 12 and `.filter` on line 16, the pre-fix positions.",
+    transform: revertToChainOpeningLine,
   },
   {
     id: "scala/write-as-read-leak",
