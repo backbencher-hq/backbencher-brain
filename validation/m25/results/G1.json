@@ -2,20 +2,22 @@
   "issue": "M25.G1",
   "code": "G1",
   "milestone": "M25",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 72,
-  "passed": 72,
-  "failed": 0,
+  "passed": 71,
+  "failed": 1,
   "negativeCases": 11,
-  "currentCommit": "39dcf27527a74bbe591a00e4ac8002dfae1940cb",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "27be4201646606dab63a33e9b00b3bfc2a8121ef",
+  "workingTreeRelevantChanges": [
+    "package.json"
+  ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-15T23:04:17.643Z",
+  "generatedAt": "2026-09-15T23:49:35.440Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
-    "m24GateExit": 0
+    "m24GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
@@ -23,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T23:04:17.646Z",
-    "contentSha256": "089e6edf2ce6a3433e48ef7c722584cf0d9809ad9ea6b48abe19c490f88060d5"
+    "sealedAt": "2026-09-15T23:49:35.444Z",
+    "contentSha256": "4181f2edad4343e9dc6aa9e2a56732c40261602e5219456cecefd53331a605a7"
   }
 }

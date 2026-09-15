@@ -1,6 +1,6 @@
 # Precision ledger — bb_lsp per-language, per-feature truth (M29.R4)
 
-Inputs hash `764c201a461f13fd3287a6b79aa2560d0ab21322` (deterministic: byte-identical regeneration is the drift gate; run record with commit + timestamp lives in validation/m29/results/R4.json).
+Inputs hash `37ee8850faa6c2055c7c3c13b63a71b8e79b76d2` (deterministic: byte-identical regeneration is the drift gate; run record with commit + timestamp lives in validation/m29/results/R4.json).
 
 > This document is **generated** from evidence files. A hand edit breaks the drift gate (`script/m29/verify-precision-ledger.ts`). Claim levels are computed by the R1 binding from recorded evidence — they cannot be edited up. Staleness policy: any input-evidence change makes this stale until regenerated.
 
