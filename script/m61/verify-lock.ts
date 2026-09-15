@@ -435,8 +435,14 @@ try {
   }
 
   // --- evidence ------------------------------------------------------------------
+  // The record must never disagree with the run that produced it (M61's whole
+  // subject): the lock-hygiene check runs BEFORE the build, and the record is
+  // written twice — once so the trusted read can verify it, then re-written so
+  // the self-read check is itself counted in the record it describes.
+  check("R: no lock file is left behind in the results dir", !lockExists(RESULTS))
+
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-  const evidence = {
+  const buildEvidence = () => ({
     issue: "M61.V2 gate serialization lock (issue #843)",
     code: "V2",
     milestone: "M61",
@@ -461,11 +467,13 @@ try {
       "Stale detection uses pid liveness and declared age; a lock held by a live but wedged process is reported at the declared age threshold rather than detected instantly.",
       "The concurrent-run proof uses two OS processes (real), not simulated threads; count is 2x100 writes, sized to finish inside the gate budget.",
     ],
-  }
-  writeSealed(path.join(RESULTS, "V2.json"), evidence)
+  })
+  writeSealed(path.join(RESULTS, "V2.json"), buildEvidence())
   const selfRead = readEvidence(path.join(RESULTS, "V2.json"))
   check("R: this verifier's own evidence verifies through the trusted read", selfRead.ok)
-  check("R: no lock file is left behind in the results dir", !lockExists(RESULTS))
+  // Second write: the record now carries the true final counts (including the
+  // self-read check above). Nothing is checked after it — no drift possible.
+  writeSealed(path.join(RESULTS, "V2.json"), buildEvidence())
 
   console.log(`\nM61.V2: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks.length})`)
   console.log(`Evidence (sealed): ${path.join(RESULTS, "V2.json")}`)
