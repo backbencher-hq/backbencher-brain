@@ -37,11 +37,11 @@
       "origin": "real project index"
     }
   ],
-  "realDbsScanned": 41,
-  "generatedAt": "2026-09-15T19:10:28.828Z",
+  "realDbsScanned": 51,
+  "generatedAt": "2026-09-15T21:34:07.746Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T19:10:28.830Z",
-    "contentSha256": "cd82bb7f8234331ae22cf19e9d21f8bf03470beb34d6d76758dce5c6a6427418"
+    "sealedAt": "2026-09-15T21:34:07.750Z",
+    "contentSha256": "3c251c8a4279745014593b7336476ee785c5558d42a8b5f7be1237ba6fc8e0b2"
   }
 }
