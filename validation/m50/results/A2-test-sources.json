@@ -1,6 +1,6 @@
 {
   "probe": "M50.A2-test-sources",
-  "at": "2026-09-12T17:46:19.370Z",
+  "at": "2026-09-13T17:37:07.403Z",
   "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
   "finding": {
     "what": "is_test_file matches directory segments (…/spec/…) with no regard for file type, so a real repo's TEST CORPUS is data fixtures, not tests.",
@@ -41,7 +41,7 @@
   },
   "issue": 764,
   "milestone": "M50",
-  "commit": "8f4aaec16514a956590fb70ff68d87531835b4de",
+  "commit": "634e6bb333690b344ab0d08c2887f66ce8b834ef",
   "checks": 20,
   "passed": 20,
   "failed": 0,
