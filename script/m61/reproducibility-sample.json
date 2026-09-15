@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M61",
+  "issue": "M61.V3 reproducibility sample (issue #844)",
+  "authority": "docs/m61/M61-MASTER-PLAN.md D-3 (reproduce, don't trust)",
+  "note": "The DECLARED sample the auditor re-executes. This file is the single owner of the sampled set — the auditor and its verifier both read it; neither hardcodes a member. Members are chosen to be runtime-light (no editors, no giant corpora, no dist/ server binary) so the audit can run inside a gate. A member that needs a runtime this machine lacks is declared in declaredBlocked with its reason; an undeclared block FAILS the audit (never silently aged out).",
+  "declaredMinimum": 5,
+  "requiredMilestones": ["m24", "m29", "m42", "m44", "m55"],
+  "stableFields": ["status", "checks", "passed", "failed", "realFailed"],
+  "declaredVolatileFields": [
+    "generatedAt",
+    "bbSeal",
+    "currentCommit",
+    "verifierCommand"
+  ],
+  "perMemberTimeoutMs": 300000,
+  "members": [
+    {
+      "milestone": "m24",
+      "record": "validation/m24/results/P1.json",
+      "verifierCommand": "npx tsx script/m24/verify-positions.ts",
+      "rationale": "component-level position mapping — fixture-driven, no server, no runtime deps"
+    },
+    {
+      "milestone": "m29",
+      "record": "validation/m29/results/R4-verify.json",
+      "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
+      "rationale": "precision ledger regeneration — file-driven, no server"
+    },
+    {
+      "milestone": "m42",
+      "record": "validation/m42/results/H1.json",
+      "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
+      "rationale": "hover-highlight component — pure, no server"
+    },
+    {
+      "milestone": "m44",
+      "record": "validation/m44/results/U6.json",
+      "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
+      "rationale": "usages-fallback decision core — pure, no server"
+    },
+    {
+      "milestone": "m55",
+      "record": "validation/m55/results/P1.json",
+      "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
+      "rationale": "panel-placement decision core — pure, no server"
+    },
+    {
+      "milestone": "m61",
+      "record": "validation/m61/results/V1.json",
+      "verifierCommand": "npx tsx script/m61/verify-sealing.ts",
+      "rationale": "the sealing theme re-proves itself — the auditor's own foundation"
+    }
+  ],
+  "declaredBlocked": []
+}

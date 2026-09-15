@@ -310,22 +310,31 @@ try {
   const lockSource = readFileSync(path.join(ROOT, "script/lib/lock.ts"), "utf8")
   const evSource = readFileSync(path.join(ROOT, "script/lib/evidence.ts"), "utf8")
 
-  async function runMutant(name: string, from: string, to: string, probe: (mod: Record<string, unknown>) => boolean, source = lockSource, rewriteImports = false): Promise<void> {
+  // Mutant copies are written BESIDE their source (script/lib/) so the copy's
+  // own relative imports resolve — the same rule verify-sealing needed after
+  // evidence.ts grew an `import ... from "./lock.ts"`.
+  for (const f of readdirSync(path.join(ROOT, "script/lib"))) {
+    if (f.startsWith(".mutant-lock-")) rmSync(path.join(ROOT, "script/lib", f), { force: true })
+  }
+  async function runMutant(name: string, from: string, to: string, probe: (mod: Record<string, unknown>) => boolean, source = lockSource): Promise<void> {
     if (!source.includes(from)) {
       check(`M: ${name} (mutation anchor exists)`, false, "anchor not found — the mutant is stale")
       return
     }
-    let mutated = source.replace(from, to)
-    if (rewriteImports) mutated = mutated.replace('from "./lock.ts"', 'from "../lib/lock.ts"')
-    const mutantPath = path.join(ROOT, "script/m61", `.mutant-lock-${name}.ts`)
+    const mutated = source.replace(from, to)
+    const mutantPath = path.join(ROOT, "script/lib", `.mutant-lock-${name}.ts`)
     writeFileSync(mutantPath, mutated)
     try {
       const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
       check(`M: ${name}`, probe(mod) === true, "the mutant did NOT manifest the defect — the suite could not fail")
     } catch (e) {
-      // A mutant that crashes the library is still caught (the real gate would
-      // fail loudly); counted as caught.
-      check(`M: ${name}`, true, `(mutant crashed — still caught: ${(e as Error).message})`)
+      // A mutant that crashes the library at RUNTIME is still caught (the real
+      // gate would fail loudly). A mutant that cannot even LOAD is NOT a
+      // can-fail proof — it silently disarms the check, so it fails here.
+      const code = (e as NodeJS.ErrnoException).code ?? ""
+      const cannotLoad = code.startsWith("ERR_MODULE") || code === "ERR_UNKNOWN_FILE_EXTENSION" || e instanceof SyntaxError
+      if (cannotLoad) check(`M: ${name}`, false, `the mutant could not load (${code || (e as Error).name}) — the can-fail proof is disarmed`)
+      else check(`M: ${name}`, true, `(mutant crashed at runtime — still caught: ${(e as Error).message})`)
     } finally {
       rmSync(mutantPath, { force: true })
     }
@@ -407,15 +416,13 @@ try {
     "return (() => {",
     () => true,
     evSource,
-    true,
   )
   {
     const dir = path.join(tmp, "m5b")
     const holderProc = spawn("npx", ["tsx", holderChild, dir, "1500"], { stdio: "ignore" })
     waitFor(path.join(dir, LOCK_FILE))
-    let mutated = evSource.replace("return withLock(dir, () => {", "return (() => {").replace("  }, lock)", "  })()")
-    mutated = mutated.replace('from "./lock.ts"', 'from "../lib/lock.ts"')
-    const mutantPath = path.join(ROOT, "script/m61", ".mutant-lock-write-unlocked.ts")
+    const mutated = evSource.replace("return withLock(dir, () => {", "return (() => {").replace("  }, lock)", "  })()")
+    const mutantPath = path.join(ROOT, "script/lib", ".mutant-lock-write-unlocked.ts")
     writeFileSync(mutantPath, mutated)
     try {
       const mod = (await import(pathToFileURL(mutantPath).href)) as Record<string, unknown>
