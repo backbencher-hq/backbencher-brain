@@ -44,14 +44,15 @@ const LANGUAGES: Array<{ lang: string; ext: string[]; unsupportedExt?: string[] 
   { lang: "java", ext: [".java"] },
   { lang: "kotlin", ext: [".kt", ".kts"] },
   { lang: "scala", ext: [".scala"] },
-  // #850: the product's language registry maps `groovy`/`gsp`, NOT `gradle`, so
-  // every `build.gradle` in the corpus is rejected by detectLanguage before a
-  // grammar is chosen. Sampling them made the groovy lane produce ZERO evidence
-  // (measured: with --files-per-lang=6 the walk picked 6 .gradle files first and
-  // all 6 were skipped as "Unsupported file type"). The extension stays listed
-  // as the INTENDED surface and the files are excluded explicitly, with the
-  // reason recorded in the evidence — never silently dropped.
-  { lang: "groovy", ext: [".groovy", ".gradle"], unsupportedExt: [".gradle"] },
+  // #850 closed in M49 W21: the language registry now maps `gradle: groovy`, so
+  // `.gradle` is sampled and checked like any other surface instead of being
+  // excluded. The exclusion existed because every `build.gradle` was rejected by
+  // detectLanguage before a grammar was chosen — with --files-per-lang=6 the walk
+  // picked 6 .gradle files first and the groovy lane produced ZERO evidence.
+  // Measured after registering it (script/m59/measure-gradle-surface.ts):
+  // grails-core 454 files, 86 parse-failure (18.9%), 15,013 relationships, 0
+  // without a line, 13,339 attributed to (script).
+  { lang: "groovy", ext: [".groovy", ".gradle"] },
   { lang: "typescript", ext: [".ts"] },
   { lang: "javascript", ext: [".js", ".mjs", ".cjs"] },
   { lang: "vue", ext: [".vue"] },
@@ -225,6 +226,11 @@ interface FileResult {
   notCheckable: number
   inconsistentSample: Array<{ type: string; callee: string; claimedLine: number; sourceLine: string }>
 }
+
+/** The canonical sweep's own shape — read off the committed artifact, not chosen:
+ *  validation/m59/results/oracle-callsite.json records `filesPerLang: 40` over all
+ *  22 languages. Any run that is not that shape must not overwrite it. */
+const CANONICAL_FILES_PER_LANG = 40
 
 async function main() {
   const filesPerLang = argNum("files-per-lang", 6)
@@ -472,8 +478,29 @@ async function main() {
     perFile: perLang,
     skipped,
   }
-  const outFile = path.join(OUT_DIR, "oracle-callsite.json")
+  // M49 W21: a SCOPED run must never replace the canonical artifact.
+  //
+  // Measured failure, not a hypothetical: `--only=groovy --files-per-lang=40`
+  // rewrote this file as a 40-file single-language report, deleting 9,693 lines
+  // of the 22-language claim (java 1,920 · kotlin 6,807 · scala 1,989 · groovy
+  // 1,390 relationships) with no warning. The differential harness already
+  // refuses this for M14.0.F5 (`--repo`/`--sample` runs print their result and
+  // write nothing, because "writing it here would replace that claim with a
+  // smaller one"). The oracle is the instrument that certifies the JVM family's
+  // lines, so the same rule applies: a scoped run is for inspecting a lane, and
+  // its numbers belong in the terminal, not in the milestone's evidence.
+  // "Scoped" means EITHER a language filter OR fewer files than the canonical
+  // sweep — a full-language run at --files-per-lang=4 shrinks the claim just as
+  // effectively as --only, so the file count is part of the rule rather than an
+  // afterthought. Both are legitimate inspection runs; neither is evidence.
+  const scoped = only !== null || filesPerLang !== CANONICAL_FILES_PER_LANG
+  const outFile = path.join(OUT_DIR, scoped ? "oracle-callsite-scoped.json" : "oracle-callsite.json")
   writeFileSync(outFile, JSON.stringify(report, null, 2))
+  if (scoped) {
+    console.log(
+      `\nSCOPED run (--only=${only?.join(",")} --files-per-lang=${filesPerLang}): written to ${path.relative(ROOT, outFile)} — the canonical oracle-callsite.json is NOT touched (a scoped run must not shrink the milestone's claim).`,
+    )
+  }
 
   // ── Human-readable verdict ────────────────────────────────────────────────
   console.log("\n=== M59 ORACLE — Tier A (necessary condition) ===")

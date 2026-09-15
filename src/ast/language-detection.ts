@@ -15,6 +15,11 @@ const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
   rs: "rust", go: "go", zig: "zig", nim: "nim",
   java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala", groovy: "groovy", gsp: "groovy",
+  // M49 W21 (#850): Gradle's Groovy DSL. `.gradle` had NO registry entry, so every
+  // `build.gradle`/`settings.gradle` was rejected by detectLanguage before a grammar
+  // was chosen — the largest real-world Groovy surface (454 files in grails-core alone)
+  // was invisible to bb_analyze. The Kotlin DSL was already covered via `kts`.
+  gradle: "groovy",
   py: "python", pyw: "python", pyi: "python", pyx: "python", pxd: "python",
   rb: "ruby", php: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
   ex: "elixir", exs: "elixir", erl: "erlang", hrl: "erlang",
