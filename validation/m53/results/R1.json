@@ -3,8 +3,8 @@
   "code": "R1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 39,
-  "failed": 1,
+  "passed": 37,
+  "failed": 3,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -34,9 +34,9 @@
     {
       "name": "m25-harness-core",
       "script": "script/m25/verify-harness-core.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (26/27 passed, 6/6 mutants caught)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (27/27 passed, 6/6 mutants caught)",
+      "ok": true
     },
     {
       "name": "m25-closure",
@@ -202,9 +202,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (27/32 passed, 3 negatives)",
+      "ok": false
     },
     {
       "name": "m42-enrichment",
@@ -251,9 +251,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (23/30 passed, 7 negatives)",
+      "ok": false
     },
     {
       "name": "m44-hub-tree",
@@ -293,17 +293,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (41/48 passed, 7 negatives)",
+      "ok": false
     }
   ],
-  "currentCommit": "39dcf27527a74bbe591a00e4ac8002dfae1940cb",
+  "currentCommit": "27be4201646606dab63a33e9b00b3bfc2a8121ef",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-15T23:05:09.885Z",
+  "generatedAt": "2026-09-15T23:39:43.148Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T23:05:09.889Z",
-    "contentSha256": "a6026f093bed92a23237194e515a2dfd8bb30b77b7d5d0c5f585269bd4f0036b"
+    "sealedAt": "2026-09-15T23:39:43.150Z",
+    "contentSha256": "0d47ccbedc570b5d8f9fd1e243a99064be7ae354834095124e2a80dafbdfc750"
   }
 }

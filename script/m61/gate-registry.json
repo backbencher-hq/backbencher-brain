@@ -140,6 +140,10 @@
   ],
   "declaredArtifactRecords": [
     {
+      "record": "validation/m61/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority, per-issue evidence) \u2014 a declared plan record whose every entry is a PROJECTION of a gate's record, not a gate verdict of its own"
+    },
+    {
       "record": "validation/m24/results/manifest.json",
       "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
     },
