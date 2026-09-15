@@ -4339,11 +4339,24 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     return false
   }
   const objcClassMembers = new Map<string, Set<string>>()
+  // OC-F mirror: same-file enum case names (flat set, shadowed by nearer binds).
+  const objcEnumCases = new Set<string>()
   {
     const pre: any[] = [root]
     while (pre.length > 0) {
       const pn = pre.pop()!
       if (!pn) continue
+      if (pn.type === "enum_specifier") {
+        const el = pn.namedChildren.find((c: any) => c.type === "enumerator_list")
+        if (el) {
+          for (let i = 0; i < el.namedChildCount; i++) {
+            const en = el.namedChild(i)
+            if (!en || en.type !== "enumerator") continue
+            const nm = en.namedChildren.find((c: any) => c.type === "identifier")
+            if (nm && nm.text.trim()) objcEnumCases.add(nm.text)
+          }
+        }
+      }
       if (pn.type === "class_interface" || pn.type === "class_implementation") {
         const cn = pn.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
         if (cn) {
@@ -4388,6 +4401,8 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     const cm = objcClassMembers.get(owner)
     if (cm && cm.has(name)) return true
     if (objcGlobals.has(name)) return true
+    // OC-F: same-file enum cases resolve last.
+    if (objcEnumCases.has(name)) return true
     return false
   }
   // OBJCD8 oracle mirror: collect in-file class superclass clauses + full
@@ -4515,7 +4530,27 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     if (t === "method_definition" || t === "function_definition") {
       objcFrame = new Set<string>()
       childBindable = true
-      if (t === "function_definition") { childOwner = ""; childScope = "fn" }
+      if (t === "function_definition") {
+        childOwner = ""; childScope = "fn"
+        // OC-H mirror: file-scope function names are resolvable values
+        // (first function_declarator outside the body, then its identifier).
+        const fstack: any[] = [n]
+        let fname: string | null = null
+        while (fstack.length > 0 && !fname) {
+          const fc = fstack.pop()!
+          if (!fc || fc.type === "compound_statement") continue
+          if (fc.type === "function_declarator") {
+            const id = fc.namedChildren.find((c: any) => c.type === "identifier")
+            if (id) fname = id.text
+            break
+          }
+          for (let k = fc.namedChildCount - 1; k >= 0; k--) {
+            const c = fc.namedChild(k)
+            if (c) fstack.push(c)
+          }
+        }
+        if (fname) objcGlobals.add(fname)
+      }
       else { const sel = fullMethodSelector(n); if (sel) childScope = sel }
     }
     if (t === "block_literal" && childBindable) objcBlockFrames.push(new Set<string>())
@@ -4647,7 +4682,19 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     }
     if (t === "call_expression" && inBody) {
       const fn = n.namedChildren.find((c: any) => c.type === "identifier")
-      if (fn) push("calls", fn.text)
+      // OC-G mirror: `@protocol(P)` is a compiler directive, not a call
+      // (direct child of at_expression with callee `protocol`).
+      const inAt = (() => {
+        let p: any = n.parent
+        let g = 0
+        while (p && g++ < 3) {
+          if (p.type === "at_expression") return true
+          if (p.type === "message_expression" || p.type === "call_expression") return false
+          p = p.parent
+        }
+        return false
+      })()
+      if (fn && !(inAt && fn.text === "protocol")) push("calls", fn.text)
     }
     if (t === "preproc_include") {
       // module name: system_lib_string stripped of <>, or string_literal
