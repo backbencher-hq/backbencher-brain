@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "00eb0da5810df21733f3c7d18360d77a083c241f",
-  "committedAt": "2026-09-14T00:04:07+02:00",
+  "commit": "f3161f4843f68907cf75b24af929b94edd0cd650",
+  "committedAt": "2026-09-15T02:07:26+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -190,7 +190,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 68,
+        "referencedTypeLiterals": 79,
         "status": "fail",
         "unknownFields": [],
         "unknownNodeTypes": [
@@ -198,6 +198,16 @@
             "context": "real-dart-analyzer.ts:comparison",
             "line": 453,
             "literal": "dynamic"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1784,
+            "literal": "simple_formal_parameter"
+          },
+          {
+            "context": "real-dart-analyzer.ts:comparison",
+            "line": 1785,
+            "literal": "catch_clause_parameter"
           }
         ],
         "waivedFindings": [],
@@ -319,7 +329,7 @@
         "fieldless": false,
         "oracleFieldCount": 42,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 352,
+        "oracleNodeTypeCount": 359,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 60,
         "status": "pass",
@@ -399,7 +409,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 63,
+        "referencedTypeLiterals": 67,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -456,7 +466,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 368,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 73,
+        "referencedTypeLiterals": 74,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -587,7 +597,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 27,
+        "referencedTypeLiterals": 35,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -828,7 +838,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 82,
+        "referencedTypeLiterals": 85,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1029,7 +1039,7 @@
       "fail": 7,
       "languagesAudited": 41,
       "pass": 34,
-      "totalUnknownReferences": 24
+      "totalUnknownReferences": 26
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1048,8 +1058,8 @@
       "description": "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria"
     }
   ],
-  "regeneratedAt": "2026-09-13T22:05:43.291Z",
-  "regeneratedAtCommit": "00eb0da5810df21733f3c7d18360d77a083c241f",
+  "regeneratedAt": "2026-09-15T00:35:05.488Z",
+  "regeneratedAtCommit": "f3161f4843f68907cf75b24af929b94edd0cd650",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
