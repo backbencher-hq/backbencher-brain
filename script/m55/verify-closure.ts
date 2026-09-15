@@ -494,13 +494,21 @@ const result = {
 
 try {
   mkdirSync(RESULTS, { recursive: true })
-  writeSealed(EVIDENCE, result)
+  // The record must agree with the RUN. It is written once so the self-read
+  // below has a target, then RE-written after that check — the first form
+  // captured its counters before the C1 check ran, so the record said N checks
+  // while the run did N+1. Found by M61.V6's G8 rule ("a check after the last
+  // evidence write"), which exists because the M61.V1 record had this exact
+  // defect in its own milestone.
+  const emit = () => ({ ...result, checks, passed, failed: realFailed, realFailed, negativeCases: mutantsTotal, mutants: { total: mutantsTotal, caught: mutantsCaught } })
+  writeSealed(EVIDENCE, emit())
   console.log(`\nEV X1 evidence written (sealed): ${path.relative(ROOT, EVIDENCE)}`)
   // The self-record's own consistency: it must be pinned to the audit HEAD it
   // just performed (C1's declared exception, made explicit rather than implied).
   const writtenRead = readEvidence(EVIDENCE)
   const written = writtenRead.ok ? (writtenRead.record as { currentCommit?: string }) : undefined
   check("C1: the X1 record this run wrote is pinned to the audit HEAD", written !== undefined && written.currentCommit === HEAD, String(written?.currentCommit ?? "unreadable").slice(0, 12))
+  writeSealed(EVIDENCE, emit())
 } catch (e) {
   console.log(`\nEV X1 evidence write failed: ${String(e)}`)
 }

@@ -325,10 +325,19 @@ try {
       "Mutants M1-M5 are source-level copies of the library imported from a mutated file; the real gate always imports the untouched script/lib/evidence.ts.",
     ],
   }
-  const evidenceSeal = writeSealed(evidencePath, evidence)
+  // The record must agree with the RUN — so it is (re)written after every
+  // check, including the two below. Found the hard way: the first form wrote
+  // 32/32 and then ran two more checks, printing 34/34 while the record said
+  // 32 — the record-disagrees-with-the-run class this very milestone exists to
+  // kill (the M61.V2 record had the identical defect). `emit()` re-reads the
+  // counters, so the last write is always the truth.
+  const emit = () => ({ ...evidence, checks: checks.length, passed, failed, realFailed: failed, checksList: checks })
+  writeSealed(evidencePath, emit())
   const selfRead = readEvidence(evidencePath)
   check("R12: this verifier's own evidence file verifies through the trusted read", selfRead.ok)
+  const evidenceSeal = writeSealed(evidencePath, emit())
   check("R12: the emitted evidence carries a valid seal", typeof evidenceSeal.contentSha256 === "string" && evidenceSeal.contentSha256.length === 64)
+  writeSealed(evidencePath, emit())
 
   console.log(`\nM61.V1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks.length})`)
   console.log(`Evidence (sealed): ${evidencePath}`)
