@@ -152,6 +152,69 @@ function dropJavaCallsiteLines(r: any) {
   }
 }
 
+// M59 (#825), groovy half: the PRE-FIX state EXACTLY. Before this round the
+// groovy analyzer emitted NO line on any relationship (measured: 0 of 761 on a
+// 40-file sample), so the faithful regression is "the field is gone".
+function dropGroovyLineNumbers(r: any) {
+  const rels: any[] = r.relationships ?? []
+  if (!rels.some((x) => x && "line_number" in x)) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!x || !("line_number" in x)) return x
+      const { line_number: _drop, ...rest } = x
+      return rest
+    }),
+  }
+}
+
+// M59 (#825), kotlin half: the PRE-FIX state EXACTLY. Before this round the
+// kotlin analyzer emitted NO line on a heritage edge (measured: 130 of 130
+// kotlin_extends and 9 of 9 kotlin_implements carried none on a 60-file
+// sample), so the faithful regression is "the field is gone", not a wrong
+// number — same shape as java's drop mutant.
+function dropKotlinHeritageLines(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const isHeritage = (x: any) => {
+    const t = String(x.type ?? x.relationshipType ?? "")
+    return t === "extends" || t === "implements"
+  }
+  if (!rels.some((x) => isHeritage(x) && "line_number" in x)) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!isHeritage(x) || !("line_number" in x)) return x
+      const { line_number: _drop, ...rest } = x
+      return rest
+    }),
+  }
+}
+
+// M59 (#825), kotlin half: the NAIVE alternative the fixture forbids — every
+// heritage edge stamped with the line the CLASS DECLARATION starts on. A
+// wrapped supertype list (`internal class TestScopeImpl(...) :` / line 184
+// `AbstractCoroutine<Unit>(...), TestScope {`) then names the class keyword for
+// every parent. Written off the result's own symbol table so it cannot silently
+// stop matching.
+function revertKotlinHeritageToDeclarationLine(r: any) {
+  const startLine = new Map<string, number>()
+  for (const s of r.symbols ?? []) {
+    if (typeof s?.name === "string" && typeof s?.range?.startLine === "number") {
+      startLine.set(s.name, s.range.startLine)
+    }
+  }
+  if (startLine.size === 0) return r
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const t = String(x.type ?? x.relationshipType ?? "")
+      if (t !== "extends" && t !== "implements") return x
+      const ln = startLine.get(String(x.source ?? x.from ?? "?"))
+      return ln === undefined ? x : { ...x, line_number: ln }
+    }),
+  }
+}
+
 // M59 (#825), import half: the PRE-FIX import line EXACTLY. The edge's target is
 // the dotted module; the pre-fix line was that import statement's own start, so
 // an import whose last segment is written later (a renamed selector inside a
@@ -933,6 +996,41 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: java's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 1,920 java relationships carried one). Caught by java/callsite-lines-825, which pins trim 15, toUpperCase 16, instantiates Chains 20 and StringBuilder 24 and the two append calls at 25/26.",
     transform: dropJavaCallsiteLines,
+  },
+  {
+    id: "kotlin/heritage-lines-dropped",
+    language: "kotlin",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: kotlin heritage edges go back to carrying NO line — the exact pre-fix state (measured 139 of 139 extends/implements edges unlined on a 60-file sample, 12,274 relationships total). Caught by kotlin/heritage-lines-825, which pins all three `Wrapped` parents at 12 and both `Third` supertypes at 21.",
+    transform: dropKotlinHeritageLines,
+  },
+  {
+    id: "groovy/lines-dropped",
+    language: "groovy",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: groovy's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 761 relationships carried one on a 40-file sample). Caught by groovy/lines-825, which pins the class at 19, its members at 23/26, both heritage parents at 19/20, the override at 26, the member read at 27, the declared type at 23, the import at 3 and both chain calls at 29/30.",
+    transform: dropGroovyLineNumbers,
+  },
+  {
+    id: "groovy/annotation-start-line",
+    language: "groovy",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a groovy declaration goes back to the line of its leading ANNOTATION — the exact pre-fix behaviour of every symbol range (the pinned grammar puts `modifiers` first, so `@Deprecated\nclass Wrapped` started at 18). Caught by groovy/lines-825 twice: `contains Wrapped -> label` is pinned at 23 and forbidden at 22, `contains Wrapped -> use` pinned at 26 and forbidden at 25, and the Wrapped/label symbol ranges are pinned at 19/23.",
+    transform: revertToAnnotationStartLine,
+  },
+  {
+    id: "groovy/chain-opening-line",
+    language: "groovy",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: every call in a multi-line chain is stamped with the line the chain's first call is on, so the second continuation is attributed to the first's line. Caught by groovy/lines-825, whose forbid entry names `.configure(m)` at 29 when it is written on 30 (the receiver opens the chain on 28).",
+    transform: revertToChainOpeningLine,
+  },
+  {
+    id: "kotlin/heritage-class-header-line",
+    language: "kotlin",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: every heritage edge is stamped with the line the CLASS DECLARATION starts on, which is right only when the supertype list is written inline. On a wrapped list (`internal class TestScopeImpl(...) :` 183 / `AbstractCoroutine<Unit>(...), TestScope {` 184 in kotlinx-coroutines) it sends a tool to the class keyword for every parent. Caught by kotlin/heritage-lines-825, whose forbid entries name `Wrapped`'s parents at 9 (the `class` line) and `Third`'s at 20.",
+    transform: revertKotlinHeritageToDeclarationLine,
   },
   {
     id: "scala/import-statement-start-line",
