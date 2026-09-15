@@ -203,12 +203,16 @@ named on their own lines, and the overriding declaration — not its `@Override`
 `groovy/chain-opening-line` (the scala mechanism re-checked on groovy's shape: `.configure(m)` written
 on 30 must not be stamped with the chain-opening 29).
 
-**Two shapes were found while probing and deliberately NOT pinned as expected** — both filed:
+**Two shapes were found while probing and deliberately NOT pinned here** — both filed and **both since
+fixed and closed in M49 W20** (`reviews/m49-w20-groovy-continuation-shapes.md`):
 
 - **#851** — a newline-continued PROPERTY read (`this\n  .label`) is shaped as `leading_dot_call` and
-the analyzer emits a **`calls` edge to the property**, losing the read. The line fixture avoids the
-shape so its pins stay honest; the defect needs the oracle's `deriveGroovyEdges` to learn the same
-rule (it has no `leading_dot_call` handling at all) before it can be fixed with the usual apparatus.
+the analyzer emitted a **`calls` edge to the property**, losing the read. The line fixture avoids the
+shape so its pins stay honest; the fix landed with the oracle's `deriveGroovyEdges` gaining the same
+rule (its absence of any `leading_dot_call` branch is why the lane was green while blind — measured,
+the mirror moved calls-truth 476 -> 865 on the identical groovy lane with `unexplained` 0 both times).
+Pinned by `groovy/continuation-shapes-851` beside its one-line control, and by the mutant
+`groovy/parenless-continuation-call`.
 - **#852** — the same shape written dotted AND continued on the next line (`helper.build(2)` then
 `.configure(3)`) turns the whole expression into a `juxt_function_call` and emits **both** a dotted
 `calls` target (`f -> helper.build`, where the family contract is the bare leaf, and the same method is

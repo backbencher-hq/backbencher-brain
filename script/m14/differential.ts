@@ -1264,7 +1264,26 @@ export function deriveGroovyEdges(root: any): { label: string; from: string; tar
       if (first && (first.type === "super" || first.type === "this")) push("calls", first.type)
     } else if (t === "juxt_function_call") {
       const nameNode = n.childForFieldName?.("name")
-      if (nameNode && !isBuiltin(nameNode.text)) push("calls", nameNode.text)
+      if (nameNode && !isBuiltin(nameNode.text)) {
+        // #852: the family contract is a BARE callee leaf. A dotted juxt name
+        // parses as field_access (`helper.build "x"`, and every continued
+        // dotted chain), so the whole dotted text used to become the target.
+        const leaf = nameNode.type === "field_access"
+          ? nameNode.childForFieldName?.("field") ?? nameNode
+          : nameNode
+        push("calls", leaf.text)
+      }
+    } else if (t === "leading_dot_call") {
+      // #851: a continuation segment is a call ONLY with an argument list
+      // (`.build(1)`); a paren-less `.label` is a member READ and is
+      // deliberately NOT calls truth. This branch did not exist, so the
+      // analyzer's fabricated `calls` for the property form had no oracle to
+      // disagree with it, and the legitimate paren-ful call had no truth
+      // either.
+      const nameNode = n.childForFieldName?.("name")
+      const args = n.childForFieldName?.("arguments")
+        ?? (n.namedChildren ?? []).find((c: any) => c.type === "argument_list")
+      if (args && nameNode && !isBuiltin(nameNode.text)) push("calls", nameNode.text)
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
   }
