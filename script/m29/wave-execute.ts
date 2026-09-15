@@ -22,6 +22,7 @@ import { realpathSync } from "node:fs"
 import { WAVE_LANGUAGES, ROOT } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 interface Expectations {
   language: string
@@ -106,7 +107,7 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
       steps, indexCounts: null, measurements: [], budgetViolations: [], commit, machine, generatedAt,
     }
   }
-  const expectations = JSON.parse(readFileSync(expPath, "utf8")) as Expectations
+  const expectations = parseSealedRecord(expPath) as Expectations
   const distIndex = path.join(ROOT, "dist", "index.js")
   const distServer = path.join(ROOT, "dist", "lsp", "server.js")
   if (!existsSync(distIndex) || !existsSync(distServer)) {
@@ -274,7 +275,7 @@ async function main(): Promise<void> {
   let allOk = true
   for (const language of languages) {
     const result = await executeWaveLeg(language)
-    writeSealed(path.join(ROOT, "validation/m29/results", `wave-${language}.json`), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results", `wave-${language}.json`), result)
     const fails = result.steps.filter((s) => s.status === "fail")
     console.log(`  ${language.padEnd(11)} ${result.status.toUpperCase().padEnd(8)} ${result.steps.length} checks, ${fails.length} failed${result.reason ? ` — ${result.reason}` : ""}`)
     if (result.status !== "verified") allOk = false

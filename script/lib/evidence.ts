@@ -182,3 +182,19 @@ export function sealLegacyFile(filePath: string, now = new Date()): EvidenceSeal
   writeFileSync(filePath, `${JSON.stringify(sealed, null, 2)}\n`)
   return seal
 }
+
+/** Drop-in adoption helper for gates that already do
+ *  `JSON.parse(readFileSync(p, "utf8"))` on evidence records (inside try/
+ *  catch or bare). Semantics: a sealed record parses exactly as before; a
+ *  clean legacy record parses with a warn (the declared transition window);
+ *  tampered/bad-seal/unparseable records THROW with the reason — a gate that
+ *  catches gets a loud refusal ("missing evidence"), a bare site fails the
+ *  run. Never returns a record that failed verification. */
+export function parseSealedRecord<T = Record<string, unknown>>(filePath: string): T {
+  const read = readEvidenceAllowingLegacy<T>(filePath)
+  if (read.ok) {
+    if (read.legacy) console.error(`warn: ${path.basename(filePath)} is a legacy (unsealed) record — accepted in the M61 transition window only`)
+    return read.record
+  }
+  throw new Error(`M61 trusted read refused ${path.basename(filePath)}: ${read.reason} (kind=${read.kind})`)
+}

@@ -64,6 +64,7 @@ import { M55_ROOT, ensureServerBuilt } from "./lsp-wire.ts"
 import { EDITOR_CONTENT_REGION, navigationSpannedFile, noNavigationReason, type RegionDiff } from "./navigation.ts"
 import { runWireProbe, DECLARED_FIXTURE, type ProbeResult } from "./wire-probe.ts"
 import { CAPTURE_FLOWS, FRAMES_DIR, PIXEL_READ, SCREEN, rigPreflight } from "./screenshot-protocol.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = M55_ROOT
 const EVIDENCE = path.join(ROOT, "validation/m55/results/V1.json")
@@ -517,7 +518,7 @@ check(
 
 // --- R5: wiring ---------------------------------------------------------------------
 console.log("\nR5: wiring — the gate is in the chains (machine-read, not a doc claim)")
-const pkg = JSON.parse(readFileSync(PACKAGE, "utf8")) as { scripts: Record<string, string> }
+const pkg = parseSealedRecord(PACKAGE) as { scripts: Record<string, string> }
 const inVerify = (pkg.scripts.verify ?? "").includes("m55/verify-live-surface")
 const inFast = (pkg.scripts["verify:fast"] ?? "").includes("m55/verify-live-surface")
 check("R5: the gate is in the local npm verify chain", inVerify, "package.json scripts.verify")
@@ -623,7 +624,7 @@ try {
   // expected for a blocked session
 }
 try {
-  blockedRecord = JSON.parse(readFileSync(BLOCKED_PROOF, "utf8")) as typeof blockedRecord
+  blockedRecord = parseSealedRecord(BLOCKED_PROOF) as typeof blockedRecord
 } catch {
   blockedRecord = null
 }

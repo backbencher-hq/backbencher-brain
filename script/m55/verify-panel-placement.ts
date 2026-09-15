@@ -35,6 +35,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const MODULE = path.join(ROOT, "ide/vscode/src/panel-placement.ts")
@@ -153,7 +154,7 @@ check(
   /resolvePlacementFromSettings/.test(helper) && /ViewColumn\.Active/.test(helper) && /ViewColumn\.Beside/.test(helper),
   "",
 )
-const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
+const manifest = parseSealedRecord(MANIFEST) as {
   contributes?: { configuration?: { properties?: Record<string, { enum?: string[]; default?: string }> } }
 }
 const prop = manifest.contributes?.configuration?.properties?.[PANEL_PLACEMENT_SETTING]

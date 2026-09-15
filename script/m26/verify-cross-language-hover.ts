@@ -333,8 +333,8 @@ async function main(): Promise<void> {
     }
     const dir = join(ROOT, "validation/m26/results")
     mkdirSync(dir, { recursive: true })
-    writeSealed(join(dir, "W3.json"), JSON.stringify(result, null, 2) + "\n")
-    writeSealed(join(dir, "W3-pairs.json"), JSON.stringify({ status: result.status, checkedPairs: allPairs, realDbsScanned, generatedAt: result.generatedAt }, null, 2) + "\n")
+    writeSealed(join(dir, "W3.json"), result)
+    writeSealed(join(dir, "W3-pairs.json"), { status: result.status, checkedPairs: allPairs, realDbsScanned, generatedAt: result.generatedAt })
     console.log(`W3: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
     process.exit(failed === 0 ? 0 : 1)
   } finally {

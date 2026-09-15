@@ -173,6 +173,6 @@ const result = {
   ],
   details: details.slice(0, 10),
 }
-writeSealed(path.join(ROOT, "validation/m29/results/D1-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/D1-verify.json"), result)
 console.log(`D1: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 3 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

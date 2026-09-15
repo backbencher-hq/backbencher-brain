@@ -33,7 +33,6 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_REL_MAIN2, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import {
-import { writeSealed } from "../lib/evidence.ts"
   connectedGroups,
   connectedSummarySection,
   richSitesForSymbol,
@@ -41,6 +40,7 @@ import { writeSealed } from "../lib/evidence.ts"
   usagesSection,
   type RichSite,
 } from "../../src/lsp/rich_hover.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H2.json")

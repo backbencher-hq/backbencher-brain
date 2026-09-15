@@ -15,7 +15,7 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, readEvidenceAllowingLegacy } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m24/results")
@@ -65,6 +65,7 @@ const SECTION6_CATEGORIES: Array<{
 // Launch set (M29 wave-1 extension; single owner src/lsp/launch_languages.ts,
 // drift-gated against the approval record by script/m29/verify-governance.ts).
 import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
+import { parseSealedRecord } from "../lib/evidence.ts"
 const SIX_FEATURES = ["hover", "definition", "references", "documentSymbol", "workspaceSymbol", "callHierarchy"]
 
 let checks = 0
@@ -102,12 +103,25 @@ function runVerifier(script: string): number {
  * measured latency samples (p95WarmMs are measurements, not facts; their
  * budget-pass/fail verdict is what must be identical). Everything else must
  * reproduce byte-for-byte.
+ *
+ * M61.V1: records are read through the trusted path and the bbSeal envelope
+ * is excluded from the fingerprint — the seal is integrity metadata (its
+ * sealedAt is declared-volatile like generatedAt, its contentSha256 covers
+ * exactly the content compared here). A tampered record is refused before
+ * fingerprinting, which makes the regeneration check seal-aware: content
+ * under a valid seal must reproduce, or the closure fails.
  */
 function fingerprint(evidenceFile: string): string | null {
   const p = path.join(RESULTS, evidenceFile)
   if (!existsSync(p)) return null
-  const raw = JSON.parse(readFileSync(p, "utf8"))
+  const read = readEvidenceAllowingLegacy<Record<string, unknown>>(p)
+  if (!read.ok) {
+    console.error(`refused: ${evidenceFile} — ${read.reason} (kind=${read.kind}); not fingerprintable`)
+    return null
+  }
+  const raw = read.record
   delete raw.generatedAt
+  delete raw.bbSeal
   for (const run of raw.runs ?? []) {
     for (const f of run.features ?? []) {
       delete f.p95WarmMs // declared measurement, excluded from the fingerprint
@@ -135,7 +149,7 @@ for (const { category, code, mutantName } of SECTION6_CATEGORIES) {
   const evPath = path.join(RESULTS, SUITE.find((s) => s.code === code)!.evidenceFile)
   let covered = false
   if (existsSync(evPath)) {
-    const ev = JSON.parse(readFileSync(evPath, "utf8"))
+    const ev = parseSealedRecord(evPath)
     const verdict = ev.verdict
     const mutantsCaught = verdict?.mutantsCaught ?? ev.mutants?.filter((m: any) => m.caught).length ?? 0
     const mutantsTotal = verdict?.mutantsTotal ?? ev.mutants?.length ?? 0
@@ -181,7 +195,7 @@ check("X1: D1 evidence verified (claim levels + limitations)", (JSON.parse(readF
 check("X1: doc states claim levels", doc.includes("Claim levels"))
 check("X1: doc states limitations", doc.includes("## Limitations"))
 // Item 5: ledger clean — no PENDING cell.
-const ledger = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"))
+const ledger = parseSealedRecord(MANIFEST_PATH)
 const pending = ledger.issues.filter((i: any) => i.status === "planned")
 check("X1: ledger has no pending non-X1 cell", pending.every((i: any) => i.code === "X1"), pending.map((i: any) => i.code).join(","))
 
@@ -262,7 +276,7 @@ const evidenceCommits = new Set(
   SUITE.map(({ evidenceFile }) => {
     const p = path.join(RESULTS, evidenceFile)
     if (!existsSync(p)) return null
-    return JSON.parse(readFileSync(p, "utf8")).currentCommit
+    return parseSealedRecord(p).currentCommit
   }).filter(Boolean),
 )
 check("X1: all suite evidence files share one commit (regenerated together)", evidenceCommits.size === 1, [...evidenceCommits].map((c) => String(c).slice(0, 8)).join(","))

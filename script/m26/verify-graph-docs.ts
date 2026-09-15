@@ -284,7 +284,7 @@ function main(): void {
     verifierCommand: "npx tsx script/m26/verify-graph-docs.ts",
     generatedAt: new Date().toISOString(),
   }
-  writeSealed(join(dir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "D1.json"), result)
   console.log("D1: " + result.status.toUpperCase() + " (" + passed + "/" + checks + " passed, " + result.mutantsCaught + "/" + result.mutantsTotal + " mutants)")
   if (result.status !== "verified") process.exitCode = 1
 }

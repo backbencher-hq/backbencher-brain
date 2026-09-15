@@ -24,6 +24,7 @@ const PLAN = join(ROOT, "docs", "m24", "M24-MASTER-PLAN.md")
  *  the duplicated copy here was a drift hazard; the wave-1 extension flows
  *  through the owner module). */
 import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 /** Feature -> { evidence file, claim level } mapping, all derived from
  *  machine evidence. A feature is listed only when its evidence says
@@ -54,7 +55,7 @@ function evidenceStatus(code: string): "verified" | "missing" {
   const p = join(RESULTS, `${code}.json`)
   if (!existsSync(p)) return "missing"
   try {
-    const d = JSON.parse(readFileSync(p, "utf8")) as { status?: string; verdict?: { ok?: boolean } }
+    const d = parseSealedRecord(p) as { status?: string; verdict?: { ok?: boolean } }
     return d.status === "verified" && (d.verdict?.ok ?? true) ? "verified" : "missing"
   } catch {
     return "missing"

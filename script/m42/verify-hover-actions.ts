@@ -32,6 +32,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H4.json")
@@ -331,7 +332,7 @@ console.log("\nR5: budget")
 // --- R6: docs + manifest drift gate -----------------------------------------------------
 console.log("\nR6: docs drift gate")
 {
-  const pkg = JSON.parse(readFileSync(PKG, "utf8")) as { contributes?: { commands?: Array<{ command: string }> } }
+  const pkg = parseSealedRecord(PKG) as { contributes?: { commands?: Array<{ command: string }> } }
   const cmdIds = (pkg.contributes?.commands ?? []).map((c) => c.command)
   check(
     "R6: manifest contributes registers the three hover actions",
