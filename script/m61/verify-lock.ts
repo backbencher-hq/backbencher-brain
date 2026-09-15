@@ -285,6 +285,7 @@ try {
     "script/m61/adopt-sealed-reads2.ts",
     "script/m25/verify-auto-index.ts", // consent store — declared out of D-1 scope
     "script/m25/verify-install-docs.ts", // transient vscode-test results.json (harness output, not a record)
+    "script/m61/verify-governance.ts", // G1's tampered-record fixture (written to a temp path, then removed)
   ])
   const offenders: string[] = []
   for (const d of ["m24", "m25", "m26", "m27", "m28", "m29", "m42", "m44", "m53", "m55", "m61"]) {

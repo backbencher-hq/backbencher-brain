@@ -19,6 +19,9 @@
 //   G7 import order: no lane gate imports a lane module with a DYNAMIC
 //                    `import("./…")` — the TDZ bug class (#847), which the rule
 //                    found once, for real, in script/m29/verify-analyzer-relevance.ts.
+//   G8 record=run:   no check runs after a gate's last evidence write — a record
+//                    one check stale is a record that disagrees with its run
+//                    (found in M61.V1, M61.V2 and M55.X1).
 //
 // Mutants (source-level copies of the lint's pure decision cores) prove the
 // suite CAN FAIL:
@@ -29,6 +32,7 @@
 //   M5 env-blind:       undeclared env vars stop failing.
 //   M6 tier-blind:      a gate in no execution tier stops failing G5.
 //   M7 import-order-blind: a relative dynamic import stops failing G7.
+//   M8 record-order-blind: a check after the last write stops failing G8.
 //
 // Run: npx tsx script/m61/verify-lint.ts
 // Evidence: validation/m61/results/V4.json (sealed)
@@ -45,6 +49,7 @@ import {
   isSealed,
   lint,
   loadRegistry,
+  recordAfterChecksFinding,
   type LintReport,
 } from "./gate_lint.ts"
 
@@ -95,6 +100,7 @@ check("G4: every gate carries a can-fail proof or a declared reason", byRule("G4
 check("G5: every gate is wired into a tier, and fast ⊆ full", byRule("G5").length === 0, byRule("G5").slice(0, 3).join(" | "))
 check("G6: every BB_* env var a gate reads is declared", byRule("G6").length === 0, byRule("G6").slice(0, 3).join(" | "))
 check("G7: no lane gate dynamically imports a lane module", byRule("G7").length === 0, byRule("G7").slice(0, 3).join(" | "))
+check("G8: no lane gate runs a check after its last evidence write", byRule("G8").length === 0, byRule("G8").slice(0, 3).join(" | "))
 check("G0: the lint reports no unexplained failures at all", report.failures.length === 0, report.failures.slice(0, 5).join(" | "))
 
 // --- core functions on known inputs ----------------------------------------------
@@ -207,6 +213,19 @@ await runMutant("import-order-blind", "      out.push(`${file}:${i + 1}: dynamic
 // m26 on-demand gates rotted while the 40-gate ladder stayed green, so a gate
 // wired into NO execution tier broke the m29 closure when it was finally
 // spawned; the M61 verifiers were not in the ladder and could rot unseen too.
+// M61.V6 / #847 — the record-must-agree-with-the-run class. Incident: M61.V1
+// wrote 32/32 and then ran two more checks (printing 34/34), M55.X1 captured its
+// counters before its C1 check, and M61.V2's variant is what made the rule.
+await runMutant(
+  "record-order-blind",
+  "  if (lastCheck > lastWrite) {",
+  "  if (false) {",
+  (mod) => {
+    const f = (mod.recordAfterChecksFinding as typeof recordAfterChecksFinding)("x.ts", 'writeSealed("a.json", r)\ncheck("after", true)\n')
+    return f === null
+  },
+)
+
 await runMutant("tier-blind", "      } else {\n        failures.push(`G5: ${gate} is wired into NO execution tier", "      } else if (false) {\n        failures.push(`G5: ${gate} is wired into NO execution tier", (mod) => {
   const reg = JSON.parse(JSON.stringify(loadRegistry())) as ReturnType<typeof loadRegistry>
   // Strip the on-demand declarations: every on-demand gate is now a gate in no
