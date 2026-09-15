@@ -28,9 +28,12 @@ import {
   createServer,
   languageForPath,
   isLaunchLanguage,
-  LAUNCH_LANGUAGES,
   ErrorCodes,
 } from "../../src/lsp/server"
+// D-5 (gate-internal facts): the launch set is read from its OWNER module, never
+// re-listed inline here and never taken second-hand through a re-export — this is
+// the fact this gate checks against the owner-approved wave records below.
+import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
