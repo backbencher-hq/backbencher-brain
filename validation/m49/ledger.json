@@ -208,6 +208,15 @@
     }
 ,
     {
+        "id": "OC2",
+        "title": "ObjC second review wave (issue #853): OC-F enum cases, OC-G protocol directive, OC-H function decay",
+        "status": "verified",
+        "notes": "Hostile second battery over pass-1 deferrals; oracle mirrors in deriveObjcEdges. Fully gated: fixture objc/second-review (new), 3 mutants, spec OC-F/G/H + OC-R3. Lanes: sdwebimage + afnetworking, pinned + 5 rotations, 0/0. F3 all pass, F4 578/578, R1 122/122, R2 15/15. Seam trace in-wave (P1-objc.json): 468 rows, flags join F1, contains lines vs analyzer NULLs.",
+        "evidenceFile": "reviews/objc/second-review.md",
+        "verifiedAtCommit": "5af983f2"
+    }
+,
+    {
         "id": "DT1",
         "title": "Dart first review wave (issue #827): DT-A named construction, DT-B heritage aliases, DT-C redirect alias, DT-D super/this redirections, DT-F member reads, DT-E/DT-R1 ruled",
         "status": "verified",
