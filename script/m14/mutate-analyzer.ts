@@ -49,6 +49,90 @@ function revertToKeywordTarget(r: any) {
   }
 }
 
+// M59 (#825), second half: the PRE-FIX declaration line for an ANNOTATED
+// definition. tree-sitter-scala starts a definition node at its leading
+// annotation, so `contains X -> member` and the symbol's own range both landed
+// one line above `def`/`val`. Simulated generically: any symbol the analyzer
+// itself recorded decorators for is treated as annotated, and its range start
+// plus every `contains` edge into it moves back one line. Uses the result's own
+// decorator payload, so it stays a faithful stand-in rather than a name filter
+// that silently stops matching when the fixture changes.
+function revertToAnnotationStartLine(r: any) {
+  const annotated = new Set(
+    (r.symbols ?? [])
+      .filter((s: any) => Array.isArray(s.decorators) && s.decorators.length > 0)
+      .map((s: any) => s.name),
+  )
+  if (annotated.size === 0) return r
+  return {
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) =>
+      annotated.has(s.name)
+        ? { ...s, range: { ...(s.range ?? {}), startLine: (s.range?.startLine ?? 1) - 1 } }
+        : s,
+    ),
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const t = String(x.type ?? x.relationshipType ?? "")
+      if (t !== "contains" || !annotated.has(String(x.target))) return x
+      return typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x
+    }),
+  }
+}
+
+// M59 (#825): the PRE-FIX line for an inheritance list. Every supertype was
+// stamped with the line the `extends` clause opened on, so on a parent written
+// one per line only the FIRST one was right. Generic: within each source symbol,
+// collapse every extends/implements edge onto that source's earliest such line.
+function revertToClauseStartLine(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const isHeritage = (x: any) => {
+    const t = String(x.type ?? x.relationshipType ?? "")
+    return t === "extends" || t === "implements"
+  }
+  const earliest = new Map<string, number>()
+  for (const x of rels) {
+    if (!isHeritage(x) || typeof x.line_number !== "number") continue
+    const k = String(x.source ?? x.from ?? "?")
+    const cur = earliest.get(k)
+    if (cur === undefined || x.line_number < cur) earliest.set(k, x.line_number)
+  }
+  if (earliest.size === 0) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!isHeritage(x) || typeof x.line_number !== "number") return x
+      const m = earliest.get(String(x.source ?? x.from ?? "?"))
+      return m === undefined ? x : { ...x, line_number: m }
+    }),
+  }
+}
+
+// M59 (#825): the PRE-FIX line for a type REFERENCE. The line came from the
+// enclosing type expression's start, so `type Shape[T] = Shape.Cases[(\n
+//   Case[Cons[T], (T, Lst[T])]\n)]` put Cons/Lst/Unit on the `type` line.
+// Generic: within each source symbol, collapse every `references` edge onto that
+// source's earliest references line.
+function revertToEnclosingTypeLine(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const isRef = (x: any) => String(x.type ?? x.relationshipType ?? "") === "references"
+  const earliest = new Map<string, number>()
+  for (const x of rels) {
+    if (!isRef(x) || typeof x.line_number !== "number") continue
+    const k = String(x.source ?? x.from ?? "?")
+    const cur = earliest.get(k)
+    if (cur === undefined || x.line_number < cur) earliest.set(k, x.line_number)
+  }
+  if (earliest.size === 0) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!isRef(x) || typeof x.line_number !== "number") return x
+      const m = earliest.get(String(x.source ?? x.from ?? "?"))
+      return m === undefined ? x : { ...x, line_number: m }
+    }),
+  }
+}
+
 // M59 (#825): the PRE-FIX call-site line semantics. A call_expression starts at
 // its RECEIVER, so every call inside one multi-line chain was stamped with the
 // line the chain opened on — on the real cats-effect Example.scala that put 5
@@ -793,6 +877,27 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: restores the receiver-start line, collapsing every call in a multi-line chain onto the line the chain opened on. Exactly the defect the fix removed — on cats-effect Example.scala `.as(ExitCode(2))` written on 23 was reported on 22. Caught by scala/callsite-lines-825, whose forbid entries name `.as` on line 12 and `.filter` on line 16, the pre-fix positions.",
     transform: revertToChainOpeningLine,
+  },
+  {
+    id: "scala/annotation-start-line",
+    language: "scala",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a definition's line goes back to its leading ANNOTATION (tree-sitter-scala starts the definition node at the annotation), so `contains` and the symbol range both land on `@tailrec`/`@deprecated` instead of on `def`/`val` — scala/declaration-lines-825 pins countdown 25 and legacy 29 and FORBIDS 24/28, so the pre-fix positions fail the gate.",
+    transform: revertToAnnotationStartLine,
+  },
+  {
+    id: "scala/extends-clause-start-line",
+    language: "scala",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: every supertype edge is stamped with the line the `extends` clause OPENED on, so parents written one per line collapse onto the first one's line — scala/declaration-lines-825 pins `with Mixin` 33 / `with Product` 34 and FORBIDS both at 32.",
+    transform: revertToClauseStartLine,
+  },
+  {
+    id: "scala/enclosing-type-start-line",
+    language: "scala",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: type references are stamped with the line the enclosing type expression opened on instead of the line the type is named — scala/declaration-lines-825 pins List 40 / Option 41 and FORBIDS both at 39.",
+    transform: revertToEnclosingTypeLine,
   },
   {
     id: "scala/write-as-read-leak",

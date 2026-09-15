@@ -101,13 +101,70 @@ Verified by indexing a real corpus repo from source into a throwaway data dir
 Lines landed: `calls` 5,628 · `instantiates` 1,273 · `extends` 630 · `implements` 54 — all scala, the
 only language whose analyzer emits them today.
 
-### 3. The landed lines checked against source (not against the index)
+### 3. The landed lines checked against source (not against the index) — the 2026-09-14 baseline
 
-7,187 consistent / **330 inconsistent** of 7,517. The 330 are a real analyzer defect, not a store one:
-scala records the enclosing expression's **start** line instead of the call node's line in multi-line
-chains — e.g. `scalafix/rules/.../v3_0_0.scala:193` claims `dropRight` at line 193, but line 193 is
-`val toRemove = outerTokens`. Handed to #825, and it matters because scala is the pattern the other 20
-languages would otherwise copy.
+At filing: 7,187 consistent / **330 inconsistent** of 7,517. The 330 were a real analyzer defect, not a
+store one: scala recorded the enclosing expression's **start** line instead of the call node's line in
+multi-line chains — e.g. `scalafix/rules/.../v3_0_0.scala:193` claims `dropRight` at line 193, but line
+193 is `val toRemove = outerTokens`. Handed to #825, and it matters because scala is the pattern the
+other 20 languages would otherwise copy.
+
+### 3b. The scala reference implementation, corrected and completed (2026-09-15, #825)
+
+Scala was the only language emitting a line, and it was wrong in **four** places, all one defect: the
+line belonged to the enclosing construct instead of to the name. Each was found by the oracle against
+source, fixed, and pinned.
+
+**Coverage** — same instrument, same 300-file scala3 sample before and after
+(`bun script/m59/oracle-callsite.ts --files-per-lang=300 --only=scala`), so this half IS an A/B:
+
+| | before this round | after |
+|---|---:|---:|
+| relationships carrying a line | 2,949 of 9,320 (~32%) | **9,319 of 9,319 (100%)** |
+| landed lines failing the source check | 20 of 2,949 (0.68%) | **0 of 9,010 checked** |
+| not checkable (synthesised names) | counted as failures | 309, reported separately |
+
+**Accuracy** — the 4.4% figure #825 was filed with (330 of 7,517 landed lines) came from the
+store-landing run on cats-effect (404 files), a **different sample** to the one above, so it is not a
+clean before/after ratio. What it measures is the same defect, and the answer on the current sample is
+zero failures out of 9,010 checked — the 20 that survived the call-site fix are among the 102 below.
+
+| # | mechanism | evidence on real source | fix |
+|---|---|---|---|
+| 1 | a `call_expression` starts at its **receiver**, so every call in a multi-line chain took the chain's opening line | cats-effect `Example.scala`: `.as(ExitCode(2))` written on 23 reported on 22 | line from the **callee leaf** |
+| 2 | a **type request** took the enclosing type expression's line | `type Shape[T] = Shape.Cases[(\n …Cons…]` put Cons/Lst/Unit on the `type` line | `collectTypeNames` returns `{name, line}` pairs |
+| 3 | an **inheritance list** took the line the `extends` clause opened on | `trait IterableLike[+A]\n extends FromIterable\n with IterableOps[A] …` put all three on 106 | `extractSupertypes` returns `{name, line}` pairs |
+| 4 | a definition with a **leading annotation** took the annotation's line (tree-sitter-scala starts the definition node at its annotation — measured, not assumed) | `@tailrec\n def loop` gave the symbol line 4 for a `def` on 5 | `declarationLineNode()` — start after the annotations |
+
+Mechanism 4 is a **contract decision**, not a bug fix: an annotation is a modifier, so the declaration
+line is where the declaration is written. The symbol range and the `contains` edge move together so
+they cannot disagree. java/kotlin/groovy have no annotation-aware start line either, so this is the
+shape they will inherit — which is why it was settled here first, before three analyzers copied it.
+
+### 3c. Two oracle defects found while measuring (the instrument, not the analyzers)
+
+Both would have hidden real defects, so both are fixed in `script/m59/oracle-callsite.ts` and pinned by
+a boundary self-test that runs on every invocation (the run exits non-zero if it cannot fail):
+
+1. The Tier A boundary excluded `$` on both sides, so a `$`-introduced name was **unmatchable**. Scala's
+   string interpolation is everywhere: `s"… got $v"` reported the use of `v` as inconsistent (19 false
+   accusations on a 60-file sample; also php `$var`, js `$el`). Fixed, with the remaining weakening
+   (token `b` now matches inside `a$b`) recorded as an accepted limitation rather than asserted away.
+2. **Of the 102 claims the first pass flagged on the 60-file sample, 89 were not analyzer defects at all**
+   — 70 named synthesised nodes (`constructor` ×40, `anonymous_*`, `given_N`) that are never written in
+   source, so no line could ever satisfy them, and 19 were the `$` false accusations above. The
+   synthesised names are now a **third state** (`notCheckable`), never a pass and never a failure — the
+   same tier discipline the oracle's own header demands. The 13 that were real were mechanisms 2 and 3
+   of §3b, plus 4 annotation cases. Had the oracle been trusted as-is, it would have reported ~8× its
+   true failure rate and sent the fix chasing its own instrument.
+
+### 3d. Adjacent finding, filed not fixed: `.gradle` files have no analyzer
+
+516 `*.gradle` files exist in the corpus and **zero** can be analyzed: `src/ast/language-detection.ts`
+maps `groovy` and `gsp` but not `gradle`, so `ASTEngine.parseFile` throws `Unsupported file type` for
+every `build.gradle`. That is what caps the oracle's groovy row at 20 files where other languages get
+40. Out of scope for #825 (path detection, not line attribution) but it is the single most common
+Groovy file in the world and the whole sample silently depended on it.
 
 ## Why every previous gate passed while this was true
 
@@ -130,7 +187,7 @@ Two mechanisms, both removed by #824:
 | #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
 | #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
 | #824 delete false certification | **open** |
-| #825 analyzer lane emission | **open** — 20 languages + the 330 wrong scala lines |
+| #825 analyzer lane emission | **partly done** — scala is now the *correct and complete* reference (0 of 9,010 landed lines fail the source check; 100% of its 9,319 relationships carry one; 4 mechanisms fixed, each fixture- and mutant-pinned). Still open: java/kotlin/groovy/xml emit **0 lines across 86,257 relationships** (21-language sweep, 820 files) |
 | #826 closure gate | **open** |
 
 ## Evidence

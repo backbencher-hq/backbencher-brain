@@ -312,6 +312,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
               // as 1 by the classifier but filtered inconsistently by
               // downstream >= 0.7 consumers. A throw target is structural.
               confidence: 0.95,
+              // M59 (#825): the throw target is named at the throw expression.
+              line_number: (thrown ?? node).startPosition.row + 1,
               metadata: { scalaSpecific: true, isThrow: true, relationshipType: "throw_target" },
             })
           }
@@ -515,6 +517,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59 (#825): a containment edge has no "call site", but it does have
+          // a navigable site — the member's own declaration line. Taken from the
+          // symbol's range rather than a syntax node because this loop runs over
+          // the symbol table, and omitted entirely when the symbol has no range
+          // (never written as 0 — #820).
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isContained: true },
         })
       }
@@ -534,6 +542,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${declaringInFile}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 1.0,
+            // M59 (#825): the override occurs at the OVERRIDING declaration, so
+            // the line is the overriding method's own — not the base's.
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             // S1.3 (M49 #715): override edges carry the parameter signature
             // payload — the source/target keep the family convention
             // (Owner.name → Parent.name), but the SIG travels in metadata so
@@ -570,6 +581,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${overrideParent}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence,
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { isOverride: true, overrideParent, reasonCode, overrideSig: sigText(s) },
           })
         }
@@ -593,6 +605,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${declaringInFile}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 1.0,
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isOverride: true, implicitOverride: true, overrideParent: declaringInFile, reasonCode: "exact-in-file", overrideSig: sigText(s) },
         })
       }
@@ -605,6 +618,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: imp.module || "",
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
+        // M59 (#825): an import reference occurs at its import statement;
+        // handleImport already records that range. Omitted, not zeroed, when
+        // absent (#820).
+        ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
         metadata: { isImportDep: true },
       })
     }
@@ -799,6 +816,36 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  /**
+   * M59 (#825): the node whose START is the declaration's own line.
+   *
+   * tree-sitter-scala gives a definition the line of its LEADING ANNOTATION —
+   * measured, not assumed: for
+   *
+   *     @tailrec                  ← row 4
+   *     def loop(n: Int): Int =   ← row 5
+   *
+   * the `function_definition` node starts at row 4 while its `name` field is at
+   * row 5. Stamping the node's start put the `contains` edge (and the symbol's
+   * own line) on the annotation, so the line no longer contained the declared
+   * name — 4 of 13 remaining scala oracle failures on a 60-file sample, and the
+   * shape that would otherwise be copied by java/kotlin/groovy.
+   *
+   * An annotation is a modifier: it decorates the declaration, it is not where
+   * the declaration is written. Skipping leading annotations (and `modifiers`
+   * wrappers) gives the declaration keyword line, which is what a tool must
+   * point at and what the tier contract can check against the source.
+   */
+  private declarationLineNode(node: Node): Node {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "annotation" || c.type === "modifiers") continue
+      return c
+    }
+    return node
+  }
+
   private getVisibility(node: Node): string {
     let modifiersNode: Node | null = null
     for (let i = 0; i < node.childCount; i++) {
@@ -954,9 +1001,23 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
     const emitted = new Set<string>()
 
-    const collectTypeNames = (n: Node, out: string[]): void => {
+    // M59 (#825, second half): a type name is stamped with the line of the
+    // NODE THAT CARRIES THE NAME, not with the line its enclosing type
+    // expression happens to start on. `type Shape[T] = Shape.Cases[(\n
+    //   Shape.Case[Cons[T], (T, Lst[T])],\n  Shape.Case[Nil.type, Unit]\n)]`
+    // names Cons/Lst/Unit on lines 2-4 of that expression; stamping the root's
+    // line put all of them on the `type` line, which fails the oracle against
+    // the source (9 of 13 remaining scala failures on a 60-file sample). The
+    // call-site half of the same defect was fixed in this round too: the line
+    // belongs to the name, never to the construct that contains it.
+    const collectTypeNames = (n: Node, out: Array<{ name: string; line: number }>): void => {
+      const push = (name: string): void => {
+        if (name === "throws") return
+        if (out.some((x) => x.name === name)) return
+        out.push({ name, line: n.startPosition.row + 1 })
+      }
       if (n.type === "type_identifier") {
-        if (n.text !== "throws" && !out.includes(n.text)) out.push(n.text)
+        push(n.text)
         return
       }
       // S1.11 (M49 #715): `stable_type_identifier` — dotted/qualified types
@@ -965,7 +1026,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // type positions emitted ZERO references. The FULL dotted text is the
       // honest target (cross-language convention: kotlin/java keep dotted).
       if (n.type === "stable_type_identifier") {
-        if (n.text !== "throws" && !out.includes(n.text)) out.push(n.text)
+        push(n.text)
         return
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -999,9 +1060,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const source = sourceOverride ?? resolveSource(decl)
       for (const r of roots) {
         if (!r) continue
-        const names: string[] = []
+        const names: Array<{ name: string; line: number }> = []
         collectTypeNames(r, names)
-        for (const raw of names) {
+        for (const { name: raw, line: nameLine } of names) {
           // S1.11-merge: the G6 recorded contract (derives-refs fixture) is
           // LEAF targets for derives clauses ("scala.util.hashing.Hashing"
           // references Hashing — the family lastSegment convention); type
@@ -1017,6 +1078,16 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: t,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
+            // M59 (#825): a type reference occurs where the type is NAMED, so
+            // the line is the type node's own — this one site covers
+            // declared_type / return_type / pattern_type / type_alias /
+            // cast_target / instanceof_check / given_type / tuple_type /
+            // annotation_type, which together were 1,129 line-less edges on a
+            // 60-file scala sample. Note what it is NOT: the declaration's line.
+            // `def f: Map[K, V]` written over several lines references Map on
+            // the line Map is written on. `nameLine` (not `r`'s start) is what
+            // makes that true when the type expression itself is multi-line.
+            line_number: nameLine,
             metadata: { relationshipType: relType, declaredOn: decl.type },
           })
         }
@@ -1205,6 +1276,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: recv.text,
                   type: ASTEngine.RelationshipType.References,
                   confidence: 0.95,
+                  // M59 (#825): the referenced type is named by the receiver.
+                  line_number: recv.startPosition.row + 1,
                   metadata: { relationshipType: "method_value", declaredOn: "field_expression" },
                 })
               }
@@ -1255,7 +1328,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // S1.7: one top-level sentinel (see collectDeclaredTypeRefs).
       return "(script)"
     }
-    const emitUse = (n: Node, target: string): void => {
+    const emitUse = (n: Node, target: string, nameNode?: Node): void => {
       if (!target) return
       // SCD1 (JAD1/KAD1 family contract): assignment LHS is a WRITE, not a
       // read. `h.value = 5` previously emitted uses h. Both write shapes are
@@ -1278,6 +1351,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         source,
         target,
         type: ASTEngine.RelationshipType.Uses,
+        // M59 (#825): a read happens where the NAME is written, so the line
+        // comes from the name node — not from `n`, which for a field access is
+        // the receiver and would hand a multi-line chain the line it opened on
+        // (the same defect class fixed for calls above). `n` is the fallback
+        // only when no name node was passed.
+        line_number: (nameNode ?? n).startPosition.row + 1,
         confidence: 0.9,
         metadata: { relationshipType: "expression_use" },
       })
@@ -1285,7 +1364,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const walk = (n: Node): void => {
       if (n.type === "interpolation") {
         const id = n.namedChild(0)
-        if (id && id.type === "identifier") emitUse(n, id.text)
+        if (id && id.type === "identifier") emitUse(n, id.text, id)
       } else if (n.type === "field_expression") {
         const isCallFn = n.parent && n.parent.type === "call_expression" && n.parent.childForFieldName?.("function")?.id === n.id
         if (!isCallFn) {
@@ -1302,10 +1381,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isSelfReceiver = recv !== null && (recv.text === "this" || recv.text === "super")
           if (isSelfReceiver) {
             const leaf = n.childForFieldName?.("field")
-            if (leaf && leaf.text.length > 0) emitUse(n, leaf.text)
+            if (leaf && leaf.text.length > 0) emitUse(n, leaf.text, leaf)
           } else if (recv && recv.text.length > 0 && !(recv.text.charCodeAt(0) >= 65 && recv.text.charCodeAt(0) <= 90)) {
             // Capitalized receivers are type references (G3) — never Uses.
-            emitUse(n, recv.text)
+            emitUse(n, recv.text, recv)
           }
         }
       }
@@ -1357,15 +1436,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): ASTEngine.UniversalSymbol {
     const decorators = this.collectAnnotations(node)
     const kdoc = this.extractScalaDoc(node)
+    // M59 (#825): the DECLARATION's own line (annotations skipped), so the
+    // symbol line and its `contains` edge agree and both point at the keyword.
+    const decl = this.declarationLineNode(node)
     return {
       name,
       kind,
       range: {
-        startLine: node.startPosition.row + 1,
-        startColumn: node.startPosition.column + 1,
+        startLine: decl.startPosition.row + 1,
+        startColumn: decl.startPosition.column + 1,
         endLine: node.endPosition.row + 1,
         endColumn: node.endPosition.column + 1,
-        startIndex: node.startIndex,
+        startIndex: decl.startIndex,
         endIndex: node.endIndex,
       },
       id: `${parent ? parent.id + "." : ""}${name}`,
@@ -1497,17 +1579,39 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Extract supertypes from an extends_clause (direct type children in v0.26.2). */
-  private extractSupertypes(extendsClause: Node): string[] {
-    const out: string[] = []
+  /**
+   * M59 (#825): each supertype name is paired with the LINE IT IS WRITTEN ON.
+   *
+   * Scala writes the parents of a long inheritance list one per line:
+   *
+   *     trait IterableLike[+A]
+   *       extends FromIterable          ← 106
+   *          with IterableOps[A]        ← 107
+   *          with IterablePolyTransforms[A]   ← 108
+   *
+   * Stamping the clause's start line put IterableOps/PolyTransforms on 106, a
+   * line they are not written on — 8 of 8 remaining scala oracle failures at the
+   * 300-file scale, including the `trait T1 extends { ... } with Base` form where
+   * the parent appears AFTER an early-init block. Same defect family as the call
+   * site (`#825` half one) and the declared-type reference: the line belongs to
+   * the NAME, never to the construct containing it.
+   */
+  private extractSupertypes(extendsClause: Node): Array<{ name: string; line: number }> {
+    const out: Array<{ name: string; line: number }> = []
+    const push = (name: string, n: Node): void => {
+      if (!name) return
+      if (out.some((x) => x.name === name)) return
+      out.push({ name, line: n.startPosition.row + 1 })
+    }
     for (let i = 0; i < extendsClause.childCount; i++) {
       const c = extendsClause.child(i)
       if (!c || !c.isNamed) continue
       if (c.type === "type_identifier" || c.type === "identifier") {
-        out.push(c.text)
+        push(c.text, c)
       } else if (c.type === "stable_type_identifier") {
         // dotted parents like js.Object / scala.Any: keep FULL dotted name
         // (cross-language convention decided in M14.1)
-        out.push(c.text)
+        push(c.text, c)
       } else if (c.type === "generic_type") {
         // Prefer a dotted base (stable_type_identifier:
         // collection.mutable.ArrayBuffer[Int] -> full dotted name per
@@ -1517,7 +1621,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let j = 0; j < c.childCount; j++) {
           const ch = c.child(j)
           if (ch && ch.type === "stable_type_identifier") {
-            out.push(ch.text)
+            push(ch.text, ch)
             pushed = true
             break
           }
@@ -1526,7 +1630,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let j = 0; j < c.childCount; j++) {
             const ch = c.child(j)
             if (ch && ch.type === "type_identifier") {
-              out.push(ch.text)
+              push(ch.text, ch)
               break
             }
           }
@@ -1535,7 +1639,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let j = 0; j < c.namedChildCount; j++) {
           const ch = c.namedChild(j)
           if (ch && (ch.type === "type_identifier" || ch.type === "generic_type")) {
-            out.push(ch.type === "type_identifier" ? ch.text : this.extractSupertypes(ch)[0] || ch.text)
+            if (ch.type === "type_identifier") push(ch.text, ch)
+            else {
+              const inner = this.extractSupertypes(ch)
+              if (inner.length > 0) push(inner[0].name, ch)
+              else push(ch.text, ch)
+            }
           }
         }
       }
@@ -1649,11 +1758,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const extendsClause = this.findChild(node, "extends_clause")
     if (extendsClause) {
       const supertypes = this.extractSupertypes(extendsClause)
-      symbol.metadata!.superTypes = supertypes
+      symbol.metadata!.superTypes = supertypes.map((s) => s.name)
       for (let i = 0; i < supertypes.length; i++) {
         relationships.push({
           source: symbol.name,
-          target: supertypes[i],
+          target: supertypes[i].name,
           // Scala: extends covers classes AND traits; first supertype =
           // extends is the documented convention (parenless class extends is
           // legal, so kotlin's ctor-invocation signal does not transfer).
@@ -1662,7 +1771,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // classifier-defaulted today but downstream >= 0.7 filters read
           // the field directly.
           confidence: 1.0,
-          line_number: extendsClause.startPosition.row + 1,
+          // M59 (#825): the parent's OWN line, not the clause's.
+          line_number: supertypes[i].line,
           metadata: { isTrait: i > 0 },
         })
       }
@@ -1723,11 +1833,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const extendsClause = this.findChild(node, "extends_clause")
     if (extendsClause) {
       const supertypes = this.extractSupertypes(extendsClause)
-      symbol.metadata!.superTypes = supertypes
+      symbol.metadata!.superTypes = supertypes.map((s) => s.name)
       for (let i = 0; i < supertypes.length; i++) {
         relationships.push({
           source: symbol.name,
-          target: supertypes[i],
+          target: supertypes[i].name,
           // Scala: extends covers classes AND traits; first supertype =
           // extends is the documented convention (parenless class extends is
           // legal, so kotlin's ctor-invocation signal does not transfer).
@@ -1783,14 +1893,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const extendsClause = this.findChild(node, "extends_clause")
     if (extendsClause) {
       const supertypes = this.extractSupertypes(extendsClause)
-      symbol.metadata!.superTypes = supertypes
+      symbol.metadata!.superTypes = supertypes.map((s) => s.name)
       for (let i = 0; i < supertypes.length; i++) {
         relationships.push({
           source: symbol.name,
-          target: supertypes[i],
+          target: supertypes[i].name,
           type: ASTEngine.RelationshipType.Extends, // trait supertypes: ALL are extends
           confidence: 1.0,
-          line_number: extendsClause.startPosition.row + 1,
+          // M59 (#825): the parent's OWN line, not the clause's.
+          line_number: supertypes[i].line,
           metadata: { isTrait: i > 0 },
         })
       }
@@ -1827,14 +1938,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const enumExtends = this.findChild(node, "extends_clause")
     if (enumExtends) {
       const supertypes = this.extractSupertypes(enumExtends)
-      symbol.metadata!.superTypes = supertypes
+      symbol.metadata!.superTypes = supertypes.map((s) => s.name)
       for (const st of supertypes) {
         relationships.push({
           source: name,
-          target: st,
+          target: st.name,
           type: ASTEngine.RelationshipType.Extends,
           confidence: 1.0,
-          line_number: enumExtends.startPosition.row + 1,
+          // M59 (#825): the parent's OWN line, not the clause's.
+          line_number: st.line,
           metadata: { isTrait: true },
         })
       }
@@ -2096,6 +2208,9 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: extensionReceiverType,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        // M59 (#825): the extension receiver type is named in the extension
+        // method's own declaration, so the declaration is the navigable site.
+        line_number: node.startPosition.row + 1,
         metadata: { relationshipType: "scala_extension_method", isExtension: true },
       })
     }
@@ -2205,7 +2320,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!typeNode) return
     let typeName = typeNode.text
     if (typeNode.type === "generic_type") {
-      typeName = this.extractSupertypes(typeNode)[0] || typeNode.text
+      typeName = this.extractSupertypes(typeNode)[0]?.name || typeNode.text
     }
     // Scala renders type arguments with SQUARE brackets: List[(A, B)](args)
     // — targets must be clean base names, so strip bracketed type args in
