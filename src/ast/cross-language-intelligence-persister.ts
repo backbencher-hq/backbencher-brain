@@ -281,7 +281,14 @@ export namespace CrossLanguageIntelligencePersister {
             relationship_type: mapRelationshipType(relationship.type),
             confidence: relationship.strength,
             context: `Cross-language: ${relationship.metadata.communicationMechanism}`,
-            line_number: relationship.source.range?.startLine || 0,
+            // M59/#821: never 0. `range?.startLine || 0` wrote 0 — the value
+            // readers treat as "unknown" — whenever the source symbol had no
+            // range, which is indistinguishable from a real line 0 to every
+            // downstream consumer. Unknown is NULL.
+            line_number:
+              relationship.source.range && relationship.source.range.startLine > 0
+                ? relationship.source.range.startLine
+                : null,
             is_cross_language: isCrossLanguage,
             bridge_mechanism: relationship.metadata.communicationMechanism,
             metadata: JSON.stringify({
@@ -420,7 +427,10 @@ export namespace CrossLanguageIntelligencePersister {
           relationship_type: "data_flow",
           confidence: 0.9,
           context: `Data flow: ${flow.source.dataFormat} -> ${flow.target.expectedFormat}`,
-          line_number: 0,
+          // M59/#821: a synthesised cross-service data flow has no source line
+          // at all. NULL is the honest value; 0 claimed a line that does not
+          // exist and made "unknown" indistinguishable from "line 0".
+          line_number: null,
           is_cross_language: flow.source.language !== flow.target.language,
           bridge_mechanism: "data_transfer",
           metadata: JSON.stringify({
