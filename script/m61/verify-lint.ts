@@ -16,6 +16,9 @@
 //                    A declared-no-can-fail gate that carries proof fails.
 //   G5 wiring:       every gate is in >= 1 tier; verify:fast ⊆ verify.
 //   G6 env:          every BB_* env var a gate reads is declared with its role.
+//   G7 import order: no lane gate imports a lane module with a DYNAMIC
+//                    `import("./…")` — the TDZ bug class (#847), which the rule
+//                    found once, for real, in script/m29/verify-analyzer-relevance.ts.
 //
 // Mutants (source-level copies of the lint's pure decision cores) prove the
 // suite CAN FAIL:
@@ -24,6 +27,8 @@
 //   M3 orphan-blind:    attribution claims every record.
 //   M4 floor-ignored:   the can-fail floor check is dropped.
 //   M5 env-blind:       undeclared env vars stop failing.
+//   M6 tier-blind:      a gate in no execution tier stops failing G5.
+//   M7 import-order-blind: a relative dynamic import stops failing G7.
 //
 // Run: npx tsx script/m61/verify-lint.ts
 // Evidence: validation/m61/results/V4.json (sealed)
@@ -36,6 +41,7 @@ import { writeSealed } from "../lib/evidence.ts"
 import {
   ROOT,
   canFailProofs,
+  importOrderFindings,
   isSealed,
   lint,
   loadRegistry,
@@ -88,6 +94,7 @@ check("G3: every lane record is sealed or declared legacy", byRule("G3").length 
 check("G4: every gate carries a can-fail proof or a declared reason", byRule("G4").length === 0, byRule("G4").slice(0, 4).join(" | "))
 check("G5: every gate is wired into a tier, and fast ⊆ full", byRule("G5").length === 0, byRule("G5").slice(0, 3).join(" | "))
 check("G6: every BB_* env var a gate reads is declared", byRule("G6").length === 0, byRule("G6").slice(0, 3).join(" | "))
+check("G7: no lane gate dynamically imports a lane module", byRule("G7").length === 0, byRule("G7").slice(0, 3).join(" | "))
 check("G0: the lint reports no unexplained failures at all", report.failures.length === 0, report.failures.slice(0, 5).join(" | "))
 
 // --- core functions on known inputs ----------------------------------------------
@@ -106,6 +113,35 @@ check(
 )
 check("core: a sealed record is recognised", isSealed({ bbSeal: { alg: "sha256" } }) === true)
 check("core: an unsealed record is not", isSealed({ status: "verified" }) === false)
+// G7's rule (and the incident it memorializes: the m29 wave gate's dynamic
+// import of its relevance rule, which threw into the staleness catch).
+// The specifier is assembled at runtime so THIS file's source does not itself
+// contain a matchable relative dynamic import (the rule scans sources, and its
+// own verifier is a lane script — the rule caught exactly that on first run).
+const incidentModule = "./wave-" + "execute.ts"
+const incidentSource = [
+  'import path from "node:path"',
+  'const paths = staleRelevantPaths("java")',
+  `const { staleRelevantPaths } = await import("${incidentModule}")`,
+  "console.log(paths, staleRelevantPaths, path)",
+].join("\n")
+check(
+  "core: a relative dynamic import of a lane module is flagged (the TDZ class)",
+  importOrderFindings("x.ts", incidentSource).length === 1,
+  importOrderFindings("x.ts", incidentSource).join(" | "),
+)
+check(
+  "core: a static import of the same module is not flagged",
+  importOrderFindings("x.ts", 'import { staleRelevantPaths } from "./wave-execute.ts"\n').length === 0,
+)
+check(
+  "core: a computed-URL dynamic import (the mutant harnesses) is not flagged",
+  importOrderFindings("x.ts", "const m = await import(pathToFileURL(p).href)\n").length === 0,
+)
+check(
+  "core: a TYPE-position typeof import() is not flagged (erased at compile time)",
+  importOrderFindings("x.ts", 'const o = (await import(pathToFileURL(P).href)) as typeof import("../../src/lsp/x.ts")\n').length === 0,
+)
 
 // --- mutants: the suite CAN FAIL -------------------------------------------------
 console.log("\nmutants: the suite can fail (source-level copies)")
@@ -156,6 +192,28 @@ await runMutant("floor-ignored", "    if (total < reg.canFailFloor && !noCanFail
   reg.declaredNoCanFail = []
   const r = (mod.lint as typeof lint)(reg)
   return r.failures.filter((f) => f.startsWith("G4:")).length === 0
+})
+
+// M61.V6 / #847 — the TDZ class, made extinct. Incident: the m29 wave gate
+// imported its per-language relevance rule with a dynamic import placed BELOW
+// the rule's first use; the ReferenceError landed in the staleness catch and
+// every wave leg silently read stale. This mutant proves G7 can see it.
+await runMutant("import-order-blind", "      out.push(`${file}:${i + 1}: dynamic import of a lane module", "      if (false) out.push(`${file}:${i + 1}: dynamic import of a lane module", (mod) => {
+  const f = (mod.importOrderFindings as typeof importOrderFindings)("x.ts", incidentSource)
+  return f.length === 0
+})
+
+// M61.V6 / #847 — the on-demand-gate-rot class, made extinct. Incident: the
+// m26 on-demand gates rotted while the 40-gate ladder stayed green, so a gate
+// wired into NO execution tier broke the m29 closure when it was finally
+// spawned; the M61 verifiers were not in the ladder and could rot unseen too.
+await runMutant("tier-blind", "      } else {\n        failures.push(`G5: ${gate} is wired into NO execution tier", "      } else if (false) {\n        failures.push(`G5: ${gate} is wired into NO execution tier", (mod) => {
+  const reg = JSON.parse(JSON.stringify(loadRegistry())) as ReturnType<typeof loadRegistry>
+  // Strip the on-demand declarations: every on-demand gate is now a gate in no
+  // tier. With the mutant, G5's "wired into NO execution tier" stops firing.
+  reg.declaredOnDemand = []
+  const r = (mod.lint as typeof lint)(reg)
+  return r.failures.filter((f) => f.includes("wired into NO execution tier")).length === 0
 })
 
 await runMutant("env-blind", "      if (!declaredEnv.has(m)) failures.push(", "      if (false) failures.push(", (mod) => {

@@ -3,14 +3,21 @@
   "code": "D1-install",
   "milestone": "M25",
   "status": "verified",
-  "checks": 18,
-  "passed": 18,
+  "checks": 21,
+  "passed": 21,
   "failed": 0,
   "failures": [],
-  "currentCommit": "3b7246446cdb261d7c9fc66ede887b11c7cc22d3",
+  "currentCommit": "4dfd8c4148d043ff3d1aa720a3b89474f9d677b3",
   "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
   "evidenceFile": "D1-install.json",
-  "generatedAt": "2026-09-15T22:05:23.379Z",
+  "mutantsCaught": 3,
+  "mutantsTotal": 3,
+  "checksList": [
+    "ok: M: install doc naming a stale VSIX passes",
+    "ok: M: install doc launching without a clean profile passes",
+    "ok: M: install doc omitting the status command passes"
+  ],
+  "generatedAt": "2026-09-15T22:40:03.378Z",
   "limitations": [
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
     "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
@@ -18,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T22:05:23.380Z",
-    "contentSha256": "dbafb90801fc2090bca6a0af62c50e1394fa8ee90e718b3620a9d76b911306e6"
+    "sealedAt": "2026-09-15T22:40:03.379Z",
+    "contentSha256": "91fd60e14bc3dd7aad20c472aa0eaff83a0aa512cf57f54e20351946ab4efaec"
   }
 }

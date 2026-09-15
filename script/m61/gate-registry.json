@@ -119,22 +119,6 @@
     {
       "gate": "script/m25/run-fork-e2e.mts",
       "reason": "fork-editor leg runner \u2014 same as the VS Code runner: the can-fail proof belongs to the shared assertion core."
-    },
-    {
-      "gate": "script/m25/verify-install-docs.ts",
-      "reason": "install-docs/VSIX surface check with no planted defect yet. FLAGGED, not fixed: V6 (#847, bug-class extinction) adds a permanent mutant per historical verifier-bug class and this gate inherits one."
-    },
-    {
-      "gate": "script/m53/r2-probe.mts",
-      "reason": "differential measurement leg: its \"negative\" is the differential itself (live index vs M44-era floors), not a labelled mutant. FLAGGED: V6 (#847) lands a labelled can-fail mutant."
-    },
-    {
-      "gate": "script/m53/verify-branch-audit.ts",
-      "reason": "its planted-defect negative (N1, a scratch branch carrying a lane touch) is exercised and reported in its console, but the record stores only counts, so no derivation can see it. FLAGGED: V6 (#847) records the labelled negative."
-    },
-    {
-      "gate": "script/m53/verify-r1-ladder.ts",
-      "reason": "the ladder's can-fail proof is its degenerate-aggregate self-test (a bogus non-zero rc must flip the verdict), which the record does not carry. FLAGGED: V6 (#847) records it."
     }
   ],
   "declaredEnv": [
