@@ -2800,6 +2800,18 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "groovy/grammar-round3-call-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "#841 round-3 regression: drops calls sourced from the round-3 constructs — the .& method-reference, interaction-DSL slashy callee, leading-dot/elvis continuation, operator-first && continuation, GString call name, exclusive-range, primitive-operand, and bare-assert bodies (grammar-round3-841 expects refer->eachEntry, check->isPresent, fetch->getProperty, dispatch->\"$entry.key\", interact->/print.*/). If the grammar or the leading_dot_call analyzer handler regresses, those calls vanish rather than failing a fixture. Also drops the def-squeeze repairs: a misnamed constructor reverts to kind=constructor and the phantom `def` property reappears (pinned by forbidSymbols).",
+    transform: r => ({ ...r,
+      relationships: (r.relationships ?? []).filter((x: any) =>
+        !(x.type === "calls" && ["refer", "check", "fetch", "dispatch", "interact"].includes(x.source))),
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.name === "refer" && s.kind === "method" ? { ...s, kind: "constructor" } : s),
+    }),
+  },
+  {
     id: "groovy/grammar-residual-call-drop",
     language: "groovy",
     defectClass: "relationship-loss",
