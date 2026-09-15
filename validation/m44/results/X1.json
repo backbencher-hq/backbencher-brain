@@ -39,7 +39,7 @@
     "e5": "validation/m25/results/E5.json (re-run at this HEAD — full suite incl. the M44 hub legs)",
     "e6": "validation/m25/results/F-CURSOR.json + F-ANTIGRAVITY.json (re-run at this HEAD, terminal gate 26→88); F-WINDSURF blocked-with-reason"
   },
-  "currentCommit": "20af00cee40749fe48a83a20da07f93405042a5b",
+  "currentCommit": "8399884df8f141b8bac2b98660f22f91fd4db748",
   "verifierCommand": "npx tsx script/m44/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -53,7 +53,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-15T15:13:13.729Z",
+  "generatedAt": "2026-09-15T15:51:37.549Z",
   "limitations": [
     "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
@@ -62,7 +62,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T15:13:13.729Z",
-    "contentSha256": "197c0aa0d2fb695d68afc40e16c90e9193e31f851e740caaf24503fbb2e043e2"
+    "sealedAt": "2026-09-15T15:51:37.549Z",
+    "contentSha256": "06bdfaba7eb2341afe018cb273c2879c28460bfdf96a693f4194f18eaec4e3ab"
   }
 }

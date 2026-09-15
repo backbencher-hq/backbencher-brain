@@ -2,7 +2,7 @@
   "issue": "M26.A1",
   "githubIssue": 615,
   "status": "verified",
-  "passed": 11,
+  "passed": 12,
   "failed": 0,
   "mutants": [
     {
@@ -28,13 +28,13 @@
       ]
     }
   },
-  "currentCommit": "377dea29d232a79f748395cc1c913970f4efb57d",
+  "currentCommit": "8399884df8f141b8bac2b98660f22f91fd4db748",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-12T22:07:04.635Z",
+  "generatedAt": "2026-09-15T16:09:24.720Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.419Z",
-    "contentSha256": "1c361c142f0295ba811e32c140fa31ff4b38598ff62b776241005c14e2b7d81f"
+    "sealedAt": "2026-09-15T16:09:24.720Z",
+    "contentSha256": "3c72f1223992ee842bc75ea6308eb3b812adbd4820d267d06c01ba28479a9a8f"
   }
 }

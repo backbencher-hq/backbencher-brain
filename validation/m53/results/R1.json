@@ -288,12 +288,12 @@
       "ok": false
     }
   ],
-  "currentCommit": "20af00cee40749fe48a83a20da07f93405042a5b",
+  "currentCommit": "8399884df8f141b8bac2b98660f22f91fd4db748",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-15T15:13:13.771Z",
+  "generatedAt": "2026-09-15T15:51:37.602Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T15:13:13.773Z",
-    "contentSha256": "a83ffad872bae6cde5ee599f31ba2372b034e4f76c6b43a3548390ae092fdcd2"
+    "sealedAt": "2026-09-15T15:51:37.604Z",
+    "contentSha256": "05d9324f900d76ad6b2e16ce74857923869f4e0e96a7c3a1958115ac67f81431"
   }
 }

@@ -1,26 +1,22 @@
 {
+  "session": [],
   "raw": {
     "documentSymbol": [
       {
-        "range": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        },
-        "kind": 5,
-        "name": "main",
         "data": {
-          "evidenceTier": "indexed",
           "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:main:1",
+          "evidenceTier": "indexed",
           "notIndexed": false
         },
         "children": [
           {
+            "data": {
+              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:prefix:2",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "children": [],
+            "name": "prefix",
             "range": {
               "start": {
                 "line": 1,
@@ -31,14 +27,6 @@
                 "character": 20
               }
             },
-            "kind": 13,
-            "name": "prefix",
-            "data": {
-              "evidenceTier": "indexed",
-              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:prefix:2",
-              "notIndexed": false
-            },
-            "children": [],
             "detail": "prefix",
             "selectionRange": {
               "start": {
@@ -49,9 +37,17 @@
                 "line": 1,
                 "character": 20
               }
-            }
+            },
+            "kind": 13
           },
           {
+            "data": {
+              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:greet:4",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "children": [],
+            "name": "greet",
             "range": {
               "start": {
                 "line": 3,
@@ -62,14 +58,6 @@
                 "character": 24
               }
             },
-            "kind": 12,
-            "name": "greet",
-            "data": {
-              "evidenceTier": "indexed",
-              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:greet:4",
-              "notIndexed": false
-            },
-            "children": [],
             "detail": "greet",
             "selectionRange": {
               "start": {
@@ -80,9 +68,21 @@
                 "line": 4,
                 "character": 24
               }
-            }
+            },
+            "kind": 12
           }
         ],
+        "name": "main",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 11,
+            "character": 0
+          }
+        },
         "detail": "main",
         "selectionRange": {
           "start": {
@@ -93,9 +93,17 @@
             "line": 11,
             "character": 0
           }
-        }
+        },
+        "kind": 5
       },
       {
+        "data": {
+          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:message:8",
+          "evidenceTier": "indexed",
+          "notIndexed": false
+        },
+        "children": [],
+        "name": "message",
         "range": {
           "start": {
             "line": 5,
@@ -106,14 +114,6 @@
             "character": 22
           }
         },
-        "kind": 2,
-        "name": "message",
-        "data": {
-          "evidenceTier": "indexed",
-          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:message:8",
-          "notIndexed": false
-        },
-        "children": [],
         "detail": "message",
         "selectionRange": {
           "start": {
@@ -124,12 +124,64 @@
             "line": 7,
             "character": 22
           }
-        }
+        },
+        "kind": 2
       }
     ],
     "workspaceAbsence": [],
     "definition": {
       "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+      "range": {
+        "start": {
+          "line": 5,
+          "character": 1
+        },
+        "end": {
+          "line": 7,
+          "character": 22
+        }
+      }
+    },
+    "hover": {
+      "data": {
+        "provenance": {
+          "evidenceClass": "usage_contextual",
+          "source": "bb_index",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "stale": false,
+          "engine": "bb_lsp hover@m24.l2"
+        },
+        "symbol": {
+          "symbolType": "constant",
+          "signature": "public constant message",
+          "usageCount": 1,
+          "evidenceTiers": [
+            "usage_contextual"
+          ],
+          "connectedSection": "",
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)",
+          "crossLanguageSection": "",
+          "annotationSection": "",
+          "freshnessStatus": "fresh",
+          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+          "lineStart": 8,
+          "lineEnd": 8,
+          "definition": {
+            "line": 5,
+            "character": 1
+          },
+          "name": "message",
+          "stale": false,
+          "qualifiedName": "message"
+        }
+      },
+      "contents": {
+        "value": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte:6](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D))_",
+        "kind": "markdown"
+      },
       "range": {
         "start": {
           "line": 5,
@@ -168,118 +220,66 @@
           }
         }
       }
-    ],
-    "hover": {
-      "range": {
-        "start": {
-          "line": 5,
-          "character": 1
-        },
-        "end": {
-          "line": 7,
-          "character": 22
-        }
-      },
-      "contents": {
-        "value": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte:6](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D))_",
-        "kind": "markdown"
-      },
-      "data": {
-        "provenance": {
-          "engine": "bb_lsp hover@m24.l2",
-          "limitations": [
-            "index-sourced; no compiler-backed types (complement stance)"
-          ],
-          "source": "bb_index",
-          "evidenceClass": "usage_contextual",
-          "stale": false
-        },
-        "symbol": {
-          "name": "message",
-          "stale": false,
-          "qualifiedName": "message",
-          "symbolType": "constant",
-          "signature": "public constant message",
-          "usageCount": 1,
-          "evidenceTiers": [
-            "usage_contextual"
-          ],
-          "connectedSection": "",
-          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
-          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)",
-          "crossLanguageSection": "",
-          "annotationSection": "",
-          "freshnessStatus": "fresh",
-          "definition": {
-            "line": 5,
-            "character": 1
-          },
-          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
-          "lineStart": 8,
-          "lineEnd": 8
-        }
-      }
-    }
+    ]
   },
-  "session": [],
-  "language": "svelte",
   "checks": [
     {
       "ok": true,
-      "name": "S6: launch order resolves a server",
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
+      "name": "S6: launch order resolves a server"
     },
     {
       "ok": true,
-      "name": "S6: vim.lsp.start launched bb_lsp",
-      "detail": "1"
+      "detail": "1",
+      "name": "S6: vim.lsp.start launched bb_lsp"
     },
     {
       "ok": true,
-      "name": "S6: client initialized",
-      "detail": "table: 0x7014f33ba510"
+      "detail": "table: 0x7a010f7ef888",
+      "name": "S6: client initialized"
     },
     {
       "ok": true,
-      "name": "S6: capabilities advertised",
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
+      "name": "S6: capabilities advertised"
     },
     {
       "ok": true,
-      "name": "S6: hover renders the symbol",
-      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)"
+      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)",
+      "name": "S6: hover renders the symbol"
     },
     {
       "ok": true,
-      "name": "S6: hover carries evidence tier (contract §2)",
-      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)"
+      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)",
+      "name": "S6: hover carries evidence tier (contract §2)"
     },
     {
       "ok": true,
-      "name": "S6: definition resolves",
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 22,\n      line = 7\n    },\n    start = {\n      character = 1,\n      line = 5\n    }\n  },\n  uri = \"file://$HOMEh"
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 22,\n      line = 7\n    },\n    start = {\n      character = 1,\n      line = 5\n    }\n  },\n  uri = \"file://$HOMEh",
+      "name": "S6: definition resolves"
     },
     {
       "ok": true,
-      "name": "S6: references returns locations",
-      "detail": "2"
+      "detail": "2",
+      "name": "S6: references returns locations"
     },
     {
       "ok": true,
-      "name": "S6: documentSymbols include the class",
-      "detail": "{ \"main\", \"message\" }"
+      "detail": "{ \"main\", \"message\" }",
+      "name": "S6: documentSymbols include the class"
     },
     {
       "ok": true,
-      "name": "S6: declared absence is honored (no fabricated symbols)",
-      "detail": "{}"
+      "detail": "{}",
+      "name": "S6: declared absence is honored (no fabricated symbols)"
     }
   ],
+  "language": "svelte",
   "status": "verified",
-  "commit": "20af00cee40749fe48a83a20da07f93405042a5b",
+  "commit": "8399884df8f141b8bac2b98660f22f91fd4db748",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T15:21:31.496Z",
-    "contentSha256": "4d613103107598056dc92975cba28793bbb130be26971d538259d34538b6ca95"
+    "sealedAt": "2026-09-15T15:58:40.257Z",
+    "contentSha256": "4b786b0708ff029fed8048962364fa35110753b36fd2090b62dc2bf22f9b53d5"
   }
 }
