@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "6666e7f5d30c465dd75b4fcc7e66bd81ca09d249",
+  "currentCommit": "bdb34e6d50d0877d25075bdc0429e3c141d1e045",
   "verifierCommand": "npx tsx script/m44/verify-legend.ts",
   "evidenceFile": "U4.json",
-  "generatedAt": "2026-09-15T17:35:17.274Z",
+  "generatedAt": "2026-09-15T18:07:14.342Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "duplicated": "make -> Widget carries calls + instantiates (3 caller rows, 2 caller groups)"
@@ -30,7 +30,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T17:35:17.275Z",
-    "contentSha256": "d6e5884bc373824acc176d853232b376c5a660290770ef7c89406d7eb7c77cbb"
+    "sealedAt": "2026-09-15T18:07:14.342Z",
+    "contentSha256": "5e242e391258a0385347c767c9cb2ffd80fd32e7f2dbd8710638fbf601b8c430"
   }
 }
