@@ -2265,7 +2265,14 @@ export async function storeResults(
                    // claiming line 0: a number that silently means "unknown" and
                    // that graph-engine's `row.lineNumber || node.line` turned into
                    // an unrelated line. Never 0 — the analyzer's line or NULL.
-                   symbolStartLine,
+                   //
+                   // M59/#825: a SYNTHESISED member carries no line at all. Its
+                   // "range" is the enclosing declaration's (kotlin data-class
+                   // copy/equals/hashCode/toString all carried the CLASS's line;
+                   // measured as 16 rows of a small kotlin lane whose target name
+                   // appears nowhere on the claimed line). NULL is the honest
+                   // value: unknown is a state, not a placeholder.
+                   symbol.metadata?.isPhantom === true ? null : symbolStartLine,
                    0,
                    0,
                    null,

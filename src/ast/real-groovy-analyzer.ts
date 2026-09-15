@@ -1661,7 +1661,9 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "modifiers" || c.type === "annotation" || c.type === "marker_annotation") continue
-      if (c.type === "comment" || c.type === "block_comment" || c.type === "line_comment") continue
+      // M59 (#825) / F6: the grammar's own names. `"comment"` was dead here —
+      // tree-sitter-groovy emits `line_comment`/`block_comment` only.
+      if (c.type === "line_comment" || c.type === "block_comment") continue
       return c
     }
     return node
