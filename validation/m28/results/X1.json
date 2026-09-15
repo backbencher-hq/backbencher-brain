@@ -2,13 +2,19 @@
   "issue": "629",
   "code": "X1",
   "milestone": "M28",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 31,
-  "passed": 31,
-  "failed": 0,
-  "failures": [],
+  "passed": 26,
+  "failed": 5,
+  "failures": [
+    "X1: T1 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: U1 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: A1 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: A2 evidence byte-identical (modulo generatedAt/currentCommit)",
+    "X1: V1 evidence byte-identical (modulo generatedAt/currentCommit)"
+  ],
   "negativeCases": 4,
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m28/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -18,10 +24,10 @@
     "A2": [],
     "V1": []
   },
-  "generatedAt": "2026-09-14T16:01:17.046Z",
+  "generatedAt": "2026-09-15T00:41:39.482Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.425Z",
-    "contentSha256": "c762eba90a401e749a0fa3bba70d6c97581930a59502ae71482272bdf97d9531"
+    "sealedAt": "2026-09-15T00:41:39.482Z",
+    "contentSha256": "9a000f7db95028a58f4cfea7a75dd6b478232debf644e98c374aeffd98fec176"
   }
 }

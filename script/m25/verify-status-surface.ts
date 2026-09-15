@@ -137,7 +137,12 @@ try {
   // --- G2: drift gate vs the generated tool doc -----------------------------
   {
     const doc = readFileSync(TOOL_DOC, "utf8")
-    const rows = [...doc.matchAll(/^\| (java|groovy|kotlin|scala|typescript|javascript|python) \|(.*)$/gm)]
+    // Language set DERIVED from the single owner (M61 Gap-1 rule: no
+    // gate-internal hardcoded language lists — the wave-1 alternation here
+    // drifted the moment wave 2 landed). Sorted longest-first so e.g.
+    // "typescript" matches before a hypothetical prefix.
+    const langAlt = [...LAUNCH_LANGUAGES].sort((a, b) => b.length - a.length).join("|")
+    const rows = [...doc.matchAll(new RegExp(`^\\| (${langAlt}) \\|(.*)$`, "gm"))]
     check("G2: tool doc has a claim row for every launch language (M29 wave-1 set)", rows.length === LAUNCH_LANGUAGES.length, `${rows.length}`)
     let drift = 0
     for (const row of rows) {

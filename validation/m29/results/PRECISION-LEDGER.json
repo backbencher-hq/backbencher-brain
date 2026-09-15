@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "af36aeb2b52e4d24f0f09c1bd7a6bf1a8342f1bf",
+  "inputsHash": "896d04244e11d90f6e174ddd2643e073f0badcf0",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -70,7 +70,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+          "commit": "445379dba757698f3a245ca7db8299b0e9e39d76",
           "status": "verified"
         }
       },
@@ -123,7 +123,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+          "commit": "445379dba757698f3a245ca7db8299b0e9e39d76",
           "status": "verified"
         }
       },
@@ -176,7 +176,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+          "commit": "445379dba757698f3a245ca7db8299b0e9e39d76",
           "status": "verified"
         }
       },
@@ -229,7 +229,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+          "commit": "445379dba757698f3a245ca7db8299b0e9e39d76",
           "status": "verified"
         }
       },
@@ -282,7 +282,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+          "commit": "445379dba757698f3a245ca7db8299b0e9e39d76",
           "status": "verified"
         }
       },
@@ -335,7 +335,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+          "commit": "445379dba757698f3a245ca7db8299b0e9e39d76",
           "status": "verified"
         }
       },
@@ -365,10 +365,5 @@
     "Differential floors are M14's committed baselines (named repo per language), not the full ecosystem — the numbers are floors, not upper bounds.",
     "Per-language warm p95 is measured over the wave fixture pack (real index, real server), not over giant-scale workspaces; the scale row (R3) covers the giant regime separately.",
     "Wave-1 covers the six owner-approved languages; all other analyzers onboard in later waves after M37/M14 (owner decision recorded)."
-  ],
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.428Z",
-    "contentSha256": "46bfcff58add101acbe859d2d8119dd39c0947aee2faaae55da6abeb2e5d262a"
-  }
+  ]
 }

@@ -2,21 +2,21 @@
   "issue": "M25.E3",
   "code": "E3",
   "milestone": "M25",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 32,
-  "passed": 31,
-  "failed": 1,
+  "passed": 32,
+  "failed": 0,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "negativeCases": 4,
-  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
   "evidenceFile": "E3.json",
   "renderCapture": "validation/m25/results/E3-render-capture.txt",
-  "generatedAt": "2026-09-14T23:51:15.468Z",
+  "generatedAt": "2026-09-15T02:43:51.959Z",
   "os": "linux",
   "verdict": {
-    "realComponentFailures": 1
+    "realComponentFailures": 0
   },
   "limitations": [
     "Rendered states are captured as log evidence here (E3-render-capture.txt); in-editor screenshots of the status bar and panel are E5 editor-verification evidence per the contract's OS-scoped claim rules.",
@@ -25,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T00:06:48.558Z",
-    "contentSha256": "022d60f3d947c95dd19cca4c6d502df6deb4c919a5f0fac56e43ba2752938e82"
+    "sealedAt": "2026-09-15T02:43:51.959Z",
+    "contentSha256": "a1b61bd325f51bf25bdca6a9c21e457a2ad2c0b3b9c65aaa33a38e3ae9f4841e"
   }
 }

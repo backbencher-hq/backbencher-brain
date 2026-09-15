@@ -2,16 +2,16 @@
   "issue": "M29.R2",
   "code": "R2",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 261,
-  "passed": 261,
-  "failed": 0,
+  "passed": 247,
+  "failed": 14,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
   "evidenceFile": "R2.json",
-  "generatedAt": "2026-09-14T21:46:40.961Z",
+  "generatedAt": "2026-09-15T00:44:05.369Z",
   "approval": {
     "record": "validation/m29/results/wave-1-approval.json",
     "approvedBy": "owner (ishaq2321)",
@@ -210,7 +210,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.431Z",
-    "contentSha256": "746e7be2176044c42865087891f198b70ee3549457400b5734db7d1f6b67f71a"
+    "sealedAt": "2026-09-15T00:44:05.370Z",
+    "contentSha256": "ddfe3c4f0154e8ec42166d5633d5fd9c5b250f1d51c3527177465092c77d5744"
   }
 }
