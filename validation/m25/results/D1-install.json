@@ -7,10 +7,10 @@
   "passed": 18,
   "failed": 0,
   "failures": [],
-  "currentCommit": "216d1c67e1ad70dac9f6ec1cef41f2e58024d649",
+  "currentCommit": "3b7246446cdb261d7c9fc66ede887b11c7cc22d3",
   "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
   "evidenceFile": "D1-install.json",
-  "generatedAt": "2026-09-15T20:55:15.229Z",
+  "generatedAt": "2026-09-15T22:05:23.379Z",
   "limitations": [
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
     "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
@@ -18,7 +18,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T20:55:15.230Z",
-    "contentSha256": "2f328839e32fc8f388ea901355dbcff6a8c4df962f958174a04ac4a9101b9136"
+    "sealedAt": "2026-09-15T22:05:23.380Z",
+    "contentSha256": "dbafb90801fc2090bca6a0af62c50e1394fa8ee90e718b3620a9d76b911306e6"
   }
 }
