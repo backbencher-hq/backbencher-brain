@@ -324,16 +324,66 @@ cats-effect `TestInstances.scala`: the module opens on 21, the segment that name
 0 storing 0, 1,284 `NULL`; checked against source: **25,960 consistent, 0 inconsistent**, 865 not
 checkable (synthesised names).
 
+### 3h. The false certification, deleted (#824, 2026-09-15)
+
+Two mechanisms let every gate stay green while 189,499 lines were wrong. Both are now gone, and the
+replacement was proven able to fail before it was trusted.
+
+**1. `script/verify-graph.ts` checked the FILE and never the LINE.** It certified call-site behaviour with
+`callSite.file.length > 0`. The assertion now derives its expectation from the **fixture's own source**
+(the M59 oracle's shape: the last line that writes `callee()` is the call, since the declaration comes
+first), so a substituted caller-declaration line or a fabricated `0` cannot pass. Measured at HEAD on a
+purpose-built 4-language index: `java: call site is the line the call is WRITTEN on (gammaJ at 8, betaJ
+declared elsewhere)` · `scala: … (gammaS at 6, betaS declared elsewhere)`. The file assertion is kept but
+relabelled as explicitly **not** a line claim. Two controls run over a **real index**, not a fixture:
+control A corrupts a genuine stored line and is caught by the same predicate; control B sets the stored
+line to `NULL` and refuses the tool's substituted `0` (a call written on 8 must not be reported as 0);
+control C restores the real line and the predicate passes again. TypeScript still reports `0` for its
+unlined edges — recorded in the run output as the #823/#825 observation, **not** certified.
+
+**2. The multiplicity/line fixtures hand-supplied what the pipeline drops.**
+`script/m44/verify-usages-groups.ts:139` passed `line_number` 3, `verify-legend.ts:147` passed 1,
+`verify-hub-tree.ts:147` passed 1 — values production never produced for those languages. Deleted
+(written as `NULL`, exactly what production stores where an analyzer emits no line). **All three gates
+still pass unchanged** — `U1 20/20`, `U3 27/27`, `U4 25/25` — which is the proof that no law in those
+batteries ever read a line, and therefore that the hand-supplied values were certifying nothing.
+
+**Two holes in the evidence itself, found while removing the first.**
+
+- The gates collected the failed checks' labels in memory and printed them to stdout, but persisted
+  only **counts**. A `known-gap` snapshot therefore said *that* something failed and never *which law* —
+  undiagnosable after the fact, since a failing run's stdout is exactly what nobody keeps. The evidence
+  now carries `failures: ["<label>: <detail>", …]`.
+- The wire leg emitted **2 checks when the session succeeded and 1 when it threw**, so the check *count*
+  moved between runs at one commit — a 19-check snapshot was indistinguishable from a gate that never
+  finished. Every wire law is now emitted on every path (clean, blocked-with-reason, or session-failed),
+  so the set is invariant and a failed session fails each law **by name**.
+
+Negative controls for both, run before the fix was trusted: a planted law failure persisted
+`"R2: fixture stored set is the authored 8 rows: got 8: …"` with `exit=1`; a forced session failure
+(initialize caps made unmatchable) produced **20 checks / 2 named failures** where the old code produced
+19/1, with the caps error text inside the label's detail.
+
+**One observation left unexplained, deliberately.** An early run at `36b83b89` recorded
+`known-gap 19/18/1`; the next runs at the same commit recorded `20/20/0` with nothing changed on disk
+between them. The mechanism is bounded (a throw inside the wire leg collapsed the check set) and its
+**direction is safe** — it can only under-report, never certify — but the triggering condition was not
+reproduced under deliberate full-core CPU saturation, so it is recorded as an unexplained transient
+rather than attributed to a cause. The `failures` field above is what makes the next occurrence
+attributable instead of another anonymous count.
+
+**Adjacent, pre-existing, not caused by this round:** `script/m42/verify-governance.ts` and the M29 bar
+inside it are at `known-gap` because their evidence is pinned to an older commit
+(`validation/m42/results/H3.json` → `7777dd53`, HEAD `36b83b89`). The three M44 evidence files re-run by
+this round now pin to the current HEAD instead.
+
 ## Why every previous gate passed while this was true
 
-Two mechanisms, both removed by #824:
-
-1. `script/verify-graph.ts` certifies call-site behavior with `callSite.file.length > 0` — it checks the
-   **file, never the line**. Green for 189,499 wrong lines.
-2. The multiplicity/line fixtures **hand-supply** what the pipeline drops:
-   `script/m44/verify-usages-groups.ts:139` passes `line_number` 3, `verify-legend.ts:147` passes 1,
-   `verify-hub-tree.ts:147` passes 1. The gate could never observe the defect because the test provided
-   the value production never did.
+Because the two instruments that could have contradicted it were not measuring: one certified the file
+and called it the call site, and the other handed the gate a line the pipeline never produced. Section
+3h records both mechanisms being deleted, and the negative controls that proved their replacements can
+fail. The answer to "why did 189,499 wrong lines pass 189,499 green checks" is that the checks were
+asking a different question.
 
 ## Open at filing — the milestone is NOT closed
 
@@ -344,7 +394,7 @@ Two mechanisms, both removed by #824:
 | #821 remaining hardcoded `0` | **closed** — the buffered `contains` insert and both cross-language persister sites write the analyzer's line or `NULL`; measured 62 → **0** rows storing 0 on a real index, and the store probe fails the run if one reappears |
 | #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
 | #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
-| #824 delete false certification | **open** |
+| #824 delete false certification | **closed** — `script/verify-graph.ts` no longer accepts a file as a call site: the expectation is derived from the fixture's own source (java 8, scala 6 at HEAD) and two controls over a **real index** corrupt and `NULL` the stored line and are caught/refused. The three M44 fixtures that hand-supplied `line_number` (3, 4, 2, 5, 6, 1) now write `NULL` and every law still passes (U1 20/20 · U3 27/27 · U4 25/25), which is what proves they never read it. The same round fixed the evidence: `failures` is persisted, and the wire-leg check set is invariant, so a run that cannot establish a law fails it by name instead of shrinking the count |
 | #825 analyzer lane emission — synthesised members | **JVM family done** — a synthesised member (`metadata.isPhantom`: kotlin's data-class `componentN`/`copy`/`equals`/`hashCode`/`toString`, java's lombok accessors and Spring-Data repository methods) carries NO line; a declared member keeps its real one. Both analyzers used to take the ENCLOSING declaration's range, so `contains DataHolder.component1` claimed the class line and no source check could ever satisfy it. kotlin's injector also set `ownerName` for `componentN` but not for the other four, so those members had no containment edge at all. Fixtures `kotlin/data-class-phantoms` (extended) and `java/phantom-contains-lines` (new), mutants `kotlin/phantom-containment-line`, `java/phantom-containment-line`, `kotlin/phantom-uncontained` (all CAUGHT), and the runner gained the `line_number: null` assertion the gate was missing. The oracle now flags a phantom target that CLAIMS a line as inconsistent (it previously classified the whole class `notCheckable` by name shape, which is how 32 wrong-line kotlin edges passed a 6,787/6,787 "carries a line, 0 inconsistent" claim) |
 | #825 analyzer lane emission | **JVM family done, others open** — at the 840-file oracle sweep, scala **1,989/1,989** · java **1,920/1,920** · kotlin **6,787/6,787** · groovy **761/761** carry a line on **every** relationship, **0 inconsistent** (groovy also 2,864/2,864 at a 150-file sample). Every mechanism is fixture- and mutant-pinned (scala 5 mutants, java 3, kotlin 2, groovy 3). Still open: the other 17 languages emit **0 lines across 77,170 relationships**. xml is now closed too — added to the oracle (569/569 consistent, 0 inconsistent at 40 files) and given the fixture lane it never had (`xml/lines-825`, 22 lanes / 429 fixtures) |
 | #826 closure gate | **open** |
@@ -353,6 +403,8 @@ Two mechanisms, both removed by #824:
 
 - `validation/m59/results/oracle-callsite.json` — oracle run, tiers, mutation, per-file detail
 - `validation/m59/results/store-line-landing.json` — before/after on a real index + per-line source check
+- `validation/m44/results/U1.json` · `U3.json` · `U4.json` — the three gates re-run at HEAD with the
+  hand-supplied lines deleted; each now carries `failures: []` and pins to the current commit
 - `reviews/m49-callsite-line-gap.md` — the contract handoff to the analyzer lane
 
 ## Reproduce
@@ -360,4 +412,9 @@ Two mechanisms, both removed by #824:
 ```bash
 npx tsx script/m59/oracle-callsite.ts --files-per-lang=4
 npx tsx script/m59/verify-store-line-landing.ts
+# #824 — the certification that can fail (A6)
+bun run script/verify-graph.ts
+npx tsx script/m44/verify-usages-groups.ts   # U1 20/20
+npx tsx script/m44/verify-hub-tree.ts        # U3 27/27
+npx tsx script/m44/verify-legend.ts          # U4 25/25
 ```
