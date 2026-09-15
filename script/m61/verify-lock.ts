@@ -277,6 +277,7 @@ try {
   const DECLARED_EXCLUSIONS = new Set([
     "script/m61/verify-sealing.ts", // tamper/clobber fixtures — deliberate raw writes
     "script/m61/verify-lock.ts", // this suite's fixtures
+    "script/m61/verify-reproducibility.ts", // V3's DOCTORED stored record (a fixture, written to a temp dir)
     "script/m61/seal-legacy.ts", // D-1's one-shot migration (its own write path)
     "script/m61/adopt-sealed-writes.ts", // codemod: rewrites OTHER files' text
     "script/m61/adopt-sealed-writes2.ts",
