@@ -26,25 +26,25 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "38/38 fixtures pass",
+      "detail": "39/39 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "45/45 fixtures pass",
+      "detail": "46/46 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "37/37 fixtures pass",
+      "detail": "38/38 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "47/47 fixtures pass",
+      "detail": "48/48 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -92,13 +92,13 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "7/7 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
@@ -110,7 +110,7 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "00eb0da5810df21733f3c7d18360d77a083c241f",
-  "committedAt": "2026-09-14T00:04:07+02:00",
+  "commit": "f3161f4843f68907cf75b24af929b94edd0cd650",
+  "committedAt": "2026-09-15T02:07:26+02:00",
   "data": {
     "details": [
       {
@@ -1013,6 +1013,11 @@
         "problems": []
       },
       {
+        "fixture": "java/bare-member-read-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/chained-field-access",
         "ok": true,
         "problems": []
@@ -1293,6 +1298,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/grammar-rebuild-constructs",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/groovydoc-payload",
         "ok": true,
         "problems": []
@@ -1419,6 +1429,11 @@
       },
       {
         "fixture": "kotlin/api-contract-routes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/bare-member-read-uses",
         "ok": true,
         "problems": []
       },
@@ -1669,6 +1684,11 @@
       },
       {
         "fixture": "scala/field-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/framework-detection",
         "ok": true,
         "problems": []
       },
@@ -2043,6 +2063,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/bare-member-read-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/dedup-and-attribution",
         "ok": true,
         "problems": []
@@ -2053,12 +2078,22 @@
         "problems": []
       },
       {
+        "fixture": "dart/member-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/part-of",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "dart/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/bare-member-read-uses",
         "ok": true,
         "problems": []
       },
@@ -2078,7 +2113,17 @@
         "problems": []
       },
       {
+        "fixture": "swift/init-delegation",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/master-review-w2-regressions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/member-value-reads",
         "ok": true,
         "problems": []
       },
@@ -2124,6 +2169,11 @@
       },
       {
         "fixture": "php/external-override",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/member-value-reads",
         "ok": true,
         "problems": []
       },
@@ -2193,7 +2243,7 @@
       },
       "dart": {
         "fail": 0,
-        "pass": 4
+        "pass": 6
       },
       "go": {
         "fail": 0,
@@ -2201,7 +2251,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 45
+        "pass": 46
       },
       "haskell": {
         "fail": 0,
@@ -2209,7 +2259,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 38
+        "pass": 39
       },
       "javascript": {
         "fail": 0,
@@ -2217,7 +2267,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 37
+        "pass": 38
       },
       "objc": {
         "fail": 0,
@@ -2225,7 +2275,7 @@
       },
       "php": {
         "fail": 0,
-        "pass": 5
+        "pass": 6
       },
       "python": {
         "fail": 0,
@@ -2241,7 +2291,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 47
+        "pass": 48
       },
       "svelte": {
         "fail": 0,
@@ -2249,7 +2299,7 @@
       },
       "swift": {
         "fail": 0,
-        "pass": 7
+        "pass": 10
       },
       "typescript": {
         "fail": 0,
@@ -2278,8 +2328,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-13T22:06:22.098Z",
-  "regeneratedAtCommit": "00eb0da5810df21733f3c7d18360d77a083c241f",
+  "regeneratedAt": "2026-09-15T00:35:14.281Z",
+  "regeneratedAtCommit": "f3161f4843f68907cf75b24af929b94edd0cd650",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
