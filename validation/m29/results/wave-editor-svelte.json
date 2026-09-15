@@ -1,4 +1,228 @@
 {
+  "raw": {
+    "hover": {
+      "range": {
+        "start": {
+          "character": 1,
+          "line": 5
+        },
+        "end": {
+          "character": 22,
+          "line": 7
+        }
+      },
+      "data": {
+        "symbol": {
+          "crossLanguageSection": "",
+          "annotationSection": "",
+          "freshnessStatus": "fresh",
+          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+          "lineStart": 8,
+          "lineEnd": 8,
+          "name": "message",
+          "stale": false,
+          "qualifiedName": "message",
+          "symbolType": "constant",
+          "definition": {
+            "character": 1,
+            "line": 5
+          },
+          "signature": "public constant message",
+          "usageCount": 1,
+          "evidenceTiers": [
+            "usage_contextual"
+          ],
+          "connectedSection": "",
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)"
+        },
+        "provenance": {
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "stale": false,
+          "evidenceClass": "usage_contextual",
+          "source": "bb_index",
+          "engine": "bb_lsp hover@m24.l2"
+        }
+      },
+      "contents": {
+        "kind": "markdown",
+        "value": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte:6](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D))_"
+      }
+    },
+    "workspaceAbsence": [],
+    "documentSymbol": [
+      {
+        "name": "main",
+        "children": [
+          {
+            "name": "prefix",
+            "children": [],
+            "selectionRange": {
+              "start": {
+                "character": 4,
+                "line": 1
+              },
+              "end": {
+                "character": 20,
+                "line": 1
+              }
+            },
+            "detail": "prefix",
+            "range": {
+              "start": {
+                "character": 4,
+                "line": 1
+              },
+              "end": {
+                "character": 20,
+                "line": 1
+              }
+            },
+            "kind": 13,
+            "data": {
+              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:prefix:2",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            }
+          },
+          {
+            "name": "greet",
+            "children": [],
+            "selectionRange": {
+              "start": {
+                "character": 22,
+                "line": 3
+              },
+              "end": {
+                "character": 24,
+                "line": 4
+              }
+            },
+            "detail": "greet",
+            "range": {
+              "start": {
+                "character": 22,
+                "line": 3
+              },
+              "end": {
+                "character": 24,
+                "line": 4
+              }
+            },
+            "kind": 12,
+            "data": {
+              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:greet:4",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            }
+          }
+        ],
+        "selectionRange": {
+          "start": {
+            "character": 0,
+            "line": 0
+          },
+          "end": {
+            "character": 0,
+            "line": 11
+          }
+        },
+        "detail": "main",
+        "range": {
+          "start": {
+            "character": 0,
+            "line": 0
+          },
+          "end": {
+            "character": 0,
+            "line": 11
+          }
+        },
+        "kind": 5,
+        "data": {
+          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:main:1",
+          "evidenceTier": "indexed",
+          "notIndexed": false
+        }
+      },
+      {
+        "name": "message",
+        "children": [],
+        "selectionRange": {
+          "start": {
+            "character": 1,
+            "line": 5
+          },
+          "end": {
+            "character": 22,
+            "line": 7
+          }
+        },
+        "detail": "message",
+        "range": {
+          "start": {
+            "character": 1,
+            "line": 5
+          },
+          "end": {
+            "character": 22,
+            "line": 7
+          }
+        },
+        "kind": 2,
+        "data": {
+          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:message:8",
+          "evidenceTier": "indexed",
+          "notIndexed": false
+        }
+      }
+    ],
+    "definition": {
+      "range": {
+        "start": {
+          "character": 1,
+          "line": 5
+        },
+        "end": {
+          "character": 22,
+          "line": 7
+        }
+      },
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte"
+    },
+    "references": [
+      {
+        "range": {
+          "start": {
+            "character": 0,
+            "line": 0
+          },
+          "end": {
+            "character": 0,
+            "line": 11
+          }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte"
+      },
+      {
+        "range": {
+          "start": {
+            "character": 1,
+            "line": 5
+          },
+          "end": {
+            "character": 22,
+            "line": 7
+          }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte"
+      }
+    ]
+  },
+  "session": [],
+  "language": "svelte",
   "checks": [
     {
       "name": "S6: launch order resolves a server",
@@ -13,7 +237,7 @@
     {
       "name": "S6: client initialized",
       "ok": true,
-      "detail": "table: 0x764995a70f10"
+      "detail": "table: 0x73f82863d0e8"
     },
     {
       "name": "S6: capabilities advertised",
@@ -51,235 +275,11 @@
       "detail": "{}"
     }
   ],
-  "language": "svelte",
-  "session": [],
-  "raw": {
-    "documentSymbol": [
-      {
-        "kind": 5,
-        "name": "main",
-        "data": {
-          "evidenceTier": "indexed",
-          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:main:1",
-          "notIndexed": false
-        },
-        "range": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        },
-        "detail": "main",
-        "children": [
-          {
-            "kind": 13,
-            "name": "prefix",
-            "data": {
-              "evidenceTier": "indexed",
-              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:prefix:2",
-              "notIndexed": false
-            },
-            "range": {
-              "start": {
-                "line": 1,
-                "character": 4
-              },
-              "end": {
-                "line": 1,
-                "character": 20
-              }
-            },
-            "detail": "prefix",
-            "children": [],
-            "selectionRange": {
-              "start": {
-                "line": 1,
-                "character": 4
-              },
-              "end": {
-                "line": 1,
-                "character": 20
-              }
-            }
-          },
-          {
-            "kind": 12,
-            "name": "greet",
-            "data": {
-              "evidenceTier": "indexed",
-              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:greet:4",
-              "notIndexed": false
-            },
-            "range": {
-              "start": {
-                "line": 3,
-                "character": 22
-              },
-              "end": {
-                "line": 4,
-                "character": 24
-              }
-            },
-            "detail": "greet",
-            "children": [],
-            "selectionRange": {
-              "start": {
-                "line": 3,
-                "character": 22
-              },
-              "end": {
-                "line": 4,
-                "character": 24
-              }
-            }
-          }
-        ],
-        "selectionRange": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        }
-      },
-      {
-        "kind": 2,
-        "name": "message",
-        "data": {
-          "evidenceTier": "indexed",
-          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:message:8",
-          "notIndexed": false
-        },
-        "range": {
-          "start": {
-            "line": 5,
-            "character": 1
-          },
-          "end": {
-            "line": 7,
-            "character": 22
-          }
-        },
-        "detail": "message",
-        "children": [],
-        "selectionRange": {
-          "start": {
-            "line": 5,
-            "character": 1
-          },
-          "end": {
-            "line": 7,
-            "character": 22
-          }
-        }
-      }
-    ],
-    "definition": {
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
-      "range": {
-        "start": {
-          "line": 5,
-          "character": 1
-        },
-        "end": {
-          "line": 7,
-          "character": 22
-        }
-      }
-    },
-    "references": [
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
-        "range": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        }
-      },
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
-        "range": {
-          "start": {
-            "line": 5,
-            "character": 1
-          },
-          "end": {
-            "line": 7,
-            "character": 22
-          }
-        }
-      }
-    ],
-    "hover": {
-      "contents": {
-        "value": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte:6](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D))_",
-        "kind": "markdown"
-      },
-      "range": {
-        "start": {
-          "line": 5,
-          "character": 1
-        },
-        "end": {
-          "line": 7,
-          "character": 22
-        }
-      },
-      "data": {
-        "provenance": {
-          "limitations": [
-            "index-sourced; no compiler-backed types (complement stance)"
-          ],
-          "stale": false,
-          "source": "bb_index",
-          "evidenceClass": "usage_contextual",
-          "engine": "bb_lsp hover@m24.l2"
-        },
-        "symbol": {
-          "annotationSection": "",
-          "freshnessStatus": "fresh",
-          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
-          "lineStart": 8,
-          "lineEnd": 8,
-          "name": "message",
-          "stale": false,
-          "qualifiedName": "message",
-          "symbolType": "constant",
-          "signature": "public constant message",
-          "usageCount": 1,
-          "evidenceTiers": [
-            "usage_contextual"
-          ],
-          "connectedSection": "",
-          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
-          "definition": {
-            "line": 5,
-            "character": 1
-          },
-          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)",
-          "crossLanguageSection": ""
-        }
-      }
-    },
-    "workspaceAbsence": []
-  },
   "status": "verified",
-  "commit": "7fe8212b4dd8bec623185d14da9c749c53851b31",
+  "commit": "6666e7f5d30c465dd75b4fcc7e66bd81ca09d249",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T17:00:11.846Z",
-    "contentSha256": "0539219b574947d38190578aa222b4899aee564981f65ea50ff10cd347bb4a3e"
+    "sealedAt": "2026-09-15T17:28:26.750Z",
+    "contentSha256": "442a69fc3069c8aaca23c5dbac8446c97550cecef32f5f57325ff605794c5669"
   }
 }
