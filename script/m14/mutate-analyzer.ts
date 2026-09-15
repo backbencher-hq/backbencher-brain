@@ -2800,6 +2800,14 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "groovy/grammar-residual-call-drop",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "#841 regression: drops calls whose source lives in a grammar-residual region — the typed for-in / slashy / spread-map / one-line-class-field / one-line-try bodies that the grammar round made parseable (grammar-residuals-841 expects deployAll->deploy, deployAll->attempt, deployAll->log). If the grammar regresses, those calls vanish into ERROR regions rather than failing a fixture, so the drop is the observable pin.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) =>
+      !(x.type === "calls" && x.source === "deployAll")) }),
+  },
+  {
     id: "groovy/as-cast-drop",
     language: "groovy",
     defectClass: "relationship-loss",
