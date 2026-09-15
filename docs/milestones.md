@@ -22,6 +22,7 @@
 | 58 | M58 Analyzer Lane Review — foreign-red gates (M57 convictions) | fix foreign-minted gate convictions in the analyzer lane | *(no PLAN in repo — registered 2026-09-14)* | open; #802 #803 #805 #811 |
 | 59 | M59 Call-Site Truth | no relationship without a real line | docs/m59/ | active |
 | 60 | M60 Family Truth Reconciliation | standing rules + payload seam; closes JVM/web remainder | docs/m60/PLAN.md | active; terminal milestone |
+| 61 | M61 Verifier Truth — the machinery that watches the machinery | verifier honesty: evidence sealing, gate serialization, reproducibility, claim pins | *(no PLAN in repo — all 8 issues link `docs/m61/M61-MASTER-PLAN.md`, which does not exist; registered 2026-09-15 by the R1 sweep so the milestone stops being invisible to governance)* | open; issues #842–#849 |
 
 ## Finished milestones left open on GitHub (tracker hygiene, not work)
 

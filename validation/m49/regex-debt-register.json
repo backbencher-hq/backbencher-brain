@@ -118,11 +118,11 @@
     },
     {
       "file": "real-php-analyzer.ts",
-      "line": 1054,
+      "line": 1236,
       "source": "/^\\\\+/",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "M49: leading-backslash strip -> startsWith slice"
+      "note": "M49: leading-backslash strip -> startsWith slice. Position corrected 1054 -> 1236 by M49.PHP1 (241e3a4e): the same source moved, no debt paid and no row added"
     },
     {
       "file": "real-zig-analyzer.ts",
