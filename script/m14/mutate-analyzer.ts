@@ -269,6 +269,54 @@ function revertToChainOpeningLine(r: any) {
   }
 }
 
+// M59 (#825), synthesised-member half: the PRE-FIX line semantics EXACTLY. A
+// phantom symbol's range IS its enclosing declaration's range (kotlin's data
+// class, java's lombok field / Spring-Data interface), so the containment edge
+// used to carry a real-looking line on which the target name is written NOWHERE.
+// Written off the result's own symbol table (metadata.isPhantom + range) so it
+// cannot silently stop matching on a fixture that renames things.
+function stampPhantomContainmentLine(r: any) {
+  const phantomLine = new Map<string, number>()
+  for (const s of r.symbols ?? []) {
+    if (s?.metadata?.isPhantom === true && typeof s?.range?.startLine === "number") {
+      phantomLine.set(String(s.name), s.range.startLine)
+    }
+  }
+  if (phantomLine.size === 0) return r
+  const rels: any[] = r.relationships ?? []
+  const isContains = (x: any) => x.type === "contains" || x.relationshipType === "contains"
+  if (!rels.some((x) => isContains(x) && phantomLine.has(String(x.target ?? x.to ?? "")))) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!isContains(x)) return x
+      const ln = phantomLine.get(String(x.target ?? x.to ?? ""))
+      return ln === undefined ? x : { ...x, line_number: ln }
+    }),
+  }
+}
+
+// M59 (#825), the OTHER half of the same injector bug: synthesized members that
+// are NOT componentN (copy/equals/hashCode/toString) go back to carrying no
+// ownerName, so their class contains them no more. Derived from the symbols' own
+// names (the four generated members are the phantoms that are not componentN).
+function dropNonComponentPhantomContainment(r: any) {
+  const unowned = new Set<string>()
+  for (const s of r.symbols ?? []) {
+    if (s?.metadata?.isPhantom !== true) continue
+    const n = String(s?.name ?? "")
+    if (!/^component\d+$/.test(n)) unowned.add(n)
+  }
+  if (unowned.size === 0) return r
+  const rels: any[] = r.relationships ?? []
+  const isContains = (x: any) => x.type === "contains" || x.relationshipType === "contains"
+  if (!rels.some((x) => isContains(x) && unowned.has(String(x.target ?? x.to ?? "")))) return r
+  return {
+    ...r,
+    relationships: rels.filter((x: any) => !(isContains(x) && unowned.has(String(x.target ?? x.to ?? "")))),
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -1039,6 +1087,27 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: every heritage edge is stamped with the line the CLASS DECLARATION starts on, which is right only when the supertype list is written inline. On a wrapped list (`internal class TestScopeImpl(...) :` 183 / `AbstractCoroutine<Unit>(...), TestScope {` 184 in kotlinx-coroutines) it sends a tool to the class keyword for every parent. Caught by kotlin/heritage-lines-825, whose forbid entries name `Wrapped`'s parents at 9 (the `class` line) and `Third`'s at 20.",
     transform: revertKotlinHeritageToDeclarationLine,
+  },
+  {
+    id: "java/phantom-containment-line",
+    language: "java",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a SYNTHESISED java member's containment edge goes back to carrying the symbol's range — lombok accessors name the FIELD's line (8/9) and Spring-Data methods the INTERFACE's (12), where the generated name is written nowhere. Caught by java/phantom-contains-lines, whose forbid entries name getOwner/setBalance at 8/9 and save/count at 12.",
+    transform: stampPhantomContainmentLine,
+  },
+  {
+    id: "kotlin/phantom-containment-line",
+    language: "kotlin",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a SYNTHESISED member's containment edge goes back to carrying the symbol's range — which for a phantom is the ENCLOSING declaration's line, so a tool navigating to `Money.component1` opens the class. Measured pre-fix on a real file (JsonTestsData.kt): 7 of 8 phantom containment edges named a line on which the target name appears nowhere. Caught by kotlin/data-class-phantoms, whose forbid entries name component1, copy and toString at 3 (the data class's only line).",
+    transform: stampPhantomContainmentLine,
+  },
+  {
+    id: "kotlin/phantom-uncontained",
+    language: "kotlin",
+    defectClass: "edge-absence",
+    description: "M59 (#825) regression: the injector's own inconsistency — componentN set ownerName (so `contains Money -> component1` existed) while copy/equals/hashCode/toString did not (so those members were the only ones with no containment edge at all). Caught by kotlin/data-class-phantoms, which pins a containment edge for each of the four.",
+    transform: dropNonComponentPhantomContainment,
   },
   {
     id: "scala/import-statement-start-line",

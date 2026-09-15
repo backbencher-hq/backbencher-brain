@@ -854,7 +854,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "annotation" || c.type === "modifiers") continue
-      if (c.type === "comment" || c.type === "block_comment" || c.type === "line_comment") continue
+      // M59 (#825) / F6: tree-sitter-scala's comment nodes are `comment` and
+      // `block_comment` — `line_comment` does not exist in that grammar (the
+      // wasm node-type table is the check), so it was dead code.
+      if (c.type === "comment" || c.type === "block_comment") continue
       return c
     }
     return node

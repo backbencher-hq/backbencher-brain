@@ -1,6 +1,6 @@
 {
   "probe": "M59.O1",
-  "at": "2026-09-15T16:51:39.679Z",
+  "at": "2026-09-15T18:31:30.083Z",
   "corpus": "$HOME/fixtures/repositories",
   "filesPerLang": 40,
   "oracleIndependence": {
@@ -47,12 +47,12 @@
     },
     "kotlin": {
       "files": 40,
-      "rels": 6787,
-      "withLine": 6787,
-      "noLine": 0,
+      "rels": 6807,
+      "withLine": 6775,
+      "noLine": 32,
       "consistent": 6639,
       "inconsistent": 0,
-      "notCheckable": 148
+      "notCheckable": 136
     },
     "scala": {
       "files": 40,
@@ -847,12 +847,12 @@
       {
         "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionRollbackTest.kt",
         "language": "kotlin",
-        "rels": 269,
-        "withLine": 269,
-        "noLine": 0,
+        "rels": 273,
+        "withLine": 267,
+        "noLine": 6,
         "consistent": 257,
         "inconsistent": 0,
-        "notCheckable": 12,
+        "notCheckable": 10,
         "inconsistentSample": []
       },
       {
@@ -913,12 +913,12 @@
       {
         "file": "Exposed/spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt",
         "language": "kotlin",
-        "rels": 197,
-        "withLine": 197,
-        "noLine": 0,
+        "rels": 205,
+        "withLine": 191,
+        "noLine": 14,
         "consistent": 191,
         "inconsistent": 0,
-        "notCheckable": 6,
+        "notCheckable": 0,
         "inconsistentSample": []
       },
       {
@@ -968,12 +968,12 @@
       {
         "file": "Exposed/exposed-jodatime/src/test/kotlin/org/jetbrains/exposed/v1/jodatime/JodaTimeTests.kt",
         "language": "kotlin",
-        "rels": 436,
-        "withLine": 436,
-        "noLine": 0,
+        "rels": 440,
+        "withLine": 434,
+        "noLine": 6,
         "consistent": 412,
         "inconsistent": 0,
-        "notCheckable": 24,
+        "notCheckable": 22,
         "inconsistentSample": []
       },
       {
@@ -1023,12 +1023,12 @@
       {
         "file": "Exposed/exposed-kotlin-datetime/src/test/kotlin/org/jetbrains/exposed/v1/datetime/KotlinTimeTests.kt",
         "language": "kotlin",
-        "rels": 752,
-        "withLine": 752,
-        "noLine": 0,
+        "rels": 756,
+        "withLine": 750,
+        "noLine": 6,
         "consistent": 711,
         "inconsistent": 0,
-        "notCheckable": 41,
+        "notCheckable": 39,
         "inconsistentSample": []
       },
       {

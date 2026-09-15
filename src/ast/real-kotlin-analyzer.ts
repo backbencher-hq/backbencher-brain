@@ -271,14 +271,25 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       const _owner = s.ownerName
       if (_owner) {
+        // M59 (#825): a containment edge's navigable site is the member's own
+        // declaration line, from the symbol so the two cannot disagree.
+        //
+        // A SYNTHESISED member has no such site. kotlin's data classes generate
+        // componentN/copy/equals/hashCode/toString (`metadata.isPhantom`), and
+        // their symbol range is the ENCLOSING CLASS's range — so the edge used to
+        // claim the class's line for a name written nowhere, and a tool
+        // navigating to `DataHolder.component1` opened the class. Measured on a
+        // real file (JsonTestsData.kt): 7 of 8 phantom containment edges named no
+        // line containing the name; the same shape reached the store as 16 rows.
+        // The line is omitted rather than guessed: unknown is a state, not a
+        // placeholder (#820/#821/#823).
+        const isSynthetic = s.metadata?.isPhantom === true
         relationships.push({
           source: _owner,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
-          // M59 (#825): a containment edge's navigable site is the member's own
-          // declaration line, from the symbol so the two cannot disagree.
-          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+          ...(!isSynthetic && s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isContained: true },
         })
       }
@@ -532,6 +543,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           name: "copy",
           kind: ASTEngine.SymbolKind.Method,
           scope: symbol.name,
+          // M59 (#825): ownerName is what makes the member CONTAINED by its class
+          // — the injector set it for componentN but not for copy/equals/hashCode/
+          // toString, so `contains Money -> copy` never existed while
+          // `contains Money -> component1` did. Same class, same synthesis route,
+          // opposite outcomes on a real corpus file (measured on
+          // JsonTestsData.kt: 7 componentN containment edges, 0 for the other four
+          // members). java's phantoms (lombok/Spring-Data, processPhantomSymbols)
+          // have always carried ownerName.
+          ownerName: symbol.name,
           modifiers: ["phantom", "data_class_generated"],
           range: symbol.range,
           parameters: copyParams,
@@ -551,6 +571,10 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: method.name,
             kind: ASTEngine.SymbolKind.Method,
             scope: symbol.name,
+            // Same ownerName gap as `copy` above (M59 #825): without it these
+            // three generated overrides were the only members of the data class
+            // with no containment edge at all.
+            ownerName: symbol.name,
             modifiers: ["phantom", "data_class_generated", "override"],
             range: symbol.range,
             parameters: method.params,
@@ -1494,7 +1518,14 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "modifiers" || c.type === "annotation") continue
-      if (c.type === "comment" || c.type === "line_comment" || c.type === "block_comment") continue
+      // M59 (#825) / F6 — and this one was a real hole, not just dead code:
+      // tree-sitter-kotlin's comment nodes are `line_comment` and
+      // `multiline_comment`; the guard named `comment` (nonexistent) and
+      // `block_comment` (nonexistent), so a kotlin `/* … */` written as the
+      // first named child was RETURNED as the declaration node and its line
+      // became the declaration's — exactly the annotation/comment defect this
+      // helper exists to prevent, left open for one comment style.
+      if (c.type === "line_comment" || c.type === "multiline_comment") continue
       return c
     }
     return node

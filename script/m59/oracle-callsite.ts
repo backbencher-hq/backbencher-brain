@@ -272,6 +272,29 @@ async function main() {
       }
       const lines = readFileSync(f, "utf8").split("\n")
       const rels: any[] = res?.relationships ?? []
+      // SYNTHESISED MEMBERS (the analyzer's own marker, never a name shape):
+      // lombok/Spring-Data accessors, kotlin data-class componentN/copy/equals/
+      // hashCode/toString. Such a name has NO declaration anywhere in the file —
+      // its symbol range is the ENCLOSING declaration's — so a relationship that
+      // CLAIMS a line for one is a definite defect, not an uncheckable claim.
+      // Before this the name-shape allowlist below made the whole class invisible:
+      // the oracle reported kotlin 6,787/6,787 "carrying a line, 0 inconsistent"
+      // while 32 of those lines named a class/interface that the target name is
+      // written nowhere on (found instead by probe-phantom-contains.ts). A
+      // synthetic name with NO line stays the honest unknown state (noLine).
+      // Keyed by OWNER+NAME, and applied only to `contains` edges, because a
+      // synthesised NAME is shared with real members all over a file: keying on
+      // the bare name flagged every `calls toString()` site in a file that merely
+      // happened to contain a data class (measured: 4 false positives on Exposed,
+      // line 270 / 506 / 373 / 729 — ordinary call sites, correctly lined). The
+      // defect is exactly a containment edge that names the enclosing
+      // declaration's line for a member no declaration produces.
+      const phantomMembers = new Set<string>()
+      for (const s of res?.symbols ?? []) {
+        if (s?.metadata?.isPhantom !== true) continue
+        if (typeof s?.name !== "string" || typeof s?.ownerName !== "string") continue
+        phantomMembers.add(`${s.ownerName}\u0000${s.name}`)
+      }
       const r: FileResult = {
         file: path.relative(CORPUS, f),
         language: res?.language ?? lang,
@@ -290,6 +313,25 @@ async function main() {
           continue
         }
         r.withLine++
+        const relType = String(rel?.type ?? rel?.relationshipType ?? "")
+        if (
+          relType === "contains" &&
+          phantomMembers.has(`${String(rel?.source ?? rel?.from ?? "")}\u0000${String(rel?.target ?? rel?.to ?? "")}`)
+        ) {
+          // Definite: the target names a synthesised member, so no line in this
+          // file can be its site. Reported with its own reason so the two
+          // failure kinds are never conflated in the sample.
+          r.inconsistent++
+          if (r.inconsistentSample.length < 5) {
+            r.inconsistentSample.push({
+              type: String(rel?.type ?? "?") + "(phantom-target-claims-line)",
+              callee: String(rel?.target ?? rel?.to ?? ""),
+              claimedLine: ln,
+              sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100),
+            })
+          }
+          continue
+        }
         const token = calleeToken(rel)
         // An xml NAMESPACE edge names a namespace, and the DEFAULT namespace has
         // no written prefix: for `xmlns="…"` the analyzer synthesises the

@@ -53,11 +53,26 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
 
 interface Entry { [k: string]: any }
 
+// M59 (#825): `line_number: null` is a supported constraint (see below) — the
+// unknown state, asserted rather than assumed. `undefined`/`null` both satisfy it;
+// a number (including the old fabricated 0) does not.
 function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
     // Documentation fields on expectation entries are NOT match constraints.
     if (k === "comment") continue
     if (k === "note") continue
+    // M59 (#825) — the UNKNOWN state as a first-class assertion. `line_number:
+    // null` means "this edge must NOT name a line": the field is absent (the
+    // analyzers' contract) or explicitly null (the store's contract). It is what
+    // lets a fixture pin the RIGHT answer for an edge whose target is written
+    // NOWHERE in the source (kotlin's data-class phantoms, java's lombok /
+    // Spring-Data phantoms). The only honest value there is no value, and before
+    // this the runner had no way to say so — the pre-fix state (an enclosing
+    // declaration's line) was indistinguishable from the fixed one.
+    if (k === "line_number" && v === null) {
+      if (actual.line_number !== undefined && actual.line_number !== null) return false
+      continue
+    }
     if (k === "confidenceMin") {
       if (!(typeof actual.confidence === "number" && actual.confidence >= v)) return false
     } else if (k === "confidenceMax") {
