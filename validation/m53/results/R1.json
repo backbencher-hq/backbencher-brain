@@ -2,9 +2,19 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "verified",
-  "passed": 40,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 39,
+  "failed": 1,
+  "mutantsCaught": 1,
+  "mutantsTotal": 1,
+  "checksList": [
+    "ok: M: degenerate-aggregate — a bogus gate (rc=1) flips the R1 verdict"
+  ],
+  "canFail": {
+    "name": "degenerate-aggregate",
+    "flipped": true,
+    "bogusRc": 1
+  },
   "gatesTotal": 40,
   "gates": [
     {
@@ -24,9 +34,9 @@
     {
       "name": "m25-harness-core",
       "script": "script/m25/verify-harness-core.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (27/27 passed, 6/6 mutants caught)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (26/27 passed, 6/6 mutants caught)",
+      "ok": false
     },
     {
       "name": "m25-closure",
@@ -165,7 +175,7 @@
       "name": "m29-wave-protocol",
       "script": "script/m29/verify-wave-protocol.ts",
       "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 4/4 mutants — every mutant must be caught)",
+      "verdict": "VERIFIED (36/36 passed, 7/7 mutants — every mutant must be caught)",
       "ok": true
     },
     {
@@ -288,12 +298,12 @@
       "ok": true
     }
   ],
-  "currentCommit": "3b7246446cdb261d7c9fc66ede887b11c7cc22d3",
+  "currentCommit": "39dcf27527a74bbe591a00e4ac8002dfae1940cb",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-15T22:23:59.020Z",
+  "generatedAt": "2026-09-15T23:05:09.885Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T22:23:59.021Z",
-    "contentSha256": "ad419b2b683f2da8bfb9a7c727980a6d4982f52d6fdb73c41251dde678fa3bac"
+    "sealedAt": "2026-09-15T23:05:09.889Z",
+    "contentSha256": "a6026f093bed92a23237194e515a2dfd8bb30b77b7d5d0c5f585269bd4f0036b"
   }
 }
