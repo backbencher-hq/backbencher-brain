@@ -1,8 +1,8 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-15T00:05:21.911Z",
-  "atCommit": "bab8342d853de9ce7b328c11c3861a6020414f8c",
+  "at": "2026-09-15T17:03:07.731Z",
+  "atCommit": "42d4a50a827ebc2c09c256fce7bfd01b8f03745e",
   "passed": 22,
   "failed": 1,
   "negatives": 6,
