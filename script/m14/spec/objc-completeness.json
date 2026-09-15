@@ -333,6 +333,38 @@
         "question": "First OO review: @synthesize names and @selector names \u2014 reads, references, or silent?",
         "resolution": "SILENT (both sides): @synthesize wires storage without reading; @selector names a method without invoking it (unlike C# nameof-as-call, a SEL value is closer to a method pointer and no family member emits calls for it). @selector is load-bearing-silent (forbid uses[maker->fire] with a bound local of the same spelling); @synthesize is defensive-silent (class-scope, unobservable by edges) gated by forbid uses[Holder->_label] (class scope never sources reads) + mutant objc/emit-synthesize-as-bare-read.",
         "issue": "M49.OC1 objc first review"
+      },
+      {
+        "id": "OC-F",
+        "node_type": "enumerator identifiers in value positions",
+        "status": "FIXED",
+        "question": "Second review: `case Red:`, `x == Alpha`, `return Beta` invisible on both sides \u2014 enum cases (OC-D symbols!) never entered the value inventory, though case labels and comparisons genuinely reference them.",
+        "resolution": "Same-file enum cases resolve last in the inventory (locals/params/ivars/globals shadow first). NS_ENUM/NS_OPTIONS need macro expansion AND live in headers \u2014 silent by unit design on both sides (verified: the macro error-recovers, cases unparseable). Gated by fixture objc/second-review + mutant objc/drop-enum-case-reads.",
+        "issue": "M49.OC2 objc second review"
+      },
+      {
+        "id": "OC-G",
+        "node_type": "call_expression under at_expression",
+        "status": "FIXED",
+        "question": "Second review: `@protocol(P)` emitted calls->protocol (dangling \u2014 nothing named protocol is invocable) while `@encode` stayed silent by shape and `@selector` by ruling (OC-R2). Directives named inconsistently.",
+        "resolution": "Calls with callee `protocol` directly under at_expression are skipped on both sides (message sends named protocol stay calls \u2014 real methods). Gated by fixture forbid + mutant objc/emit-protocol-directive-call.",
+        "issue": "M49.OC2 objc second review"
+      },
+      {
+        "id": "OC-H",
+        "node_type": "function_definition names as values",
+        "status": "FIXED",
+        "question": "Second review: `cb = helper` decay and bare function references silent \u2014 file-scope functions symbolized but never bound, though bare `helper` can never invoke a method (receivers required), so global attribution is exact.",
+        "resolution": "Defined function names join globals on both sides (locals shadow first; call-callee and declarator positions still skipped). Gated by fixture (uses without disturbing calls) + mutant objc/drop-function-decay-reads.",
+        "issue": "M49.OC2 objc second review"
+      },
+      {
+        "id": "OC-R3",
+        "node_type": "compound assignment, address-of, use-before-declaration",
+        "status": "RULED",
+        "question": "Second review: `x *= 2`/`+=` (folded into assignment_expression) gated as writes \u2014 but RMW reads the value! `&buf` reads without reading the value. `use-before-decl` locals invisible.",
+        "resolution": "Compound-assign LHS are writes (C SCD1 parity: `c->count += 1` gated there too; update_expression `++` stays the read form per OC-R1). Address-of emits on both sides (a reference, documented as read). Use-before-declaration in one scope is invalid C \u2014 silence on broken code is correct.",
+        "issue": "M49.OC2 objc second review"
       }
     ]
   }
