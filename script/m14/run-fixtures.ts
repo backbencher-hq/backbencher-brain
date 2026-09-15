@@ -44,6 +44,11 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
+  // M59 (#825): xml had NO fixture lane at all, while being one of only two
+  // analyzers that emitted a line before the round (27 of 27 relationships on
+  // the M59 coverage probe). Nothing pinned its line contract, so nothing could
+  // have caught a regression in it — added with the xml/lines-825 fixture.
+  xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml" },
 }
 
 interface Entry { [k: string]: any }
