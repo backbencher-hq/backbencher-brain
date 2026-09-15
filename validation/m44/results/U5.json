@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "39dcf27527a74bbe591a00e4ac8002dfae1940cb",
+  "currentCommit": "27be4201646606dab63a33e9b00b3bfc2a8121ef",
   "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
   "evidenceFile": "U5.json",
-  "generatedAt": "2026-09-15T23:05:02.718Z",
+  "generatedAt": "2026-09-15T23:39:39.992Z",
   "fixture": "script/m44/u5-fixture.ts (real indexer + real dist server)",
   "laws": [
     "R0 fixture truth from the REAL indexer (seed can never drift)",
@@ -28,7 +28,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T23:05:02.719Z",
-    "contentSha256": "47d88e339191128b4f3b3abbf5afbcbc0d3f3166f07368f76c76c903cc5341c6"
+    "sealedAt": "2026-09-15T23:39:39.992Z",
+    "contentSha256": "a9fe512958b9777b92bd5d68b508a3ad451aab4e366f6c86e0767b46d1911ad0"
   }
 }

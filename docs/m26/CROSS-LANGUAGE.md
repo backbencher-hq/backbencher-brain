@@ -19,5 +19,5 @@ Launch languages: java, groovy, kotlin, scala, typescript, javascript, python
 (M29 wave-1 extension). Any pair among
 them not in the table above is **declared absent**: no stored rows exist,
 the UI renders no cross-language text for it, and no bridge is claimed.
-Real project dbs scanned: 53.
+Real project dbs scanned: 59.
 
