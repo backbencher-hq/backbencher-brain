@@ -52,7 +52,9 @@ export type Registry = {
   tiers: { name: string; kind: "npm-script" | "script-list"; script?: string; source?: string }[]
   declaredNonGates: { path: string; reason: string }[]
   declaredNoCanFail: { gate: string; reason: string }[]
+  declaredOnDemand: { gate: string; reason: string }[]
   declaredEnv: { name: string; role: "skip" | "input"; reason: string }[]
+  declaredArtifactRecords: { record: string; reason: string }[]
   declaredLegacyUnsealed: { record: string; reason: string }[]
 }
 
@@ -74,29 +76,48 @@ export function canFailProofs(record: Record<string, unknown>): { mutants: numbe
   const declaredKeys = ["mutantsCaught", "mutants", "negativeCases", "negatives", "canFail"]
   let mutants = 0
   let negatives = 0
+  const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0)
   for (const k of declaredKeys) {
     const v = record[k]
     if (typeof v === "number") {
-      if (k === "negatives" || k === "negativeCases") negatives += v
-      else mutants += v
+      if (k === "negatives" || k === "negativeCases") negatives += num(v)
+      else mutants += num(v)
     } else if (v && typeof v === "object") {
       const o = v as Record<string, unknown>
-      if (typeof o.mutants === "number") mutants += o.mutants
-      if (typeof o.negatives === "number") negatives += o.negatives
+      mutants += num(o.mutants) + num(o.caught) + num(o.mutantsCaught)
+      negatives += num(o.negatives) + num(o.planned) + num(o.negativeCases)
     }
   }
-  const list = record.checksList
-  if (Array.isArray(list)) {
+  // The house shape nests the proof under `verdict` (mutantsCaught / mutantsTotal)
+  // with the negative count beside it — both are declarations by the record's
+  // owner, so the lint reads them rather than asking the gate to restate them.
+  const verdict = record.verdict
+  if (verdict && typeof verdict === "object") {
+    const o = verdict as Record<string, unknown>
+    mutants += num(o.mutantsCaught) + num(o.mutants)
+  }
+  for (const listKey of ["checksList", "checks"]) {
+    const list = record[listKey]
+    if (!Array.isArray(list)) continue
     for (const c of list) {
       if (typeof c !== "string") continue
-      if (/^(ok|FAIL):\s*M[::]/.test(c)) mutants++
+      if (/^(ok|FAIL):\s*M[::]/.test(c) || /^M[::]\s/.test(c)) mutants++
       else if (/\bnegative\b/i.test(c)) negatives++
     }
   }
   return { mutants, negatives }
 }
 
-export type ScriptInfo = { rel: string; lane: string; source: string; runsChecks: boolean; jsonLiterals: string[]; envVars: string[] }
+export type ScriptInfo = {
+  rel: string
+  lane: string
+  source: string
+  runsChecks: boolean
+  jsonLiterals: string[]
+  /** Records the script WRITES (the literal is bound to a const passed to writeSealed, or sits inside the call). */
+  writtenRecords: string[]
+  envVars: string[]
+}
 
 /** Every lane script that runs checks or writes evidence, with its derived facts. */
 export function scanLaneScripts(lanes: string[]): ScriptInfo[] {
@@ -113,7 +134,27 @@ export function scanLaneScripts(lanes: string[]): ScriptInfo[] {
       // path literal ("validation/m53/results/R3.json"). Compared by basename.
       const jsonLiterals = [...source.matchAll(/"([A-Za-z0-9._/-]+\.json)"/g)].map((m) => path.basename(m[1]))
       const envVars = [...new Set([...source.matchAll(/process\.env\.(BB_[A-Z0-9_]+)/g)].map((m) => m[1]))]
-      out.push({ rel, lane, source, runsChecks, jsonLiterals, envVars })
+      // Which of those literals does this script actually WRITE? A reader must
+      // never win attribution over a writer (that ambiguity is what orphaned
+      // R2.json/R3.json). Two shapes cover the lane: a const bound to the
+      // literal and passed to writeSealed, and a literal inside the call.
+      // A write counts only when the expression clearly targets the results
+      // tree (`validation/...` or a `RESULTS` const) — otherwise a screenshot
+      // protocol writing its own out/<manifest.json> would be mistaken for the
+      // milestone's ledger writer.
+      const targetsResults = (expr: string) => /validation\/|RESULTS/.test(expr)
+      const writtenRecords = new Set<string>()
+      for (const m of source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=\s*([^\n]*"[A-Za-z0-9._/-]+\.json"[^\n]*)/g)) {
+        if (!targetsResults(m[2])) continue
+        const lit = m[2].match(/"([A-Za-z0-9._/-]+\.json)"/)
+        if (lit && new RegExp(`writeSealed\\(\\s*${m[1]}\\b`).test(source)) writtenRecords.add(path.basename(lit[1]))
+      }
+      for (const m of source.matchAll(/writeSealed\(([^;]*?"[A-Za-z0-9._/-]+\.json"[^;]*?)\)/g)) {
+        if (!targetsResults(m[1])) continue
+        const lit = m[1].match(/"([A-Za-z0-9._/-]+\.json)"/)
+        if (lit) writtenRecords.add(path.basename(lit[1]))
+      }
+      out.push({ rel, lane, source, runsChecks, jsonLiterals, writtenRecords: [...writtenRecords], envVars })
     }
   }
   return out
@@ -157,10 +198,21 @@ export function attribute(records: RecordInfo[], scripts: ScriptInfo[], gatePath
     let owner: string | undefined
     if (r.owner && gatePaths.has(r.owner)) owner = r.owner
     else {
-      const candidates = scripts.filter((s) => gatePaths.has(s.rel) && s.jsonLiterals.includes(r.fileName))
-      // Exactly one candidate is attribution; more than one is ambiguity, which
-      // is reported as an orphan to be fixed (the writer must name itself).
-      if (candidates.length === 1) owner = candidates[0].rel
+      // A WRITER beats a mentioner; a bare mention is only attribution when it
+      // is unique. Ambiguity is reported as an orphan (the writer must name
+      // itself) rather than guessed.
+      // Lane-aware: a lane's record can only be produced by a script of that
+      // lane (a cross-lane link must be stated explicitly as verifierCommand,
+      // as M44's U2.json does when it names the m26 webview harness). Without
+      // this, "R3.json" collided between m29 and m53 and a writer stole a
+      // record from another milestone entirely.
+      const inLane = (s: ScriptInfo) => gatePaths.has(s.rel) && s.lane === r.lane
+      const writers = scripts.filter((s) => inLane(s) && s.writtenRecords.includes(r.fileName))
+      if (writers.length === 1) owner = writers[0].rel
+      else {
+        const mentions = scripts.filter((s) => inLane(s) && s.jsonLiterals.includes(r.fileName))
+        if (mentions.length === 1) owner = mentions[0].rel
+      }
     }
     if (owner) byGate.get(owner)!.push(r)
     else orphans.push(r.rel)
@@ -197,6 +249,7 @@ export type LintReport = {
   gateCount: number
   recordCount: number
   tiers: { name: string; gateCount: number }[]
+  onDemandCount: number
   gates: {
     gate: string
     lane: string
@@ -208,6 +261,7 @@ export type LintReport = {
   }[]
   failures: string[]
   orphanRecords: string[]
+  artifactRecords: string[]
   declaredNonGates: string[]
   declaredNoCanFail: string[]
 }
@@ -217,6 +271,9 @@ export function lint(reg: Registry): LintReport {
   const scripts = scanLaneScripts(reg.lanes)
   const records = loadLaneRecords(reg.lanes)
   const nonGatePaths = new Set(reg.declaredNonGates.map((d) => d.path))
+  // Declared measurement artifacts: records a declared runner produces that are
+  // NOT a gate verdict (their verdict record is the companion *-verify.json).
+  const artifactPaths = new Set((reg.declaredArtifactRecords ?? []).map((d) => d.record))
   const tiers = readTiers(reg)
 
   // G1: the gate census. Uniform rule with no heuristics: a lane script that
@@ -224,27 +281,56 @@ export function lint(reg: Registry): LintReport {
   // a non-gate with a reason. Anything else is a gate that produces no
   // evidence; a declared non-gate that owns a record means the declaration is
   // hiding a real gate.
-  const namedByRecord = new Set(records.map((r) => r.owner).filter((o): o is string => !!o))
-  const gatePaths = new Set(namedByRecord)
+  //
+  // Ownership is the ATTRIBUTED set (owner named, else the unique writer), not
+  // merely the scripts a record names — a gate that writes its record without
+  // naming itself in it is still a gate.
+  const candidateGates = new Set(scripts.filter((s) => s.runsChecks && !nonGatePaths.has(s.rel)).map((s) => s.rel))
+  const gatePaths = new Set([...records.map((r) => r.owner).filter((o): o is string => !!o), ...candidateGates])
+  const ownerOf = new Map<string, number>()
+  for (const g of attribute(records, scripts, gatePaths).groups) ownerOf.set(g.gate, g.records.length)
   for (const s of scripts) {
     if (!s.runsChecks) continue
-    const owns = namedByRecord.has(s.rel)
+    const owns = (ownerOf.get(s.rel) ?? 0) > 0
     const declared = nonGatePaths.has(s.rel)
     if (owns && declared) failures.push(`G1: ${s.rel} is declared a non-gate but OWNS a record — the declaration hides a real gate`)
     if (!owns && !declared) failures.push(`G1: ${s.rel} runs checks but owns no lane record and is not declared a non-gate`)
   }
   for (const p of nonGatePaths) {
-    if (!scripts.some((x) => x.rel === p)) failures.push(`G1: declared non-gate ${p} does not exist`)
+    const s = scripts.find((x) => x.rel === p)
+    if (!s) {
+      failures.push(`G1: declared non-gate ${p} does not exist`)
+      continue
+    }
+    // A declaration cannot hide a gate: if a declared non-gate WRITES a record
+    // that exists on disk and is NOT a declared measurement artifact, it is
+    // producing evidence and must be declared a gate.
+    const produced = records.find((r) => r.lane === s.lane && s.writtenRecords.includes(r.fileName))
+    if (produced && !artifactPaths.has(produced.rel)) {
+      failures.push(`G1: declared non-gate ${p} WRITES ${produced.rel} — the declaration hides a real gate`)
+    }
   }
 
   // G2: every record is attributable (derived from the one attribution pass,
-  // so a mutant on `attribute` manifests here).
+  // so a mutant on `attribute` manifests here). A record that is NOT gate
+  // evidence (a milestone manifest, a publisher artifact) must be declared an
+  // artifact with a reason — and an artifact that turns out to be a gate's
+  // output fails, so the declaration cannot absorb real evidence.
   const { groups: attributed, orphans: orphanRecords } = attribute(records, scripts, gatePaths)
-  for (const o of orphanRecords) failures.push(`G2: ${o} is an orphan record — no gate claims it (its writer must name itself)`)
+  const artifactRecords = artifactPaths
+  const claimedByGate = new Set(attributed.flatMap((g) => g.records.map((r) => r.rel)))
+  for (const o of orphanRecords) {
+    if (!artifactRecords.has(o)) failures.push(`G2: ${o} is an orphan record — no gate claims it (its writer must name itself, or declare it an artifact with a reason)`)
+  }
+  for (const a of artifactRecords) {
+    if (claimedByGate.has(a)) failures.push(`G2: ${a} is declared an artifact but a GATE outputs it — the declaration absorbs real evidence`)
+    if (!records.some((r) => r.rel === a)) failures.push(`G2: declared artifact ${a} does not exist`)
+  }
 
   const legacy = new Set(reg.declaredLegacyUnsealed.map((d) => d.record))
   const noCanFail = new Set(reg.declaredNoCanFail.map((d) => d.gate))
   const declaredEnv = new Map((reg.declaredEnv ?? []).map((d) => [d.name, d.role]))
+  const onDemand = new Set((reg.declaredOnDemand ?? []).map((d) => d.gate))
   const tierOf = new Map<string, string[]>()
   for (const t of tiers) {
     for (const c of t.commands) {
@@ -291,8 +377,20 @@ export function lint(reg: Registry): LintReport {
     if (total < reg.canFailFloor && !noCanFail.has(gate)) {
       failures.push(`G4: ${gate} carries ${total} can-fail proofs (< floor ${reg.canFailFloor}) and is not declared in declaredNoCanFail`)
     }
-    // G5
-    if (script && script.runsChecks && gateTiers.length === 0) failures.push(`G5: ${gate} is wired into NO execution tier`)
+    // G5: D-4 requires every gate to be declared in exactly one execution tier
+    // (CI fast / full / lane / ON-DEMAND). On-demand is a declared tier, but a
+    // declaration is not a hiding place: each entry carries a reason, a declared
+    // on-demand gate that IS in an automated tier is stale, and the census
+    // reports the on-demand set so the residue stays countable.
+    if (script && script.runsChecks && gateTiers.length === 0) {
+      if (onDemand.has(gate)) {
+        gateTiers.push("on-demand")
+      } else {
+        failures.push(`G5: ${gate} is wired into NO execution tier and is not declared in declaredOnDemand with a reason`)
+      }
+    } else if (onDemand.has(gate) && gateTiers.length > 0) {
+      failures.push(`G5: ${gate} is declared on-demand but runs in ${gateTiers.join(", ")} — stale declaration`)
+    }
     // G6: no folklore — every BB_* env var a gate reads is declared with its
     // role (skip mode vs data input), so a skip switch can never appear silently.
     for (const m of script?.envVars ?? []) {
@@ -312,6 +410,8 @@ export function lint(reg: Registry): LintReport {
   return {
     gateCount: gates.length,
     recordCount: records.length,
+    artifactRecords: [...artifactRecords],
+    onDemandCount: gates.filter((g) => g.tiers.includes("on-demand")).length,
     tiers: tiers.map((t) => ({ name: t.name, gateCount: t.commands.map(commandGate).filter(Boolean).length })),
     gates: gates.sort((a, b) => a.gate.localeCompare(b.gate)),
     failures,

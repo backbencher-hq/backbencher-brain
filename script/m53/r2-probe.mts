@@ -199,6 +199,10 @@ async function main(): Promise<void> {
   mkdirSync(path.dirname(OUT), { recursive: true }) // kept: dir may be fresh
   const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
   const evidence = {
+    // M61.V4: the record names its own gate and output. Without this the R2
+    // record was an orphan — evidence no gate claimed (the verifier lint's G2).
+    verifierCommand: "npx tsx script/m53/r2-probe.mts",
+    evidenceFile: "R2.json",
     status: failed === 0 ? "verified" : "failed",
     head,
     repo: DEMO,
