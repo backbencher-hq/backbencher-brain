@@ -49,5 +49,10 @@
     }
   ],
   "passed": true,
-  "parseErrors": 0
+  "parseErrors": 0,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.915Z",
+    "contentSha256": "a15d639457fb712394390b5b2010f11a3848ece2c45960bf182140f28365ad88"
+  }
 }

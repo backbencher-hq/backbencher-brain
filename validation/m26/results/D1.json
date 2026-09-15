@@ -22,5 +22,10 @@
   "docFile": "docs/m26/GRAPH.md",
   "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-14T15:59:08.124Z"
+  "generatedAt": "2026-09-14T15:59:08.124Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.419Z",
+    "contentSha256": "b2398d4fb63f37bc15ed81d00643a5fd596e70e995b28c85dd53d17cb706b8b4"
+  }
 }

@@ -340,5 +340,10 @@
   },
   "language": "go",
   "status": "verified",
-  "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36"
+  "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.440Z",
+    "contentSha256": "c995f601adf47ad82968dfa88e7a44513e75a931eaf7666a8b29bf57e2606059"
+  }
 }

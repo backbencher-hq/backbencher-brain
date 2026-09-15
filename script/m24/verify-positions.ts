@@ -15,6 +15,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const COMPONENT = path.join(ROOT, "src/lsp/positions.ts")
@@ -356,6 +357,6 @@ const result = {
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m24/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m24/results/P1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m24/results/P1.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`P1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantResults.filter((m) => m.caught).length}/${mutants.length} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

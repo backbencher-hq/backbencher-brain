@@ -15,5 +15,10 @@
   "limitations": [
     "Badge styling (colors/shape) is per-editor CSS; the verified honesty surface is the class + data-attribute contract.",
     "Legend meanings are English UI terms; localization is not declared."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.420Z",
+    "contentSha256": "c4e758eb6dc64990919373e8861a56009a6e22b74cdb952df4445728cfae241b"
+  }
 }

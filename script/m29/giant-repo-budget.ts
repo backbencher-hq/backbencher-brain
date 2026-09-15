@@ -26,6 +26,7 @@ import { realpathSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const CORPUS = path.join(ROOT, ".tools", "m29-giant-corpus")
 const MANIFEST = path.join(CORPUS, "..", "m29-giant-corpus-manifest.json")
@@ -485,7 +486,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
 // CLI entry.
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   void runGiantBudget().then((result) => {
-    writeFileSync(path.join(ROOT, "validation/m29/results/R3.json"), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results/R3.json"), JSON.stringify(result, null, 2) + "\n")
     console.log(`R3: ${String(result.status).toUpperCase()}`)
     const budgets = (result.budgets ?? {}) as Record<string, { budgetViolations?: string[]; overColdHoverBudget?: boolean }>
     for (const [k, v] of Object.entries(budgets)) {

@@ -43,5 +43,10 @@
     "files": 2,
     "symbols": 24,
     "relationships": 27
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.435Z",
+    "contentSha256": "cdb6f29acef2e6d60af77909ab4d0dc5e96acdeab37dd5294a807ed2aa282f0d"
   }
 }

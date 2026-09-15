@@ -20,5 +20,10 @@
     "relationshipsPerSecond": 742.2700394556159,
     "parseErrors": 64
   },
-  "note": "Tracked .py files at or above 1 KiB only; production pool-worker parseFile path; no generated, untracked, Cython-only, or non-Python files included."
+  "note": "Tracked .py files at or above 1 KiB only; production pool-worker parseFile path; no generated, untracked, Cython-only, or non-Python files included.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.956Z",
+    "contentSha256": "a1a479eb651adc1a71abd736bcd5fbd6a48d05f7d3708cca637f768377a08f30"
+  }
 }

@@ -41,6 +41,7 @@
 
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { readEvidence, readEvidenceAllowingLegacy, writeSealed } from "../lib/evidence.ts"
 import path from "node:path"
 import { M55_ROOT } from "./lsp-wire.ts"
 // The freshness rule and its map are shared with G1 through a PURE module:
@@ -175,7 +176,10 @@ function handoffIsLinked(note: string, issue: number): boolean {
 }
 
 // --- inputs --------------------------------------------------------------------------
-const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
+// M61.V1 adoption: every evidence record is read through the ONE trusted path
+// (seal verified; legacy accepted in the declared window with a warn; tampered
+// or unparseable refused loudly — never believed).
+const manifestRead = readEvidenceAllowingLegacy<{
   issues: Array<{
     code: string
     githubIssue: number
@@ -183,11 +187,16 @@ const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
     status: string
     evidence: { status: string; evidenceFile: string; passed?: number; mutantsCaught?: number; mutantsTotal?: number }
   }>
-}
-const v1 = JSON.parse(readFileSync(V1_EVIDENCE, "utf8")) as {
+}>(MANIFEST)
+if (!manifestRead.ok) throw new Error(`M61 trusted read refused the ledger: ${manifestRead.reason}`)
+if (manifestRead.legacy) console.error("warn: the M55 ledger is a legacy (unsealed) record — accepted in the M61 transition window only")
+const manifest = manifestRead.record
+const v1Read = readEvidenceAllowingLegacy<{
   claimTrace: Array<{ claim: string; source: string; frame: string | null }>
   live?: { captureRun?: string }
-}
+}>(V1_EVIDENCE)
+if (!v1Read.ok) throw new Error(`M61 trusted read refused V1's evidence: ${v1Read.reason}`)
+const v1 = v1Read.record
 const runName = v1.live?.captureRun ?? null
 const runDir = runName === null ? null : path.join(FRAMES_DIR, runName)
 const handoffIssue = (manifest.issues.find((i) => i.code === "X1") as unknown as { handoffIssue?: number } | undefined)?.handoffIssue ?? null
@@ -199,7 +208,13 @@ for (const issue of manifest.issues) {
   const file = path.join(RESULTS, issue.evidence.evidenceFile)
   let rec: { status?: string; realFailed?: number; currentCommit?: string } | null = null
   try {
-    rec = JSON.parse(readFileSync(file, "utf8")) as typeof rec
+    const recRead = readEvidenceAllowingLegacy<typeof rec>(file)
+    if (!recRead.ok) {
+      console.error(`refused: ${path.relative(ROOT, file)} — ${recRead.reason} (kind=${recRead.kind}); treating as no evidence`)
+      rec = null
+    } else {
+      rec = recRead.record as typeof rec
+    }
   } catch {
     rec = null
   }
@@ -224,7 +239,9 @@ for (const issue of manifest.issues) {
 console.log("\nC2: the M24->M44 lane ladder re-audited at the audit HEAD")
 let ladder: { status?: string; passed?: number; gatesTotal?: number; currentCommit?: string; gates?: Array<{ name: string; script: string; rc: number; ok: boolean }> } | null = null
 try {
-  ladder = JSON.parse(readFileSync(LADDER, "utf8")) as typeof ladder
+  const ladderRead = readEvidenceAllowingLegacy<typeof ladder>(LADDER)
+  if (ladderRead.ok) ladder = ladderRead.record as typeof ladder
+  else console.error(`refused: ${path.relative(ROOT, LADDER)} — ${ladderRead.reason} (kind=${ladderRead.kind}); treating as absent`)
 } catch {
   ladder = null
 }
@@ -237,7 +254,9 @@ check(
 // G1 is the milestone's own bar re-audit: it runs the same ladder and records
 // the exits in its evidence. Reading it here means the audit's two independent
 // records (the ladder's own JSON and the governance gate's) must agree.
-const g1 = JSON.parse(readFileSync(path.join(RESULTS, "G1.json"), "utf8")) as { bar?: { status?: string; ladder?: Array<{ gate: string; exit: number }> } }
+const g1Read = readEvidenceAllowingLegacy<{ bar?: { status?: string; ladder?: Array<{ gate: string; exit: number }> } }>(path.join(RESULTS, "G1.json"))
+if (!g1Read.ok) throw new Error(`M61 trusted read refused G1's evidence: ${g1Read.reason}`)
+const g1 = g1Read.record
 const g1Ladder = g1.bar?.ladder ?? []
 check("C2: G1's bar re-audit records the ladder gates it ran", g1Ladder.length >= 2, JSON.stringify(g1Ladder.map((l) => `${l.gate}=${l.exit}`)))
 check("C2: G1's bar re-audit records every ladder gate green", g1Ladder.length >= 2 && g1Ladder.every((l) => l.exit === 0), JSON.stringify(g1Ladder))
@@ -474,12 +493,13 @@ const result = {
 
 try {
   mkdirSync(RESULTS, { recursive: true })
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
-  console.log(`\nEV X1 evidence written: ${path.relative(ROOT, EVIDENCE)}`)
+  writeSealed(EVIDENCE, result)
+  console.log(`\nEV X1 evidence written (sealed): ${path.relative(ROOT, EVIDENCE)}`)
   // The self-record's own consistency: it must be pinned to the audit HEAD it
   // just performed (C1's declared exception, made explicit rather than implied).
-  const written = JSON.parse(readFileSync(EVIDENCE, "utf8")) as { currentCommit?: string }
-  check("C1: the X1 record this run wrote is pinned to the audit HEAD", written.currentCommit === HEAD, String(written.currentCommit).slice(0, 12))
+  const writtenRead = readEvidence(EVIDENCE)
+  const written = writtenRead.ok ? (writtenRead.record as { currentCommit?: string }) : undefined
+  check("C1: the X1 record this run wrote is pinned to the audit HEAD", written !== undefined && written.currentCommit === HEAD, String(written?.currentCommit ?? "unreadable").slice(0, 12))
 } catch (e) {
   console.log(`\nEV X1 evidence write failed: ${String(e)}`)
 }

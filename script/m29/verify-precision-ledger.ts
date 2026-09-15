@@ -26,6 +26,7 @@ import path from "node:path"
 import { createHash } from "node:crypto"
 import { buildLedger } from "./generate-precision-ledger.ts"
 import { computeCap, type SpecLedger, type Step } from "./wave-protocol.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -189,6 +190,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/R4-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R4-verify.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`R4: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 5 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

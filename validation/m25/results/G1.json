@@ -22,5 +22,10 @@
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.417Z",
+    "contentSha256": "3c4d5e60373ce6e0998210c6d07803e706de662d3f78cb9927820195515dc44a"
+  }
 }

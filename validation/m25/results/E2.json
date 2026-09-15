@@ -9,10 +9,10 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negativeCases": 5,
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
   "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
   "evidenceFile": "E2.json",
-  "generatedAt": "2026-09-14T15:56:28.988Z",
+  "generatedAt": "2026-09-14T23:51:09.699Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -21,5 +21,10 @@
     "E2E legs run the real `bb index` CLI on tiny/medium fixtures with BB_DATA_DIR isolation; giant-repo timings are not re-measured here (M19 numbers are the declared reference).",
     "The in-editor dialog/progress UX is exercised by E5 in-editor evidence; this suite proves the pure machine, the real CLI integration, cancel/resume semantics, and the non-blocking glue by lint.",
     "Progress file counters are parsed best-effort from CLI output; final honesty gate is the presence of a non-empty brain.db, never the parsed counters."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-15T00:06:48.557Z",
+    "contentSha256": "ef92ee56d8978c8f831ffd5bc6714a781bfbaa89a58521ead599447e8e3c8593"
+  }
 }

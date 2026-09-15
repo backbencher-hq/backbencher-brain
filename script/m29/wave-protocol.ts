@@ -28,6 +28,7 @@ import path from "node:path"
 import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
+import { writeSealed } from "../lib/evidence.ts"
 
 export const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 export const SPEC_LEDGER = path.join(ROOT, "validation/m14/results/M14.0.SPEC.json")
@@ -262,7 +263,7 @@ function main(): void {
     console.log(`  IDE cap: ${verdict.ideCap}${verdict.blockers.length ? ` (blockers: ${verdict.blockers.length})` : ""}`)
     if (outFile) {
       mkdirSync(path.dirname(outFile), { recursive: true })
-      writeFileSync(outFile, JSON.stringify(verdict, null, 2) + "\n")
+      writeSealed(outFile, verdict)
     }
     process.exit(verdict.ok ? 0 : 1)
   })

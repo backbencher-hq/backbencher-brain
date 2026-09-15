@@ -147,5 +147,10 @@
     "comma",
     "source_file"
   ],
-  "passed": true
+  "passed": true,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.875Z",
+    "contentSha256": "0614cd311646517cf4ddbb30344ec9db12b8b008519cb2d5f63a20e0d72aae2e"
+  }
 }

@@ -177,5 +177,10 @@
       }
     ]
   },
-  "generatedAt": "2026-09-14T15:59:08.150Z"
+  "generatedAt": "2026-09-14T15:59:08.150Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.421Z",
+    "contentSha256": "93ceb7eaeeee49521627f64f9b6579e0319a7ba5aabfa1414e6d1797e2337a3b"
+  }
 }

@@ -760,5 +760,10 @@
       },
       "errors": []
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.940Z",
+    "contentSha256": "d50de0a5736ed2a5503f0c3452db46de2b2cebec148ae161e3aedbb2bb64d0cf"
+  }
 }

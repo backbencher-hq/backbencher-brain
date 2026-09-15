@@ -15,6 +15,7 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m24/results")
@@ -306,5 +307,5 @@ const result = {
   ],
 }
 mkdirSync(RESULTS, { recursive: true })
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}`)

@@ -507,5 +507,10 @@
       "nodes": 8,
       "bytes": 7648
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.105Z",
+    "contentSha256": "ab0d23093d27603a505494b2c8d9ab6531323246f5a93bee5f8116c16ba64c7d"
+  }
 }

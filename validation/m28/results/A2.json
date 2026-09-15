@@ -39,5 +39,10 @@
   "evidenceFile": "A2.json",
   "generatedAt": "2026-09-14T16:01:06.827Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.424Z",
+    "contentSha256": "5cf5983487c27556bdb3bbe4dee9c30d09f0eff3b7ba0d8223d549b084a60bee"
+  }
 }

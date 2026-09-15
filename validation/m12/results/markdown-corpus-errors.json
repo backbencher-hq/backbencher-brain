@@ -57,5 +57,10 @@
   ],
   "unexpectedErrors": [],
   "passed": true,
-  "policy": "Every tracked .md file in clean scala3@18df09c is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Four real files contain valid CommonMark edge constructs (|| inside a table cell, indented <details> inside numbered lists, and a heading at EOF without trailing newline) that the vendored tree-sitter-markdown block grammar does not model; they are recorded as named grammar limitations by markdown-corpus-errors.ts, never hidden. Clean acceptance files are those with zero parse errors."
+  "policy": "Every tracked .md file in clean scala3@18df09c is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Four real files contain valid CommonMark edge constructs (|| inside a table cell, indented <details> inside numbered lists, and a heading at EOF without trailing newline) that the vendored tree-sitter-markdown block grammar does not model; they are recorded as named grammar limitations by markdown-corpus-errors.ts, never hidden. Clean acceptance files are those with zero parse errors.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.933Z",
+    "contentSha256": "cb9d098cec395944aeabc8002e960cf8b376877fb5dd62fb1962c610b72ce248"
+  }
 }

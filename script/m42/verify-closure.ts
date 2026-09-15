@@ -28,6 +28,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EVIDENCE_PATH = join(ROOT, "validation/m42/results/X1.json")
@@ -286,7 +287,7 @@ const result = {
   ],
 }
 mkdirSync(join(ROOT, "validation/m42/results"), { recursive: true })
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 
 console.log(`\nX1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negatives)`)
 console.log(`Evidence: ${EVIDENCE_PATH}`)

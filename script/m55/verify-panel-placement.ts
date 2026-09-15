@@ -34,6 +34,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const MODULE = path.join(ROOT, "ide/vscode/src/panel-placement.ts")
@@ -240,7 +241,7 @@ const result = {
   failures,
 }
 mkdirSync(path.dirname(EVIDENCE), { recursive: true })
-writeFileSync(EVIDENCE, `${JSON.stringify(result, null, 2)}\n`)
+writeSealed(EVIDENCE, result)
 console.log(`\nP1: ${status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 console.log(`Evidence: ${EVIDENCE}`)
 if (failures.length > 0) {

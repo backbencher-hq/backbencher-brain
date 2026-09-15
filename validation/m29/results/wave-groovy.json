@@ -365,5 +365,10 @@
     "platform": "linux",
     "arch": "x64"
   },
-  "generatedAt": "2026-09-14T20:25:37.400Z"
+  "generatedAt": "2026-09-14T20:25:37.400Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.452Z",
+    "contentSha256": "b35d7ce3f923def36f9118c6c6c8be7b425dd6462cc0f4f2da61dd6149bf0e6d"
+  }
 }

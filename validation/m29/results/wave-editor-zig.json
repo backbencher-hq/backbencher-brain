@@ -345,5 +345,10 @@
     ]
   },
   "status": "verified",
-  "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36"
+  "commit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.451Z",
+    "contentSha256": "23597a03f2f655541cec94b461c9ab7106d87358832588fb19f024c791d389c7"
+  }
 }

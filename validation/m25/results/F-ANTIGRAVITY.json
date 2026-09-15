@@ -474,5 +474,10 @@
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-ANTIGRAVITY.json",
   "generatedAt": "2026-09-14T16:07:30.984Z",
-  "limitations": []
+  "limitations": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.415Z",
+    "contentSha256": "24d23eb2f0bed2df846ec53633a648999e34bc04493245e972ba0ce9639bfff9"
+  }
 }

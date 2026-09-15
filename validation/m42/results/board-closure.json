@@ -92,5 +92,10 @@
   "pointerTo": {
     "27": "milestone #38 (issues 616-622)",
     "28": "milestone #39 (issues 623-629)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.549Z",
+    "contentSha256": "ea5c485fe6718aebfb8c5554d96aa2e1da1a92223027ea7ba32ebdc031cfab46"
   }
 }

@@ -39,5 +39,10 @@
     "Top-hit presence is asserted for verified names, not full-repo behavioral recall.",
     "Content search on a giant corpus bounds substring phases at PHASE_CAP=2000 candidates; a no-match text query is a single bounded full scan (~6-7s on 1M symbols, measured) and is recorded honestly rather than hidden."
   ],
-  "generatedAt": "2026-08-26T17:11:51.149Z"
+  "generatedAt": "2026-08-26T17:11:51.149Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.365Z",
+    "contentSha256": "8600a7b147db4358ddacdb247ac1f9271e72073c0d2a8838b77b5a8eb9a633d9"
+  }
 }

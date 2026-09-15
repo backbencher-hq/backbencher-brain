@@ -15,5 +15,10 @@
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
   "evidenceFile": "R5-verify.json",
   "generatedAt": "2026-09-14T21:46:47.906Z",
-  "details": []
+  "details": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.433Z",
+    "contentSha256": "306088bde214de7904a16b5e83ba9c6ef4634926306cdb0bf856554e4a4e0f60"
+  }
 }

@@ -40,5 +40,10 @@
   "limitations": [
     "Helix configuration is verified against the real server capabilities via the M24 harness client; the editor session itself is not machine-driven here.",
     "Graph webview out of scope in Helix (D-6); the capability matrix records the delta."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.422Z",
+    "contentSha256": "276ce78d524a2ae9e8235e85fc7e460f1e1600fbdde43dd96f4ed928160f0c6d"
+  }
 }

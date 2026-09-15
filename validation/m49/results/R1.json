@@ -1,10 +1,15 @@
 {
- "schemaVersion": 1,
- "milestone": "M49",
- "issueId": "R1",
- "runCommand": "bun run script/m49/verify-r1-intake.ts",
- "verifiedAtCommit": "bb2c631e",
- "status": "pass",
- "verdictLine": "see rawOutput tail below",
- "rawOutput": "R1: 15/15 checks passed, 1 negative(s) exercised, 4 review folder(s) tracked"
+  "schemaVersion": 1,
+  "milestone": "M49",
+  "issueId": "R1",
+  "runCommand": "bun run script/m49/verify-r1-intake.ts",
+  "verifiedAtCommit": "bb2c631e",
+  "status": "pass",
+  "verdictLine": "see rawOutput tail below",
+  "rawOutput": "R1: 15/15 checks passed, 1 negative(s) exercised, 4 review folder(s) tracked",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.571Z",
+    "contentSha256": "5635bef42e6ae617d4b8f13742ab390bd2844008e64622f5978dcb1a2e86ec1e"
+  }
 }

@@ -15,5 +15,10 @@
   "limitations": [
     "DOM-port stub is the harness surface; real webview CSS/positioning is verified in-editor by later legs (E5/E6 pattern).",
     "Render budget (300/1000 ms) is measured by the caller per contract section 3; this suite pins the structural budget only."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.419Z",
+    "contentSha256": "6655ff18da6f3c6b21025583a540446cf14f883c7687627d468e5d5d2348d288"
+  }
 }

@@ -124,5 +124,10 @@
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed)."
   ],
-  "generatedAt": "2026-09-05T20:58:15.478Z"
+  "generatedAt": "2026-09-05T20:58:15.478Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.299Z",
+    "contentSha256": "1ba98cfeb2748a8ae9278416f7474c5c43af80571d33a31f6744e23a96d2207f"
+  }
 }

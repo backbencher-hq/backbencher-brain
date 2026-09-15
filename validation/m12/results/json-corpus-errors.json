@@ -45,5 +45,10 @@
   ],
   "crashes": [],
   "passed": true,
-  "policy": "strict JSON acceptance subset; every tracked non-strict JSONC/encoding path is listed as an explicit exclusion, even when the grammar recovers it"
+  "policy": "strict JSON acceptance subset; every tracked non-strict JSONC/encoding path is listed as an explicit exclusion, even when the grammar recovers it",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.917Z",
+    "contentSha256": "40891877a9a3f17d49cd523ddbe73b1b6e4d3f89c682783b9ac35b7c89054286"
+  }
 }

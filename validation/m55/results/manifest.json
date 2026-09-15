@@ -5,8 +5,8 @@
   "title": "The Hub That Tells the Truth (IDE v8)",
   "status": "closed",
   "authority": "docs/m55/M55-MASTER-PLAN.md (Issue groups table)",
-  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a715 Truth Rules, M55 amendment \u2014 landed by G1)",
-  "prerequisite": "M44 + M53 completion bars met \u2014 re-audited by G1 on every run; blocked (never green) when the external fixture or the display tooling is absent",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§15 Truth Rules, M55 amendment — landed by G1)",
+  "prerequisite": "M44 + M53 completion bars met — re-audited by G1 on every run; blocked (never green) when the external fixture or the display tooling is absent",
   "protocol": "docs/m55/SCREENSHOT-PROTOCOL.md",
   "filingEvidence": {
     "run": "filing-2026-09-12",
@@ -21,7 +21,7 @@
       "githubIssue": 773,
       "tool": "m55-governance",
       "status": "verified",
-      "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); \u00a715 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
+      "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); §15 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where the M44 and M53 gates also exit 0; exits non-zero for each planted mutant ledger (missing evidence file, stale commit pin, no acceptance criteria, a closable issue behind a planned prerequisite)",
         "evidence JSON machine-emitted with commit pin + working-tree state; no hand-written status anywhere in the ledger",
@@ -110,7 +110,7 @@
       "acceptanceCriteria": [
         "fixture-first: a fixture with a symbol having zero callers, a callee, an owning class and multiple call sites",
         "differential wire assertions across hover count, hover list, bb/graph callers, bb/graph references and textDocument/references under their declared filters",
-        "the zero-caller symbol renders '0 usages' and no usages list (declared absence) \u2014 never its callees or its class",
+        "the zero-caller symbol renders '0 usages' and no usages list (declared absence) — never its callees or its class",
         "rendered-copy assertions: usages rows are invocation sites (file:line), checked against the source bytes",
         "mutants: a count derived from callees, a list including the owning declaration, and a count disagreeing with the rendered rows each fail the gate"
       ],
@@ -170,7 +170,7 @@
         "fixture-first: one class, one method, one field and one external symbol with authored tier expectations",
         "differential assertions across provenance.evidenceClass, evidenceTiers, the hub row chip, the legend's tier set and the stored rows for all four symbols",
         "a member rule that differs from the class rule, or a symbol claiming two tiers when the rows support one, fails the gate",
-        "the render path uses the same tier\u2192badge mapping as renderLegend (single source asserted at source level)"
+        "the render path uses the same tier→badge mapping as renderLegend (single source asserted at source level)"
       ],
       "closureRequirements": [
         "T5 evidence (verified, current HEAD)",
@@ -226,13 +226,13 @@
       "scope": "the filing rig promoted to script/m55: screenshot-protocol.ts (build+install isolated, drive the declared flows, capture frames + manifest), wire-probe (the stdio truth), verify-live-surface.ts (differential + pixel reads-back), wired into the verify chains",
       "acceptanceCriteria": [
         "wired into the npm verify chain and the CI verify:fast chain (machine-read from package.json)",
-        "fails when the installed bundle hash is not the HEAD build, and when any T1\u2013T5 mutant is planted",
+        "fails when the installed bundle hash is not the HEAD build, and when any T1–T5 mutant is planted",
         "a full run records bundle hash, VS Code version, fixture hash, every frame + hash, the probe's raw JSON and the verdict",
         "every claim in the completion report maps to a frame or a probe line (the evidence file lists the mapping)"
       ],
       "closureRequirements": [
         "V1 evidence (verified, current HEAD)",
-        "the external-fixture blocked path proven (run with the fixture absent \u2192 blocked with a reason, never green)",
+        "the external-fixture blocked path proven (run with the fixture absent → blocked with a reason, never green)",
         "G1's truth-rule 5 enforcement reads this gate's frames"
       ],
       "evidence": {
@@ -252,16 +252,16 @@
       "githubIssue": 778,
       "tool": "m55-closure",
       "status": "verified",
-      "scope": "program closure audit M24\u2192M55 at one HEAD; the owner's v8 verdict pack (every claim with its frame); the cross-language false-positive hand-off note to the analyzer lane; the v9 statement",
+      "scope": "program closure audit M24→M55 at one HEAD; the owner's v8 verdict pack (every claim with its frame); the cross-language false-positive hand-off note to the analyzer lane; the v9 statement",
       "acceptanceCriteria": [
         "every M55 issue's evidence exists at the audit HEAD (a stale pin fails G1's ladder)",
-        "the audit records, per milestone: gate command, exit code, evidence file, commit pin \u2014 machine-emitted",
+        "the audit records, per milestone: gate command, exit code, evidence file, commit pin — machine-emitted",
         "the hand-off note is a linked issue in the analyzer lane carrying the stored cross-language row + probe evidence; this issue links it",
         "the verdict pack lists every claim with its frame path; a claim with no frame is removed rather than softened"
       ],
       "closureRequirements": [
         "X1 evidence (verified, current HEAD)",
-        "the owner's verdict recorded (\u00a78.5) \u2014 the gate never declares the milestone achieved",
+        "the owner's verdict recorded (§8.5) — the gate never declares the milestone achieved",
         "no lane violations"
       ],
       "evidence": {
@@ -277,5 +277,10 @@
       },
       "handoffIssue": 816
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.587Z",
+    "contentSha256": "be8d5083ba1286544dac08d3039bef3292ee73a2419ac8d61f28fe870e5dbb72"
+  }
 }

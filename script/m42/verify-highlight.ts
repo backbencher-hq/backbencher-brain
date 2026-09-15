@@ -29,6 +29,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { H1_EXPECT, H1_FILE, H1_REL, H1_ROOT, writeH1Fixture } from "./h1-fixture.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H1.json")
@@ -228,6 +229,6 @@ const result = {
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE, result)
 console.log(`\nH1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants)`)
 if (failed > 0) process.exitCode = 1

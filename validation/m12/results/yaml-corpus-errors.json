@@ -27,5 +27,10 @@
   "unexpectedErrors": [],
   "acceptanceFiles": 273,
   "passed": true,
-  "policy": "All tracked YAML/YML files from clean grails-core@a83f8748 are audited. One named Grails template contains unquoted @...@ placeholders, which are invalid YAML until template expansion; it remains recorded as an explicit exclusion from the strict acceptance subset, never silently treated as clean."
+  "policy": "All tracked YAML/YML files from clean grails-core@a83f8748 are audited. One named Grails template contains unquoted @...@ placeholders, which are invalid YAML until template expansion; it remains recorded as an explicit exclusion from the strict acceptance subset, never silently treated as clean.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.118Z",
+    "contentSha256": "5f2180f14cc10f3b7481bf0e3a0ffb96ebee08c39e1f62c2d5e1bec9405aa136"
+  }
 }

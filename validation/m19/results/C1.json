@@ -8,5 +8,10 @@
   "passed": 14,
   "failed": 0,
   "negatives": 0,
-  "generatedAt": "2026-08-26T17:15:55.888Z"
+  "generatedAt": "2026-08-26T17:15:55.888Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.365Z",
+    "contentSha256": "e5e6e365394c9492455a1f21dc1e7f674805769ed50fab796bc4dd97eb25497e"
+  }
 }

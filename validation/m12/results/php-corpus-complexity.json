@@ -21,5 +21,10 @@
     "relationshipsPerSecond": 785.6034018570365,
     "parseErrors": 0
   },
-  "note": "Deterministic first-400 sorted tracked .php files; production pool-worker parseFile path."
+  "note": "Deterministic first-400 sorted tracked .php files; production pool-worker parseFile path.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.946Z",
+    "contentSha256": "97bc4865372d039ae118bee8538dc737c87ae713c3c55b468a6d968e5ece4cf4"
+  }
 }

@@ -42,5 +42,10 @@
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
     "The §8.5 achieved/not-achieved verdict on the IDE program is NOT this gate's to make: the spot-check pack above is prepared for the owner, whose verdict closes the program.",
     "Co-agent lanes (M14/M37/M40/M41) are outside this program's closure; their gates live in their own milestones."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.433Z",
+    "contentSha256": "72deffd73cde716aac97db4bd4dc5493ac958d404cecb25abafeb9f69c3c4794"
+  }
 }

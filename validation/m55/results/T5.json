@@ -68,5 +68,10 @@
     "The external target `push` has no brain_symbol row — that is the indexer's shape for `ext:` targets (target_external, target_symbol_id NULL) — so it has no hoverable position; its story is asserted through its stored rows and through the hub, which is the surface that renders it.",
     "The hub (bb/graph usages) only traverses the engine's declared relationship types (calls/instantiates/extends/implements), so the `contains`/`imports`/`references`/`uses` rows are asserted on the hover leg and on the model legs, not as hub chips. The hub leg asserts the rules it can carry: stored-class-wins, the floor, and the closed vocabulary.",
     "The legend's tier set is the five legend tiers by contract; a symbol with no stored rows reports the declared `unknown`, which is deliberately NOT a legend badge (no chip is rendered for it)."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.582Z",
+    "contentSha256": "22b1c0382e2da946a0a6d1d6b84e681503f8c8872505f657d4d0a65f3f8bfd5b"
+  }
 }

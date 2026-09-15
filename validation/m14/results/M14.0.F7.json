@@ -34,5 +34,10 @@
   ],
   "runtime": "node v22.22.1",
   "schemaVersion": 2,
-  "title": "Pipeline end-to-end gate"
+  "title": "Pipeline end-to-end gate",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.321Z",
+    "contentSha256": "05132e24b97b5cb49d7906f2358971bc3b5a52410a461646cb8bab5f97ed9dbd"
+  }
 }
