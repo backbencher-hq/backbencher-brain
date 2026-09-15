@@ -283,6 +283,40 @@ export function importOrderFindings(file: string, src: string): string[] {
   return out
 }
 
+/**
+ * G8: THE RECORD MUST AGREE WITH THE RUN (issue #847's class, found in M61's own
+ * gates).
+ *
+ * A gate that writes its evidence and THEN runs a check records counters that
+ * are one check stale — the run says 34/34 while the record says 32/32. That is
+ * a record that disagrees with its own run, which is the whole subject of this
+ * milestone (M61.V1 shipped with it; M55.X1 had it; M61.V2 had a variant).
+ *
+ * The rule is deliberately mechanical: the LAST evidence write in a monitoring
+ * script must not be followed by another check. Helper DEFINITIONS are ignored
+ * (a `function <name>` declaration line is not a call), and non-gate scripts
+ * (no evidence write at all) are not touched.
+ */
+export function recordAfterChecksFinding(file: string, src: string): string | null {
+  const lines = src.split("\n")
+  const isComment = (l: string) => /^\s*(\/\/|\/\*|\*|#!)/.test(l)
+  const isDefinition = (l: string) => /\b(function|const|let|var)\s+(check|negative|mutant)\b/.test(l)
+  let lastWrite = -1
+  let lastCheck = -1
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]!
+    if (isComment(l)) continue
+    if (!isDefinition(l) && /(?<![\w.])(?:writeSealed|writeFileSync)\s*\(/.test(l)) lastWrite = i
+    if (isDefinition(l)) continue
+    if (/(?<![\w.])(?:check|negative|mutant)\s*\(/.test(l)) lastCheck = i
+  }
+  if (lastWrite < 0) return null
+  if (lastCheck > lastWrite) {
+    return `${file}:${lastCheck + 1}: a check runs AFTER the last evidence write (line ${lastWrite + 1}) — the record can disagree with the run`
+  }
+  return null
+}
+
 // --- the lint --------------------------------------------------------------------
 
 export type LintReport = {
@@ -385,6 +419,11 @@ export function lint(reg: Registry): LintReport {
   // catch is nearest and the gate reads stale instead of failing.
   for (const s of scripts) {
     for (const f of importOrderFindings(s.rel, s.source)) failures.push(`G7: ${f}`)
+  }
+  // G8: the record must agree with the run — no check after the last write.
+  for (const s of scripts) {
+    const f = recordAfterChecksFinding(s.rel, s.source)
+    if (f) failures.push(`G8: ${f}`)
   }
 
   const gates: LintReport["gates"] = []
