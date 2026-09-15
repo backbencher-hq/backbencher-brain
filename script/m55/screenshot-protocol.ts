@@ -633,7 +633,7 @@ export async function runCaptureSession(opts: { run?: string; profile?: string; 
     const captured = base.flows.filter((f) => f.status === "captured").length
     if (captured === 0) return { ...base, reason: "not one frame was captured (every flow failed) — reported as blocked with the per-flow reasons above" }
     base.status = "captured"
-    writeSealed(path.join(outDir, "manifest.json"), JSON.stringify(base, null, 2) + "\n")
+    writeSealed(path.join(outDir, "manifest.json"), base)
     return base
   } catch (e) {
     return { ...base, reason: `session threw: ${e instanceof Error ? e.message.slice(0, 220) : String(e)}` }

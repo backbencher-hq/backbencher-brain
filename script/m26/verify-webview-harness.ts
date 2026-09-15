@@ -683,7 +683,7 @@ async function main(): Promise<void> {
   }
   const dir = join(ROOT, "validation/m26/results")
   mkdirSync(dir, { recursive: true })
-  writeSealed(join(dir, "V1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "V1.json"), result)
   console.log(`V1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

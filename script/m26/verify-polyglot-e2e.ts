@@ -229,7 +229,7 @@ async function main(): Promise<void> {
     evidenceFile: "A1.json",
     generatedAt: new Date().toISOString(),
   }
-  writeSealed(join(dir, "A1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "A1.json"), result)
   console.log(`\nA1: ${result.status.toUpperCase()} (${passed}/${checks} passed, 1 mutant)`)
   if (result.status !== "verified") process.exitCode = 1
 }

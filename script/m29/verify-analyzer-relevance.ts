@@ -25,6 +25,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const RESULTS = path.join(ROOT, "validation/m29/results")
@@ -98,7 +99,7 @@ for (const shared of ["script/m29/wave-execute.ts", "src/lsp/launch_languages.ts
 const java = "java"
 const legPath = path.join(RESULTS, `wave-${java}.json`)
 if (existsSync(legPath)) {
-  const leg = JSON.parse(readFileSync(legPath, "utf8")) as { commit?: string }
+  const leg = parseSealedRecord(legPath) as { commit?: string }
   if (typeof leg.commit === "string" && /^[0-9a-f]{40}$/.test(leg.commit)) {
     const changed = execFileSync("git", ["diff", "--name-only", leg.commit, "HEAD", "--", ...staleRelevantPaths(java)], {
       cwd: ROOT,

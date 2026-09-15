@@ -33,6 +33,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
@@ -287,7 +288,7 @@ try {
   const pub = spawnSync("node", ["publish-openvsx.mjs"], { cwd: EXT_ROOT, encoding: "utf8", timeout: 120_000 })
   check("G3: publish script exits 0 in dry-run (blocked, never silent-skip)", pub.status === 0, String(pub.stderr).slice(0, 200))
   const recordPath = path.join(RESULTS, "E4-openvsx.json")
-  const record = existsSync(recordPath) ? JSON.parse(readFileSync(recordPath, "utf8")) : null
+  const record = existsSync(recordPath) ? parseSealedRecord(recordPath) : null
   check("G3: machine record written", record !== null)
   check("G3: record is honestly blocked with the credential reason", record?.blocked === true && typeof record?.reason === "string" && record.reason.includes("credentials"), JSON.stringify(record?.reason ?? ""))
   check("G3: record points at a real artifact", typeof record?.artifact === "string" && existsSync(path.join(ROOT, record.artifact)))
@@ -408,6 +409,6 @@ const result = {
   ],
 }
 mkdirSync(RESULTS, { recursive: true })
-writeSealed(path.join(RESULTS, "E4.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(RESULTS, "E4.json"), result)
 console.log(`E4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

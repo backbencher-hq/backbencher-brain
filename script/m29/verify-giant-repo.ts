@@ -28,6 +28,7 @@ import os from "node:os"
 import { budgetViolationsFrom, relevantInputsHash, WARM_BUDGETS, type HostNoise, type FeatureMeasurement } from "./giant-repo-budget.ts"
 import { createStdioTransport } from "../m25/feature-assertions.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EVIDENCE = path.join(ROOT, "validation/m29/results/R3.json")
@@ -65,7 +66,7 @@ function gitCommit(): string {
 // ---------------------------------------------------------------------------
 let manifest: { corpusRevision: string; totalFiles: number; kind: string; declared: string } | null = null
 try {
-  manifest = JSON.parse(readFileSync(MANIFEST, "utf8"))
+  manifest = parseSealedRecord(MANIFEST)
 } catch {}
 check("R1: corpus manifest exists and declares a synthetic kind", !!manifest && typeof manifest.kind === "string" && manifest.kind.startsWith("synthetic"), manifest?.kind)
 check("R1: corpus meets the M19 giant-scale bar (files >= 50k)", !!manifest && manifest.totalFiles >= 50000, String(manifest?.totalFiles))
@@ -81,7 +82,7 @@ check("R1: corpus on disk matches the manifest", diskFiles === manifest?.totalFi
 // ---------------------------------------------------------------------------
 let evidence: any = null
 try {
-  evidence = JSON.parse(readFileSync(EVIDENCE, "utf8"))
+  evidence = parseSealedRecord(EVIDENCE)
 } catch {}
 check("R2: R3.json exists with verified status", evidence?.status === "verified", evidence?.status)
 // The commit stamp must be an ancestor of HEAD (the evidence was produced on
@@ -225,6 +226,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeSealed(path.join(ROOT, "validation/m29/results/R3-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R3-verify.json"), result)
 console.log(`R3: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 6 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

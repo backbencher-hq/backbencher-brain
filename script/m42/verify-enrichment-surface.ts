@@ -30,7 +30,6 @@ import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h
 import { statSync, readdirSync } from "node:fs"
 import Database from "better-sqlite3"
 import {
-import { writeSealed } from "../lib/evidence.ts"
   describeEnrichment,
   describeFrequency,
   enrichmentIsStale,
@@ -38,6 +37,7 @@ import { writeSealed } from "../lib/evidence.ts"
   parseEnrichment,
   type Enrichment,
 } from "../../src/lsp/enrichment.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H3.json")

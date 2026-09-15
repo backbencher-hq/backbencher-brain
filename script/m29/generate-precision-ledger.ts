@@ -26,6 +26,7 @@ import path from "node:path"
 import { createHash } from "node:crypto"
 import { computeCap, analyzerConformance, type SpecLedger, type Step } from "./wave-protocol.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -60,7 +61,7 @@ function gitCommit(): string {
 // The owner-approved wave-1 set is the ledger's row set (authority: the
 // approval record; languages are added here ONLY via a recorded wave).
 function approvedLanguages(): string[] {
-  const a = JSON.parse(readFileSync(APPROVAL, "utf8")) as { languages: string[] }
+  const a = parseSealedRecord(APPROVAL) as { languages: string[] }
   return a.languages
 }
 
@@ -162,7 +163,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
   // Giant-scale row from R3 (scale regime — separate from per-language S5).
   let giant: Record<string, unknown> = { present: false, note: "R3.json missing — no scale row published" }
   if (existsSync(R3)) {
-    const r3 = JSON.parse(readFileSync(R3, "utf8")) as any
+    const r3 = parseSealedRecord(R3) as any
     if (r3?.status === "verified") {
       giant = {
         present: true,
@@ -267,7 +268,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
       commit: gitCommit(),
       generatedAt: new Date().toISOString(),
     }
-    writeSealed(path.join(ROOT, "validation/m29/results/R4.json"), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results/R4.json"), result)
     console.log(`R4: ledger written (inputsHash ${inputsHash.slice(0, 10)})`)
   } else {
     console.log(json)

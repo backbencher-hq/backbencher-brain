@@ -200,7 +200,7 @@ async function main(): Promise<void> {
     ],
   }
   mkdirSync(path.join(ROOT, "validation/m28/results"), { recursive: true })
-  writeSealed(path.join(ROOT, "validation/m28/results", result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(ROOT, "validation/m28/results", result.evidenceFile), result)
   console.log(`U1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 }

@@ -177,7 +177,7 @@ for (const entry of OS_MATRIX) {
     evidenceFile: entry.file,
     generatedAt: new Date().toISOString(),
   }
-  writeSealed(join(RESULTS_DIR, entry.file), JSON.stringify(blocked, null, 2) + "\n")
+  writeSealed(join(RESULTS_DIR, entry.file), blocked)
   check(`G3: ${entry.label} recorded blocked with reason (never omitted, never claimed)`, existsSync(join(RESULTS_DIR, entry.file)))
 }
 
@@ -289,7 +289,7 @@ const thisResult = {
     `The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY; the native ${nativeLabel} leg itself exercises ${runningOs} semantics (drive letters, % variables on win32).`,
   ],
 }
-writeSealed(join(RESULTS_DIR, evidenceFile), JSON.stringify(thisResult, null, 2) + "\n")
+writeSealed(join(RESULTS_DIR, evidenceFile), thisResult)
 
 console.log(`\nE7(${runningOs}): ${thisResult.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${MUTANTS.length} mutants caught)`)
 console.log(`Evidence: ${join(RESULTS_DIR, evidenceFile)}`)

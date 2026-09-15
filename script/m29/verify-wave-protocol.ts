@@ -32,6 +32,7 @@ import {
 } from "./wave-protocol.ts"
 import { generateWaveDoc } from "./generate-wave-doc.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 let checks = 0
 let passed = 0
@@ -79,7 +80,7 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
 {
   let spec: SpecLedger | null = null
   try {
-    spec = JSON.parse(readFileSync(SPEC_LEDGER, "utf8")) as SpecLedger
+    spec = parseSealedRecord(SPEC_LEDGER) as SpecLedger
   } catch {}
   check("R2: SPEC ledger is readable", spec !== null)
   if (spec) {
@@ -114,14 +115,14 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
     // (History: S5 was hardcoded blocked, which capped fully-verified
     // languages at I1 even with both legs green on disk.)
     const javaServerEv = path.join(ROOT, "validation", "m29", "results", "wave-java.json")
-    check("R3: S5 honors recorded evidence", s5?.status === (existsSync(javaServerEv) ? (JSON.parse(readFileSync(javaServerEv, "utf8")) as { status?: string }).status === "verified" ? "pass" : "fail" : "blocked"), s5?.detail)
+    check("R3: S5 honors recorded evidence", s5?.status === (existsSync(javaServerEv) ? (parseSealedRecord(javaServerEv) as { status?: string }).status === "verified" ? "pass" : "fail" : "blocked"), s5?.detail)
     const s6 = byStep.get("S6-editor-leg")
     // The protocol honors RECORDED editor evidence (R2 execution writes it).
     // When java's S6 evidence exists, S6 reads pass and the cap stays I1
     // (S5 remains R2-scoped); without it, S6 is honestly blocked.
     const javaEditorEv = path.join(ROOT, "validation", "m29", "results", "wave-editor-java.json")
     if (existsSync(javaEditorEv)) {
-      const ev = JSON.parse(readFileSync(javaEditorEv, "utf8")) as { status?: string }
+      const ev = parseSealedRecord(javaEditorEv) as { status?: string }
       check("R3: S6 honors recorded evidence", s6?.status === (ev.status === "verified" ? "pass" : "fail"), s6?.detail)
       // Both legs recorded and verified → the cap is the top of the ladder.
       check("R3: cap reaches I3 with both legs verified", verdict.ideCap === "I3", `got ${verdict.ideCap}`)
@@ -178,7 +179,7 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
 {
   let spec: SpecLedger | null = null
   try {
-    spec = JSON.parse(readFileSync(SPEC_LEDGER, "utf8")) as SpecLedger
+    spec = parseSealedRecord(SPEC_LEDGER) as SpecLedger
   } catch {}
   const tampered = structuredClone(spec!)
   delete tampered.data.languages["typescript"]
@@ -209,7 +210,7 @@ const result = {
 }
 const evidenceDir = path.join(ROOT, "validation", "m29", "results")
 mkdirSync(evidenceDir, { recursive: true })
-writeSealed(path.join(evidenceDir, "R1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(evidenceDir, "R1.json"), result)
 console.log(`R1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants — every mutant must be caught)`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 
