@@ -36,7 +36,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const AUTO_INDEX_SRC = join(ROOT, "ide/vscode/src/auto-index.ts")
@@ -85,7 +85,7 @@ const editorLegRecords: Array<Record<string, unknown>> = []
 for (const f of readdirSync(RESULTS_DIR)) {
   if (!/^E5\.json$/.test(f) && !/^F-[A-Za-z0-9-]+\.json$/.test(f)) continue
   try {
-    editorLegRecords.push(JSON.parse(readFileSync(join(RESULTS_DIR, f), "utf8")) as Record<string, unknown>)
+    editorLegRecords.push(parseSealedRecord(join(RESULTS_DIR, f)) as Record<string, unknown>)
   } catch {
     check(`G1: evidence readable — ${f}`, false, "unparseable JSON")
   }
