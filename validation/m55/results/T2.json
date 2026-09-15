@@ -144,5 +144,10 @@
   "limitations": [
     "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
     "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.581Z",
+    "contentSha256": "0845363152833375f99eb6c5a39b04a5df40ebc546886db3e5fb44e2f82d4d1f"
+  }
 }

@@ -23,5 +23,10 @@
     "totalCountIfKnown is computed by an independent bounded COUNT under the same containment rule; it counts distinct caller symbols, not call sites.",
     "Impact depth cap mirrors the engine (5); deeper chains exist but are declared out of budget.",
     "Latency measured headless (component + engine); in-editor regime is measured by the editor legs."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.420Z",
+    "contentSha256": "2b9977aa0999c71ab820f4a3c13cb32157b1a6cd98d60961d16988bb5a6230bc"
+  }
 }

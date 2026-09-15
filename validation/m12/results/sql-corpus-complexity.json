@@ -824,5 +824,10 @@
   "cleanSymbols": 185,
   "cleanRelationships": 315,
   "cleanErrors": 0,
-  "corpusPolicy": "tracked SQL subset; cleanFiles are the acceptance subset, excluded files retain grammar-error evidence"
+  "corpusPolicy": "tracked SQL subset; cleanFiles are the acceptance subset, excluded files retain grammar-error evidence",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.102Z",
+    "contentSha256": "7debb9d79c2ba2b1a2dc76f9ff34a76ea303ccae844db57998d51f47aeed74a4"
+  }
 }

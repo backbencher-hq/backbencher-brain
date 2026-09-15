@@ -1056,5 +1056,10 @@
   ],
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Grammar-conformance auditor"
+  "title": "Grammar-conformance auditor",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.303Z",
+    "contentSha256": "c173299e28a9f8cd87569ffc28953dd7cf7a3fe257bb42b19cbad0926a57a155"
+  }
 }

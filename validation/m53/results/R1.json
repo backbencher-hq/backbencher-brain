@@ -290,5 +290,10 @@
   ],
   "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-14T16:08:15.212Z"
+  "generatedAt": "2026-09-14T16:08:15.212Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.574Z",
+    "contentSha256": "2688b6403cbf51710f514e66f8ed342e99d755507988d0f64beeec6c03236e1a"
+  }
 }

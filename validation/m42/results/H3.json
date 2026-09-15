@@ -32,5 +32,10 @@
     "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
     "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges.",
     "Overhead budget is a pure-layer proxy (2000 cycles); the in-editor 50ms hover budget with an enriched fixture is asserted in the E5 session."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.546Z",
+    "contentSha256": "fb6ebcfb52975740117827edcc0563b4e8795690d339d4cb37a160c6b900ed81"
+  }
 }

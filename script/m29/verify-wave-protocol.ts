@@ -31,6 +31,7 @@ import {
   type Step,
 } from "./wave-protocol.ts"
 import { generateWaveDoc } from "./generate-wave-doc.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 let checks = 0
 let passed = 0
@@ -208,7 +209,7 @@ const result = {
 }
 const evidenceDir = path.join(ROOT, "validation", "m29", "results")
 mkdirSync(evidenceDir, { recursive: true })
-writeFileSync(path.join(evidenceDir, "R1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(evidenceDir, "R1.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`R1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants — every mutant must be caught)`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 

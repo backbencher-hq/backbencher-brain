@@ -26,5 +26,10 @@
   },
   "flows": [],
   "generatedAt": "2026-09-14T03:29:07.260Z",
-  "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
+  "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.583Z",
+    "contentSha256": "a1d78fa0ceca8156365eee8beea6e7ee16860f366267710ba828fce2d224faf7"
+  }
 }

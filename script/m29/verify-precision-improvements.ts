@@ -28,6 +28,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { probeFixture, seedTierFixture } from "./r5-tier-fixture.ts"
 import { createRequire } from "node:module"
+import { writeSealed } from "../lib/evidence.ts"
 
 const require = createRequire(import.meta.url)
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -197,6 +198,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/R5-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R5-verify.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`R5: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 4 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

@@ -27,6 +27,7 @@ import { realpathSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 /** Every owner-approved wave record (wave-1, wave-2, …): the union is the
  *  execution authority, mirroring the executor's approvedLanguages(). */
@@ -166,7 +167,7 @@ if (existsSync(NVIM) && approval) {
     // (ext + derived hoverCharacter) to a temp file and pass that path.
     const enrichedDir = mkdtempSync(path.join(tmpdir(), `m29-s6-${lang}-`))
     const enrichedPath = path.join(enrichedDir, "expectations.json")
-    writeFileSync(enrichedPath, JSON.stringify(expect, null, 2) + "\n")
+    writeSealed(enrichedPath, expect)
 
     // A REAL index for the pack in a temp data dir; nvim (and through it the
     // spawned server) receives BB_DATA_DIR so the editor leg serves the same
@@ -210,7 +211,7 @@ if (existsSync(NVIM) && approval) {
     // Final evidence: driver session + verifier-computed status, written by
     // this script to the path the R1 protocol runner reads.
     const outPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
-    writeFileSync(outPath, JSON.stringify({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }, null, 2) + "\n")
+    writeSealed(outPath, JSON.stringify({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }, null, 2) + "\n")
     for (const c of result.checks) {
       check(`R3/${lang}: ${c.name}`, c.ok, c.detail)
     }
@@ -313,6 +314,6 @@ const result = {
 }
 const evidenceDir = path.join(ROOT, "validation/m29/results")
 mkdirSync(evidenceDir, { recursive: true })
-writeFileSync(path.join(evidenceDir, "R2.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(evidenceDir, "R2.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`R2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)

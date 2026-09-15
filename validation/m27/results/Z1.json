@@ -45,5 +45,10 @@
   "limitations": [
     "The shim's resolution logic is unit-proven through its executable TS mirror, drift-gated against the Rust source; a wasm build was attempted and its result recorded.",
     "Graph webview out of scope outside VS Code (D-6); the capability matrix records the delta."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.423Z",
+    "contentSha256": "91b04d082b0dbbb3abac490c66cc8f49f702d57259f0394376dd4423304535a4"
+  }
 }

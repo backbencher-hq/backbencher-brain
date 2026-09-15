@@ -35,5 +35,10 @@
   "limitations": [
     "Fixture seeded with the shared-core convention (real hash + stat) — the same shape M25.E5 uses.",
     "Graph webview out of scope in Neovim (D-6); the capability matrix records the delta."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.422Z",
+    "contentSha256": "0053126832dea7ab8d5b725bc11e2411b24dfb05ccc36b8f97808b78a06a0190"
+  }
 }

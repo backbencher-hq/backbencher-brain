@@ -33,6 +33,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const RESULTS = join(ROOT, "validation/m25/results")
@@ -300,7 +301,7 @@ const result = {
     "The §6 table's M24 rows point at the M24 closure gate's caught mutants (server-side classes); this gate re-proves the extension-surface classes directly.",
   ],
 }
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 
 console.log(`\nX1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negative)`)
 console.log(`Evidence: ${EVIDENCE_PATH}`)

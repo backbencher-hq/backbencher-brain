@@ -36,6 +36,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { T3_EXPECT, T3_ROWS, T3_SYMBOLS, seedT3Db, writeT3Workspace } from "./t3-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const RELATIONS = path.join(ROOT, "src/lsp/relations.ts")
@@ -394,7 +395,7 @@ const result = {
 }
 
 try {
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nEV T3 evidence written: ${path.relative(ROOT, EVIDENCE)}`)
 } catch (e) {
   console.log(`\nEV T3 evidence write failed: ${String(e)}`)

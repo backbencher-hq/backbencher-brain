@@ -24,5 +24,10 @@
       "bad": 0
     }
   },
-  "negativeLine": "Proves persistence/history equivalence only, not taint-detection accuracy (phantom sinks are an analyzer-domain gap)."
+  "negativeLine": "Proves persistence/history equivalence only, not taint-detection accuracy (phantom sinks are an analyzer-domain gap).",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.355Z",
+    "contentSha256": "b0497225169f7734936e2763957ca22131905a2249cf38b57ccbbac066a3fbff"
+  }
 }

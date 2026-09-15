@@ -31,5 +31,10 @@
   "currentCommit": "377dea29d232a79f748395cc1c913970f4efb57d",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-12T22:07:04.635Z"
+  "generatedAt": "2026-09-12T22:07:04.635Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.419Z",
+    "contentSha256": "1c361c142f0295ba811e32c140fa31ff4b38598ff62b776241005c14e2b7d81f"
+  }
 }

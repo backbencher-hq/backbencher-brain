@@ -32,6 +32,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { T2_ROOT, T2_EXPECT, writeT2Fixture } from "./t2-fixture.ts";
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const COMPONENT = path.join(ROOT, "src/lsp/call_hierarchy.ts");
@@ -500,7 +501,7 @@ try {
       "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range.",
     ],
   };
-  writeFileSync(EVIDENCE, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+  writeSealed(EVIDENCE, evidence);
 } finally {
   await lsp.dispose();
   rmSync(dataDir, { recursive: true, force: true });

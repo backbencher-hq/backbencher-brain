@@ -91,5 +91,10 @@
     "tools": [
       "bb_cross_language"
     ]
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.563Z",
+    "contentSha256": "428e29305836e74ebe3d5212bd4d5b8be5544bee87820cbf527dc79f223141c6"
   }
 }

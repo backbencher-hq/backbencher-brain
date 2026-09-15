@@ -13,6 +13,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { readEvidenceAllowingLegacy, writeSealed } from "../lib/evidence.ts"
 
 type Issue = {
   code: string
@@ -171,7 +172,11 @@ function validateLedger(ledger: Ledger, plan: string, contract: string): string[
 }
 
 function main(): void {
-  const ledger = JSON.parse(readFileSync(ledgerPath, "utf8")) as Ledger
+  // M61.V1 adoption: the ledger is an evidence record — trusted read.
+  const ledgerRead = readEvidenceAllowingLegacy<Ledger>(ledgerPath)
+  if (!ledgerRead.ok) throw new Error(`M61 trusted read refused the M24 ledger: ${ledgerRead.reason}`)
+  if (ledgerRead.legacy) console.error("warn: the M24 ledger is a legacy (unsealed) record — accepted in the M61 transition window only")
+  const ledger = ledgerRead.record
   const plan = readFileSync(planPath, "utf8")
   const contract = readFileSync(contractPath, "utf8")
   const errors = validateLedger(ledger, plan, contract)
@@ -358,7 +363,15 @@ function main(): void {
       continue
     }
     try {
-      const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as Record<string, unknown>
+      // M61.V1 adoption: persisted evidence is read through the trusted path.
+      const evRead = readEvidenceAllowingLegacy<Record<string, unknown>>(evidencePath)
+      if (!evRead.ok) {
+        evidenceErrors.push(`${issue.code}:${evRead.kind === "tampered" ? "tampered-evidence" : "unreadable-evidence"}`)
+        console.error(`refused: ${evidence.evidenceFile} — ${evRead.reason} (kind=${evRead.kind})`)
+        continue
+      }
+      if (evRead.legacy) console.error(`warn: ${evidence.evidenceFile} is a legacy (unsealed) record — accepted in the M61 transition window only`)
+      const persisted = evRead.record
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       // Real failures are what count against a gate. Mutant-based verifiers
       // record intentional failures (a caught mutant fails tests by design)
@@ -425,13 +438,14 @@ function main(): void {
   const evidenceDir = path.join(ROOT, "validation/m24/results")
   mkdirSync(evidenceDir, { recursive: true })
   const evidencePath = path.join(evidenceDir, result.evidenceFile)
-  writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
-  const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof result
-  check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
+  writeSealed(evidencePath, result)
+  const persistedRead = readEvidenceAllowingLegacy<typeof result>(evidencePath)
+  const persisted = persistedRead.ok ? persistedRead.record : undefined
+  check("G1: evidence is persisted and re-readable", persisted !== undefined && persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
   const finalFailed2 = checks - passed
   const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
-  writeFileSync(evidencePath, JSON.stringify(finalResult, null, 2) + "\n")
+  writeSealed(evidencePath, finalResult)
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
 }

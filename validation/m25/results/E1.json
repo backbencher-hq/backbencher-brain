@@ -9,10 +9,10 @@
   "mutantsCaught": 3,
   "mutantsTotal": 3,
   "negativeCases": 0,
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
   "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
   "evidenceFile": "E1.json",
-  "generatedAt": "2026-09-14T15:56:17.500Z",
+  "generatedAt": "2026-09-14T23:50:55.925Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -20,5 +20,10 @@
   "limitations": [
     "Headless module verification: the vscode API layer (activate path) is verified in-editor by E5; this suite covers the pure core, budget/crash declarations, and complement-stance lint.",
     "Activation budget value is declared (150 ms default); the measured in-editor number is recorded by E5 evidence per contract §7.3/§3."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-15T00:06:48.556Z",
+    "contentSha256": "bb4695b90e60aa1d466be8a80d945f5e22da3dae42efbdb024823e39cc4a68cc"
+  }
 }

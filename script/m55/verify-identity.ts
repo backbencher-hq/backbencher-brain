@@ -39,6 +39,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { T1_ROOT, T1_EXPECT, writeT1Fixture } from "./t1-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const IDENTITY = path.join(ROOT, "src/lsp/identity.ts")
@@ -555,7 +556,7 @@ const result = {
   failures,
 }
 mkdirSync(path.dirname(EVIDENCE), { recursive: true })
-writeFileSync(EVIDENCE, `${JSON.stringify(result, null, 2)}\n`)
+writeSealed(EVIDENCE, result)
 console.log(`\nT1: ${status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 console.log(`Evidence: ${EVIDENCE}`)
 if (failures.length > 0) {

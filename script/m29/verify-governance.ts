@@ -21,6 +21,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 type Issue = {
   code: string
@@ -491,7 +492,7 @@ function main(): void {
   const evidenceDir = path.join(ROOT, "validation/m29/results")
   mkdirSync(evidenceDir, { recursive: true })
   const evidencePath = path.join(evidenceDir, result.evidenceFile)
-  writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(evidencePath, result)
   const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof result
   check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
@@ -500,7 +501,7 @@ function main(): void {
   // found in the M28 extreme review and fixed in all five gates).
   const finalFailed2 = checks - passed
   const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
-  writeFileSync(evidencePath, JSON.stringify(finalResult, null, 2) + "\n")
+  writeSealed(evidencePath, finalResult)
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
 }

@@ -25,5 +25,10 @@
   "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
   "limitations": [
     "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.424Z",
+    "contentSha256": "9a8136f72380eea427b2c351f3d9358afa09a71577b6130dafb8d7289dd22e77"
+  }
 }

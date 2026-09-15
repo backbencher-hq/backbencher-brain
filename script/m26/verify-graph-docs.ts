@@ -32,6 +32,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { createRequire } from "node:module"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const DOC = join(ROOT, "docs", "m26", "GRAPH.md")
@@ -283,7 +284,7 @@ function main(): void {
     verifierCommand: "npx tsx script/m26/verify-graph-docs.ts",
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(join(dir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
   console.log("D1: " + result.status.toUpperCase() + " (" + passed + "/" + checks + " passed, " + result.mutantsCaught + "/" + result.mutantsTotal + " mutants)")
   if (result.status !== "verified") process.exitCode = 1
 }

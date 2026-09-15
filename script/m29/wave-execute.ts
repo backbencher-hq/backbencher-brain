@@ -21,6 +21,7 @@ import path from "node:path"
 import { realpathSync } from "node:fs"
 import { WAVE_LANGUAGES, ROOT } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 interface Expectations {
   language: string
@@ -273,7 +274,7 @@ async function main(): Promise<void> {
   let allOk = true
   for (const language of languages) {
     const result = await executeWaveLeg(language)
-    writeFileSync(path.join(ROOT, "validation/m29/results", `wave-${language}.json`), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results", `wave-${language}.json`), JSON.stringify(result, null, 2) + "\n")
     const fails = result.steps.filter((s) => s.status === "fail")
     console.log(`  ${language.padEnd(11)} ${result.status.toUpperCase().padEnd(8)} ${result.steps.length} checks, ${fails.length} failed${result.reason ? ` — ${result.reason}` : ""}`)
     if (result.status !== "verified") allOk = false

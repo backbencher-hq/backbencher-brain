@@ -211,8 +211,13 @@
   },
   "limitations": [
     "Bottleneck verdicts are derived from X1 (controlled cold fixture) and X2 (sampled large-repo cold runs) wall-clock phase timings on this machine; they are relative consumption points, not throughput guarantees.",
-    "Discovery/worker-startup are disproven only for these cold sampled runs \u2014 cold caches, network filesystems, or very different layouts could change that, so 'disproven' is machine-scoped, not universal.",
+    "Discovery/worker-startup are disproven only for these cold sampled runs — cold caches, network filesystems, or very different layouts could change that, so 'disproven' is machine-scoped, not universal.",
     "Known gaps D2/E2/R3 remain intentionally open (fail-closed); X3 does not retroactively verify them.",
     "The classification rule uses interquartile-relative thresholds so a single oversized repo cannot tilt the verdict; UNRESOLVED is returned whenever runs disagree too much to support an honest claim."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.391Z",
+    "contentSha256": "66b9f1d6b0244ff8a86d08f9b342fef80aefc6edf102bcf66a405efe97c23d0e"
+  }
 }

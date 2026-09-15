@@ -25,5 +25,10 @@
   "unexpectedErrorFiles": 0,
   "crashes": [],
   "passed": true,
-  "policy": "Every tracked .graphql file in clean graphql-js@9c245018 is audited through the production parseFile pipeline with 0 crashes and 0 phantom rows. The GitHub public schema parses with 0 errors. The kitchen-sink executable torture-test has two named grammar-level errors (directive-on-variable, escaped block-string) that the vendored grammar does not model; they are recorded explicitly as grammar limitations, never hidden."
+  "policy": "Every tracked .graphql file in clean graphql-js@9c245018 is audited through the production parseFile pipeline with 0 crashes and 0 phantom rows. The GitHub public schema parses with 0 errors. The kitchen-sink executable torture-test has two named grammar-level errors (directive-on-variable, escaped block-string) that the vendored grammar does not model; they are recorded explicitly as grammar limitations, never hidden.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.872Z",
+    "contentSha256": "e67aee130d952682941951d2cfd44cc5bc557a0c7bc3c81a2f734797984fb66f"
+  }
 }

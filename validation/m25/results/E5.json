@@ -869,5 +869,10 @@
   "evidenceFile": "E5.json",
   "generatedAt": "2026-09-14T16:06:26.939Z",
   "os": "linux",
-  "limitations": []
+  "limitations": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.411Z",
+    "contentSha256": "ea823d1a1f27d498bbdf53f8cbfba948d47be776329b676574ae1912b6cc96dd"
+  }
 }

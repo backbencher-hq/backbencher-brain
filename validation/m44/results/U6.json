@@ -28,5 +28,10 @@
   "limitations": [
     "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message).",
     "The pure core's reveal floor is reachable only for legacy clients that predate the symbol-carrying link; it remains a declared outcome, not a message-only dead end."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.554Z",
+    "contentSha256": "d3fa59a48aa1157a8a237b7f5912b4ad5dd114378e27a987784efa9fa84e8222"
+  }
 }

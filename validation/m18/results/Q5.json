@@ -11,5 +11,10 @@
     "content_hash is stored but NOT consulted at query time (insert-time dedupe only); staleness is proven via file-level hash (checkResultsFreshness).",
     "The verifier patches SemanticEngine.embed + getLastEmbeddingModel with a fixed synthetic vector/model so it is fully deterministic; real-model behavior is covered by Q2/Q3/Q4."
   ],
-  "generatedAt": "2026-08-25T18:49:40.945Z"
+  "generatedAt": "2026-08-25T18:49:40.945Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.363Z",
+    "contentSha256": "25023901358e263ca1104095c7f2f6fc03ee6cee8e4e56e1d6ca297e6c813c16"
+  }
 }

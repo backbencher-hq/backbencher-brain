@@ -31,5 +31,10 @@
   "evidenceFile": "A1.json",
   "generatedAt": "2026-09-14T16:01:03.948Z",
   "claimLevel": "verified — annotation store proven against a real sqlite db (fresh + pre-existing paths), provenance enforced in code, suite can-fail proven",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.424Z",
+    "contentSha256": "ed2dcd3956d95706e3ad8f31a14211f330926fdfd1ac27f21331fb05103a1af3"
+  }
 }

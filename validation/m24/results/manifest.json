@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M24",
   "githubMilestone": 24,
-  "title": "bb_lsp \u2014 The Server (IDE Program v0)",
+  "title": "bb_lsp — The Server (IDE Program v0)",
   "status": "closed",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
@@ -327,5 +327,10 @@
         "negativeCases": 6
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.406Z",
+    "contentSha256": "d8460e442e404667e44c15957092aa37596ac04b9740bd586d826e2e603712c9"
+  }
 }

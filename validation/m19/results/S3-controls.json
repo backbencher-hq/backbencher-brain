@@ -61,5 +61,10 @@
     "The two RSS runs used disjoint samples and are sequential, so they are not a same-input benchmark.",
     "The control samples measure deferred-finalization ingestion only; they do not establish full-corpus cold timing.",
     "The /tmp log paths are local provenance; the numeric values are copied from the successful JSON summaries and /usr/bin/time output recorded during this run."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.367Z",
+    "contentSha256": "a8d13e6ace0e01d0d21262091df8e5148e8ae766d76563d48e97a77b4a7b3b10"
+  }
 }

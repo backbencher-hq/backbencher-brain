@@ -34,6 +34,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ISSUE_RELEVANT_FILES } from "./relevance.ts";
+import { readEvidenceAllowingLegacy as readSealedRecord, writeSealed } from "../lib/evidence.ts";
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..");
 const LEDGER = path.join(ROOT, "validation/m55/results/manifest.json");
@@ -295,11 +296,17 @@ function main(): void {
     readEvidence: (file) => {
       const p = path.join(RESULTS, file);
       if (!existsSync(p)) return null;
-      try {
-        return JSON.parse(readFileSync(p, "utf8")) as EvidenceFile;
-      } catch {
-        return null;
+      // M61.V1 adoption: records are read through the ONE trusted path.
+      // Sealed records verify; legacy (pre-M61) records are accepted in the
+      // declared transition window with a WARN; anything else (tampered,
+      // unparseable) is refused loudly — never silently believed.
+      const read = readSealedRecord(p);
+      if (read.ok) {
+        if (read.legacy) console.error(`warn: ${file} is a legacy (unsealed) record — accepted in the M61 transition window only`);
+        return read.record as EvidenceFile;
       }
+      console.error(`refused: ${file} — ${read.reason} (kind=${read.kind}); treating as no evidence`);
+      return null;
     },
     changedSince: (commit, files) => {
       if (files.length === 0) return [];
@@ -484,7 +491,7 @@ function main(): void {
       "The in-editor legs (V1's frames) are out of this gate's reach: it can only assert that the ledger points at evidence files, never that a frame was read by a human.",
     ],
   };
-  writeFileSync(path.join(RESULTS, "G1.json"), `${JSON.stringify(evidence, null, 2)}\n`);
+  writeSealed(path.join(RESULTS, "G1.json"), evidence);
 
   console.log(`\nG1: ${status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`);
   console.log(`Evidence: ${path.join(RESULTS, "G1.json")}`);

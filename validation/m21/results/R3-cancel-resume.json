@@ -78,12 +78,12 @@
     {
       "name": "R3: resume exits 0",
       "pass": true,
-      "detail": "exit=0 stderr=e\":\"html\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm\"}\n[STORE] TestCaseUtils.hs: 54s 97r\n\r[progress] 2340/2348 files (99%) 118.2/s ETA 0s \u2014 ChangeLog.md[STORE] Utils.hs: 25s 36r\n\n"
+      "detail": "exit=0 stderr=e\":\"html\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm\"}\n[STORE] TestCaseUtils.hs: 54s 97r\n\r[progress] 2340/2348 files (99%) 118.2/s ETA 0s — ChangeLog.md[STORE] Utils.hs: 25s 36r\n\n"
     },
     {
       "name": "R3: resume reported checkpoint",
       "pass": true,
-      "detail": "indexing $HOME/fixtures/repositories/cabal (project dfe57809\u2026)\nresuming interrupted index (checkpoint: 70/2348 files done)\n[brain] \u2713 worker "
+      "detail": "indexing $HOME/fixtures/repositories/cabal (project dfe57809…)\nresuming interrupted index (checkpoint: 70/2348 files done)\n[brain] ✓ worker "
     },
     {
       "name": "R3: post-resume DB readable",
@@ -125,5 +125,10 @@
       "pass": true,
       "detail": "fallbackBlock=129659"
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.385Z",
+    "contentSha256": "3fb9509026f6634fa692c64cea7d95a5ed11b500191482fe8db6b9884b974553"
+  }
 }

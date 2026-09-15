@@ -24,5 +24,10 @@
     ]
   },
   "mutation": "not-run (control)",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.485Z",
+    "contentSha256": "e0fb8b98cc8ae61dfeb72f97f00d73607f401df81b2430f807476d8ee767b4a4"
+  }
 }

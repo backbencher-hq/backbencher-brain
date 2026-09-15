@@ -25,5 +25,10 @@
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
     "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.423Z",
+    "contentSha256": "6c13790dd829405864d4080e746aaecf3beae1416065de69ebeb499cdf262f1e"
+  }
 }

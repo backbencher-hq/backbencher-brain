@@ -32,6 +32,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { U6_EXPECT, U6_REL, U6_ROOT, U6_SOURCE_APP, writeU6Fixture } from "./u6-fixture.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m44/results/U6.json")
@@ -222,7 +223,7 @@ async function main(): Promise<void> {
     ],
   }
   mkdirSync(path.dirname(EVIDENCE), { recursive: true })
-  writeFileSync(EVIDENCE, JSON.stringify(evidence, null, 2))
+  writeSealed(EVIDENCE, evidence)
 
   console.log(`\nU6: ${ok ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants caught, ${negativeCases} negative)`)
   if (!ok) {

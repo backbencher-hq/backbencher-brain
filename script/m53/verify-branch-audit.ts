@@ -21,6 +21,7 @@
 import { execFileSync } from "node:child_process"
 import { writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const OUT = path.join(ROOT, "validation/m53/results/R3.json")
@@ -69,7 +70,7 @@ function main(): void {
   const branchHead = git(["rev-parse", "--verify", branchRef])
   if (branchHead.startsWith("__GIT_ERROR__")) {
     console.log("R3: BLOCKED — origin/m48-recovery not present; nothing to audit")
-    writeFileSync(OUT, JSON.stringify({ status: "blocked", reason: "branch absent", head: git(["rev-parse", "HEAD"]).trim(), generatedAt: new Date().toISOString() }, null, 2) + "\n")
+    writeSealed(OUT, JSON.stringify({ status: "blocked", reason: "branch absent", head: git(["rev-parse", "HEAD"]).trim(), generatedAt: new Date().toISOString() }, null, 2) + "\n")
     return
   }
   const base = git(["merge-base", mainRef, branchRef]).trim()
@@ -148,7 +149,7 @@ function main(): void {
     failed,
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(OUT, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(OUT, evidence)
   console.log(`\nR3: ${failed === 0 ? "VERIFIED" : "FAILED"} (${checks - failed}/${checks} passed)`)
   if (failed > 0) process.exitCode = 1
 }

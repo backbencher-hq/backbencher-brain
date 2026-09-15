@@ -40,6 +40,7 @@ import path from "node:path"
 import { M55_ROOT } from "./lsp-wire.ts"
 import { EDITOR_CONTENT_REGION, navigationSpannedFile, noNavigationReason, type RegionDiff } from "./navigation.ts"
 import { DECLARED_FIXTURE, resolvePosition } from "./wire-probe.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = M55_ROOT
 
@@ -632,7 +633,7 @@ export async function runCaptureSession(opts: { run?: string; profile?: string; 
     const captured = base.flows.filter((f) => f.status === "captured").length
     if (captured === 0) return { ...base, reason: "not one frame was captured (every flow failed) — reported as blocked with the per-flow reasons above" }
     base.status = "captured"
-    writeFileSync(path.join(outDir, "manifest.json"), JSON.stringify(base, null, 2) + "\n")
+    writeSealed(path.join(outDir, "manifest.json"), JSON.stringify(base, null, 2) + "\n")
     return base
   } catch (e) {
     return { ...base, reason: `session threw: ${e instanceof Error ? e.message.slice(0, 220) : String(e)}` }
@@ -652,7 +653,7 @@ if (process.argv[1] !== undefined && /screenshot-protocol\.ts$/.test(process.arg
     fixture: fixtureIdx >= 0 ? args[fixtureIdx + 1] : undefined,
   })
   const outIdx = args.indexOf("--out")
-  if (outIdx >= 0 && args[outIdx + 1] !== undefined) writeFileSync(args[outIdx + 1]!, JSON.stringify(result, null, 2) + "\n")
+  if (outIdx >= 0 && args[outIdx + 1] !== undefined) writeSealed(args[outIdx + 1]!, result)
   console.log(`screenshot-protocol: ${result.status}${result.reason !== undefined ? ` — ${result.reason}` : ""} (${result.flows.filter((f) => f.status === "captured").length}/${CAPTURE_FLOWS.length} frames)`)
   for (const flow of result.flows) {
     console.log(`  ${flow.status === "captured" ? "✓" : "✗"} ${flow.id} ${flow.label}${flow.reason !== undefined ? ` — ${flow.reason}` : ""}`)

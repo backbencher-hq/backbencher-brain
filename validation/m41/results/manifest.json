@@ -262,5 +262,10 @@
         "negativeCases": 13
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.541Z",
+    "contentSha256": "df16a7bdfe60cfdbb982e7e0fa794f30f58c3df0ad0ac26d756e7de24ccfd4d2"
+  }
 }

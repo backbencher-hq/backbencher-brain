@@ -122,5 +122,10 @@
     "The bounded sample is not representative of a cold full index.",
     "Provider/API latency is reported only indirectly unless embedding configuration exposes provider timing.",
     "Index status fields are observed as persisted; missing fields are null, never interpreted as zero."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.374Z",
+    "contentSha256": "0a5a493e092664a196ec5d21e325b16948cfc9ea23f88187114b7a454c27522e"
+  }
 }

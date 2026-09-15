@@ -22,5 +22,10 @@
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
     "A run with relevant uncommitted M29 files is recorded as known-gap; verified status requires a clean relevant tree."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.428Z",
+    "contentSha256": "4b3743ed2b372fda82efe4541208ac80d187a87c8fefe1d533e2ee6a7f7c2aaa"
+  }
 }

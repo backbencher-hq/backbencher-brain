@@ -27,5 +27,10 @@
   "limitations": [
     "The graph surface's legend is W4's own gate (verify-evidence-badges.ts P3), re-run in the standing chain.",
     "The whole-panel stale marker is a hub-panel (vscode-importing) contract: pinned at source level here and asserted live by the E5 in-editor leg."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.554Z",
+    "contentSha256": "364b33776a43591c1258b9fac9e2fdc20af0b65ca03771365879f6668e4fd80f"
+  }
 }

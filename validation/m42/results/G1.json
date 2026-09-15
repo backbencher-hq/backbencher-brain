@@ -29,5 +29,10 @@
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",
     "A run with relevant uncommitted M42 files is recorded as known-gap; verified status requires a clean relevant tree."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.541Z",
+    "contentSha256": "364c194efae9d0d57c6a84559161da7abd7791f06eaa8180e1467bbfa75bc688"
+  }
 }

@@ -21,5 +21,10 @@
   "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
   "evidenceFile": "P1.json",
   "generatedAt": "2026-09-13T23:37:55.736Z",
-  "failures": []
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.580Z",
+    "contentSha256": "bd1ac9be1e70a20bd0e07b269a1b53b8b35db57d5e163d8321a5b2b41bf765af"
+  }
 }

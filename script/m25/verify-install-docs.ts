@@ -28,6 +28,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EXT_ROOT = join(ROOT, "ide/vscode")
@@ -194,7 +195,7 @@ const result = {
     "Runs on this machine's Linux only; macOS/Windows install-doc execution is E7 scope.",
   ],
 }
-writeFileSync(join(ROOT, "validation/m25/results", "D1-install.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(ROOT, "validation/m25/results", "D1-install.json"), JSON.stringify(result, null, 2) + "\n")
 
 console.log(`\nD1-install: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed)`)
 console.log(`Evidence: ${join(ROOT, "validation/m25/results/D1-install.json")}`)

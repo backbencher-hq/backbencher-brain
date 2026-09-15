@@ -15,5 +15,10 @@
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "evidenceFile": "R4-verify.json",
   "generatedAt": "2026-09-14T21:47:43.172Z",
-  "details": []
+  "details": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.432Z",
+    "contentSha256": "6aa77310c43a947bb7aa758b8b62a279adffbce3da8d2257609b6f43745a5193"
+  }
 }

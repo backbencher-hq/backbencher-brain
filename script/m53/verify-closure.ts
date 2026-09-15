@@ -24,6 +24,7 @@
 
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { readEvidenceAllowingLegacy, writeSealed } from "../lib/evidence.ts"
 import { join, resolve } from "node:path"
 
 const ROOT = resolve(import.meta.dirname, "../..")
@@ -56,11 +57,17 @@ function git(args: string[]): string {
 const HEAD = git(["rev-parse", "HEAD"])
 
 function loadJson(p: string): any {
-  try {
-    return JSON.parse(readFileSync(p, "utf8"))
-  } catch {
-    return null
+  // M61.V1 adoption: evidence records go through the ONE trusted path —
+  // sealed records verify, legacy records are accepted in the declared
+  // window with a warn, tampered/unparseable are refused loudly (null here,
+  // which the prerequisite checks report as "missing" — never believed).
+  const read = readEvidenceAllowingLegacy<any>(p)
+  if (read.ok) {
+    if (read.legacy) console.error(`warn: ${p.split("/").pop()} is a legacy (unsealed) record — accepted in the M61 transition window only`)
+    return read.record
   }
+  console.error(`refused: ${p.split("/").pop()} — ${read.reason} (kind=${read.kind})`)
+  return null
 }
 
 // --- G1: prerequisites ------------------------------------------------------
@@ -211,7 +218,7 @@ const result = {
   generatedAt: new Date().toISOString(),
 }
 mkdirSync(join(ROOT, "validation/m53/results"), { recursive: true })
-writeFileSync(OUT, JSON.stringify(result, null, 2) + "\n")
+writeSealed(OUT, result)
 console.log(`X1: ${result.status.toUpperCase()} (${result.passed}/${checks} checks, ${negativeCaught}/${negativeCount} mutants)`)
 console.log(`Evidence: ${OUT}`)
 process.exit(result.status === "verified" ? 0 : 1)

@@ -35,6 +35,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EVIDENCE_PATH = join(ROOT, "validation/m44/results/X1.json")
@@ -222,7 +223,7 @@ inventory.push(
     note: "Compiled by script/m44/verify-closure.ts from the m44 evidence limitations + closure-time items (deterministic; no wall clock). Every entry carries its disposition in docs/m44/LAUNCH-RECORD.md (fixed / documented-with-reason / owner / CI-pending). None silent.",
   }
   mkdirSync(join(ROOT, "validation/m44/results"), { recursive: true })
-  writeFileSync(KNOWN_GAPS, JSON.stringify(compiled, null, 2) + "\n")
+  writeSealed(KNOWN_GAPS, compiled)
 }
 
 // --- Pass 3: closure preconditions — ledger + launch record + spot-check pack ------
@@ -358,7 +359,7 @@ console.log("\npass 4: known-gaps inventory audit (compiled in pass 2.5)")
     note: "Compiled by script/m44/verify-closure.ts from the m44 evidence limitations + closure-time items (deterministic; no wall clock). Every entry carries its disposition in docs/m44/LAUNCH-RECORD.md (fixed / documented-with-reason / owner / CI-pending). None silent.",
   }
   mkdirSync(join(ROOT, "validation/m44/results"), { recursive: true })
-  writeFileSync(KNOWN_GAPS, JSON.stringify(compiled, null, 2) + "\n")
+  writeSealed(KNOWN_GAPS, compiled)
   const recompiled = JSON.parse(readFileSync(KNOWN_GAPS, "utf8")) as { count?: number; inventory?: Array<{ code: string; limitation: string }> }
   check("X1: known-gaps inventory compiled over the m44 evidence", recompiled.count === inventory.length && (recompiled.inventory ?? []).every((g) => g.code.length > 0 && g.limitation.length > 0), `count=${recompiled.count}`)
   check("X1: the launch record's known-gaps section is non-empty", (launchText ?? "").includes("## Known-gaps inventory"), "")
@@ -404,7 +405,7 @@ const result = {
     "Co-agent lanes (M14/M37/M40/M41…) are outside this program's closure; their gates live in their own milestones.",
   ],
 }
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 
 console.log(`\nX1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negatives)`)
 console.log(`Evidence: ${EVIDENCE_PATH}`)

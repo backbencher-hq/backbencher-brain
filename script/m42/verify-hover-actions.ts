@@ -31,6 +31,7 @@ import { execFileSync, spawn } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H4.json")
@@ -485,6 +486,6 @@ const result = {
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2))
+writeSealed(EVIDENCE, result)
 console.log(`H4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantStats.caught}/${mutantStats.total} mutants caught)`)
 if (failed > 0) process.exit(1)

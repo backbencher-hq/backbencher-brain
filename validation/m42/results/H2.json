@@ -70,5 +70,10 @@
     "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to).",
     "Warm-budget check uses mean-over-40 as a p95 proxy; the E5 editor leg re-measures with the shared harness.",
     "Editor-leg (link clicking in a real session) is asserted in the E5-pattern session at H2 acceptance; this file proves the server surface."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.545Z",
+    "contentSha256": "fabbc1c425ff0f6b2796958e5ded9dbab312ce7f9042096d17f0a24af94c0cd7"
+  }
 }

@@ -58,6 +58,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 import { pathToFileURL } from "node:url"
 import { M55_ROOT, ensureServerBuilt } from "./lsp-wire.ts"
 import { EDITOR_CONTENT_REGION, navigationSpannedFile, noNavigationReason, type RegionDiff } from "./navigation.ts"
@@ -157,7 +158,7 @@ const pre = rigPreflight()
 console.log(`  (rig: ${pre.ok ? "available" : `MISSING ${pre.missing.join(", ")}`})`)
 ensureServerBuilt()
 const probe: ProbeResult = await runWireProbe({ workspace: DECLARED_FIXTURE })
-writeFileSync(PROBE_OUT, JSON.stringify(probe, null, 2) + "\n")
+writeSealed(PROBE_OUT, probe)
 
 if (probe.status === "blocked") {
   blocked("R1: the probe reads the live surfaces", probe.reason ?? "unknown")
@@ -857,7 +858,7 @@ const result = {
 }
 
 try {
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nEV V1 evidence written: ${path.relative(ROOT, EVIDENCE)}`)
 } catch (e) {
   console.log(`\nEV V1 evidence write failed: ${String(e)}`)

@@ -57,5 +57,10 @@
     "The analyzers of the confirmatory languages store line_number = 0 for call rows (verified on the demo index: every TypeScript/Java usage row carries 0), so a usage row's file:line is the REFERENCING symbol's indexed location — where the call is — and the rendered copy says so. Invocation-column precision needs the analyzers to store call-site lines; the gate asserts the stored-line case only if the index carries one (it does not today).",
     "The wire legs run the real dist server against a real seeded index in an isolated BB_DATA_DIR; a stale dist is rebuilt first (lsp-wire.ts), never silently used.",
     "bb/graph declares its own traversal profile (calls/callers by default): the gate asserts callers are a SUBSET of the usage-site set and equality where the usage sites are all `calls` rows — a graph row that is not a stored usage site would fail."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.581Z",
+    "contentSha256": "35e5fe50792c218e831f0ce1564b732aa5df3f6b544c4002d5d719ded4c7cde2"
+  }
 }

@@ -2,11 +2,11 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "ad06cddf1b879f7fa912f9e27eac67b149a3dd36",
+  "currentCommit": "ec14a7fa07f6ce022965635dc30dcc295e945484",
   "sourceFingerprint": "abdeee56eb046e54c6f2991528dfb56bf6992c0600754d454213b04ccc077934",
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",
-  "generatedAt": "2026-09-14T21:53:11.822Z",
+  "generatedAt": "2026-09-14T23:49:09.656Z",
   "passed": 27,
   "failed": 0,
   "failures": [],
@@ -23,5 +23,10 @@
     "reference sites resolve to relationship edge coordinates; heuristic-edge ratio per language is declared in the master plan",
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-15T00:06:48.552Z",
+    "contentSha256": "7aeeb8bcf8f7148b39b36c2040a33dd3c1e70d11a0e7c759ad20aff4565eafd0"
+  }
 }

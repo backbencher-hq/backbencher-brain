@@ -18,5 +18,10 @@
     "The lint is lexical: it proves the listing avoids banned phrasing, not that every sentence is strategically perfect (that word is banned too).",
     "Claim drift is checked against the ledger and F-*.json evidence at run time; a re-run after any evidence change re-derives the allowed claims.",
     "The install follow-along lives in verify-install-docs.ts (clean-profile execution); this file only proves the instructions reference real artifacts."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.408Z",
+    "contentSha256": "ed56ca06159040938c768abf28b7bed2d48a1bc2dbb3e28a6e9afa82043ab7fd"
+  }
 }

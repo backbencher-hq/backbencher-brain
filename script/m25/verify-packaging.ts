@@ -32,6 +32,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
@@ -407,6 +408,6 @@ const result = {
   ],
 }
 mkdirSync(RESULTS, { recursive: true })
-writeFileSync(path.join(RESULTS, "E4.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(RESULTS, "E4.json"), JSON.stringify(result, null, 2) + "\n")
 console.log(`E4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

@@ -16,6 +16,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m42/results")
@@ -382,13 +383,13 @@ const result = {
 }
 mkdirSync(EVIDENCE_DIR, { recursive: true })
 const evidencePath = path.join(EVIDENCE_DIR, result.evidenceFile)
-writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
+writeSealed(evidencePath, result)
 const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof result
 check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
 // Counters re-captured AFTER the last check (the M24-inherited undercount bug).
 const finalFailed2 = checks - passed
 const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
-writeFileSync(evidencePath, JSON.stringify(finalResult, null, 2) + "\n")
+writeSealed(evidencePath, finalResult)
 console.log(`\nG1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
 process.exit(finalFailed2 === 0 ? 0 : 1)
