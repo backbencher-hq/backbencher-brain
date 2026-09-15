@@ -143,12 +143,16 @@ async function makeFixture(): Promise<Fixture> {
   const rel = db.prepare(
     `INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, metadata, line_number, is_cross_language, target_external) VALUES (?,?,?,?,?,?,?,?,?,?)`,
   )
+  // M59.A6 (#824): the hand-supplied lines here (1, 2, 1, 1) were values the
+  // pipeline never produced for this fixture's language — the legend/tier laws
+  // read confidence, evidence class and staleness, never a line. NULL now, as
+  // production stores it (#825 for the analyzers still without a line).
   // The DUPLICATED relationship: make reaches Widget two ways.
-  rel.run("r-make-calls", projectId, S_MAKE, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', 1, 0, null)
-  rel.run("r-make-inst", projectId, S_MAKE, S_WIDGET, "instantiates", 0.5, '{"evidenceClass":"inferred"}', 2, 0, null)
-  rel.run("r-draw", projectId, S_DRAW, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', 1, 0, null)
+  rel.run("r-make-calls", projectId, S_MAKE, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
+  rel.run("r-make-inst", projectId, S_MAKE, S_WIDGET, "instantiates", 0.5, '{"evidenceClass":"inferred"}', null, 0, null)
+  rel.run("r-draw", projectId, S_DRAW, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
   // Callee: Widget calls util (external push omitted — not a U4 concern).
-  rel.run("r-wu", projectId, S_WIDGET, S_UTIL, "calls", 0.9, '{"evidenceClass":"structural"}', 1, 0, null)
+  rel.run("r-wu", projectId, S_WIDGET, S_UTIL, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
 
   return {
     ws,
@@ -379,8 +383,12 @@ async function main(): Promise<void> {
 
     // --- R3b: the REAL dist server over stdio -------------------------------
     console.log("\nR3b: real bb_lsp server over the fixture workspace")
+    // #824: both R3b laws are emitted on EVERY path — blocked, failed, or clean
+    // — so the check count does not change with the session's outcome.
     if (!existsSync(SERVER)) {
-      check("R3b: dist server present (blocked-with-reason: run npm run build)", false, "dist/lsp/server.js missing")
+      const why = "blocked-with-reason: dist/lsp/server.js missing (run npm run build)"
+      check("R3b: the WIRE response's header counts groups (2 callers), never rows (3)", false, why)
+      check("R3b: the wire render passes AH1–AH11 clean", false, why)
     } else {
       const child = spawn(process.execPath, [SERVER, "--dir", fx.ws], {
         cwd: ROOT,
@@ -444,7 +452,9 @@ async function main(): Promise<void> {
         const bad = ff.filter((f: any) => !f.ok)
         check("R3b: the wire render passes AH1–AH11 clean", bad.length === 0, bad.map((f: any) => `${f.assertion}: ${f.detail}`).join("; ").slice(0, 200))
       } catch (error: any) {
-        check("R3b: real-server session completes", false, String(error?.message ?? error).slice(0, 200) + (stderr ? ` | stderr: ${stderr.slice(-200)}` : ""))
+        const why = String(error?.message ?? error).slice(0, 200) + (stderr ? ` | stderr: ${stderr.slice(-200)}` : "")
+        check("R3b: the WIRE response's header counts groups (2 callers), never rows (3)", false, `session did not complete: ${why}`)
+        check("R3b: the wire render passes AH1–AH11 clean", false, `session did not complete: ${why}`)
       } finally {
         try { child.kill() } catch {}
       }
@@ -476,6 +486,8 @@ async function main(): Promise<void> {
     checks,
     passed,
     failed,
+    // #824: persist WHICH check failed (see verify-usages-groups.ts).
+    failures,
     mutantsCaught: mutants.caught,
     mutantsTotal: mutants.total,
     currentCommit,
