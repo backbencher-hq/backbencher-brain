@@ -2,13 +2,13 @@
   "issue": "622",
   "code": "X1",
   "milestone": "M27",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 31,
-  "passed": 31,
-  "failed": 0,
-  "failures": 0,
+  "passed": 26,
+  "failed": 5,
+  "failures": 5,
   "negativeCases": 4,
-  "currentCommit": "a726e6001bc2f8cd6bc24bf6804c47983f608f9b",
+  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -18,10 +18,10 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-09-14T16:00:14.886Z",
+  "generatedAt": "2026-09-15T00:40:29.092Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.423Z",
-    "contentSha256": "bc6e116871b2fee2380b62d8fd49c1a267c034a9650a498de7f125889522a8f1"
+    "sealedAt": "2026-09-15T00:40:29.094Z",
+    "contentSha256": "181f8ef21d3d7c13b6c9aaff23bd5348903397f2b409b03dccb99bb400ce1e3f"
   }
 }
