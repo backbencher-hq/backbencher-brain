@@ -70,7 +70,7 @@ function main(): void {
   const branchHead = git(["rev-parse", "--verify", branchRef])
   if (branchHead.startsWith("__GIT_ERROR__")) {
     console.log("R3: BLOCKED — origin/m48-recovery not present; nothing to audit")
-    writeSealed(OUT, { status: "blocked", reason: "branch absent", head: git(["rev-parse", "HEAD"]).trim(), generatedAt: new Date().toISOString() })
+    writeSealed(OUT, { verifierCommand: "npx tsx script/m53/verify-branch-audit.ts", evidenceFile: "R3.json", status: "blocked", reason: "branch absent", head: git(["rev-parse", "HEAD"]).trim(), generatedAt: new Date().toISOString() })
     return
   }
   const base = git(["merge-base", mainRef, branchRef]).trim()
@@ -139,6 +139,9 @@ function main(): void {
   // --- evidence ------------------------------------------------------------
   mkdirSync(path.dirname(OUT), { recursive: true })
   const evidence = {
+    // M61.V4: the record names its own gate and output (see r2-probe.mts).
+    verifierCommand: "npx tsx script/m53/verify-branch-audit.ts",
+    evidenceFile: "R3.json",
     status: failed === 0 ? "verified" : "failed",
     head: git(["rev-parse", "HEAD"]).trim(),
     mainHead: git(["rev-parse", mainRef]).trim(),

@@ -58,6 +58,23 @@ function sha256Hex(content: string): string {
 /** M2 — the sealed content is the record's canonical JSON WITHOUT the seal
  *  key itself, computed on the STRING form so verification recomputes exactly
  *  what the writer sealed, independent of the file's whitespace/key order. */
+/**
+ * M61.V4 (D-4): a gate's can-fail declaration, derived from its OWN check
+ * list rather than restated by hand. The house conventions name a mutant
+ * check `M: <name>` and a negative case with "negative"; the gate passes the
+ * same list it already accumulates, so the record can never disagree with the
+ * run (the count is computed at write time from the checks themselves).
+ */
+export function canFailFromChecks(checks: string[]): { mutants: number; negatives: number } {
+  let mutants = 0
+  let negatives = 0
+  for (const c of checks) {
+    if (/^(ok|FAIL):\s*M[::]/.test(c)) mutants++
+    else if (/\bnegative\b/i.test(c)) negatives++
+  }
+  return { mutants, negatives }
+}
+
 export function sealedContent(record: Record<string, unknown>): string {
   const { [SEAL_KEY]: _omit, ...rest } = record
   return JSON.stringify(rest)
