@@ -1,8 +1,8 @@
 {
   "probe": "M59.O1",
-  "at": "2026-09-14T13:18:27.102Z",
+  "at": "2026-09-15T13:41:50.723Z",
   "corpus": "$HOME/fixtures/repositories",
-  "filesPerLang": 4,
+  "filesPerLang": 30,
   "oracleIndependence": {
     "importsAnalyzerCode": false,
     "importsGraphOrStoreCode": false,
@@ -13,177 +13,177 @@
     "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent"
   },
   "mutation": {
-    "file": "scala:scala3/tests/warn/12974.scala",
-    "trueLine": 19,
-    "mutatedLine": 26,
+    "file": "scala:scala3/staging/test/scala/quoted/staging/repl/StagingScriptedReplTests.scala",
+    "trueLine": 11,
+    "mutatedLine": 18,
     "caught": true
   },
   "totals": {
     "java": {
-      "files": 4,
-      "rels": 1627,
+      "files": 30,
+      "rels": 1492,
       "withLine": 0,
-      "noLine": 1627,
+      "noLine": 1492,
       "consistent": 0,
       "inconsistent": 0
     },
     "kotlin": {
-      "files": 4,
-      "rels": 77,
+      "files": 30,
+      "rels": 4162,
       "withLine": 0,
-      "noLine": 77,
+      "noLine": 4162,
       "consistent": 0,
       "inconsistent": 0
     },
     "scala": {
-      "files": 4,
-      "rels": 66,
-      "withLine": 7,
-      "noLine": 59,
-      "consistent": 7,
+      "files": 30,
+      "rels": 1809,
+      "withLine": 813,
+      "noLine": 996,
+      "consistent": 813,
       "inconsistent": 0
     },
     "groovy": {
-      "files": 0,
-      "rels": 0,
+      "files": 10,
+      "rels": 203,
       "withLine": 0,
-      "noLine": 0,
+      "noLine": 203,
       "consistent": 0,
       "inconsistent": 0
     },
     "typescript": {
-      "files": 4,
-      "rels": 59,
+      "files": 30,
+      "rels": 434,
       "withLine": 0,
-      "noLine": 59,
+      "noLine": 434,
       "consistent": 0,
       "inconsistent": 0
     },
     "javascript": {
-      "files": 4,
-      "rels": 1144,
+      "files": 30,
+      "rels": 2907,
       "withLine": 0,
-      "noLine": 1144,
+      "noLine": 2907,
       "consistent": 0,
       "inconsistent": 0
     },
     "vue": {
-      "files": 4,
-      "rels": 246,
+      "files": 30,
+      "rels": 2788,
       "withLine": 0,
-      "noLine": 246,
+      "noLine": 2788,
       "consistent": 0,
       "inconsistent": 0
     },
     "svelte": {
-      "files": 4,
-      "rels": 5,
+      "files": 30,
+      "rels": 325,
       "withLine": 0,
-      "noLine": 5,
+      "noLine": 325,
       "consistent": 0,
       "inconsistent": 0
     },
     "c": {
-      "files": 4,
-      "rels": 233,
+      "files": 30,
+      "rels": 1123,
       "withLine": 0,
-      "noLine": 233,
+      "noLine": 1123,
       "consistent": 0,
       "inconsistent": 0
     },
     "cpp": {
-      "files": 4,
-      "rels": 220,
+      "files": 30,
+      "rels": 7017,
       "withLine": 0,
-      "noLine": 220,
+      "noLine": 7017,
       "consistent": 0,
       "inconsistent": 0
     },
     "rust": {
-      "files": 4,
-      "rels": 79,
+      "files": 30,
+      "rels": 3595,
       "withLine": 0,
-      "noLine": 79,
+      "noLine": 3595,
       "consistent": 0,
       "inconsistent": 0
     },
     "go": {
-      "files": 4,
-      "rels": 143,
+      "files": 30,
+      "rels": 7660,
       "withLine": 0,
-      "noLine": 143,
+      "noLine": 7660,
       "consistent": 0,
       "inconsistent": 0
     },
     "zig": {
-      "files": 4,
-      "rels": 584,
+      "files": 30,
+      "rels": 1911,
       "withLine": 0,
-      "noLine": 584,
+      "noLine": 1911,
       "consistent": 0,
       "inconsistent": 0
     },
     "csharp": {
-      "files": 4,
-      "rels": 176,
+      "files": 30,
+      "rels": 1258,
       "withLine": 0,
-      "noLine": 176,
+      "noLine": 1258,
       "consistent": 0,
       "inconsistent": 0
     },
     "dart": {
-      "files": 4,
-      "rels": 639,
+      "files": 30,
+      "rels": 776,
       "withLine": 0,
-      "noLine": 639,
+      "noLine": 776,
       "consistent": 0,
       "inconsistent": 0
     },
     "swift": {
-      "files": 4,
-      "rels": 51,
+      "files": 30,
+      "rels": 1257,
       "withLine": 0,
-      "noLine": 51,
+      "noLine": 1257,
       "consistent": 0,
       "inconsistent": 0
     },
     "objc": {
-      "files": 4,
-      "rels": 1837,
+      "files": 30,
+      "rels": 2645,
       "withLine": 0,
-      "noLine": 1837,
+      "noLine": 2645,
       "consistent": 0,
       "inconsistent": 0
     },
     "php": {
-      "files": 4,
-      "rels": 2830,
+      "files": 30,
+      "rels": 5995,
       "withLine": 0,
-      "noLine": 2830,
+      "noLine": 5995,
       "consistent": 0,
       "inconsistent": 0
     },
     "ruby": {
-      "files": 4,
-      "rels": 196,
+      "files": 30,
+      "rels": 3537,
       "withLine": 0,
-      "noLine": 196,
+      "noLine": 3537,
       "consistent": 0,
       "inconsistent": 0
     },
     "python": {
-      "files": 4,
-      "rels": 498,
+      "files": 30,
+      "rels": 2751,
       "withLine": 0,
-      "noLine": 498,
+      "noLine": 2751,
       "consistent": 0,
       "inconsistent": 0
     },
     "haskell": {
-      "files": 4,
-      "rels": 348,
+      "files": 30,
+      "rels": 9556,
       "withLine": 0,
-      "noLine": 348,
+      "noLine": 9556,
       "consistent": 0,
       "inconsistent": 0
     }
@@ -191,17 +191,147 @@
   "perFile": {
     "java": [
       {
-        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/AggregateFunction.java",
+        "file": "kotlinx-coroutines/benchmarks/src/jmh/java/benchmarks/flow/scrabble/RxJava2PlaysScrabble.java",
         "language": "java",
-        "rels": 49,
+        "rels": 204,
         "withLine": 0,
-        "noLine": 49,
+        "noLine": 204,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/ScalarFunction.java",
+        "file": "kotlinx-coroutines/benchmarks/src/jmh/java/benchmarks/flow/scrabble/RxJava2PlaysScrabbleOpt.java",
+        "language": "java",
+        "rels": 184,
+        "withLine": 0,
+        "noLine": 184,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/benchmarks/src/jmh/java/benchmarks/flow/scrabble/optimizations/FlowableSplit.java",
+        "language": "java",
+        "rels": 184,
+        "withLine": 0,
+        "noLine": 184,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/benchmarks/src/jmh/java/benchmarks/flow/scrabble/optimizations/StringFlowable.java",
+        "language": "java",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/benchmarks/src/jmh/java/benchmarks/flow/scrabble/optimizations/FlowableCharSequence.java",
+        "language": "java",
+        "rels": 88,
+        "withLine": 0,
+        "noLine": 88,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/reactive/kotlinx-coroutines-reactor/src/module-info.java",
+        "language": "java",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/reactive/kotlinx-coroutines-jdk9/src/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/reactive/kotlinx-coroutines-reactive/src/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/reactive/kotlinx-coroutines-rx2/src/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/reactive/kotlinx-coroutines-rx3/src/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/kotlinx-coroutines-core/jvm/src/module-info.java",
+        "language": "java",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/ui/kotlinx-coroutines-javafx/src/module-info.java",
+        "language": "java",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/ui/kotlinx-coroutines-android/src/module-info.java",
+        "language": "java",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/ui/kotlinx-coroutines-swing/src/module-info.java",
+        "language": "java",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/kotlinx-coroutines-test/jvm/src/module-info.java",
         "language": "java",
         "rels": 4,
         "withLine": 0,
@@ -211,21 +341,151 @@
         "inconsistentSample": []
       },
       {
-        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/SqlFunction.java",
+        "file": "kotlinx-coroutines/integration/kotlinx-coroutines-slf4j/src/module-info.java",
         "language": "java",
-        "rels": 255,
+        "rels": 0,
         "withLine": 0,
-        "noLine": 255,
+        "noLine": 0,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/Sqlite.java",
+        "file": "kotlinx-coroutines/integration/kotlinx-coroutines-guava/src/module-info.java",
         "language": "java",
-        "rels": 1319,
+        "rels": 0,
         "withLine": 0,
-        "noLine": 1319,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/integration/kotlinx-coroutines-jdk8/src/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/integration-testing/safeDebugAgentTest/src/main/java/Main.java",
+        "language": "java",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/integration-testing/src/javaConsumersTest/java/RunBlockingJavaTest.java",
+        "language": "java",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/integration-testing/jpmsTest/src/debugDynamicAgentJpmsTest/java/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/kotlinx-coroutines-debug/src/module-info.java",
+        "language": "java",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/SwissArmy.java",
+        "language": "java",
+        "rels": 62,
+        "withLine": 0,
+        "noLine": 62,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/FIStatic.java",
+        "language": "java",
+        "rels": 19,
+        "withLine": 0,
+        "noLine": 19,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/GenericInterface.java",
+        "language": "java",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/FunctionalTester.java",
+        "language": "java",
+        "rels": 21,
+        "withLine": 0,
+        "noLine": 21,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/FIConstructor.java",
+        "language": "java",
+        "rels": 15,
+        "withLine": 0,
+        "noLine": 15,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/AdapterExerciser.java",
+        "language": "java",
+        "rels": 617,
+        "withLine": 0,
+        "noLine": 617,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/ConcreteClass.java",
+        "language": "java",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "clojure/test/java/clojure/test/ReflectorTryCatchFixture.java",
+        "language": "java",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -233,103 +493,138 @@
     ],
     "kotlin": [
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/example/android/build.gradle.kts",
+        "file": "Exposed/build.gradle.kts",
         "language": "kotlin",
-        "rels": 16,
+        "rels": 166,
         "withLine": 0,
-        "noLine": 16,
+        "noLine": 166,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/example/android/settings.gradle.kts",
+        "file": "Exposed/settings.gradle.kts",
         "language": "kotlin",
-        "rels": 18,
+        "rels": 37,
         "withLine": 0,
-        "noLine": 18,
+        "noLine": 37,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/example/android/app/build.gradle.kts",
+        "file": "Exposed/exposed-jdbc-r2dbc-tests/build.gradle.kts",
         "language": "kotlin",
-        "rels": 16,
+        "rels": 49,
         "withLine": 0,
-        "noLine": 16,
+        "noLine": 49,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/android/build.gradle.kts",
+        "file": "Exposed/exposed-jdbc-r2dbc-tests/src/test/kotlin/org/jetbrains/exposed/v1/test/mixed/MixedDatabasesConnectionTests.kt",
         "language": "kotlin",
-        "rels": 27,
+        "rels": 11,
         "withLine": 0,
-        "noLine": 27,
-        "consistent": 0,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      }
-    ],
-    "scala": [
-      {
-        "file": "scala3/tests/warn/12974.scala",
-        "language": "scala",
-        "rels": 35,
-        "withLine": 2,
-        "noLine": 33,
-        "consistent": 2,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      },
-      {
-        "file": "scala3/tests/warn/14034b.scala",
-        "language": "scala",
-        "rels": 17,
-        "withLine": 0,
-        "noLine": 17,
+        "noLine": 11,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "scala3/tests/warn/15981.scala",
-        "language": "scala",
-        "rels": 9,
-        "withLine": 1,
-        "noLine": 8,
-        "consistent": 1,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      },
-      {
-        "file": "scala3/tests/warn/17284.scala",
-        "language": "scala",
-        "rels": 5,
-        "withLine": 4,
-        "noLine": 1,
-        "consistent": 4,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      }
-    ],
-    "groovy": [],
-    "typescript": [
-      {
-        "file": "vue-core/vitest.config.ts",
-        "language": "typescript",
-        "rels": 7,
+        "file": "Exposed/exposed-jdbc-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/test/mixed/MixedDatabaseTestsBase.kt",
+        "language": "kotlin",
+        "rels": 29,
         "withLine": 0,
-        "noLine": 7,
+        "noLine": 29,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "vue-core/scripts/setup-vitest.ts",
-        "language": "typescript",
+        "file": "Exposed/spring-transaction/build.gradle.kts",
+        "language": "kotlin",
+        "rels": 43,
+        "withLine": 0,
+        "noLine": 43,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionTestBase.kt",
+        "language": "kotlin",
+        "rels": 54,
+        "withLine": 0,
+        "noLine": 54,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringMultiContainerTransactionTest.kt",
+        "language": "kotlin",
+        "rels": 210,
+        "withLine": 0,
+        "noLine": 210,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/MixedExposedJdbcTransactionTest.kt",
+        "language": "kotlin",
+        "rels": 117,
+        "withLine": 0,
+        "noLine": 117,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringCoroutineTest.kt",
+        "language": "kotlin",
+        "rels": 41,
+        "withLine": 0,
+        "noLine": 41,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionSingleConnectionTest.kt",
+        "language": "kotlin",
+        "rels": 75,
+        "withLine": 0,
+        "noLine": 75,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/EntityUpdateTest.kt",
+        "language": "kotlin",
+        "rels": 44,
+        "withLine": 0,
+        "noLine": 44,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/ConnectionSpy.kt",
+        "language": "kotlin",
+        "rels": 76,
+        "withLine": 0,
+        "noLine": 76,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionAttributeSourceConcurrencyTest.kt",
+        "language": "kotlin",
         "rels": 48,
         "withLine": 0,
         "noLine": 48,
@@ -338,7 +633,583 @@
         "inconsistentSample": []
       },
       {
-        "file": "vue-core/packages-private/global.d.ts",
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/JdbcExposedTransactionManagerTest.kt",
+        "language": "kotlin",
+        "rels": 204,
+        "withLine": 0,
+        "noLine": 204,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionRollbackTest.kt",
+        "language": "kotlin",
+        "rels": 269,
+        "withLine": 0,
+        "noLine": 269,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/DataSourceSpy.kt",
+        "language": "kotlin",
+        "rels": 52,
+        "withLine": 0,
+        "noLine": 52,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/TransactionSynchronizationTest.kt",
+        "language": "kotlin",
+        "rels": 59,
+        "withLine": 0,
+        "noLine": 59,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManagerTest.kt",
+        "language": "kotlin",
+        "rels": 345,
+        "withLine": 0,
+        "noLine": 345,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionEntityTest.kt",
+        "language": "kotlin",
+        "rels": 90,
+        "withLine": 0,
+        "noLine": 90,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/test/kotlin/org/jetbrains/exposed/v1/spring/transaction/ExposedTransactionManagerTest.kt",
+        "language": "kotlin",
+        "rels": 246,
+        "withLine": 0,
+        "noLine": 246,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt",
+        "language": "kotlin",
+        "rels": 197,
+        "withLine": 0,
+        "noLine": 197,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/ExposedSpringTransactionAttributeSource.kt",
+        "language": "kotlin",
+        "rels": 35,
+        "withLine": 0,
+        "noLine": 35,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/build.gradle.kts",
+        "language": "kotlin",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/src/test/kotlin/org/jetbrains/exposed/v1/jodatime/JodaTimeDefaultsTest.kt",
+        "language": "kotlin",
+        "rels": 505,
+        "withLine": 0,
+        "noLine": 505,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/src/test/kotlin/org/jetbrains/exposed/v1/jodatime/JodaDateTimeLiteralTest.kt",
+        "language": "kotlin",
+        "rels": 48,
+        "withLine": 0,
+        "noLine": 48,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/src/test/kotlin/org/jetbrains/exposed/v1/jodatime/JodaTimeTests.kt",
+        "language": "kotlin",
+        "rels": 436,
+        "withLine": 0,
+        "noLine": 436,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/src/test/kotlin/org/jetbrains/exposed/v1/jodatime/JodaTimeMiscTableTest.kt",
+        "language": "kotlin",
+        "rels": 313,
+        "withLine": 0,
+        "noLine": 313,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/src/main/kotlin/org/jetbrains/exposed/v1/jodatime/DateColumnType.kt",
+        "language": "kotlin",
+        "rels": 132,
+        "withLine": 0,
+        "noLine": 132,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jodatime/src/main/kotlin/org/jetbrains/exposed/v1/jodatime/DateFunctions.kt",
+        "language": "kotlin",
+        "rels": 195,
+        "withLine": 0,
+        "noLine": 195,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "scala": [
+      {
+        "file": "scala3/staging/test/scala/quoted/staging/repl/StagingScriptedReplTests.scala",
+        "language": "scala",
+        "rels": 11,
+        "withLine": 4,
+        "noLine": 7,
+        "consistent": 4,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/staging/src/scala/quoted/staging/QuoteCompiler.scala",
+        "language": "scala",
+        "rels": 155,
+        "withLine": 55,
+        "noLine": 100,
+        "consistent": 55,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/staging/src/scala/quoted/staging/staging.scala",
+        "language": "scala",
+        "rels": 21,
+        "withLine": 6,
+        "noLine": 15,
+        "consistent": 6,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/staging/src/scala/quoted/staging/ExprCompilationUnit.scala",
+        "language": "scala",
+        "rels": 8,
+        "withLine": 1,
+        "noLine": 7,
+        "consistent": 1,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/staging/src/scala/quoted/staging/QuoteDriver.scala",
+        "language": "scala",
+        "rels": 83,
+        "withLine": 28,
+        "noLine": 55,
+        "consistent": 28,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/staging/src/scala/quoted/staging/Compiler.scala",
+        "language": "scala",
+        "rels": 38,
+        "withLine": 7,
+        "noLine": 31,
+        "consistent": 7,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/test/scala/dotty/tools/directives/ParserTests.scala",
+        "language": "scala",
+        "rels": 431,
+        "withLine": 214,
+        "noLine": 217,
+        "consistent": 214,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/test/scala/dotty/tools/directives/CommentExtractorTests.scala",
+        "language": "scala",
+        "rels": 264,
+        "withLine": 136,
+        "noLine": 128,
+        "consistent": 136,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/test/scala/dotty/tools/directives/LexerTests.scala",
+        "language": "scala",
+        "rels": 215,
+        "withLine": 110,
+        "noLine": 105,
+        "consistent": 110,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/Lexer.scala",
+        "language": "scala",
+        "rels": 66,
+        "withLine": 44,
+        "noLine": 22,
+        "consistent": 44,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/DirectiveValue.scala",
+        "language": "scala",
+        "rels": 23,
+        "withLine": 0,
+        "noLine": 23,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/UsingDirectivesParser.scala",
+        "language": "scala",
+        "rels": 29,
+        "withLine": 11,
+        "noLine": 18,
+        "consistent": 11,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/Parser.scala",
+        "language": "scala",
+        "rels": 124,
+        "withLine": 59,
+        "noLine": 65,
+        "consistent": 59,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/CommentExtractor.scala",
+        "language": "scala",
+        "rels": 85,
+        "withLine": 48,
+        "noLine": 37,
+        "consistent": 48,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/Diagnostics.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/Token.scala",
+        "language": "scala",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/Position.scala",
+        "language": "scala",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/directives-parser/src/main/scala/dotty/tools/directives/UsingDirective.scala",
+        "language": "scala",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/new/test.scala",
+        "language": "scala",
+        "rels": 19,
+        "withLine": 8,
+        "noLine": 11,
+        "consistent": 8,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/new/tracked-mixin-traits.scala",
+        "language": "scala",
+        "rels": 15,
+        "withLine": 3,
+        "noLine": 12,
+        "consistent": 3,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/exhaustivity-I.scala",
+        "language": "scala",
+        "rels": 33,
+        "withLine": 30,
+        "noLine": 3,
+        "consistent": 30,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/inductive-implicits.scala",
+        "language": "scala",
+        "rels": 63,
+        "withLine": 11,
+        "noLine": 52,
+        "consistent": 11,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/tuple22-tails.scala",
+        "language": "scala",
+        "rels": 14,
+        "withLine": 0,
+        "noLine": 14,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/tuple22-creation-cons.scala",
+        "language": "scala",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/implicit_cache.scala",
+        "language": "scala",
+        "rels": 12,
+        "withLine": 2,
+        "noLine": 10,
+        "consistent": 2,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/tuple.scala",
+        "language": "scala",
+        "rels": 6,
+        "withLine": 4,
+        "noLine": 2,
+        "consistent": 4,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/i1687.scala",
+        "language": "scala",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/i1535.scala",
+        "language": "scala",
+        "rels": 35,
+        "withLine": 23,
+        "noLine": 12,
+        "consistent": 23,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/tuple22-apply.scala",
+        "language": "scala",
+        "rels": 9,
+        "withLine": 6,
+        "noLine": 3,
+        "consistent": 6,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "scala3/tests/bench/exhaustivity-T.scala",
+        "language": "scala",
+        "rels": 4,
+        "withLine": 2,
+        "noLine": 2,
+        "consistent": 2,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "groovy": [
+      {
+        "file": "geb/gradle/codenarc/rulesets.groovy",
+        "language": "groovy",
+        "rels": 62,
+        "withLine": 0,
+        "noLine": 62,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/asciidoctor-extension/src/main/groovy/geb/doc/asciidoctor/extension/BookOfGebExtension.groovy",
+        "language": "groovy",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/asciidoctor-extension/src/main/groovy/geb/doc/asciidoctor/extension/GithubProfileLinkMacro.groovy",
+        "language": "groovy",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/asciidoctor-extension/src/main/groovy/geb/doc/asciidoctor/extension/GithubCommitLinkMacro.groovy",
+        "language": "groovy",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/asciidoctor-extension/src/main/groovy/geb/doc/asciidoctor/extension/HistoricalIssueLinkMacro.groovy",
+        "language": "groovy",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/asciidoctor-extension/src/main/groovy/geb/doc/asciidoctor/extension/IssueLinkMacro.groovy",
+        "language": "groovy",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/manual-snippets/src/test/groovy/reporting/ReportingSpec.groovy",
+        "language": "groovy",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/manual-snippets/src/test/groovy/reporting/ReportingListenerSpec.groovy",
+        "language": "groovy",
+        "rels": 15,
+        "withLine": 0,
+        "noLine": 15,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/manual-snippets/src/test/groovy/downloading/UntrustedCertificatesSpec.groovy",
+        "language": "groovy",
+        "rels": 24,
+        "withLine": 0,
+        "noLine": 24,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/manual-snippets/src/test/groovy/downloading/FineGrainedRequestSpec.groovy",
+        "language": "groovy",
+        "rels": 18,
+        "withLine": 0,
+        "noLine": 18,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "typescript": [
+      {
+        "file": "element-plus/vitest.setup.ts",
+        "language": "typescript",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/play/env.d.ts",
         "language": "typescript",
         "rels": 0,
         "withLine": 0,
@@ -348,7 +1219,137 @@
         "inconsistentSample": []
       },
       {
-        "file": "vue-core/packages-private/vite-debug/main.ts",
+        "file": "element-plus/play/main.ts",
+        "language": "typescript",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/element-plus/make-installer.ts",
+        "language": "typescript",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/element-plus/index.ts",
+        "language": "typescript",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/element-plus/component.ts",
+        "language": "typescript",
+        "rels": 114,
+        "withLine": 0,
+        "noLine": 114,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/element-plus/defaults.ts",
+        "language": "typescript",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/element-plus/locales.ts",
+        "language": "typescript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/element-plus/plugin.ts",
+        "language": "typescript",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/theme-chalk/buildfile.ts",
+        "language": "typescript",
+        "rels": 74,
+        "withLine": 0,
+        "noLine": 74,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/make-mount.ts",
+        "language": "typescript",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/index.ts",
+        "language": "typescript",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/tick.ts",
+        "language": "typescript",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/define-getter.ts",
+        "language": "typescript",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/stable-load.ts",
+        "language": "typescript",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/dom.ts",
         "language": "typescript",
         "rels": 4,
         "withLine": 0,
@@ -356,31 +1357,171 @@
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/mock.ts",
+        "language": "typescript",
+        "rels": 14,
+        "withLine": 0,
+        "noLine": 14,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/composite-click.ts",
+        "language": "typescript",
+        "rels": 18,
+        "withLine": 0,
+        "noLine": 18,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/make-scroll.ts",
+        "language": "typescript",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/style-plugin.ts",
+        "language": "typescript",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/sleep.ts",
+        "language": "typescript",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/test-utils/trigger-event.ts",
+        "language": "typescript",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/index.ts",
+        "language": "typescript",
+        "rels": 74,
+        "withLine": 0,
+        "noLine": 74,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/eu.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/ca.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/tr.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/km.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/mg.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/ar-eg.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/locale/lang/th.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
       }
     ],
     "javascript": [
       {
-        "file": "zig/lib/docs/main.js",
+        "file": "element-plus/commitlint.config.mjs",
         "language": "javascript",
-        "rels": 774,
+        "rels": 24,
         "withLine": 0,
-        "noLine": 774,
+        "noLine": 24,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "zig/lib/build-web/main.js",
+        "file": "element-plus/eslint.config.mjs",
         "language": "javascript",
-        "rels": 361,
+        "rels": 2,
         "withLine": 0,
-        "noLine": 361,
+        "noLine": 2,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "vue-element-admin/.eslintrc.js",
+        "file": "element-plus/play/scripts/init.mjs",
         "language": "javascript",
         "rels": 8,
         "withLine": 0,
@@ -390,11 +1531,271 @@
         "inconsistentSample": []
       },
       {
-        "file": "vue-element-admin/babel.config.js",
+        "file": "element-plus/docs/public/sw.js",
         "language": "javascript",
-        "rels": 1,
+        "rels": 9,
         "withLine": 0,
-        "noLine": 1,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/internal/eslint-config/index.js",
+        "language": "javascript",
+        "rels": 33,
+        "withLine": 0,
+        "noLine": 33,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/.markdown-doctest-setup.js",
+        "language": "javascript",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/playwright.config.js",
+        "language": "javascript",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/test/playwright-runner.spec.js",
+        "language": "javascript",
+        "rels": 24,
+        "withLine": 0,
+        "noLine": 24,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/test/test-fp.js",
+        "language": "javascript",
+        "rels": 1263,
+        "withLine": 0,
+        "noLine": 1263,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/test/remove.js",
+        "language": "javascript",
+        "rels": 26,
+        "withLine": 0,
+        "noLine": 26,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/test/asset/worker.js",
+        "language": "javascript",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/test/asset/test-ui.js",
+        "language": "javascript",
+        "rels": 62,
+        "withLine": 0,
+        "noLine": 62,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/fp/_mapping.js",
+        "language": "javascript",
+        "rels": 23,
+        "withLine": 0,
+        "noLine": 23,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/fp/_baseConvert.js",
+        "language": "javascript",
+        "rels": 284,
+        "withLine": 0,
+        "noLine": 284,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/fp/placeholder.js",
+        "language": "javascript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/fp/_convertBrowser.js",
+        "language": "javascript",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/perf/perf.js",
+        "language": "javascript",
+        "rels": 589,
+        "withLine": 0,
+        "noLine": 589,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/perf/asset/perf-ui.js",
+        "language": "javascript",
+        "rels": 41,
+        "withLine": 0,
+        "noLine": 41,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/fp/build-modules.js",
+        "language": "javascript",
+        "rels": 92,
+        "withLine": 0,
+        "noLine": 92,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/fp/build-dist.js",
+        "language": "javascript",
+        "rels": 35,
+        "withLine": 0,
+        "noLine": 35,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/fp/build-doc.js",
+        "language": "javascript",
+        "rels": 48,
+        "withLine": 0,
+        "noLine": 48,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/common/minify.js",
+        "language": "javascript",
+        "rels": 19,
+        "withLine": 0,
+        "noLine": 19,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/common/util.js",
+        "language": "javascript",
+        "rels": 14,
+        "withLine": 0,
+        "noLine": 14,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/common/uglify.options.js",
+        "language": "javascript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/common/file.js",
+        "language": "javascript",
+        "rels": 33,
+        "withLine": 0,
+        "noLine": 33,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/common/mapping.js",
+        "language": "javascript",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/main/build-modules.js",
+        "language": "javascript",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/main/build-dist.js",
+        "language": "javascript",
+        "rels": 20,
+        "withLine": 0,
+        "noLine": 20,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/main/build-site.js",
+        "language": "javascript",
+        "rels": 147,
+        "withLine": 0,
+        "noLine": 147,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "lodash/lib/main/build-doc.js",
+        "language": "javascript",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -402,41 +1803,301 @@
     ],
     "vue": [
       {
-        "file": "vue-element-admin/src/App.vue",
+        "file": "element-plus/play/app.example.vue",
         "language": "vue",
-        "rels": 2,
+        "rels": 4,
         "withLine": 0,
-        "noLine": 2,
+        "noLine": 4,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "vue-element-admin/src/views/zip/index.vue",
+        "file": "element-plus/packages/components/tooltip/src/content.vue",
         "language": "vue",
-        "rels": 39,
+        "rels": 99,
         "withLine": 0,
-        "noLine": 39,
+        "noLine": 99,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "vue-element-admin/src/views/theme/index.vue",
+        "file": "element-plus/packages/components/tooltip/src/tooltip.vue",
         "language": "vue",
-        "rels": 21,
+        "rels": 76,
         "withLine": 0,
-        "noLine": 21,
+        "noLine": 76,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "vue-element-admin/src/views/table/complex-table.vue",
+        "file": "element-plus/packages/components/tooltip/src/trigger.vue",
         "language": "vue",
-        "rels": 184,
+        "rels": 63,
         "withLine": 0,
-        "noLine": 184,
+        "noLine": 63,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/input-number/src/input-number.vue",
+        "language": "vue",
+        "rels": 254,
+        "withLine": 0,
+        "noLine": 254,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/menu/src/menu-collapse-transition.vue",
+        "language": "vue",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/menu/src/menu-item-group.vue",
+        "language": "vue",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/menu/src/menu-item.vue",
+        "language": "vue",
+        "rels": 53,
+        "withLine": 0,
+        "noLine": 53,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/rate/src/rate.vue",
+        "language": "vue",
+        "rels": 149,
+        "withLine": 0,
+        "noLine": 149,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/carousel/src/carousel-item.vue",
+        "language": "vue",
+        "rels": 31,
+        "withLine": 0,
+        "noLine": 31,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/carousel/src/carousel.vue",
+        "language": "vue",
+        "rels": 75,
+        "withLine": 0,
+        "noLine": 75,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/focus-trap/src/focus-trap.vue",
+        "language": "vue",
+        "rels": 134,
+        "withLine": 0,
+        "noLine": 134,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/alert/src/alert.vue",
+        "language": "vue",
+        "rels": 32,
+        "withLine": 0,
+        "noLine": 32,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/anchor/src/anchor.vue",
+        "language": "vue",
+        "rels": 115,
+        "withLine": 0,
+        "noLine": 115,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/anchor/src/anchor-link.vue",
+        "language": "vue",
+        "rels": 33,
+        "withLine": 0,
+        "noLine": 33,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/radio/src/radio-group.vue",
+        "language": "vue",
+        "rels": 59,
+        "withLine": 0,
+        "noLine": 59,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/radio/src/radio-button.vue",
+        "language": "vue",
+        "rels": 19,
+        "withLine": 0,
+        "noLine": 19,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/radio/src/radio.vue",
+        "language": "vue",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/descriptions/src/description.vue",
+        "language": "vue",
+        "rels": 44,
+        "withLine": 0,
+        "noLine": 44,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/descriptions/src/descriptions-row.vue",
+        "language": "vue",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/slider/src/slider.vue",
+        "language": "vue",
+        "rels": 93,
+        "withLine": 0,
+        "noLine": 93,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/slider/src/button.vue",
+        "language": "vue",
+        "rels": 29,
+        "withLine": 0,
+        "noLine": 29,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/switch/src/switch.vue",
+        "language": "vue",
+        "rels": 102,
+        "withLine": 0,
+        "noLine": 102,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/notification/src/notification.vue",
+        "language": "vue",
+        "rels": 99,
+        "withLine": 0,
+        "noLine": 99,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/icon/src/icon.vue",
+        "language": "vue",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/date-picker-panel/src/date-picker-com/basic-month-table.vue",
+        "language": "vue",
+        "rels": 176,
+        "withLine": 0,
+        "noLine": 176,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/date-picker-panel/src/date-picker-com/panel-year-range.vue",
+        "language": "vue",
+        "rels": 147,
+        "withLine": 0,
+        "noLine": 147,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/date-picker-panel/src/date-picker-com/panel-quarter-range.vue",
+        "language": "vue",
+        "rels": 138,
+        "withLine": 0,
+        "noLine": 138,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/date-picker-panel/src/date-picker-com/panel-date-pick.vue",
+        "language": "vue",
+        "rels": 572,
+        "withLine": 0,
+        "noLine": 572,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "element-plus/packages/components/date-picker-panel/src/date-picker-com/panel-month-range.vue",
+        "language": "vue",
+        "rels": 116,
+        "withLine": 0,
+        "noLine": 116,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -444,17 +2105,137 @@
     ],
     "svelte": [
       {
-        "file": "svelte/playgrounds/sandbox/scripts/main.template.svelte",
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/textarea/input.svelte",
         "language": "svelte",
-        "rels": 3,
+        "rels": 7,
         "withLine": 0,
-        "noLine": 3,
+        "noLine": 7,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-online/input.svelte",
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/label/label.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/button/button.svelte",
+        "language": "svelte",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/input/input.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/stepper/stepper-item.svelte",
+        "language": "svelte",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/stepper/stepper.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card-action.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card-title.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card-header.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card-footer.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card-description.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card-content.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/ui/card/card.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/example-with-css/example-card.svelte",
         "language": "svelte",
         "rels": 0,
         "withLine": 0,
@@ -464,21 +2245,161 @@
         "inconsistentSample": []
       },
       {
-        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-innerwidth/input.svelte",
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/checkout-steps/checkout-steps.svelte",
         "language": "svelte",
-        "rels": 1,
+        "rels": 3,
         "withLine": 0,
-        "noLine": 1,
+        "noLine": 3,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-dimensions/input.svelte",
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/complex-component/+page.svelte",
         "language": "svelte",
-        "rels": 1,
+        "rels": 3,
         "withLine": 0,
-        "noLine": 1,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/complex-component/components/pokemon-card.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/complex-component/components/pokemon-image.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/hello-world/hello-world.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/lib/registry/blocks/example-form/example-form.svelte",
+        "language": "svelte",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/sv-addons/registry/template/src/routes/+page.svelte",
+        "language": "svelte",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/tooltip/tooltip-portal.svelte",
+        "language": "svelte",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/tooltip/tooltip-provider.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/tooltip/tooltip-content.svelte",
+        "language": "svelte",
+        "rels": 25,
+        "withLine": 0,
+        "noLine": 25,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/tooltip/tooltip-trigger.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/tooltip/tooltip.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/carousel/carousel-item.svelte",
+        "language": "svelte",
+        "rels": 15,
+        "withLine": 0,
+        "noLine": 15,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/carousel/carousel-previous.svelte",
+        "language": "svelte",
+        "rels": 19,
+        "withLine": 0,
+        "noLine": 19,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/carousel/carousel.svelte",
+        "language": "svelte",
+        "rels": 45,
+        "withLine": 0,
+        "noLine": 45,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shadcn-svelte/docs/src/lib/registry/ui/carousel/carousel-content.svelte",
+        "language": "svelte",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -486,27 +2407,37 @@
     ],
     "c": [
       {
-        "file": "zig/bootstrap.c",
+        "file": "luarocks/spec/fixtures/fixturedep.c",
         "language": "c",
-        "rels": 47,
+        "rels": 0,
         "withLine": 0,
-        "noLine": 47,
+        "noLine": 0,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "zig/tools/macos-headers.c",
+        "file": "luarocks/spec/fixtures/with_external_dep.c",
         "language": "c",
-        "rels": 181,
+        "rels": 6,
         "withLine": 0,
-        "noLine": 181,
+        "noLine": 6,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "zig/test/standalone/windows_entry_points/main.c",
+        "file": "luarocks/spec/fixtures/with_external_dep/foo/foo.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "luarocks/spec/fixtures/double_deploy_type/ddt.c",
         "language": "c",
         "rels": 2,
         "withLine": 0,
@@ -516,19 +2447,77 @@
         "inconsistentSample": []
       },
       {
-        "file": "zig/test/standalone/windows_entry_points/winmain.c",
+        "file": "luarocks/spec/fixtures/mixed_deploy_type/mdt.c",
         "language": "c",
-        "rels": 3,
+        "rels": 2,
         "withLine": 0,
-        "noLine": 3,
+        "noLine": 2,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
-      }
-    ],
-    "cpp": [
+      },
       {
-        "file": "zig/test/standalone/libcxx/mt_doit.cpp",
+        "file": "luarocks/win32/lua5.1/include/lualib.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "luarocks/win32/lua5.1/include/lauxlib.h",
+        "language": "c",
+        "rels": 18,
+        "withLine": 0,
+        "noLine": 18,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "luarocks/win32/lua5.1/include/lua.h",
+        "language": "c",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "luarocks/win32/lua5.1/include/luaconf.h",
+        "language": "c",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/src/scanner.c",
+        "language": "c",
+        "rels": 164,
+        "withLine": 0,
+        "noLine": 164,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/src/tree_sitter/parser.h",
+        "language": "c",
+        "rels": 94,
+        "withLine": 0,
+        "noLine": 94,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/src/tree_sitter/alloc.h",
         "language": "cpp",
         "rels": 3,
         "withLine": 0,
@@ -538,7 +2527,249 @@
         "inconsistentSample": []
       },
       {
-        "file": "zig/test/standalone/libcxx/st_doit.cpp",
+        "file": "tree-sitter-clean/src/tree_sitter/array.h",
+        "language": "cpp",
+        "rels": 30,
+        "withLine": 0,
+        "noLine": 30,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/swift/TreeSitterClean/clean.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/python/tree_sitter_clean/binding.c",
+        "language": "c",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/c/tree_sitter/tree-sitter-clean.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cupertino_http/ios_test/ios/Runner/Runner-Bridging-Header.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/utils.h",
+        "language": "cpp",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/win32_window.h",
+        "language": "cpp",
+        "rels": 31,
+        "withLine": 0,
+        "noLine": 31,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/resource.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/flutter_window.h",
+        "language": "cpp",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/flutter/generated_plugin_registrant.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/linux/my_application.h",
+        "language": "c",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/linux/flutter/generated_plugin_registrant.h",
+        "language": "c",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/ios/Runner/Runner-Bridging-Header.h",
+        "language": "c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/include/fmt/core.h",
+        "language": "cpp",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/include/fmt/args.h",
+        "language": "cpp",
+        "rels": 72,
+        "withLine": 0,
+        "noLine": 72,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/include/fmt/os.h",
+        "language": "cpp",
+        "rels": 91,
+        "withLine": 0,
+        "noLine": 91,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/include/fmt/ranges.h",
+        "language": "cpp",
+        "rels": 371,
+        "withLine": 0,
+        "noLine": 371,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/include/fmt/xchar.h",
+        "language": "cpp",
+        "rels": 153,
+        "withLine": 0,
+        "noLine": 153,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "cpp": [
+      {
+        "file": "luarocks/win32/lua5.1/include/lua.hpp",
+        "language": "cpp",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/node/binding.cc",
+        "language": "cpp",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/win32_window.cpp",
+        "language": "cpp",
+        "rels": 115,
+        "withLine": 0,
+        "noLine": 115,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/utils.cpp",
+        "language": "cpp",
+        "rels": 29,
+        "withLine": 0,
+        "noLine": 29,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/main.cpp",
+        "language": "cpp",
+        "rels": 20,
+        "withLine": 0,
+        "noLine": 20,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/runner/flutter_window.cpp",
+        "language": "cpp",
+        "rels": 30,
+        "withLine": 0,
+        "noLine": 30,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/windows/flutter/generated_plugin_registrant.cc",
         "language": "cpp",
         "rels": 1,
         "withLine": 0,
@@ -548,40 +2779,138 @@
         "inconsistentSample": []
       },
       {
-        "file": "zig/test/standalone/c_compiler/test.cpp",
+        "file": "dart-http/pkgs/flutter_http_example/linux/my_application.cc",
         "language": "cpp",
-        "rels": 32,
+        "rels": 61,
         "withLine": 0,
-        "noLine": 32,
+        "noLine": 61,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "zig/src/zig_clang_cc1_main.cpp",
+        "file": "dart-http/pkgs/flutter_http_example/linux/main.cc",
         "language": "cpp",
-        "rels": 184,
+        "rels": 5,
         "withLine": 0,
-        "noLine": 184,
-        "consistent": 0,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      }
-    ],
-    "rust": [
-      {
-        "file": "tree-sitter-clean/bindings/rust/build.rs",
-        "language": "rust",
-        "rels": 13,
-        "withLine": 0,
-        "noLine": 13,
+        "noLine": 5,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "tree-sitter-clean/bindings/rust/lib.rs",
-        "language": "rust",
+        "file": "dart-http/pkgs/flutter_http_example/linux/flutter/generated_plugin_registrant.cc",
+        "language": "cpp",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/module-test.cc",
+        "language": "cpp",
+        "rels": 262,
+        "withLine": 0,
+        "noLine": 262,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/format-test.cc",
+        "language": "cpp",
+        "rels": 2534,
+        "withLine": 0,
+        "noLine": 2534,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/xchar-test.cc",
+        "language": "cpp",
+        "rels": 372,
+        "withLine": 0,
+        "noLine": 372,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/gtest-extra.cc",
+        "language": "cpp",
+        "rels": 35,
+        "withLine": 0,
+        "noLine": 35,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/ranges-odr-test.cc",
+        "language": "cpp",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/unicode-test.cc",
+        "language": "cpp",
+        "rels": 24,
+        "withLine": 0,
+        "noLine": 24,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/scan-test.cc",
+        "language": "cpp",
+        "rels": 133,
+        "withLine": 0,
+        "noLine": 133,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/ostream-test.cc",
+        "language": "cpp",
+        "rels": 200,
+        "withLine": 0,
+        "noLine": 200,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/printf-test.cc",
+        "language": "cpp",
+        "rels": 428,
+        "withLine": 0,
+        "noLine": 428,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/os-test.cc",
+        "language": "cpp",
+        "rels": 365,
+        "withLine": 0,
+        "noLine": 365,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/test-main.cc",
+        "language": "cpp",
         "rels": 11,
         "withLine": 0,
         "noLine": 11,
@@ -590,11 +2919,183 @@
         "inconsistentSample": []
       },
       {
+        "file": "fmt/test/util.cc",
+        "language": "cpp",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/enum-test.cc",
+        "language": "cpp",
+        "rels": 134,
+        "withLine": 0,
+        "noLine": 134,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/noexception-test.cc",
+        "language": "cpp",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/format-impl-test.cc",
+        "language": "cpp",
+        "rels": 326,
+        "withLine": 0,
+        "noLine": 326,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/color-test.cc",
+        "language": "cpp",
+        "rels": 206,
+        "withLine": 0,
+        "noLine": 206,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/assert-test.cc",
+        "language": "cpp",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/detect-stdfs.cc",
+        "language": "cpp",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/base-test.cc",
+        "language": "cpp",
+        "rels": 535,
+        "withLine": 0,
+        "noLine": 535,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/test/chrono-test.cc",
+        "language": "cpp",
+        "rels": 1133,
+        "withLine": 0,
+        "noLine": 1133,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "rust": [
+      {
         "file": "ripgrep/build.rs",
         "language": "rust",
         "rels": 22,
         "withLine": 0,
         "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/fuzz/fuzz_targets/fuzz_glob.rs",
+        "language": "rust",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/feature.rs",
+        "language": "rust",
+        "rels": 87,
+        "withLine": 0,
+        "noLine": 87,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/util.rs",
+        "language": "rust",
+        "rels": 295,
+        "withLine": 0,
+        "noLine": 295,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/macros.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/tests.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/misc.rs",
+        "language": "rust",
+        "rels": 118,
+        "withLine": 0,
+        "noLine": 118,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/json.rs",
+        "language": "rust",
+        "rels": 124,
+        "withLine": 0,
+        "noLine": 124,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/regression.rs",
+        "language": "rust",
+        "rels": 114,
+        "withLine": 0,
+        "noLine": 114,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -608,11 +3109,241 @@
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/hay.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/multiline.rs",
+        "language": "rust",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/index/basic.rs",
+        "language": "rust",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/index/disallowed.rs",
+        "language": "rust",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/tests/index/mod.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/process.rs",
+        "language": "rust",
+        "rels": 160,
+        "withLine": 0,
+        "noLine": 160,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/pattern.rs",
+        "language": "rust",
+        "rels": 82,
+        "withLine": 0,
+        "noLine": 82,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/lib.rs",
+        "language": "rust",
+        "rels": 32,
+        "withLine": 0,
+        "noLine": 32,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/human.rs",
+        "language": "rust",
+        "rels": 93,
+        "withLine": 0,
+        "noLine": 93,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/escape.rs",
+        "language": "rust",
+        "rels": 86,
+        "withLine": 0,
+        "noLine": 86,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/decompress.rs",
+        "language": "rust",
+        "rels": 237,
+        "withLine": 0,
+        "noLine": 237,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/wtr.rs",
+        "language": "rust",
+        "rels": 77,
+        "withLine": 0,
+        "noLine": 77,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/cli/src/hostname.rs",
+        "language": "rust",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/lines.rs",
+        "language": "rust",
+        "rels": 250,
+        "withLine": 0,
+        "noLine": 250,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/macros.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/sink.rs",
+        "language": "rust",
+        "rels": 181,
+        "withLine": 0,
+        "noLine": 181,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/lib.rs",
+        "language": "rust",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/testutil.rs",
+        "language": "rust",
+        "rels": 483,
+        "withLine": 0,
+        "noLine": 483,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/line_buffer.rs",
+        "language": "rust",
+        "rels": 553,
+        "withLine": 0,
+        "noLine": 553,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/crates/searcher/src/searcher/core.rs",
+        "language": "rust",
+        "rels": 499,
+        "withLine": 0,
+        "noLine": 499,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
       }
     ],
     "go": [
       {
-        "file": "tree-sitter-clean/bindings/go/binding.go",
+        "file": "terraform/checkpoint.go",
+        "language": "go",
+        "rels": 34,
+        "withLine": 0,
+        "noLine": 34,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/experiments.go",
+        "language": "go",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/version.go",
+        "language": "go",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/working_dir.go",
         "language": "go",
         "rels": 4,
         "withLine": 0,
@@ -622,11 +3353,11 @@
         "inconsistentSample": []
       },
       {
-        "file": "terraform/checkpoint.go",
+        "file": "terraform/signal_unix.go",
         "language": "go",
-        "rels": 34,
+        "rels": 4,
         "withLine": 0,
-        "noLine": 34,
+        "noLine": 4,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -642,11 +3373,241 @@
         "inconsistentSample": []
       },
       {
-        "file": "terraform/experiments.go",
+        "file": "terraform/provider_source.go",
+        "language": "go",
+        "rels": 73,
+        "withLine": 0,
+        "noLine": 73,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/main.go",
+        "language": "go",
+        "rels": 100,
+        "withLine": 0,
+        "noLine": 100,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/signal_windows.go",
+        "language": "go",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/telemetry.go",
+        "language": "go",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/help.go",
+        "language": "go",
+        "rels": 19,
+        "withLine": 0,
+        "noLine": 19,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/main_test.go",
+        "language": "go",
+        "rels": 73,
+        "withLine": 0,
+        "noLine": 73,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/telemetry_test.go",
+        "language": "go",
+        "rels": 25,
+        "withLine": 0,
+        "noLine": 25,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/modsdir/manifest.go",
+        "language": "go",
+        "rels": 63,
+        "withLine": 0,
+        "noLine": 63,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/modsdir/paths.go",
+        "language": "go",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/modsdir/doc.go",
+        "language": "go",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/moduledeps/module_test.go",
+        "language": "go",
+        "rels": 40,
+        "withLine": 0,
+        "noLine": 40,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/moduledeps/module.go",
+        "language": "go",
+        "rels": 64,
+        "withLine": 0,
+        "noLine": 64,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/moduledeps/dependencies.go",
+        "language": "go",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/moduledeps/doc.go",
+        "language": "go",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/grpcwrap/provisioner.go",
+        "language": "go",
+        "rels": 80,
+        "withLine": 0,
+        "noLine": 80,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/grpcwrap/provider6.go",
+        "language": "go",
+        "rels": 810,
+        "withLine": 0,
+        "noLine": 810,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/grpcwrap/provider.go",
+        "language": "go",
+        "rels": 613,
+        "withLine": 0,
+        "noLine": 613,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfplugin5/tfplugin5_grpc.pb.go",
+        "language": "go",
+        "rels": 919,
+        "withLine": 0,
+        "noLine": 919,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/tfplugin5/tfplugin5.pb.go",
+        "language": "go",
+        "rels": 4452,
+        "withLine": 0,
+        "noLine": 4452,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/context_input.go",
+        "language": "go",
+        "rels": 61,
+        "withLine": 0,
+        "noLine": 61,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/transform_module_install.go",
+        "language": "go",
+        "rels": 30,
+        "withLine": 0,
+        "noLine": 30,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/transform_provisioner.go",
         "language": "go",
         "rels": 1,
         "withLine": 0,
         "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/transform_transitive_reduction.go",
+        "language": "go",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/terraform/reduce_plan_test.go",
+        "language": "go",
+        "rels": 33,
+        "withLine": 0,
+        "noLine": 33,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -659,6 +3620,46 @@
         "rels": 237,
         "withLine": 0,
         "noLine": 237,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lifecycle.zig",
+        "language": "zig",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/tests.zig",
+        "language": "zig",
+        "rels": 18,
+        "withLine": 0,
+        "noLine": 18,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis_check.zig",
+        "language": "zig",
+        "rels": 114,
+        "withLine": 0,
+        "noLine": 114,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/helper.zig",
+        "language": "zig",
+        "rels": 100,
+        "withLine": 0,
+        "noLine": 100,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -684,11 +3685,231 @@
         "inconsistentSample": []
       },
       {
-        "file": "zls/tests/analysis_check.zig",
+        "file": "zls/tests/context.zig",
         "language": "zig",
-        "rels": 114,
+        "rels": 113,
         "withLine": 0,
-        "noLine": 114,
+        "noLine": 113,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/document_symbol.zig",
+        "language": "zig",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/folding_range.zig",
+        "language": "zig",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/completion.zig",
+        "language": "zig",
+        "rels": 199,
+        "withLine": 0,
+        "noLine": 199,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/semantic_tokens.zig",
+        "language": "zig",
+        "rels": 89,
+        "withLine": 0,
+        "noLine": 89,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/diagnostics.zig",
+        "language": "zig",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/signature_help.zig",
+        "language": "zig",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/selection_range.zig",
+        "language": "zig",
+        "rels": 40,
+        "withLine": 0,
+        "noLine": 40,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/references.zig",
+        "language": "zig",
+        "rels": 123,
+        "withLine": 0,
+        "noLine": 123,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/definition.zig",
+        "language": "zig",
+        "rels": 72,
+        "withLine": 0,
+        "noLine": 72,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/workspace_symbols.zig",
+        "language": "zig",
+        "rels": 35,
+        "withLine": 0,
+        "noLine": 35,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/hover.zig",
+        "language": "zig",
+        "rels": 43,
+        "withLine": 0,
+        "noLine": 43,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/inlay_hints.zig",
+        "language": "zig",
+        "rels": 74,
+        "withLine": 0,
+        "noLine": 74,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/lsp_features/code_actions.zig",
+        "language": "zig",
+        "rels": 88,
+        "withLine": 0,
+        "noLine": 88,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/utility/position_context.zig",
+        "language": "zig",
+        "rels": 45,
+        "withLine": 0,
+        "noLine": 45,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/utility/ast.zig",
+        "language": "zig",
+        "rels": 34,
+        "withLine": 0,
+        "noLine": 34,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/utility/diff.zig",
+        "language": "zig",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis/assign_destructure.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis/error_union.zig",
+        "language": "zig",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis/meta.zig",
+        "language": "zig",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis/block.zig",
+        "language": "zig",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis/integer_literal.zig",
+        "language": "zig",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zls/tests/analysis/generics.zig",
+        "language": "zig",
+        "rels": 38,
+        "withLine": 0,
+        "noLine": 38,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -696,27 +3917,177 @@
     ],
     "csharp": [
       {
-        "file": "sqlite/tool/GetFile.cs",
+        "file": "fsharp/tests/benchmarks/CompiledCodeBenchmarks/MicroPerf/CS/MicroPerfCSharp.cs",
         "language": "csharp",
-        "rels": 84,
+        "rels": 3,
         "withLine": 0,
-        "noLine": 84,
+        "noLine": 3,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "sqlite/tool/Replace.cs",
+        "file": "fsharp/tests/fsharp/typecheck/full-rank-arrays/Class1.cs",
         "language": "csharp",
-        "rels": 38,
+        "rels": 46,
         "withLine": 0,
-        "noLine": 38,
+        "noLine": 46,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "powershell/test/xUnit/AssemblyInfo.cs",
+        "file": "fsharp/tests/fsharp/core/forwarders/b.cs",
+        "language": "csharp",
+        "rels": 26,
+        "withLine": 0,
+        "noLine": 26,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/forwarders/a.cs",
+        "language": "csharp",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/fsfromfsviacs/lib2.cs",
+        "language": "csharp",
+        "rels": 115,
+        "withLine": 0,
+        "noLine": 115,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/fsfromfsviacs/lib3.cs",
+        "language": "csharp",
+        "rels": 63,
+        "withLine": 0,
+        "noLine": 63,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/attributes/cslib.cs",
+        "language": "csharp",
+        "rels": 30,
+        "withLine": 0,
+        "noLine": 30,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/members/set-only-property/cs.cs",
+        "language": "csharp",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/fsfromcs/test.cs",
+        "language": "csharp",
+        "rels": 142,
+        "withLine": 0,
+        "noLine": 142,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/quotes/cslib.cs",
+        "language": "csharp",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/core/events/testcs.cs",
+        "language": "csharp",
+        "rels": 21,
+        "withLine": 0,
+        "noLine": 21,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/Properties/AssemblyInfo.cs",
+        "language": "csharp",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/typeProviders/globalNamespace/globalNamespaceTP.cs",
+        "language": "csharp",
+        "rels": 25,
+        "withLine": 0,
+        "noLine": 25,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/typeProviders/helloWorldCSharp/provider.cs",
+        "language": "csharp",
+        "rels": 48,
+        "withLine": 0,
+        "noLine": 48,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/service/data/CSharp_Analysis/CSharpClass.cs",
+        "language": "csharp",
+        "rels": 70,
+        "withLine": 0,
+        "noLine": 70,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/service/data/CSharp_Analysis/Properties/AssemblyInfo.cs",
+        "language": "csharp",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Core.UnitTests/FSharp.Core/SampleTuples/TupleSample.cs",
+        "language": "csharp",
+        "rels": 43,
+        "withLine": 0,
+        "noLine": 43,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Core.UnitTests/FSharp.Core/SampleTuples/Properties/AssemblyInfo.cs",
         "language": "csharp",
         "rels": 1,
         "withLine": 0,
@@ -726,11 +4097,121 @@
         "inconsistentSample": []
       },
       {
-        "file": "powershell/test/xUnit/csharp/TestProgressRawUI.cs",
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/resources/tests/Conformance/ImplementationFilesAndSignatureFiles/NamespacesFragmentsAndImplementationFiles/global/CSharpDll.cs",
         "language": "csharp",
-        "rels": 53,
+        "rels": 1,
         "withLine": 0,
-        "noLine": 53,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/InferenceProcedures/ByrefSafetyAnalysis/MigratedTest03CSharpLib.cs",
+        "language": "csharp",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/ExpressionQuotations/Regressions/SimpleStruct.cs",
+        "language": "csharp",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/ExpressionQuotations/Regressions/SimpleEnum.cs",
+        "language": "csharp",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/MemberDefinitions/OptionalDefaultParamArgs/CallFSharpMethods.cs",
+        "language": "csharp",
+        "rels": 81,
+        "withLine": 0,
+        "noLine": 81,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/MemberDefinitions/OptionalArguments/TestLib.cs",
+        "language": "csharp",
+        "rels": 14,
+        "withLine": 0,
+        "noLine": 14,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/MemberDefinitions/OverloadingMembers/lib.cs",
+        "language": "csharp",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/CustomAttributes/ArgumentsOfAllTypes/CSharpConsumer.cs",
+        "language": "csharp",
+        "rels": 168,
+        "withLine": 0,
+        "noLine": 168,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/CustomAttributes/ArgumentsOfAllTypes/CSLibraryWithAttributes.cs",
+        "language": "csharp",
+        "rels": 287,
+        "withLine": 0,
+        "noLine": 287,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/ExceptionDefinitions/CSharpException.cs",
+        "language": "csharp",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/BasicGrammarElements/AccessibilityAnnotations/OnTypeMembers/BaseClass.cs",
+        "language": "csharp",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/EmittedIL/Nullness/CsharpConsumer.cs",
+        "language": "csharp",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -738,27 +4219,107 @@
     ],
     "dart": [
       {
-        "file": "proxicall/translate.dart",
+        "file": "dart-http/pkgs/http/test/stub_server.dart",
         "language": "dart",
-        "rels": 574,
+        "rels": 40,
         "withLine": 0,
-        "noLine": 574,
+        "noLine": 40,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/test/url_launcher_windows_test.dart",
+        "file": "dart-http/pkgs/http/test/http_retry_test.dart",
         "language": "dart",
-        "rels": 37,
+        "rels": 54,
         "withLine": 0,
-        "noLine": 37,
+        "noLine": 54,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/pigeons/messages.dart",
+        "file": "dart-http/pkgs/http/test/mock_client_test.dart",
+        "language": "dart",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/response_test.dart",
+        "language": "dart",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/streamed_request_test.dart",
+        "language": "dart",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/multipart_test.dart",
+        "language": "dart",
+        "rels": 29,
+        "withLine": 0,
+        "noLine": 29,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/request_test.dart",
+        "language": "dart",
+        "rels": 26,
+        "withLine": 0,
+        "noLine": 26,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/no_default_http_client_test.dart",
+        "language": "dart",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/utils.dart",
+        "language": "dart",
+        "rels": 58,
+        "withLine": 0,
+        "noLine": 58,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/io/client_test.dart",
+        "language": "dart",
+        "rels": 79,
+        "withLine": 0,
+        "noLine": 79,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/io/client_conformance_test.dart",
         "language": "dart",
         "rels": 5,
         "withLine": 0,
@@ -768,7 +4329,187 @@
         "inconsistentSample": []
       },
       {
-        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/lib/url_launcher_windows.dart",
+        "file": "dart-http/pkgs/http/test/io/streamed_request_test.dart",
+        "language": "dart",
+        "rels": 24,
+        "withLine": 0,
+        "noLine": 24,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/io/multipart_test.dart",
+        "language": "dart",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/io/request_test.dart",
+        "language": "dart",
+        "rels": 21,
+        "withLine": 0,
+        "noLine": 21,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/io/http_test.dart",
+        "language": "dart",
+        "rels": 31,
+        "withLine": 0,
+        "noLine": 31,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/html/client_test.dart",
+        "language": "dart",
+        "rels": 20,
+        "withLine": 0,
+        "noLine": 20,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/html/client_conformance_test.dart",
+        "language": "dart",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/html/streamed_request_test.dart",
+        "language": "dart",
+        "rels": 18,
+        "withLine": 0,
+        "noLine": 18,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/test/html/utils.dart",
+        "language": "dart",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/retry.dart",
+        "language": "dart",
+        "rels": 67,
+        "withLine": 0,
+        "noLine": 67,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/testing.dart",
+        "language": "dart",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/browser_client.dart",
+        "language": "dart",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/io_client.dart",
+        "language": "dart",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/http.dart",
+        "language": "dart",
+        "rels": 40,
+        "withLine": 0,
+        "noLine": 40,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/src/io_streamed_response.dart",
+        "language": "dart",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/src/streamed_request.dart",
+        "language": "dart",
+        "rels": 24,
+        "withLine": 0,
+        "noLine": 24,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/src/multipart_file_io.dart",
+        "language": "dart",
+        "rels": 13,
+        "withLine": 0,
+        "noLine": 13,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/src/byte_stream.dart",
+        "language": "dart",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/src/base_client.dart",
+        "language": "dart",
+        "rels": 58,
+        "withLine": 0,
+        "noLine": 58,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/http/lib/src/base_response.dart",
         "language": "dart",
         "rels": 23,
         "withLine": 0,
@@ -782,6 +4523,26 @@
       {
         "file": "tree-sitter-clean/Package.swift",
         "language": "swift",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cupertino_http/ios_test/ios/Runner/AppDelegate.swift",
+        "language": "swift",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cupertino_http/ios_test/ios/RunnerTests/RunnerTests.swift",
+        "language": "swift",
         "rels": 5,
         "withLine": 0,
         "noLine": 5,
@@ -790,17 +4551,37 @@
         "inconsistentSample": []
       },
       {
-        "file": "swift-nio/Package.swift",
+        "file": "dart-http/pkgs/flutter_http_example/macos/Runner/AppDelegate.swift",
         "language": "swift",
-        "rels": 3,
+        "rels": 5,
         "withLine": 0,
-        "noLine": 3,
+        "noLine": 5,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "swift-nio/dev/stackdiff/Package.swift",
+        "file": "dart-http/pkgs/flutter_http_example/macos/Runner/MainFlutterWindow.swift",
+        "language": "swift",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/macos/RunnerTests/RunnerTests.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/macos/Flutter/GeneratedPluginRegistrant.swift",
         "language": "swift",
         "rels": 2,
         "withLine": 0,
@@ -810,17 +4591,287 @@
         "inconsistentSample": []
       },
       {
-        "file": "swift-nio/dev/stackdiff/Tests/StacksTests/AggregateStackTests.swift",
+        "file": "dart-http/pkgs/flutter_http_example/ios/Runner/AppDelegate.swift",
         "language": "swift",
-        "rels": 41,
+        "rels": 7,
         "withLine": 0,
-        "noLine": 41,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/ios/RunnerTests/RunnerTests.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/macos/firebase_storage/Package.swift",
+        "language": "swift",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/macos/firebase_storage/Sources/firebase_storage/FLTFirebaseStoragePlugin.swift",
+        "language": "swift",
+        "rels": 225,
+        "withLine": 0,
+        "noLine": 225,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/macos/firebase_storage/Sources/firebase_storage/TaskStateChannelStreamHandler.swift",
+        "language": "swift",
+        "rels": 66,
+        "withLine": 0,
+        "noLine": 66,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/macos/firebase_storage/Sources/firebase_storage/FirebaseStorageMessages.g.swift",
+        "language": "swift",
+        "rels": 237,
+        "withLine": 0,
+        "noLine": 237,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/example/macos/Runner/AppDelegate.swift",
+        "language": "swift",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/example/macos/Runner/MainFlutterWindow.swift",
+        "language": "swift",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/ios/firebase_storage/Package.swift",
+        "language": "swift",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/ios/firebase_storage/Sources/firebase_storage/FLTFirebaseStoragePlugin.swift",
+        "language": "swift",
+        "rels": 225,
+        "withLine": 0,
+        "noLine": 225,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/ios/firebase_storage/Sources/firebase_storage/TaskStateChannelStreamHandler.swift",
+        "language": "swift",
+        "rels": 66,
+        "withLine": 0,
+        "noLine": 66,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/ios/firebase_storage/Sources/firebase_storage/FirebaseStorageMessages.g.swift",
+        "language": "swift",
+        "rels": 237,
+        "withLine": 0,
+        "noLine": 237,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/jni/example/macos/Runner/AppDelegate.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/jni/example/macos/Runner/MainFlutterWindow.swift",
+        "language": "swift",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/macos/network_info_plus/Package.swift",
+        "language": "swift",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/macos/network_info_plus/Sources/network_info_plus/NetworkInfoPlusPlugin.swift",
+        "language": "swift",
+        "rels": 69,
+        "withLine": 0,
+        "noLine": 69,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/example/macos/Runner/AppDelegate.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/example/macos/Runner/MainFlutterWindow.swift",
+        "language": "swift",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/example/macos/RunnerTests/RunnerTests.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/example/ios/Runner/AppDelegate.swift",
+        "language": "swift",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/example/ios/RunnerTests/RunnerTests.swift",
+        "language": "swift",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/ios/network_info_plus/Package.swift",
+        "language": "swift",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/macos/firebase_core/Package.swift",
+        "language": "swift",
+        "rels": 2,
+        "withLine": 0,
+        "noLine": 2,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       }
     ],
     "objc": [
+      {
+        "file": "dart-http/pkgs/cupertino_http/src/native_cupertino_bindings.m",
+        "language": "objective-c",
+        "rels": 637,
+        "withLine": 0,
+        "noLine": 637,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Clyde/NoodleLineNumberMarker.m",
+        "language": "objective-c",
+        "rels": 28,
+        "withLine": 0,
+        "noLine": 28,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Clyde/NSWindow+DvA.m",
+        "language": "objective-c",
+        "rels": 93,
+        "withLine": 0,
+        "noLine": 93,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Clyde/NSTextView+JSDExtensions.m",
+        "language": "objective-c",
+        "rels": 133,
+        "withLine": 0,
+        "noLine": 133,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Clyde/NoodleLineNumberView.m",
+        "language": "objective-c",
+        "rels": 237,
+        "withLine": 0,
+        "noLine": 237,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
       {
         "file": "zig/test/standalone/ios/main.m",
         "language": "objective-c",
@@ -832,18 +4883,440 @@
         "inconsistentSample": []
       },
       {
-        "file": "sdwebimage/Tests/Tests/SDAnimatedImageTest.m",
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/example/ios/Runner/main.m",
         "language": "objective-c",
-        "rels": 760,
+        "rels": 8,
         "withLine": 0,
-        "noLine": 760,
+        "noLine": 8,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "sdwebimage/Tests/Tests/SDCategoriesTests.m",
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_storage/example/ios/Runner/AppDelegate.m",
         "language": "objective-c",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/ios/network_info_plus/Sources/network_info_plus/FPPNetworkInfoPlusPlugin.m",
+        "language": "objective-c",
+        "rels": 94,
+        "withLine": 0,
+        "noLine": 94,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/ios/network_info_plus/Sources/network_info_plus/FPPHotspotNetworkInfoProvider.m",
+        "language": "objective-c",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/ios/network_info_plus/Sources/network_info_plus/FPPNetworkInfo.m",
+        "language": "objective-c",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/network_info_plus/ios/network_info_plus/Sources/network_info_plus/FPPCaptiveNetworkInfoProvider.m",
+        "language": "objective-c",
+        "rels": 15,
+        "withLine": 0,
+        "noLine": 15,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/macos/firebase_core/Sources/firebase_core/FLTFirebasePluginRegistry.m",
+        "language": "objective-c",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/macos/firebase_core/Sources/firebase_core/FLTFirebasePlugin.m",
+        "language": "objective-c",
+        "rels": 35,
+        "withLine": 0,
+        "noLine": 35,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/macos/firebase_core/Sources/firebase_core/dummy.m",
+        "language": "objective-c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/macos/firebase_core/Sources/firebase_core/messages.g.m",
+        "language": "objective-c",
+        "rels": 246,
+        "withLine": 0,
+        "noLine": 246,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/macos/firebase_core/Sources/firebase_core/FLTFirebaseCorePlugin.m",
+        "language": "objective-c",
+        "rels": 122,
+        "withLine": 0,
+        "noLine": 122,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/example/ios/Runner/main.m",
+        "language": "objective-c",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/example/ios/Runner/AppDelegate.m",
+        "language": "objective-c",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/ios/firebase_core/Sources/firebase_core/FLTFirebasePluginRegistry.m",
+        "language": "objective-c",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/ios/firebase_core/Sources/firebase_core/FLTFirebasePlugin.m",
+        "language": "objective-c",
+        "rels": 35,
+        "withLine": 0,
+        "noLine": 35,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/ios/firebase_core/Sources/firebase_core/dummy.m",
+        "language": "objective-c",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/ios/firebase_core/Sources/firebase_core/messages.g.m",
+        "language": "objective-c",
+        "rels": 246,
+        "withLine": 0,
+        "noLine": 246,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_core/ios/firebase_core/Sources/firebase_core/FLTFirebaseCorePlugin.m",
+        "language": "objective-c",
+        "rels": 122,
+        "withLine": 0,
+        "noLine": 122,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/share_plus/ios/share_plus/Sources/share_plus/FPPSharePlusPlugin.m",
+        "language": "objective-c",
+        "rels": 229,
+        "withLine": 0,
+        "noLine": 229,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_app_check/example/ios/Runner/main.m",
+        "language": "objective-c",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/firebase_app_check/example/ios/Runner/AppDelegate.m",
+        "language": "objective-c",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/device_info_plus/ios/device_info_plus/Sources/device_info_plus/DeviceIdentifiers.m",
+        "language": "objective-c",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/device_info_plus/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m",
+        "language": "objective-c",
+        "rels": 71,
+        "withLine": 0,
+        "noLine": 71,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "proxicall/windows/flutter/ephemeral/.plugin_symlinks/cloud_firestore/macos/cloud_firestore/Sources/cloud_firestore/FLTFirebaseFirestoreWriter.m",
+        "language": "objective-c",
+        "rels": 127,
+        "withLine": 0,
+        "noLine": 127,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "php": [
+      {
+        "file": "slim/tests/ResponseEmitterTest.php",
+        "language": "php",
+        "rels": 159,
+        "withLine": 0,
+        "noLine": 159,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/AppTest.php",
+        "language": "php",
+        "rels": 2016,
+        "withLine": 0,
+        "noLine": 2016,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/CallableResolverTest.php",
+        "language": "php",
+        "rels": 461,
+        "withLine": 0,
+        "noLine": 461,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/TestCase.php",
+        "language": "php",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/MiddlewareDispatcherTest.php",
+        "language": "php",
+        "rels": 484,
+        "withLine": 0,
+        "noLine": 484,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/bootstrap.php",
+        "language": "php",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteTest.php",
+        "language": "php",
+        "rels": 513,
+        "withLine": 0,
+        "noLine": 513,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteCollectorTest.php",
+        "language": "php",
+        "rels": 124,
+        "withLine": 0,
+        "noLine": 124,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteRunnerTest.php",
+        "language": "php",
+        "rels": 20,
+        "withLine": 0,
+        "noLine": 20,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/FastRouteDispatcherTest.php",
+        "language": "php",
+        "rels": 208,
+        "withLine": 0,
+        "noLine": 208,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteParserTest.php",
+        "language": "php",
+        "rels": 89,
+        "withLine": 0,
+        "noLine": 89,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteContextTest.php",
+        "language": "php",
+        "rels": 76,
+        "withLine": 0,
+        "noLine": 76,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteResolverTest.php",
+        "language": "php",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/DispatcherTest.php",
+        "language": "php",
+        "rels": 115,
+        "withLine": 0,
+        "noLine": 115,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Routing/RouteCollectorProxyTest.php",
+        "language": "php",
+        "rels": 275,
+        "withLine": 0,
+        "noLine": 275,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Handlers/ErrorHandlerTest.php",
+        "language": "php",
+        "rels": 315,
+        "withLine": 0,
+        "noLine": 315,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Handlers/Strategies/RequestResponseNamedArgsTest.php",
+        "language": "php",
+        "rels": 95,
+        "withLine": 0,
+        "noLine": 95,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Exception/HttpUnauthorizedExceptionTest.php",
+        "language": "php",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Exception/HttpExceptionTest.php",
+        "language": "php",
+        "rels": 31,
+        "withLine": 0,
+        "noLine": 31,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Factory/ServerRequestCreatorFactoryTest.php",
+        "language": "php",
         "rels": 61,
         "withLine": 0,
         "noLine": 61,
@@ -852,53 +5325,101 @@
         "inconsistentSample": []
       },
       {
-        "file": "sdwebimage/Tests/Tests/SDImageCacheTests.m",
-        "language": "objective-c",
-        "rels": 991,
-        "withLine": 0,
-        "noLine": 991,
-        "consistent": 0,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      }
-    ],
-    "php": [
-      {
-        "file": "slim/tests/AppTest.php",
+        "file": "slim/tests/Factory/AppFactoryTest.php",
         "language": "php",
-        "rels": 1845,
+        "rels": 241,
         "withLine": 0,
-        "noLine": 1845,
+        "noLine": 241,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "slim/tests/CallableResolverTest.php",
+        "file": "slim/tests/Factory/Psr17/Psr17FactoryTest.php",
         "language": "php",
-        "rels": 384,
+        "rels": 16,
         "withLine": 0,
-        "noLine": 384,
+        "noLine": 16,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "slim/tests/MiddlewareDispatcherTest.php",
+        "file": "slim/tests/Factory/Psr17/SlimHttpServerRequestCreatorTest.php",
         "language": "php",
-        "rels": 447,
+        "rels": 47,
         "withLine": 0,
-        "noLine": 447,
+        "noLine": 47,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
       {
-        "file": "slim/tests/ResponseEmitterTest.php",
+        "file": "slim/tests/Factory/Psr17/Psr17FactoryProviderTest.php",
         "language": "php",
-        "rels": 154,
+        "rels": 12,
         "withLine": 0,
-        "noLine": 154,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Middleware/RoutingMiddlewareTest.php",
+        "language": "php",
+        "rels": 110,
+        "withLine": 0,
+        "noLine": 110,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Middleware/MethodOverrideMiddlewareTest.php",
+        "language": "php",
+        "rels": 88,
+        "withLine": 0,
+        "noLine": 88,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Middleware/OutputBufferingMiddlewareTest.php",
+        "language": "php",
+        "rels": 73,
+        "withLine": 0,
+        "noLine": 73,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Middleware/BodyParsingMiddlewareTest.php",
+        "language": "php",
+        "rels": 56,
+        "withLine": 0,
+        "noLine": 56,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Middleware/ErrorMiddlewareTest.php",
+        "language": "php",
+        "rels": 204,
+        "withLine": 0,
+        "noLine": 204,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Middleware/ContentLengthMiddlewareTest.php",
+        "language": "php",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -906,11 +5427,11 @@
     ],
     "ruby": [
       {
-        "file": "swift-nio/scripts/analyze_performance_results.rb",
+        "file": "ripgrep/HomebrewFormula/ripgrep-bin.rb",
         "language": "ruby",
-        "rels": 72,
+        "rels": 17,
         "withLine": 0,
-        "noLine": 72,
+        "noLine": 17,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -926,11 +5447,151 @@
         "inconsistentSample": []
       },
       {
-        "file": "ripgrep/HomebrewFormula/ripgrep-bin.rb",
+        "file": "rake/test/test_rake_definitions.rb",
         "language": "ruby",
-        "rels": 17,
+        "rels": 72,
         "withLine": 0,
-        "noLine": 17,
+        "noLine": 72,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_cpu_counter.rb",
+        "language": "ruby",
+        "rels": 62,
+        "withLine": 0,
+        "noLine": 62,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_path_map.rb",
+        "language": "ruby",
+        "rels": 187,
+        "withLine": 0,
+        "noLine": 187,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_task_manager.rb",
+        "language": "ruby",
+        "rels": 235,
+        "withLine": 0,
+        "noLine": 235,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_directory_task.rb",
+        "language": "ruby",
+        "rels": 74,
+        "withLine": 0,
+        "noLine": 74,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_path_map_explode.rb",
+        "language": "ruby",
+        "rels": 34,
+        "withLine": 0,
+        "noLine": 34,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_application_options.rb",
+        "language": "ruby",
+        "rels": 472,
+        "withLine": 0,
+        "noLine": 472,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_thread_pool.rb",
+        "language": "ruby",
+        "rels": 111,
+        "withLine": 0,
+        "noLine": 111,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_late_time.rb",
+        "language": "ruby",
+        "rels": 20,
+        "withLine": 0,
+        "noLine": 20,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_test_task.rb",
+        "language": "ruby",
+        "rels": 265,
+        "withLine": 0,
+        "noLine": 265,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_backtrace.rb",
+        "language": "ruby",
+        "rels": 74,
+        "withLine": 0,
+        "noLine": 74,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_file_task.rb",
+        "language": "ruby",
+        "rels": 182,
+        "withLine": 0,
+        "noLine": 182,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_makefile_loader.rb",
+        "language": "ruby",
+        "rels": 46,
+        "withLine": 0,
+        "noLine": 46,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_file_list.rb",
+        "language": "ruby",
+        "rels": 568,
+        "withLine": 0,
+        "noLine": 568,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_private_reader.rb",
+        "language": "ruby",
+        "rels": 30,
+        "withLine": 0,
+        "noLine": 30,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -944,25 +5605,275 @@
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_scope.rb",
+        "language": "ruby",
+        "rels": 52,
+        "withLine": 0,
+        "noLine": 52,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_functional.rb",
+        "language": "ruby",
+        "rels": 415,
+        "withLine": 0,
+        "noLine": 415,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_name_space.rb",
+        "language": "ruby",
+        "rels": 40,
+        "withLine": 0,
+        "noLine": 40,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_early_time.rb",
+        "language": "ruby",
+        "rels": 32,
+        "withLine": 0,
+        "noLine": 32,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_win32.rb",
+        "language": "ruby",
+        "rels": 12,
+        "withLine": 0,
+        "noLine": 12,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_file_list_path_map.rb",
+        "language": "ruby",
+        "rels": 11,
+        "withLine": 0,
+        "noLine": 11,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_linked_list.rb",
+        "language": "ruby",
+        "rels": 95,
+        "withLine": 0,
+        "noLine": 95,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_extension.rb",
+        "language": "ruby",
+        "rels": 37,
+        "withLine": 0,
+        "noLine": 37,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_trace_output.rb",
+        "language": "ruby",
+        "rels": 41,
+        "withLine": 0,
+        "noLine": 41,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_task_with_arguments.rb",
+        "language": "ruby",
+        "rels": 159,
+        "withLine": 0,
+        "noLine": 159,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_rake_test_loader.rb",
+        "language": "ruby",
+        "rels": 47,
+        "withLine": 0,
+        "noLine": 47,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "rake/test/test_rake_top_level_functions.rb",
+        "language": "ruby",
+        "rels": 40,
+        "withLine": 0,
+        "noLine": 40,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
       }
     ],
     "python": [
+      {
+        "file": "tree-sitter-clean/setup.py",
+        "language": "python",
+        "rels": 33,
+        "withLine": 0,
+        "noLine": 33,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "tree-sitter-clean/bindings/python/tree_sitter_clean/__init__.py",
+        "language": "python",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/eng/common/cross/install-debs.py",
+        "language": "python",
+        "rels": 135,
+        "withLine": 0,
+        "noLine": 135,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/benchmarks/scripts/generate_plots_flow_flatten_merge.py",
+        "language": "python",
+        "rels": 36,
+        "withLine": 0,
+        "noLine": 36,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/support/printable.py",
+        "language": "python",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/support/release.py",
+        "language": "python",
+        "rels": 107,
+        "withLine": 0,
+        "noLine": 107,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/support/docopt.py",
+        "language": "python",
+        "rels": 239,
+        "withLine": 0,
+        "noLine": 239,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/support/python/mkdocstrings_handlers/cxx/__init__.py",
+        "language": "python",
+        "rels": 180,
+        "withLine": 0,
+        "noLine": 180,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "phpmyadmin/docs/conf.py",
+        "language": "python",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "phpmyadmin/docs/_ext/configext.py",
+        "language": "python",
+        "rels": 86,
+        "withLine": 0,
+        "noLine": 86,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "cabal/doc/cabaldomain.py",
+        "language": "python",
+        "rels": 309,
+        "withLine": 0,
+        "noLine": 309,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "cabal/doc/conf.py",
+        "language": "python",
+        "rels": 26,
+        "withLine": 0,
+        "noLine": 26,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "cabal/bootstrap/bootstrap.py",
+        "language": "python",
+        "rels": 231,
+        "withLine": 0,
+        "noLine": 231,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/tools/zig_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 32,
+        "withLine": 0,
+        "noLine": 32,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
       {
         "file": "zig/tools/lldb_pretty_printers.py",
         "language": "python",
         "rels": 361,
         "withLine": 0,
         "noLine": 361,
-        "consistent": 0,
-        "inconsistent": 0,
-        "inconsistentSample": []
-      },
-      {
-        "file": "zig/tools/stage1_gdb_pretty_printers.py",
-        "language": "python",
-        "rels": 22,
-        "withLine": 0,
-        "noLine": 22,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -978,6 +5889,16 @@
         "inconsistentSample": []
       },
       {
+        "file": "zig/tools/stage1_gdb_pretty_printers.py",
+        "language": "python",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
         "file": "zig/tools/std_gdb_pretty_printers.py",
         "language": "python",
         "rels": 76,
@@ -986,25 +5907,145 @@
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
-      }
-    ],
-    "haskell": [
+      },
       {
-        "file": "shellcheck/shellcheck-dev.hs",
-        "language": "haskell",
-        "rels": 10,
+        "file": "jq/docs/build_manpage.py",
+        "language": "python",
+        "rels": 119,
         "withLine": 0,
-        "noLine": 10,
+        "noLine": 119,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
       },
+      {
+        "file": "jq/docs/build_mantests.py",
+        "language": "python",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "jq/docs/validate_manual_schema.py",
+        "language": "python",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "jq/docs/build_website.py",
+        "language": "python",
+        "rels": 43,
+        "withLine": 0,
+        "noLine": 43,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "jq/scripts/gen_utf8_tables.py",
+        "language": "python",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/postgrest.py",
+        "language": "python",
+        "rels": 117,
+        "withLine": 0,
+        "noLine": 117,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/config.py",
+        "language": "python",
+        "rels": 14,
+        "withLine": 0,
+        "noLine": 14,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_log.py",
+        "language": "python",
+        "rels": 131,
+        "withLine": 0,
+        "noLine": 131,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_admin.py",
+        "language": "python",
+        "rels": 89,
+        "withLine": 0,
+        "noLine": 89,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/util.py",
+        "language": "python",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_settings.py",
+        "language": "python",
+        "rels": 141,
+        "withLine": 0,
+        "noLine": 141,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "postgrest/test/io/test_connection.py",
+        "language": "python",
+        "rels": 97,
+        "withLine": 0,
+        "noLine": 97,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "haskell": [
       {
         "file": "shellcheck/shellcheck.hs",
         "language": "haskell",
         "rels": 142,
         "withLine": 0,
         "noLine": 142,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/shellcheck-dev.hs",
+        "language": "haskell",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -1020,11 +6061,271 @@
         "inconsistentSample": []
       },
       {
+        "file": "shellcheck/src/ShellCheck/AnalyzerLib.hs",
+        "language": "haskell",
+        "rels": 310,
+        "withLine": 0,
+        "noLine": 310,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Data.hs",
+        "language": "haskell",
+        "rels": 22,
+        "withLine": 0,
+        "noLine": 22,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/ASTLib.hs",
+        "language": "haskell",
+        "rels": 389,
+        "withLine": 0,
+        "noLine": 389,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Prelude.hs",
+        "language": "haskell",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Debug.hs",
+        "language": "haskell",
+        "rels": 68,
+        "withLine": 0,
+        "noLine": 68,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Interface.hs",
+        "language": "haskell",
+        "rels": 188,
+        "withLine": 0,
+        "noLine": 188,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Parser.hs",
+        "language": "haskell",
+        "rels": 1775,
+        "withLine": 0,
+        "noLine": 1775,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/CFGAnalysis.hs",
+        "language": "haskell",
+        "rels": 522,
+        "withLine": 0,
+        "noLine": 522,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Analyzer.hs",
+        "language": "haskell",
+        "rels": 16,
+        "withLine": 0,
+        "noLine": 16,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Checker.hs",
+        "language": "haskell",
+        "rels": 180,
+        "withLine": 0,
+        "noLine": 180,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Regex.hs",
+        "language": "haskell",
+        "rels": 15,
+        "withLine": 0,
+        "noLine": 15,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/CFG.hs",
+        "language": "haskell",
+        "rels": 431,
+        "withLine": 0,
+        "noLine": 431,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Fixer.hs",
+        "language": "haskell",
+        "rels": 167,
+        "withLine": 0,
+        "noLine": 167,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Analytics.hs",
+        "language": "haskell",
+        "rels": 3196,
+        "withLine": 0,
+        "noLine": 3196,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
         "file": "shellcheck/src/ShellCheck/AST.hs",
         "language": "haskell",
         "rels": 180,
         "withLine": 0,
         "noLine": 180,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/Diff.hs",
+        "language": "haskell",
+        "rels": 127,
+        "withLine": 0,
+        "noLine": 127,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/Format.hs",
+        "language": "haskell",
+        "rels": 25,
+        "withLine": 0,
+        "noLine": 25,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/CheckStyle.hs",
+        "language": "haskell",
+        "rels": 31,
+        "withLine": 0,
+        "noLine": 31,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/GCC.hs",
+        "language": "haskell",
+        "rels": 17,
+        "withLine": 0,
+        "noLine": 17,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/TTY.hs",
+        "language": "haskell",
+        "rels": 53,
+        "withLine": 0,
+        "noLine": 53,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/Quiet.hs",
+        "language": "haskell",
+        "rels": 7,
+        "withLine": 0,
+        "noLine": 7,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/JSON1.hs",
+        "language": "haskell",
+        "rels": 39,
+        "withLine": 0,
+        "noLine": 39,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Formatter/JSON.hs",
+        "language": "haskell",
+        "rels": 27,
+        "withLine": 0,
+        "noLine": 27,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Checks/Commands.hs",
+        "language": "haskell",
+        "rels": 1076,
+        "withLine": 0,
+        "noLine": 1076,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Checks/ShellSupport.hs",
+        "language": "haskell",
+        "rels": 482,
+        "withLine": 0,
+        "noLine": 482,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Checks/Custom.hs",
+        "language": "haskell",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "shellcheck/src/ShellCheck/Checks/ControlFlow.hs",
+        "language": "haskell",
+        "rels": 29,
+        "withLine": 0,
+        "noLine": 29,
         "consistent": 0,
         "inconsistent": 0,
         "inconsistentSample": []
@@ -1034,19 +6335,83 @@
   "skipped": [
     {
       "lang": "groovy",
-      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/example/android/build.gradle"
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/Exposed/documentation-website/Writerside/snippets/exposed-modules-groovy-gradle/build.gradle"
     },
     {
       "lang": "groovy",
-      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/example/android/settings.gradle"
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/flutter_http_example/android/build.gradle"
     },
     {
       "lang": "groovy",
-      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/example/android/app/build.gradle"
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/flutter_http_example/android/settings.gradle"
     },
     {
       "lang": "groovy",
-      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/proxicall/windows/flutter/ephemeral/.plugin_symlinks/sentry_flutter/android/build.gradle"
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/flutter_http_example/android/app/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/ok_http/android/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/ok_http/android/settings.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/ok_http/example/android/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/ok_http/example/android/settings.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/ok_http/example/android/app/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/cronet_http/android/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/cronet_http/android/settings.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/cronet_http/example/android/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/cronet_http/example/android/settings.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/dart-http/pkgs/cronet_http/example/android/app/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build.gradle: Unsupported file type: $HOME/fixtures/repositories/fmt/support/build.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "geb.gradle: Unsupported file type: $HOME/fixtures/repositories/geb/geb.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "settings.gradle: Unsupported file type: $HOME/fixtures/repositories/geb/settings.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "build-scans.gradle: Unsupported file type: $HOME/fixtures/repositories/geb/gradle/build-scans.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "asciidoctor-extension.gradle: Unsupported file type: $HOME/fixtures/repositories/geb/doc/asciidoctor-extension/asciidoctor-extension.gradle"
+    },
+    {
+      "lang": "groovy",
+      "reason": "manual-snippets.gradle: Unsupported file type: $HOME/fixtures/repositories/geb/doc/manual-snippets/manual-snippets.gradle"
     }
   ]
 }
