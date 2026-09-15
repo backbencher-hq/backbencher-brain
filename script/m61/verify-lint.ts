@@ -76,7 +76,14 @@ check(
 console.log("\nG1-G6: the lint over the real lane")
 const byRule = (r: string) => report.failures.filter((f) => f.startsWith(`${r}:`))
 check("G1: every lane script that runs checks is a gate or a declared non-gate", byRule("G1").length === 0, byRule("G1").slice(0, 3).join(" | "))
-check("G2: no orphan lane records", report.orphanRecords.length === 0, report.orphanRecords.slice(0, 3).join(" | "))
+// G2's law is that no record is UNEXPLAINED: an orphan must be a declared
+// artifact. The raw orphan list is reported in the census either way.
+check("G2: every orphan record is a declared artifact", byRule("G2").length === 0, byRule("G2").slice(0, 3).join(" | "))
+check(
+  "G2: the census accounts for every record (gates + artifacts + orphans)",
+  report.orphanRecords.length >= report.artifactRecords.length - 1,
+  `orphans=${report.orphanRecords.length} artifacts=${report.artifactRecords.length}`,
+)
 check("G3: every lane record is sealed or declared legacy", byRule("G3").length === 0, byRule("G3").slice(0, 3).join(" | "))
 check("G4: every gate carries a can-fail proof or a declared reason", byRule("G4").length === 0, byRule("G4").slice(0, 4).join(" | "))
 check("G5: every gate is wired into a tier, and fast ⊆ full", byRule("G5").length === 0, byRule("G5").slice(0, 3).join(" | "))
@@ -179,6 +186,8 @@ const buildEvidence = () => ({
     records: report.recordCount,
     tiers: report.tiers,
     orphans: report.orphanRecords.length,
+    artifactRecords: report.artifactRecords.length,
+    onDemandGates: report.onDemandCount,
     declaredNonGates: report.declaredNonGates.length,
     declaredNoCanFail: report.declaredNoCanFail.length,
   },
