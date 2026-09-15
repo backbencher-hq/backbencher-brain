@@ -1,91 +1,214 @@
 {
   "checks": [
     {
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
       "ok": true,
-      "name": "S6: launch order resolves a server",
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
+      "name": "S6: launch order resolves a server"
     },
     {
+      "detail": "1",
       "ok": true,
-      "name": "S6: vim.lsp.start launched bb_lsp",
-      "detail": "1"
+      "name": "S6: vim.lsp.start launched bb_lsp"
     },
     {
+      "detail": "table: 0x779ce55cca48",
       "ok": true,
-      "name": "S6: client initialized",
-      "detail": "table: 0x79422c0d1030"
+      "name": "S6: client initialized"
     },
     {
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
       "ok": true,
-      "name": "S6: capabilities advertised",
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
+      "name": "S6: capabilities advertised"
     },
     {
+      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)",
       "ok": true,
-      "name": "S6: hover renders the symbol",
-      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)"
+      "name": "S6: hover renders the symbol"
     },
     {
+      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)",
       "ok": true,
-      "name": "S6: hover carries evidence tier (contract §2)",
-      "detail": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)"
+      "name": "S6: hover carries evidence tier (contract §2)"
     },
     {
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 30,\n      line = 9\n    },\n    start = {\n      character = 6,\n      line = 9\n    }\n  },\n  uri = \"file://$HOMEh",
       "ok": true,
-      "name": "S6: definition resolves",
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 30,\n      line = 9\n    },\n    start = {\n      character = 6,\n      line = 9\n    }\n  },\n  uri = \"file://$HOMEh"
+      "name": "S6: definition resolves"
     },
     {
+      "detail": "2",
       "ok": true,
-      "name": "S6: references returns locations",
-      "detail": "2"
+      "name": "S6: references returns locations"
     },
     {
+      "detail": "{ \"main\", \"prefix\", \"message\" }",
       "ok": true,
-      "name": "S6: documentSymbols include the class",
-      "detail": "{ \"main\", \"prefix\", \"message\" }"
+      "name": "S6: documentSymbols include the class"
     },
     {
+      "detail": "{}",
       "ok": true,
-      "name": "S6: declared absence is honored (no fabricated symbols)",
-      "detail": "{}"
+      "name": "S6: declared absence is honored (no fabricated symbols)"
     }
   ],
-  "session": [],
-  "language": "vue",
   "raw": {
+    "documentSymbol": [
+      {
+        "selectionRange": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 15,
+            "character": 0
+          }
+        },
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 15,
+            "character": 0
+          }
+        },
+        "kind": 5,
+        "name": "main",
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:main:1",
+          "notIndexed": false
+        },
+        "detail": "main",
+        "children": [
+          {
+            "selectionRange": {
+              "start": {
+                "line": 5,
+                "character": 0
+              },
+              "end": {
+                "line": 7,
+                "character": 1
+              }
+            },
+            "range": {
+              "start": {
+                "line": 5,
+                "character": 0
+              },
+              "end": {
+                "line": 7,
+                "character": 1
+              }
+            },
+            "kind": 12,
+            "name": "greet",
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:greet:6",
+              "notIndexed": false
+            },
+            "detail": "greet",
+            "children": []
+          }
+        ]
+      },
+      {
+        "selectionRange": {
+          "start": {
+            "line": 3,
+            "character": 6
+          },
+          "end": {
+            "line": 3,
+            "character": 27
+          }
+        },
+        "range": {
+          "start": {
+            "line": 3,
+            "character": 6
+          },
+          "end": {
+            "line": 3,
+            "character": 27
+          }
+        },
+        "kind": 2,
+        "name": "prefix",
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:prefix:4",
+          "notIndexed": false
+        },
+        "detail": "prefix",
+        "children": []
+      },
+      {
+        "selectionRange": {
+          "start": {
+            "line": 9,
+            "character": 6
+          },
+          "end": {
+            "line": 9,
+            "character": 30
+          }
+        },
+        "range": {
+          "start": {
+            "line": 9,
+            "character": 6
+          },
+          "end": {
+            "line": 9,
+            "character": 30
+          }
+        },
+        "kind": 2,
+        "name": "message",
+        "data": {
+          "evidenceTier": "indexed",
+          "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:message:10",
+          "notIndexed": false
+        },
+        "detail": "message",
+        "children": []
+      }
+    ],
     "definition": {
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue",
       "range": {
         "start": {
-          "character": 6,
-          "line": 9
+          "line": 9,
+          "character": 6
         },
         "end": {
-          "character": 30,
-          "line": 9
+          "line": 9,
+          "character": 30
         }
-      },
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue"
+      }
     },
+    "workspaceAbsence": [],
     "hover": {
       "contents": {
-        "kind": "markdown",
-        "value": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.vue:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D))_"
+        "value": "```\npublic constant message\n```\n\n**message** — constant, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: usage_contextual\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.vue:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D))_",
+        "kind": "markdown"
       },
       "data": {
-        "symbol": {
-          "freshnessStatus": "fresh",
-          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue",
-          "lineStart": 10,
-          "lineEnd": 10,
-          "name": "message",
-          "definition": {
-            "character": 6,
-            "line": 9
-          },
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
           "stale": false,
-          "qualifiedName": "message",
-          "symbolType": "constant",
+          "source": "bb_index",
+          "evidenceClass": "usage_contextual"
+        },
+        "symbol": {
           "signature": "public constant message",
           "usageCount": 1,
           "evidenceTiers": [
@@ -95,191 +218,68 @@
           "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.vue:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
           "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fvue%2Fmain.vue%22%2C%22line%22%3A9%2C%22character%22%3A6%7D%5D)",
           "crossLanguageSection": "",
-          "annotationSection": ""
-        },
-        "provenance": {
+          "annotationSection": "",
+          "freshnessStatus": "fresh",
+          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue",
+          "lineStart": 10,
+          "lineEnd": 10,
+          "name": "message",
+          "definition": {
+            "line": 9,
+            "character": 6
+          },
           "stale": false,
-          "evidenceClass": "usage_contextual",
-          "engine": "bb_lsp hover@m24.l2",
-          "source": "bb_index",
-          "limitations": [
-            "index-sourced; no compiler-backed types (complement stance)"
-          ]
+          "qualifiedName": "message",
+          "symbolType": "constant"
         }
       },
       "range": {
         "start": {
-          "character": 6,
-          "line": 9
+          "line": 9,
+          "character": 6
         },
         "end": {
-          "character": 30,
-          "line": 9
+          "line": 9,
+          "character": 30
         }
       }
     },
-    "workspaceAbsence": [],
-    "documentSymbol": [
-      {
-        "kind": 5,
-        "range": {
-          "start": {
-            "character": 0,
-            "line": 0
-          },
-          "end": {
-            "character": 0,
-            "line": 15
-          }
-        },
-        "selectionRange": {
-          "start": {
-            "character": 0,
-            "line": 0
-          },
-          "end": {
-            "character": 0,
-            "line": 15
-          }
-        },
-        "name": "main",
-        "data": {
-          "notIndexed": false,
-          "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:main:1",
-          "evidenceTier": "indexed"
-        },
-        "children": [
-          {
-            "kind": 12,
-            "range": {
-              "start": {
-                "character": 0,
-                "line": 5
-              },
-              "end": {
-                "character": 1,
-                "line": 7
-              }
-            },
-            "selectionRange": {
-              "start": {
-                "character": 0,
-                "line": 5
-              },
-              "end": {
-                "character": 1,
-                "line": 7
-              }
-            },
-            "name": "greet",
-            "data": {
-              "notIndexed": false,
-              "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:greet:6",
-              "evidenceTier": "indexed"
-            },
-            "children": [],
-            "detail": "greet"
-          }
-        ],
-        "detail": "main"
-      },
-      {
-        "kind": 2,
-        "range": {
-          "start": {
-            "character": 6,
-            "line": 3
-          },
-          "end": {
-            "character": 27,
-            "line": 3
-          }
-        },
-        "selectionRange": {
-          "start": {
-            "character": 6,
-            "line": 3
-          },
-          "end": {
-            "character": 27,
-            "line": 3
-          }
-        },
-        "name": "prefix",
-        "data": {
-          "notIndexed": false,
-          "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:prefix:4",
-          "evidenceTier": "indexed"
-        },
-        "children": [],
-        "detail": "prefix"
-      },
-      {
-        "kind": 2,
-        "range": {
-          "start": {
-            "character": 6,
-            "line": 9
-          },
-          "end": {
-            "character": 30,
-            "line": 9
-          }
-        },
-        "selectionRange": {
-          "start": {
-            "character": 6,
-            "line": 9
-          },
-          "end": {
-            "character": 30,
-            "line": 9
-          }
-        },
-        "name": "message",
-        "data": {
-          "notIndexed": false,
-          "id": "cc3b6be0abe24b60ff107acc50f28777dfab0795:main.vue:message:10",
-          "evidenceTier": "indexed"
-        },
-        "children": [],
-        "detail": "message"
-      }
-    ],
     "references": [
       {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue",
         "range": {
           "start": {
-            "character": 0,
-            "line": 0
+            "line": 0,
+            "character": 0
           },
           "end": {
-            "character": 0,
-            "line": 15
+            "line": 15,
+            "character": 0
           }
-        },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue"
+        }
       },
       {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue",
         "range": {
           "start": {
-            "character": 6,
-            "line": 9
+            "line": 9,
+            "character": 6
           },
           "end": {
-            "character": 30,
-            "line": 9
+            "line": 9,
+            "character": 30
           }
-        },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/vue/main.vue"
+        }
       }
     ]
   },
+  "session": [],
+  "language": "vue",
   "status": "verified",
-  "commit": "e764ac5c663044cad7b5494f80b523dea6f0af1e",
+  "commit": "3b7246446cdb261d7c9fc66ede887b11c7cc22d3",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T21:53:05.356Z",
-    "contentSha256": "65ebff1232c4e9417732b22a82173f04438c3035bffa6d4105a0e9863060efa1"
+    "sealedAt": "2026-09-15T22:16:17.114Z",
+    "contentSha256": "07c9447feaa14f6500b839660881ab0d57282542270aa9aca81cbc298bb0fc04"
   }
 }
