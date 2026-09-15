@@ -18,15 +18,15 @@
       "caught": true
     }
   ],
-  "currentCommit": "bdb34e6d50d0877d25075bdc0429e3c141d1e045",
+  "currentCommit": "866ba066f0785786fe24ba009c0cb33bfdca69b4",
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-15T17:59:12.346Z",
+  "generatedAt": "2026-09-15T18:42:59.186Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T17:59:12.346Z",
-    "contentSha256": "aa684e86015726d1329f4255b31e97aa152bf926a63ac596374a254929df83a9"
+    "sealedAt": "2026-09-15T18:42:59.186Z",
+    "contentSha256": "4d324314615b78dc6e5b0a4595cef59847a4eba2a3fc7ac3c1b39fdca570e623"
   }
 }

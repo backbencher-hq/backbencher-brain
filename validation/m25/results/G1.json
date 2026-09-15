@@ -2,16 +2,16 @@
   "issue": "M25.G1",
   "code": "G1",
   "milestone": "M25",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 72,
-  "passed": 72,
-  "failed": 0,
+  "passed": 71,
+  "failed": 1,
   "negativeCases": 11,
-  "currentCommit": "542ec348c65181f311c3c20526f5e32a88d2a227",
+  "currentCommit": "866ba066f0785786fe24ba009c0cb33bfdca69b4",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-15T18:22:17.851Z",
+  "generatedAt": "2026-09-15T18:52:06.734Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "closed",
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T18:22:17.853Z",
-    "contentSha256": "65628d2a8ccc9118cde6aa61691d24aec6c52738b77b91c9e9b50a0191555488"
+    "sealedAt": "2026-09-15T18:52:06.738Z",
+    "contentSha256": "e33a646233290addc524b28417780e63326df889fa312c78087368ea67d3d8d1"
   }
 }
