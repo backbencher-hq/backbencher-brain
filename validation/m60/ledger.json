@@ -62,7 +62,7 @@
       "status": "verified",
       "evidenceFile": "validation/m60/results/J1.json",
       "verifiedAtCommit": "HEAD",
-      "notes": "#739/#740 fixed+closed earlier waves. #741 fixed+closed this wave (c6df719b: Spring/Jackson/jsoniter/sttp detection, fixture + 2 mutants incl. forbidFrameworks direction, lane 100/0/0). #742 OPEN: reproduce-corrected to 59.0%, census + corpus-errors evidence landed (e62728cd/4856458f); fix needs a groovy wasm rebuild — no emcc on this box and no prebuilt upstream wasm exists (checked tree-sitter-grammars et al.); remedy registered on the issue. J1.json carries the per-issue disposition."
+      "notes": "#739/#740 fixed+closed earlier waves. #741 fixed+closed this wave (c6df719b: Spring/Jackson/jsoniter/sttp detection, fixture + 2 mutants incl. forbidFrameworks direction, lane 100/0/0). #742 FIXED + CLOSED this wave (bab8342d, M49 W18): the registered environment-blocked remedy was never verified against the vendored tree — the grammar source is in-repo at grammars/tree-sitter-groovy/ and the repo's local tree-sitter CLI builds wasm with its bundled WASI toolchain (no emcc, no emsdk, no network). Measured through the production parseFile pipeline on grails-core (6,564 files): 59.0% -> 25.0% error files (3,874 -> 1,643); the recorded M12 400-file sample 250/400 -> 115/400; the 15-cell construct matrix 11/15 -> 15/15; corpus-wide MISSING ';' 2,698 -> 340. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast mis-parse marker; re-keyed to the structural cast_type). Residual registered as #841. J1.json carries the per-issue disposition."
     },
     {
       "id": "W1",
@@ -79,7 +79,7 @@
       "title": "Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required",
       "status": "pending",
       "evidenceFile": "validation/m60/results/X1.json",
-      "notes": "script/m60/verify-family-closure-truth.ts implemented and emitting X1/J1/W1.json; the closure verdict is COMPUTED (closed-computable vs not-closed). Current verdict: not-closed — honest blockers: (1) #742 groovy grammar fix is environment-blocked (wasm rebuild needs emcc); (2) M49 sub-gates red on the co-agent's in-flight swift/php waves (open review folders, DT1/PHP1/SW1/SW2 ledger codes, php census row); (3) R4 fold record not yet written into the M49 ledger (lands at milestone close by design). Fold + M14 hand-off decision belong to the owner at close."
+      "notes": "script/m60/verify-family-closure-truth.ts implemented and emitting X1/J1/W1.json; the closure verdict is COMPUTED (closed-computable vs not-closed). Current verdict: not-closed — honest blockers: (1) the M60 container issues #830/#831 are themselves OPEN and their titles match this gate's own family scan — a circularity: they cannot close while the gate counts them as findings, so the fold must record them as containers, not as defects; (2) M49 closure refuses live (X1 5/7: 11 review folders open — dart, rust, go, csharp, ruby, cpp, zig, swift, systems-family, php, objc — i.e. the co-agent's in-flight waves and the unprocessed first-pass folders; G6 census-lineage was red on one stale register position, corrected 1054 -> 1236 in this wave); (3) R4 fold record not yet written into the M49 ledger (lands at milestone close by design). Fold + M14 hand-off decision belong to the owner at close."
     }
   ]
 }
