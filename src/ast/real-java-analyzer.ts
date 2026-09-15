@@ -1327,7 +1327,14 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // navigable one — the member's own declaration line, taken from the
           // symbol so the edge and the symbol cannot disagree. Omitted, never
           // zeroed, when the symbol has no line (#820/#821).
-          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+          //
+          // A SYNTHESISED member has no declaration at all: java's phantoms
+          // (Spring-Data repository methods carry the INTERFACE's range, lombok
+          // getters/setters carry the FIELD's) name methods that are written
+          // nowhere in the source, so the class/field line can never be the site
+          // of the name. Same contract and same reasoning as kotlin's data-class
+          // phantoms — the line is omitted, not guessed.
+          ...(s.metadata?.isPhantom !== true && s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: { isContained: true },
         })
       }
@@ -1817,7 +1824,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "modifiers" || c.type === "annotation" || c.type === "marker_annotation") continue
-      if (c.type === "comment" || c.type === "block_comment" || c.type === "line_comment") continue
+      // The grammar's OWN comment node names — M59 (#825) / F6: a literal the
+      // grammar cannot produce is dead code, and this guard's `"comment"` was
+      // one (tree-sitter-java emits `line_comment`/`block_comment`; there is no
+      // `comment` node). The per-grammar sets, verified against each wasm's
+      // node-type table: java/groovy line_comment+block_comment, kotlin
+      // line_comment+multiline_comment, scala comment+block_comment.
+      if (c.type === "line_comment" || c.type === "block_comment") continue
       return c
     }
     return node

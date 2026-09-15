@@ -1,8 +1,8 @@
 {
   "probe": "M59.O3",
-  "at": "2026-09-15T15:49:09.576Z",
+  "at": "2026-09-15T17:36:23.066Z",
   "repo": "$HOME/fixtures/repositories/cats-effect",
-  "tempDataDir": "/tmp/m59-data-IzaiEP",
+  "tempDataDir": "/tmp/m59-data-g4QwjI",
   "indexStats": {
     "files": 404,
     "symbols": 7550,
