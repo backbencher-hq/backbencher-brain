@@ -2577,11 +2577,23 @@ export async function storeResults(
                isBlockScopeName
              ) {
                continue
-             }
- 
-             // Deterministic relId — same (source, target, type) shares one row.
-             // INSERT OR IGNORE silently skips duplicates; no more 7× dupes.
-             const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}`
+             }              // Deterministic relId. INSERT OR IGNORE skips duplicates, so the
+              // identity decides what "a duplicate" even means.
+              //
+              // M59/#822: identity includes the call-site line WHEN the analyzer
+              // derived one. The old `${projectId}:rel:${sourceId}:${targetName}:${relType}`
+              // collapsed every genuine call site of one callee onto one row —
+              // measured on a fixture with exactly 4 calls: 1 row survived, so
+              // bb_graph could only ever report "one caller" for a method
+              // invoked four times, and the agent had to fall back to grep for
+              // the sites it could not see (script/m59/verify-rel-multiplicity.ts).
+              // Line-less edges keep the previous identity exactly, so languages
+              // whose analyzer emits no line are unchanged (their per-site rows
+              // are unprovable until #825 lands — never fabricated here).
+              const relLine =
+                typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+              const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`
+
  
              stmt.insertRelationship.run(
                relId,
@@ -2598,7 +2610,7 @@ export async function storeResults(
                // reader must handle "unknown" instead of a number that silently
                // meant "unknown" (graph-engine's `row.lineNumber || node.line`
                // turned that 0 into the caller symbol's declaration line).
-               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null,
+               relLine,
                relIsCrossFile,
                rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
                rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
@@ -4103,7 +4115,9 @@ export async function snapshotInEdges(projectId: ProjectID, fileIds: string[]): 
  * so the resolution phase re-resolves them against the fresh symbol table.
  * Deterministic ids make re-runs idempotent (INSERT OR IGNORE).
  */
-async function repairInEdges(projectId: ProjectID, snapshot: InEdgeSnapshotRow[]): Promise<number> {
+// M59/#821: exported for the legacy-zero-heal gate (verify-legacy-zero-heal.ts) —
+// the repair path is the one place a pre-M59 index's stored 0 can re-enter the DB.
+export async function repairInEdges(projectId: ProjectID, snapshot: InEdgeSnapshotRow[]): Promise<number> {
   if (snapshot.length === 0) return 0
   const rawDb = await BrainDatabase.getRawInstance(projectId)
   const now = Date.now()
@@ -4122,9 +4136,15 @@ async function repairInEdges(projectId: ProjectID, snapshot: InEdgeSnapshotRow[]
       const valuesSql = batch.map(() => "(?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, 1, 0, NULL, ?, ?, ?)").join(",")
       const params: any[] = []
       for (const r of batch) {
+        // M59/#821: snapshot rows from a LEGACY index may carry the old stored
+        // 0 ("unknown" written as a number). Re-storing it verbatim would let
+        // the class survive every reindex. Heal at the boundary: > 0 keeps the
+        // analyzer's line; 0/NULL/undefined becomes NULL. The id keeps the
+        // legacy `?? 0` component so re-runs stay idempotent with existing rows.
+        const ln = typeof r.line_number === "number" && r.line_number > 0 ? r.line_number : null
         const id = `${r.source_symbol_id}:${r.relationship_type}:${r.target_name}:${r.line_number ?? 0}:m40`
         // Idempotency: deterministic id + INSERT OR IGNORE (PK dedup).
-        params.push(id, projectId, r.source_symbol_id, r.target_name, r.relationship_type, r.confidence, r.context, r.line_number, r.metadata, now, now)
+        params.push(id, projectId, r.source_symbol_id, r.target_name, r.relationship_type, r.confidence, r.context, ln, r.metadata, now, now)
       }
       rawDb.prepare(`
         INSERT OR IGNORE INTO brain_relationship

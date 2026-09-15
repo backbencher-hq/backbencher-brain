@@ -38,8 +38,10 @@ import type { GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence
 export interface GroupedRow {
   rowId: string
   relationshipType: string
-  /** Source-side call site (file relative + 1-based line). */ 
-  callSite?: { file: string; line: number }
+  /** Source-side call site (file relative + 1-based line). null line = the
+   *  analyzer could not derive one (M59.O4 #823) — renderers must treat it
+   *  as "unknown", never substitute another line. */
+  callSite?: { file: string; line: number | null }
   /** Traversal depth of the edge this row came from. */
   depth: number
   confidence: number

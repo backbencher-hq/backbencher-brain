@@ -1,49 +1,49 @@
 {
   "probe": "M59.O3",
-  "at": "2026-09-15T17:36:23.066Z",
+  "at": "2026-09-15T22:59:33.808Z",
   "repo": "$HOME/fixtures/repositories/cats-effect",
-  "tempDataDir": "/tmp/m59-data-g4QwjI",
+  "tempDataDir": "/tmp/m59-data-nPtMfh",
   "indexStats": {
     "files": 404,
-    "symbols": 7550,
-    "relationships": 28340,
-    "imports": 1369,
+    "symbols": 7544,
+    "relationships": 33133,
+    "imports": 1349,
     "errorFiles": 0
   },
   "db": {
-    "total": 28340,
-    "withLine": 27056,
+    "total": 33133,
+    "withLine": 31849,
     "zero": 0,
     "null": 1284
   },
   "byType": [
     {
       "rt": "references",
-      "n": 12237
+      "n": 13567
     },
     {
       "rt": "calls",
-      "n": 5653
+      "n": 7843
     },
     {
       "rt": "contains",
-      "n": 5398
+      "n": 5885
     },
     {
       "rt": "instantiates",
-      "n": 1275
+      "n": 1674
     },
     {
       "rt": "uses",
       "n": 1229
     },
     {
-      "rt": "extends",
-      "n": 635
+      "rt": "overrides",
+      "n": 959
     },
     {
-      "rt": "overrides",
-      "n": 575
+      "rt": "extends",
+      "n": 638
     },
     {
       "rt": "implements",
@@ -53,11 +53,11 @@
   "byLanguage": [
     {
       "lang": "scala",
-      "n": 26564
+      "n": 30895
     },
     {
       "lang": "java",
-      "n": 214
+      "n": 239
     },
     {
       "lang": "markdown",
@@ -69,10 +69,10 @@
     }
   ],
   "sourceCheck": {
-    "checked": 26825,
-    "consistent": 25960,
+    "checked": 31181,
+    "consistent": 30270,
     "inconsistent": 0,
-    "notCheckable": 865,
+    "notCheckable": 911,
     "targetUnresolved": 0,
     "failures": [],
     "boundarySelfTest": {

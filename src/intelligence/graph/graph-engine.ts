@@ -174,7 +174,10 @@ export async function traverseGraph(
         confidence: row.confidence ?? 0,
         isCrossLanguage: !!row.isCrossLang,
         bridgeMechanism: row.bridge || undefined,
-        callSite: { file: row.srcFileRel || node.file, line: row.lineNumber || node.line },
+        // M59.O4 (#823): a DB-unknown line stays null — the previous
+        // `|| node.line` substituted the symbol's DECLARATION line for the
+        // call site, which is how bb_graph invented lines 189,499 times.
+        callSite: { file: row.srcFileRel || node.file, line: row.lineNumber && row.lineNumber > 0 ? row.lineNumber : null },
         depth,
         rowId: row.rowId,
         metadata: edgeMetadata(row.meta),
@@ -261,7 +264,9 @@ export async function traverseGraph(
         confidence: row.confidence ?? 0,
         isCrossLanguage: !!row.isCrossLang,
         bridgeMechanism: row.bridge || undefined,
-        callSite: { file: row.srcFileRel || srcFileRel, line: row.lineNumber || 0 },
+        // M59.O4 (#823): `|| 0` reported "unknown" as line 0 — equally
+        // fabricated. null means the analyzer could not derive a line.
+        callSite: { file: row.srcFileRel || srcFileRel, line: row.lineNumber && row.lineNumber > 0 ? row.lineNumber : null },
         depth,
         rowId: row.rowId,
         metadata: edgeMetadata(row.meta),
