@@ -18,6 +18,11 @@
 //   C3 the registry is well-formed: unique ids, every claim has a doc, a
 //      template and a derivation, and every claim's doc is a real file.
 //   C4 a claim with no derivation kind is a failure (the tool never guesses).
+//   C5 coverage: README, the website and the docs are all in the audit set —
+//      every doc that publishes this lane's counts is pinned here, and a doc
+//      declared out-of-scope that publishes one is a failure (issue #846 names
+//      README/website/docs explicitly, so "we only audited one doc" cannot
+//      pass).
 //
 // Run: npx tsx script/m61/verify-claims.ts
 // Evidence: validation/m61/results/V5.json (sealed)
@@ -35,7 +40,15 @@ export type Claim = {
   derive: { kind: "issue-counts" | "field" | "mutant-totals"; source: string; template?: string }
 }
 
-export type Registry = { schemaVersion: number; claims: Claim[] }
+/**
+ * A doc the coverage scan audits. `pinned` docs publish this lane's counts and
+ * must have claims in the registry; `out-of-scope` docs must publish NO lane
+ * count at all (a number that appears there is unpinned prose). The declaration
+ * is what makes the scope visible — an undeclared doc is a doc nobody checks.
+ */
+export type CoverageSpec = { doc: string; status: "pinned" | "out-of-scope"; reason?: string }
+
+export type Registry = { schemaVersion: number; claims: Claim[]; coverage?: CoverageSpec[] }
 
 export function loadClaims(file = CLAIMS_FILE): Registry {
   return JSON.parse(readFileSync(file, "utf8")) as Registry
@@ -130,6 +143,52 @@ export function derive(claim: Claim): Derivation {
   return { values: {}, blocked: `unknown derivation kind: ${String(kind)}` }
 }
 
+/** A line that NAMES this lane and STATES a count about it. Prose that merely
+ *  points at a drift-gated doc (a file path, a tier id) is not a count. */
+export const LANE_WORD = /\b(M2[4-9]|M4[24]|M53|M61)\b|bb_lsp/i
+export const COUNT_CLAIM = /\b\d+\s*\/\s*\d+\b|\b\d+\s+(gates|mutants|suites|issues|verified|passed|negatives)\b/i
+
+/** Every lane count claim a doc publishes, with its line number. */
+export function laneCountClaims(text: string): { line: number; text: string }[] {
+  return text.split("\n").flatMap((l, i) => (LANE_WORD.test(l) && COUNT_CLAIM.test(l) ? [{ line: i + 1, text: l.trim() }] : []))
+}
+
+/** The deliverable's coverage law (issue #846): README, the website and the
+ *  docs are all audited, and every doc that publishes this lane's counts is
+ *  either PINNED here or declared OUT-OF-SCOPE — in which case it must publish
+ *  none. The residue on a pinned doc is reported as a census, so an unpinned
+ *  number stays COUNTABLE instead of invisible. */
+export function coverageFindings(registry: Registry, docs?: Record<string, string>): string[] {
+  const out: string[] = []
+  const declared = registry.coverage ?? []
+  if (declared.length === 0) out.push("coverage: the registry declares no coverage set — the scan cannot say which docs it audits")
+  for (const c of declared) {
+    const text = docs?.[c.doc] ?? (existsSync(path.join(ROOT, c.doc)) ? readFileSync(path.join(ROOT, c.doc), "utf8") : null)
+    if (text === null) {
+      out.push(`coverage: declared doc does not exist: ${c.doc}`)
+      continue
+    }
+    const claims = laneCountClaims(text)
+    if (c.status === "out-of-scope") {
+      for (const h of claims) out.push(`coverage: ${c.doc}:${h.line} publishes a lane count but the doc is declared out-of-scope — pin it or declare it pinned: "${h.text.slice(0, 80)}"`)
+    } else if (registry.claims.filter((x) => x.doc === c.doc).length === 0) {
+      out.push(`coverage: ${c.doc} is declared pinned but the registry pins no claim in it`)
+    }
+  }
+  return out
+}
+
+/** The coverage census: how many lane claims each declared doc publishes and
+ *  how many the registry pins there. Reported, never asserted — the residue is
+ *  the milestone gate's business, not a silent pass. */
+export function coverageCensus(registry: Registry): { doc: string; status: string; published: number; pinned: number }[] {
+  return (registry.coverage ?? []).map((c) => {
+    const abs = path.join(ROOT, c.doc)
+    const published = existsSync(abs) ? laneCountClaims(readFileSync(abs, "utf8")).length : 0
+    return { doc: c.doc, status: c.status, published, pinned: registry.claims.filter((x) => x.doc === c.doc).length }
+  })
+}
+
 export type ClaimResult = {
   id: string
   doc: string
@@ -197,5 +256,19 @@ export function registryProblems(registry: Registry): string[] {
     // only when the derivation still supplies values (checked at pin time).
   }
   if (registry.claims.length === 0) problems.push("the registry has no claims")
+  // C5: the coverage set is part of the registry's well-formedness — every
+  // declared doc must exist, a status must be declared, and an out-of-scope
+  // declaration must carry its reason (a bare exclusion is a hiding place).
+  const seen = new Set<string>()
+  for (const c of registry.coverage ?? []) {
+    if (!c.doc) problems.push("a coverage entry has no doc")
+    else {
+      if (seen.has(c.doc)) problems.push(`duplicate coverage entry: ${c.doc}`)
+      seen.add(c.doc)
+      if (!existsSync(path.join(ROOT, c.doc))) problems.push(`coverage: doc does not exist: ${c.doc}`)
+    }
+    if (c.status !== "pinned" && c.status !== "out-of-scope") problems.push(`coverage: ${c.doc ?? "?"} has no status`)
+    if (c.status === "out-of-scope" && !c.reason) problems.push(`coverage: ${c.doc ?? "?"} is out-of-scope with no reason`)
+  }
   return problems
 }

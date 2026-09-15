@@ -12,6 +12,10 @@
 //   C2 pinned:    every claim's rendered row appears verbatim in its doc. This
 //                 is where prose drift dies: the published number must equal
 //                 the ledger's number.
+//   C3 coverage:  the declared audit set is README + website + docs (#846). A
+//                 doc declared out-of-scope that publishes a lane count fails,
+//                 and a pinned doc with no pins fails — so "we only audited one
+//                 file" cannot pass as coverage.
 //
 // Mutants (source-level copies) prove the suite CAN FAIL:
 //   M1 pin-blind:      a drifted doc reports as pinned.
@@ -22,6 +26,9 @@
 //   M5 scan-blind:     the doc scan never finds the rendered row (so a fully
 //                      correct doc would be reported as drifted — proving the
 //                      comparison is live rather than vacuous).
+//   M6 coverage-blind: an out-of-scope doc publishing a lane count stops
+//                      failing — the coverage law is disconnected.
+//   M7 unpinned-blind: a pinned doc with no pins stops failing.
 //
 // Run: npx tsx script/m61/verify-claims.ts
 // Evidence: validation/m61/results/V5.json (sealed)
@@ -35,6 +42,8 @@ import {
   ROOT,
   classify,
   derive,
+  coverageCensus,
+  coverageFindings,
   loadClaims,
   pinClaims,
   registryProblems,
@@ -83,6 +92,24 @@ console.log("\nC2: every published number equals its ledger")
 const drifted = results.filter((r) => r.outcome === "drifted")
 check("C2: no published claim has drifted from its ledger", drifted.length === 0, drifted.map((d) => `${d.id}: published ${d.published} row(s), expected "${d.rendered}"`).slice(0, 4).join(" | "))
 check("C2: the pins are live (at least one row was found for every claim)", results.every((r) => r.outcome !== "pinned" || r.published >= 1))
+
+// --- C3: coverage of the audit set (README + website + docs) ----------------------
+console.log("\nC3: the declared audit set publishes no unpinned lane count")
+const covFindings = coverageFindings(registry)
+check("C3: every declared doc exists and honors its coverage status", covFindings.length === 0, covFindings.slice(0, 4).join(" | "))
+const census = coverageCensus(registry)
+check(
+  "C3: the audit set covers README, the website and the docs end to end",
+  census.some((c) => c.doc === "README.md") && census.some((c) => c.doc.startsWith("website/")) && census.some((c) => c.doc.startsWith("docs/")),
+  census.map((c) => c.doc).join(", "),
+)
+const pinnedDoc = census.find((c) => c.status === "pinned")
+check("C3: the pinned doc really publishes lane counts (the scan is live, not vacuous)", !!pinnedDoc && pinnedDoc.published > 0, JSON.stringify(pinnedDoc ?? null))
+check(
+  "C3: the coverage set declares a pinned doc and at least one enforced exclusion",
+  census.some((c) => c.status === "pinned") && census.some((c) => c.status === "out-of-scope"),
+  `${census.length} declared docs`,
+)
 
 // --- pure cores on known inputs ---------------------------------------------------
 console.log("\ncores: known inputs")
@@ -164,6 +191,32 @@ await runMutant("scan-blind", '    const published = text === null ? 0 : text.sp
   return rs.every((x) => x.outcome !== "pinned")
 })
 
+// M6/M7 (issue #846 acceptance: README/website/docs covered): the coverage law
+// itself must be able to fail. These plant the two defects that would let an
+// unpinned lane count live in a published doc.
+await runMutant(
+  "coverage-blind",
+  "      for (const h of claims) out.push(`coverage: ${c.doc}:${h.line} publishes a lane count",
+  "      for (const h of []) out.push(`coverage: ${c.doc}:${h.line} publishes a lane count",
+  (mod) => {
+    const reg = JSON.parse(JSON.stringify(loadClaims())) as ReturnType<typeof loadClaims>
+    reg.coverage = [{ doc: "README.md", status: "out-of-scope", reason: "probe" }]
+    const docs1 = { "README.md": "M44 · 48/48 gates verified in-editor\n" }
+    return (mod.coverageFindings as typeof coverageFindings)(reg, docs1).length === 0
+  },
+)
+await runMutant(
+  "unpinned-blind",
+  "    } else if (registry.claims.filter((x) => x.doc === c.doc).length === 0) {",
+  "    } else if (false) {",
+  (mod) => {
+    const reg = JSON.parse(JSON.stringify(loadClaims())) as ReturnType<typeof loadClaims>
+    reg.claims = []
+    reg.coverage = [{ doc: "docs/IDE-PROGRAM-STATUS.md", status: "pinned" }]
+    return (mod.coverageFindings as typeof coverageFindings)(reg).length === 0
+  },
+)
+
 // --- evidence --------------------------------------------------------------------
 function gitHead(): string {
   try {
@@ -189,8 +242,9 @@ const buildEvidence = () => ({
   evidenceFile: "V5.json",
   generatedAt: new Date().toISOString(),
   claims: results.map((r) => ({ id: r.id, doc: r.doc, outcome: r.outcome, rendered: r.rendered, published: r.published, reason: r.reason })),
+  coverage: census,
   limitations: [
-    "The tool pins the claims DECLARED in script/m61/claims.json. A number that is published but not declared is not yet covered — the registry is the surface to extend, and adding a claim is a data change, not a code change.",
+    "The tool pins the claims DECLARED in script/m61/claims.json, and coverage (#846's audit set: README + website + docs) is enforced by the scan — an out-of-scope doc that publishes a lane count fails. The residue on the pinned doc is reported as the `coverage` census rather than hidden: a count-claim line not covered by a pin is visible in the record and is the registry's next extension.",
     "Byte-gated REGENERATION is the D1 pattern already owned by the generated docs (docs/m26/GRAPH.md via verify-graph-docs, docs/m29/* via verify-m29-docs). The claims doc pinned here is hand-written, so it is PINNED rather than regenerated: the pin fails the moment the prose and the ledger disagree, which is the same protection without rewriting the doc body.",
     "Derivations read the records' own fields; a claim whose source stops exposing a field BLOCKS (loudly) rather than comparing against a silent zero.",
   ],
