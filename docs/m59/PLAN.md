@@ -381,6 +381,79 @@ inside it are at `known-gap` because their evidence is pinned to an older commit
 (`validation/m42/results/H3.json` → `7777dd53`, HEAD `36b83b89`). The three M44 evidence files re-run by
 this round now pin to the current HEAD instead.
 
+### 3i. Call-site multiplicity: identity that keeps every site (#822, 2026-09-16)
+
+`bb_graph` could only ever answer with ONE site per callee. This document had assumed the analyzers
+deduped the rest away (`relationshipKeys` sets indexed by `(source,target,type)`), so the analyzers were
+measured FIRST — the fix depends on which layer is losing the sites.
+
+**Measured at the analyzer seam** (`script/m59/probe-multiplicity.ts`; controlled fixtures — one caller,
+one callee, 4 calls on 4 known lines, expected count asserted against the fixture text):
+
+| language | analyzer emits | carries lines |
+|---|---|---|
+| java · kotlin · scala | **4 edges, 4 distinct lines** | yes |
+| typescript · javascript | 4 edges | **0 lines** at this HEAD |
+| python · go | **1 edge** | 0 lines |
+
+So for the JVM family the sites were NOT deduped by the analyzer — they were collapsed by the STORE:
+`relId = ${projectId}:rel:${sourceId}:${targetName}:${relType}` has no line component, and
+`INSERT OR IGNORE` kept the first row and silently dropped the rest. **This document's earlier claim that
+"analyzers also dedupe per (source,target,type)" was wrong for `calls`** — it came from grepping the
+`uses`/`contains` dedupe paths. Measured, not argued.
+
+**RED, in the database** (`script/m59/verify-rel-multiplicity.ts`, before the fix — the gate turns on a
+predicate that is separately aimed at a collapsed world to prove it can fail):
+
+```
+java-per-call-site   FAIL   1 row / 1 distinct line for 4 true call sites
+```
+
+**The fix** — identity includes the site line when the analyzer derived one, and keeps the previous
+identity when it did not (so line-less languages are bit-for-bit unchanged):
+
+```ts
+const relLine = typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`
+```
+
+**GREEN, through the real tool path** (same gate: index → store → `graphTraversal`, the engine behind
+`bb_graph`):
+
+```
+java-per-call-site                PASS   4 rows / 4 distinct lines for 4 true call sites
+tool-reports-every-call-site      PASS   4 caller edges, 4 distinct lines — caller:3 at lines 4,5,6,7
+```
+
+**Magnitude on a real repo** — cats-effect, 404 files, identical corpus, before vs after:
+
+| | before #822 | after |
+|---|---:|---:|
+| relationship rows | 28,186 | **33,133** (+4,947, +17.6%) |
+| carrying a real line | 26,906 | 31,849 |
+| `line_number = 0` | 0 | **0** |
+| landed lines vs source (Tier A) | 25,810 consistent / 0 inconsistent | **30,270 consistent / 0 inconsistent** |
+
+3,021 `(source,target,type)` groups that held 1 row now hold 8,063. Spot-checked against source:
+`IOFiber.scala`'s `runLoop` at **48** lines — every one a real `runLoop(...)` call; `tag` overrides at
+26; `JSRunner.register` at 17. The extra rows are real sites, and the source check did not weaken
+(0 inconsistent before and after).
+
+**Edits are safe — proven, not assumed** (`script/m59/verify-line-key-idempotency.ts`, 6/6): a full index
+stores 4 rows at lines 3-6; editing the CALLEE (the caller's lines unchanged) leaves exactly 4 rows /
+4 distinct ids, carried through the repair path's `m40` ids with **no rel/m40 duplication**; editing the
+CALLER so the calls move to 5-8 leaves exactly 4 rows at 5-8 — **no stale row survives at the old
+lines**, which is the failure mode a line-keyed identity invites.
+
+**Not a pass, declared:** typescript and javascript emit 4 edges with no line, so their sites still
+collapse to 1 row — the sites exist but cannot be told apart until the analyzer emits a line (#825).
+python/go emit 1 edge (analyzer-side). The gate prints those states and never counts them as passing.
+
+**New finding, filed not smuggled:** #854 — the id keys on the raw target spelling, so `Reference` and
+`java.lang.ref.Reference` resolving to one symbol at one line store **two** rows (116 groups / 223 rows
+on the cats-effect index, 28 of them line-bearing; 0 rows share a primary-key id, so this is identity by
+spelling, not a broken PK).
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
@@ -396,8 +469,8 @@ asking a different question.
 | #819 oracle | delivered, mutation-proven |
 | #820 store write | landed, measured on a real index |
 | #821 remaining hardcoded `0` | **closed** — the buffered `contains` insert and both cross-language persister sites write the analyzer's line or `NULL`; measured 62 → **0** rows storing 0 on a real index, and the store probe fails the run if one reappears |
-| #822 call-site multiplicity | **open** — row id at `:2547` has no line; analyzers also dedupe per `(source,target,type)` |
-| #823 stop fabricating in the tool | **open** — needs `number \| null` end-to-end and coordinates with the LSP/hub lane |
+| #822 call-site multiplicity | **closed** — the analyzers were measured first (`probe-multiplicity.ts`): java/kotlin/scala emit 4 edges on 4 lines for 4 calls, so the collapse was the STORE's id, not the analyzers'. Identity now carries the site line; the DB gate went 1 row → 4 rows and the TOOL path (`graphTraversal`) returns all 4 sites at lines 4,5,6,7. Real repo: 28,186 → 33,133 rows, 3,021 groups now hold 8,063 sites, source check still 0 inconsistent (30,270 consistent). Edits proven non-staling and non-duplicating (`verify-line-key-idempotency.ts` 6/6). Line-less languages unchanged by construction; #854 filed for target-spelling duplicates |
+| #823 stop fabricating in the tool | **closed** — `graph-engine.ts:177/264` no longer substitute `node.line`/`0`; the contracts type `line: number \| null`; the LSP emits NO range for an unknown line (`null - 1` → NaN and a wrong highlight before). Gate `verify-honest-callsite.ts` was run RED at HEAD first (`db=NULL engine=5`), then GREEN (`0 fabricated`), with the mutation proven by stashing the fix and re-running. Coordinated with the LSP/hub lane by landing the change additively |
 | #824 delete false certification | **closed** — `script/verify-graph.ts` no longer accepts a file as a call site: the expectation is derived from the fixture's own source (java 8, scala 6 at HEAD) and two controls over a **real index** corrupt and `NULL` the stored line and are caught/refused. The three M44 fixtures that hand-supplied `line_number` (3, 4, 2, 5, 6, 1) now write `NULL` and every law still passes (U1 20/20 · U3 27/27 · U4 25/25), which is what proves they never read it. The same round fixed the evidence: `failures` is persisted, and the wire-leg check set is invariant, so a run that cannot establish a law fails it by name instead of shrinking the count |
 | #825 analyzer lane emission — synthesised members | **JVM family done** — a synthesised member (`metadata.isPhantom`: kotlin's data-class `componentN`/`copy`/`equals`/`hashCode`/`toString`, java's lombok accessors and Spring-Data repository methods) carries NO line; a declared member keeps its real one. Both analyzers used to take the ENCLOSING declaration's range, so `contains DataHolder.component1` claimed the class line and no source check could ever satisfy it. kotlin's injector also set `ownerName` for `componentN` but not for the other four, so those members had no containment edge at all. Fixtures `kotlin/data-class-phantoms` (extended) and `java/phantom-contains-lines` (new), mutants `kotlin/phantom-containment-line`, `java/phantom-containment-line`, `kotlin/phantom-uncontained` (all CAUGHT), and the runner gained the `line_number: null` assertion the gate was missing. The oracle now flags a phantom target that CLAIMS a line as inconsistent (it previously classified the whole class `notCheckable` by name shape, which is how 32 wrong-line kotlin edges passed a 6,787/6,787 "carries a line, 0 inconsistent" claim) |
 | #825 analyzer lane emission | **JVM family done, others open** — at the 840-file oracle sweep, scala **1,989/1,989** · java **1,920/1,920** · kotlin **6,787/6,787** · groovy **761/761** carry a line on **every** relationship, **0 inconsistent** (groovy also 2,864/2,864 at a 150-file sample). Every mechanism is fixture- and mutant-pinned (scala 5 mutants, java 3, kotlin 2, groovy 3). Still open: the other 17 languages emit **0 lines across 77,170 relationships**. xml is now closed too — added to the oracle (569/569 consistent, 0 inconsistent at 40 files) and given the fixture lane it never had (`xml/lines-825`, 22 lanes / 429 fixtures) |
@@ -407,6 +480,11 @@ asking a different question.
 
 - `validation/m59/results/oracle-callsite.json` — oracle run, tiers, mutation, per-file detail
 - `validation/m59/results/store-line-landing.json` — before/after on a real index + per-line source check
+- `validation/m59/results/multiplicity.json` — #822: what each analyzer emits per call site (7 languages)
+- `validation/m59/results/rel-multiplicity.json` — #822: the DB and the tool, before/after, with the
+  predicate aimed at a collapsed world to prove it can fail
+- `validation/m59/results/line-key-idempotency.json` — #822: edits leave no stale rows, no duplicates
+- `validation/m59/results/honest-callsite.json` · `legacy-zero-heal.json` — #823 / #821 gates
 - `validation/m44/results/U1.json` · `U3.json` · `U4.json` — the three gates re-run at HEAD with the
   hand-supplied lines deleted; each now carries `failures: []` and pins to the current commit
 - `reviews/m49-callsite-line-gap.md` — the contract handoff to the analyzer lane
@@ -416,6 +494,13 @@ asking a different question.
 ```bash
 npx tsx script/m59/oracle-callsite.ts --files-per-lang=4
 npx tsx script/m59/verify-store-line-landing.ts
+# #822 — multiplicity: what the analyzers emit, what the store keeps, what the tool answers
+npx tsx script/m59/probe-multiplicity.ts
+npx tsx script/m59/verify-rel-multiplicity.ts
+npx tsx script/m59/verify-line-key-idempotency.ts
+# #823 / #821 — the tool stops fabricating; legacy zeros cannot return
+npx tsx script/m59/verify-honest-callsite.ts
+npx tsx script/m59/verify-legacy-zero-heal.ts
 # #824 — the certification that can fail (A6)
 bun run script/verify-graph.ts
 npx tsx script/m44/verify-usages-groups.ts   # U1 20/20

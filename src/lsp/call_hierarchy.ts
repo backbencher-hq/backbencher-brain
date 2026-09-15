@@ -299,14 +299,21 @@ export async function expandCalls(
     const node = result.nodes[otherId];
     if (node === undefined) continue;
     const item = itemFromNode(node);
-    const callSite: LspRange = {
-      start: { line: Math.max(0, edge.callSite.line - 1), character: 0 },
-      end: { line: Math.max(0, edge.callSite.line - 1), character: 0 },
-    };
+    // M59.O4 (#823): an unknown call-site line emits NO range — the previous
+    // `edge.callSite.line - 1` on a fabricated declaration line highlighted the
+    // wrong line in the editor. The caller itself stays visible with empty
+    // fromRanges; null carries through, never a guessed number.
+    const callSite: LspRange | null =
+      edge.callSite.line !== null
+        ? {
+            start: { line: Math.max(0, edge.callSite.line - 1), character: 0 },
+            end: { line: Math.max(0, edge.callSite.line - 1), character: 0 },
+          }
+        : null;
     if (direction === "callers") {
-      calls.push({ from: item, fromRanges: [callSite] });
+      calls.push({ from: item, fromRanges: callSite ? [callSite] : [] });
     } else {
-      calls.push({ to: item, fromRanges: [callSite] });
+      calls.push({ to: item, fromRanges: callSite ? [callSite] : [] });
     }
   }
 
