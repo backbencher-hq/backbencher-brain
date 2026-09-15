@@ -36,11 +36,11 @@
       "detail": "caught (1 failures)"
     }
   ],
-  "currentCommit": "8399884df8f141b8bac2b98660f22f91fd4db748",
+  "currentCommit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
   "sourceFingerprint": "44bdf9f570c8807e4c84d2fda13eee1a64b1b15d8228b1bcefa4060e70223a4a",
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-09-15T16:00:31.414Z",
+  "generatedAt": "2026-09-15T16:17:46.401Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory; platform-specific watcher quirks (inotify limits, macOS FSEvents coalescing) are covered by M25.E7 cross-platform runs.",
     "brain.db interaction exercised through an interface double; the DB-backed freshness path is covered by the upstream freshness verifiers.",
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T16:00:31.415Z",
-    "contentSha256": "830263db819d90fb3c74a615d2d4de090116bf43d4fe82e6b9d3decd0953e976"
+    "sealedAt": "2026-09-15T16:17:46.401Z",
+    "contentSha256": "469966d9039438886f384471f14060dc9f2ccadd6b264445e3ff9776f76ccff0"
   }
 }

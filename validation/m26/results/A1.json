@@ -28,13 +28,13 @@
       ]
     }
   },
-  "currentCommit": "8399884df8f141b8bac2b98660f22f91fd4db748",
+  "currentCommit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-15T16:09:24.720Z",
+  "generatedAt": "2026-09-15T16:14:05.577Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T16:09:24.720Z",
-    "contentSha256": "3c72f1223992ee842bc75ea6308eb3b812adbd4820d267d06c01ba28479a9a8f"
+    "sealedAt": "2026-09-15T16:14:05.577Z",
+    "contentSha256": "b9e14fa0372b3d3198c10e34bd51301b0b8d4c0cd2d7f5227bf94c9ce429239c"
   }
 }
