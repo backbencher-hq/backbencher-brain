@@ -1,6 +1,6 @@
 {
   "probe": "M59.O1",
-  "at": "2026-09-15T16:36:23.151Z",
+  "at": "2026-09-15T16:51:39.679Z",
   "corpus": "$HOME/fixtures/repositories",
   "filesPerLang": 40,
   "oracleIndependence": {
@@ -19,7 +19,11 @@
       "subwordStillFails": true,
       "suffixOfLongerWordFails": true,
       "wrongLineStillFails": true,
-      "sigilJoinedIdentifierAccepted": true
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
     }
   },
   "mutation": {
@@ -218,6 +222,15 @@
       "withLine": 0,
       "noLine": 9857,
       "consistent": 0,
+      "inconsistent": 0,
+      "notCheckable": 0
+    },
+    "xml": {
+      "files": 40,
+      "rels": 569,
+      "withLine": 569,
+      "noLine": 0,
+      "consistent": 569,
       "inconsistent": 0,
       "notCheckable": 0
     }
@@ -9500,6 +9513,448 @@
         "withLine": 0,
         "noLine": 108,
         "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "xml": [
+      {
+        "file": "slim/psalm.xml",
+        "language": "xml",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "ripgrep/pkg/windows/Manifest.xml",
+        "language": "xml",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/command/testdata/test/junit-output/multiple-files/expected-output.xml",
+        "language": "xml",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/command/testdata/test/junit-output/missing-provider/expected-output.xml",
+        "language": "xml",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "terraform/internal/command/testdata/test/junit-output/1pass-1fail/expected-output.xml",
+        "language": "xml",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-jdbc-r2dbc-tests/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-migration-jdbc/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-r2dbc-tests/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-r2dbc-tests/src/main/resources/log4j2.xml",
+        "language": "xml",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-gradle-plugin/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/documentation-website/Writerside/redirection-rules.xml",
+        "language": "xml",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/documentation-website/Writerside/snippets/exposed-modules-maven/pom.xml",
+        "language": "xml",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/documentation-website/Writerside/snippets/exposed-maven-plugin/pom.xml",
+        "language": "xml",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/documentation-website/Writerside/cfg/buildprofiles.xml",
+        "language": "xml",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/documentation-website/Writerside/cfg/build-script.xml",
+        "language": "xml",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-maven-plugin/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-maven-plugin/src/test/resources/template/pom.xml",
+        "language": "xml",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 50,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-crypt/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-plugin-core/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-migration-r2dbc/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/samples/exposed-ktor-r2dbc/src/main/resources/logback.xml",
+        "language": "xml",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/samples/springboot3-exposed-r2dbc/src/test/resources/logback.xml",
+        "language": "xml",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/samples/exposed-ktor/src/main/resources/logback.xml",
+        "language": "xml",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-tests/src/test/resources/logback-test.xml",
+        "language": "xml",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "Exposed/exposed-tests/src/main/resources/log4j2.xml",
+        "language": "xml",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/optimize/stats/ILLink.Substitutions.xml",
+        "language": "xml",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/fsharp/optimize/stats/ILLink.LinkAttributes.xml",
+        "language": "xml",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/tests/FSharp.Compiler.ComponentTests/Conformance/Expressions/DataExpressions/QueryExpressions/Customers.xml",
+        "language": "xml",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/eng/Version.Details.xml",
+        "language": "xml",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/eng/policheck_exclusions.xml",
+        "language": "xml",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/src/FSharp.Core/ILLink.Substitutions.xml",
+        "language": "xml",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/vsintegration/ItemTemplates/XMLFile/Template/XMLFile.xml",
+        "language": "xml",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fsharp/vsintegration/src/SupportedRuntimes/SupportedRuntimes.xml",
+        "language": "xml",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/docs/cfg/buildprofiles.xml",
+        "language": "xml",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "kotlinx-coroutines/integration/kotlinx-coroutines-slf4j/test-resources/logback-test.xml",
+        "language": "xml",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/app/src/profile/AndroidManifest.xml",
+        "language": "xml",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/app/src/main/AndroidManifest.xml",
+        "language": "xml",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/app/src/main/res/values/styles.xml",
+        "language": "xml",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/app/src/main/res/drawable/launch_background.xml",
+        "language": "xml",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/app/src/main/res/values-night/styles.xml",
+        "language": "xml",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": []

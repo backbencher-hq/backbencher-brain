@@ -69,6 +69,14 @@ const LANGUAGES: Array<{ lang: string; ext: string[]; unsupportedExt?: string[] 
   { lang: "ruby", ext: [".rb"] },
   { lang: "python", ext: [".py"] },
   { lang: "haskell", ext: [".hs"] },
+  // xml is not one of the 21 onboarded *language lanes*, but it IS an onboarded
+  // language in the registry (`xml`/`xsd`/`dtd`) and — measured — the only other
+  // analyzer besides scala that emitted a line before the M59 round (27 of 27
+  // relationships on the M59 coverage probe). Its lines had therefore never been
+  // checked against source by anything: it was absent from this list, so the
+  // milestone's own oracle could not see it. Added so that its every line is
+  // source-checked like the four JVM languages.
+  { lang: "xml", ext: [".xml"] },
 ]
 
 const MAX_BYTES = 400_000
@@ -283,11 +291,23 @@ async function main() {
         }
         r.withLine++
         const token = calleeToken(rel)
-        if (!isCheckable(token, rel?.target ?? rel?.to)) {
+        // An xml NAMESPACE edge names a namespace, and the DEFAULT namespace has
+        // no written prefix: for `xmlns="…"` the analyzer synthesises the
+        // element name `default`, which appears nowhere in the source, so the
+        // element-name token can never be found on any line. The ATTRIBUTE name
+        // IS written (`xmlns`, `xmlns:asmv3`), so the claim is checked against
+        // that rather than being skipped — measured: 7 such claims on a 40-file
+        // xml sample, all on the correct line. Narrow by METADATA MARKER (the
+        // analyzer sets role: "xml_namespace"), never by the name string, so no
+        // real claim of a wrongly-lined `default` can hide behind it.
+        const isNsEdge = rel?.metadata?.role === "xml_namespace"
+        const nsAttr = isNsEdge ? rel?.metadata?.attributeName : undefined
+        const checkToken = typeof nsAttr === "string" && nsAttr.length > 0 ? nsAttr : token
+        if (!isCheckable(checkToken, isNsEdge ? checkToken : (rel?.target ?? rel?.to))) {
           r.notCheckable++
           continue
         }
-        if (tierAConsistent(lines, ln, token)) {
+        if (tierAConsistent(lines, ln, checkToken)) {
           r.consistent++
         } else {
           r.inconsistent++
@@ -331,6 +351,14 @@ async function main() {
     wrongLineStillFails: !tierAConsistent(["  val v = 1", "  val w = 2"], 2, "v"),
     // documented accepted weakening (see boundaryRe): recorded, not asserted away
     sigilJoinedIdentifierAccepted: tierAConsistent([String.raw`val a$b = 1`], 1, "b"),
+    // xml namespace edges: the synthesised element name `default` is NEVER in
+    // source (so it would be an unfixable "failure"), while the attribute name
+    // the claim is checked against IS. Both directions asserted, so the
+    // narrowing cannot silently pass a wrong line either.
+    xmlNamespaceSyntheticNameFails: !tierAConsistent(['<project xmlns="http://maven.apache.org/POM/4.0.0"'], 1, "default"),
+    xmlNamespaceAttributeMatches: tierAConsistent(['<project xmlns="http://maven.apache.org/POM/4.0.0"'], 1, "xmlns"),
+    xmlNamespacePrefixedAttributeMatches: tierAConsistent(['<asmv3:windowsSettings xmlns="x" xmlns:asmv3="y">'], 1, "xmlns:asmv3"),
+    xmlNamespaceWrongLineStillFails: !tierAConsistent(['<project>', '<project xmlns="u">'], 1, "xmlns"),
   }
   const boundaryOk = Object.values(boundarySelfTest).every(Boolean)
 

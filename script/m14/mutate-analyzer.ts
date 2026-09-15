@@ -152,10 +152,11 @@ function dropJavaCallsiteLines(r: any) {
   }
 }
 
-// M59 (#825), groovy half: the PRE-FIX state EXACTLY. Before this round the
-// groovy analyzer emitted NO line on any relationship (measured: 0 of 761 on a
-// 40-file sample), so the faithful regression is "the field is gone".
-function dropGroovyLineNumbers(r: any) {
+// M59 (#825), the "no line at all" half: the PRE-FIX state EXACTLY for an
+// analyzer that emitted none. Used by groovy (measured 0 of 761 relationships on
+// a 40-file sample) and by xml, whose lines existed but were never pinned by any
+// lane before this round.
+function dropAllLineNumbers(r: any) {
   const rels: any[] = r.relationships ?? []
   if (!rels.some((x) => x && "line_number" in x)) return r
   return {
@@ -1009,7 +1010,14 @@ const MUTANTS: Mutant[] = [
     language: "groovy",
     defectClass: "line-attribution",
     description: "M59 (#825) regression: groovy's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 761 relationships carried one on a 40-file sample). Caught by groovy/lines-825, which pins the class at 19, its members at 23/26, both heritage parents at 19/20, the override at 26, the member read at 27, the declared type at 23, the import at 3 and both chain calls at 29/30.",
-    transform: dropGroovyLineNumbers,
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "xml/lines-dropped",
+    language: "xml",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: xml's relationships go back to carrying NO line. xml had no fixture lane at all before this round, so nothing pinned its line contract even though it was one of only two analyzers that emitted one. Caught by xml/lines-825, which pins every element, every attribute, the default-namespace edge (whose target is the synthesised name `default`) and the prefixed-namespace edge.",
+    transform: dropAllLineNumbers,
   },
   {
     id: "groovy/annotation-start-line",
