@@ -135,15 +135,22 @@ async function makeFixture(): Promise<Fixture> {
   const rel = db.prepare(
     `INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, metadata, line_number, is_cross_language, target_external) VALUES (?,?,?,?,?,?,?,?,?,?)`,
   )
+  // M59.A6 (#824): these rows used to carry hand-supplied line numbers
+  // (3, 4, 2, 5, 6, 1). NO law in this battery reads a line — the fixture was
+  // supplying values the pipeline never produced for typescript, which is what
+  // let the gate read as if the line path had been exercised. They are NULL
+  // now, exactly as production stores them for a language whose analyzer emits
+  // no line yet (#825); the grouping/multiplicity/identity laws are unchanged
+  // by the removal, which is the proof that they never depended on it.
   // makeWidget -> Widget TWICE (calls + instantiates): one group, multiplicity 2.
-  rel.run("r-make-calls", projectId, S_MAKE, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', 3, 0, null)
-  rel.run("r-make-inst", projectId, S_MAKE, S_WIDGET, "instantiates", 0.5, '{"evidenceClass":"inferred"}', 4, 0, null)
-  rel.run("r-draw", projectId, S_DRAW, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', 2, 0, null)
+  rel.run("r-make-calls", projectId, S_MAKE, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
+  rel.run("r-make-inst", projectId, S_MAKE, S_WIDGET, "instantiates", 0.5, '{"evidenceClass":"inferred"}', null, 0, null)
+  rel.run("r-draw", projectId, S_DRAW, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
   // The §13.1 identity trap: TWO distinct symbols, same name, both call Widget.
-  rel.run("r-ma", projectId, S_MAIN_A, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', 5, 0, null)
-  rel.run("r-mb", projectId, S_MAIN_B, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', 6, 0, null)
+  rel.run("r-ma", projectId, S_MAIN_A, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
+  rel.run("r-mb", projectId, S_MAIN_B, S_WIDGET, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
   // Unresolved external callee of the root.
-  rel.run("r-ext-push", projectId, S_WIDGET, null, "calls", 0.6, null, 1, 0, "push")
+  rel.run("r-ext-push", projectId, S_WIDGET, null, "calls", 0.6, null, null, 0, "push")
   // File-level imports/exports rows (NULL source symbol), targeting the root.
   rel.run("r-imp", projectId, null, S_WIDGET, "imports", 0.9, null, null, 0, "./widget:Widget")
   rel.run("r-exp", projectId, null, S_WIDGET, "exports", 0.9, null, null, 0, "./widget:Widget")
@@ -152,7 +159,7 @@ async function makeFixture(): Promise<Fixture> {
   // draw) and from the root's callee cascade — so the grouped response must
   // never contain it (differential proof that nothing leaks beyond the root's
   // usage set).
-  rel.run("r-noise", projectId, S_DRAW, S_UTIL, "calls", 0.9, '{"evidenceClass":"structural"}', 9, 0, null)
+  rel.run("r-noise", projectId, S_DRAW, S_UTIL, "calls", 0.9, '{"evidenceClass":"structural"}', null, 0, null)
 
   return {
     ws,
@@ -344,12 +351,16 @@ async function runMutant(idx: number, m: Mutant, db: any, projectId: string, sto
 }
 
 // --- R4: real-server leg ---------------------------------------------------------
-async function realServerLeg(): Promise<{ ok: boolean; detail: string }> {
+async function realServerLeg(): Promise<{ ok: boolean; shapeOk: boolean; detail: string }> {
   if (!existsSync(SERVER)) {
     execFileSync("npx", ["tsup"], { cwd: ROOT, stdio: ["ignore", "ignore", "inherit"], timeout: 420_000 })
   }
-  const out = { ok: false, detail: "" }
+  const out = { ok: false, shapeOk: false, detail: "" }
   let child: ReturnType<typeof spawn> | null = null
+  // #824: the two wire laws' verdicts are captured here and emitted AFTER the
+  // session, so the check set is the same whether or not the session completed.
+  let wireOk = false
+  let legacyMsg = ""
   // A FRESH fixture (own workspace + own data dir) — the same seeding
   // makeFixture() performs in-process has already persisted the sqlite file,
   // so the child server opens the real index, exactly as a real client would.
@@ -408,7 +419,7 @@ async function realServerLeg(): Promise<{ ok: boolean; detail: string }> {
     const makeWidget = callers.find((x: any) => x.name === "makeWidget")
     const callees: any[] = Array.isArray(g?.callees) ? g.callees : []
     const imports: any[] = g?.fileLevel?.imports ?? []
-    const wireOk =
+    wireOk =
       callers.length === 4 &&
       new Set(callers.map((x: any) => x.symbolId)).size === 4 &&
       makeWidget?.occurrences === 2 &&
@@ -420,22 +431,34 @@ async function realServerLeg(): Promise<{ ok: boolean; detail: string }> {
     if (!wireOk) throw new Error(`grouped shape wrong over the wire: ${out.detail}`)
 
     // A v1 client must get the loud declared mismatch, never silent data.
-    let legacyMsg = ""
     try {
       await request("bb/graph", { schemaVersion: 1, symbol: "Widget", mode: "usages" })
     } catch (error: any) {
       legacyMsg = String(error?.message ?? error)
     }
-    const legacyOk = legacyMsg.startsWith("bb/graph:") && legacyMsg.includes("schema version mismatch")
-    check("R4: v1 client over the wire gets the loud declared mismatch", legacyOk, legacyMsg.slice(0, 160))
-    if (!legacyOk) throw new Error(`v1 client was not rejected loudly: ${legacyMsg.slice(0, 160)}`)
-    out.ok = true
   } catch (error: any) {
     out.detail = `${out.detail} | ${String(error?.message ?? error).slice(0, 300)}`
   } finally {
     try { child?.kill() } catch {}
     fx.cleanup()
   }
+  // #824: this check used to live INSIDE the try. Any throw before it (a spawn
+  // failure, the initialize caps check, a request timeout, a wire shape
+  // mismatch) dropped it silently, so a failing run reported 19 checks where a
+  // passing one reports 20 — a count that varies between runs at one commit is
+  // indistinguishable from a gate that never finished. Both wire laws are now
+  // emitted on every path, and a session that did not complete fails them by
+  // name instead of shrinking the set.
+  const legacyOk = legacyMsg.startsWith("bb/graph:") && legacyMsg.includes("schema version mismatch")
+  check(
+    "R4: v1 client over the wire gets the loud declared mismatch",
+    legacyOk,
+    legacyMsg
+      ? legacyMsg.slice(0, 160)
+      : `no v1 response — session did not reach the probe (${out.detail.slice(0, 200)})`,
+  )
+  out.shapeOk = wireOk
+  out.ok = wireOk && legacyOk
   return out
 }
 
@@ -488,7 +511,7 @@ async function main(): Promise<void> {
   // --- R4: real-server leg ---------------------------------------------------------
   console.log("\nR4: real dist server over stdio — the grouped shape on the wire")
   const leg = await realServerLeg()
-  check("R4: grouped usages shape over the real server", leg.ok, leg.detail)
+  check("R4: grouped usages shape over the real server", leg.shapeOk, leg.detail)
 
   // --- Persist evidence -------------------------------------------------------------
   const failed = checks - passed
@@ -500,6 +523,11 @@ async function main(): Promise<void> {
     checks,
     passed,
     failed,
+    // #824: the labels of every failed check, so a known-gap snapshot says
+    // WHICH law failed instead of only that one did. The in-memory failures
+    // array existed from the start and was printed to stdout, but never
+    // persisted — a failing run's stdout is exactly what nobody keeps.
+    failures,
     realFailed: 0,
     negativeCases: mutants.total,
     mutantsCaught: mutants.caught,

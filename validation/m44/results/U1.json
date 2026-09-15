@@ -6,14 +6,15 @@
   "checks": 20,
   "passed": 20,
   "failed": 0,
+  "failures": [],
   "realFailed": 0,
   "negativeCases": 6,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "36b83b8926f9f8cf4fe4f3578dddae9ae87ca29d",
   "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-09T19:21:59.426Z",
+  "generatedAt": "2026-09-15T18:57:10.040Z",
   "schemaVersion": 2,
   "laws": [
     "L1 one-group-per-symbol",
@@ -41,12 +42,10 @@
       "imports ./widget:Widget",
       "exports ./widget:Widget"
     ],
-    "noise": "draw\u2192util (sibling callee, must never leak into Widget's usage set)"
+    "noise": "draw→util (sibling callee, must never leak into Widget's usage set)"
   },
   "limitations": [
     "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures.",
     "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws."
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  ]
 }
