@@ -17,16 +17,16 @@
   "budgets": {
     "impactWarmP95Ms": 300
   },
-  "currentCommit": "7fe8212b4dd8bec623185d14da9c749c53851b31",
+  "currentCommit": "6666e7f5d30c465dd75b4fcc7e66bd81ca09d249",
   "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
   "evidenceFile": "H4.json",
-  "generatedAt": "2026-09-15T17:05:49.158Z",
+  "generatedAt": "2026-09-15T17:35:03.528Z",
   "limitations": [
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T17:05:49.159Z",
-    "contentSha256": "bbecaaeff20148a540147fb4c9fd1b9d8716fbdf1ee923471f5f913f9ab780d0"
+    "sealedAt": "2026-09-15T17:35:03.529Z",
+    "contentSha256": "e131bc67f529e860918c0957b734c90edb7eeee219784cc1250ea116e1bd9ce3"
   }
 }
