@@ -619,6 +619,34 @@
       }
     ],
     "evidence": "reviews/m49-w9-fixture-coverage-adjudication.md, reviews/onboarding.md, src/ast/real-java-analyzer.ts, src/ast/real-javascript-analyzer.ts, script/m14/verify-fixture-coverage.ts, script/m14/mutate-analyzer.ts (java/argument-count-inflation), script/m49/verify-governance.ts, validation/m14/fixtures/java/argument-count-comment-exclusion.{java,expectation.json}, validation/m14/results/M14.0.F6.json, validation/m49/evidence-producer-register.json ; reproducibility: F6 (21/21 languages PASS, 0 uncovered / 0 dead literals) and its --selftest both pass in a clean `git worktree` of 54dc2daa with node_modules symlinked, the artifact regenerated there is byte-identical to the committed one once lineage fields are stripped, the mutation battery on that clean tree reports all 429 mutants caught with java/argument-count-inflation caught by exactly the two arity fixtures, and G1/G4/G6/G8 + evidence-lineage are green at the same commit"
+  },
+  {
+    "id": "M49.W20",
+    "title": "Groovy continuation shapes (#851/#852): a paren-less leading-dot continuation stops fabricating a call edge, a dotted juxt callee stops duplicating a method as two graph nodes — and the calls oracle that was blind to both is corrected",
+    "date": "2026-09-15",
+    "commit": "see git log (W20)",
+    "method": "Two findings filed while building the M59 line fixture (groovy/lines-825), each reproduced through the real analyzer at HEAD with the raw tree printed beside the emitted edges, so the emitting branch was identified rather than guessed. The discriminating fact is measured, not assumed: `leading_dot_call` carries an `arguments` field iff the continuation has an argument list (`.build(1)` yes, `.label` no), so one rule separates the call from the member read. Each shape was then pinned beside its own ONE-LINE control in one fixture, because the control is the contract — the same chain written on one line and written across a continuation must emit the same calls multiset, and a member access must stay a read. The oracle half was not optional: before this round deriveGroovyEdges had no leading_dot_call branch at all and gave the juxt call the whole dotted text, i.e. it mirrored the defect rather than the contract.",
+    "findings": [
+      {
+        "issue": 851,
+        "lang": "groovy",
+        "class": "continuation-read-as-call",
+        "severity": "medium-high",
+        "ledgerId": "W20",
+        "note": "A newline-continued property access (`this` / `        .label`) is an extremely common Groovy layout, and the pinned grammar shapes it as its own `leading_dot_call` statement node with NO argument list. The branch emitted `calls -> label` for every continuation regardless, so the property read became a CALL and the read itself vanished (the same access on one line emits `uses A -> label`). Fixed by the argument-list discriminator: with `arguments` a genuine call (`.build(1)`, unchanged), without it a member READ in the exact shape collectFieldAccessUses uses, attributed to the enclosing METHOD because the continuation node does not carry its receiver (the GAD1 convention for an unresolvable receiver — hence `uses A -> label` at line 5 and `uses continuedRead -> label` at line 11 deliberately name different owners for the same member). Measured on the pinned 400-file grails-core sample: 57 paren-less continuations in 22 files (5.5%), i.e. 57 fabricated calls and 57 lost reads, against 217 paren-ful continuations that were already correct. Pinned by fixture groovy/continuation-shapes-851; mutant groovy/parenless-continuation-call is CAUGHT (0 -> 5 failures).",
+        "severityDetail": "A false CALL edge to a property name creates a dependency that does not exist and loses the read that does — wrong in both directions at once."
+      },
+      {
+        "issue": 852,
+        "lang": "groovy",
+        "class": "juxt-dotted-target-and-callee-read-leak",
+        "severity": "medium",
+        "ledgerId": "W20",
+        "note": "A continued dotted call folds into `juxt_function_call name: (field_access ...)`, which produced three defects from one shape: (1) the call TARGET was the whole dotted text, so `helper.build` and `build` became two graph nodes for one method (the family contract, and this analyzer's own method_invocation branch, is the BARE callee leaf); (2) a field_access in callee position leaked a `uses -> build` READ, contradicting the family rule that a callee is not a read (java/kotlin/scala all suppress it, and so does this shape written on one line). Measured: 60 dotted juxt callees in 38 of 400 files (9.5%), against 228 plain ones already correct. Fixed by taking the leaf (`nameNode.field` when the name is a field_access) with the leaf's own line (#825), and by suppressing the callee-position field_access. The edge now also carries `groovyCallExpression` — the callee as written — mirroring the sibling method_invocation branch, so the dotted form stays recoverable downstream even though the target names the leaf. Pinned by fixture groovy/continuation-shapes-851; mutants groovy/juxt-target-dotted and groovy/juxt-callee-read are both CAUGHT, and each is caught by THAT FIXTURE ALONE - the measurement that nothing in the suite could see this class before the round.",
+        "severityDetail": "One method silently became two graph nodes and the callee appeared as a member read, so both navigation and read-accounting were wrong on the same statement."
+      }
+    ],
+    "evidence": "src/ast/real-groovy-analyzer.ts, script/m14/differential.ts (deriveGroovyEdges), script/m14/mutate-analyzer.ts (groovy/parenless-continuation-call, groovy/juxt-target-dotted, groovy/juxt-callee-read), validation/m14/fixtures/groovy/continuation-shapes-851.{groovy,expectation.json}, validation/m14/fixtures/groovy/lines-825.expectation.json (rationale updated: the shape it deliberately did not pin now has its own fixture), script/m59/measure-groovy-continuation-shapes.ts, script/m59/probe-groovy-continuation-shapes.ts, script/m59/probe-groovy-continuation-oracle.ts, reviews/m49-w20-groovy-continuation-shapes.md ; gates at HEAD: audit:fixtures all 22 lanes pass (groovy 51/51) with no regressions, audit:fixture-coverage 21/21 PASS (0 uncovered, 0 dead literals), groovy differential 100% covered / MISSING=0 / unexplained=0, audit:mutations no survivors, tsc clean ; oracle before/after on the identical grails-core groovy lane: tree-truth 476 -> 865 (+389 calls edges, +82% of the surface measured) with unexplained 0 in BOTH runs — the lane was green while blind to more than half of groovy's call surface, which is how both defects shipped ; NOT covered, deliberately: groovy has no read oracle, so the restored member read rides the fixture and its mutant but no corpus lane (a full groovy read oracle is the cpp deriveCppBareUses-sized job, and one stray uses truth entry would make the lane look worse, not better)"
   }
   ]
 }

@@ -32,7 +32,7 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "50/50 fixtures pass",
+      "detail": "51/51 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "c496e41832340f51aa1a7c16ad8c4eecaadf2357",
-  "committedAt": "2026-09-15T20:36:51+02:00",
+  "commit": "0fb3003f7dbc90db4aba54497eb28adab2506c52",
+  "committedAt": "2026-09-15T20:59:35+02:00",
   "data": {
     "details": [
       {
@@ -1269,6 +1269,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/continuation-shapes-851",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/ctor-delegation",
         "ok": true,
         "problems": []
@@ -2317,7 +2322,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 50
+        "pass": 51
       },
       "haskell": {
         "fail": 0,
@@ -2398,8 +2403,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-15T18:37:25.666Z",
-  "regeneratedAtCommit": "c496e41832340f51aa1a7c16ad8c4eecaadf2357",
+  "regeneratedAt": "2026-09-15T19:20:36.295Z",
+  "regeneratedAtCommit": "0fb3003f7dbc90db4aba54497eb28adab2506c52",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

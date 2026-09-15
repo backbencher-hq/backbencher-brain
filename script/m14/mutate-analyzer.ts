@@ -1068,6 +1068,54 @@ const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "groovy/parenless-continuation-call",
+    language: "groovy",
+    defectClass: "relationship-fabrication",
+    description: "M49-CONV #851 regression: a paren-less leading-dot continuation goes back to emitting a CALL edge to a property name and loses the read — the exact pre-fix state, where `this\n .label` (a very common Groovy layout) produced `calls f -> label` and no read at all while the same access on one line produced `uses A -> label`. Simulated at the output level in the shape the defect actually produced: every method-attributed member READ, the form the continuation read takes, becomes a `calls` edge. Caught by groovy/continuation-shapes-851, which pins `uses continuedRead -> label` at 11 and forbids `calls continuedRead -> label` on any line.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        normRel(x).type === "uses" && x.metadata?.isFieldAccess
+          ? { ...x, type: "calls", metadata: { relationshipType: "leading_dot_call" } }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "groovy/juxt-target-dotted",
+    language: "groovy",
+    defectClass: "relationship-target",
+    description: "M49-CONV #852 regression: a juxtaposition call stores the WHOLE dotted callee text as its target, so one method appears in the graph twice under two names (`build` from the one-line form and `helper.build` from a continuation) — the exact pre-fix emission. Reconstructed from the edge's own `groovyCallExpression` payload, so it is the real defect value rather than a synthesised guess. Caught by groovy/continuation-shapes-851, which pins `calls continuedChain -> build` at 27 and forbids a `calls` target of `helper.build`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.relationshipType === "juxt_call" && x.metadata?.groovyCallExpression
+          ? { ...x, target: x.metadata.groovyCallExpression }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "groovy/juxt-callee-read",
+    language: "groovy",
+    defectClass: "relationship-noise",
+    description: "M49-CONV #852 regression, second half: the callee of a juxtaposition call leaks as a member READ (`uses f -> build` beside `calls f -> build`), contradicting the family rule that a callee is not a read, which java/kotlin/scala all honour. Caught by groovy/continuation-shapes-851, whose forbid entry names `uses continuedChain -> build` at 27.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...(r.relationships ?? [])
+          .filter((x: any) => x.metadata?.relationshipType === "juxt_call")
+          .map((x: any) => ({
+            ...x,
+            type: "uses",
+            confidence: 0.6,
+            metadata: { isFieldAccess: true },
+          })),
+      ],
+    }),
+  },
+  {
     id: "groovy/annotation-start-line",
     language: "groovy",
     defectClass: "line-attribution",

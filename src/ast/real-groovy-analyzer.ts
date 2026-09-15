@@ -540,15 +540,33 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Groovy juxtaposition call syntax: `echo "msg"` / `sh "cmd"` IS a
         // method call under Groovy semantics — Jenkins pipelines are built
         // on it. Grammar: juxt_function_call [name, args].
+        //
+        // #852: the family contract (java/kotlin/scala, and this analyzer's own
+        // `method_invocation` branch) is that a `calls` edge targets the BARE
+        // callee leaf. A dotted juxt name parses as `field_access`, so
+        // `helper.build "x"` — and every chain continuation, since a continued
+        // dotted call folds into a juxt call — used to store the whole dotted
+        // text as the target, putting ONE method in the graph twice under two
+        // names (`build` at its own line and `helper.build` at the
+        // continuation). Measured: `helper.build(2)\n .configure(3)` emitted
+        // `calls f -> helper.build` where the one-line `helper.build(2).configure(3)`
+        // emits `calls f -> build`. The leaf's own line is used for the same
+        // reason (#825): the name's line, not the spanning expression's.
         const nameNode = node.childForFieldName("name")
         if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
+          const leafNode = nameNode.type === "field_access"
+            ? nameNode.childForFieldName("field") ?? nameNode
+            : nameNode
           relationships.push({
             source: parentContext?.name ?? "(script)",
-            target: nameNode.text,
+            target: leafNode.text,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.7,
-            ...this.lineField(nameNode, node),
-            metadata: { relationshipType: "juxt_call" },
+            ...this.lineField(leafNode, node),
+            // The callee expression AS WRITTEN (the sibling method_invocation
+            // branch's payload) — kept so the dotted form is recoverable by a
+            // consumer even though the edge itself names the bare leaf.
+            metadata: { relationshipType: "juxt_call", groovyCallExpression: nameNode.text },
           })
         }
       } else if (type === "leading_dot_call") {
@@ -557,16 +575,41 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // becomes its own statement node (documented grammar tradeoff); the
         // call must still be analyzer-visible and attributed to the enclosing
         // scope, exactly like a same-line method_invocation.
+        //
+        // #851: a continuation segment is a CALL only when it carries an
+        // argument list. Measured on the pinned grammar — `helper\n .build(1)`
+        // parses as `leading_dot_call name: (identifier) arguments:
+        // (argument_list …)`, while `this\n .label` parses with `name` and NO
+        // arguments. The branch used to emit `calls` for both, so a multi-line
+        // property access — an extremely common Groovy layout — fabricated a
+        // call edge to a property name and lost the read entirely. The
+        // paren-less form is a MEMBER READ, emitted in the exact shape
+        // `collectFieldAccessUses` uses for the same-line `field_access`
+        // (`obj.thing` -> `uses <owner> -> thing`), attributed to the enclosing
+        // method because the continuation node does not carry its receiver
+        // (GAD1: an unresolvable receiver attributes to the enclosing method).
         const nameNode = node.childForFieldName("name")
         if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
-          relationships.push({
-            source: parentContext?.name ?? "(script)",
-            target: nameNode.text,
-            type: ASTEngine.RelationshipType.Calls,
-            confidence: 0.7,
-            ...this.lineField(nameNode, node),
-            metadata: { relationshipType: "leading_dot_call" },
-          })
+          const args = node.childForFieldName("arguments") ?? this.findChild(node, (n) => n.type === "argument_list")
+          if (args) {
+            relationships.push({
+              source: parentContext?.name ?? "(script)",
+              target: nameNode.text,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.7,
+              ...this.lineField(nameNode, node),
+              metadata: { relationshipType: "leading_dot_call" },
+            })
+          } else {
+            relationships.push({
+              source: parentContext?.name ?? "(script)",
+              target: nameNode.text,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.6,
+              ...this.lineField(nameNode, node),
+              metadata: { isFieldAccess: true },
+            })
+          }
         }
       } else if (type === "object_creation_expression") {
         // new Foo(...) → Instantiates. Type is a type_identifier for plain
@@ -1281,8 +1324,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             const lhs = node.parent!.namedChild(0)
             isWrite = !!lhs && lhs.startIndex === node.startIndex && lhs.endIndex === node.endIndex
           }
+          // #852: a `field_access` in CALLEE position — the `name` of a
+          // juxt_function_call, which is where a continued dotted chain lands —
+          // is the callee, not a read. It used to leak the callee as a member
+          // read (`uses f -> build` alongside `calls f -> build`), contradicting
+          // the family rule that a callee is not a read; java/kotlin/scala all
+          // suppress it, and so does this shape written on one line.
+          const parentField = node.parent?.type === "juxt_function_call"
+            ? node.parent.childForFieldName("name")
+            : null
+          const isCalleePosition = !!parentField
+            && parentField.startIndex === node.startIndex
+            && parentField.endIndex === node.endIndex
           const key = `${source}.${parts[parts.length - 1]}`
-          if (!isWrite && !seen.has(key)) {
+          if (!isWrite && !isCalleePosition && !seen.has(key)) {
             seen.add(key)
             relationships.push({
               source,

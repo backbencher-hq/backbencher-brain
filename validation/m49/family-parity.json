@@ -8,7 +8,7 @@
     "member-read-through-receiver": {
       "description": "a read of an own member through the receiver (this/self/$this/s.) from inside a method",
       "trackedMember": "count",
-      "declaredAt": "M49 W15 (#813/#814 rulings, commits 35a51bfa + this wave)",
+      "declaredAt": "M49 W15 (#813/#814 rulings, commits 35a51bfa + this wave); kotlin's GAP re-adjudicated at M49 W20 (see its note)",
       "java": { "source": "read", "symbolName": "count" },
       "javascript": { "source": "read", "symbolName": "count" },
       "typescript": { "source": "read", "symbolName": "count" },
@@ -22,9 +22,9 @@
       "rust": { "source": "read", "symbolName": "count" },
       "scala": { "source": "read", "symbolName": "count" },
       "kotlin": {
-        "state": "gap",
-        "issue": "#740",
-        "reason": "CONV-K-1 (#740): kotlin emits no Uses edge for plain or dotted member reads, so this construct has no observation to compare. Declared as a GAP rather than omitted: if kotlin starts emitting, the gate fires and the gap must be re-adjudicated instead of silently becoming a divergence."
+        "source": "read",
+        "symbolName": "count",
+        "note": "RE-ADJUDICATED at M49 W20 (#740 -> fixed). This was declared a GAP on purpose, with the instruction that if kotlin starts emitting the gate must fire and the gap be re-adjudicated rather than silently become a divergence. It fired, and this is that re-adjudication: kotlin now observes source=read, symbolName=count, confidence 0.6 for `this.count` inside a method — the same shape as java/scala/every other declared language, so the construct is no longer a divergence and the gap declaration is retired. The gap's own negative control still exists in verify-family-parity.ts (`rule rejects a gap that now emits`), so the rule that caught this stays able to fire."
       }
     },
     "private-member-declared-name": {
