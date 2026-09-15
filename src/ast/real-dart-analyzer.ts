@@ -1779,10 +1779,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (stack.length > 0) {
       const n = stack.pop()!
       if (n.type === "identifier" && this.isDartDeclaredName(n)) out.add(n.text)
+      // M14.0.F6 (2026-09-15): two of the names here cannot occur in the pinned
+      // dart grammar, so their branches were dead — `simple_formal_parameter`
+      // (the grammar's rule is HIDDEN and underscore-prefixed,
+      // `_simple_formal_parameter`, so it never appears as a node type at all)
+      // and `catch_clause_parameter` (dart's node is `catch_parameters`, which
+      // IS listed). Measured: a catch clause parses as
+      // `(catch_clause (catch_parameters (identifier) (identifier)))` and a
+      // parameter as `(formal_parameter …)` — both already covered, so removing
+      // the two names changes nothing (the gate's own definition of a dead
+      // literal is a comparison that can never fire).
       if (
         n.type === "formal_parameter" || n.type === "constructor_param" ||
-        n.type === "simple_formal_parameter" || n.type === "super_formal_parameter" ||
-        n.type === "catch_clause_parameter" || n.type === "catch_parameters"
+        n.type === "super_formal_parameter" || n.type === "catch_parameters"
       ) {
         const id = this.findChildByType(n, "identifier")
         if (id) out.add(id.text)
