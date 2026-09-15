@@ -2,11 +2,11 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
+  "currentCommit": "20af00cee40749fe48a83a20da07f93405042a5b",
   "sourceFingerprint": "bef9d13f60a72228c27db3df3da8d4e1a110339bea1d33081909ef6e85e15d07",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-09-15T00:31:20.492Z",
+  "generatedAt": "2026-09-15T14:51:33.163Z",
   "passed": 20,
   "failed": 0,
   "failures": [],
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T00:31:20.493Z",
-    "contentSha256": "5a321b30b2b33b4c3ffa1225fbe89c5aedd195bca29fffdb41a082bdc6287245"
+    "sealedAt": "2026-09-15T14:51:33.163Z",
+    "contentSha256": "7909c8aa0bd332e1bd51c13420848f2ee24d2a2527b99b4d4e1c65c4bc514aea"
   }
 }

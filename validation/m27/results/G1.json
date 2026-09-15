@@ -4,14 +4,16 @@
   "milestone": "M27",
   "status": "known-gap",
   "checks": 70,
-  "passed": 67,
-  "failed": 3,
+  "passed": 69,
+  "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "445379dba757698f3a245ca7db8299b0e9e39d76",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "20af00cee40749fe48a83a20da07f93405042a5b",
+  "workingTreeRelevantChanges": [
+    "script/m27/verify-closure.ts"
+  ],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-15T00:50:44.689Z",
+  "generatedAt": "2026-09-15T15:19:48.997Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
@@ -23,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T00:50:44.691Z",
-    "contentSha256": "b8555b0d9fe311baa315edb53e025705f9b731294eea5d4158b63cc227f1fb93"
+    "sealedAt": "2026-09-15T15:19:49.002Z",
+    "contentSha256": "abca9b376b79ce4a8bc4bc108fea4f5eedff878a534f84b72e589018f170b456"
   }
 }

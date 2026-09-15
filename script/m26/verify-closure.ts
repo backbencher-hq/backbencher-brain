@@ -63,6 +63,10 @@ function fingerprint(file: string): string | null {
     const j = parseSealedRecord(file)
     delete j.generatedAt
     delete j.currentCommit
+    // bbSeal is declared-volatile integrity metadata (sealedAt changes every
+    // regeneration); parseSealedRecord has already VERIFIED the seal, so the
+    // equivalence check compares content only (same rule as m24's closure).
+    delete j.bbSeal
     return JSON.stringify(j)
   } catch {
     return null
