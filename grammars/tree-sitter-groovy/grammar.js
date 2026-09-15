@@ -809,6 +809,18 @@ module.exports = grammar(Java, {
     map_item: $ => seq(
       field('key', choice(
         $.identifier,
+        // M49 W21 (#850): Java reserves `open`, `module`, `record`, `with` and
+        // `sealed` as keywords, and this grammar extends Java — so a named
+        // argument whose KEY is one of them (`exclude group: 'x', module: 'y'`,
+        // ubiquitous in Gradle build scripts) lexed as a keyword token, not an
+        // identifier, and `module:` could not be a map_item at all. Every other
+        // name position in this grammar already accepts `_reserved_identifier`
+        // (`field('name', choice($.identifier, $._reserved_identifier, …))` at
+        // five sites); the map_item key was the one that did not. Measured on
+        // grails-core: `exclude module: 'x'` alone is an ERROR and drags its
+        // whole enclosing `dependencies { … }` block into ERROR recovery, which
+        // is why the census's largest first-error signature was a bare `ID {`.
+        $._reserved_identifier,
         $._literal,
         seq('(', $.expression, ')'),
       )),

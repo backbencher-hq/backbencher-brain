@@ -1,6 +1,6 @@
 {
   "probe": "M59.O1",
-  "at": "2026-09-15T18:31:30.083Z",
+  "at": "2026-09-15T20:15:22.981Z",
   "corpus": "$HOME/fixtures/repositories",
   "filesPerLang": 40,
   "oracleIndependence": {
@@ -65,12 +65,12 @@
     },
     "groovy": {
       "files": 40,
-      "rels": 761,
-      "withLine": 761,
+      "rels": 881,
+      "withLine": 881,
       "noLine": 0,
-      "consistent": 714,
+      "consistent": 865,
       "inconsistent": 0,
-      "notCheckable": 47
+      "notCheckable": 16
     },
     "typescript": {
       "files": 40,
@@ -1564,12 +1564,221 @@
     ],
     "groovy": [
       {
+        "file": "Exposed/documentation-website/Writerside/snippets/exposed-modules-groovy-gradle/build.gradle",
+        "language": "groovy",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/build.gradle",
+        "language": "groovy",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/settings.gradle",
+        "language": "groovy",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/flutter_http_example/android/app/build.gradle",
+        "language": "groovy",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/ok_http/android/build.gradle",
+        "language": "groovy",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/ok_http/android/settings.gradle",
+        "language": "groovy",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/ok_http/example/android/build.gradle",
+        "language": "groovy",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/ok_http/example/android/settings.gradle",
+        "language": "groovy",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/ok_http/example/android/app/build.gradle",
+        "language": "groovy",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cronet_http/android/build.gradle",
+        "language": "groovy",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cronet_http/android/settings.gradle",
+        "language": "groovy",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cronet_http/example/android/build.gradle",
+        "language": "groovy",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cronet_http/example/android/settings.gradle",
+        "language": "groovy",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "dart-http/pkgs/cronet_http/example/android/app/build.gradle",
+        "language": "groovy",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "fmt/support/build.gradle",
+        "language": "groovy",
+        "rels": 62,
+        "withLine": 62,
+        "noLine": 0,
+        "consistent": 62,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/geb.gradle",
+        "language": "groovy",
+        "rels": 55,
+        "withLine": 55,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/settings.gradle",
+        "language": "groovy",
+        "rels": 36,
+        "withLine": 36,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/gradle/build-scans.gradle",
+        "language": "groovy",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
         "file": "geb/gradle/codenarc/rulesets.groovy",
         "language": "groovy",
         "rels": 62,
         "withLine": 62,
         "noLine": 0,
         "consistent": 62,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/asciidoctor-extension/asciidoctor-extension.gradle",
+        "language": "groovy",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 5,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": []
@@ -1625,6 +1834,17 @@
         "withLine": 11,
         "noLine": 0,
         "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "geb/doc/manual-snippets/manual-snippets.gradle",
+        "language": "groovy",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": []
@@ -1698,10 +1918,10 @@
       {
         "file": "geb/doc/manual-snippets/src/test/groovy/ide/StrongTypingSpec.groovy",
         "language": "groovy",
-        "rels": 63,
-        "withLine": 63,
+        "rels": 62,
+        "withLine": 62,
         "noLine": 0,
-        "consistent": 61,
+        "consistent": 60,
         "inconsistent": 0,
         "notCheckable": 2,
         "inconsistentSample": []
@@ -1779,226 +1999,6 @@
         "withLine": 6,
         "noLine": 0,
         "consistent": 5,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/AutoClearCookiesConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 6,
-        "withLine": 6,
-        "noLine": 0,
-        "consistent": 5,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/FunctionalSpec.groovy",
-        "language": "groovy",
-        "rels": 9,
-        "withLine": 9,
-        "noLine": 0,
-        "consistent": 8,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/WaitingConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 17,
-        "withLine": 17,
-        "noLine": 0,
-        "consistent": 15,
-        "inconsistent": 0,
-        "notCheckable": 2,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/DriverConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 40,
-        "withLine": 40,
-        "noLine": 0,
-        "consistent": 36,
-        "inconsistent": 0,
-        "notCheckable": 4,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/BaseNavigatorWaitingConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 6,
-        "withLine": 6,
-        "noLine": 0,
-        "consistent": 5,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/AutoClearWebStorageConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 6,
-        "withLine": 6,
-        "noLine": 0,
-        "consistent": 5,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/ReporterConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 23,
-        "withLine": 23,
-        "noLine": 0,
-        "consistent": 20,
-        "inconsistent": 0,
-        "notCheckable": 3,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/UnexpectedPagesConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 9,
-        "withLine": 9,
-        "noLine": 0,
-        "consistent": 8,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/QuitDriverOnBrowserResetConfigSpec.groovy",
-        "language": "groovy",
-        "rels": 6,
-        "withLine": 6,
-        "noLine": 0,
-        "consistent": 5,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/configuration/TemplateOptionsConfigScriptSpec.groovy",
-        "language": "groovy",
-        "rels": 10,
-        "withLine": 10,
-        "noLine": 0,
-        "consistent": 9,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/assertions/ImplicitAssertionsSpec.groovy",
-        "language": "groovy",
-        "rels": 62,
-        "withLine": 62,
-        "noLine": 0,
-        "consistent": 58,
-        "inconsistent": 0,
-        "notCheckable": 4,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/assertions/ImplicitAssertionsExamplePage.groovy",
-        "language": "groovy",
-        "rels": 10,
-        "withLine": 10,
-        "noLine": 0,
-        "consistent": 10,
-        "inconsistent": 0,
-        "notCheckable": 0,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/assertions/ImplicitAssertionsIntroductionSpec.groovy",
-        "language": "groovy",
-        "rels": 8,
-        "withLine": 8,
-        "noLine": 0,
-        "consistent": 7,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/driver/HtmlUnitRefreshHandlerSpec.groovy",
-        "language": "groovy",
-        "rels": 8,
-        "withLine": 8,
-        "noLine": 0,
-        "consistent": 7,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/binding/BindingUpdatingSpec.groovy",
-        "language": "groovy",
-        "rels": 34,
-        "withLine": 34,
-        "noLine": 0,
-        "consistent": 32,
-        "inconsistent": 0,
-        "notCheckable": 2,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/testing/FunctionalSpec.groovy",
-        "language": "groovy",
-        "rels": 30,
-        "withLine": 30,
-        "noLine": 0,
-        "consistent": 28,
-        "inconsistent": 0,
-        "notCheckable": 2,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/testing/ReportingFunctionalSpec.groovy",
-        "language": "groovy",
-        "rels": 34,
-        "withLine": 34,
-        "noLine": 0,
-        "consistent": 33,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/testing/BrowserRestartSpec.groovy",
-        "language": "groovy",
-        "rels": 8,
-        "withLine": 8,
-        "noLine": 0,
-        "consistent": 7,
-        "inconsistent": 0,
-        "notCheckable": 1,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/browser/WithWindowSpec.groovy",
-        "language": "groovy",
-        "rels": 21,
-        "withLine": 21,
-        "noLine": 0,
-        "consistent": 19,
-        "inconsistent": 0,
-        "notCheckable": 2,
-        "inconsistentSample": []
-      },
-      {
-        "file": "geb/doc/manual-snippets/src/test/groovy/browser/ContentDslToParameterSpec.groovy",
-        "language": "groovy",
-        "rels": 34,
-        "withLine": 34,
-        "noLine": 0,
-        "consistent": 33,
         "inconsistent": 0,
         "notCheckable": 1,
         "inconsistentSample": []
@@ -9961,10 +9961,5 @@
       }
     ]
   },
-  "skipped": [
-    {
-      "lang": "groovy",
-      "reason": "excluded 27 file(s) with extension .gradle: not in the product's language registry (#850) — excluded BEFORE sampling so the lane still measures the supported surface"
-    }
-  ]
+  "skipped": []
 }
