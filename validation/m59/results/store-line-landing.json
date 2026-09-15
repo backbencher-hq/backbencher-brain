@@ -1,0 +1,108 @@
+{
+  "probe": "M59.O3",
+  "at": "2026-09-14T13:22:37.547Z",
+  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "tempDataDir": "/tmp/m59-data-schMgT",
+  "indexStats": {
+    "files": 404,
+    "errorFiles": 0
+  },
+  "db": {
+    "total": 28327,
+    "withLine": 7585,
+    "zero": 62,
+    "null": 20680
+  },
+  "byType": [
+    {
+      "rt": "calls",
+      "n": 5628
+    },
+    {
+      "rt": "instantiates",
+      "n": 1273
+    },
+    {
+      "rt": "extends",
+      "n": 630
+    },
+    {
+      "rt": "implements",
+      "n": 54
+    }
+  ],
+  "byLanguage": [
+    {
+      "lang": "scala",
+      "n": 7517
+    }
+  ],
+  "sourceCheck": {
+    "checked": 7517,
+    "consistent": 7187,
+    "inconsistent": 330,
+    "failures": [
+      {
+        "path": "project/CI.scala",
+        "line": 27,
+        "target": "filter",
+        "sourceLine": "(List("
+      },
+      {
+        "path": "scalafix/rules/src/main/scala/fix/v3_0_0.scala",
+        "line": 40,
+        "target": "collect",
+        "sourceLine": "doc"
+      },
+      {
+        "path": "scalafix/rules/src/main/scala/fix/v3_0_0.scala",
+        "line": 193,
+        "target": "dropRight",
+        "sourceLine": "val toRemove = outerTokens"
+      },
+      {
+        "path": "scalafix/rules/src/main/scala/fix/v3_0_0.scala",
+        "line": 193,
+        "target": "dropRightWhile",
+        "sourceLine": "val toRemove = outerTokens"
+      },
+      {
+        "path": "scalafix/rules/src/main/scala/fix/v3_0_0.scala",
+        "line": 193,
+        "target": "drop",
+        "sourceLine": "val toRemove = outerTokens"
+      },
+      {
+        "path": "scalafix/rules/src/main/scala/fix/v3_0_0.scala",
+        "line": 193,
+        "target": "dropWhile",
+        "sourceLine": "val toRemove = outerTokens"
+      },
+      {
+        "path": "scalafix/rules/src/main/scala/fix/v3_3_0.scala",
+        "line": 16,
+        "target": "collect",
+        "sourceLine": "doc"
+      },
+      {
+        "path": "tests/js/src/main/scala/catseffect/examplesplatform.scala",
+        "line": 73,
+        "target": "orElse",
+        "sourceLine": "apps"
+      },
+      {
+        "path": "tests/js/src/main/scala/catseffect/examplesplatform.scala",
+        "line": 73,
+        "target": "map",
+        "sourceLine": "apps"
+      },
+      {
+        "path": "tests/js/src/main/scala/catseffect/examplesplatform.scala",
+        "line": 73,
+        "target": "get",
+        "sourceLine": "apps"
+      }
+    ]
+  },
+  "before": "every pre-existing index on this machine: 0 rows with line_number > 0 (189,499 of 189,499 were 0)"
+}
