@@ -447,6 +447,61 @@ function revertToTypeSource(r: any) {
   }
 }
 
+// M59 (#861): the decorated-declaration contract, both halves, as faithful
+// reverts of the measured pre-fix behaviour.
+//
+// `revertDecoratorRangeExclusion` puts a decorated symbol's range start back onto
+// its DECORATOR and moves the contains/exports lines derived from it with it —
+// the pre-fix state in both web grammars (a decorated declaration's node starts
+// at the decorator).
+function revertDecoratorRangeExclusion() {
+  return (r: any) => {
+    const decorated = new Set<string>(
+      (r.symbols ?? [])
+        .filter((s: any) => Array.isArray(s.decorators) && s.decorators.length > 0)
+        .map((s: any) => s.name),
+    )
+    if (decorated.size === 0) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        decorated.has(s.name)
+          ? { ...s, range: { ...(s.range ?? {}), startLine: (s.range?.startLine ?? 1) - 1 } }
+          : s,
+      ),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.type ?? x.relationshipType ?? "")
+        if ((t !== "contains" && t !== "exports") || !decorated.has(String(x.target))) return x
+        return typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x
+      }),
+    }
+  }
+}
+
+// `readdScopeScopedDecoratorEdges` restores the class-scoped decorator rows the
+// metadata rule removed: for every symbol carrying decorators, the decorator's
+// invocation and name become `calls`/`references` edges sourced from the scope
+// that lexically encloses it (the class for a member, the class itself for its
+// own decorator).
+function readdScopeScopedDecoratorEdges() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (!Array.isArray(s.decorators) || s.decorators.length === 0) continue
+      const lines = s.metadata?.decoratorLines as Array<number | null> | undefined
+      const source = s.kind === "class" ? s.name : (s.ownerName ?? s.name)
+      for (let i = 0; i < s.decorators.length; i++) {
+        const line = lines?.[i]
+        const lineField = typeof line === "number" ? { line_number: line } : {}
+        extra.push({ source, target: s.decorators[i], type: "calls", confidence: 0.8, ...lineField, metadata: { calleeExpression: s.decorators[i] } })
+        extra.push({ source, target: s.decorators[i], type: "references", confidence: 0.8, ...lineField, metadata: {} })
+      }
+    }
+    if (extra.length === 0) return r
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+  }
+}
+
 // M49/M37 #866: the two halves of the anonymous-body MEMBER contract as
 // faithful reverts of the measured pre-fix behaviour (kotlin and scala dropped
 // the field member; kotlin also flattened its initialiser call onto the
@@ -1502,6 +1557,27 @@ const MUTANTS: Mutant[] = [
         (x: any) => !(String(x.type) === "calls" && String(x.source).startsWith("anonymous_")),
       ),
     }),
+  },
+  {
+    id: "typescript/decorator-range-includes-decorator",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description: "M59 (#861) regression: a decorated declaration's symbol range goes back to starting AT its decorator, and the contains/exports lines derived from it move with it — caught by typescript/decorator-declaration-lines-861, which pins Service 39 / pool 41 / method 44 and forbids the pre-fix 40 exports line and the decorator-line contains rows.",
+    transform: revertDecoratorRangeExclusion(),
+  },
+  {
+    id: "typescript/decorator-call-by-enclosing-scope",
+    language: "typescript",
+    defectClass: "misattribution",
+    description: "M59 (#861) regression: restores the class-scoped decorator rows — `@inject(\"db\")` again emits `calls Service -> inject` and `references Service -> inject` from the CLASS beside the correct `references pool -> inject` — caught by typescript/decorator-declaration-lines-861's forbid entries, which name exactly those two rows.",
+    transform: readdScopeScopedDecoratorEdges(),
+  },
+  {
+    id: "javascript/decorator-range-includes-decorator",
+    language: "javascript",
+    defectClass: "line-attribution",
+    description: "M59 (#861) regression: javascript's decorated-declaration ranges go back onto the decorator (this grammar nests the decorator INSIDE class/field/method nodes), so contains Service -> pool reads 34 and Service -> method reads 37 — caught by javascript/decorator-declaration-lines-861, which pins 35/38 and forbids both.",
+    transform: revertDecoratorRangeExclusion(),
   },
   {
     id: "java/drop-anon-body-field-member",
@@ -5043,11 +5119,11 @@ const MUTANTS: Mutant[] = [
     id: "php/emit-write-as-uses",
     language: "php",
     defectClass: "relationship-loss",
-    description: "regresses the read/write gate: emits uses for assignment-LHS writes ($this->balance = ... as a read) — php forbid pin",
+    description: "regresses the read/write gate: emits uses for top-level assignment-LHS writes ($greeting = 'hi' as a read) — php payload-and-complexity forbid pin. PHP2 retarget: the old fabrication (uses __construct->gateway) became legitimate output when bare param reads landed, so the mutant survived honestly; the write gate it guarded now fabricates at file scope instead",
     transform: r => ({
       ...r,
       relationships: [...(r.relationships ?? []), {
-        type: "uses", source: "__construct", target: "gateway", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true },
+        type: "uses", source: "global", target: "greeting", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isLocalRead: true },
       }],
     }),
   },
@@ -5197,6 +5273,34 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "PHP-O1 companion: trait uses vanish from analyzer output (use_declaration branch) — php member-value-reads trait pin dies (the oracle-side inBody gate is covered by lanes)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "C" && x.target === "T")) }),
+  },
+  {
+    id: "php/drop-bare-local-reads",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "PHP2 regression: frame-scoped bare `$var` reads vanish (params/locals/loop/destructure/captures) — php bare-value-reads n/doubled/item/total pins die",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && (x.metadata ?? {}).isLocalRead)) }),
+  },
+  {
+    id: "php/drop-bare-global-reads",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "PHP2 regression: file-function/superglobal bare reads vanish — php bare-value-reads _GET pin dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && (x.metadata ?? {}).isGlobalRead)) }),
+  },
+  {
+    id: "php/drop-bare-const-reads",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "PHP2 regression: bare `NAME` const reads vanish (property/const/enum/attribute/default initializers) — php bare-value-reads LIMIT/RUN_NAME/FALLBACK pins die",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && (x.metadata ?? {}).isConstRead)) }),
+  },
+  {
+    id: "php/emit-receiver-member-read",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "PHP2-D regression: the member side of call receivers reads again (`$gw->authorize()` emits uses->authorize) — php payload-and-complexity authorize forbid dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "process", target: "authorize", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }] }),
   },
   {
     id: "ruby/drop-implements-edge",
