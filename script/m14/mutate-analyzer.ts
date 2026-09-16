@@ -3788,6 +3788,37 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "zero", target: "count", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "computed", target: "local", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "pick", target: "fast", confidence: 0.6, metadata: { isBareRead: true } }, { type: "uses", source: "label", target: "group", confidence: 0.6, metadata: { isBareRead: true } }] }),
   },
   {
+    id: "dart/drop-local-read-uses",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "DT2 regression: bound locals/params stop reading (frames empty) — dart value-reads local pins die (member/global pins survive)",
+    transform: r => {
+      const drop = new Set(["compute>k", "compute>depth", "compute>limit", "compute>total", "helper>x", "shadowed>count", "sums>i", "sums>total", "sums>x", "sums>xs", "guarded>e", "blocks>x", "blocks>xs", "blocks>p", "blocks>q", "inits>b", "inits>p", "constructor>p"]);
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && drop.has(`${x.source}>${x.target}`))) };
+    },
+  },
+  {
+    id: "dart/drop-global-read-uses",
+    language: "dart",
+    defectClass: "relationship-loss",
+    description: "DT2 regression: file-scope values stop resolving (globals empty) — dart value-reads get->gTotal and label->gLabel pins die",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && ((x.source === "get" && x.target === "gTotal") || (x.source === "label" && x.target === "gLabel")))) }),
+  },
+  {
+    id: "dart/emit-label-as-read",
+    language: "dart",
+    defectClass: "relationship-fabrication",
+    description: "DT2 read-gate regression: named-argument labels read (cb:/count:) — dart value-reads label forbids die",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "takes", target: "cb", confidence: 0.9 }, { type: "uses", source: "takes", target: "count", confidence: 0.9 }] }),
+  },
+  {
+    id: "dart/emit-global-write-as-read",
+    language: "dart",
+    defectClass: "relationship-fabrication",
+    description: "DT2 read-gate regression: write-only globals read (gTotal = 0) — dart value-reads reset forbid dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "reset", target: "gTotal", confidence: 0.9 }] }),
+  },
+  {
     id: "swift/drop-implements-edge",
     language: "swift",
     defectClass: "relationship-loss",
