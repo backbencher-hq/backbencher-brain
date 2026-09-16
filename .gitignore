@@ -30,3 +30,11 @@ tool-mode-corpus.json.fresh
 
 # client-tooling client runtime dir
 .client-tooling/
+
+# tree-sitter grammar build outputs. `tree-sitter generate` writes a ~16MB
+# parser.c and the node-types/grammar JSON, and `tree-sitter build` writes a
+# local wasm; only the hand-written grammar sources (grammar.js, package.json,
+# tree-sitter.json, README, scanner.h) are tracked. The wasm the product loads
+# is the one committed under wasm/, which is the artifact the evidence names.
+grammars/tree-sitter-*/src/
+grammars/tree-sitter-*/tree-sitter-*.wasm
