@@ -75,7 +75,7 @@ function fixtureModel(edgeCount = 3) {
       relationshipType: "calls",
       confidence: i === 0 ? 0.4 : 0.9, // first edge sub-floor → inferred
       isCrossLanguage: false,
-      callSite: { file: c.file, line: 1 },
+      callSite: { kind: "call-site", file: c.file, line: 1 },
       depth: 0,
       rowId: `rel-${i}`,
     })),
@@ -207,7 +207,7 @@ async function main(): Promise<void> {
   // actually execute. Truthful render: 500 nodes shown of 505.
   const truncFixture = fixtureModel(0)
   for (let i = 0; i < 504; i++) truncFixture.nodes[`sym:t${i}`] = { id: `sym:t${i}`, name: `t${i}`, symbolType: "function", file: `t${i}.ts`, line: 1, lineEnd: 2, language: "typescript", isExternal: false }
-  truncFixture.callers = Array.from({ length: 504 }, (_, i) => ({ from: `sym:t${i}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { file: "t.ts", line: 1 }, depth: 0, rowId: `rel-t${i}` }))
+  truncFixture.callers = Array.from({ length: 504 }, (_, i) => ({ from: `sym:t${i}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { kind: "call-site", file: "t.ts", line: 1 }, depth: 0, rowId: `rel-t${i}` }))
   truncFixture.summary = { totalCallers: 504, totalCallees: 0, truncated: true, truncationReason: "node-budget-exhausted", crossLanguageEdges: 0 }
   const truncModel = {
     nodes: Object.values(truncFixture.nodes).map((n: any) => ({ id: n.id, name: n.name })),
@@ -298,8 +298,8 @@ async function main(): Promise<void> {
   // the harness must agree with a clean, marker-free document.
   const big = fixtureModel(0)
   for (let i = 0; i < 499; i++) big.nodes[`sym:n${i}`] = { id: `sym:n${i}`, name: `n${i}`, symbolType: "function", file: `f${i}.ts`, line: 1, lineEnd: 2, language: "typescript", isExternal: false }
-  big.callees = Array.from({ length: 1250 }, (_, i) => ({ from: "sym:root", to: `sym:n${i % 499}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "r.ts", line: 1 }, depth: 0, rowId: `rel-b${i}` }))
-  big.callers = Array.from({ length: 750 }, (_, i) => ({ from: `sym:n${i % 499}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { file: "p.ts", line: 1 }, depth: 0, rowId: `rel-a${i}` }))
+  big.callees = Array.from({ length: 1250 }, (_, i) => ({ from: "sym:root", to: `sym:n${i % 499}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { kind: "call-site", file: "r.ts", line: 1 }, depth: 0, rowId: `rel-b${i}` }))
+  big.callers = Array.from({ length: 750 }, (_, i) => ({ from: `sym:n${i % 499}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { kind: "call-site", file: "p.ts", line: 1 }, depth: 0, rowId: `rel-a${i}` }))
   big.summary = { totalCallers: 750, totalCallees: 1250, truncated: false, crossLanguageEdges: 0 }
   const samples: number[] = []
   for (let i = 0; i < 10; i++) {

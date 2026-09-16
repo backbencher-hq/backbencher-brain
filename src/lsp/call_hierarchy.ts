@@ -19,10 +19,12 @@
 //
 // M55.T2 (Truth Rules 1/2/3 — docs/m55/M55-MASTER-PLAN.md):
 //   call sites:  fromRanges are the INVOCATION sites found in the caller's own
-//                source — every occurrence of the target being invoked. The
-//                stored relationship row carries line_number = 0 today (the
-//                engine falls back to the caller's declaration line), so no
-//                position may be taken from it. When no invocation can be
+//                source — every occurrence of the target being invoked. No
+//                position is ever taken from the stored relationship row's
+//                line: that column is the address owner's to interpret
+//                (src/intelligence/graph/line-address.ts, M62.A2 — a legacy 0
+//                or NULL means "no call-site line stored", and a labeled
+//                substitute is the only thing it may stand for). When no invocation can be
 //                resolved the response DECLARES it (callSitesResolved counts,
 //                item detail says "position approximate") and the range falls
 //                back to the caller's name token — a labeled substitute, never

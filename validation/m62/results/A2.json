@@ -1,0 +1,46 @@
+{
+  "issue": "M62.A2",
+  "code": "A2",
+  "milestone": "M62",
+  "status": "verified",
+  "checks": 16,
+  "passed": 16,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 6,
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+  "verifierCommand": "npx tsx script/m62/verify-consumers.ts",
+  "evidenceFile": "A2.json",
+  "generatedAt": "2026-09-16T22:11:02.892Z",
+  "schemaVersion": 1,
+  "laws": [
+    "P1 engine-derives-address",
+    "P2 hub-serves-the-engine-address",
+    "P3 mcp-serves-the-engine-address",
+    "P4 webview-mirror-drift",
+    "P5 dom-declares-the-kinds-it-shows",
+    "P6 no-display-side-raw-stored-line-read"
+  ],
+  "consumers": [
+    "src/intelligence/graph/graph-engine.ts",
+    "src/lsp/graph_usages.ts",
+    "src/mcp/tool-handlers.ts",
+    "script/m26/graph-core.ts",
+    "src/lsp/navigation.ts (raw column removed)"
+  ],
+  "declaredNotChanged": [
+    "references/call-hierarchy keep navigating to the referencing symbol's own indexed location (byte-accurate) — no line-only call-site position is claimed there; the exact stored call-site address is served by the graph/hub/MCP surfaces.",
+    "The hover's usages section keeps its declared vocabulary (the referencing symbol's location), stated in its own header."
+  ],
+  "limitations": [
+    "The webview mirror is drift-gated, not shared (graph-core keeps its zero-import law W1).",
+    "Per-language real-line coverage is M59's lane; this gate seeds the three store states directly."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-16T22:11:02.892Z",
+    "contentSha256": "d8358d03739463cdcc81fc943b9fed1eb469483e125ef6d999dfc87b0c202e28"
+  }
+}

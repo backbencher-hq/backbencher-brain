@@ -3,6 +3,7 @@ import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { GraphEdge, GraphNode, GraphTraversalOptions, GraphTraversalResult } from "../contracts"
 import { makeProvenance } from "../evidence"
+import { deriveCallSiteAddress } from "./line-address"
 
 type EdgeMetadata = NonNullable<GraphEdge["metadata"]>
 
@@ -174,7 +175,15 @@ export async function traverseGraph(
         confidence: row.confidence ?? 0,
         isCrossLanguage: !!row.isCrossLang,
         bridgeMechanism: row.bridge || undefined,
-        callSite: { file: row.srcFileRel || node.file, line: row.lineNumber || node.line },
+        // M62.A2 (issue #876): the address owner decides what this position
+        // IS. A stored line of 0 (the indexer's legacy literal) or NULL is
+        // NOT a position — the calling symbol's declaration is only ever a
+        // LABELED substitute, never silently presented as the call site.
+        callSite: deriveCallSiteAddress({
+          storedLine: row.lineNumber,
+          file: row.srcFileRel || node.file,
+          callerDeclaration: { line: node.line },
+        }),
         depth,
         rowId: row.rowId,
         metadata: edgeMetadata(row.meta),
@@ -202,7 +211,7 @@ export async function traverseGraph(
   const visitedCallees = new Set<string>()
   let calleeBudget = options.calleeBudget ?? DEFAULT_BUDGET
 
-  const traceCallees = (symbolId: string, srcFileRel: string, depth: number): void => {
+  const traceCallees = (symbolId: string, srcFileRel: string, srcLine: number, depth: number): void => {
     if (depth >= maxDepth || visitedCallees.has(symbolId)) return
     visitedCallees.add(symbolId)
     const isExternal = symbolId.startsWith("ext:")
@@ -246,7 +255,7 @@ export async function traverseGraph(
       ) as EdgeRow[]
     }
 
-    const children: Array<{ id: string; file: string }> = []
+    const children: Array<{ id: string; file: string; line: number }> = []
     for (const row of rows) {
       const targetName = row.symName || row.extName || ""
       if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) continue
@@ -261,14 +270,20 @@ export async function traverseGraph(
         confidence: row.confidence ?? 0,
         isCrossLanguage: !!row.isCrossLang,
         bridgeMechanism: row.bridge || undefined,
-        callSite: { file: row.srcFileRel || srcFileRel, line: row.lineNumber || 0 },
+        // M62.A2 (issue #876): same rule as the callers side — the calling
+        // symbol's declaration (srcLine) is a labeled substitute only.
+        callSite: deriveCallSiteAddress({
+          storedLine: row.lineNumber,
+          file: row.srcFileRel || srcFileRel,
+          callerDeclaration: { line: srcLine },
+        }),
         depth,
         rowId: row.rowId,
         metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
-      if (row.symId) children.push({ id: row.symId, file: node.file })
-      else if (row.extName) children.push({ id: `ext:${row.extName}`, file: node.file })
+      if (row.symId) children.push({ id: row.symId, file: node.file, line: node.line })
+      else if (row.extName) children.push({ id: `ext:${row.extName}`, file: node.file, line: node.line })
     }
 
     for (const child of children) {
@@ -280,13 +295,13 @@ export async function traverseGraph(
       if (depth >= maxDepth - 1) break
       if (!visitedCallees.has(child.id)) {
         calleeBudget--
-        traceCallees(child.id, child.file, depth + 1)
+        traceCallees(child.id, child.file, child.line, depth + 1)
       }
     }
   }
 
   if (options.direction !== "callees") traceCallers(root.id, 0)
-  if (options.direction !== "callers") traceCallees(root.id, root.relativePath, 0)
+  if (options.direction !== "callers") traceCallees(root.id, root.relativePath, root.line, 0)
 
   return { callers, callees, nodes, truncated, truncationReason, maxDepthReached }
 }

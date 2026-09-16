@@ -36,6 +36,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 
 - Per-symbol dependency graph: callers and callees
 - Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence
+- Per-edge call-site address (M62.A2): `{ kind, file, line, note }` — `call-site` is an exact stored line; `declaration` is a LABELED substitute (the calling symbol's own declaration, shown only when no call-site line is stored); `unknown` has no position at all (line null) and states why. A position is never fabricated and never reported as line 0
 - Declared truncation with a reason when the traversal is bounded
 
 ## Examples
@@ -55,6 +56,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 - Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven
 - The graph reflects the index as of the last index run
 - Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row
+- Call-site positions depend on the analyzer: an exact line is claimed only where the index stored a real line; a legacy 0 or a NULL line yields the declared `declaration` or `unknown` address instead (derived by src/intelligence/graph/line-address.ts — never an inline fallback)
 
 ## Performance
 
