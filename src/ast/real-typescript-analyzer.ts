@@ -3562,6 +3562,47 @@ class TypeScriptAnalysisRunner {
     }
   }
 
+  /**
+   * M59 (#861): is this node written in DECORATOR position?
+   *
+   * A decorator is METADATA on the symbol it decorates, not a call or a
+   * reference made by whoever lexically encloses it. The family already rules
+   * this way: the JVM analyzers attach annotations as `decorators` metadata and
+   * emit no call/reference from them, and the python oracle documents the same
+   * rule (PYD1 — "the analyzer treats decorators as metadata on the decorated
+   * symbol, not runtime call edges", with its oracle skipping the positions to
+   * match). typescript was the exception: because a decorator is syntactically
+   * a call expression inside the class body, `@inject("db")` produced
+   * `calls Service -> inject` AND `references Service -> inject` from the CLASS
+   * — so a class appeared to call a decorator it never mentions in its body —
+   * alongside the correct `references pool -> inject` that
+   * extractDecoratorRelationships emits from the decorated member.
+   *
+   * The walk stops at the enclosing statement/declaration boundary rather than
+   * walking to the root: a decorator on a METHOD cannot make the method's own
+   * body a decorator position (its decorators are siblings of
+   * method_definition, never ancestors of the body).
+   */
+  private inDecoratorPosition(n: Node): boolean {
+    let p: Node | null = n.parent
+    while (p) {
+      if (p.type === "decorator") return true
+      if (
+        p.type === "class_declaration" ||
+        p.type === "abstract_class_declaration" ||
+        p.type === "class" ||
+        p.type === "function_declaration" ||
+        p.type === "method_definition" ||
+        p.type === "statement_block" ||
+        p.type === "program"
+      ) {
+        return false
+      }
+      p = p.parent
+    }
+    return false
+  }
+
   private extractCallRelationships(
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -3569,6 +3610,11 @@ class TypeScriptAnalysisRunner {
   ): void {
     const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
+      // M59 (#861): no call edge is emitted for a decorator invocation — see
+      // inDecoratorPosition. The subtree is skipped whole, so a call nested in a
+      // decorator's ARGUMENTS (`@inject(makeToken())`) is decorator position too,
+      // which is exactly what the oracle now skips.
+      if (this.inDecoratorPosition(n)) return
 
       // Extract call expressions and JSX component usages
       // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
@@ -3749,6 +3795,12 @@ class TypeScriptAnalysisRunner {
     const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null, locals: Set<string>): void => {
       const prevSymbol = currentSymbol
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
+      // M59 (#861): the usage/reference pass is the one that produced the
+      // duplicate `references Service -> inject` beside the member-scoped
+      // decorator reference. Same rule as the call pass: decorator position is
+      // metadata, not a usage by the enclosing scope.
+      if (this.inDecoratorPosition(n)) return
+
       // TSD2: fresh locals set per function/method scope. resolveRelationship
       // Symbol rebinds ONLY on function-like nodes, so a symbol change here
       // means we just entered one; siblings restore their own set via the
@@ -5380,13 +5432,42 @@ class TypeScriptAnalysisRunner {
       }
     }
 
+    // M59 (#861): a DECORATED declaration's node STARTS AT ITS DECORATOR in this
+    // grammar family — measured on the pinned wasm:
+    //
+    //   @sealed
+    //   export class Service      export_statement children
+    //                             [decorator@18, export@19, class_declaration@19]
+    //   @inject("db")
+    //   private pool: unknown     public_field_definition children
+    //                             [decorator@20, accessibility_modifier@21, ...]
+    //
+    // so the symbol's own line, its `exports` line and its `contains` line all
+    // named the line the DECORATOR is written on (18 and 20) instead of the line
+    // the declaration's own name is written on (19 and 21) — the M59 contract is
+    // the line the named token appears on. Method decorators are class_body
+    // SIBLINGS rather than children, which is why methods were already correct.
+    // The family rule is the one scala fixed in scala/declaration-lines-825
+    // (leading annotations excluded from the range); this makes typescript's the
+    // same rule. Advancing to the first NON-decorator child keeps the range
+    // coherent — startLine/startColumn/startIndex all move together, to the
+    // `export` keyword of a class or the accessibility modifier of a field,
+    // which are on the declaration's own line.
+    let startSource = targetNode
+    {
+      let i = 0
+      while (i < targetNode.childCount && targetNode.child(i)?.type === "decorator") i++
+      const first = i < targetNode.childCount ? targetNode.child(i) : null
+      if (i > 0 && first) startSource = first
+    }
+
     return {
       // tree-sitter rows are 0-indexed; the index convention is 1-based.
-      startLine: targetNode.startPosition.row + 1,
-      startColumn: targetNode.startPosition.column + 1,
+      startLine: startSource.startPosition.row + 1,
+      startColumn: startSource.startPosition.column + 1,
       endLine: targetNode.endPosition.row + 1,
       endColumn: targetNode.endPosition.column + 1,
-      startIndex: targetNode.startIndex,
+      startIndex: startSource.startIndex,
       endIndex: targetNode.endIndex,
     }
   }
