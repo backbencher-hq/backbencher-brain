@@ -1,37 +1,39 @@
 {
   "probe": "M59.O3",
-  "at": "2026-09-15T22:59:33.808Z",
+  "at": "2026-09-16T17:53:23.037Z",
+  "atCommit": "fced54ba29fb86579006a1a4ec23f1532222a95f",
+  "treeModifiedInputs": 13,
   "repo": "$HOME/fixtures/repositories/cats-effect",
-  "tempDataDir": "/tmp/m59-data-nPtMfh",
+  "tempDataDir": "/tmp/m59-data-oAQxGg",
   "indexStats": {
     "files": 404,
-    "symbols": 7544,
-    "relationships": 33133,
-    "imports": 1349,
+    "symbols": 7675,
+    "relationships": 33326,
+    "imports": 1369,
     "errorFiles": 0
   },
   "db": {
-    "total": 33133,
-    "withLine": 31849,
+    "total": 33326,
+    "withLine": 32042,
     "zero": 0,
     "null": 1284
   },
   "byType": [
     {
       "rt": "references",
-      "n": 13567
+      "n": 13589
     },
     {
       "rt": "calls",
-      "n": 7843
+      "n": 7861
     },
     {
       "rt": "contains",
-      "n": 5885
+      "n": 6032
     },
     {
       "rt": "instantiates",
-      "n": 1674
+      "n": 1680
     },
     {
       "rt": "uses",
@@ -53,11 +55,11 @@
   "byLanguage": [
     {
       "lang": "scala",
-      "n": 30895
+      "n": 31750
     },
     {
       "lang": "java",
-      "n": 239
+      "n": 241
     },
     {
       "lang": "markdown",
@@ -69,8 +71,8 @@
     }
   ],
   "sourceCheck": {
-    "checked": 31181,
-    "consistent": 30270,
+    "checked": 32038,
+    "consistent": 31127,
     "inconsistent": 0,
     "notCheckable": 911,
     "targetUnresolved": 0,
