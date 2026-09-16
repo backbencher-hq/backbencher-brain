@@ -2,26 +2,26 @@
   "issue": "M55.X1",
   "code": "X1",
   "milestone": "M55",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 41,
-  "passed": 41,
-  "failed": 0,
-  "realFailed": 0,
+  "passed": 35,
+  "failed": 6,
+  "realFailed": 6,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+  "currentCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
   "workingTreeRelevantChanges": [
     "docs/m55/VERDICT-PACK.md",
     "validation/m55/results/X1.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-16T20:19:15.793Z",
+  "generatedAt": "2026-09-16T22:28:32.204Z",
   "audit": {
-    "head": "02eb66896c9bfc36151f1aa98715603078f1635f",
+    "head": "8ca8e7882dbba857606fce4d02c08b845627ae75",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
@@ -343,7 +343,7 @@
         "status": "verified"
       }
     ],
-    "captureRun": "live-21",
+    "captureRun": "live-22",
     "frames": 11,
     "claims": 12,
     "wireOnlyClaims": 2,
@@ -356,7 +356,14 @@
     ],
     "handoffIssue": 816
   },
-  "failures": [],
+  "failures": [
+    "C1: T2 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=fd48c16c2cf1 realFailed=0 stale(src/lsp/call_hierarchy.ts)",
+    "C1: T3 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=fd48c16c2cf1 realFailed=0 stale(src/lsp/navigation.ts,src/lsp/rich_hover.ts)",
+    "C1: T4 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=fd48c16c2cf1 realFailed=0 stale(src/lsp/call_hierarchy.ts)",
+    "C1: T5 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=fd48c16c2cf1 realFailed=0 stale(script/m26/graph-core.ts)",
+    "C1: V1 evidence is verified and fresh by relevance (the G1 rule): status=verified pin=fd48c16c2cf1 realFailed=0 stale(script/m55/verify-live-surface.ts)",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=a2aac1e2825c green=40/40 lane-changed=10"
+  ],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
     "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 40 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
@@ -364,7 +371,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T20:19:15.799Z",
-    "contentSha256": "c8ce3985ba856f0bc935d126df8b1f69db5c2ebc8826e6bdcdc7b293494b9b8d"
+    "sealedAt": "2026-09-16T22:28:32.207Z",
+    "contentSha256": "089d351ca5a1b1d58fb2de2ba8050f812f3dd045e27fba1f902b138ced4d1957"
   }
 }

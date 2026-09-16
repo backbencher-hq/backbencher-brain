@@ -13,7 +13,7 @@
       "code": "G1",
       "githubIssue": 874,
       "tool": "m62-governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "the M62 ledger; the bar re-audit that re-executes A1/A2/A3/D1 on every run; the chain wiring audit; the lane's prerequisites (M55 + M61 bars)",
       "acceptanceCriteria": [
         "gate exits 0 only on a fully verified ledger; a hollow closure, a removed issue, a mis-ordered group, a lane escape, a tampered record, an unwired gate and a hand-edited count each FAIL (proven by in-memory negatives)",
@@ -31,14 +31,14 @@
         "validation/m62/results/manifest.json"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m62/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 10,
-        "failed": 0,
-        "realFailed": 0,
+        "passed": 8,
+        "failed": 3,
+        "realFailed": 3,
         "negativeCases": 8,
-        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45"
+        "recordCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75"
       }
     },
     {
@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
-        "recordSealedAt": "2026-09-16T22:11:01.623Z"
+        "recordCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+        "recordSealedAt": "2026-09-16T22:28:40.170Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "negativeCases": 6,
-        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
-        "recordSealedAt": "2026-09-16T22:11:02.892Z"
+        "recordCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+        "recordSealedAt": "2026-09-16T22:28:41.597Z"
       }
     },
     {
@@ -142,15 +142,15 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
-        "recordSealedAt": "2026-09-16T22:11:03.971Z"
+        "recordCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+        "recordSealedAt": "2026-09-16T22:28:43.071Z"
       }
     },
     {
       "code": "X1",
       "githubIssue": 878,
       "tool": "m62-closure",
-      "status": "planned",
+      "status": "verified",
       "scope": "the lane closure audit: M62 plus the IDE lane re-audited at one HEAD, with generated packs",
       "acceptanceCriteria": [
         "the audit requires the m62 ledger closed, every M62 gate re-executed in the same run, and the lane bars fresh by relevance",
@@ -165,7 +165,17 @@
         "script/m62/verify-closure.ts",
         "validation/m62/results/SPOT-CHECK-PACK.md",
         "validation/m62/results/KNOWN-GAPS.md"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m62/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 19,
+        "failed": 9,
+        "realFailed": 9,
+        "negativeCases": 7,
+        "recordCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75"
+      }
     }
   ]
 }

@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "504c43ff8bde1689353bd2daa5c74664f7f22a03",
+  "inputsHash": "8f3fdf22b6621f053aa91dbb701a761b357be41d",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -44,12 +44,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 16.9,
-          "definition": 3.53,
-          "references": 3.63,
-          "documentSymbol": 3.28,
-          "workspaceSymbol": 2.43,
-          "prepareCallHierarchy": 3.79
+          "hover": 8.57,
+          "definition": 0.95,
+          "references": 1.52,
+          "documentSymbol": 1.21,
+          "workspaceSymbol": 0.83,
+          "prepareCallHierarchy": 0.75
         },
         "budgetViolations": []
       },
@@ -64,13 +64,13 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-java.json",
-          "commit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
-          "generatedAt": "2026-09-15T16:21:13.113Z",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+          "generatedAt": "2026-09-16T22:31:52.834Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
           "status": "verified"
         }
       },
@@ -97,12 +97,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 12.31,
-          "definition": 3.62,
-          "references": 4.1,
-          "documentSymbol": 5.55,
-          "workspaceSymbol": 6.15,
-          "prepareCallHierarchy": 6.62
+          "hover": 6.77,
+          "definition": 0.89,
+          "references": 2.16,
+          "documentSymbol": 1.07,
+          "workspaceSymbol": 0.82,
+          "prepareCallHierarchy": 0.74
         },
         "budgetViolations": []
       },
@@ -117,13 +117,13 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-python.json",
-          "commit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
-          "generatedAt": "2026-09-15T16:21:20.004Z",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+          "generatedAt": "2026-09-16T22:31:58.301Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
           "status": "verified"
         }
       },
@@ -150,12 +150,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 16.62,
-          "definition": 3.51,
-          "references": 4.37,
-          "documentSymbol": 3.61,
-          "workspaceSymbol": 3.49,
-          "prepareCallHierarchy": 3.85
+          "hover": 9.67,
+          "definition": 1.89,
+          "references": 2.56,
+          "documentSymbol": 2.21,
+          "workspaceSymbol": 1.43,
+          "prepareCallHierarchy": 1.43
         },
         "budgetViolations": []
       },
@@ -170,13 +170,13 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-typescript.json",
-          "commit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
-          "generatedAt": "2026-09-15T16:21:26.367Z",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+          "generatedAt": "2026-09-16T22:32:03.140Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
           "status": "verified"
         }
       },
@@ -203,12 +203,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 16.65,
-          "definition": 3.39,
-          "references": 3.79,
-          "documentSymbol": 3.46,
-          "workspaceSymbol": 3.61,
-          "prepareCallHierarchy": 3.3
+          "hover": 8.98,
+          "definition": 1.16,
+          "references": 1.39,
+          "documentSymbol": 2.26,
+          "workspaceSymbol": 1.21,
+          "prepareCallHierarchy": 1.44
         },
         "budgetViolations": []
       },
@@ -223,13 +223,13 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-javascript.json",
-          "commit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
-          "generatedAt": "2026-09-15T16:21:32.823Z",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+          "generatedAt": "2026-09-16T22:32:08.109Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
           "status": "verified"
         }
       },
@@ -256,12 +256,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 15.89,
-          "definition": 3.51,
-          "references": 3.73,
-          "documentSymbol": 3.54,
-          "workspaceSymbol": 3.22,
-          "prepareCallHierarchy": 4.58
+          "hover": 8.31,
+          "definition": 1.07,
+          "references": 1.18,
+          "documentSymbol": 1.39,
+          "workspaceSymbol": 1.87,
+          "prepareCallHierarchy": 1.46
         },
         "budgetViolations": []
       },
@@ -276,13 +276,13 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-kotlin.json",
-          "commit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
-          "generatedAt": "2026-09-15T16:21:39.123Z",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+          "generatedAt": "2026-09-16T22:32:12.989Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
           "status": "verified"
         }
       },
@@ -309,12 +309,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 16.75,
-          "definition": 5.83,
-          "references": 4.08,
-          "documentSymbol": 5.2,
-          "workspaceSymbol": 5.12,
-          "prepareCallHierarchy": 6.66
+          "hover": 9.68,
+          "definition": 1.63,
+          "references": 2.02,
+          "documentSymbol": 2.57,
+          "workspaceSymbol": 1.83,
+          "prepareCallHierarchy": 1.82
         },
         "budgetViolations": []
       },
@@ -329,13 +329,13 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-scala.json",
-          "commit": "5c0864d124cbb54ca3da4d565178dfc3b39316d7",
-          "generatedAt": "2026-09-15T16:21:45.522Z",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+          "generatedAt": "2026-09-16T22:32:18.028Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
           "status": "verified"
         }
       },
@@ -349,9 +349,9 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 11.09,
-    "inEditorHoverP95Ms": 8.25,
-    "coldMedianMs": 1233,
+    "hoverP95Ms": 5.42,
+    "inEditorHoverP95Ms": 5.92,
+    "coldMedianMs": 899,
     "tierRatio": {
       "totalRelationships": 785930,
       "inferredRatioBeforePct": 42.1,
