@@ -26,25 +26,25 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "43/43 fixtures pass",
+      "detail": "44/44 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "54/54 fixtures pass",
+      "detail": "55/55 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "40/40 fixtures pass",
+      "detail": "42/42 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "53/53 fixtures pass",
+      "detail": "54/54 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "d174d2af956d13ea711ee35ba69de8674d2f63bf",
-  "committedAt": "2026-09-16T18:52:57+02:00",
+  "commit": "fced54ba29fb86579006a1a4ec23f1532222a95f",
+  "committedAt": "2026-09-16T19:49:00+02:00",
   "data": {
     "details": [
       {
@@ -1064,6 +1064,11 @@
         "problems": []
       },
       {
+        "fixture": "java/anonymous-type-owner",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/argument-count-comment-exclusion",
         "ok": true,
         "problems": []
@@ -1280,6 +1285,11 @@
       },
       {
         "fixture": "groovy/anonymous-field-member",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/anonymous-type-owner",
         "ok": true,
         "problems": []
       },
@@ -1544,7 +1554,17 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/anon-type-not-file-primary-type",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/anonymous-field-member",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/anonymous-type-owner",
         "ok": true,
         "problems": []
       },
@@ -1760,6 +1780,11 @@
       },
       {
         "fixture": "scala/anonymous-member-initializer-call",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/anonymous-type-owner",
         "ok": true,
         "problems": []
       },
@@ -2422,7 +2447,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 54
+        "pass": 55
       },
       "haskell": {
         "fail": 0,
@@ -2430,7 +2455,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 43
+        "pass": 44
       },
       "javascript": {
         "fail": 0,
@@ -2438,7 +2463,7 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 40
+        "pass": 42
       },
       "objc": {
         "fail": 0,
@@ -2462,7 +2487,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 53
+        "pass": 54
       },
       "svelte": {
         "fail": 0,
@@ -2503,8 +2528,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-16T17:08:02.631Z",
-  "regeneratedAtCommit": "d174d2af956d13ea711ee35ba69de8674d2f63bf",
+  "regeneratedAt": "2026-09-16T17:49:14.305Z",
+  "regeneratedAtCommit": "fced54ba29fb86579006a1a4ec23f1532222a95f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
