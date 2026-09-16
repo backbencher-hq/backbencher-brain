@@ -235,6 +235,14 @@
       "verifiedAtCommit": "241e3a4e"
     },
     {
+      "id": "PHP2",
+      "title": "PHP second review wave (issue #869): PHP2-A bare $var reads, PHP2-B bare NAME consts, PHP2-C bare foreach value, PHP2-D receiver bases + owner attribution",
+      "status": "verified",
+      "notes": "Hostile battery over the PHP-R3 deferral (22 cases) + F5 lanes; oracle mirrors in derivePhpEdges. Fully gated: fixture php/bare-value-reads (new, 12/27/7), 4 mutants (34/34 php; mutant hunks ride in 20e217b7, verified present), spec PHP2-A/B/C/D. Lanes: phpunit + phpmyadmin, pinned + 5 rotations, 0/0/0. F3 all pass (payload-and-complexity re-ruled: receiver exclusion narrowed to member side), F4 614/614, R1 124/124, R2 php-clean (suite 13/15 on co-agent TS debt, no new regexes). tsc clean, grammar php PASS (0 unknowns), fixture-coverage php PASS. Seam annex P1-php.json secondReview (25 uses rows; isLocalRead survives only on symbol-unresolvable rows; rest join F1 on #829).",
+      "evidenceFile": "reviews/php/second-review.md",
+      "verifiedAtCommit": "7ba371ea"
+    },
+    {
       "id": "SW1",
       "title": "Swift ultimate review wave (issue #836): SW-A member reads, SW-B enum construction, SW-D keypaths, SW-E type filter, SW-F projected values",
       "status": "verified",
