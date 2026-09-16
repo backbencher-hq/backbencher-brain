@@ -47,6 +47,24 @@ const PACKAGE = path.join(ROOT, "package.json");
 
 const EXPECTED_CODES = ["G1", "T1", "T2", "T3", "T4", "T5", "P1", "V1", "X1"];
 
+/** The two codes this gate's own verdict cannot require to be GREEN ahead of the
+ *  run that measures them — the self-reference rule (M61's verifier-truth class,
+ *  found here by M61's program audit). G1's record is written by THIS run, so
+ *  demanding it be verified makes the gate depend on its own previous verdict:
+ *  one red run — for any reason, including a lane change under a closed
+ *  milestone — would make every later run red forever, and the trap would read
+ *  as "the milestone went stale" rather than "the gate cannot clear itself".
+ *  X1's record is written by the closure gate, which itself requires THIS gate
+ *  green (its C1), so demanding X1 green here closes a mutual loop.
+ *
+ *  What is still enforced for these two: the record must exist, be pinned to an
+ *  ancestor of HEAD, be relevance-fresh, name its own code and command, and
+ *  declare no lane violation. What is NOT skipped: the pair's greenness is
+ *  required where it is measurable — m55's closure requires G1 verified and
+ *  relevance-fresh, and the program closure (M61.X1) re-executes that closure
+ *  and m24–m55 at HEAD. The narrowness is proven by negatives below. */
+const SELF_OWNED_CODES = ["G1", "X1"];
+
 /** The six Truth Rules, exactly as they must appear in the contract. */
 const TRUTH_RULES = [
   "**One surface, one answer.**",
@@ -230,8 +248,13 @@ function collectErrors(ledger: Ledger, ctx: Ctx): string[] {
         const file = ctx.readEvidence(e.evidenceFile);
         if (file === null) errors.push(`evidence-file-missing:${issue.code}`);
         else {
-          if (file.status !== "verified") errors.push(`evidence-file-status:${issue.code}`);
-          if (typeof file.realFailed === "number" && file.realFailed !== 0) errors.push(`evidence-file-failed:${issue.code}`);
+          // See SELF_OWNED_CODES: for those two the record's verdict is not this
+          // gate's to demand. The pin, freshness, identity and lane checks below
+          // still apply.
+          if (!SELF_OWNED_CODES.includes(issue.code)) {
+            if (file.status !== "verified") errors.push(`evidence-file-status:${issue.code}`);
+            if (typeof file.realFailed === "number" && file.realFailed !== 0) errors.push(`evidence-file-failed:${issue.code}`);
+          }
           if (file.code !== issue.code) errors.push(`evidence-file-code:${issue.code}`);
           if (file.verifierCommand !== undefined && file.verifierCommand !== e.verifierCommand) errors.push(`evidence-command-drift:${issue.code}`);
           const commit = file.currentCommit ?? "";
@@ -400,6 +423,25 @@ function main(): void {
 
   const mContract: Ctx = { ...ctx, contract: contract.replace("**Identity is stated.**", "**Identity is implied.**") };
   negative("G1: a missing Truth Rule in the contract", collectErrors(clone(), mContract).some((e) => e.startsWith("contract-rule")), "");
+
+  // The self-owned exemption must not leak: every entry that is NOT G1/X1 keeps
+  // the file-greater rule, so a closed milestone whose lane record went red is
+  // still reported.
+  const mLeaked: Ledger = clone();
+  const leakedCtx: Ctx = {
+    ...ctx,
+    readEvidence: (file: string) => (file === "T1.json" ? { ...(ctx.readEvidence(file) ?? {}), status: "known-gap", realFailed: 1 } : ctx.readEvidence(file)),
+  };
+  negative("G1: the self-owned exemption leaks to a lane record that went red", collectErrors(mLeaked, leakedCtx).some((e) => e.startsWith("evidence-file-status:T1")), "");
+
+  // ...and it does not drop the pin: a self-owned record that is not an ancestor
+  // of HEAD is still an error, so "exempt from green" never means "unpinned".
+  const mSelfPin: Ledger = clone();
+  const selfPinCtx: Ctx = {
+    ...ctx,
+    readEvidence: (file: string) => (file === "X1.json" ? { ...(ctx.readEvidence(file) ?? {}), currentCommit: "0".repeat(40) } : ctx.readEvidence(file)),
+  };
+  negative("G1: a self-owned record pinned to a commit that is not an ancestor", collectErrors(mSelfPin, selfPinCtx).some((e) => e.startsWith("evidence-commit-not-ancestor:X1")), "");
 
   const mLane: Ledger = clone();
   const laneIssue = mLane.issues[1]!;

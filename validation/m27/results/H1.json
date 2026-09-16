@@ -26,10 +26,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
+  "currentCommit": "f62bf332b4dd14b1e0f100052bdcc688c4e5ff48",
   "verifierCommand": "npx tsx script/m27/verify-helix.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-16T17:23:33.027Z",
+  "generatedAt": "2026-09-16T18:53:22.526Z",
   "claimLevel": "I2 — configuration verified against the real server's advertised capabilities; no driven hx session on this machine (D-7)",
   "blockedLegs": [
     {
@@ -43,7 +43,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:23:33.027Z",
-    "contentSha256": "c7c7030e503a38fd025516dd2b1afd8e0e417ebec982d2e26dcd51dfc03ae165"
+    "sealedAt": "2026-09-16T18:53:22.527Z",
+    "contentSha256": "f8fd4c9df100bcc65b7a3b296b1eb79cffbba73fbb759f83da37745afc0eccb1"
   }
 }

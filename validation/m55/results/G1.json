@@ -3,31 +3,21 @@
   "code": "G1",
   "milestone": "M55",
   "status": "known-gap",
-  "checks": 14,
-  "passed": 13,
+  "checks": 16,
+  "passed": 15,
   "failed": 0,
   "realFailed": 1,
-  "negativeCases": 6,
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
+  "negativeCases": 8,
+  "currentCommit": "f62bf332b4dd14b1e0f100052bdcc688c4e5ff48",
   "workingTreeRelevantChanges": [
     "docs/m55/VERDICT-PACK.md",
+    "script/m55/verify-governance.ts",
     "validation/m55/results/G1.json",
-    "validation/m55/results/P1.json",
-    "validation/m55/results/T1.json",
-    "validation/m55/results/T2.json",
-    "validation/m55/results/T3.json",
-    "validation/m55/results/T4.json",
-    "validation/m55/results/T5.json",
-    "validation/m55/results/V1-action-args.json",
-    "validation/m55/results/V1-blocked-path.json",
-    "validation/m55/results/V1-probe.json",
-    "validation/m55/results/V1-status-panel.json",
-    "validation/m55/results/V1.json",
     "validation/m55/results/X1.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-16T17:31:23.779Z",
+  "generatedAt": "2026-09-16T19:01:16.962Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -66,7 +56,7 @@
     ]
   },
   "failures": [
-    "G1: the M55 ledger is structurally valid at HEAD — evidence-file-status:G1; evidence-file-failed:G1; evidence-file-status:V1; evidence-file-failed:V1; evidence-file-status:X1; evidence-file-failed:X1"
+    "G1: the M55 ledger is structurally valid at HEAD — evidence-stale:G1(script/m55/verify-governance.ts)"
   ],
   "limitations": [
     "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
@@ -75,7 +65,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:31:23.780Z",
-    "contentSha256": "245d984c6b7ef4af2afaf7d3aa817301bc77faf6ae888a1b7a04bcf028a61e7a"
+    "sealedAt": "2026-09-16T19:01:16.963Z",
+    "contentSha256": "eaf181ff0f8abcde2aab2db6527a8a0ca0c07c53238f5d60e150898a7f32276b"
   }
 }
