@@ -613,7 +613,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   return { pass, fail, details }
 }
 
-export { runLang, LANGS, matchConstraints }
+export { runLang, LANGS, matchConstraints, getParser }
 
 async function main() {
   const argLangs = process.argv.includes("--lang")
