@@ -306,6 +306,14 @@ function auditCallee(craw: any, traversal: any, calleeName: string): Audit {
 }
 
 async function main() {
+  const { execSync } = await import("node:child_process")
+  const commit = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
+  // Tracked files modified against that commit (untracked scratch excluded):
+  // a non-zero value means the artifact is a WORKING-TREE measurement.
+  const modifiedInputs = execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" })
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("?? ")).length
   const { getProjectId } = await import(path.join(ROOT, "src/cli/index.ts"))
   const { indexProjectParallel } = await import(path.join(ROOT, "src/ast/parallel-indexer.ts"))
   const { BrainDatabase } = await import(path.join(ROOT, "src/brain/database.ts"))
@@ -580,6 +588,13 @@ async function main() {
         probe: "M59.ACC",
         at: new Date().toISOString(),
         command: process.argv.map((a) => (a.includes(" ") ? `"${a}"` : a)).join(" "),
+        // M59 (#855): the artifact must name the code it measured, and say when
+        // the tree it measured was NOT that commit — the same disclosure the M14
+        // honesty gate demands of the differential evidence (`measured over
+        // uncommitted code`). Without this the file was anonymous: it could not
+        // be told apart from an artifact of a different indexer.
+        commit,
+        treeModifiedInputs: modifiedInputs,
         dataDir: DATA,
         reused: REUSE,
         repo: REPO,
