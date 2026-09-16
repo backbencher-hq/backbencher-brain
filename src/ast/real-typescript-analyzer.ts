@@ -1978,6 +1978,7 @@ class TypeScriptAnalysisRunner {
         extends: heritage.extends,
         extendsLines: heritage.extendsLines,
         implements: heritage.implements,
+        implementsLines: heritage.implementsLines,
       },
     }
 
@@ -3503,13 +3504,19 @@ class TypeScriptAnalysisRunner {
     for (const symbol of symbols) {
       if (symbol.kind === ASTEngine.SymbolKind.Class) {
         const implementsTypes = symbol.metadata?.implements as string[] | undefined
+        // M59 (#825 discipline): the interface NAME's line, parallel to the name
+        // list and absent when the collector could not locate a node for it —
+        // unknown is absent, never `0`.
+        const implementsLines = symbol.metadata?.implementsLines as number[] | undefined
         if (implementsTypes) {
-          for (const iface of implementsTypes) {
+          for (let i = 0; i < implementsTypes.length; i++) {
+            const iface = implementsTypes[i]
             relationships.push({
               source: symbol.name,
               target: iface,
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
+              ...(implementsLines?.[i] ? { line_number: implementsLines[i] } : {}),
               metadata: {},
             })
           }
@@ -4170,6 +4177,90 @@ class TypeScriptAnalysisRunner {
         if (baseBases) queue.push(...baseBases)
       }
     }
+
+    // M49 W22 (rotation-found, vue-core `packages/reactivity/src/effect.ts`):
+    // a CLASS implementing an in-file INTERFACE emitted no override for the
+    // members it supplies, so `ReactiveEffect.notify -> Subscriber.notify` was
+    // permanently MISSING. The contract is the one java already carries
+    // (clojure `TransformerIterator`: `Empty.add -> Buffer.add`, probe-verified)
+    // and the one the oracle derives generically — `declParents` takes
+    // `extends` AND `implements` edges whose target resolves in-file, which is
+    // why java's lane reads 0 missing while typescript's carried this gap.
+    //
+    // Lockstep with the oracle's member set, deliberately asymmetric:
+    //   - the CLASS side is METHODS only. A class field is
+    //     `public_field_definition`, which the oracle excludes by name so truth
+    //     cannot outrun the analyzer (`property_signature` is an INTERFACE
+    //     member and stays in, because the analyzer's interface-heritage arm
+    //     does emit those);
+    //   - the BASE side is the interface's methods and properties, walked
+    //     transitively along `extends` (depth 10, mirroring the oracle's
+    //     declParents walk and this method's interface arm above);
+    //   - abstention matches the arm above: an overloaded name on either side
+    //     cannot be paired name-only, because the analyzer carries no textual
+    //     signature truth — the oracle's `sigCompatible` gate would decide.
+    //   - the base name is used VERBATIM (metadata.implements is what emits the
+    //     `implements` edge the oracle reads). A qualified or generic target is
+    //     therefore unresolved on both sides, which is what lockstep means.
+    const classMethods = new Map<string, ASTEngine.UniversalSymbol[]>()
+    for (const s of symbols) {
+      if (s.ownerKind === ASTEngine.SymbolKind.Class &&
+          s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
+        const list = classMethods.get(s.ownerName) ?? []
+        list.push(s)
+        classMethods.set(s.ownerName, list)
+      }
+    }
+    const seenOverride = new Set<string>(
+      relationships
+        .filter((r) => r.type === ASTEngine.RelationshipType.Overrides)
+        .map((r) => `${r.source}\u0000${r.target}`),
+    )
+    for (const cls of symbols) {
+      if (cls.kind !== ASTEngine.SymbolKind.Class) continue
+      const bases = cls.metadata?.implements as string[] | undefined
+      if (!bases || bases.length === 0) continue
+      const members = classMethods.get(cls.name) ?? []
+      if (members.length === 0) continue
+      const memberCounts = new Map<string, number>()
+      for (const m of members) memberCounts.set(m.name, (memberCounts.get(m.name) ?? 0) + 1)
+      const seenBase = new Set<string>()
+      const queue: string[] = [...bases]
+      let depth = 0
+      while (queue.length && depth < 10) {
+        depth++
+        const base = queue.shift()!
+        if (seenBase.has(base) || base === cls.name) continue
+        seenBase.add(base)
+        const baseDecl = ifaceByName.get(base)
+        if (!baseDecl) continue // external/unresolved base: not in-file truth
+        const baseMembers = ifaceMembers.get(base) ?? []
+        for (const m of members) {
+          if ((memberCounts.get(m.name) ?? 0) > 1) continue
+          const matching = baseMembers.filter((bm) => bm.name === m.name)
+          // Overload abstention on the base side too: two declarations of the
+          // name in the interface cannot be paired name-only.
+          if (matching.length !== 1) continue
+          const key = `${cls.name}.${m.name}\u0000${base}.${m.name}`
+          if (seenOverride.has(key)) continue
+          seenOverride.add(key)
+          relationships.push({
+            source: `${cls.name}.${m.name}`,
+            target: `${base}.${m.name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.95,
+            // The IMPLEMENTING member's own line (M59 #825): the edge names the
+            // member, so it takes the member's line, not the class's.
+            ...(m.range?.startLine ? { line_number: m.range.startLine } : {}),
+            metadata: {
+              implementedInterface: base,
+            },
+          })
+        }
+        const baseBases = baseDecl.metadata?.extends as string[] | undefined
+        if (baseBases) queue.push(...baseBases)
+      }
+    }
   }
 
 
@@ -4653,8 +4744,8 @@ class TypeScriptAnalysisRunner {
     return this.typeInference.inferFunctionReturnType(node)
   }
 
-  private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[]; extendsLines?: number[] } {
-    const result: { extends?: string[]; implements?: string[]; extendsLines?: number[] } = {}
+  private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[]; extendsLines?: number[]; implementsLines?: number[] } {
+    const result: { extends?: string[]; implements?: string[]; extendsLines?: number[]; implementsLines?: number[] } = {}
 
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -4684,10 +4775,19 @@ class TypeScriptAnalysisRunner {
             }
           } else if (heritageClause.type === "implements_clause") {
             result.implements = []
+            result.implementsLines = []
             for (let k = 0; k < heritageClause.namedChildCount; k++) {
               const type = heritageClause.namedChild(k)
               if (!type || type.type === "type_arguments") continue
               result.implements.push(type.text)
+              // M59.A7 (corpus sweep after the M49 W22 fix): the M59 round gave
+              // `extends` its base-name line but left `implements` unstamped, so
+              // every `implements` edge was the ONE relationship kind the web
+              // round's "every edge carries its name's line" claim did not cover
+              // (measured: 6 in the four TS corpora + 1 delegated from svelte).
+              // The 40-file oracle sample happened to draw none of them, which is
+              // why the milestone's own instrument read 0 noLine for typescript.
+              result.implementsLines.push(type.startPosition.row + 1)
             }
           }
         }
