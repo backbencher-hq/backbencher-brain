@@ -61,8 +61,42 @@ const TYPE_NODES = new Set([
 ])
 
 // ============================================================================
-// MAIN ANALYZER
+// PHP VALUE SCOPE — persistent scope frames for bare-`$var` reads (PHP2).
+// PHP scoping: file statements see file bindings; function/method bodies see
+// params+locals+`global` imports (never file locals); closures see params+
+// `use` (never the enclosing frame); arrow functions chain the enclosing
+// frame (implicit capture); named nested functions start fresh. Universals
+// (superglobals, top-level functions, consts, defines, use-imports) are
+// visible everywhere. Frames are persistent (child snapshots parent) so no
+// exit bookkeeping is needed on the iterative walks.
 // ============================================================================
+type PhpValueScope = {
+  bound: Set<string>
+  parent: PhpValueScope | null
+}
+
+function phpScopeHas(scope: PhpValueScope | null, name: string): boolean {
+  let cur: PhpValueScope | null = scope
+  while (cur) {
+    if (cur.bound.has(name)) return true
+    cur = cur.parent
+  }
+  return false
+}
+
+// Superglobals: ambient authority, bound in every scope (bare names here,
+// without the `$` — variableBareName strips it before lookup).
+const PHP_SUPERGLOBALS: ReadonlySet<string> = new Set([
+  "_GET", "_POST", "_SERVER", "_COOKIE", "_SESSION", "_FILES", "_ENV",
+  "_REQUEST", "GLOBALS", "argv", "argc",
+])
+
+// Magic constants: `name` nodes, never values (`__DIR__` etc. — boolean/
+// null literals are dedicated node types and never reach the read rules).
+const PHP_MAGIC_CONSTANTS: ReadonlySet<string> = new Set([
+  "__DIR__", "__FILE__", "__LINE__", "__FUNCTION__", "__CLASS__",
+  "__METHOD__", "__NAMESPACE__", "__TRAIT__",
+])
 export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // class name -> declared base class (leaf name), populated as class
   // declarations are encountered; consumed by processObjectCreation to
@@ -118,11 +152,26 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind: string | undefined
       ns: string | undefined
       inFunction: string | undefined
+      scope: PhpValueScope
     }
-    const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined }]
+    // PHP2 file scope: prescanned top-level bindings (uniform — valid code
+    // declares before use; hoisted functions resolve regardless of order).
+    // Function/method/closure bodies do NOT inherit file locals (PHP
+    // scoping); they consult funcValues/constValues/superglobals separately
+    // (see read rules).
+    const fileScope: PhpValueScope = { bound: new Set<string>(), parent: null }
+    // Universals: visible in EVERY scope. funcValues (top-level function
+    // names + use-function imports — PHP functions hoist) and constValues
+    // (file consts + define() + use-const imports). Superglobals
+    // (PHP_SUPERGLOBALS) are ambient in every frame lookup. File VARIABLES
+    // live only in fileScope (functions never inherit them).
+    const funcValues = new Set<string>()
+    const constValues = new Set<string>()
+    this.collectPhpFileScope(rootNode, fileScope.bound, funcValues, constValues)
+    const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined, scope: fileScope }]
 
     while (stack.length > 0) {
-      const { node, owner, ownerKind, ns, inFunction } = stack.pop()!
+      const { node, owner, ownerKind, ns, inFunction, scope } = stack.pop()!
       const type = node.type
 
       if (type === "namespace_definition") {
@@ -142,7 +191,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Namespace applies to subsequent top-level declarations.
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: undefined, ownerKind: undefined, ns: nsName, inFunction: undefined })
+          if (child) stack.push({ node: child, owner: undefined, ownerKind: undefined, ns: nsName, inFunction: undefined, scope })
         }
         continue
       }
@@ -218,8 +267,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         const body = this.findChildByType(node, "declaration_list")
         if (body) {
-          this.pushMembers(body, stack, className, "class", ns)
+          this.pushMembers(body, stack, className, "class", ns, scope)
         }
+        this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
       }
 
@@ -262,7 +312,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${ifaceName}` : ifaceName, namespace: ns, extendedInterfaces: extended },
         })
         const body = this.findChildByType(node, "declaration_list")
-        if (body) this.pushMembers(body, stack, ifaceName, "interface", ns)
+        if (body) this.pushMembers(body, stack, ifaceName, "interface", ns, scope)
+        this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
       }
 
@@ -278,7 +329,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName, namespace: ns },
         })
         const body = this.findChildByType(node, "declaration_list")
-        if (body) this.pushMembers(body, stack, traitName, "trait", ns)
+        if (body) this.pushMembers(body, stack, traitName, "trait", ns, scope)
+        this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
       }
 
@@ -315,9 +367,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (list) {
           for (let i = 0; i < list.namedChildCount; i++) {
             const child = list.namedChild(i)
-            if (child) stack.push({ node: child, owner: enumName, ownerKind: "enum", ns, inFunction: undefined })
+            if (child) stack.push({ node: child, owner: enumName, ownerKind: "enum", ns, inFunction: undefined, scope })
           }
         }
+        this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
       }
 
@@ -334,7 +387,6 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { phpSpecific: true },
           })
         }
-        continue
       }
 
       if (type === "function_definition") {
@@ -355,7 +407,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
         })
         const body = node.childForFieldName("body")
-        if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns)
+        if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope)
         continue
       }
 
@@ -371,7 +424,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // walkBody's treatment of anon classes nested inside named methods).
         if (!owner) {
           const body = node.childForFieldName("body")
-          if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, undefined, detectedFrameworks, patterns)
+          if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, undefined, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+          this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope)
           continue
         }
         const modifiers = this.extractModifiers(node)
@@ -407,7 +461,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.extractPromotedProperties(node, owner, ownerKind, symbols)
         if (methodName.startsWith("__")) patterns.add("Magic Methods")
         const body = node.childForFieldName("body")
-        if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns)
+        if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope)
         continue
       }
 
@@ -434,7 +489,6 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { phpSpecific: true },
           })
         }
-        continue
       }
 
       if (type === "const_declaration") {
@@ -457,7 +511,6 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { phpSpecific: true, isConstant: true },
           })
         }
-        continue
       }
 
       if (type === "use_declaration") {
@@ -512,7 +565,6 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "require_once_expression" || type === "include_once_expression" ||
           type === "require_expression" || type === "include_expression") {
         this.emitInclude(node, imports, relationships, ns)
-        continue
       }
 
       // --- Top-level call/creation dispatch (M37.13 procedural gap) ---
@@ -538,13 +590,36 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "object_creation_expression") {
         this.processObjectCreation(node, relationships, owner, inFunction)
       }
+      // PHP2: bare value reads outside bodies (file scope, field defaults,
+      // const initializers, attributes). Closures/arrows at this level get
+      // their frames below before children are pushed.
+      // Read edges attribute to the innermost function, else the
+      // enclosing class (trait-use precedent, PHP-O1), else file scope.
+      const readSource = inFunction || owner || "global"
+      if (type === "variable_name") {
+        this.emitPhpVariableRead(node, node.parent, scope, { file: fileScope, funcValues, constValues }, readSource, relationships)
+      } else if (type === "name") {
+        this.emitPhpConstRead(node, node.parent, { file: fileScope, funcValues, constValues }, readSource, relationships)
+      }
+      // PHP2 scope boundaries at top/class level (closures/arrows assigned
+      // or nested outside any body).
+      let extScope = scope
+      if (type === "anonymous_function") {
+        const fresh: PhpValueScope = { bound: new Set<string>(), parent: null }
+        this.collectPhpScopeBinds(node, fresh.bound)
+        extScope = fresh
+      } else if (type === "arrow_function") {
+        const chained: PhpValueScope = { bound: new Set<string>(), parent: scope }
+        this.collectPhpScopeBinds(node, chained.bound)
+        extScope = chained
+      }
 
       // --- Top-level statement wrapper (e.g. `require_once ...;` is wrapped in
       // an expression_statement at the program level).
       if (type === "expression_statement") {
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
+          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction, scope: extScope })
         }
         continue
       }
@@ -553,7 +628,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "program") {
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
+          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction, scope: extScope })
         }
         continue
       }
@@ -567,7 +642,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // oracle's generic walk.
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction })
+        if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction, scope: extScope })
       }
     }
 
@@ -607,10 +682,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     inFunction: string | undefined,
     detectedFrameworks: Set<string>,
     patterns: Set<string>,
+    scopeCtx: { file: PhpValueScope; funcValues: Set<string>; constValues: Set<string> },
   ): void {
-    const stack: Array<{ n: Node; parent: Node | null }> = [{ n: node, parent: null }]
+    // PHP2 entry seed: the body's declaration params (methods, functions,
+    // closures incl. `use`) — fresh frame, never chained (only arrows chain,
+    // handled inline below).
+    const seed: PhpValueScope = { bound: new Set<string>(), parent: null }
+    this.collectPhpScopeBinds(node.parent, seed.bound)
+    const stack: Array<{ n: Node; parent: Node | null; scope: PhpValueScope }> = [{ n: node, parent: null, scope: seed }]
     while (stack.length > 0) {
-      const { n, parent } = stack.pop()!
+      const { n, parent, scope } = stack.pop()!
       const type = n.type
 
       if (type === "function_call_expression") {
@@ -769,9 +850,36 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // PHP2 scope boundaries: closures get fresh frames (params +
+      // `use`), arrows chain the enclosing frame (implicit capture), named
+      // nested functions start fresh (no capture).
+      let childScope = scope
+      if (type === "anonymous_function") {
+        const fresh: PhpValueScope = { bound: new Set<string>(), parent: null }
+        this.collectPhpScopeBinds(n, fresh.bound)
+        childScope = fresh
+      } else if (type === "arrow_function") {
+        const chained: PhpValueScope = { bound: new Set<string>(), parent: scope }
+        this.collectPhpScopeBinds(n, chained.bound)
+        childScope = chained
+      } else if (type === "function_definition" || type === "method_declaration") {
+        const freshFn: PhpValueScope = { bound: new Set<string>(), parent: null }
+        this.collectPhpScopeBinds(n, freshFn.bound)
+        childScope = freshFn
+      }
+      // PHP2: bare value reads. variable_name positions resolve through the
+      // scope chain, then file-scope functions, then superglobals; `name`
+      // positions resolve through file consts only. $this never reads.
+      // Declaration, write, label, member-link, callee and type positions
+      // never read (mirrored exactly in the oracle).
+      if (type === "variable_name") {
+        this.emitPhpVariableRead(n, parent, scope, scopeCtx, inFunction || "global", relationships)
+      } else if (type === "name") {
+        this.emitPhpConstRead(n, parent, scopeCtx, inFunction || "global", relationships)
+      }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
-        if (child) stack.push({ n: child, parent: n })
+        if (child) stack.push({ n: child, parent: n, scope: childScope })
       }
     }
   }
@@ -956,16 +1064,43 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // HELPERS
   // ========================================================================
 
+  /**
+   * PHP2: push a declaration's non-body children (attributes, signatures)
+   * for the extractive walk. Bodies belong to walkBody; heritage and names
+   * belong to no value rule — but defaults, const initializers and
+   * attribute arguments genuinely read (consts/globals via file frame).
+   */
+  private pushNonBodyChildren(
+    node: Node,
+    stack: { node: Node; owner: string | undefined; ownerKind: string | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
+    owner: string | undefined,
+    ownerKind: string | undefined,
+    ns: string | undefined,
+    scope: PhpValueScope,
+  ): void {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "attribute_list" || c.type === "formal_parameters") {
+        for (let j = c.namedChildCount - 1; j >= 0; j--) {
+          const g = c.namedChild(j)
+          if (g) stack.push({ node: g, owner, ownerKind, ns, inFunction: undefined, scope })
+        }
+      }
+    }
+  }
+
   private pushMembers(
     body: Node,
-    stack: { node: Node; owner: string | undefined; ownerKind: string | undefined; ns: string | undefined; inFunction: string | undefined }[],
+    stack: { node: Node; owner: string | undefined; ownerKind: string | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
     owner: string,
     ownerKind: string,
     ns: string | undefined,
+    scope: PhpValueScope,
   ): void {
     for (let i = body.namedChildCount - 1; i >= 0; i--) {
       const child = body.namedChild(i)
-      if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction: undefined })
+      if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction: undefined, scope })
     }
   }
 
@@ -1194,11 +1329,360 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * PHP2: bare `$var` value reads. Lookup order encodes PHP scoping:
+   * frame chain (params/locals/use/catch/loop), then file functions, then
+   * superglobals. `$this` never reads. Skips: declaration/write/label
+   * positions (isPhpBindSite covers binds), member-link and callee
+   * positions (pass-1 owns member calls/reads), subscript/use-clause/
+   * interpolation interiors (pass-1 owns those unconditionally), and
+   * property declarations (members, never locals).
+   */
+  private emitPhpVariableRead(
+    n: Node,
+    parent: Node | null,
+    scope: PhpValueScope,
+    scopeCtx: { file: PhpValueScope; funcValues: Set<string>; constValues: Set<string> },
+    source: string,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const base = this.variableBareName(n);
+    if (!base || base === "this") return
+    const ptype = parent?.type ?? ""
+    // Pass-1 owns use-clause/interpolation positions and declaring
+    // positions bind, never read. Subscript BASES belong to the
+    // unconditional subscript rule — but index expressions read.
+    if (
+      ptype === "property_declaration" || ptype === "property_element" ||
+      ptype === "simple_parameter" || ptype === "variadic_parameter" ||
+      ptype === "property_promotion_parameter" ||
+      ptype === "anonymous_function_use_clause"
+    ) {
+      return
+    }
+    if (ptype === "subscript_expression" && parent) {
+      const first = parent.namedChild(0)
+      if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) return
+    }
+    if (this.isPhpBindSite(n)) return
+    if (this.isInsideInterpolation(n)) return
+    // Call-callee variables read the callable (`$fn(n)`); every other
+    // variable position reads the value when bound.
+    if (phpScopeHas(scope, base)) {
+      relationships.push({
+        source,
+        target: base,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isLocalRead: true },
+      })
+    } else if (scopeCtx.funcValues.has(base)) {
+      relationships.push({
+        source,
+        target: base,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isGlobalRead: true },
+      });
+    } else if (PHP_SUPERGLOBALS.has(base)) {
+      relationships.push({
+        source,
+        target: base,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isGlobalRead: true },
+      });
+    }
+  }
+
+  /**
+   * PHP2: bare `NAME` constant reads (userland file consts, define(),
+   * use-const imports). Magic constants never read; member/call/const-
+   * fetch/heritage/label positions belong to other rules or nothing.
+   */
+  private emitPhpConstRead(
+    n: Node,
+    parent: Node | null,
+    scopeCtx: { file: PhpValueScope; funcValues: Set<string>; constValues: Set<string> },
+    source: string,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const txt = n.text
+    if (!txt || PHP_MAGIC_CONSTANTS.has(txt)) return
+    const ptype = parent?.type ?? ""
+    if (
+      ptype === "member_access_expression" || ptype === "nullsafe_member_access_expression" ||
+      ptype === "class_constant_access_expression" ||
+      ptype === "function_call_expression" || ptype === "scoped_call_expression" ||
+      ptype === "member_call_expression" || ptype === "nullsafe_member_call_expression" ||
+      ptype === "base_clause" || ptype === "class_interface_clause"
+    ) {
+      return
+    }
+    // Const-element declarations (`const FOO = BAR`): only the FIRST name
+    // declares; values nested after `=` read.
+    if (ptype === "const_element" && parent) {
+      const first = parent.namedChild(0)
+      if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) return
+    }
+    // Named-argument labels (`cb:`) name, never read: this name is a
+    // label iff the next raw sibling is ':'.
+    if (ptype === "argument" && parent) {
+      for (let i = 0; i < parent.childCount; i++) {
+        const c = parent.child(i)
+        if (c && c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) {
+          const nx = parent.child(i + 1)
+          if (nx && !nx.isNamed && nx.type === ":") return
+          break
+        }
+      }
+    }
+    // Enum-case declarations (`case Hearts = 1`): only the FIRST name
+    // declares; backing values read.
+    if (ptype === "enum_case" && parent) {
+      const first = parent.namedChild(0)
+      if (first && first.startIndex === n.startIndex && first.endIndex === n.endIndex) return
+    }
+    if (ptype === "namespace_use_clause" || ptype === "namespace_name") return
+    let a: Node | null | undefined = parent
+    let g = 0
+    while (a && g++ < 4) {
+      if (a.type === "namespace_use_clause" || a.type === "namespace_definition") return
+      if (a.type === "compound_statement" ||
+          a.type === "class_declaration" || a.type === "program" ||
+          a.type === "expression_statement") break
+      a = a.parent
+    }
+    if (scopeCtx.constValues.has(txt)) {
+      relationships.push({
+        source,
+        target: txt,
+        type: ASTEngine.RelationshipType.Uses,
+        confidence: 0.9,
+        metadata: { phpSpecific: true, isConstRead: true },
+      });
+    }
+  }
+
   /** Bare name from a variable_name node (its `name` child, else strip `$`). */
-  private variableBareName(node: Node): string {    const nameChild = this.findChildByType(node, "name")
+  private variableBareName(node: Node): string {
+    const nameChild = this.findChildByType(node, "name")
     if (nameChild) return nameChild.text
     const t = node.text
     return t.startsWith("$") ? t.slice(1) : t
+  }
+
+  /**
+   * PHP2: collect the names a scope node binds — parameters (simple/
+   * formal/constructor), closure `use` vars, catch vars, loop vars,
+   * static/global/destructuring declarations and assignment targets.
+   * Declaration SITES bind; reads elsewhere resolve against the frame.
+   * Pure AST, span-compared, never regex.
+   */
+  private collectPhpScopeBinds(node: Node | null, out: Set<string>): void {
+    if (!node) return
+    const t = node.type
+    // Parameters: simple/formal/constructor/super (direct variable child).
+    if (t === "simple_parameter" || t === "variadic_parameter" ||
+        t === "property_promotion_parameter") {
+      const v = this.findChildByType(node, "variable_name")
+      if (v) {
+        const nm = this.variableBareName(v)
+        if (nm && nm !== "this") out.add(nm)
+      }
+      return
+    }
+    // Closure `use (...)` vars (direct variable children).
+    if (t === "anonymous_function_use_clause") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "variable_name") {
+          const nm = this.variableBareName(c)
+          if (nm && nm !== "this") out.add(nm)
+        }
+      }
+      return
+    }
+    // A declaration-ish subtree: walk it collecting binds.
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const nt = n.type
+      // Nested scopes bind their own frames — never leak outward.
+      if (n !== node && (nt === "anonymous_function" || nt === "arrow_function" ||
+          nt === "function_definition" || nt === "method_declaration")) {
+        continue
+      }
+      if (nt === "variable_name" && this.isPhpBindSite(n)) {
+        const nm = this.variableBareName(n)
+        if (nm && nm !== "this") out.add(nm)
+      }
+      if (nt === "simple_parameter" || nt === "variadic_parameter" ||
+          nt === "property_promotion_parameter") {
+        const v = this.findChildByType(n, "variable_name")
+        if (v) {
+          const nm = this.variableBareName(v)
+          if (nm && nm !== "this") out.add(nm)
+        }
+      }
+      if (nt === "catch_clause") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "variable_name") {
+            const nm = this.variableBareName(c)
+            if (nm && nm !== "this") out.add(nm)
+          }
+        }
+      }
+      if (nt === "anonymous_function_use_clause") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "variable_name") {
+            const nm = this.variableBareName(c)
+            if (nm && nm !== "this") out.add(nm)
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /**
+   * PHP2: is this variable occurrence a BINDING site (declaration, write
+   * target, loop var, catch var, use var, destructuring element)?
+   */
+  private isPhpBindSite(n: Node): boolean {
+    const parent = n.parent
+    if (!parent) return false
+    const pt = parent.type
+    if (pt === "static_variable_declaration" || pt === "global_declaration") return true
+    if (pt === "catch_clause") return true
+    // Assignment LHS (plain `=` and compound — span-matched): `$x = ...`
+    // binds; `pair()`-style values never sit here.
+    if (pt === "assignment_expression") {
+      const lhs = parent.namedChild(0)
+      return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+    }
+    // Destructuring LHS (`list($a,$b) = ...`, `[$a,$b] = ...`): the list
+    // must sit inside an assignment LHS span.
+    if (pt === "list_literal") {
+      let a: Node | null | undefined = parent.parent
+      let g = 0
+      while (a && g++ < 4) {
+        if (a.type === "assignment_expression") {
+          const lhs = a.namedChild(0)
+          return !!lhs && lhs.startIndex <= parent.startIndex && lhs.endIndex >= parent.endIndex
+        }
+        if (a.type === "expression_statement" || a.type === "compound_statement" ||
+            a.type === "program") return false
+        a = a.parent
+      }
+      return false
+    }
+    // foreach key/value (`as $k => $v` — pair under foreach).
+    if (pt === "pair") {
+      let a: Node | null | undefined = parent.parent
+      let g = 0
+      while (a && g++ < 4) {
+        if (a.type === "foreach_statement") return true
+        if (a.type === "compound_statement" || a.type === "program" ||
+            a.type === "expression_statement") return false
+        a = a.parent
+      }
+      return false
+    }
+    // Bare foreach value (`as $item` — variable directly under the
+    // foreach; the collection is always the first named child and reads).
+    if (pt === "foreach_statement") {
+      const first = parent.namedChild(0)
+      return !!first && (first.startIndex !== n.startIndex || first.endIndex !== n.endIndex)
+    }
+    return false
+  }
+
+  /**
+   * PHP2: file-scope prescan — top-level value bindings (uniform: valid
+   * code declares before use; hoisted functions resolve regardless).
+   * Functions (all depths — nested named functions are global in PHP),
+   * file consts, define() names, use function/const imports, top-level
+   * variable binds. Class/interface/trait/enum bodies contribute nothing
+   * (members are never bare values).
+   */
+  private collectPhpFileScope(rootNode: Node, out: Set<string>, funcValues: Set<string>, constValues: Set<string>): void {
+    // Scopes bind their own frames — never descend for file bindings, with
+    // two global-effect exceptions handled at visit time below (hoisted
+    // function names, define()).
+    const isScopeRoot = (t: string): boolean =>
+      t === "function_definition" || t === "method_declaration" ||
+      t === "anonymous_function" || t === "arrow_function" ||
+      t === "class_declaration" || t === "interface_declaration" ||
+      t === "trait_declaration" || t === "enum_declaration"
+    const stack: Array<{ n: Node; fileLevel: boolean }> = [{ n: rootNode, fileLevel: true }]
+    while (stack.length > 0) {
+      const { n, fileLevel } = stack.pop()!
+      const t = n.type
+      // Global effects, visible everywhere regardless of nesting.
+      if (t === "function_definition") {
+        const nm = n.childForFieldName("name")
+        if (nm) funcValues.add(nm.text)
+      }
+      if (t === "function_call_expression") {
+        const fn = n.childForFieldName("function")
+        if (fn && fn.text === "define") {
+          const args = this.findChildByType(n, "arguments")
+          if (args) {
+            const first = args.namedChild(0)
+            if (first) {
+              const txt = first.text
+              if ((txt.startsWith("'") || txt.startsWith('"')) && txt.length >= 2) {
+                constValues.add(txt.slice(1, -1))
+              }
+            }
+          }
+        }
+      }
+      if (t === "namespace_use_clause") {
+        let isFn = false
+        let isConst = false
+        let leaf: string | null = null
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (!c) continue
+          if (!c.isNamed && c.text === "function") isFn = true
+          else if (!c.isNamed && c.text === "const") isConst = true
+          if (c.isNamed && (c.type === "name" || c.type === "qualified_name")) {
+            leaf = this.leafName(c.text)
+          }
+        }
+        if (leaf && isFn) funcValues.add(leaf)
+        else if (leaf && isConst) constValues.add(leaf)
+      }
+      // File-level const declarations bind globally.
+      if (t === "const_declaration" && fileLevel) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "const_element") {
+            const nm = this.findChildByType(c, "name")
+            if (nm) constValues.add(nm.text)
+          }
+        }
+      }
+      // File-level variable binds (declarations, assignments, loops...).
+      if (fileLevel && !isScopeRoot(t)) {
+        if (n.type === "variable_name" && this.isPhpBindSite(n)) {
+          const nm = this.variableBareName(n)
+          if (nm && nm !== "this") out.add(nm)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        stack.push({ n: c, fileLevel: fileLevel && !isScopeRoot(t) })
+      }
+    }
   }
 
   /** Leaf name from a possibly-qualified FQN like App\Base\BaseService. */

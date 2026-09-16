@@ -5049,6 +5049,221 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const classBase = new Map<string, string>()  // class -> declared base (for new parent)
+  // Import the analyzer's EXACT builtin set (never a hand-duplicated copy —
+  // a drift here would fabricate or hide call edges).
+  const key = (label: string, target: string) => label + ":" + target
+  const push = (label: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+  }
+
+  // PHP2 mirror helpers: bare-name extraction, bind-site test, scope
+  // collectors. Mirror the analyzer's variableBareName / isPhpBindSite /
+  // collectPhpScopeBinds exactly (same shapes, same order).
+  const phpBareName = (n: any): string => {
+    const nameChild = n.namedChildren.find((c: any) => c.type === "name")
+    if (nameChild) return nameChild.text
+    const t = n.text
+    return t.startsWith("$") ? t.slice(1) : t
+  }
+  const phpIsBindSite = (n: any): boolean => {
+    const parent = n.parent
+    if (!parent) return false
+    const pt = parent.type
+    if (pt === "static_variable_declaration" || pt === "global_declaration") return true
+    if (pt === "catch_clause") return true
+    if (pt === "assignment_expression") {
+      const lhs = parent.namedChild(0)
+      return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+    }
+    if (pt === "list_literal") {
+      let a: any = parent.parent
+      let g = 0
+      while (a && g++ < 4) {
+        if (a.type === "assignment_expression") {
+          const lhs = a.namedChild(0)
+          return !!lhs && lhs.startIndex <= parent.startIndex && lhs.endIndex >= parent.endIndex
+        }
+        if (a.type === "expression_statement" || a.type === "compound_statement" ||
+            a.type === "program") return false
+        a = a.parent
+      }
+      return false
+    }
+    if (pt === "pair") {
+      let a: any = parent.parent
+      let g = 0
+      while (a && g++ < 4) {
+        if (a.type === "foreach_statement") return true
+        if (a.type === "compound_statement" || a.type === "program" ||
+            a.type === "expression_statement") return false
+        a = a.parent
+      }
+      return false
+    }
+    // Bare foreach value (`as $item` — variable directly under the
+    // foreach; the collection is always the first named child and reads).
+    // Mirrors RealPhpAnalyzer.isPhpBindSite exactly.
+    if (pt === "foreach_statement") {
+      const first = parent.namedChild(0)
+      return !!first && (first.startIndex !== n.startIndex || first.endIndex !== n.endIndex)
+    }
+    return false
+  }
+  const phpCollectBinds = (node: any, out: Set<string>): void => {
+    if (!node) return
+    const t = node.type
+    if (t === "simple_parameter" || t === "variadic_parameter" ||
+        t === "property_promotion_parameter") {
+      const v = node.namedChildren.find((c: any) => c.type === "variable_name")
+      if (v) {
+        const nm = phpBareName(v)
+        if (nm && nm !== "this") out.add(nm)
+      }
+      return
+    }
+    if (t === "anonymous_function_use_clause") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c && c.type === "variable_name") {
+          const nm = phpBareName(c)
+          if (nm && nm !== "this") out.add(nm)
+        }
+      }
+      return
+    }
+    const stack: any[] = [node]
+    while (stack.length > 0) {
+      const m = stack.pop()!
+      const mt = m.type
+      if (m !== node && (mt === "anonymous_function" || mt === "arrow_function" ||
+          mt === "function_definition" || mt === "method_declaration")) {
+        continue
+      }
+      if (mt === "variable_name" && phpIsBindSite(m)) {
+        const nm = phpBareName(m)
+        if (nm && nm !== "this") out.add(nm)
+      }
+      if (mt === "simple_parameter" || mt === "variadic_parameter" ||
+          mt === "property_promotion_parameter") {
+        const v = m.namedChildren.find((c: any) => c.type === "variable_name")
+        if (v) {
+          const nm = phpBareName(v)
+          if (nm && nm !== "this") out.add(nm)
+        }
+      }
+      if (mt === "catch_clause") {
+        for (let i = 0; i < m.namedChildCount; i++) {
+          const c = m.namedChild(i)
+          if (c && c.type === "variable_name") {
+            const nm = phpBareName(c)
+            if (nm && nm !== "this") out.add(nm)
+          }
+        }
+      }
+      if (mt === "anonymous_function_use_clause") {
+        for (let i = 0; i < m.namedChildCount; i++) {
+          const c = m.namedChild(i)
+          if (c && c.type === "variable_name") {
+            const nm = phpBareName(c)
+            if (nm && nm !== "this") out.add(nm)
+          }
+        }
+      }
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+  // PHP2 mirror: bounded interpolation climb (encapsed/dynamic strings).
+  const phpInInterp = (n: any): boolean => {
+    let p: any = n.parent
+    let g = 0
+    while (p && g++ < 8) {
+      if (p.type === "encapsed_string" || p.type === "dynamic_variable_name") return true
+      if (p.type === "compound_statement" ||
+          p.type === "class_declaration" || p.type === "program" ||
+          p.type === "function_definition" || p.type === "method_declaration") return false
+      p = p.parent
+    }
+    return false
+  }
+  const phpFileBinds = new Set<string>()
+  const phpFuncValues = new Set<string>()
+  const phpConstValues = new Set<string>()
+  const phpSuperGlobals = new Set(["_GET", "_POST", "_SERVER", "_COOKIE", "_SESSION", "_FILES", "_ENV", "_REQUEST", "GLOBALS", "argv", "argc"])
+  const phpMagicConsts = new Set(["__DIR__", "__FILE__", "__LINE__", "__FUNCTION__", "__CLASS__", "__METHOD__", "__NAMESPACE__", "__TRAIT__"])
+  {
+    const isScopeRoot = (t: string): boolean =>
+      t === "function_definition" || t === "method_declaration" ||
+      t === "anonymous_function" || t === "arrow_function" ||
+      t === "class_declaration" || t === "interface_declaration" ||
+      t === "trait_declaration" || t === "enum_declaration"
+    const st: Array<{ n: any; fileLevel: boolean }> = [{ n: root, fileLevel: true }]
+    while (st.length > 0) {
+      const { n, fileLevel } = st.pop()!
+      const t = n.type
+      if (t === "function_definition") {
+        const nm = n.childForFieldName?.("name")
+        if (nm) phpFuncValues.add(nm.text)
+      }
+      if (t === "function_call_expression") {
+        const fn = n.childForFieldName?.("function")
+        if (fn && fn.text === "define") {
+          const args = n.namedChildren.find((c: any) => c.type === "arguments")
+          if (args) {
+            const first = args.namedChild(0)
+            if (first) {
+              const txt = first.text
+              if ((txt.startsWith("'") || txt.startsWith('"')) && txt.length >= 2) phpConstValues.add(txt.slice(1, -1))
+            }
+          }
+        }
+      }
+      if (t === "namespace_use_clause") {
+        let isFn = false
+        let isConst = false
+        let leaf: string | null = null
+        const leafOf = (x: string): string => {
+          const parts = x.split("\\").filter(Boolean)
+          return parts.length > 0 ? parts[parts.length - 1] : x
+        }
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (!c) continue
+          if (!c.isNamed && c.text === "function") isFn = true
+          else if (!c.isNamed && c.text === "const") isConst = true
+          if (c.isNamed && (c.type === "name" || c.type === "qualified_name")) leaf = leafOf(c.text)
+        }
+        if (leaf && isFn) phpFuncValues.add(leaf)
+        else if (leaf && isConst) phpConstValues.add(leaf)
+      }
+      if (t === "const_declaration" && fileLevel) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "const_element") {
+            const nm = c.namedChildren.find((x: any) => x.type === "name")
+            if (nm) phpConstValues.add(nm.text)
+          }
+        }
+      }
+      if (fileLevel && !isScopeRoot(t)) {
+        if (n.type === "variable_name" && phpIsBindSite(n)) {
+          const nm = phpBareName(n)
+          if (nm && nm !== "this") phpFileBinds.add(nm)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) st.push({ n: c, fileLevel: fileLevel && !isScopeRoot(t) })
+      }
+    }
+  }
 // PHP tree-truth oracle (php managed-OO wave #268). Mirrors
 // RealPhpAnalyzer's emission contract exactly:
 //   - extends: class base_clause (FIRST child = superclass) + interface
@@ -5064,17 +5279,6 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
 //     references, exactly like the analyzer)
 // The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
 // matching the site-agnostic coverage match in main().
-export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
-  const seen = new Set<string>()
-  const classBase = new Map<string, string>()  // class -> declared base (for new parent)
-  // Import the analyzer's EXACT builtin set (never a hand-duplicated copy —
-  // a drift here would fabricate or hide call edges).
-  const key = (label: string, target: string) => label + ":" + target
-  const push = (label: string, target: string) => {
-    const k = key(label, target)
-    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
-  }
   const leafName = (t: string): string => {
     const parts = t.split(/\\|\./).filter(Boolean)
     return parts[parts.length - 1] ?? t
@@ -5194,9 +5398,28 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     return undefined
   }
 
-  const stack: any[] = [{ n: root, parent: null, inBody: false, cls: undefined as string | undefined, base: undefined as string | undefined }]
+  // PHP2 mirror: persistent value-scope frames (file prescan + per-scope
+  // binds). Mirrors the analyzer's fileScope/universals/collectors exactly.
+  const phpFileScope: Set<string> = phpFileBinds
+  const stack: any[] = [{ n: root, parent: null, inBody: false, cls: undefined as string | undefined, base: undefined as string | undefined, scope: { bound: phpFileBinds, parent: null } }]
+  const phpScopeHas = (scope: any, name: string): boolean => {
+    let cur: any = scope
+    while (cur) {
+      if (cur.bound && cur.bound.has(name)) return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const phpFrameFor = (node: any, parentScope: any): any => {
+    // Scope boundaries mirror the analyzer: closures fresh (params+use),
+    // arrows chain, named functions/methods fresh (params).
+    const bound = new Set<string>()
+    phpCollectBinds(node, bound)
+    if (node.type === "arrow_function") return { bound, parent: parentScope }
+    return { bound, parent: null }
+  }
   while (stack.length > 0) {
-    const { n, parent, inBody, cls, base } = stack.pop()!
+    const { n, parent, inBody, cls, base, scope } = stack.pop()!
     const t = n.type
     if (t === "class_declaration") {
       const nameNode = n.namedChildren.find((c: any) => c.type === "name")
@@ -5398,12 +5621,94 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       const base = n.text
       if (base && base !== "this") push("uses", base)
     }
+    // PHP2 mirror: bare `$var` reads (frame chain, then file functions,
+    // then superglobals) and bare `NAME` const reads (file consts only).
+    // Mirrors emitPhpVariableRead/emitPhpConstRead exactly.
+    if (t === "variable_name") {
+      const raw = n.namedChildren.find((c: any) => c.type === "name")?.text ?? n.text
+      const base = raw.startsWith("$") ? raw.slice(1) : raw
+      if (base && base !== "this") {
+        const ptype = parent ? parent.type : ""
+        // Subscript BASES belong to the unconditional subscript rule —
+        // index expressions read (positional, mirrors the analyzer).
+        let isSubBase = false
+        if (ptype === "subscript_expression" && parent) {
+          const first = parent.namedChild(0)
+          isSubBase = !!first && first.startIndex === n.startIndex && first.endIndex === n.endIndex
+        }
+        if (
+          ptype !== "property_declaration" && ptype !== "property_element" &&
+          ptype !== "simple_parameter" && ptype !== "variadic_parameter" &&
+          ptype !== "property_promotion_parameter" &&
+          ptype !== "anonymous_function_use_clause" &&
+          !isSubBase &&
+          !phpIsBindSite(n) && !phpInInterp(n)
+        ) {
+          if (phpScopeHas(scope, base)) {
+            push("uses", base)
+          } else if (phpFuncValues.has(base)) {
+            push("uses", base)
+          } else if (phpSuperGlobals.has(base)) {
+            push("uses", base)
+          }
+        }
+      }
+    }
+    if (t === "name") {
+      const txt = n.text
+      if (txt && !phpMagicConsts.has(txt)) {
+        const ptype = parent ? parent.type : ""
+        const calleePos = parent && (parent.type === "function_call_expression" || parent.type === "scoped_call_expression" ||
+          parent.type === "member_call_expression" || parent.type === "nullsafe_member_call_expression") &&
+          parent.namedChild(0) && parent.namedChild(0).startIndex === n.startIndex && parent.namedChild(0).endIndex === n.endIndex
+        let isLabel = false
+        if (ptype === "argument" && parent) {
+          for (let i = 0; i < parent.childCount; i++) {
+            const c = parent.child(i)
+            if (c && c.isNamed && c.startIndex === n.startIndex && c.endIndex === n.endIndex) {
+              const nx = parent.child(i + 1)
+              if (nx && !nx.isNamed && nx.type === ":") isLabel = true
+              break
+            }
+          }
+        }
+        let inNs = false
+        {
+          let a: any = parent
+          let g = 0
+          while (a && g++ < 4) {
+            if (a.type === "namespace_use_clause" || a.type === "namespace_definition") { inNs = true; break }
+            if (a.type === "compound_statement" || a.type === "class_declaration" || a.type === "program" ||
+                a.type === "expression_statement") break
+            a = a.parent
+          }
+        }
+        let isDecl = false
+        if (ptype === "const_element" && parent) {
+          const first = parent.namedChild(0)
+          isDecl = !!first && first.startIndex === n.startIndex && first.endIndex === n.endIndex
+        }
+        if (
+          ptype !== "member_access_expression" && ptype !== "nullsafe_member_access_expression" &&
+          ptype !== "class_constant_access_expression" &&
+          !calleePos && !isDecl && !isLabel && !inNs &&
+          phpConstValues.has(txt)
+        ) {
+          push("uses", txt)
+        }
+      }
+    }
     const nextBody = inBody || t === "method_declaration" || t === "function_definition"
     const nextCls = t === "class_declaration" ? (stack as any)._curCls : cls
     const nextBase = t === "class_declaration" ? (stack as any)._curBase : base
+    let childScope = scope
+    if (t === "anonymous_function" || t === "arrow_function" ||
+        t === "function_definition" || t === "method_declaration") {
+      childScope = phpFrameFor(n, scope)
+    }
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
-      if (c) stack.push({ n: c, parent: n, inBody: nextBody, cls: nextCls, base: nextBase })
+      if (c) stack.push({ n: c, parent: n, inBody: nextBody, cls: nextCls, base: nextBase, scope: childScope })
     }
   }
   return edges
