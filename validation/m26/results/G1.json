@@ -4,17 +4,14 @@
   "milestone": "M26",
   "status": "known-gap",
   "checks": 70,
-  "passed": 70,
-  "failed": 0,
+  "passed": 69,
+  "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
-  "workingTreeRelevantChanges": [
-    "docs/m26/CROSS-LANGUAGE.md",
-    "docs/m26/GRAPH.md"
-  ],
+  "currentCommit": "8807bda5b29f3fa25c5bea16257ad5bda38bb204",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-16T17:30:58.217Z",
+  "generatedAt": "2026-09-16T17:53:10.172Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "closed",
@@ -26,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:30:58.224Z",
-    "contentSha256": "7c87451c287ccabc4f16e707d53f557156796f6c2094665c3481a946e0def6ed"
+    "sealedAt": "2026-09-16T17:53:10.174Z",
+    "contentSha256": "5b7d13c4829b23d87434f8836a6bc3ab32a6987e1eedff69b2248bc53e438d56"
   }
 }
