@@ -128,8 +128,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a5598e542c00d95cf92ef4a662285ab65ff809f5",
-  "committedAt": "2026-09-16T15:01:38+02:00",
+  "commit": "73c477fb361d5937170a009b8d76404d8822d11c",
+  "committedAt": "2026-09-16T17:12:06+02:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
@@ -140,8 +140,8 @@
       "description": "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)"
     }
   ],
-  "regeneratedAt": "2026-09-16T13:01:59.054Z",
-  "regeneratedAtCommit": "a5598e542c00d95cf92ef4a662285ab65ff809f5",
+  "regeneratedAt": "2026-09-16T15:13:34.915Z",
+  "regeneratedAtCommit": "73c477fb361d5937170a009b8d76404d8822d11c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)"
