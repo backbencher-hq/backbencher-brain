@@ -62,7 +62,7 @@
       "id": "T1",
       "title": "TypeScript review-intake wave (issue #725): process reviews/typescript 11 confirmed claims",
       "status": "verified",
-      "notes": "Co-agent T-wave (analyzer in 977e687e, fixtures in 60a2dc32) independently re-verified claim-by-claim against live parses: T1-T10 all PASS. Gap found+closed by verification: T6 had no fixture/mutant \u2014 added typescript/positional-payload (owner-pinned both symbols, CPPD10 anti-pollution) + mutant typescript/positional-first-name-collision (caught). Spec TSD20-TSD28 recorded (incl. real template-dedup Low-note). Certification @1a9255da: F3 ts 56/56, F4 392/392, F1 ts clean 386 types, R1 31/31, R2 6/6, G1 51/0, F5 vue-core+element-plus 100/0/0. Full analyzer diff co-audited (module-resolver rewrite: resolvedPath claim verified, R2 shrink-only holds).",
+      "notes": "Co-agent T-wave (analyzer in 977e687e, fixtures in 60a2dc32) independently re-verified claim-by-claim against live parses: T1-T10 all PASS. Gap found+closed by verification: T6 had no fixture/mutant — added typescript/positional-payload (owner-pinned both symbols, CPPD10 anti-pollution) + mutant typescript/positional-first-name-collision (caught). Spec TSD20-TSD28 recorded (incl. real template-dedup Low-note). Certification @1a9255da: F3 ts 56/56, F4 392/392, F1 ts clean 386 types, R1 31/31, R2 6/6, G1 51/0, F5 vue-core+element-plus 100/0/0. Full analyzer diff co-audited (module-resolver rewrite: resolvedPath claim verified, R2 shrink-only holds).",
       "evidenceFile": "reviews/typescript/master-review.md",
       "verifiedAtCommit": "1a9255da"
     },
@@ -78,7 +78,7 @@
       "id": "V1",
       "title": "Vue review-intake wave (issue #730): process reviews/vue 10 confirmed claims",
       "status": "verified",
-      "notes": "Co-agent V1 wave independently re-verified claim-by-claim through the faithful SFC harness: H1a/H1b data keys read, H2 SFC-offset errors (row 5 reports 5), M1 member-chain root-only, M2 quoted keys unquoted, M3 serverPrefetch, M4 commented-default ownership, M5 Options-API TS payload \u2014 8/8 PASS. F3 vue 27/27, F4 395/395, F5 element-plus 100/0/0 @13.8ms/file + vue-element-admin 100/0/0, tsc clean.",
+      "notes": "Co-agent V1 wave independently re-verified claim-by-claim through the faithful SFC harness: H1a/H1b data keys read, H2 SFC-offset errors (row 5 reports 5), M1 member-chain root-only, M2 quoted keys unquoted, M3 serverPrefetch, M4 commented-default ownership, M5 Options-API TS payload — 8/8 PASS. F3 vue 27/27, F4 395/395, F5 element-plus 100/0/0 @13.8ms/file + vue-element-admin 100/0/0, tsc clean.",
       "evidenceFile": "reviews/vue/master-review.md",
       "verifiedAtCommit": "aab61932"
     },
@@ -94,7 +94,7 @@
       "id": "J4",
       "title": "JavaScript blind-spot wave W1 (issue #768): binding positions are definitions; write-LHS subtree suppression; call-rooted chain head",
       "status": "verified",
-      "notes": "Surfaced by the #760 cold-pool rotation (grails-core MISSING=7, lodash MISSING=26 \u2014 the only lanes that moved off 100/0/0). The #744 bare-read walk treated every non-declaration-name identifier as a read, so import bindings, parameters, catch params, destructuring targets and export specifiers fabricated uses @0.6; the write-LHS suppression used `continue` in a stack walk that pushes children at the loop tail, so the whole statement subtree was skipped; a call-rooted chain head was emitted as raw expression TEXT (a non-symbol target). The JS-lane oracle carried the identical gate list, so lockstep mirrored all three and the lane agreed on a wrong contract \u2014 the probe battery gained `oracleForbid`, which fails as `oracle colludes`, self-tested by re-introducing the fabrication. Fixtures binding-sites-are-not-reads + write-lhs-nested-reads; mutants import-binding/binding-param/destructure-target-read-fabrication + write-lhs-subtree-skip + write-target-read-leak + chain-head-expression-fabrication; spec JSD23-JSD26.",
+      "notes": "Surfaced by the #760 cold-pool rotation (grails-core MISSING=7, lodash MISSING=26 — the only lanes that moved off 100/0/0). The #744 bare-read walk treated every non-declaration-name identifier as a read, so import bindings, parameters, catch params, destructuring targets and export specifiers fabricated uses @0.6; the write-LHS suppression used `continue` in a stack walk that pushes children at the loop tail, so the whole statement subtree was skipped; a call-rooted chain head was emitted as raw expression TEXT (a non-symbol target). The JS-lane oracle carried the identical gate list, so lockstep mirrored all three and the lane agreed on a wrong contract — the probe battery gained `oracleForbid`, which fails as `oracle colludes`, self-tested by re-introducing the fabrication. Fixtures binding-sites-are-not-reads + write-lhs-nested-reads; mutants import-binding/binding-param/destructure-target-read-fabrication + write-lhs-subtree-skip + write-target-read-leak + chain-head-expression-fabrication; spec JSD23-JSD26.",
       "evidenceFile": "validation/m14/fixtures/javascript/binding-sites-are-not-reads.expectation.json",
       "verifiedAtCommit": "5d602664"
     },
@@ -102,13 +102,13 @@
       "id": "J5",
       "title": "JavaScript/Vue blind-spot wave W2 (issue #769): a member's identity is its container, not its bare name",
       "status": "verified",
-      "notes": "The JS method dedup key was `${owner ?? \"module\"}:${name}` and scopeOwnerName only reports CLASS scopes, so every object-literal member of a module shared ONE slot: the second init()/default() of a SIBLING object literal replaced the first, dead-spanning its body and dropping its calls. TypeScript kept both, so the same shape produced different graphs by file extension. Lane-visible on the real corpus: vue-element-admin MarkdownEditor/index.vue (two prop-default factories) had MISSING={toFixed,random} against the vue lane's own truth oracle, 0 after. Identity is now container-scoped (class body -> class name, object literal -> its span) while duplicates INSIDE one container still collapse last-wins. Also fixed the B5 sibling-accessor kill, which matched owner+name TEXT and so killed same-named accessors of other object literals. Fixtures javascript/sibling-object-member-identity + the re-authored vue/prop-default-factory-calls (now the real two-factory corpus shape \u2014 the #762 one-factory version passed either way); mutants javascript/sibling-object-collapse + vue/prop-default-multi-collapse; spec JSD27-JSD28. Same commit repairs 5d602664's mutant registry (ids outside the array) and adds M49.G4 script-integrity, which fails on that class.",
+      "notes": "The JS method dedup key was `${owner ?? \"module\"}:${name}` and scopeOwnerName only reports CLASS scopes, so every object-literal member of a module shared ONE slot: the second init()/default() of a SIBLING object literal replaced the first, dead-spanning its body and dropping its calls. TypeScript kept both, so the same shape produced different graphs by file extension. Lane-visible on the real corpus: vue-element-admin MarkdownEditor/index.vue (two prop-default factories) had MISSING={toFixed,random} against the vue lane's own truth oracle, 0 after. Identity is now container-scoped (class body -> class name, object literal -> its span) while duplicates INSIDE one container still collapse last-wins. Also fixed the B5 sibling-accessor kill, which matched owner+name TEXT and so killed same-named accessors of other object literals. Fixtures javascript/sibling-object-member-identity + the re-authored vue/prop-default-factory-calls (now the real two-factory corpus shape — the #762 one-factory version passed either way); mutants javascript/sibling-object-collapse + vue/prop-default-multi-collapse; spec JSD27-JSD28. Same commit repairs 5d602664's mutant registry (ids outside the array) and adds M49.G4 script-integrity, which fails on that class.",
       "evidenceFile": "validation/m14/fixtures/javascript/sibling-object-member-identity.expectation.json",
       "verifiedAtCommit": "f0221d23"
     },
     {
       "id": "G5",
-      "title": "F5 baseline comparison is not sample-aware \u2014 cold-pool rotation makes per-lane counts incomparable",
+      "title": "F5 baseline comparison is not sample-aware — cold-pool rotation makes per-lane counts incomparable",
       "status": "verified",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "ef5b10c1",
@@ -116,15 +116,15 @@
     },
     {
       "id": "J6",
-      "title": "JS template-substitution reads include call callees \u2014 5 over-emitted uses edges",
+      "title": "JS template-substitution reads include call callees — 5 over-emitted uses edges",
       "status": "verified",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "35ce5f8b",
-      "notes": "All five svelte-repo javascript-lane unexplained edges carry confidence 0.85 = the template_substitution rule (`real-javascript-analyzer.ts` ~L1881): `${escape_markdown_cell(key)}`, `${format_markdown_value(value)}`, `${escape_markdown_cell(String(id))}`, `${lines.join('\\n')}` (benchmarking/utils.js), `${escape_html(value, true)}` (transform-template/template.js). The rule emits Uses for every identifier in the substitution subtree, including call callees \u2014 while the analyzer's own bare-read rule excludes callees (`!isCallee`) because the calls edge already covers them. Same defect class as M49 W1's chain-head fabrication; needs a fixture + mutant pair before the fix lands. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change. FIXED @35ce5f8b: the template walk gates on call-callee / assignment-left ancestry and owns the substitution read alone (one 0.85 isTemplateInterpolation edge; the #744 bare-read duplicate is suppressed, TS TSD28 family contract). The typescript twin carried the same over-emission and was fixed with it. Fixture javascript/template-substitution-reads; mutants javascript/template-callee-uses + javascript/template-read-duplicate CAUGHT; F3 js 55/55; F4 449/449; corpus: svelte-repo javascript lane 0 unexplained (was 5)."
+      "notes": "All five svelte-repo javascript-lane unexplained edges carry confidence 0.85 = the template_substitution rule (`real-javascript-analyzer.ts` ~L1881): `${escape_markdown_cell(key)}`, `${format_markdown_value(value)}`, `${escape_markdown_cell(String(id))}`, `${lines.join('\\n')}` (benchmarking/utils.js), `${escape_html(value, true)}` (transform-template/template.js). The rule emits Uses for every identifier in the substitution subtree, including call callees — while the analyzer's own bare-read rule excludes callees (`!isCallee`) because the calls edge already covers them. Same defect class as M49 W1's chain-head fabrication; needs a fixture + mutant pair before the fix lands. Registered, NOT fixed: this entry dates the finding; the fix wave must land fixture + mutant + spec row (and the oracle mirror where the truth side is the defective one) before any status change. FIXED @35ce5f8b: the template walk gates on call-callee / assignment-left ancestry and owns the substitution read alone (one 0.85 isTemplateInterpolation edge; the #744 bare-read duplicate is suppressed, TS TSD28 family contract). The typescript twin carried the same over-emission and was fixed with it. Fixture javascript/template-substitution-reads; mutants javascript/template-callee-uses + javascript/template-read-duplicate CAUGHT; F3 js 55/55; F4 449/449; corpus: svelte-repo javascript lane 0 unexplained (was 5)."
     },
     {
       "id": "T2",
-      "title": "TS .d.ts interface-member redeclaration overrides have no oracle mirror \u2014 19 unexplained",
+      "title": "TS .d.ts interface-member redeclaration overrides have no oracle mirror — 19 unexplained",
       "status": "verified",
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "35ce5f8b",
@@ -137,8 +137,7 @@
       "evidenceFile": "reviews/web-family/rotated-sample-findings.md",
       "verifiedAtCommit": "35ce5f8b",
       "notes": "Second finding of the same rotated-sample probe, surfaced as `MISSING calls .../runtime-browser/test.ts -> text` (line 203 `console[method](message.text());`) once the sample rotated. Probe script/m14/tmp/t3-nested-call-probe.ts: `console[method](m.text())` emitted NOTHING while the oracle derived calls->text, because the subscript-callee branch (and the dynamic-import branch) `return`ed before processNode's child recursion - the EDGE skip swallowed the SUBTREE. `console.log(m.text())` was fine, so only computed callees were hit. FIXED @35ce5f8b: both branches walk the children, then stop (the same defect class as the M49 W1 javascript `continue`-skips-subtree fix). Fixture typescript/subscript-callee-nested-calls (count==2 + computed-target forbids); mutant typescript/subscript-callee-nested-call-drop CAUGHT; corpus lane 0 missing / 0 unexplained."
-    }
-,
+    },
     {
       "id": "C1",
       "title": "C holy-c review waves (issue #795): HC1 static-prototype visibility, HC2 redeclaration dedupe, HC3 K&R params, HC5 instance-state contamination, HC6 prototype-param pollution (HC4 ruled)",
@@ -178,104 +177,95 @@
       "notes": "Hostile synthetic battery + lane replicas at pinned and 2 rotated seeds (60-200 files, zig + zls) all 0/0. Fully gated: fixture zig/bare-value-reads (extended), 11 mutants, spec Z1-Z10. F3 399/399, F4 461/461 at the wave commit.",
       "evidenceFile": "reviews/zig/master-review.md",
       "verifiedAtCommit": "5c71e176"
-    }
-,
-    {
-        "id": "CS1",
-        "title": "C# first review wave (issue #804): CS-R1 bare reads, CS-B1 top-level calls, CS-B2 nameof, CS-B3 bare catch, CS-B4 file visibility, CS-B5 pattern calls",
-        "status": "verified",
-        "notes": "Full analyzer read + hostile battery + shape dumps + fresh lanes. Fully gated: fixture csharp/bare-value-reads (new), 7 mutants, spec CS-R1/CS-B1-CS-B5. Lanes: powershell 2557/2557 + fsharp 1213/1213, 0/0. F3 401/401, F4 482/482. Second review scheduled per OO program.",
-        "evidenceFile": "reviews/csharp/master-review.md",
-        "verifiedAtCommit": "00c49c59"
-    }
-,
-    {
-        "id": "RB1",
-        "title": "Ruby second review wave (issue #812): RB-F endless bodies, RB-G defined?/undef, RB-H attr strings, RB-I dynamic classes, RB-J autoload, RB-K nested singleton defs",
-        "status": "verified",
-        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirror fixes in deriveRubyEdges. Fully gated: fixture ruby/second-review (new), 7 mutants, spec RB-F-RB-K. Lanes: rack + rake, pinned + 5 rotations, 0/0. F3 all pass, F4 493/493, R1 95/95, R2 15/15.",
-        "evidenceFile": "reviews/ruby/second-review.md",
-        "verifiedAtCommit": "399e4a02"
-    }
-,
-    {
-        "id": "OC1",
-        "title": "ObjC first review wave (issue #815): OC-B category exports, OC-D C type inventory, OC-E bare value reads, OC-R1 update operands, OC-R2 synthesize/selector",
-        "status": "verified",
-        "notes": "Full analyzer re-read + hostile battery + shape dumps + C-parity probes + fresh lanes; oracle mirror in deriveObjcEdges. Fully gated: fixture objc/bare-value-reads (new), 7 mutants, spec OC-B/OC-D/OC-E/OC-R1/OC-R2. Lanes: sdwebimage + afnetworking, pinned + 5 rotations, 0/0. F3 all pass, F4 500/500, R1 98/98, R2 15/15.",
-        "evidenceFile": "reviews/objc/first-review.md",
-        "verifiedAtCommit": "630a3660"
-    }
-,
-    {
-        "id": "OC2",
-        "title": "ObjC second review wave (issue #853): OC-F enum cases, OC-G protocol directive, OC-H function decay",
-        "status": "verified",
-        "notes": "Hostile second battery over pass-1 deferrals; oracle mirrors in deriveObjcEdges. Fully gated: fixture objc/second-review (new), 3 mutants, spec OC-F/G/H + OC-R3. Lanes: sdwebimage + afnetworking, pinned + 5 rotations, 0/0. F3 all pass, F4 578/578, R1 122/122, R2 15/15. Seam trace in-wave (P1-objc.json): 468 rows, flags join F1, contains lines vs analyzer NULLs.",
-        "evidenceFile": "reviews/objc/second-review.md",
-        "verifiedAtCommit": "5af983f2"
-    }
-,
-    {
-        "id": "DT1",
-        "title": "Dart first review wave (issue #827): DT-A named construction, DT-B heritage aliases, DT-C redirect alias, DT-D super/this redirections, DT-F member reads, DT-E/DT-R1 ruled",
-        "status": "verified",
-        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirror in deriveDartEdges. Fully gated: fixture dart/member-value-reads (new), 10 mutants, spec DT-A-DT-F/DT-E/DT-R1. Lanes: proxicall + dart-http, pinned + 5 rotations, 0/0. F3 all pass, F4 516/516, R1 107/107, R2 15/15. Bare unqualified reads deferred to review 2.",
-        "evidenceFile": "reviews/dart/first-review.md",
-        "verifiedAtCommit": "8a9b36d9"
-    }
-,
-    {
-        "id": "DT2",
-        "title": "Dart second review wave (issue #856): DT2-A bound locals/params, DT2-B file-scope values",
-        "status": "verified",
-        "notes": "Hostile battery over the DT-F deferral + audit of co-agent #752 gates; oracle mirrors in deriveDartBareUses. Fully gated: fixture dart/value-reads (new), 4 mutants, spec DT2-A/B/C/D. Lanes: proxicall + dart-http, pinned + 5 rotations, 0/0/0. F3 all pass, F4 582/582, R1 124/124, R2 15/15. Seam trace in-wave (P1-dart.json secondReview).",
-        "evidenceFile": "reviews/dart/second-review.md",
-        "verifiedAtCommit": "d4536e77"
-    }
-,
-    {
-        "id": "PHP1",
-        "title": "PHP first review wave (issue #835): PHP-A receiver reads, PHP-H static reads, PHP-D const fetch, PHP-E tear-offs, PHP-F interpolation, PHP-B subscripts, PHP-C captures, PHP-O1/O2 oracle holes",
-        "status": "verified",
-        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirrors in derivePhpEdges. Fully gated: fixture php/member-value-reads (new), 11 mutants, spec PHP-A-H/O1-O2/R1-R3. Lanes: phpunit + phpmyadmin, pinned + 5 rotations, 0/0. F3 all pass, F4 529/529, R1 112/112, R2 15/15. Seam trace in-wave (P1-php.json): flags join F1, relId dedup verified, line NULL. Bare $vars deferred to review 2.",
-        "evidenceFile": "reviews/php/first-review.md",
-        "verifiedAtCommit": "241e3a4e"
-    }
-,
-    {
-        "id": "SW1",
-        "title": "Swift ultimate review wave (issue #836): SW-A member reads, SW-B enum construction, SW-D keypaths, SW-E type filter, SW-F projected values",
-        "status": "verified",
-        "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes (main-harness-equivalent setup); oracle mirrors in deriveSwiftEdges/BareUses. Fully gated: fixture swift/member-value-reads (new), 6 mutants, spec SW-A/B/D/E/F + SW-R1/R2. Lanes: swift-nio + alamofire, pinned + 5 rotations, 0/0/0. F3 all pass, F4 545/545, R1 115/115, R2 15/15. Seam trace in-wave (P1-swift.json): flags join F1, contains-zero noted, heuristic tier intact.",
-        "evidenceFile": "reviews/swift/ultimate-review.md",
-        "verifiedAtCommit": "e8427668"
-    }
-,
-    {
-        "id": "SW2",
-        "title": "Swift second review wave (issue #838): SW-G init delegation, SW-H implicit/Self enum construction",
-        "status": "verified",
-        "notes": "Hostile second battery over pass-1 deferrals; oracle mirrors in deriveSwiftEdges. Fully gated: fixture swift/init-delegation (new), 5 mutants, spec SW-G/SW-H + SW-R3. Lanes: swift-nio + alamofire, pinned + 5 rotations, 0/0/0. F3 all pass, F4 550/550, R1 117/117, R2 15/15. Seam trace extended (P1-swift.json secondReview).",
-        "evidenceFile": "reviews/swift/second-review.md",
-        "verifiedAtCommit": "a3faaa23"
     },
     {
-        "id": "G6",
-        "title": "Groovy W21 (#850 residual / #841): Java-reserved words as named-argument KEYS made 65 of 86 `.gradle` parse failures",
-        "status": "verified",
-        "notes": "`open`/`module`/`record`/`with`/`sealed` are JAVA keywords and this grammar is grammar(Java, ...); map_item's key accepted `identifier | literal | (expr)` while every other name position already accepts `_reserved_identifier` (five sites), so one named argument (`exclude group: 'a', module: 'b'`) dragged its whole enclosing `dependencies { ... }` block into ERROR recovery - which is why the census's largest first-error signature was a bare `ID {`. Fix is that one-word choice. Corpus grails-core @ a83f87480e0c, 454 *.gradle through production parseFile, same instrument both sides: parse-failing 86 -> 21 (18.9% -> 4.6%), relationships 15,013 -> 17,017; the SETS are the claim - 65 fixed, 0 regressed, 0 files losing a relationship. Pinned by fixture groovy/reserved-key-map-items-850 (0 symbols / 1 relationship pre-fix, 5 / 7 post-fix); negative control run - with the pre-fix wasm the groovy lane is 51/1 with exactly that fixture failing. F3 433/433 all 22 lanes, F4 571/571 caught 0 survivors, G1 196/0, G9 49/49, typecheck clean, canonical oracle re-certified at HEAD with 0 INCONSISTENT across 22 languages. An INSTRUMENT defect was found by disagreement and is recorded rather than silently corrected: a hand-rolled walk counting type === 'ERROR' reported 200 failing where the product reported 86, and the 114-file gap is a zero-width unnamed empty-text EOF phantom that the vendored tree-sitter parse does not print at all - so tree.hasError is the criterion. Also fixes oracle-callsite.ts having no scoped-run guard (a --only run had replaced the canonical 22-language evidence file with a 40-file one).",
-        "evidenceFile": "reviews/m49-w21-groovy-reserved-argument-keys.md",
-        "verifiedAtCommit": "20446852"
+      "id": "CS1",
+      "title": "C# first review wave (issue #804): CS-R1 bare reads, CS-B1 top-level calls, CS-B2 nameof, CS-B3 bare catch, CS-B4 file visibility, CS-B5 pattern calls",
+      "status": "verified",
+      "notes": "Full analyzer read + hostile battery + shape dumps + fresh lanes. Fully gated: fixture csharp/bare-value-reads (new), 7 mutants, spec CS-R1/CS-B1-CS-B5. Lanes: powershell 2557/2557 + fsharp 1213/1213, 0/0. F3 401/401, F4 482/482. Second review scheduled per OO program.",
+      "evidenceFile": "reviews/csharp/master-review.md",
+      "verifiedAtCommit": "00c49c59"
     },
     {
-        "id": "G7",
-        "title": "Groovy GString interpolation is invisible to the graph: 13,830 interpolation sites across 2,115 files emit zero reads, and the nested-quote subset emits a FABRICATED call edge — CLOSED",
-        "status": "verified",
-        "notes": "Found while closing the W21 residual class `GString with a nested double quote inside ${ }` (5 files) - the parse failure is the visible tip. The grammar is grammar(Java, ...) and inherits Java's _string_literal, whose fragment token is `token.immediate(prec(1, /[^\\\\]+/))` (everything except quote and backslash, which INCLUDES `$` and `{`), and Java's string_interpolation is Java's text-block `'\\{'` form. This grammar overrides character_literal, _multiline_string_literal and the multiline fragments, but SEARCHING IT FOR `string_interpolation:` OR `string_fragment` RETURNS NOTHING - so `${...}` and `$name` are opaque literal text by construction and no interpolated identifier can ever reach the analyzer. MEASURED (script/m59/measure-groovy-interpolation.ts, grails-core @ a83f87480e0c, 7,701 *.groovy/*.gradle/*.gsp files, source-matched so the count does not depend on the fix): 2,115 files (27.5%) contain interpolation, 13,830 sites, 59 of them (31 files) are the nested-double-quote subset that fails to PARSE and emits `calls (script) -> X`; 361,280 relationships emitted with 0 contributed by any interpolation site. FAMILY PARITY: dart (DT-F), php, ruby and kotlin all read interpolation and each has a caught `drop-interp-read-uses` mutant; real-groovy-analyzer.ts has ZERO references to interpolation, and no mutant exists because there is no behaviour to mutate. Parse-clean, line-clean, oracle-clean and graph-incomplete, which is why every gate in the repo is green on it. Fix shape recorded in the evidence file: override string_fragment (must stop swallowing `$`), define string_interpolation as `'${' expression '}'` plus the `$identifier` short form, give a bare `$` its own explicit grammar alternative because tree-sitter's regex has no lookahead, check the five existing template_expression conflict entries, add analyzer reads AND the deriveGroovyEdges oracle mirror, and re-cut the W21 residual table afterwards.",
-        "evidenceFile": "reviews/m49-groovy-gstring-interpolation.md",
-        "verifiedAtCommit": "37cd5215",
-        "resolution": "CLOSED 2026-09-16 in seven grammar changes and one analyzer pass (review §6). GRAMMAR: `string_fragment` overridden to stop at `$`; `string_interpolation` = `'${' expression '}'`; the `$name` short form is a TOKEN - as `seq('$', identifier)` the parser stood at `name` where both `identifier` and the inherited `prec(1)` fragment are valid and the fragment won the LEXICAL tie, so `\"value $field\"` parsed as two fragments (probe-verified against the CLI, fragments at [0,9]-[0,15] and [0,16]-[0,21]); a bare `$` gets its own alternative because tree-sitter's regex has no lookahead, so `/[^\"\\\\$]+|\\$(?![{a-zA-Z_])/` is not expressible; the single-quoted forms LOSE the inherited Java alternative, or `'''${x}'''` would interpolate; the `\"\"\"` forms carry the same four alternatives; `slashy_string` becomes a RULE that interpolates (measured before the change over 2,000 grails-core files: 154 slashy_string tokens, 3 carrying an interpolation-shaped `$` in 2 files, every one emitting no read - the other 26 `$`-bearing tokens are regex ANCHORS `/^…$/`, which Groovy never interpolates, which is why the fragment stops only at an interpolation-SHAPED `$`). One declared conflict, `[$.map_item, $._unannotated_type]`, closes the parenthesised ARRAY-TYPE map key `[(Byte[]): v]` (an ERROR; `[(Integer): v]` worked only because Integer is also an expression) that left DefaultGraphQLTypeManager.groovy unparsed. ANALYZER: a BARE name in interpolation is read (confidence 0.9, metadata.isInterpolationRead, the identifier's own line) while member and call positions stay owned by the field-access and call walks; behind a local-binding gate (formal/catch parameters, variable declarators, closure `it`, unioned across every enclosing scope, climbing THROUGH nested closures but stopping at the type boundary) - without it the fix would fabricate an edge for every `\"$it\"` in the corpus. PINS: fixture `groovy/interpolation-reads-g7` holds the contract with its controls in one file (free field read, `$name`, member read, call, bound local/parameter/receiver, nested-closure `def`, implicit `it`, the SINGLE-QUOTED negative control, the raw nested-double-quote form, the slashy free/bound/anchor trio, the array-type map key) with forbidRelationships naming each pre-fix emission; FOUR mutants, all CAUGHT (groovy/drop-interpolation-reads = the exact pre-fix state, interpolation-reads-unbound = the naive fix, interpolation-callee-read = double-emission, interpolation-reads-single-quoted). MEASURED: deterministic 400-file sorted grails-core sample compared SET-WISE, wasm 90c7f39936ba -> fcfead14d8c0: 90 files touched, uses+199, calls+98, ONE loss = `build-logic/settings.gradle calls 44 -> 43`, adjudicated by printing both edge sets (script/m14/tmp/g7-loss-probe.ts) as the deletion of a FABRICATED calls edge whose target was raw recovered text `logger.warn(\"Build date will be set to (SOURCE_DATE_EPOCH=${System.getenv(\"` from a line that failed to parse, while the real `calls (script) -> warn@39` stands. The nested-quote class - the parse-visible tip - now parses (hasError false, a real string_interpolation with its inner method_invocation). Why 297 relationships and not 13,830 sites: the sample is 400 files not 7,701, and the binding gate suppresses bound names BY DESIGN. ORACLE MIRROR: deriveGroovyEdges had no interpolation branch at all, so it was green by blindness both before the fix (nothing to see) and after it (nothing to check) - the W20 lesson applied. Mirrored (the same five owning parents, the same bound-name climb, the same `method ?? owner` source rule). The first version asked the weaker question 'is there a method above me?' and a corpus-wide probe over 8,383 groovy files (script/m14/tmp/g7-oracle-mirror-check.ts) reported 4 oracle-only reads in 2 files - every one inside a file that fails to parse as a single whole-file ERROR node, where a Spock feature method is named by a `string_literal` and no class context survives recovery. Branch-instrumented (BB_G7_DEBUG, since reverted): the node is visited, parentType=string_literal, bound=false, candidates=1, and SOURCE=NULL - the analyzer's silence is the honest one (no owner to attribute the read to, exactly as for a script-level read) and the mirror was what over-claimed. Mirroring the real rule takes the probe to 0 oracle-only uses. SECOND INSTRUMENT DEFECT, found because the first canonical F5 run reported grails-core:groovy missing=8 on interpolation-shaped targets: the harness compares only the labels a language's truth derives, and for groovy `uses` was NOT among them (groovy had no read oracle - the limitation the W20 note records as 'a restored read rides the fixture and its mutant but no corpus lane'), so adding interpolation truths injected `uses` edges into a lane that structurally could not match them and EVERY interpolated name became a permanent false MISSING. Measured false positive: 8 on 4 named files, every target (id/action/controller/i/dataSource/configPrefix/subscriber/event) one the analyzer DOES emit (uses StoreUrlMappings -> controller/action/id @42, metadata.isInterpolationRead). Fixed by the full mirror rather than by the silence - the oracle now derives all four groovy `uses` sources the analyzer emits (field_access, paren-less leading_dot_call, array_access, interpolation) and groovy joins the uses-audited language set - verified in BOTH directions over the whole corpus (8,383 files, the harness's own label set): oracle-only uses 0 AND analyzer-only uses 0, so the lane audits groovy reads exactly for the first time. Also recorded from that run: 26 baseline lanes are UNPINNED (no recorded drawn set), so seven lanes reported as DIFFERENTIAL REGRESSION cannot distinguish a cold-pool rotation from a regression - the harness prints this itself, and re-pinning with --update-baseline is a re-baselining decision left to the owner rather than taken in a language round. RECORDED, NOT ROUNDED AWAY: a declaration left unnamed by parse recovery contributes no interpolation reads (4 edges in 2 of 8,383 files, a consequence of the residual parse classes filed by script/m59/probe-groovy-residual-classes.ts, not of the interpolation modelling). SPEC: the groovy completeness ruling S1 was DECLARED LIMITATION ('the pinned grammar produces no string_interpolation/template nodes ... out of scope') and is now SUPERSEDED, with the new node types bucketed in handled_verified/internal_silent. GATES at this state: fixtures 435/435 (groovy 53, scala 51), mutations 583/583 caught 0 survivors, M49 G1 207/207, R1 124/124, R2 15/15, G8 21/21, consistency green, typecheck clean, M59 canonical oracle re-run 22 languages 0 INCONSISTENT (groovy 875/891 consistent + 16 notCheckable, scala 1,957/1,989 + 32). Related: the same round closed a scala #825 follow-through found by the oracle at HEAD - an extension method's receiver TYPE now stamps the line where the type is written, not the method's declaration line (scala3 tests/warn/ext-override.scala), pinned in the existing scala/extension-method-flag fixture with forbid entries for both pre-fix stamps and a caught revert mutant (scala/extension-receiver-method-line). Full record: reviews/m49-groovy-gstring-interpolation.md section 6."
+      "id": "RB1",
+      "title": "Ruby second review wave (issue #812): RB-F endless bodies, RB-G defined?/undef, RB-H attr strings, RB-I dynamic classes, RB-J autoload, RB-K nested singleton defs",
+      "status": "verified",
+      "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirror fixes in deriveRubyEdges. Fully gated: fixture ruby/second-review (new), 7 mutants, spec RB-F-RB-K. Lanes: rack + rake, pinned + 5 rotations, 0/0. F3 all pass, F4 493/493, R1 95/95, R2 15/15.",
+      "evidenceFile": "reviews/ruby/second-review.md",
+      "verifiedAtCommit": "399e4a02"
+    },
+    {
+      "id": "OC1",
+      "title": "ObjC first review wave (issue #815): OC-B category exports, OC-D C type inventory, OC-E bare value reads, OC-R1 update operands, OC-R2 synthesize/selector",
+      "status": "verified",
+      "notes": "Full analyzer re-read + hostile battery + shape dumps + C-parity probes + fresh lanes; oracle mirror in deriveObjcEdges. Fully gated: fixture objc/bare-value-reads (new), 7 mutants, spec OC-B/OC-D/OC-E/OC-R1/OC-R2. Lanes: sdwebimage + afnetworking, pinned + 5 rotations, 0/0. F3 all pass, F4 500/500, R1 98/98, R2 15/15.",
+      "evidenceFile": "reviews/objc/first-review.md",
+      "verifiedAtCommit": "630a3660"
+    },
+    {
+      "id": "OC2",
+      "title": "ObjC second review wave (issue #853): OC-F enum cases, OC-G protocol directive, OC-H function decay",
+      "status": "verified",
+      "notes": "Hostile second battery over pass-1 deferrals; oracle mirrors in deriveObjcEdges. Fully gated: fixture objc/second-review (new), 3 mutants, spec OC-F/G/H + OC-R3. Lanes: sdwebimage + afnetworking, pinned + 5 rotations, 0/0. F3 all pass, F4 578/578, R1 122/122, R2 15/15. Seam trace in-wave (P1-objc.json): 468 rows, flags join F1, contains lines vs analyzer NULLs.",
+      "evidenceFile": "reviews/objc/second-review.md",
+      "verifiedAtCommit": "5af983f2"
+    },
+    {
+      "id": "DT1",
+      "title": "Dart first review wave (issue #827): DT-A named construction, DT-B heritage aliases, DT-C redirect alias, DT-D super/this redirections, DT-F member reads, DT-E/DT-R1 ruled",
+      "status": "verified",
+      "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirror in deriveDartEdges. Fully gated: fixture dart/member-value-reads (new), 10 mutants, spec DT-A-DT-F/DT-E/DT-R1. Lanes: proxicall + dart-http, pinned + 5 rotations, 0/0. F3 all pass, F4 516/516, R1 107/107, R2 15/15. Bare unqualified reads deferred to review 2.",
+      "evidenceFile": "reviews/dart/first-review.md",
+      "verifiedAtCommit": "8a9b36d9"
+    },
+    {
+      "id": "DT2",
+      "title": "Dart second review wave (issue #856): DT2-A bound locals/params, DT2-B file-scope values",
+      "status": "verified",
+      "notes": "Hostile battery over the DT-F deferral + audit of co-agent #752 gates; oracle mirrors in deriveDartBareUses. Fully gated: fixture dart/value-reads (new), 4 mutants, spec DT2-A/B/C/D. Lanes: proxicall + dart-http, pinned + 5 rotations, 0/0/0. F3 all pass, F4 582/582, R1 124/124, R2 15/15. Seam trace in-wave (P1-dart.json secondReview).",
+      "evidenceFile": "reviews/dart/second-review.md",
+      "verifiedAtCommit": "d4536e77"
+    },
+    {
+      "id": "PHP1",
+      "title": "PHP first review wave (issue #835): PHP-A receiver reads, PHP-H static reads, PHP-D const fetch, PHP-E tear-offs, PHP-F interpolation, PHP-B subscripts, PHP-C captures, PHP-O1/O2 oracle holes",
+      "status": "verified",
+      "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes; oracle mirrors in derivePhpEdges. Fully gated: fixture php/member-value-reads (new), 11 mutants, spec PHP-A-H/O1-O2/R1-R3. Lanes: phpunit + phpmyadmin, pinned + 5 rotations, 0/0. F3 all pass, F4 529/529, R1 112/112, R2 15/15. Seam trace in-wave (P1-php.json): flags join F1, relId dedup verified, line NULL. Bare $vars deferred to review 2.",
+      "evidenceFile": "reviews/php/first-review.md",
+      "verifiedAtCommit": "241e3a4e"
+    },
+    {
+      "id": "SW1",
+      "title": "Swift ultimate review wave (issue #836): SW-A member reads, SW-B enum construction, SW-D keypaths, SW-E type filter, SW-F projected values",
+      "status": "verified",
+      "notes": "Full analyzer re-read + hostile battery + shape dumps + fresh lanes (main-harness-equivalent setup); oracle mirrors in deriveSwiftEdges/BareUses. Fully gated: fixture swift/member-value-reads (new), 6 mutants, spec SW-A/B/D/E/F + SW-R1/R2. Lanes: swift-nio + alamofire, pinned + 5 rotations, 0/0/0. F3 all pass, F4 545/545, R1 115/115, R2 15/15. Seam trace in-wave (P1-swift.json): flags join F1, contains-zero noted, heuristic tier intact.",
+      "evidenceFile": "reviews/swift/ultimate-review.md",
+      "verifiedAtCommit": "e8427668"
+    },
+    {
+      "id": "SW2",
+      "title": "Swift second review wave (issue #838): SW-G init delegation, SW-H implicit/Self enum construction",
+      "status": "verified",
+      "notes": "Hostile second battery over pass-1 deferrals; oracle mirrors in deriveSwiftEdges. Fully gated: fixture swift/init-delegation (new), 5 mutants, spec SW-G/SW-H + SW-R3. Lanes: swift-nio + alamofire, pinned + 5 rotations, 0/0/0. F3 all pass, F4 550/550, R1 117/117, R2 15/15. Seam trace extended (P1-swift.json secondReview).",
+      "evidenceFile": "reviews/swift/second-review.md",
+      "verifiedAtCommit": "a3faaa23"
+    },
+    {
+      "id": "G6",
+      "title": "Groovy W21 (#850 residual / #841): Java-reserved words as named-argument KEYS made 65 of 86 `.gradle` parse failures",
+      "status": "verified",
+      "notes": "`open`/`module`/`record`/`with`/`sealed` are JAVA keywords and this grammar is grammar(Java, ...); map_item's key accepted `identifier | literal | (expr)` while every other name position already accepts `_reserved_identifier` (five sites), so one named argument (`exclude group: 'a', module: 'b'`) dragged its whole enclosing `dependencies { ... }` block into ERROR recovery - which is why the census's largest first-error signature was a bare `ID {`. Fix is that one-word choice. Corpus grails-core @ a83f87480e0c, 454 *.gradle through production parseFile, same instrument both sides: parse-failing 86 -> 21 (18.9% -> 4.6%), relationships 15,013 -> 17,017; the SETS are the claim - 65 fixed, 0 regressed, 0 files losing a relationship. Pinned by fixture groovy/reserved-key-map-items-850 (0 symbols / 1 relationship pre-fix, 5 / 7 post-fix); negative control run - with the pre-fix wasm the groovy lane is 51/1 with exactly that fixture failing. F3 433/433 all 22 lanes, F4 571/571 caught 0 survivors, G1 196/0, G9 49/49, typecheck clean, canonical oracle re-certified at HEAD with 0 INCONSISTENT across 22 languages. An INSTRUMENT defect was found by disagreement and is recorded rather than silently corrected: a hand-rolled walk counting type === 'ERROR' reported 200 failing where the product reported 86, and the 114-file gap is a zero-width unnamed empty-text EOF phantom that the vendored tree-sitter parse does not print at all - so tree.hasError is the criterion. Also fixes oracle-callsite.ts having no scoped-run guard (a --only run had replaced the canonical 22-language evidence file with a 40-file one).",
+      "evidenceFile": "reviews/m49-w21-groovy-reserved-argument-keys.md",
+      "verifiedAtCommit": "20446852"
+    },
+    {
+      "id": "G7",
+      "title": "Groovy GString interpolation is invisible to the graph: 13,830 interpolation sites across 2,115 files emit zero reads, and the nested-quote subset emits a FABRICATED call edge — CLOSED",
+      "status": "verified",
+      "notes": "Found while closing the W21 residual class `GString with a nested double quote inside ${ }` (5 files) - the parse failure is the visible tip. The grammar is grammar(Java, ...) and inherits Java's _string_literal, whose fragment token is `token.immediate(prec(1, /[^\\\\]+/))` (everything except quote and backslash, which INCLUDES `$` and `{`), and Java's string_interpolation is Java's text-block `'\\{'` form. This grammar overrides character_literal, _multiline_string_literal and the multiline fragments, but SEARCHING IT FOR `string_interpolation:` OR `string_fragment` RETURNS NOTHING - so `${...}` and `$name` are opaque literal text by construction and no interpolated identifier can ever reach the analyzer. MEASURED (script/m59/measure-groovy-interpolation.ts, grails-core @ a83f87480e0c, 7,701 *.groovy/*.gradle/*.gsp files, source-matched so the count does not depend on the fix): 2,115 files (27.5%) contain interpolation, 13,830 sites, 59 of them (31 files) are the nested-double-quote subset that fails to PARSE and emits `calls (script) -> X`; 361,280 relationships emitted with 0 contributed by any interpolation site. FAMILY PARITY: dart (DT-F), php, ruby and kotlin all read interpolation and each has a caught `drop-interp-read-uses` mutant; real-groovy-analyzer.ts has ZERO references to interpolation, and no mutant exists because there is no behaviour to mutate. Parse-clean, line-clean, oracle-clean and graph-incomplete, which is why every gate in the repo is green on it. Fix shape recorded in the evidence file: override string_fragment (must stop swallowing `$`), define string_interpolation as `'${' expression '}'` plus the `$identifier` short form, give a bare `$` its own explicit grammar alternative because tree-sitter's regex has no lookahead, check the five existing template_expression conflict entries, add analyzer reads AND the deriveGroovyEdges oracle mirror, and re-cut the W21 residual table afterwards.",
+      "evidenceFile": "reviews/m49-groovy-gstring-interpolation.md",
+      "verifiedAtCommit": "37cd5215",
+      "resolution": "CLOSED 2026-09-16 in seven grammar changes and one analyzer pass (review §6). GRAMMAR: `string_fragment` overridden to stop at `$`; `string_interpolation` = `'${' expression '}'`; the `$name` short form is a TOKEN - as `seq('$', identifier)` the parser stood at `name` where both `identifier` and the inherited `prec(1)` fragment are valid and the fragment won the LEXICAL tie, so `\"value $field\"` parsed as two fragments (probe-verified against the CLI, fragments at [0,9]-[0,15] and [0,16]-[0,21]); a bare `$` gets its own alternative because tree-sitter's regex has no lookahead, so `/[^\"\\\\$]+|\\$(?![{a-zA-Z_])/` is not expressible; the single-quoted forms LOSE the inherited Java alternative, or `'''${x}'''` would interpolate; the `\"\"\"` forms carry the same four alternatives; `slashy_string` becomes a RULE that interpolates (measured before the change over 2,000 grails-core files: 154 slashy_string tokens, 3 carrying an interpolation-shaped `$` in 2 files, every one emitting no read - the other 26 `$`-bearing tokens are regex ANCHORS `/^…$/`, which Groovy never interpolates, which is why the fragment stops only at an interpolation-SHAPED `$`). One declared conflict, `[$.map_item, $._unannotated_type]`, closes the parenthesised ARRAY-TYPE map key `[(Byte[]): v]` (an ERROR; `[(Integer): v]` worked only because Integer is also an expression) that left DefaultGraphQLTypeManager.groovy unparsed. ANALYZER: a BARE name in interpolation is read (confidence 0.9, metadata.isInterpolationRead, the identifier's own line) while member and call positions stay owned by the field-access and call walks; behind a local-binding gate (formal/catch parameters, variable declarators, closure `it`, unioned across every enclosing scope, climbing THROUGH nested closures but stopping at the type boundary) - without it the fix would fabricate an edge for every `\"$it\"` in the corpus. PINS: fixture `groovy/interpolation-reads-g7` holds the contract with its controls in one file (free field read, `$name`, member read, call, bound local/parameter/receiver, nested-closure `def`, implicit `it`, the SINGLE-QUOTED negative control, the raw nested-double-quote form, the slashy free/bound/anchor trio, the array-type map key) with forbidRelationships naming each pre-fix emission; FOUR mutants, all CAUGHT (groovy/drop-interpolation-reads = the exact pre-fix state, interpolation-reads-unbound = the naive fix, interpolation-callee-read = double-emission, interpolation-reads-single-quoted). MEASURED: deterministic 400-file sorted grails-core sample compared SET-WISE, wasm 90c7f39936ba -> fcfead14d8c0: 90 files touched, uses+199, calls+98, ONE loss = `build-logic/settings.gradle calls 44 -> 43`, adjudicated by printing both edge sets (script/m14/tmp/g7-loss-probe.ts) as the deletion of a FABRICATED calls edge whose target was raw recovered text `logger.warn(\"Build date will be set to (SOURCE_DATE_EPOCH=${System.getenv(\"` from a line that failed to parse, while the real `calls (script) -> warn@39` stands. The nested-quote class - the parse-visible tip - now parses (hasError false, a real string_interpolation with its inner method_invocation). Why 297 relationships and not 13,830 sites: the sample is 400 files not 7,701, and the binding gate suppresses bound names BY DESIGN. ORACLE MIRROR: deriveGroovyEdges had no interpolation branch at all, so it was green by blindness both before the fix (nothing to see) and after it (nothing to check) - the W20 lesson applied. Mirrored (the same five owning parents, the same bound-name climb, the same `method ?? owner` source rule). The first version asked the weaker question 'is there a method above me?' and a corpus-wide probe over 8,383 groovy files (script/m14/tmp/g7-oracle-mirror-check.ts) reported 4 oracle-only reads in 2 files - every one inside a file that fails to parse as a single whole-file ERROR node, where a Spock feature method is named by a `string_literal` and no class context survives recovery. Branch-instrumented (BB_G7_DEBUG, since reverted): the node is visited, parentType=string_literal, bound=false, candidates=1, and SOURCE=NULL - the analyzer's silence is the honest one (no owner to attribute the read to, exactly as for a script-level read) and the mirror was what over-claimed. Mirroring the real rule takes the probe to 0 oracle-only uses. SECOND INSTRUMENT DEFECT, found because the first canonical F5 run reported grails-core:groovy missing=8 on interpolation-shaped targets: the harness compares only the labels a language's truth derives, and for groovy `uses` was NOT among them (groovy had no read oracle - the limitation the W20 note records as 'a restored read rides the fixture and its mutant but no corpus lane'), so adding interpolation truths injected `uses` edges into a lane that structurally could not match them and EVERY interpolated name became a permanent false MISSING. Measured false positive: 8 on 4 named files, every target (id/action/controller/i/dataSource/configPrefix/subscriber/event) one the analyzer DOES emit (uses StoreUrlMappings -> controller/action/id @42, metadata.isInterpolationRead). Fixed by the full mirror rather than by the silence - the oracle now derives all four groovy `uses` sources the analyzer emits (field_access, paren-less leading_dot_call, array_access, interpolation) and groovy joins the uses-audited language set - verified in BOTH directions over the whole corpus (8,383 files, the harness's own label set): oracle-only uses 0 AND analyzer-only uses 0, so the lane audits groovy reads exactly for the first time. Also recorded from that run: 26 baseline lanes are UNPINNED (no recorded drawn set), so seven lanes reported as DIFFERENTIAL REGRESSION cannot distinguish a cold-pool rotation from a regression - the harness prints this itself, and re-pinning with --update-baseline is a re-baselining decision left to the owner rather than taken in a language round. RECORDED, NOT ROUNDED AWAY: a declaration left unnamed by parse recovery contributes no interpolation reads (4 edges in 2 of 8,383 files, a consequence of the residual parse classes filed by script/m59/probe-groovy-residual-classes.ts, not of the interpolation modelling). SPEC: the groovy completeness ruling S1 was DECLARED LIMITATION ('the pinned grammar produces no string_interpolation/template nodes ... out of scope') and is now SUPERSEDED, with the new node types bucketed in handled_verified/internal_silent. GATES at this state: fixtures 435/435 (groovy 53, scala 51), mutations 583/583 caught 0 survivors, M49 G1 207/207, R1 124/124, R2 15/15, G8 21/21, consistency green, typecheck clean, M59 canonical oracle re-run 22 languages 0 INCONSISTENT (groovy 875/891 consistent + 16 notCheckable, scala 1,957/1,989 + 32). Related: the same round closed a scala #825 follow-through found by the oracle at HEAD - an extension method's receiver TYPE now stamps the line where the type is written, not the method's declaration line (scala3 tests/warn/ext-override.scala), pinned in the existing scala/extension-method-flag fixture with forbid entries for both pre-fix stamps and a caught revert mutant (scala/extension-receiver-method-line). Full record: reviews/m49-groovy-gstring-interpolation.md section 6."
     }
   ],
   "waves": [
@@ -284,7 +274,7 @@
       "title": "Convergence sweep: 7-class blind-spot probes across 19/21 analyzers + parse-success census + process findings #760/#761",
       "date": "2026-09-11",
       "commit": "see git log (sweep commits eba4a17e..b220ca28+)",
-      "method": "reviews/convergence/blind-spot-checklist.md \u2014 7 proven defect classes probed live against every analyzer; findings registered BEFORE fixing; fixes deferred until the svelte wave lands (tree discipline)",
+      "method": "reviews/convergence/blind-spot-checklist.md — 7 proven defect classes probed live against every analyzer; findings registered BEFORE fixing; fixes deferred until the svelte wave lands (tree discipline)",
       "findings": [
         {
           "issue": 739,
@@ -417,15 +407,15 @@
       ],
       "f9GateProposal": "corpus parse-success census (script/m14/tmp/conv-parse-census.ts) becomes a standing gate: pin per-language ERROR-rate baselines, fail on regression, hard 0% for clean languages; grammar-upgrade waves for cpp/c/groovy tracked in #742/#743",
       "convergenceStopCondition": "one full round (7-class sweep + wave self-audit) with ZERO new High/Medium findings, recorded in reviews/<lang>/; then issue-driven reviews only",
-      "svelte": "deferred \u2014 co-agent wave in flight; svelte joins the sweep when it lands",
+      "svelte": "deferred — co-agent wave in flight; svelte joins the sweep when it lands",
       "evidence": "reviews/convergence/sweep-verdicts.md"
     },
     {
       "id": "M49.W4",
-      "title": "Svelte Sv1/Sv2 wave landed \u2014 verification certifiable (web family's last own item)",
+      "title": "Svelte Sv1/Sv2 wave landed — verification certifiable (web family's last own item)",
       "date": "2026-09-12",
       "commit": "0533251e",
-      "method": "The Sv1 (H1-H4/M1-M4) + Sv2 (D1/D3/D4/D5) analyzer wave and its 15 fixture files were verified live (reviews/svelte/third-verification.md) but sat uncommitted in the shared tree, so X1 refused to certify svelte. Landed by hunk-scoping the shared files (mutate-analyzer.ts: the 23 svelte mutants + registry source pins; differential.ts: the D4 render-leaf oracle mirror) so no in-flight systems-family hunk was included. The commit itself was swept up by a concurrent M50.A4 commit in the shared index \u2014 content is verified intact at that commit (blob-compared against the staged artefact).",
+      "method": "The Sv1 (H1-H4/M1-M4) + Sv2 (D1/D3/D4/D5) analyzer wave and its 15 fixture files were verified live (reviews/svelte/third-verification.md) but sat uncommitted in the shared tree, so X1 refused to certify svelte. Landed by hunk-scoping the shared files (mutate-analyzer.ts: the 23 svelte mutants + registry source pins; differential.ts: the D4 render-leaf oracle mirror) so no in-flight systems-family hunk was included. The commit itself was swept up by a concurrent M50.A4 commit in the shared index — content is verified intact at that commit (blob-compared against the staged artefact).",
       "findings": [
         {
           "issue": 736,
@@ -439,7 +429,7 @@
           "class": "template-substitution-callee-uses",
           "severity": "medium",
           "ledgerId": "J6",
-          "note": "NO GitHub issue: creation was blocked by the proxy at registration time and remained blocked at fix time (verified 2026-09-12, three POST attempts). CORRECTION: an earlier revision of this row recorded \"issue\": 770 as the reserved number \u2014 that number was taken by the co-agent's M55.T1 (\"One identity resolver\") in the meantime, so the row asserted a false mapping. The ledger id J6 is the reference; file an issue and backfill this field when GitHub writes return. Fix landed @35ce5f8b with fixture + 2 mutants; evidence reviews/web-family/rotated-sample-findings.md \u00a75."
+          "note": "NO GitHub issue: creation was blocked by the proxy at registration time and remained blocked at fix time (verified 2026-09-12, three POST attempts). CORRECTION: an earlier revision of this row recorded \"issue\": 770 as the reserved number — that number was taken by the co-agent's M55.T1 (\"One identity resolver\") in the meantime, so the row asserted a false mapping. The ledger id J6 is the reference; file an issue and backfill this field when GitHub writes return. Fix landed @35ce5f8b with fixture + 2 mutants; evidence reviews/web-family/rotated-sample-findings.md §5."
         },
         {
           "issue": null,
@@ -447,7 +437,7 @@
           "class": "dts-interface-redeclaration-oracle-blind",
           "severity": "medium",
           "ledgerId": "T2",
-          "note": "NO GitHub issue (same proxy block; CORRECTION: \"issue\": 771 was a false reservation \u2014 #771 is the co-agent's M55.T2). Ledger id T2 is the reference. Fix landed @35ce5f8b (oracle side, M37.21 lockstep); evidence reviews/web-family/rotated-sample-findings.md \u00a75."
+          "note": "NO GitHub issue (same proxy block; CORRECTION: \"issue\": 771 was a false reservation — #771 is the co-agent's M55.T2). Ledger id T2 is the reference. Fix landed @35ce5f8b (oracle side, M37.21 lockstep); evidence reviews/web-family/rotated-sample-findings.md §5."
         },
         {
           "issue": null,
@@ -455,14 +445,14 @@
           "class": "subscript-callee-subtree-skip",
           "severity": "medium",
           "ledgerId": "T3",
-          "note": "NO GitHub issue (same proxy block). Third finding of the rotated-sample probe: the subscript-callee and dynamic-import branches `return`ed before processNode's child recursion, so `console[method](m.text())` emitted nothing (1 corpus MISSING). Fix landed @35ce5f8b; evidence reviews/web-family/rotated-sample-findings.md \u00a75."
+          "note": "NO GitHub issue (same proxy block). Third finding of the rotated-sample probe: the subscript-callee and dynamic-import branches `return`ed before processNode's child recursion, so `console[method](m.text())` emitted nothing (1 corpus MISSING). Fix landed @35ce5f8b; evidence reviews/web-family/rotated-sample-findings.md §5."
         }
       ],
       "evidence": "reviews/svelte/third-verification.md, reviews/web-family/rotated-sample-findings.md"
     },
     {
       "id": "M49.W5",
-      "title": "F5 baseline comparison made sample-aware (G5) \u2014 a rotation can no longer mislabel a new-sample finding as a regression",
+      "title": "F5 baseline comparison made sample-aware (G5) — a rotation can no longer mislabel a new-sample finding as a regression",
       "date": "2026-09-12",
       "commit": "ef5b10c1",
       "method": "Implemented the fix owed by W4's gate flaw: `sampleSetHash` (sha256 of the sorted corpus-relative drawn set) rides every lane row; `--update-baseline` pins it per lane into differential-baseline.json `hashes`; `evaluateDifferential` compares it and returns three separate verdicts instead of one `comparable` flag. Verified at the artefact level, not from the working tree: the STAGED blob of the shared differential.ts was transpiled and asserted to carry the G5 markers and NONE of the co-agent's concurrently-edited cpp/go/zig oracle (my 10 hunks staged by hunk-scope, 137 added lines, 0 co-agent lines). The comparator is self-tested in the battery (audit:differential -> script/m14/verify-differential-evidence.ts, 6 cases: pass, regression, resampled-clean, rotated-growth-is-triage, unpinned, probe-mode) and the regression case proves the gate can still fail on a pinned sample. Deliberate asymmetries recorded rather than hidden: missing/unexplained anomalies FAIL a resampled lane's check (triage) while declared-heuristic edges are disclosed as unscored; and pre-G5 rows with no recorded file set KEEP the strict comparison plus an `unpinnedLanes` disclosure, because making 154 unrecorded rows silently non-comparable would have made the improvement-forcing gate vacuous in one step. What remains: pin the file sets in the canonical no-arg --update-baseline run at a stable tree (the same ceremony R2/F1-F9 wait on); until then every lane is disclosed as unpinned.",
@@ -476,7 +466,7 @@
           "note": "The gate flaw that produced the W4 mislabel. Fixed @ef5b10c1; the fix makes the wrong label unreachable on a rotated sample AND keeps the gate able to fail on a pinned one."
         }
       ],
-      "evidence": "reviews/web-family/rotated-sample-findings.md (\u00a73a), script/m14/verify-differential-evidence.ts, script/m14/differential.ts, validation/m14/differential-baseline.json"
+      "evidence": "reviews/web-family/rotated-sample-findings.md (§3a), script/m14/verify-differential-evidence.ts, script/m14/differential.ts, validation/m14/differential-baseline.json"
     },
     {
       "id": "M49.W6",
@@ -595,99 +585,211 @@
         }
       ],
       "evidence": "reviews/m49-w8-evidence-identity.md, script/m49/verify-evidence-identity.ts, validation/m49/evidence-producer-register.json, script/m14/verify-honesty.ts, script/m14/emit-f2-evidence.ts, script/m14/verify-fixture-coverage.ts, validation/m14/results/M14.0.{F2,F6,F7,F8,F9,PIPE,WC1,SC1}.json, docs/M14-SYSTEMS-DELEGATED-SIGNOFF.md, docs/M14-JVM-WEB-DELEGATED-SIGNOFF.md, docs/M14-COMPLETENESS-LEDGER.md ; reproducibility: F2/F6/F7/F8/F9 regenerated in a clean `git worktree` of 8f4aaec1 (node_modules symlinked) are byte-identical to the committed artifacts once the lineage fields (regeneratedAt/regeneratedAtCommit/commit/committedAt) are removed, so the committed evidence is HEAD-faithful and the F6 verdict reproduces on a clean checkout rather than only in the shared dirty tree"
+    },
+    {
+      "id": "M49.W9",
+      "title": "F6 dead-literal adjudication closed: all 24 resolved on grammar evidence, the java arity defect repaired and pinned, F6 wired; the zig parameter-binding defect registered, not landed",
+      "date": "2026-09-12",
+      "commit": "54dc2daa (+ 69984c68 evidence regenerated from HEAD, 54f8fbe5 G1 language/document classification)",
+      "method": "W8 had wired F6 for the first time and it promptly failed on 24 analyzer literals across java/javascript/cpp/go/zig that are neither node types in the pinned grammar nor spec-classified - F6 calls that dead code, the class 'the branch can never fire'. Each literal was adjudicated from the grammars themselves, not from reading the analyzer: (1) is it in the grammar's raw symbol enumeration including the underscore-prefixed hidden rules; (2) does it occur anywhere in the language's fixture corpus (all children, anonymous included); (3) can a targeted source that exercises the construct produce it. A separate risk was settled first because it would have invalidated every verdict: WHICH grammar does the analyzer load - the M14 harness and the production path (bbWasmCandidates -> <repo>/wasm/...) both resolve to the vendored wasm/ dir, so the probe grammar is production's grammar. Verdict: all 24 grammar-dead. The deciding question was then whether each dead branch carried weight, and exactly one did: java's argument-count guard skipped a node type named 'comment' that tree-sitter-java does not define (comments are line_comment/block_comment), so the skip never fired and `g(1 /* c */, 2)` reported argumentCount 3 - a live defect in the payload a consumer uses to tell overloads apart. The java annotation-name fallback and the js property_signature disjunct were redundant dead names (removed, doc corrected); the cpp/go/zig removals and re-pointings are provably behaviour-preserving (a name that matches no node type cannot change a branch) and that is measured, not argued: the zig edge set over all 90 .zig files of the zls corpus is byte-identical before and after. One dead literal was a whole no-op function (zig hasZigQualifiedAncestor, whose only true return referenced a type that cannot exist). The zig literal list also exposed a REAL defect - the scope model binds every identifier under a parameter node, so names that appear only in a parameter's TYPE become bindings and suppress genuine reads (probe-verified: zero uses edges where one is required, e.g. a struct type field named FLAG shadowing a file-level const FLAG) - whose fix was written, measured, and HELD: it removes the accidental shadowing and thereby exposes a second pre-existing gap (signature-region names surfacing as bare value reads), and the in-flight oracle DERIVES those reads, so landing the analyzer half alone would leave the two contradicting. The analyzer's behaviour is verified exactly unchanged and the defect is registered. Closing this also exposed a gate bug in F6 itself: it read analyzer source as raw text, so an audit note quoting a removed literal counted as a live one - the gate would keep a removed literal dead forever precisely because it was documented. F6 now scans comment-masked source with a --selftest that proves (positionally, per gated language) that every removed occurrence is inside a comment, that masking never invents a literal, and that the gate can still fail. F6's findings are resolved, so its G8 register row is removed and the producer is wired.",
+      "findings": [
+        {
+          "issue": null,
+          "lang": "java",
+          "class": "payload-drift-argumentCount",
+          "severity": "high",
+          "ledgerId": "W9",
+          "note": "argumentCount skipped a node type the pinned grammar does not define, so a comment inside an argument list counted as an argument: g(1, 2) -> 2 (correct) but g(1 /* inline */, 2) -> 3 and g(/* nothing */) -> 1. Inline comments in argument lists are ordinary formatted Java. Fixed by skipping line_comment/block_comment; pinned by fixture java/argument-count-comment-exclusion (each call its own target so no clean sibling can satisfy the pin) and mutant java/argument-count-inflation, which is CAUGHT by exactly that fixture plus the pre-existing java/overload-arity-varargs-multicatch. Non-vacuity proven by restoring the pre-fix guard in place and re-running the fixture (FAIL on the exact arity assertions)."
+        },
+        {
+          "issue": null,
+          "lang": "zig",
+          "class": "param-type-binding-shadows-real-reads",
+          "severity": "high",
+          "ledgerId": "W9",
+          "note": "bindIdentifiersUnder binds every identifier under a parameter node, so names appearing only in a parameter's TYPE become bindings and suppress genuine reads - probe-verified zero uses edges for a file-level const FLAG shadowed by a struct type field of the same name, and the same class covers `w: io.Writer` binding io. The stop-list meant to bound the damage named composite_literal/func_literal, which cannot occur in tree-sitter-zig, so it bounded nothing. REGISTERED, NOT LANDED: the fix (bind declared NAMES, not subtrees) removes the accidental shadowing correctly and thereby exposes a second pre-existing gap - identifiers in type position were only ever silenced as a side-effect of being wrongly bound - and the in-flight oracle in differential.ts derives those signature-region reads, so landing one half would contradict the other. Measured: the analyzer's edge set over the 90-file zls corpus is byte-identical before and after (218 identifier_usage reads, zero diff). The fix and its full evidence, including the tree-sitter-zig trap that `!` in `if (!enable)` parses as an error_union_type (the same node a real Error!T return type uses, so a node-type-keyed guard silently deletes a genuine body read), are recorded in the review file so the systems-family wave lands analyzer and oracle together."
+        },
+        {
+          "issue": null,
+          "lang": "java,typescript,javascript,cpp,go,zig",
+          "class": "dead-node-type-fallbacks",
+          "severity": "medium",
+          "ledgerId": "W9",
+          "note": "23 further literals across five languages are grammar-dead and not spec-classified: java _reserved_identifier (a hidden rule, so .type can never equal it) in the annotation-name fallback; js property_signature (TypeScript-only, the analyzer loads the JS grammar); cpp template_type_parameter/template_value_parameter/compound_assignment_expression (live siblings exist) and typename_specifier (re-pointed to the real node dependent_type); go field_expression/compound_assignment_statement (go spells these selector_expression/assignment_statement); zig struct_item/enum_item/union_item/type_item/mod_item/package_clause/type_identifier/field_identifier/label_name/continue_label (rust/go names) and a whole no-op function hasZigQualifiedAncestor. W8 registered this as adjudication owed; W9 adjudicated it, resolved it, and measured the removals as behaviour-preserving rather than asserting it."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "gate-blind-to-its-own-documentation",
+          "severity": "medium",
+          "ledgerId": "W9",
+          "note": "F6 scanned analyzer source as raw text, so an audit note QUOTING a removed literal counted as a live comparison - the gate would have kept a removed literal dead forever because it was documented, and would have punished the documentation that justified the removal. F6 now scans comment-masked source, with --selftest proving (positionally, per gated language) that every masked occurrence was inside a comment, that masking never invents a literal, and that a synthetic dead literal in CODE still fails while the identical text in a // or /* */ comment does not."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "wired-gate-bakes-working-tree-data",
+          "severity": "medium",
+          "ledgerId": "W9",
+          "note": "The F6 artifact first committed with W9 had been produced in the shared tree, so its per-language fixture-type totals baked another wave's uncommitted fixtures (cpp 150 vs 147, rust 162 vs 161, go 116 vs 105) - the exact W7 defect class, evidence derived from the working tree rather than HEAD. Detected by regenerating the gate in a clean worktree of the commit and byte-comparing, not by inspection. 69984c68 replaces the artifact with the HEAD-faithful one."
+        },
+        {
+          "issue": null,
+          "lang": "process",
+          "class": "gate-language-document-misclassification",
+          "severity": "low",
+          "ledgerId": "W9",
+          "note": "M49.G1 classified every entry in reviews/ as a language, so landing a top-level review document (reviews/m49-w9-*.md) made it demand a language row for a file, while R1 already filtered to directories - the two gates disagreed about what a language is. Fixed in 54f8fbe5: languages are directories (board check unchanged, so coverage is not weakened), documents get their own correctly-scoped presence check, and two negatives make the classification non-vacuous and the document rule able to fail (proven end-to-end: a synthetic unboarded document fails G1; removing it restores 100/0/10)."
+        }
+      ],
+      "evidence": "reviews/m49-w9-fixture-coverage-adjudication.md, reviews/onboarding.md, src/ast/real-java-analyzer.ts, src/ast/real-javascript-analyzer.ts, script/m14/verify-fixture-coverage.ts, script/m14/mutate-analyzer.ts (java/argument-count-inflation), script/m49/verify-governance.ts, validation/m14/fixtures/java/argument-count-comment-exclusion.{java,expectation.json}, validation/m14/results/M14.0.F6.json, validation/m49/evidence-producer-register.json ; reproducibility: F6 (21/21 languages PASS, 0 uncovered / 0 dead literals) and its --selftest both pass in a clean `git worktree` of 54dc2daa with node_modules symlinked, the artifact regenerated there is byte-identical to the committed one once lineage fields are stripped, the mutation battery on that clean tree reports all 429 mutants caught with java/argument-count-inflation caught by exactly the two arity fixtures, and G1/G4/G6/G8 + evidence-lineage are green at the same commit"
+    },
+    {
+      "id": "M49.W20",
+      "title": "Groovy continuation shapes (#851/#852): a paren-less leading-dot continuation stops fabricating a call edge, a dotted juxt callee stops duplicating a method as two graph nodes — and the calls oracle that was blind to both is corrected",
+      "date": "2026-09-15",
+      "commit": "see git log (W20)",
+      "method": "Two findings filed while building the M59 line fixture (groovy/lines-825), each reproduced through the real analyzer at HEAD with the raw tree printed beside the emitted edges, so the emitting branch was identified rather than guessed. The discriminating fact is measured, not assumed: `leading_dot_call` carries an `arguments` field iff the continuation has an argument list (`.build(1)` yes, `.label` no), so one rule separates the call from the member read. Each shape was then pinned beside its own ONE-LINE control in one fixture, because the control is the contract — the same chain written on one line and written across a continuation must emit the same calls multiset, and a member access must stay a read. The oracle half was not optional: before this round deriveGroovyEdges had no leading_dot_call branch at all and gave the juxt call the whole dotted text, i.e. it mirrored the defect rather than the contract.",
+      "findings": [
+        {
+          "issue": 851,
+          "lang": "groovy",
+          "class": "continuation-read-as-call",
+          "severity": "medium-high",
+          "ledgerId": "W20",
+          "note": "A newline-continued property access (`this` / `        .label`) is an extremely common Groovy layout, and the pinned grammar shapes it as its own `leading_dot_call` statement node with NO argument list. The branch emitted `calls -> label` for every continuation regardless, so the property read became a CALL and the read itself vanished (the same access on one line emits `uses A -> label`). Fixed by the argument-list discriminator: with `arguments` a genuine call (`.build(1)`, unchanged), without it a member READ in the exact shape collectFieldAccessUses uses, attributed to the enclosing METHOD because the continuation node does not carry its receiver (the GAD1 convention for an unresolvable receiver — hence `uses A -> label` at line 5 and `uses continuedRead -> label` at line 11 deliberately name different owners for the same member). Measured on the pinned 400-file grails-core sample: 57 paren-less continuations in 22 files (5.5%), i.e. 57 fabricated calls and 57 lost reads, against 217 paren-ful continuations that were already correct. Pinned by fixture groovy/continuation-shapes-851; mutant groovy/parenless-continuation-call is CAUGHT (0 -> 5 failures).",
+          "severityDetail": "A false CALL edge to a property name creates a dependency that does not exist and loses the read that does — wrong in both directions at once."
+        },
+        {
+          "issue": 852,
+          "lang": "groovy",
+          "class": "juxt-dotted-target-and-callee-read-leak",
+          "severity": "medium",
+          "ledgerId": "W20",
+          "note": "A continued dotted call folds into `juxt_function_call name: (field_access ...)`, which produced three defects from one shape: (1) the call TARGET was the whole dotted text, so `helper.build` and `build` became two graph nodes for one method (the family contract, and this analyzer's own method_invocation branch, is the BARE callee leaf); (2) a field_access in callee position leaked a `uses -> build` READ, contradicting the family rule that a callee is not a read (java/kotlin/scala all suppress it, and so does this shape written on one line). Measured: 60 dotted juxt callees in 38 of 400 files (9.5%), against 228 plain ones already correct. Fixed by taking the leaf (`nameNode.field` when the name is a field_access) with the leaf's own line (#825), and by suppressing the callee-position field_access. The edge now also carries `groovyCallExpression` — the callee as written — mirroring the sibling method_invocation branch, so the dotted form stays recoverable downstream even though the target names the leaf. Pinned by fixture groovy/continuation-shapes-851; mutants groovy/juxt-target-dotted and groovy/juxt-callee-read are both CAUGHT, and each is caught by THAT FIXTURE ALONE - the measurement that nothing in the suite could see this class before the round.",
+          "severityDetail": "One method silently became two graph nodes and the callee appeared as a member read, so both navigation and read-accounting were wrong on the same statement."
+        }
+      ],
+      "evidence": "src/ast/real-groovy-analyzer.ts, script/m14/differential.ts (deriveGroovyEdges), script/m14/mutate-analyzer.ts (groovy/parenless-continuation-call, groovy/juxt-target-dotted, groovy/juxt-callee-read), validation/m14/fixtures/groovy/continuation-shapes-851.{groovy,expectation.json}, validation/m14/fixtures/groovy/lines-825.expectation.json (rationale updated: the shape it deliberately did not pin now has its own fixture), script/m59/measure-groovy-continuation-shapes.ts, script/m59/probe-groovy-continuation-shapes.ts, script/m59/probe-groovy-continuation-oracle.ts, reviews/m49-w20-groovy-continuation-shapes.md ; gates at HEAD: audit:fixtures all 22 lanes pass (groovy 51/51) with no regressions, audit:fixture-coverage 21/21 PASS (0 uncovered, 0 dead literals), groovy differential 100% covered / MISSING=0 / unexplained=0, audit:mutations no survivors, tsc clean ; oracle before/after on the identical grails-core groovy lane: tree-truth 476 -> 865 (+389 calls edges, +82% of the surface measured) with unexplained 0 in BOTH runs — the lane was green while blind to more than half of groovy's call surface, which is how both defects shipped ; NOT covered, deliberately: groovy has no read oracle, so the restored member read rides the fixture and its mutant but no corpus lane (a full groovy read oracle is the cpp deriveCppBareUses-sized job, and one stray uses truth entry would make the lane look worse, not better)"
+    },
+    {
+      "id": "M49.W21",
+      "title": "M59.A7 web family: typescript · javascript · vue · svelte go from 0 lines on 5,293 relationships to 5,292 with 0 INCONSISTENT — including the SFC seam, and the oracle's own sample is pinned before any of it is claimed",
+      "date": "2026-09-16",
+      "commit": "see git log (M49.W21)",
+      "method": "The baseline was measured FIRST, at HEAD, in a worktree, with the identical instrument and the identical sample pins, because an unpinned sample makes a before/after a lie: measured while building this round, the committed canonical artifact's typescript sample and a re-run at the same 40-file shape shared ZERO files. That defect (#859) was fixed before any line number was claimed — walkFiles sorts, the artifact carries a per-language content-pinned sampleHash plus the full samplePins, and a run that would replace a differently-pinned artifact prints SAMPLE DRIFT and says no delta may be read across the two. Every fix is verified against source by the oracle (Tier A: the claimed line must contain the name the edge is about) on that pinned sample, and every claim below is the oracle's output rather than the analyzer's opinion. Fixture expectations for the SFC languages were authored from the fixtures' own text and then checked against live emission; their `forbid` values are MEASURED (the same fixture run through the HEAD worktree), not reconstructed.",
+      "evidence": {
+        "oracle": "validation/m59/results/oracle-callsite.json",
+        "oracleShape": "22 languages x 40 files, sample pins recorded per language; total 92,519 relationships, 15,506 carrying a line, 0 INCONSISTENT",
+        "webBefore": {
+          "sample": "typescript 36bd4f36c4ee / javascript 8fb9615ccfea / vue e2727e5b75dd / svelte 293890b3240b (identical in both runs — that is what makes the delta a delta)",
+          "typescript": {
+            "rels": 2074,
+            "withLine": 0
+          },
+          "javascript": {
+            "rels": 2057,
+            "withLine": 0
+          },
+          "vue": {
+            "rels": 1051,
+            "withLine": 0
+          },
+          "svelte": {
+            "rels": 111,
+            "withLine": 0
+          }
+        },
+        "webAfter": {
+          "typescript": {
+            "rels": 2074,
+            "withLine": 2074,
+            "consistent": 2064,
+            "inconsistent": 0,
+            "notCheckable": 10
+          },
+          "javascript": {
+            "rels": 2057,
+            "withLine": 2057,
+            "consistent": 2049,
+            "inconsistent": 0,
+            "notCheckable": 8
+          },
+          "vue": {
+            "rels": 1051,
+            "withLine": 1051,
+            "consistent": 1018,
+            "inconsistent": 0,
+            "notCheckable": 33
+          },
+          "svelte": {
+            "rels": 111,
+            "withLine": 110,
+            "consistent": 108,
+            "inconsistent": 0,
+            "notCheckable": 2,
+            "noLine": 1
+          }
+        },
+        "fixtures": "440/440 across 22 languages, 0 failures; four new lanes (typescript/callsite-lines-825, javascript/callsite-lines-825, vue/template-lines-825, svelte/template-lines-825)",
+        "mutants": "591/591 caught, 0 survivors; 8 new (typescript/line-zero-based, typescript/lines-dropped, javascript/lines-dropped, vue/lines-dropped, svelte/lines-dropped, vue/delegated-line-not-shifted, svelte/delegated-line-not-shifted, vue/prop-line-from-props-pair)"
+      },
+      "findings": [
+        {
+          "issue": 858,
+          "lang": "typescript",
+          "class": "relationship-loss + fabrication (grammar)",
+          "severity": "medium",
+          "ledgerId": "W21",
+          "note": "A `new` whose constructor is written on the NEXT line is not parsed as a new_expression by the pinned grammar: the tree is `identifier(\"new\")` followed by a SEPARATE call_expression, so the analyzer emits `calls -> Ctor` and a `references` edge and NO `instantiates` — the instantiation goes silent and a method call appears in its place. Found while authoring typescript/callsite-lines-825 and deliberately NOT pinned by it (pinning a wrong answer is worse than a documented gap). Grammar-level, upstream-facing."
+        },
+        {
+          "issue": 859,
+          "lang": "instrument",
+          "class": "unpinned sample / order-dependent measurement",
+          "severity": "high",
+          "ledgerId": "W21",
+          "note": "The M59 oracle sampled with an unsorted stack-based DFS and recorded NO identity for what it measured: the committed canonical artifact's typescript sample (element-plus/*) and a re-run at the same 40-file shape (vue-core/*) shared zero files, so a before/after across two runs would have been read as a delta of the ANALYZER while being a delta of the FILE SET. Fixed in this round (sorted walk, per-language content pin, SAMPLE DRIFT reporting) before any line number was claimed."
+        },
+        {
+          "issue": 825,
+          "lang": "web (typescript, javascript, vue, svelte)",
+          "class": "line-attribution",
+          "severity": "high",
+          "ledgerId": "W21",
+          "note": "0 of 5,293 relationships carried a line. Beyond the silence: (a) the SFC SEAM — vue/svelte pushed the delegate's script-relative lines unshifted, which measured as 562/585 vue and 19/58 svelte INCONSISTENT the moment the delegate began emitting lines; the merge now shifts AND records the offset (sfcDelegated/sfcLineOffset). (b) vue's Options-API props were all stamped with the `props: { … }` pair's range — a payload defect independent of lines. (c) The name-vs-construct rule across all four lanes: chain callee leaf, import specifier, base class name, `new` class name, template tag, template-expression fragment."
+        },
+        {
+          "issue": 825,
+          "lang": "web (vue, svelte, typescript, javascript)",
+          "class": "oracle precision",
+          "severity": "medium",
+          "ledgerId": "W21",
+          "note": "Two instrument defects surfaced by the new lines: the callee token for a TS/JS import target was the whole `module:item` (`vitest:vi`), a string written on no source line, which produced 22 of the first 24 typescript INCONSISTENT verdicts — every one on a CORRECT line; narrowed to `imports` only with a token self-test asserting both directions (php `A::m`, ruby `A::B`, cpp `ns::n`, xml `ns:attr` legitimately keep their separators). And `default` (the anonymous-default-export sentinel) was being checked as a written name; the one javascript INCONSISTENT (plopfile.js:5) was hand-adjudicated as a correct line the check is structurally unable to verify and is now in the oracle's `notCheckable` state."
+        }
+      ],
+      "adjudications": [
+        "vue 3 INCONSISTENT `contains` edges (Account.vue:17, UserCard.vue:60, TabPane.vue:70) were props claiming the `props: {` pair line — the analyzer was wrong and the prop range now comes from the key node.",
+        "javascript 1 INCONSISTENT (vue-element-admin/plopfile.js:5) is a CORRECT line for the `default` sentinel export; reclassified as structurally uncheckable, hand-adjudicated in the issue text.",
+        "svelte 1 relationship carries no line — unknown-and-absent by design (the contract: no name-bearing node means no field, never `0`).",
+        "53 edges are `notCheckable` (synthesised names, unresolved targets) — the oracle's third state, never counted as a pass."
+      ],
+      "selfCaught": [
+        "The first `collectShadowNames` kept the names out of the shadow set (the pre-#825 call sites registered them by passing the shadow set as the collector's `out`, which a Map no longer does), so `{#each}`/`{#await}` bindings came back as template READS. Two pre-existing fixtures caught it (svelte/each-shadow-collision, svelte/await-inline-shadow).",
+        "The first vue/svelte seam mutant SURVIVED (it keyed on the delegate's metadata.line, which the js analyzer only sets in places), which is what forced the seam to become observable — the wrapper now records the offset it applied, and the regression is catchable."
+      ]
     }
-,
-{
-    "id": "M49.W9",
-    "title": "F6 dead-literal adjudication closed: all 24 resolved on grammar evidence, the java arity defect repaired and pinned, F6 wired; the zig parameter-binding defect registered, not landed",
-    "date": "2026-09-12",
-    "commit": "54dc2daa (+ 69984c68 evidence regenerated from HEAD, 54f8fbe5 G1 language/document classification)",
-    "method": "W8 had wired F6 for the first time and it promptly failed on 24 analyzer literals across java/javascript/cpp/go/zig that are neither node types in the pinned grammar nor spec-classified - F6 calls that dead code, the class 'the branch can never fire'. Each literal was adjudicated from the grammars themselves, not from reading the analyzer: (1) is it in the grammar's raw symbol enumeration including the underscore-prefixed hidden rules; (2) does it occur anywhere in the language's fixture corpus (all children, anonymous included); (3) can a targeted source that exercises the construct produce it. A separate risk was settled first because it would have invalidated every verdict: WHICH grammar does the analyzer load - the M14 harness and the production path (bbWasmCandidates -> <repo>/wasm/...) both resolve to the vendored wasm/ dir, so the probe grammar is production's grammar. Verdict: all 24 grammar-dead. The deciding question was then whether each dead branch carried weight, and exactly one did: java's argument-count guard skipped a node type named 'comment' that tree-sitter-java does not define (comments are line_comment/block_comment), so the skip never fired and `g(1 /* c */, 2)` reported argumentCount 3 - a live defect in the payload a consumer uses to tell overloads apart. The java annotation-name fallback and the js property_signature disjunct were redundant dead names (removed, doc corrected); the cpp/go/zig removals and re-pointings are provably behaviour-preserving (a name that matches no node type cannot change a branch) and that is measured, not argued: the zig edge set over all 90 .zig files of the zls corpus is byte-identical before and after. One dead literal was a whole no-op function (zig hasZigQualifiedAncestor, whose only true return referenced a type that cannot exist). The zig literal list also exposed a REAL defect - the scope model binds every identifier under a parameter node, so names that appear only in a parameter's TYPE become bindings and suppress genuine reads (probe-verified: zero uses edges where one is required, e.g. a struct type field named FLAG shadowing a file-level const FLAG) - whose fix was written, measured, and HELD: it removes the accidental shadowing and thereby exposes a second pre-existing gap (signature-region names surfacing as bare value reads), and the in-flight oracle DERIVES those reads, so landing the analyzer half alone would leave the two contradicting. The analyzer's behaviour is verified exactly unchanged and the defect is registered. Closing this also exposed a gate bug in F6 itself: it read analyzer source as raw text, so an audit note quoting a removed literal counted as a live one - the gate would keep a removed literal dead forever precisely because it was documented. F6 now scans comment-masked source with a --selftest that proves (positionally, per gated language) that every removed occurrence is inside a comment, that masking never invents a literal, and that the gate can still fail. F6's findings are resolved, so its G8 register row is removed and the producer is wired.",
-    "findings": [
-      {
-        "issue": null,
-        "lang": "java",
-        "class": "payload-drift-argumentCount",
-        "severity": "high",
-        "ledgerId": "W9",
-        "note": "argumentCount skipped a node type the pinned grammar does not define, so a comment inside an argument list counted as an argument: g(1, 2) -> 2 (correct) but g(1 /* inline */, 2) -> 3 and g(/* nothing */) -> 1. Inline comments in argument lists are ordinary formatted Java. Fixed by skipping line_comment/block_comment; pinned by fixture java/argument-count-comment-exclusion (each call its own target so no clean sibling can satisfy the pin) and mutant java/argument-count-inflation, which is CAUGHT by exactly that fixture plus the pre-existing java/overload-arity-varargs-multicatch. Non-vacuity proven by restoring the pre-fix guard in place and re-running the fixture (FAIL on the exact arity assertions)."
-      },
-      {
-        "issue": null,
-        "lang": "zig",
-        "class": "param-type-binding-shadows-real-reads",
-        "severity": "high",
-        "ledgerId": "W9",
-        "note": "bindIdentifiersUnder binds every identifier under a parameter node, so names appearing only in a parameter's TYPE become bindings and suppress genuine reads - probe-verified zero uses edges for a file-level const FLAG shadowed by a struct type field of the same name, and the same class covers `w: io.Writer` binding io. The stop-list meant to bound the damage named composite_literal/func_literal, which cannot occur in tree-sitter-zig, so it bounded nothing. REGISTERED, NOT LANDED: the fix (bind declared NAMES, not subtrees) removes the accidental shadowing correctly and thereby exposes a second pre-existing gap - identifiers in type position were only ever silenced as a side-effect of being wrongly bound - and the in-flight oracle in differential.ts derives those signature-region reads, so landing one half would contradict the other. Measured: the analyzer's edge set over the 90-file zls corpus is byte-identical before and after (218 identifier_usage reads, zero diff). The fix and its full evidence, including the tree-sitter-zig trap that `!` in `if (!enable)` parses as an error_union_type (the same node a real Error!T return type uses, so a node-type-keyed guard silently deletes a genuine body read), are recorded in the review file so the systems-family wave lands analyzer and oracle together."
-      },
-      {
-        "issue": null,
-        "lang": "java,typescript,javascript,cpp,go,zig",
-        "class": "dead-node-type-fallbacks",
-        "severity": "medium",
-        "ledgerId": "W9",
-        "note": "23 further literals across five languages are grammar-dead and not spec-classified: java _reserved_identifier (a hidden rule, so .type can never equal it) in the annotation-name fallback; js property_signature (TypeScript-only, the analyzer loads the JS grammar); cpp template_type_parameter/template_value_parameter/compound_assignment_expression (live siblings exist) and typename_specifier (re-pointed to the real node dependent_type); go field_expression/compound_assignment_statement (go spells these selector_expression/assignment_statement); zig struct_item/enum_item/union_item/type_item/mod_item/package_clause/type_identifier/field_identifier/label_name/continue_label (rust/go names) and a whole no-op function hasZigQualifiedAncestor. W8 registered this as adjudication owed; W9 adjudicated it, resolved it, and measured the removals as behaviour-preserving rather than asserting it."
-      },
-      {
-        "issue": null,
-        "lang": "process",
-        "class": "gate-blind-to-its-own-documentation",
-        "severity": "medium",
-        "ledgerId": "W9",
-        "note": "F6 scanned analyzer source as raw text, so an audit note QUOTING a removed literal counted as a live comparison - the gate would have kept a removed literal dead forever because it was documented, and would have punished the documentation that justified the removal. F6 now scans comment-masked source, with --selftest proving (positionally, per gated language) that every masked occurrence was inside a comment, that masking never invents a literal, and that a synthetic dead literal in CODE still fails while the identical text in a // or /* */ comment does not."
-      },
-      {
-        "issue": null,
-        "lang": "process",
-        "class": "wired-gate-bakes-working-tree-data",
-        "severity": "medium",
-        "ledgerId": "W9",
-        "note": "The F6 artifact first committed with W9 had been produced in the shared tree, so its per-language fixture-type totals baked another wave's uncommitted fixtures (cpp 150 vs 147, rust 162 vs 161, go 116 vs 105) - the exact W7 defect class, evidence derived from the working tree rather than HEAD. Detected by regenerating the gate in a clean worktree of the commit and byte-comparing, not by inspection. 69984c68 replaces the artifact with the HEAD-faithful one."
-      },
-      {
-        "issue": null,
-        "lang": "process",
-        "class": "gate-language-document-misclassification",
-        "severity": "low",
-        "ledgerId": "W9",
-        "note": "M49.G1 classified every entry in reviews/ as a language, so landing a top-level review document (reviews/m49-w9-*.md) made it demand a language row for a file, while R1 already filtered to directories - the two gates disagreed about what a language is. Fixed in 54f8fbe5: languages are directories (board check unchanged, so coverage is not weakened), documents get their own correctly-scoped presence check, and two negatives make the classification non-vacuous and the document rule able to fail (proven end-to-end: a synthetic unboarded document fails G1; removing it restores 100/0/10)."
-      }
-    ],
-    "evidence": "reviews/m49-w9-fixture-coverage-adjudication.md, reviews/onboarding.md, src/ast/real-java-analyzer.ts, src/ast/real-javascript-analyzer.ts, script/m14/verify-fixture-coverage.ts, script/m14/mutate-analyzer.ts (java/argument-count-inflation), script/m49/verify-governance.ts, validation/m14/fixtures/java/argument-count-comment-exclusion.{java,expectation.json}, validation/m14/results/M14.0.F6.json, validation/m49/evidence-producer-register.json ; reproducibility: F6 (21/21 languages PASS, 0 uncovered / 0 dead literals) and its --selftest both pass in a clean `git worktree` of 54dc2daa with node_modules symlinked, the artifact regenerated there is byte-identical to the committed one once lineage fields are stripped, the mutation battery on that clean tree reports all 429 mutants caught with java/argument-count-inflation caught by exactly the two arity fixtures, and G1/G4/G6/G8 + evidence-lineage are green at the same commit"
-  },
-  {
-    "id": "M49.W20",
-    "title": "Groovy continuation shapes (#851/#852): a paren-less leading-dot continuation stops fabricating a call edge, a dotted juxt callee stops duplicating a method as two graph nodes — and the calls oracle that was blind to both is corrected",
-    "date": "2026-09-15",
-    "commit": "see git log (W20)",
-    "method": "Two findings filed while building the M59 line fixture (groovy/lines-825), each reproduced through the real analyzer at HEAD with the raw tree printed beside the emitted edges, so the emitting branch was identified rather than guessed. The discriminating fact is measured, not assumed: `leading_dot_call` carries an `arguments` field iff the continuation has an argument list (`.build(1)` yes, `.label` no), so one rule separates the call from the member read. Each shape was then pinned beside its own ONE-LINE control in one fixture, because the control is the contract — the same chain written on one line and written across a continuation must emit the same calls multiset, and a member access must stay a read. The oracle half was not optional: before this round deriveGroovyEdges had no leading_dot_call branch at all and gave the juxt call the whole dotted text, i.e. it mirrored the defect rather than the contract.",
-    "findings": [
-      {
-        "issue": 851,
-        "lang": "groovy",
-        "class": "continuation-read-as-call",
-        "severity": "medium-high",
-        "ledgerId": "W20",
-        "note": "A newline-continued property access (`this` / `        .label`) is an extremely common Groovy layout, and the pinned grammar shapes it as its own `leading_dot_call` statement node with NO argument list. The branch emitted `calls -> label` for every continuation regardless, so the property read became a CALL and the read itself vanished (the same access on one line emits `uses A -> label`). Fixed by the argument-list discriminator: with `arguments` a genuine call (`.build(1)`, unchanged), without it a member READ in the exact shape collectFieldAccessUses uses, attributed to the enclosing METHOD because the continuation node does not carry its receiver (the GAD1 convention for an unresolvable receiver — hence `uses A -> label` at line 5 and `uses continuedRead -> label` at line 11 deliberately name different owners for the same member). Measured on the pinned 400-file grails-core sample: 57 paren-less continuations in 22 files (5.5%), i.e. 57 fabricated calls and 57 lost reads, against 217 paren-ful continuations that were already correct. Pinned by fixture groovy/continuation-shapes-851; mutant groovy/parenless-continuation-call is CAUGHT (0 -> 5 failures).",
-        "severityDetail": "A false CALL edge to a property name creates a dependency that does not exist and loses the read that does — wrong in both directions at once."
-      },
-      {
-        "issue": 852,
-        "lang": "groovy",
-        "class": "juxt-dotted-target-and-callee-read-leak",
-        "severity": "medium",
-        "ledgerId": "W20",
-        "note": "A continued dotted call folds into `juxt_function_call name: (field_access ...)`, which produced three defects from one shape: (1) the call TARGET was the whole dotted text, so `helper.build` and `build` became two graph nodes for one method (the family contract, and this analyzer's own method_invocation branch, is the BARE callee leaf); (2) a field_access in callee position leaked a `uses -> build` READ, contradicting the family rule that a callee is not a read (java/kotlin/scala all suppress it, and so does this shape written on one line). Measured: 60 dotted juxt callees in 38 of 400 files (9.5%), against 228 plain ones already correct. Fixed by taking the leaf (`nameNode.field` when the name is a field_access) with the leaf's own line (#825), and by suppressing the callee-position field_access. The edge now also carries `groovyCallExpression` — the callee as written — mirroring the sibling method_invocation branch, so the dotted form stays recoverable downstream even though the target names the leaf. Pinned by fixture groovy/continuation-shapes-851; mutants groovy/juxt-target-dotted and groovy/juxt-callee-read are both CAUGHT, and each is caught by THAT FIXTURE ALONE - the measurement that nothing in the suite could see this class before the round.",
-        "severityDetail": "One method silently became two graph nodes and the callee appeared as a member read, so both navigation and read-accounting were wrong on the same statement."
-      }
-    ],        "evidence": "src/ast/real-groovy-analyzer.ts, script/m14/differential.ts (deriveGroovyEdges), script/m14/mutate-analyzer.ts (groovy/parenless-continuation-call, groovy/juxt-target-dotted, groovy/juxt-callee-read), validation/m14/fixtures/groovy/continuation-shapes-851.{groovy,expectation.json}, validation/m14/fixtures/groovy/lines-825.expectation.json (rationale updated: the shape it deliberately did not pin now has its own fixture), script/m59/measure-groovy-continuation-shapes.ts, script/m59/probe-groovy-continuation-shapes.ts, script/m59/probe-groovy-continuation-oracle.ts, reviews/m49-w20-groovy-continuation-shapes.md ; gates at HEAD: audit:fixtures all 22 lanes pass (groovy 51/51) with no regressions, audit:fixture-coverage 21/21 PASS (0 uncovered, 0 dead literals), groovy differential 100% covered / MISSING=0 / unexplained=0, audit:mutations no survivors, tsc clean ; oracle before/after on the identical grails-core groovy lane: tree-truth 476 -> 865 (+389 calls edges, +82% of the surface measured) with unexplained 0 in BOTH runs — the lane was green while blind to more than half of groovy's call surface, which is how both defects shipped ; NOT covered, deliberately: groovy has no read oracle, so the restored member read rides the fixture and its mutant but no corpus lane (a full groovy read oracle is the cpp deriveCppBareUses-sized job, and one stray uses truth entry would make the lane look worse, not better)"
-  }
   ],
   "foldRecords": {
     "contract": "R4: at close, M60's family results are recorded into M49 as the evidence its jvm/web closure claims are true. One row per family, read STRUCTURALLY by script/m60/verify-family-closure-truth.ts (a family with no row has not folded; prose does not count). A row records the family RESULT — what was fixed, pinned and measured, and by which evidence file — and names what was still open when it was recorded, so it can never be read as a closure claim the gate did not make.",
     "jvm": {
       "family": "jvm",
-      "languages": ["java", "kotlin", "scala", "groovy"],
+      "languages": [
+        "java",
+        "kotlin",
+        "scala",
+        "groovy"
+      ],
       "milestone": "M60",
       "gate": "M60.J1",
       "evidence": "validation/m60/results/J1.json",
@@ -695,7 +797,9 @@
       "recordedAt": "2026-09-16",
       "recordedAtCommit": "181c869e",
       "summary": "M60.J1's four JVM remainders are fixed, pinned and closed with per-issue evidence in J1.json: #739 java bare member reads (3256a83e, fixture + 2 mutants), #740 kotlin member reads (29f0c1e5, fixture + 3 mutants), #741 scala framework detection (c6df719b, fixture + 2 mutants incl. the forbid-direction), #742 groovy grammar coverage (M49 W18 rebuild). Re-verified live on 2026-09-16 rather than trusted from that record: the G7 groovy read round landed (37cd5215, 36f64a38, 135eca91), F1-F9 were regenerated at 135eca91 with the M14 honesty gate green, and the F5 canonical differential claimed from a clean tree measures java 0 missing / 0 unexplained, kotlin 0/0, scala 0/0, groovy 0 missing / 1 unexplained — that single edge being the ruled SCALA-D1 external-qualified-base @Override, not a defect — with both JVM second-corpus lanes (clojure:java, cats-effect:scala, kotlinx-coroutines:kotlin, geb:groovy) at 0/0. Family conditions at recording: review folders closed for all four languages, their analyzers committed, every payload cell alive, no blocked cell.",
-      "openAtRecording": ["#830 (the M60.J1 umbrella itself — its four children are closed; the tracker close is the owner's)"]
+      "openAtRecording": [
+        "#830 (the M60.J1 umbrella itself — its four children are closed; the tracker close is the owner's)"
+      ]
     }
   }
 }

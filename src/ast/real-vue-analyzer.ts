@@ -135,7 +135,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // loop variables (v-for="item in items" binds item) and slot props
     // (#default="{ row }" binds row). A shadowed name must NOT emit a use
     // to the same-named member; that is the TS T6 scope-blind bug class.
-    const templateExprNames = new Set<string>()
+    const templateExprNames = new Map<string, number>()
     const shadowStack: Array<{ node: Node; shadowed: Set<string> }> = [{ node: rootNode, shadowed: new Set() }]
     while (shadowStack.length > 0) {
       const { node: n, shadowed } = shadowStack.pop()!
@@ -153,11 +153,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         const tag = this.elementTagName(n)
         if (tag && !HTML_BUILTIN_TAGS.has(tag) && !VUE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
           seenUsages.add(tag)
+          const tagNode = this.elementTagNameNode(n)
           relationships.push({
             source: moduleName,
             target: tag,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            // M59 (#825): the `<Child/>` tag as written in the template.
+            ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
             metadata: { isComponentUsage: true },
           })
         }
@@ -175,13 +178,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           // locally and shadows any same-named member; only the collection
           // (items) is a real member use.
           if (dname === "v-for") {
-            this.collectVForUsage(attrVal.text, templateExprNames, childShadowed)
+            this.collectVForUsage(attrVal.text, templateExprNames, childShadowed, attrVal.startPosition.row + 1)
           } else if (dname === "#" || dname === "v-slot") {
             // Slot-prop destructuring ({ row }) declares LOCAL bindings; the
             // element-level shadow pass already registered them, and the
             // destructure itself is not a member use — skip.
           } else {
-            this.collectIdentifiers(attrVal.text, templateExprNames, childShadowed)
+            this.collectIdentifiers(attrVal.text, templateExprNames, childShadowed, attrVal.startPosition.row + 1)
           }
         }
       }
@@ -190,7 +193,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (raw) {
           // {{ item }} under v-for="item in items" reads the LOCAL item;
           // skip identifiers bound in this scope.
-          this.collectIdentifiers(raw.text, templateExprNames, childShadowed)
+          this.collectIdentifiers(raw.text, templateExprNames, childShadowed, raw.startPosition.row + 1)
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -314,6 +317,23 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const r of sub.relationships ?? []) {
         const tgt = (r.target ?? "") as string
         if (VUE_COMPILER_MACROS.has(tgt)) continue
+        // M59 (#825): the delegate's lines are SCRIPT-RELATIVE, and this loop is
+        // the seam where they become FILE lines — every other script artifact
+        // (symbols, imports, exports, errors) is shifted right below/above, and
+        // the relationships were pushed raw. Harmless only while the delegate
+        // emitted NO line at all (the pre-#825 state); the moment the JS/TS
+        // analyzers began emitting `line_number`, every delegated edge claimed a
+        // line above the top of the file. Measured by the M59 oracle on the same
+        // pinned 40-file sample: vue 562 of 585 line-bearing edges INCONSISTENT
+        // (svelte 19 of 58) — the near-miss look of a real defect.
+        if (typeof r.line_number === "number") r.line_number += lineOffset
+        // The seam is RECORDED on the edge, not just applied to it: which block it
+        // came from and the offset that was added. Without this the shift is only
+        // observable by re-deriving the script's position, so no fixture could
+        // catch a regression in it (the first version of the seam mutant SURVIVED
+        // for exactly that reason), and a reader of the payload could not tell a
+        // template line from a script line.
+        r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
       }
       for (const i of sub.imports ?? []) {
@@ -415,7 +435,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (templateExprNames.size > 0) {
       const memberNames = new Set(symbols.map((s) => s.name))
       const seenUses = new Set<string>()
-      for (const name of templateExprNames) {
+      for (const [name, line] of templateExprNames) {
         if (!memberNames.has(name)) continue
         const key = `${moduleName}:${name}`
         if (seenUses.has(key)) continue
@@ -425,6 +445,9 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: name,
           type: ASTEngine.RelationshipType.Uses,
           confidence: 0.95,
+          // M59 (#825): the line the identifier is WRITTEN on (the fragment's
+          // base plus its offset inside it).
+          line_number: line,
           metadata: { isTemplateExpression: true },
         })
       }
@@ -452,6 +475,9 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59 (#825): the MEMBER's declaration line (its symbol range, already
+          // shifted to SFC coordinates) — the edge names the member.
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
         })
       }
@@ -568,12 +594,13 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (key === "props") {
         // props: array of names OR object of prop declarations
-        const names = this.propNames(value ?? child)
-        for (const pn of names) {
+        for (const { name: pn, node: pnode } of this.propEntries(value ?? child)) {
           symbols.push({
             name: pn,
             kind: ASTEngine.SymbolKind.Property,
-            range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
+            // M59 (#825): the prop KEY's own node — the line and column a
+            // navigation to this prop must land on.
+            range: this.offsetRange(this.nodeToRange(pnode), lineOffset, colOffset, indexOffset),
             scope: componentName,
             ownerName: componentName,
             ownerKind: ASTEngine.SymbolKind.Class,
@@ -582,12 +609,11 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       } else if (key === "emits") {
-        const names = this.propNames(value ?? child)
-        for (const en of names) {
+        for (const { name: en, node: enode } of this.propEntries(value ?? child)) {
           symbols.push({
             name: en,
             kind: ASTEngine.SymbolKind.Event,
-            range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
+            range: this.offsetRange(this.nodeToRange(enode), lineOffset, colOffset, indexOffset),
             scope: componentName,
             ownerName: componentName,
             ownerKind: ASTEngine.SymbolKind.Class,
@@ -771,24 +797,40 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private propNames(node: Node | undefined): string[] {
+    return this.propEntries(node).map((e) => e.name)
+  }
+
+  /**
+   * The prop/emit names WITH the node that writes each one (M59 #825).
+   *
+   * The string-only walk was enough while nothing asked WHERE a prop is
+   * declared, and the caller then stamped every prop with the `props: { … }`
+   * PAIR's range — one line for all of them. The oracle made that visible the
+   * moment `contains` edges carried lines: Account.vue claimed `user` at line 17
+   * (`props: {`) while `user` is written at 18 (the same for UserCard.vue:60 and
+   * TabPane.vue:70's `type`). A prop's declaration line is the line its own key
+   * is written on, which only this walk can say.
+   */
+  private propEntries(node: Node | undefined): Array<{ name: string; node: Node }> {
     // Shallow: props: ['a', 'b'] (array of strings) OR
     // props: { a: {...}, b: {...} } (object — direct pair keys only).
     if (!node) return []
-    const out: string[] = []
+    const out: Array<{ name: string; node: Node }> = []
     if (node.type === "array") {
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (c && c.type === "string") {
           const v = unquote(c.text)
-          if (v) out.push(v)
+          if (v) out.push({ name: v, node: c })
         }
       }
     } else if (node.type === "object") {
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (c && c.type === "pair") {
-          const key = c.childForFieldName("key")?.text
-          if (key) out.push(key)
+          const keyNode = c.childForFieldName("key")
+          const key = keyNode?.text
+          if (key) out.push({ name: key, node: keyNode ?? c })
         }
       }
     }
@@ -891,7 +933,20 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * var, slot prop) in the current scope are skipped — they shadow any
    * same-named member.
    */
-  private collectIdentifiers(text: string, out: Set<string>, shadowed?: Set<string>): void {
+  /** Counts the line breaks before `end` — how many lines into the fragment a
+   *  match sits. M59 (#825): a template expression's identifier has a REAL line
+   *  (the line of the text fragment it is written in, plus its own offset within
+   *  that fragment when the fragment wraps), and the collector is the only place
+   *  that still knows it — a `Set<string>` throws that away, which is why vue's
+   *  template `uses` edges carried no line at all.
+   */
+  private static linesBefore(text: string, end: number): number {
+    let n = 0
+    for (let i = 0; i < end && i < text.length; i++) if (text[i] === "\n") n++
+    return n
+  }
+
+  private collectIdentifiers(text: string, out: Map<string, number>, shadowed: Set<string> | undefined, baseLine: number): void {
     const isIdentStart = (ch: string): boolean =>
       (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_" || ch === "$"
     const isIdentPart = (ch: string): boolean => isIdentStart(ch) || (ch >= "0" && ch <= "9")
@@ -909,7 +964,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Member access (`a.b`), optional chain (`a?.b`), private (`#x`):
       // only the root is a use.
       const chained = prev === "." || (prev2 === "?" && prev === ".") || prev === "#"
-      if (!chained && !shadowed?.has(word)) out.add(word)
+      if (!chained && !shadowed?.has(word)) out.set(word, baseLine + RealVueAnalyzer.linesBefore(text, start))
     }
     let i = 0
     while (i < text.length) {
@@ -974,10 +1029,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * V4 (#419): the loop-variable part of v-for="item in items" (before
    * in/of) is bound locally; only the collection part is a member use.
    */
-  private collectVForUsage(text: string, out: Set<string>, shadowed: Set<string>): void {
+  private collectVForUsage(text: string, out: Map<string, number>, shadowed: Set<string>, baseLine: number): void {
     const m = /^\s*\(?([^)]*?)\)?\s+(?:in|of)\s+(.+)$/.exec(text)
     const collection = m ? m[2] : text
-    this.collectIdentifiers(collection, out, shadowed)
+    // The collection is a SUBSTRING of `text`, so its line base is the fragment's
+    // base plus the breaks the earlier part of the directive value contains —
+    // `v-for="item in\n  items"` writes items on the next line.
+    const start = m ? m[0].length - m[2].length : 0
+    this.collectIdentifiers(collection, out, shadowed, baseLine + RealVueAnalyzer.linesBefore(text, start))
   }
 
   /**
@@ -1091,9 +1150,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private elementTagName(element: Node): string | undefined {
+    return this.elementTagNameNode(element)?.text
+  }
+
+  /** The `tag_name` node itself — the node that SPELLS the tag, for its line. */
+  private elementTagNameNode(element: Node): Node | null {
     const tagNode = this.findChildByType(element, "start_tag") || this.findChildByType(element, "self_closing_tag")
-    if (!tagNode) return undefined
-    return this.findChildByType(tagNode, "tag_name")?.text
+    if (!tagNode) return null
+    return this.findChildByType(tagNode, "tag_name")
   }
 
   private offsetRange(

@@ -170,11 +170,11 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // members — {#each items as item, i} binds item+i; {#await promise then
     // value} binds value; {:catch err} binds err; {#snippet row(label)}
     // binds label+count. A shadowed name must NOT emit a use.
-    const templateExprNames = new Set<string>()
+    const templateExprNames = new Map<string, number>()
     // H2 (review wave): `this=` targets on svelte:component/svelte:element
     // with a bare-identifier value are DYNAMIC component references,
     // resolved post-merge (imports are unknown until the script pass).
-    const thisTargets = new Set<string>()
+    const thisTargets = new Map<string, number>()
     const templateStack: Array<{ node: Node; scope: { shadowed: Set<string> } }> = [
       { node: rootNode, scope: { shadowed: new Set() } },
     ]
@@ -237,6 +237,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: target.text,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
+            // M59 (#825): the `{@render ...}` tag the name is written in.
+            line_number: n.startPosition.row + 1,
             metadata: { context: "Svelte {@render} tag" },
           })
         }
@@ -283,18 +285,21 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (t === "const_tag") {
           const body = this.expressionText(n)
           const eq = this.topLevelEq(body)
-          if (eq >= 0) this.collectIdentifiersFromText(body.slice(0, eq), childShadowed, new Set())
+          if (eq >= 0) this.collectShadowNames(body.slice(0, eq), childShadowed)
         }
       }
       if (t === "element" || t === "self_closing_tag") {
         const tag = this.elementTagName(n)
         if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
           seenUsages.add(tag)
+          const tagNode = this.elementTagNameNode(n)
           relationships.push({
             source: moduleName,
             target: tag,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            // M59 (#825): the `<Child/>` tag as written.
+            ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
             metadata: { isComponentUsage: true },
           })
         }
@@ -310,7 +315,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (!valueNode) continue
               let vt = valueNode.text.trim()
               if (vt.startsWith("{") && vt.endsWith("}")) vt = vt.slice(1, -1).trim()
-              if (vt && isIdentifier(vt)) thisTargets.add(vt)
+              if (vt && isIdentifier(vt)) thisTargets.set(vt, valueNode.startPosition.row + 1)
             }
           }
         }
@@ -332,7 +337,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (attrName.startsWith("{") && attrName.endsWith("}")) {
               const inner = attrName.slice(1, -1).trim()
               const expr = inner.startsWith("...") ? inner.slice(3) : inner
-              this.collectIdentifiersFromText(expr, templateExprNames, childShadowed)
+              // The shorthand lives in the attribute NAME, so the line is the
+              // attribute's (the name is written on the tag it belongs to).
+              this.collectIdentifiersFromText(expr, templateExprNames, childShadowed, attr.startPosition.row + 1)
             }
           }
         }
@@ -358,6 +365,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: handler,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.85,
+                // M59 (#825): the handler is written in the directive's
+                // expression — that node's line, falling back to the attribute.
+                ...(this.lineField(this.findChildByType(attr, "expression") ?? attr)),
                 metadata: { context: `Svelte event directive ${attrName}` },
               })
             }
@@ -480,6 +490,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         // would also swallow USER-defined $functions - silent data loss.
         const callee = (r.metadata?.calleeExpression ?? "") as string
         if (isRuneCallee(callee) || (r.source === "(script)" && SVELTE_RUNES.has(tgt))) continue
+        // M59 (#825): the delegate's lines are SCRIPT-RELATIVE — shift them to
+        // file lines here, the same rule the symbols/imports/exports merges
+        // apply. Measured before this: svelte 19 of 58 line-bearing edges
+        // INCONSISTENT (vue 562 of 585). The applied offset is recorded on the
+        // edge so the seam is auditable and testable (see the vue twin).
+        if (typeof r.line_number === "number") r.line_number += lineOffset
+        r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
       }
       for (const i of sub.imports ?? []) {
@@ -551,7 +568,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (templateExprNames.size > 0) {
       const memberNames = new Set(symbols.map((s) => s.name))
       const seenUses = new Set<string>()
-      for (const name of templateExprNames) {
+      for (const [name, line] of templateExprNames) {
         if (!memberNames.has(name)) continue
         const key = `${moduleName}:${name}`
         if (seenUses.has(key)) continue
@@ -561,6 +578,11 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: name,
           type: ASTEngine.RelationshipType.Uses,
           confidence: 0.95,
+          // M59 (#825): the line the identifier is written on, recorded where
+          // the text was scanned. `0` can only appear if a caller passed no
+          // base line for a fragment it could not locate — the oracle counts
+          // that as a wrong line rather than a silent pass.
+          ...(line > 0 ? { line_number: line } : {}),
           metadata: { isTemplateExpression: true },
         })
       }
@@ -579,13 +601,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (item && item !== "*") importBindings.add(item)
         }
       }
-      for (const name of thisTargets) {
+      for (const [name, line] of thisTargets) {
         if (memberNames.has(name) || !importBindings.has(name)) continue
         relationships.push({
           source: moduleName,
           target: name,
           type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.95,
+          // M59 (#825): the `this={X}` value's line.
+          ...(line > 0 ? { line_number: line } : {}),
           metadata: { isComponentUsage: true },
         })
       }
@@ -599,6 +623,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59 (#825): the MEMBER's declaration line (already in SFC
+          // coordinates) — the edge names the member.
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
         })
       }
@@ -850,20 +877,72 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ============================================================================
 
   /** Extract the opaque expression text from a node (svelte_raw_text child). */
-  private expressionText(node: Node): string {
+  /** The `svelte_raw_text` node the expression body lives in — the node that
+   *  gives the expression a LINE (M59 #825). `expressionText` returns only the
+   *  string, which is exactly why every template read in this analyzer claimed
+   *  no line at all. */
+  private expressionTextNode(node: Node): Node | null {
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const m = stack.pop()!
-      if (m.type === "svelte_raw_text") return m.text
+      if (m.type === "svelte_raw_text") return m
       for (let i = m.namedChildCount - 1; i >= 0; i--) {
         const c = m.namedChild(i)
         if (c) stack.push(c)
       }
     }
-    return ""
+    return null
   }
 
-  private collectIdentifiersFromText(text: string, out: Set<string>, shadowed: Set<string>): void {
+  private expressionText(node: Node): string {
+    return this.expressionTextNode(node)?.text ?? ""
+  }
+
+  /** Every `svelte_raw_text` node under `root`, in document order — text AND
+   *  position from the same node, so a fragment's line cannot drift from the
+   *  fragment the name was read out of. */
+  private rawTextNodes(root: Node): Node[] {
+    const out: Node[] = []
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const m = stack.pop()!
+      if (m.type === "svelte_raw_text") out.push(m)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out.sort((a, b) => a.startIndex - b.startIndex)
+  }
+
+  /** Line breaks before `end` — how far into a fragment a match sits. */
+  private static linesBefore(text: string, end: number): number {
+    let n = 0
+    for (let i = 0; i < end && i < text.length; i++) if (text[i] === "\n") n++
+    return n
+  }
+
+  /**
+   * Shadow-binding sites only: the names are DEFINITIONS, so no line is ever
+   * claimed for them — but they MUST land in `shadowed`.
+   *
+   * Careful: the pre-#825 call sites did this by passing the shadow set as the
+   * collector's `out` (`collectIdentifiersFromText(vars, shadowed, new Set())`),
+   * which is where the bindings were registered. Now that `out` is a Map, that
+   * shape silently registers nothing — measured: `{#each rows as row}` and
+   * `{#await p then value}` stopped shadowing, so `row`/`item`/`total`/`value`/
+   * `d` all came back as template READS (two existing fixtures caught it:
+   * svelte/each-shadow-collision and svelte/await-inline-shadow). So the names
+   * are collected into a scratch Map and then transferred, preserving the
+   * original semantics exactly.
+   */
+  private collectShadowNames(text: string, shadowed: Set<string>): void {
+    const names = new Map<string, number>()
+    this.collectIdentifiersFromText(text, names, new Set())
+    for (const n of names.keys()) shadowed.add(n)
+  }
+
+  private collectIdentifiersFromText(text: string, out: Map<string, number>, shadowed: Set<string>, baseLine = 0): void {
     // M2+M3 (review wave): the flat identifier regex read string contents
     // (`f("a=b")` -> Uses(a), Uses(b)) and chain leaves (`item.id` -> member
     // `id`) as member reads. Character walk with quote states (backslash
@@ -888,7 +967,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const prev2 = k - 1 >= 0 ? text[k - 1] : ""
       if (prev === "." || (prev2 === "?" && prev === ".") || prev === "#") return
       if (shadowed.has(word)) return
-      out.add(word)
+      out.set(word, baseLine + RealSvelteAnalyzer.linesBefore(text, start))
     }
     let i = 0
     while (i < text.length) {
@@ -935,22 +1014,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** {#each items as item, i} — collection is a use; loop vars shadow. */
-  private collectEachExpression(node: Node, out: Set<string>, shadowed: Set<string>): void {
+  private collectEachExpression(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
     const start = this.findDescendant(node, (c) => c.type === "each_start")
     if (!start) return
-    const rawTexts: string[] = []
-    const s: Node[] = [start]
-    while (s.length > 0) {
-      const m = s.pop()!
-      if (m.type === "svelte_raw_text") rawTexts.push(m.text)
-      for (let i = m.namedChildCount - 1; i >= 0; i--) {
-        const c = m.namedChild(i)
-        if (c) s.push(c)
-      }
-    }
+    const rawTexts = this.rawTextNodes(start)
     // each_start has two raw_text children: [collection, vars]
-    const collection = rawTexts[0] ?? ""
-    this.collectIdentifiersFromText(collection, out, shadowed)
+    const collection = rawTexts[0]
+    if (collection) this.collectIdentifiersFromText(collection.text, out, shadowed, collection.startPosition.row + 1)
     // S5 (#419): the loop-var list (rawTexts[1], e.g. `row, i` / `[a, b]` /
     // `{ id }`) binds template-LOCAL names that SHADOW same-named members. They
     // must be registered into `shadowed` (the set the children inherit) so a
@@ -958,40 +1028,35 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // member function `row`. Previously this was never seeded — the shadow
     // machinery was dead for `{#each}` and only "passed" fixtures where no
     // same-named member existed to collide (the vue V4 bug class).
-    const vars = rawTexts[1] ?? ""
-    this.collectIdentifiersFromText(vars, shadowed, new Set())
+    const vars = rawTexts[1]
+    this.collectShadowNames(vars?.text ?? "", shadowed)
   }
 
   /** {#await promise then value} {:catch err} — promise is a use; vars shadow. */
-  private collectAwaitExpression(node: Node, out: Set<string>, shadowed: Set<string>): void {
+  private collectAwaitExpression(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
     const start = this.findDescendant(node, (c) => c.type === "await_start")
     const thenBlk = this.findDescendant(node, (c) => c.type === "then_start")
     const catchBlk = this.findDescendant(node, (c) => c.type === "catch_start")
     if (start) {
-      const rawTexts: string[] = []
-      const s: Node[] = [start]
-      while (s.length > 0) {
-        const m = s.pop()!
-        if (m.type === "svelte_raw_text") rawTexts.push(m.text)
-        for (let i = m.namedChildCount - 1; i >= 0; i--) {
-          const c = m.namedChild(i)
-          if (c) s.push(c)
-        }
-      }
+      const rawNodes = this.rawTextNodes(start)
+      const rawTexts = rawNodes.map((r) => r.text)
       // await_start raw_text: `promise then value` / `promise as value`
       const text = rawTexts.join(" ")
+      // The promise expression (everything before `then`/`as`) is entirely
+      // inside the FIRST fragment, so that fragment's own line is its base.
+      const firstLine = rawNodes[0] ? rawNodes[0].startPosition.row + 1 : 0
       // the promise expression is everything up to then/as; then/catch vars
       // shadow. Simpler: collect all identifiers but drop the then/catch vars
       // (already added to childShadowed), and only the promise survives.
       const m = /^(.*?)\s+(?:then|as)\s+/.exec(text)
       const promiseExpr = m ? m[1] : text
-      this.collectIdentifiersFromText(promiseExpr, out, shadowed)
+      this.collectIdentifiersFromText(promiseExpr, out, shadowed, firstLine)
       // M4 (review wave): the INLINE then/as vars (`then value` with no
       // then_block node) were never registered — {value} later leaked as a
       // member use. Register the remainder as template-local bindings.
       if (m) {
         const rest = text.slice(m[0].length)
-        this.collectIdentifiersFromText(rest, shadowed, new Set())
+        this.collectShadowNames(rest, shadowed)
       }
     }
     // then/catch var names shadow members within their block.
@@ -1001,17 +1066,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // nothing on their own, which is already correct.
     for (const blk of [thenBlk, catchBlk]) {
       if (!blk) continue
-      const rawTexts: string[] = []
-      const s: Node[] = [blk]
-      while (s.length > 0) {
-        const m = s.pop()!
-        if (m.type === "svelte_raw_text") rawTexts.push(m.text)
-        for (let i = m.namedChildCount - 1; i >= 0; i--) {
-          const c = m.namedChild(i)
-          if (c) s.push(c)
-        }
-      }
-      this.collectIdentifiersFromText(rawTexts.join(" "), shadowed, new Set())
+      // Shadow bindings only — no line is needed (and none is claimed).
+      const rawTexts = this.rawTextNodes(blk).map((r) => r.text)
+      this.collectShadowNames(rawTexts.join(" "), shadowed)
     }
   }
 
@@ -1019,48 +1076,35 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
    *  svelte_raw_text child of if_start/else_if_start/key_start (no
    *  `expression` wrapper, unlike mustache bodies). Every identifier is a
    *  member read; these heads bind nothing, so no shadow registration. */
-  private collectConditionExpression(node: Node, out: Set<string>, shadowed: Set<string>): void {
+  private collectConditionExpression(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
     const start = this.findDescendant(node, (c) =>
       c.type === "if_start" || c.type === "else_if_start" || c.type === "key_start")
     if (!start) return
-    const rawTexts: string[] = []
-    const s: Node[] = [start]
-    while (s.length > 0) {
-      const m = s.pop()!
-      if (m.type === "svelte_raw_text") rawTexts.push(m.text)
-      for (let i = m.namedChildCount - 1; i >= 0; i--) {
-        const c = m.namedChild(i)
-        if (c) s.push(c)
-      }
-    }
+    const rawNodes = this.rawTextNodes(start)
     // if_start's raw_text INCLUDES the {#if marker text? No — block_start_tag
     // is a separate child holding `#if`; raw_text holds only the condition.
     // (Verified against the live grammar: if_start->[block_start_tag,
     // svelte_raw_text]; the tag child contributes no raw text.)
-    this.collectIdentifiersFromText(rawTexts.join(" "), out, shadowed)
+    // M59 (#825): the condition node's own line is the base; a multi-fragment
+    // head (`{#key a}` + separate text) then offsets from the first fragment, so
+    // the claimed line is still a line the name is written on.
+    const baseLine = rawNodes[0] ? rawNodes[0].startPosition.row + 1 : 0
+    this.collectIdentifiersFromText(rawNodes.map((r) => r.text).join(" "), out, shadowed, baseLine)
   }
 
   /** {#snippet row(label, count)} heads — params are template-local. */
   private collectSnippetParams(node: Node, shadowed: Set<string>): void {
     const start = this.findDescendant(node, (c) => c.type === "snippet_start")
     if (!start) return
-    const rawTexts: string[] = []
-    const s: Node[] = [start]
-    while (s.length > 0) {
-      const m = s.pop()!
-      if (m.type === "svelte_raw_text") rawTexts.push(m.text)
-      for (let i = m.namedChildCount - 1; i >= 0; i--) {
-        const c = m.namedChild(i)
-        if (c) s.push(c)
-      }
-    }
-    this.collectIdentifiersFromText(rawTexts.join(" "), shadowed, new Set())
+    // Shadow bindings only — no line is claimed for them.
+    const rawTexts = this.rawTextNodes(start).map((r) => r.text)
+    this.collectShadowNames(rawTexts.join(" "), shadowed)
   }
 
   /** A template expression body ({count}, label={label}, {@html raw}). */
-  private collectExpressionIdentifiers(node: Node, out: Set<string>, shadowed: Set<string>): void {
-    const text = this.expressionText(node)
-    this.collectIdentifiersFromText(text, out, shadowed)
+  private collectExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+    const textNode = this.expressionTextNode(node)
+    this.collectIdentifiersFromText(textNode?.text ?? "", out, shadowed, textNode ? textNode.startPosition.row + 1 : 0)
   }
 
   /** D4: last all-identifier segment of a dotted render target
@@ -1085,17 +1129,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** {@html raw} / {@const total = expr} / {@debug expr} — body is a direct
    *  svelte_raw_text child of the tag (no `expression` wrapper). */
-  private collectTagExpressionIdentifiers(node: Node, out: Set<string>, shadowed: Set<string>): void {
-    let text = this.expressionText(node)
+  private collectTagExpressionIdentifiers(node: Node, out: Map<string, number>, shadowed: Set<string>): void {
+    const textNode = this.expressionTextNode(node)
+    const baseLine = textNode ? textNode.startPosition.row + 1 : 0
+    let text = textNode?.text ?? ""
     // {@const total = expr} — `total` is the const's OWN template-local
     // BINDING, not a member use; only the RHS expression reads members (and
     // the RHS loop vars are already shadowed). Strip the binding LHS so the
     // declared name never leaks as a use (S5, {@const} shadow case).
+    let base = baseLine
     if (node.type === "const_tag") {
       const eq = this.topLevelEq(text)
-      if (eq >= 0) text = text.slice(eq + 1)
+      if (eq >= 0) {
+        // The RHS starts after the `=` — advance the base by the breaks the
+        // `{@const name =` prefix contains, so the line stays the expression's.
+        base = baseLine + RealSvelteAnalyzer.linesBefore(text, eq + 1)
+        text = text.slice(eq + 1)
+      }
     }
-    this.collectIdentifiersFromText(text, out, shadowed)
+    this.collectIdentifiersFromText(text, out, shadowed, base)
   }
 
   /** Index of the first top-level `=` (not inside () / [] / {}) in `text`.*/
@@ -1219,20 +1271,36 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private elementTagName(el: Node): string | undefined {
+    return this.elementTagNameNode(el)?.text
+  }
+
+  /** The `tag_name` node itself — the node that SPELLS the tag (M59 #825: the
+   *  Instantiates edge for a component usage is about that name, so its line
+   *  must come from the tag, not from the element's opening bracket). */
+  private elementTagNameNode(el: Node): Node | null {
     // element > start_tag/self_closing_tag > tag_name (for regular elements
     // the tag_name is nested inside the start_tag, not a direct child)
     const startTag = this.findChildByType(el, "start_tag") || this.findChildByType(el, "self_closing_tag")
     if (startTag) {
       const tag = this.findChildByType(startTag, "tag_name")
-      if (tag) return tag.text
+      if (tag) return tag
     }
-    const direct = this.findChildByType(el, "tag_name")
-    return direct ? direct.text : undefined
+    return this.findChildByType(el, "tag_name")
   }
 
   private attributeName(attr: Node): string {
     const name = this.findChildByType(attr, "attribute_name")
     return name ? name.text : ""
+  }
+
+  /**
+   * M59 (#825): the `line_number` for a relationship, from the node that SPELLS
+   * the name the edge is about. Same contract as the java/TS/JS analyzers: the
+   * line belongs to the name, and a construct with no name-bearing node gets
+   * NOTHING rather than `0` (unknown must be absent, never a number).
+   */
+  private lineField(nameNode: Node | null | undefined): { line_number?: number } {
+    return nameNode ? { line_number: nameNode.startPosition.row + 1 } : {}
   }
 
   private offsetRange(

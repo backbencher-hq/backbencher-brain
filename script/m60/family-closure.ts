@@ -109,14 +109,44 @@ export function computeFamilyClosure(blockedCells: string[], openFamilyIssues: s
   return "closed-computable"
 }
 
+
 /**
- * The M60 families and the languages each is accountable for. The split is the
- * invariant's unit of accounting, so it is data here rather than a literal
- * inside whichever gate happens to ask.
+ * The M60 families and the languages each is accountable for.
+ *
+ * Read from the GOVERNANCE ARTIFACT (validation/m60/ledger.json → `families`),
+ * not from a literal here. Family composition is an accounting decision, and the
+ * first version of this module hardcoded it — which was already wrong in a way
+ * nothing in the repo could have caught: M60's own plan (§2) files a **dart**
+ * F5-lane deferral (#818) in the web remainder, so 'web' as a language set and
+ * 'web' as a remainder are not the same list. A gate that answers "is this
+ * family closed" must read the composition the milestone was ordered with, and
+ * a missing composition is FATAL rather than defaulted: a silent fallback would
+ * answer a different question than the one asked.
  */
-export const FAMILY_LANGS: Record<string, string[]> = {
-  jvm: ["java", "kotlin", "scala", "groovy"],
-  web: ["typescript", "javascript", "vue", "svelte"],
+function familyLangsFromLedger(ledgerPath: string): Record<string, string[]> {
+  let ledger: any
+  try {
+    ledger = JSON.parse(readFileSync(ledgerPath, "utf8"))
+  } catch (e) {
+    throw new Error(`M60 family composition unreadable at ${ledgerPath}: ${(e as Error).message}`)
+  }
+  const families = ledger?.families
+  if (!families || typeof families !== "object" || Object.keys(families).length === 0) {
+    throw new Error(`M60 ledger at ${ledgerPath} declares no 'families' — family closure cannot be computed without the milestone's own composition`)
+  }
+  const out: Record<string, string[]> = {}
+  for (const [fam, spec] of Object.entries<any>(families)) {
+    const langs = spec?.languages
+    if (!Array.isArray(langs) || langs.length === 0 || !langs.every((l) => typeof l === "string")) {
+      throw new Error(`M60 family '${fam}' declares no language list`)
+    }
+    out[fam] = langs
+  }
+  return out
+}
+
+export function loadFamilies(root: string): Record<string, string[]> {
+  return familyLangsFromLedger(path.join(root, "validation/m60/ledger.json"))
 }
 
 /**

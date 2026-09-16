@@ -261,6 +261,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: base.text,
                   type: ASTEngine.RelationshipType.Extends,
                   confidence: 1.0,
+                  ...this.lineField(base),
                   metadata: {},
                 })
               }
@@ -684,6 +685,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: `${reqPath}:*`,
                   type: ASTEngine.RelationshipType.Imports,
                   confidence: 1.0,
+                  // The module path argument is the name this edge is about.
+                  ...this.lineField(arg),
                   metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic },
                 })
               }
@@ -696,7 +699,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           patterns["ES6 Imports"] = true
           const srcNode = node.childForFieldName("source")
           const srcPath = srcNode ? stringContent(srcNode) : ""
-          const items: string[] = []
+          // M59 (#825): each item keeps the node that SPELLS it. The edge target
+          // is `<module>:<item>`, so the line must be the item's — an
+          // `import {\n  a,\n  b,\n} from "m"` writes a and b on their own lines,
+          // and the statement's first line would be a claim about a line they are
+          // not on. A string-only list cannot say which line that is.
+          const items: Array<{ text: string; node: Node }> = []
           const clause = this.findChildByType(node, "import_clause")
           // J4 (review wave): isDefault follows the clause shape — a direct
           // identifier child IS the default import. The old items-count
@@ -707,7 +715,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               const c = clause.namedChild(i)
               if (!c) continue
               if (c.type === "identifier") {
-                items.push(c.text) // default import
+                items.push({ text: c.text, node: c }) // default import
                 hasDefaultImport = true
               } else if (c.type === "named_imports") {
                 for (let j = 0; j < c.namedChildCount; j++) {
@@ -717,18 +725,22 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     const n = this.findChildByType(spec, "identifier")
                     const alias = spec.childForFieldName("alias")
                     const item = alias ?? n
-                    if (item) items.push(item.text)
+                    if (item) items.push({ text: item.text, node: item })
                     }
                 }
               } else if (c.type === "namespace_import") {
-                items.push("*")
+                // A namespace import binds a NAME (`import * as ns`) — that name
+                // is what the caller writes, so it is the line-bearing node; a
+                // bare `import *` (side-effect-free star, no binding) has none.
+                const nsName = c.childForFieldName("name") ?? c.namedChild(0)
+                items.push({ text: "*", node: nsName ?? c })
               }
             }
           }
           if (srcPath) {
             imports.push({
               module: srcPath,
-              items,
+              items: items.map((i) => i.text),
               isDefault: hasDefaultImport,
               range: this.nodeToRange(node),
               metadata: { type: "import" },
@@ -736,9 +748,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const item of items) {
               relationships.push({
                 source: moduleName,
-                target: `${srcPath}:${item === "*" ? "*" : item.split(" as ")[0]}`,
+                target: `${srcPath}:${item.text === "*" ? "*" : item.text.split(" as ")[0]}`,
                 type: ASTEngine.RelationshipType.Imports,
                 confidence: 1.0,
+                ...this.lineField(item.node),
                 metadata: {},
               })
             }
@@ -782,6 +795,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: `${modPath}:*`,
               type: ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
+              // A re-export with no clause names the MODULE, so the written name
+              // is the module-path argument itself.
+              ...this.lineField(exportSource),
               metadata: { isReExport: true },
             })
             patterns["ES6 ReExports"] = true
@@ -1003,6 +1019,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: symbol.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // The MEMBER's declaration line — the edge names the member.
+          ...(symbol.range?.startLine ? { line_number: symbol.range.startLine } : {}),
           metadata: {},
         })
       }
@@ -1059,6 +1077,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.95,
+            // The OVERRIDING member's own line, not the class's.
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { reasonCode: "verified-in-file" },
           })
         } else if (!isCtor && !overrideCompanion?.has(base)) {
@@ -1081,6 +1101,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.5,
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { reasonCode: "first-parent-guess" },
           })
         }
@@ -1183,6 +1204,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: targetName,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
+              // The callee LEAF — for `a.b.c()` the property node, so a chain's
+              // call does not take the chain's opening line.
+              ...this.lineField(fn.type === "member_expression" ? (fn.childForFieldName("property") ?? fn) : fn),
               metadata: { calleeExpression: fullCallee },
             })
           }
@@ -1202,6 +1226,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: ctorName,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
+              // The CLASS NAME node: for `new ns.Thing()` the property leaf,
+              // since the target is the leaf (TSD3 leaf identity).
+              ...this.lineField(ctor.type === "member_expression" ? (ctor.childForFieldName("property") ?? ctor) : ctor),
               metadata: {},
             })
           }
@@ -1223,6 +1250,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: identifier.text,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
+                ...this.lineField(identifier),
                 metadata: { jsxElement: identifier.text },
               })
             }
@@ -1244,14 +1272,16 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
   ): void {
-    for (const item of exports) {
-      relationships.push({
-        source: moduleName,
-        target: item.name,
-        type: ASTEngine.RelationshipType.Exports,
-        confidence: 1.0,
-        metadata: { isDefault: item.isDefault },
-      })
+    for (const item of exports) {        relationships.push({
+          source: moduleName,
+          target: item.name,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          // The exported NAME's own line, from the export's range when the
+          // collector recorded one. Absent rather than invented when it did not.
+          ...(item.range?.startLine ? { line_number: item.range.startLine } : {}),
+          metadata: { isDefault: item.isDefault },
+        })
     }
   }
 
@@ -1656,6 +1686,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: right.text,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 0.95,
+                ...this.lineField(right),
                 metadata: { relationshipType: "instanceof_check" },
               })
             }
@@ -1753,12 +1784,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           node.parent?.type === "call_expression" &&
           node.parent.childForFieldName("function")?.id === node.id
         if (!isCallCallee) {
-          const parts: string[] = []
+          // M59 (#825): each segment keeps the node that writes it, so the
+          // segment's OWN line is available (a chain can wrap: `a\n  .b\n  .c`).
+          const parts: Array<{ seg: string; node: Node }> = []
           let cur: Node | null | undefined = node
           // flatten nested member_expression chain into segments
           while (cur && cur.type === "member_expression") {
             const prop = cur.childForFieldName("property")
-            if (prop) parts.unshift(prop.text)
+            if (prop) parts.unshift({ seg: prop.text, node: prop })
             cur = cur.childForFieldName("object")
           }
           const head = cur ? cur.text : ""
@@ -1808,11 +1841,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     target: head,
                     type: ASTEngine.RelationshipType.Uses,
                     confidence: 0.6,
+                    // The root identifier's own line (the chain may open on a
+                    // line the segments do not share).
+                    ...this.lineField(cur),
                     metadata: { isFieldAccess: true, chainRoot: true },
                   })
                 }
               }
-              for (const seg of parts) {
+              for (const { seg, node: segNode } of parts) {
                 // M49 W15 #814 (owner rule: converge on METHOD source). JSD2
                 // used to source `this.x`/`super.x` to the enclosing TYPE
                 // (citing a java/swift precedent that no longer holds — both
@@ -1843,6 +1879,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     target: seg,
                     type: ASTEngine.RelationshipType.Uses,
                     confidence: 0.6,
+                    ...this.lineField(segNode),
                     metadata: { isFieldAccess: true },
                   })
                 }
@@ -1919,6 +1956,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: txt,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.6,
+                ...this.lineField(node),
                 metadata: { isFieldAccess: true, bareRead: true },
               })
             }
@@ -1981,6 +2019,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: c.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.85,
+                  ...this.lineField(c),
                   metadata: { isTemplateInterpolation: true },
                 })
               }
@@ -2030,6 +2069,27 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+
+  /**
+   * M59 (#825): the `line_number` for a relationship, taken from the node that
+   * SPELLS the name the edge is about.
+   *
+   * javascript is the largest silent lane in the product: measured by the M59
+   * oracle before this round, **0 of 5,818 relationships on a 40-file sample
+   * carried a line** (vue 0/3,940 and svelte 0/526, both of which delegate their
+   * script block to this analyzer — so one defect blanked three lanes). The
+   * contract is inherited, not re-invented: **the line belongs to the name, never
+   * to the construct that contains it.** A `call_expression` starts at its
+   * RECEIVER (`a.b.c()` opens on `a`, not on `c`), a `new_expression` on its
+   * `new` token, an `import_statement` on `import` even when its named specifiers
+   * sit three lines below, and a class body's children open at their decorators.
+   * Callers therefore pass the NAME node and this returns nothing when there is
+   * none — never `0`, because `0` reads as "unknown" and unknown must be absent.
+   */
+  private lineField(nameNode: Node | null | undefined, fallback?: Node | null): { line_number?: number } {
+    const n = nameNode ?? fallback
+    return n ? { line_number: n.startPosition.row + 1 } : {}
+  }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {

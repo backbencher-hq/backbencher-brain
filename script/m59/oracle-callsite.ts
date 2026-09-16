@@ -28,6 +28,7 @@
 //   the run prints whether the mutation was caught, and exits non-zero if not.
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from "node:fs"
+import { createHash } from "node:crypto"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -82,6 +83,18 @@ const LANGUAGES: Array<{ lang: string; ext: string[]; unsupportedExt?: string[] 
 
 const MAX_BYTES = 400_000
 
+/** A short content digest — enough to pin WHICH bytes a claim was measured on. */
+function sha12(s: string): string {
+  return createHash("sha256").update(s).digest("hex").slice(0, 12)
+}
+
+/** The sample's identity: the file list AND the bytes of those files. Paths alone
+ *  are not a pin — a corpus repo can be re-cloned at another revision under the
+ *  same path, and then "the same 40 files" is a different measurement. */
+function sampleHashOf(pins: Array<{ file: string; contentSha: string }>): string {
+  return sha12(pins.map((p) => `${p.file}\u0000${p.contentSha}`).sort().join("\u0001"))
+}
+
 function argNum(name: string, dflt: number): number {
   const a = process.argv.find((x) => x.startsWith(`--${name}=`))
   return a ? Number(a.split("=")[1]) : dflt
@@ -102,7 +115,17 @@ function walkFiles(root: string, exts: Set<string>, cap: number): string[] {
     } catch {
       continue
     }
-    for (const e of entries) {
+    // SORTED, and the traversal is a stack — so the sample is the FIRST files in
+    // that order, not a random draw. readdirSync order is a filesystem property
+    // (creation/internal order, not lexical) and changes when a directory's
+    // contents change, so an unsorted walk makes the sample a function of the
+    // corpus's on-disk history rather than of the corpus's contents. Measured
+    // consequence (M59.O1 defect #4): the canonical artifact's typescript sample
+    // (element-plus/*) and a re-run at the same 40-file shape (vue-core/*) shared
+    // ZERO files, so a before/after comparison between them would compare
+    // disjoint file sets while looking like one measurement. Sorting removes the
+    // history dependence; the content pin below makes the sample comparable.
+    for (const e of [...entries].sort()) {
       if (found.length >= cap) break
       if (SKIP_DIRS.has(e)) continue
       const p = path.join(dir, e)
@@ -119,17 +142,34 @@ function walkFiles(root: string, exts: Set<string>, cap: number): string[] {
       }
     }
   }
-  return found
+  return found.sort()
 }
 
 /** The callee token a relationship names, normalised to its last identifier. */
-function calleeToken(rel: any): string | null {
+function calleeToken(rel: any, relType?: string): string | null {
   const raw =
     rel?.target ?? rel?.to ?? rel?.targetExternal ?? rel?.target_external ?? rel?.metadata?.calleeExpression
   if (typeof raw !== "string" || raw.trim().length === 0) return null
   let s = raw.trim()
   s = s.split("(")[0] // drop call arguments
   s = s.split("<")[0] // drop generics
+  // M59.O1 defect #3 (found 2026-09-16 by the typescript lane, the first lane to
+  // give `imports` edges a line). A TS/JS import target is `module:item`
+  // (`vitest:vi`, `@vue/shared:*`), and `:` IS in the accepted token charset
+  // (php `A::m`, ruby `A::B`, cpp `ns::n`, xml `ns:attr` all need it), so the token
+  // came back as the WHOLE `module:item` — a string written on no source line.
+  // Consequence, measured: 22 of 24 INCONSISTENT verdicts on the 40-file
+  // typescript lane were this, every one on a CORRECT line (`import { vi } from
+  // 'vitest'` at 2 was accused of not containing `vitest:vi`). The rule is narrow
+  // by relationship type — `imports` only, never a general `:` strip, because the
+  // other languages' `::`/`:` targets are exactly what the charset is for: the
+  // token is the imported NAME the source writes, and for a namespace import
+  // (`module:*`) the `*` is not a name, so the written token is the module leaf.
+  if (relType === "imports" && s.includes(":")) {
+    const segs = s.split(":")
+    const item = segs[segs.length - 1]
+    s = item && item !== "*" ? item : (segs[0].split("/").pop() ?? segs[0])
+  }
   const parts = s.split(".")
   let last = parts[parts.length - 1]
   // Escaped identifiers: scala's `` `alt` `` and sql's "name" are the SAME
@@ -202,7 +242,18 @@ function tierAConsistent(lines: string[], line: number, token: string): boolean 
 // creates real symbols for them, and they are never written in source, so a
 // source check can neither pass nor fail for them (measured: 18 kotlin claims
 // were exactly this).
-const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+)$/
+//
+// `default` is the family's anonymous-default-export SENTINEL (the js/ts
+// collectors record it when a module default-exports an unnamed value). It is a
+// reserved word, so no declaration can be named it, and the source writes
+// `module.exports = …` / `export default …` where the word `default` appears
+// only in the latter form. Measured (M59.O1, web round): the one javascript
+// INCONSISTENT on the pinned 40-file sample was
+// vue-element-admin/plopfile.js:5 — `module.exports = function(plop) {`, a
+// correct line for the edge, unverifiable by a name-token check. Adjudicated by
+// hand and then classified as what it is: structurally uncheckable, not a
+// failure on either side.
+const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+|default)$/
 const UNKNOWN_TARGETS = new Set(["?", "<unknown>", "<anonymous>", ""])
 
 function isCheckable(token: string | null, target: unknown): token is string {
@@ -235,6 +286,11 @@ const CANONICAL_FILES_PER_LANG = 40
 async function main() {
   const filesPerLang = argNum("files-per-lang", 6)
   const only = argList("only")
+  // M49 W21: a SCOPED run must never replace the canonical artifact — and the
+  // drift check below must compare against the file this run will actually
+  // write, so the target is decided here rather than at the write.
+  const scoped = only !== null || filesPerLang !== CANONICAL_FILES_PER_LANG
+  const outFile = path.join(OUT_DIR, scoped ? "oracle-callsite-scoped.json" : "oracle-callsite.json")
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
   mkdirSync(OUT_DIR, { recursive: true })
@@ -243,6 +299,16 @@ async function main() {
   const perLang: Record<string, FileResult[]> = {}
   const totals: Record<string, { files: number; rels: number; withLine: number; noLine: number; consistent: number; inconsistent: number; notCheckable: number }> = {}
   const skipped: Array<{ lang: string; reason: string }> = []
+  // ── SAMPLE PIN: what this claim was measured on ──────────────────────────
+  // Paths alone are not a pin (a repo can be re-cloned at another revision under
+  // the same path), and neither is a file count (40 of WHICH files?). The pin is
+  // the file list plus each file's own content digest, per language, so a
+  // comparison can REQUIRE that two runs measured the same bytes — and so a
+  // re-run that does not can say so instead of silently reading as a delta.
+  const sampleHash: Record<string, string> = {}
+  const samplePins: Record<string, Array<{ file: string; contentSha: string }>> = {}
+  const prevCanonical = existsSync(outFile) ? JSON.parse(readFileSync(outFile, "utf8")) : null
+  const sampleDrift: Record<string, { prev: string | null; now: string; same: boolean }> = {}
 
   for (const { lang, ext, unsupportedExt } of languages) {
     // Walk with the extra headroom the unsupported extensions would consume,
@@ -266,17 +332,37 @@ async function main() {
       skipped.push({ lang, reason: `no ${ext.join("/")} files found under ${CORPUS}` })
       continue
     }
-    const results: FileResult[] = []
+    // Read each sampled file ONCE: the same bytes feed the pin and the parse, so
+    // the pin cannot describe a different read than the measurement did.
+    const contents = new Map<string, string>()
+    const pins: Array<{ file: string; contentSha: string }> = []
     for (const f of files) {
-      let res: any
+      let text: string
       try {
-        const content = readFileSync(f, "utf8")
-        res = await ASTEngine.parseFile(f, content)
+        text = readFileSync(f, "utf8")
       } catch (e: any) {
         skipped.push({ lang, reason: `${path.basename(f)}: ${e?.message}` })
         continue
       }
-      const lines = readFileSync(f, "utf8").split("\n")
+      contents.set(f, text)
+      pins.push({ file: path.relative(CORPUS, f), contentSha: sha12(text) })
+    }
+    samplePins[lang] = pins
+    sampleHash[lang] = sampleHashOf(pins)
+    const prevHash =    prevCanonical?.sampleHash?.[lang] ?? null
+    sampleDrift[lang] = { prev: prevHash, now: sampleHash[lang], same: prevHash === null ? false : prevHash === sampleHash[lang] }
+    const results: FileResult[] = []
+    for (const f of files) {
+      const text = contents.get(f)
+      if (text === undefined) continue
+      let res: any
+      try {
+        res = await ASTEngine.parseFile(f, text)
+      } catch (e: any) {
+        skipped.push({ lang, reason: `${path.basename(f)}: ${e?.message}` })
+        continue
+      }
+      const lines = text.split("\n")
       const rels: any[] = res?.relationships ?? []
       // SYNTHESISED MEMBERS (the analyzer's own marker, never a name shape):
       // lombok/Spring-Data accessors, kotlin data-class componentN/copy/equals/
@@ -338,7 +424,7 @@ async function main() {
           }
           continue
         }
-        const token = calleeToken(rel)
+        const token = calleeToken(rel, relType)
         // An xml NAMESPACE edge names a namespace, and the DEFAULT namespace has
         // no written prefix: for `xmlns="…"` the analyzer synthesises the
         // element name `default`, which appears nowhere in the source, so the
@@ -410,6 +496,28 @@ async function main() {
   }
   const boundaryOk = Object.values(boundarySelfTest).every(Boolean)
 
+  // ── TOKEN SELF-TEST: the imports narrowing (M59.O1 defect #3).
+  //
+  // The defect was a token that no source line writes (`vitest:vi`), so it
+  // accreted false failures on CORRECT lines. The fix must fire for every shape
+  // a TS/JS import target takes, and must NOT touch any other relationship type
+  // — `:`/`::` is a legitimate separator there (php `A::m`, ruby `A::B`, cpp
+  // `ns::n`, xml `ns:attr`), and a general strip would silently shorten those
+  // tokens until they match almost any line. Both directions are asserted here
+  // so the narrowing cannot become either a blind spot or a false-failure
+  // suppressor.
+
+  const tokenSelfTest = {
+    importModuleItemUsesItem: calleeToken({ target: "vitest:vi" }, "imports") === "vi",
+    importNamespaceStarUsesModuleLeaf: calleeToken({ target: "@vue/shared:*" }, "imports") === "shared",
+    importRelativePathUsesItem: calleeToken({ target: "./a/b:name" }, "imports") === "name",
+    importBareModuleUnchanged: calleeToken({ target: "react" }, "imports") === "react",
+    // the protection that is NOT relaxed: a non-imports type keeps its separator
+    nonImportCallKeepsSeparator: calleeToken({ target: "Config::get" }, "calls") === "Config::get",
+    nonImportReferenceKeepsSeparator: calleeToken({ target: "android:name" }, "references") === "android:name",
+  }
+  const tokenOk = Object.values(tokenSelfTest).every(Boolean)
+
   // ── MUTATION SELF-TEST: prove the Tier A predicate can fail ────────────────
   //
   // The mutation must be CONSTRUCTED, not guessed: this used to take the first
@@ -433,7 +541,7 @@ async function main() {
       const rels: any[] = res?.relationships ?? []
       for (const rel of rels) {
         if (typeof rel?.line_number !== "number" || rel.line_number <= 0) continue
-        const token = calleeToken(rel)
+        const token = calleeToken(rel, String(rel?.type ?? rel?.relationshipType ?? ""))
         if (!token) continue
         const trueLine = rel.line_number
         if (trueLine > lines.length) continue
@@ -472,9 +580,18 @@ async function main() {
       tierB: "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
       notCheckable: "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
       boundarySelfTest,
+      tokenSelfTest,
     },
     mutation,
     totals,
+    // The sample this claim was measured on: file list AND bytes. Two runs may be
+    // compared only when their sampleHash matches; otherwise they are two
+    // measurements of different corpora states and no delta may be read off them.
+    sampleHash,
+    samplePins,
+    sampleDrift,
+    sampleDriftNote:
+      "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
     perFile: perLang,
     skipped,
   }
@@ -493,8 +610,6 @@ async function main() {
   // sweep — a full-language run at --files-per-lang=4 shrinks the claim just as
   // effectively as --only, so the file count is part of the rule rather than an
   // afterthought. Both are legitimate inspection runs; neither is evidence.
-  const scoped = only !== null || filesPerLang !== CANONICAL_FILES_PER_LANG
-  const outFile = path.join(OUT_DIR, scoped ? "oracle-callsite-scoped.json" : "oracle-callsite.json")
   writeFileSync(outFile, JSON.stringify(report, null, 2))
   if (scoped) {
     console.log(
@@ -535,12 +650,30 @@ async function main() {
     String(T.notCheckable).padStart(13),
   )
   console.log(`\nboundary self-test: ${JSON.stringify(boundarySelfTest)}`)
+  const drifted = Object.entries(sampleDrift).filter(([, d]) => !d.same)
+  console.log(
+    `\nsample pin: ${Object.entries(sampleHash).map(([l, h]) => `${l}:${h}`).join(" ")}`,
+  )
+  if (drifted.length > 0) {
+    console.log(
+      `SAMPLE DRIFT on ${drifted.length} lane(s) vs the previous ${path.basename(outFile)}: ` +
+        drifted.map(([l, d]) => `${l} ${d.prev ?? "(none)"}→${d.now}`).join(" "),
+    )
+    console.log(
+      "  → do NOT read a delta across those two artifacts: they measured different files.",
+    )
+  }
+  console.log(`token self-test: ${JSON.stringify(tokenSelfTest)}`)
   console.log(`mutation self-test: ${mutation ? JSON.stringify(mutation) : "NOT RUN (no line-bearing relationship found)"}`)
   if (skipped.length > 0) console.log(`skipped: ${skipped.length} (see evidence json)`)
   console.log(`evidence: ${path.relative(ROOT, outFile)}`)
 
   if (!boundaryOk) {
     console.log("\nFAIL: the Tier A boundary predicate does not behave as recorded — measurements through it are not evidence.")
+    process.exit(1)
+  }
+  if (!tokenOk) {
+    console.log("\nFAIL: the callee-token rule does not behave as recorded — measurements through it are not evidence.")
     process.exit(1)
   }
   if (!mutation || !mutation.caught) {

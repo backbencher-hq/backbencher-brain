@@ -2,25 +2,25 @@
   "checks": [
     {
       "description": "javascript adversarial fixtures",
-      "detail": "57/57 fixtures pass",
+      "detail": "58/58 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "29/29 fixtures pass",
+      "detail": "30/30 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "26/26 fixtures pass",
+      "detail": "27/27 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "61/61 fixtures pass",
+      "detail": "62/62 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "36f64a381c1c5a9d7a166de05a2ed0790083fa64",
-  "committedAt": "2026-09-16T04:38:01+02:00",
+  "commit": "1eef668cfcbbf85a3da2bbb55694df71c32c94d8",
+  "committedAt": "2026-09-16T05:16:20+02:00",
   "data": {
     "details": [
       {
@@ -175,6 +175,11 @@
       },
       {
         "fixture": "javascript/callee-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/callsite-lines-825",
         "ok": true,
         "problems": []
       },
@@ -544,6 +549,11 @@
         "problems": []
       },
       {
+        "fixture": "vue/template-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/template-member-uses",
         "ok": true,
         "problems": []
@@ -679,6 +689,11 @@
         "problems": []
       },
       {
+        "fixture": "svelte/template-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/template-member-uses",
         "ok": true,
         "problems": []
@@ -720,6 +735,11 @@
       },
       {
         "fixture": "typescript/async-arrow-and-iface-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/callsite-lines-825",
         "ok": true,
         "problems": []
       },
@@ -2354,7 +2374,7 @@
       },
       "javascript": {
         "fail": 0,
-        "pass": 57
+        "pass": 58
       },
       "kotlin": {
         "fail": 0,
@@ -2386,7 +2406,7 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 26
+        "pass": 27
       },
       "swift": {
         "fail": 0,
@@ -2394,11 +2414,11 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 61
+        "pass": 62
       },
       "vue": {
         "fail": 0,
-        "pass": 29
+        "pass": 30
       },
       "xml": {
         "fail": 0,
@@ -2423,9 +2443,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-16T02:38:34.536Z",
-  "regeneratedAtCommit": "36f64a381c1c5a9d7a166de05a2ed0790083fa64",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-09-16T04:17:16.614Z",
+  "regeneratedAtCommit": "1eef668cfcbbf85a3da2bbb55694df71c32c94d8",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }

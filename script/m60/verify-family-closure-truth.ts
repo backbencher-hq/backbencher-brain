@@ -30,7 +30,7 @@ import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
 import {
   computeFamilyClosureVerdict, computeMilestoneVerdict, reviewFolderState,
-  dirtyAnalyzers as dirtyAnalyzerMap, FAMILY_LANGS, type FamilyConditions,
+  dirtyAnalyzers as dirtyAnalyzerMap, loadFamilies, type FamilyConditions,
 } from "./family-closure"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -97,13 +97,14 @@ function m49ClosureGateLive(): boolean {
  * ledger, with a real summary and an evidence file that exists. A family with no
  * row has not folded, and the row is not inferable from prose.
  */
-function foldRows(): { present: Record<string, boolean>; detail: Record<string, string> } {
-  const present: Record<string, boolean> = { jvm: false, web: false }
-  const detail: Record<string, string> = { jvm: "", web: "" }
+function foldRows(familyNames: string[]): { present: Record<string, boolean>; detail: Record<string, string> } {
+  const present: Record<string, boolean> = {}
+  const detail: Record<string, string> = {}
+  for (const fam of familyNames) { present[fam] = false; detail[fam] = "" }
   if (!existsSync(M49_LEDGER)) return { present, detail }
   let fold: Record<string, any> = {}
   try { fold = JSON.parse(readFileSync(M49_LEDGER, "utf8")).foldRecords ?? {} } catch { return { present, detail } }
-  for (const fam of Object.keys(FAMILY_LANGS)) {
+  for (const fam of familyNames) {
     const row = fold[fam]
     if (row && typeof row.summary === "string" && row.summary.trim().length >= 20) {
       const ev = typeof row.evidence === "string" ? row.evidence : ""
@@ -155,6 +156,7 @@ function selfTest(): { cases: number; failures: string[] } {
 
 function main() {
   const head = git(["rev-parse", "HEAD"]) || "unknown"
+  const FAMILY_LANGS = loadFamilies(ROOT)
   const st = selfTest()
   check(`verdict self-test discriminates (${st.cases} cases, every condition load-bearing)`, st.failures.length === 0, st.failures.join("; "))
   const cells = matrixCells()
@@ -162,7 +164,7 @@ function main() {
   const ghUnavailable = gh(["issue", "view", "1", "--json", "number"]) === null
   const folders = reviewFolderState(REVIEWS)
   const dirty = dirtyAnalyzerMap(ROOT, REVIEWS)
-  const fold = foldRows()
+  const fold = foldRows(Object.keys(FAMILY_LANGS))
 
   // (b) and (c) — the payload matrix, shared by both families.
   check("matrix has zero BLOCKED cells", cells.blocked.length === 0, cells.blocked.join(", ") || "(none)")
