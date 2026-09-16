@@ -32,7 +32,7 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "52/52 fixtures pass",
+      "detail": "53/53 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -92,7 +92,7 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
@@ -104,7 +104,7 @@
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "8d6f3d1563b147d161723fe70dd725b2c9691d26",
-  "committedAt": "2026-09-15T21:21:03+02:00",
+  "commit": "0c49a67bb9a86ac940f54e475392665837163970",
+  "committedAt": "2026-09-16T02:25:48+02:00",
   "data": {
     "details": [
       {
@@ -1379,6 +1379,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/interpolation-reads-g7",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/lines-825",
         "ok": true,
         "problems": []
@@ -2164,6 +2169,11 @@
         "problems": []
       },
       {
+        "fixture": "dart/value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/bare-member-read-uses",
         "ok": true,
         "problems": []
@@ -2230,6 +2240,11 @@
       },
       {
         "fixture": "objc/pointer-return-helpers",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "objc/second-review",
         "ok": true,
         "problems": []
       },
@@ -2319,7 +2334,7 @@
       },
       "dart": {
         "fail": 0,
-        "pass": 6
+        "pass": 7
       },
       "go": {
         "fail": 0,
@@ -2327,7 +2342,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 52
+        "pass": 53
       },
       "haskell": {
         "fail": 0,
@@ -2347,7 +2362,7 @@
       },
       "objc": {
         "fail": 0,
-        "pass": 5
+        "pass": 6
       },
       "php": {
         "fail": 0,
@@ -2408,8 +2423,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-15T20:12:03.445Z",
-  "regeneratedAtCommit": "8d6f3d1563b147d161723fe70dd725b2c9691d26",
+  "regeneratedAt": "2026-09-16T02:10:54.908Z",
+  "regeneratedAtCommit": "0c49a67bb9a86ac940f54e475392665837163970",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

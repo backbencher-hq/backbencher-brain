@@ -111,9 +111,11 @@ other 20 languages would otherwise copy.
 
 ### 3b. The scala reference implementation, corrected and completed (2026-09-15, #825)
 
-Scala was the only language emitting a line, and it was wrong in **five** places, all one defect: the
+Scala was the only language emitting a line, and it was wrong in **six** places, all one defect: the
 line belonged to the enclosing construct instead of to the name. Each was found by the oracle against
-source, fixed, and pinned.
+source, fixed, and pinned. (Five in this round; the sixth — mechanism 6 below — surfaced later, when the
+oracle was re-run at HEAD for the G7 round and reported scala `INCONSISTENT` again. It is the same
+defect with a different node shape, which is why the table is kept as one table.)
 
 **Coverage** — same instrument, same 300-file scala3 sample before and after
 (`bun script/m59/oracle-callsite.ts --files-per-lang=300 --only=scala`), so this half IS an A/B:
@@ -136,6 +138,13 @@ zero failures out of 9,010 checked — the 20 that survived the call-site fix ar
 | 3 | an **inheritance list** took the line the `extends` clause opened on | `trait IterableLike[+A]\n extends FromIterable\n with IterableOps[A] …` put all three on 106 | `extractSupertypes` returns `{name, line}` pairs |
 | 4 | a definition with a **leading annotation** took the annotation's line (tree-sitter-scala starts the definition node at its annotation — measured, not assumed) | `@tailrec\n def loop` gave the symbol line 4 for a `def` on 5 | `declarationLineNode()` — start after the annotations and after any trailing **comment** between them (`@Param(…)\n // why\n var size` selected the comment node) |
 | 5 | an **import** whose target is named by a RENAMED selector written below the `import` line took the statement's first line | cats-effect `TestInstances.scala`: `import cats.effect.kernel.testkit.{` opens on 21, the segment that names the edge's target is on 29 | `handleImport` records the line of the module's LAST segment |
+| 6 | an **extension method**'s receiver type took the METHOD's declaration line | scala3 `tests/warn/ext-override.scala`: `extension (\n  x: Bla\n)` names `Bla` on 11 while `def greet` starts on 13, so the claim pointed at the method signature. The single-line form is the same defect one line short: `extension (s: String)` names `String` on 3, not the method's 4 | the `uses` edge stamps the **receiver TYPE node** (`extensionReceiverTypeNode`), not the method |
+
+Mechanism 6 is pinned by the existing `scala/extension-method-flag` fixture, extended with the multi-line
+receiver case rather than given a new file — the one-line and multi-line shapes sit together so they cannot
+diverge — with `forbidRelationships` naming each pre-fix stamp (line 13 for `Bla`, 4 for `String`) so a
+revert fails the gate instead of passing silently, plus a revert mutant (`scala/extension-receiver-method-line`,
+CAUGHT by that fixture alone).
 
 Mechanism 4 is a **contract decision**, not a bug fix: an annotation is a modifier, so the declaration
 line is where the declaration is written. The symbol range and the `contains` edge move together so

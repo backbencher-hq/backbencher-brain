@@ -2099,6 +2099,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const name = this.extractIdentifier(node, "name")
 
     let extensionReceiverType: string | undefined
+    // M59 #825 follow-through (found by the oracle at HEAD, scala3
+    // tests/warn/ext-override.scala): the use of the receiver TYPE is written
+    // where the type node is — `extension (x: Bla)` names Bla on the extension
+    // line, which need not be the method's line. The old stamp took the
+    // method's declaration node, so a multi-line extension claimed a line its
+    // name is not written on — the exact class #825 closed everywhere else.
+    let extensionReceiverTypeNode: Node | null = null
     {
       // index-loop idiom, consistent with every other traversal in this file
       let anc: Node | null = node.parent
@@ -2116,6 +2123,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // strip ONE trailing ? — the old /\?$/ anchor is exact.
                   const t = tc.text
                   extensionReceiverType = t.endsWith("?") ? t.slice(0, -1) : t
+                  extensionReceiverTypeNode = tc
                   break
                 }
               }
@@ -2225,9 +2233,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: extensionReceiverType,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
-        // M59 (#825): the extension receiver type is named in the extension
-        // method's own declaration, so the declaration is the navigable site.
-        line_number: node.startPosition.row + 1,
+        // M59 (#825): the line belongs to the NAME — the receiver TYPE node,
+        // not the method that uses it. `extension (x: Bla)` on its own line
+        // puts `Bla` there; the method body follows below.
+        line_number: (extensionReceiverTypeNode ?? node).startPosition.row + 1,
         metadata: { relationshipType: "scala_extension_method", isExtension: true },
       })
     }
