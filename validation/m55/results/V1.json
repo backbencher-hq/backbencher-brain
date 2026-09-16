@@ -12,17 +12,17 @@
     "total": 17,
     "caught": 17
   },
-  "currentCommit": "f2ea7a0bfd1ec33d5cfdb157a80644608466f0d7",
+  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-14T03:29:07.507Z",
+  "generatedAt": "2026-09-16T17:40:48.692Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
     "rigAvailable": true,
     "rigMissing": [],
-    "captureRun": "live-20",
+    "captureRun": "live-21",
     "probeFile": "validation/m55/results/V1-probe.json",
     "probeStatus": "read",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
@@ -39,9 +39,9 @@
         19,
         20
       ],
-      "textPixels": 3028,
+      "textPixels": 3066,
       "textFraction": 0.0015,
-      "textRows": 20
+      "textRows": 19
     },
     "hover-declaration:stats": {
       "ok": true,
@@ -71,7 +71,7 @@
     },
     "hover:diff": {
       "ok": true,
-      "changedPixels": 161632,
+      "changedPixels": 161595,
       "changedFraction": 0.0779,
       "box": [
         418,
@@ -143,13 +143,13 @@
     },
     "ctor-hover:diff": {
       "ok": true,
-      "changedPixels": 115549,
+      "changedPixels": 115592,
       "changedFraction": 0.0557,
       "box": [
         377,
-        30,
+        12,
         1243,
-        1043
+        1061
       ]
     },
     "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)": {
@@ -224,13 +224,13 @@
     },
     "zero-usage:diff": {
       "ok": true,
-      "changedPixels": 213233,
-      "changedFraction": 0.1028,
+      "changedPixels": 213276,
+      "changedFraction": 0.1029,
       "box": [
         377,
-        30,
+        12,
         1243,
-        1043
+        1061
       ]
     }
   },
@@ -305,7 +305,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.586Z",
-    "contentSha256": "50d3b254f51bd288195be67710b87033a4e200ca6b0676d0dc4189d9d2abdd5d"
+    "sealedAt": "2026-09-16T17:40:48.692Z",
+    "contentSha256": "370fc68ffe8ba70b6624a8b83fb32bbc3c0da36f79e456e6793010149369eb5c"
   }
 }
