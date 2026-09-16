@@ -31,6 +31,7 @@ import {
   EXPECTED_CODES,
   EXPECTED_ISSUE_NUMBERS,
   PREREQUISITE_RECORDS,
+  SELF_OWNED_CODES,
   V_GATES,
   entryDrift,
   isClosable,
@@ -209,6 +210,19 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
   negative("proof-less closure: a green run with no can-fail proof passes", validateLedger(noProof, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS).some((e) => e.startsWith("hollow-verified:V4")))
 }
 {
+  // The self-owned exemption must be NARROW: naming X1 in `selfOwned` may not
+  // let a projected issue's hollow closure through. G1 exempts X1's own entry
+  // (measured by the closure gate's run); if that exemption ever leaked to the
+  // entries G1 projects and re-judges, the whole rule would be decoration.
+  const leaked = clone(ledger)
+  const v2 = leaked.issues.find((i) => i.code === "V2")!
+  v2.evidence = { ...v2.evidence, failed: 2, realFailed: 2 }
+  negative(
+    "the self-owned exemption leaks to a projected entry",
+    validateLedger(leaked, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS, SELF_OWNED_CODES.filter((c) => c !== "G1")).some((e) => e.startsWith("hollow-verified:V2")),
+  )
+}
+{
   const short = clone(ledger)
   short.issues = short.issues.filter((i) => i.code !== "V3")
   negative("a removed issue passes the ledger", validateLedger(short, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS).includes("issue-count"))
@@ -337,7 +351,7 @@ check("G1: every ledger entry is the derivation of the record it points at (no h
   const staged = buildEvidence()
   Object.assign(g1, { status: staged.status, evidence: entryOf(staged as unknown as Record<string, unknown>) })
   ledger.status = ledger.issues.every((i) => i.status === "verified") ? "closed" : "open"
-  const fullErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS)
+  const fullErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS, SELF_OWNED_CODES.filter((c) => c !== "G1"))
   check("G1: the ledger validates WHOLE with this run's own measured entry", fullErrors.length === 0, fullErrors.slice(0, 6).join(" | "))
   const drift = entryDrift(g1.evidence, entryOf(staged as unknown as Record<string, unknown>))
   check("G1: the G1 entry is the record's own derivation (not hand-assembled)", drift.length === 0, drift.join(" | "))
