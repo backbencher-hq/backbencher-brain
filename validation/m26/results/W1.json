@@ -8,17 +8,17 @@
   "failed": 0,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
+  "currentCommit": "f62bf332b4dd14b1e0f100052bdcc688c4e5ff48",
   "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
   "evidenceFile": "W1.json",
-  "generatedAt": "2026-09-16T17:22:23.194Z",
+  "generatedAt": "2026-09-16T18:52:13.350Z",
   "limitations": [
     "DOM-port stub is the harness surface; real webview CSS/positioning is verified in-editor by later legs (E5/E6 pattern).",
     "Render budget (300/1000 ms) is measured by the caller per contract section 3; this suite pins the structural budget only."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:22:23.194Z",
-    "contentSha256": "b23fe3da6d9d64164ea4f1f8c874fd044587fd141312da9a34bae863311a5e95"
+    "sealedAt": "2026-09-16T18:52:13.351Z",
+    "contentSha256": "995ba16341aac4e79c08073988ce411907cdeca5b6713bb6f2624dfad4b41cc5"
   }
 }
