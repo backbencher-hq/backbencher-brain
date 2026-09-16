@@ -1,7 +1,7 @@
 {
   "probe": "M59.P3",
   "issue": "#822",
-  "at": "2026-09-15T22:54:45.836Z",
+  "at": "2026-09-16T14:50:53.738Z",
   "command": "npx tsx script/m59/verify-rel-multiplicity.ts",
   "question": "4 call sites on 4 lines — does the INDEX keep 4?",
   "trueCallSites": {
@@ -11,28 +11,28 @@
   "java": {
     "rows": [
       {
-        "id": "90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:rel:90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:src/Multi.java:caller:3:target:calls:4",
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/Multi.java:caller:3:target:calls:4",
         "rt": "calls",
         "line": 4,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:rel:90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:src/Multi.java:caller:3:target:calls:5",
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/Multi.java:caller:3:target:calls:5",
         "rt": "calls",
         "line": 5,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:rel:90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:src/Multi.java:caller:3:target:calls:6",
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/Multi.java:caller:3:target:calls:6",
         "rt": "calls",
         "line": 6,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:rel:90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:src/Multi.java:caller:3:target:calls:7",
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/Multi.java:caller:3:target:calls:7",
         "rt": "calls",
         "line": 7,
         "te": "target",
@@ -49,24 +49,45 @@
   "typescript": {
     "rows": [
       {
-        "id": "90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:rel:90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:src/multi.ts:caller:2:target:calls:?",
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/multi.ts:caller:2:target:calls:3",
         "rt": "calls",
-        "line": null,
+        "line": 3,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:rel:90b2fb0cfbc1bbf25a0dcda7642930378181f4ff:src/multi.ts:caller:2:target:references:?",
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/multi.ts:caller:2:target:calls:4",
+        "rt": "calls",
+        "line": 4,
+        "te": "target",
+        "tname": "target"
+      },
+      {
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/multi.ts:caller:2:target:calls:5",
+        "rt": "calls",
+        "line": 5,
+        "te": "target",
+        "tname": "target"
+      },
+      {
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/multi.ts:caller:2:target:calls:6",
+        "rt": "calls",
+        "line": 6,
+        "te": "target",
+        "tname": "target"
+      },
+      {
+        "id": "93381ec9edd248457382afccb8a5eb22fd6dd12a:rel:93381ec9edd248457382afccb8a5eb22fd6dd12a:src/multi.ts:caller:2:target:references:3",
         "rt": "references",
-        "line": null,
+        "line": 3,
         "te": "target",
         "tname": "target"
       }
     ],
     "audit": {
-      "rows": 2,
-      "knownLines": 0,
-      "distinctLines": 0,
+      "rows": 5,
+      "knownLines": 5,
+      "distinctLines": 4,
       "perSite": false
     },
     "scope": "no line emitted by the analyzer yet (#825)"
