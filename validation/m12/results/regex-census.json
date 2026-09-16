@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-14T19:44:14.788Z",
+  "generatedAt": "2026-09-16T04:25:26.332Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
   "totalRegexUsages": 20,
@@ -23,7 +23,7 @@
       "usages": [
         {
           "file": "real-vue-analyzer.ts",
-          "line": 281,
+          "line": 284,
           "column": 49,
           "source": "/['\"]/g",
           "operation": "replace",
@@ -34,7 +34,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 966,
+          "line": 1021,
           "column": 20,
           "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
           "operation": "other",
@@ -45,7 +45,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 978,
+          "line": 1033,
           "column": 15,
           "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
           "operation": "test",
@@ -56,7 +56,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 988,
+          "line": 1047,
           "column": 15,
           "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
           "operation": "test",
@@ -67,7 +67,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 990,
+          "line": 1049,
           "column": 16,
           "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
           "operation": "other",
@@ -123,7 +123,7 @@
       "usages": [
         {
           "file": "real-javascript-analyzer.ts",
-          "line": 586,
+          "line": 587,
           "column": 35,
           "source": "/^module\\.exports\\./",
           "operation": "replace",
@@ -134,7 +134,7 @@
         },
         {
           "file": "real-javascript-analyzer.ts",
-          "line": 586,
+          "line": 587,
           "column": 69,
           "source": "/^exports\\./",
           "operation": "replace",
@@ -145,7 +145,7 @@
         },
         {
           "file": "real-javascript-analyzer.ts",
-          "line": 1285,
+          "line": 1315,
           "column": 33,
           "source": "/^@/",
           "operation": "replace",
@@ -218,7 +218,7 @@
       "usages": [
         {
           "file": "real-svelte-analyzer.ts",
-          "line": 838,
+          "line": 865,
           "column": 26,
           "source": "/context=[\"']module[\"']/",
           "operation": "test",
@@ -229,7 +229,7 @@
         },
         {
           "file": "real-svelte-analyzer.ts",
-          "line": 986,
+          "line": 1051,
           "column": 17,
           "source": "/^(.*?)\\s+(?:then|as)\\s+/",
           "operation": "test",
@@ -263,7 +263,7 @@
       "usages": [
         {
           "file": "real-typescript-analyzer.ts",
-          "line": 2983,
+          "line": 3058,
           "column": 40,
           "source": "/^:\\s*/",
           "operation": "replace",
