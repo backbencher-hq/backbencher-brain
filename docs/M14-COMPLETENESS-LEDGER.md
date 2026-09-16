@@ -746,7 +746,7 @@ After the CSD14/DARTD18/DARTD19/PYD17 deep-differential fixes, the remaining #61
 
 The user's five java suspects (anonymous bodies, overload disambiguation, varargs/array equivalence, dead code, multi-catch) were probe-verified on real parses, then every confirmed defect class was swept across the whole JVM family per the learn-and-gate convention:
 
-- **JD18 anonymous class bodies** (the biggest real gap): `new Comparator<String>() {...}` methods misattributed to the enclosing scope. Fixed in java; the same class confirmed and fixed in **groovy** and **scala** (`anonymous_<Type>` symbol + member attribution; kotlin verified already-correct via object : Super() handling). Gated: java + groovy + scala fixtures + mutants.
+- **JD18 anonymous class bodies** (the biggest real gap): `new Comparator<String>() {...}` methods misattributed to the enclosing scope. Fixed in java; the same class confirmed and fixed in **groovy** and **scala** (`anonymous_<Type>` symbol + member attribution; kotlin verified already-correct via object : Super() handling). Gated: java + groovy + scala fixtures + mutants. **Correction (2026-09-16, #866):** "kotlin verified already-correct" was true only for METHODS. A member whose initialiser calls a method was dropped entirely by `extractProperty`'s ancestor scan (it stopped at named declarations, walked past `object_literal`, and reclassified the member as a function-local) and `resolveCallSource` attributed that initialiser's call to the OUTER method — measured over all four analyzers in #866 and fixed there; scala had the same drop for `val` members (`handleVariable` walked past the anonymous `template_body`).
 - **JD19 multi-hop override resolution**: java's FQN-keyed hierarchy map missed overrides through non-declaring ancestors (clojure PersistentTreeMap shape: BlackVal.val → Node.val at hop 2, resolving through non-declaring Black). Groovy had the same bug **plus a fabricated 0.5-confidence wrong edge** (first-parent guess fired when the true target sat at hop 2). Fixed both; kotlin/scala are name-keyed and structurally immune (verified). Gated: java + groovy fixtures + mutants.
 - **KD19 kotlin enum supertypes**: `enum class MODE(...) : ForUpdateOrShareMode` silently dropped — the heritage post-pass filtered Class/Interface kinds and `extractEnumClass` never extracted superTypes. Fixed (extends for constructor-invocation supertype, implements for bare); gated with fixture + mutant.
 - **ScalaD-E…I (the deepest wave)**: oracle generic-substitution sigs (`(T,T)` vs `(Int,Int)` textual mismatch — hasTypeVar name-only fallback), companion-union member merge (HashSet.scala: object SetNode registered first, class's 19 abstract methods dropped — oracle now merges same-name members like the analyzer's methodSigsByOwner), ownerKind companion routing (Setup.scala: module shadowed class in typeIndex — kind-aware routing in the analyzer), analyzer-side generic fallback for consistency, instantiates bracket normalization (cats-effect `[F]` stripping). Gated: scala fixture (45/45) + mutant.
@@ -823,3 +823,37 @@ immediately before the flip (not assumed from earlier sessions).
 **Certification at closure (HEAD 60a2dc32):** F3 358/358 · F4 383/383 · R1 28/28 · R2 6/6 · F1 green · JVM heuristic-delta baseline re-pinned with classification (all 70 unmatched java heuristic edges = declared-honest 0.5 first-parent-guess overrides on external bases, pre-JD18/JD19 baseline drift — zero otherwise) · full baseline-vs-fresh-F5 consistency check: zero drift across 21 main + 21 second-corpus lanes · C floors reproduce C-D4 exactly (sqlite 9/105, jq 4/28).
 
 **Not blocked by and not blocking:** M37.X1 (#614) stays open for the non-JVM dual-lens remainder; M49.T1 (#725 typescript) and M49.J2 (#726 javascript) are the next review waves — both non-JVM.
+
+## 2026-09-16 — JVM anonymous-body MEMBER parity (#866)
+
+The #855 cross-language census measured a defect the JD18 wave had missed: it checked
+anonymous bodies for **methods** only. A member whose initialiser calls a method was
+measured over all four analyzers and came out: java YES (symbol + call on the anonymous
+type), groovy YES, kotlin **absent** — with the call attributed to the OUTER method —
+and scala **absent** (call already correct). Same class of defect, two guards: a boundary
+list that stops at named declarations only, so the scan walks past the anonymous body and
+reclassifies its member as a function-local (`extractProperty` / `resolveCallSource` for
+kotlin via `object_literal`; `handleVariable` for scala via the anonymous `template_body`).
+
+Fixed with one name derivation shared by kotlin's symbol emitter and its call resolver
+(so a member and its initialiser call cannot disagree), and an `instance_expression`-parent
+check on the scala boundary so named-class bodies keep their existing branches.
+
+**Evidence:** 4 fixtures (one per language, each with a local-variable control and a
+line-pinned forbid on the old misattribution) · lanes java 43 · groovy 54 · kotlin 40 ·
+scala 53, 0 failures · 8 new mutants (drop-the-member, re-attribute-the-call — one pair
+per language), all CAUGHT (registry 599→607) · **set-wise sweep of 30,015 corpus files in
+two trees: 0 symbols and 0 relationships removed anywhere, no owner re-attributed;
+java/groovy change surface exactly zero (the control); kotlin +2,204 member symbols,
++2,204 containment edges, 3,539 call sources moved; scala +708/+708** · the moved kotlin
+sources verified at the INDEX layer against a java twin of the same shape — post-fix
+kotlin is row-for-row identical to java (member initialiser sourced to the member,
+class-level initialiser to the member, member function to the function), where pre-fix it
+said the enclosing method and the enclosing class.
+
+**Measured and NOT folded in (filed separately):** the anonymous TYPE's own
+`ownerName`/containment source — kotlin attributes a literal inside a method to the
+enclosing CLASS where java/groovy/scala attribute it to the enclosing METHOD (identical in
+the class-level-property context). No consumer sees it (`anonymous_*` is filtered before
+the store), java's own comment says "ownerName = enclosing type", and the new fixtures
+deliberately do NOT pin it, so neither side is enshrined by a fixture.
