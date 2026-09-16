@@ -989,11 +989,18 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // were previously attributed to whatever scope was active before the
           // anonymous class (contains:Service→compare on the probe) — the
           // members leaked into the enclosing type's contains graph and no
-          // symbol existed for the anonymous type itself. Mirror the kotlin
-          // family convention exactly: anonymous_${superName} (noise name,
-          // never leaks into the index), Class symbol with ownerName =
-          // enclosing type, and a pushed scope so the body's members attribute
+          // symbol existed for the anonymous type itself. Family convention:
+          // anonymous_${superName} (noise name, never leaks into the index),
+          // Class symbol, and a pushed scope so the body's members attribute
           // to the anonymous type (contains:anonymous_Comparator→compare).
+          //
+          // M49/M37 #867 ruled the OWNER question for all four JVM analyzers:
+          // ownerName = the innermost enclosing DECLARATION (parentContext
+          // here), so a literal inside a method is owned by that method. This
+          // code did that from the start, but the comment used to claim it was
+          // mirroring kotlin's "enclosing type" — kotlin was the outlier and
+          // was changed to match this; the comment now describes the ruling
+          // instead of a language that no longer behaves that way.
           const classBody = this.findChildByType(node, "class_body")
           if (classBody && parentContext) {
             const anonName = typeName ? `anonymous_${typeName}` : "anonymous_class"

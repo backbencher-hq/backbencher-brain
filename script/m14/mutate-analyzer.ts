@@ -531,6 +531,82 @@ function dropAnonBodyMember(memberName: string) {
   }
 }
 
+// M49/M37 #867: the anonymous type's OWNER contract, as two faithful reverts —
+// one per context the ruling pins. Both are written off the result's own symbol
+// table (no fixture-specific names), so they stay valid on any fixture.
+//
+// `reownAnonTypeToClass` re-owns every anonymous type whose owner is a
+// DECLARATION (a method/function) to the file's named class — exactly kotlin's
+// pre-ruling answer, and the defect direction the ruling forbids.
+// `stripClassOwnedAnonOwner` removes the owner of every anonymous type owned by
+// a CLASS, which is the class-level context the old behaviour happened to get
+// right and which nothing pinned until this round.
+function reownAnonTypeToClass() {
+  return (r: any) => {
+    const named = (r.symbols ?? []).find(
+      (s: any) => String(s.kind) === "class" && !String(s.name ?? "").startsWith("anonymous_"),
+    )
+    if (!named) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        String(s.name ?? "").startsWith("anonymous_") && (s.ownerKind === "method" || s.ownerKind === "function")
+          ? { ...s, ownerName: named.name, ownerKind: "class" }
+          : s,
+      ),
+      // The containment edge follows the owner: the method no longer contains
+      // the type, and the class claims it instead.
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "contains" && String(x.target ?? "").startsWith("anonymous_") && x.source !== named.name
+          ? { ...x, source: named.name, from: named.name, fromSymbol: named.name }
+          : x,
+      ),
+    }
+  }
+}
+
+// `anonTypeClaimsFileImports` reverts the pre-ruling import attribution: import
+// reference edges carry the `root` placeholder and are rewritten onto the file's
+// primary top-level type; before the ruling an ownerless anonymous object
+// qualified, so it claimed every import edge of the file.
+function anonTypeClaimsFileImports() {
+  return (r: any) => {
+    const anon = (r.symbols ?? []).find((s: any) => String(s.name ?? "").startsWith("anonymous_"))
+    if (!anon) return r
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type) === "references" && String(x.source ?? "") === "root"
+          ? { ...x, source: anon.name, from: anon.name, fromSymbol: anon.name }
+          : x,
+      ),
+    }
+  }
+}
+
+function stripClassOwnedAnonOwner() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) =>
+      String(s.name ?? "").startsWith("anonymous_") && s.ownerKind === "class"
+        ? { ...s, ownerName: undefined, ownerKind: undefined }
+        : s,
+    ),
+    // Only the OWNER-to-type edge is removed: an edge whose source is the
+    // anonymous type itself (contains anonymous_X -> member) is a different
+    // contract (#866) and is deliberately left intact, so this mutant can only
+    // be caught by the owner pin.
+    relationships: (r.relationships ?? []).filter(
+      (x: any) =>
+        !(
+          x.type === "contains" &&
+          String(x.target ?? "").startsWith("anonymous_") &&
+          !String(x.source ?? "").startsWith("anonymous_")
+        ),
+    ),
+  })
+}
+
 // `reattributeAnonBodyCall` flattens every call made from an anonymous body
 // onto the named outer declaration — kotlin's pre-fix answer for a member
 // initialiser (`calls build -> target` instead of `calls anonymous_Runnable
@@ -1634,6 +1710,73 @@ const MUTANTS: Mutant[] = [
     defectClass: "misattribution",
     description: "M49/M37 (#866) regression: flattens calls made from an anonymous body onto the enclosing method. scala's own attribution was already correct, so this pins that half of the contract for the language too — Caught by scala/anonymous-field-member's forbid pin on `build -> target` at the initialiser's line.",
     transform: reattributeAnonBodyCall("build"),
+  },
+  // M49/M37 #867: the anonymous type's OWNER, one pair per JVM language. Both
+  // mutants are the measured defect directions, not inventions — (a) is what
+  // kotlin actually emitted before the ruling, (b) is the class-level context
+  // that agreed by accident and was pinned by nothing.
+  {
+    id: "java/anon-type-owner-to-class",
+    language: "java",
+    defectClass: "misattribution",
+    description: "M49/M37 (#867) regression: a method-local anonymous type is re-owned to the enclosing CLASS — kotlin's pre-ruling answer, which the census measured and this round ruled out. Caught by java/anonymous-type-owner, which pins `contains inMethod -> anonymous_Comparator` and forbids the class-owned form.",
+    transform: reownAnonTypeToClass(),
+  },
+  {
+    id: "java/anon-type-class-owner-stripped",
+    language: "java",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#867) regression: a CLASS-owned anonymous type loses its owner (the owner-to-type containment edge goes with it). Caught by java/anonymous-type-owner's context-1 pin (`contains AnonOwner -> anonymous_Runnable`), which is the half of the ruling nothing pinned before.",
+    transform: stripClassOwnedAnonOwner(),
+  },
+  {
+    id: "groovy/anon-type-owner-to-class",
+    language: "groovy",
+    defectClass: "misattribution",
+    description: "M49/M37 (#867) regression: a method-local anonymous type is re-owned to the enclosing CLASS. Caught by groovy/anonymous-type-owner.",
+    transform: reownAnonTypeToClass(),
+  },
+  {
+    id: "groovy/anon-type-class-owner-stripped",
+    language: "groovy",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#867) regression: a CLASS-owned anonymous type loses its owner. Caught by groovy/anonymous-type-owner's context-1 pin.",
+    transform: stripClassOwnedAnonOwner(),
+  },
+  {
+    id: "kotlin/anon-type-owner-to-class",
+    language: "kotlin",
+    defectClass: "misattribution",
+    description: "M49/M37 (#867) regression: reverts the ruling in the language that changed — a method-local anonymous type is owned by the enclosing class again (`pClass`-only walker). Caught by kotlin/anonymous-type-owner, which pins `contains inMethod -> anonymous_Comparator`.",
+    transform: reownAnonTypeToClass(),
+  },
+  {
+    id: "kotlin/anon-type-class-owner-stripped",
+    language: "kotlin",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#867) regression: a CLASS-owned anonymous type loses its owner — the over-reaching fix direction (re-own everything to a method / nothing). Caught by kotlin/anonymous-type-owner's context-1 pin.",
+    transform: stripClassOwnedAnonOwner(),
+  },
+  {
+    id: "kotlin/anon-type-claims-file-imports",
+    language: "kotlin",
+    defectClass: "misattribution",
+    description: "M49/M37 (#867) regression, the SECOND defect class the corpus sweep exposed: import reference edges are rewritten onto the file's primary top-level type, and an ownerless anonymous object qualifies — so the anon type claims every import edge of the file (measured pre-ruling on kotlinx-coroutines/reactor/Flux.kt: 8 edges). Caught by kotlin/anon-type-not-file-primary-type's forbid pin.",
+    transform: anonTypeClaimsFileImports(),
+  },
+  {
+    id: "scala/anon-type-owner-to-class",
+    language: "scala",
+    defectClass: "misattribution",
+    description: "M49/M37 (#867) regression: a method-local anonymous type is re-owned to the enclosing CLASS. Caught by scala/anonymous-type-owner.",
+    transform: reownAnonTypeToClass(),
+  },
+  {
+    id: "scala/anon-type-class-owner-stripped",
+    language: "scala",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#867) regression: a CLASS-owned anonymous type loses its owner. Caught by scala/anonymous-type-owner's context-1 pin.",
+    transform: stripClassOwnedAnonOwner(),
   },
   {
     id: "scala/import-statement-start-line",
