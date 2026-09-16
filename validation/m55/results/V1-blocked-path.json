@@ -25,11 +25,11 @@
     "indexedProjectDir": null
   },
   "flows": [],
-  "generatedAt": "2026-09-14T03:29:07.260Z",
+  "generatedAt": "2026-09-16T17:40:48.506Z",
   "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.583Z",
-    "contentSha256": "a1d78fa0ceca8156365eee8beea6e7ee16860f366267710ba828fce2d224faf7"
+    "sealedAt": "2026-09-16T17:40:48.630Z",
+    "contentSha256": "6e98f0992a3835a2e9a81c8165e9861fb71864262e566196ac1887e19bfb43e1"
   }
 }
