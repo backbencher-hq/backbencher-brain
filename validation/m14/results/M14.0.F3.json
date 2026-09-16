@@ -20,7 +20,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "64/64 fixtures pass",
+      "detail": "65/65 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -110,9 +110,9 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "5/6 fixtures pass",
       "id": "fixtures-php",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "ruby adversarial fixtures",
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a5598e542c00d95cf92ef4a662285ab65ff809f5",
-  "committedAt": "2026-09-16T15:01:38+02:00",
+  "commit": "be49c1e46ca129aa6e96f806beb46afd6618ea47",
+  "committedAt": "2026-09-16T15:22:33+02:00",
   "data": {
     "details": [
       {
@@ -1010,6 +1010,11 @@
       },
       {
         "fixture": "typescript/type-assertion",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/type-parameter-constraint-default",
         "ok": true,
         "problems": []
       },
@@ -2300,8 +2305,10 @@
       },
       {
         "fixture": "php/payload-and-complexity",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "forbidden relationship present: {\"type\":\"uses\",\"target\":\"gateway\"} (found uses[__construct->gateway]@0.9)"
+        ]
       },
       {
         "fixture": "php/procedural-enum",
@@ -2395,8 +2402,8 @@
         "pass": 6
       },
       "php": {
-        "fail": 0,
-        "pass": 6
+        "fail": 1,
+        "pass": 5
       },
       "python": {
         "fail": 0,
@@ -2424,7 +2431,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 64
+        "pass": 65
       },
       "vue": {
         "fail": 0,
@@ -2453,8 +2460,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-16T13:01:55.815Z",
-  "regeneratedAtCommit": "a5598e542c00d95cf92ef4a662285ab65ff809f5",
+  "regeneratedAt": "2026-09-16T13:59:56.150Z",
+  "regeneratedAtCommit": "be49c1e46ca129aa6e96f806beb46afd6618ea47",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
