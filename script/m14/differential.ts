@@ -1330,7 +1330,44 @@ export function deriveGroovyEdges(root: any): { label: string; from: string; tar
   while (stack.length > 0) {
     const n = stack.pop()!
     const t = n.type
-    if (t === "interpolated_identifier") {
+    if (t === "field_access") {
+      // Mirror of collectFieldAccessUses (analyzer): the target is the LAST
+      // dotted segment; a write LHS and a callee position are not reads; `?.`
+      // and `*.` carry their operator in the text, so it is stripped before the
+      // split. Owner resolution is deliberately NOT mirrored — the harness
+      // matches label+target site-agnostically, so only membership matters.
+      const pType = n.parent ? n.parent.type : ""
+      let fIsWrite = false
+      if (pType === "assignment_expression") {
+        const lhs = n.parent.namedChild(0)
+        fIsWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      }
+      const parentField = n.parent && n.parent.type === "juxt_function_call"
+        ? n.parent.childForFieldName?.("name")
+        : null
+      const fIsCallee = !!parentField && parentField.startIndex === n.startIndex && parentField.endIndex === n.endIndex
+      const fParts = String(n.text).split(".").map((p: string) => (p.endsWith("?") || p.endsWith("*") ? p.slice(0, -1) : p))
+      if (fParts.length >= 2 && !fIsWrite && !fIsCallee && fParts[fParts.length - 1]) push("uses", fParts[fParts.length - 1])
+    } else if (t === "leading_dot_call") {
+      // #851: a paren-less continuation is a member READ (the paren-ful one is a
+      // call, handled above). Mirrored so the restored read is COMPARED rather
+      // than invisible — the state that let it ship broken.
+      const ldName = n.childForFieldName?.("name")
+      const ldArgs = n.childForFieldName?.("arguments")
+        ?? (n.namedChildren ?? []).find((c: any) => c.type === "argument_list")
+      if (!ldArgs && ldName && !isBuiltin(ldName.text)) push("uses", ldName.text)
+    } else if (t === "array_access") {
+      // KAD1 sweep (M37 #597) mirror: a read of the array expression is a use;
+      // the assignment-LHS span is a write and must not emit.
+      const aType = n.parent ? n.parent.type : ""
+      let aIsWrite = false
+      if (aType === "assignment_expression") {
+        const lhs = n.parent.namedChild(0)
+        aIsWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+      }
+      const aFirst = n.namedChild(0)
+      if (!aIsWrite && aFirst && aFirst.type === "identifier") push("uses", aFirst.text)
+    } else if (t === "interpolated_identifier") {
       const pt = n.parent ? n.parent.type : ""
       if (pt !== "juxt_function_call" && pt !== "field_access" && groovyHasOwner(n)) {
         const raw = String(n.text)
@@ -8952,7 +8989,20 @@ async function main() {
       // call truth, so including calls there would flag every real call edge
       // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
       // USES truth as well (write-gated), so c joins the uses-audited set.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      //
+      // M49.G7: groovy joins it too, and the round is why. Groovy had NO read
+      // oracle, so `uses` was excluded from its comparison by construction (the
+      // W20 note recorded that as a declared limitation: a restored read rode
+      // the fixture and its mutant but no corpus lane). G7 then added
+      // interpolation truths, which ARE `uses`, into a lane that could not
+      // match them — so every interpolated name surfaced as a permanent false
+      // MISSING (measured: 8 on the grails-core groovy lane, across 4 named
+      // files, every target one the analyzer DOES emit). The fix is the full
+      // mirror, not the silence: the oracle now derives all four groovy `uses`
+      // sources (field_access, paren-less leading_dot_call, array_access,
+      // interpolation), so the label is comparable and the lane audits groovy
+      // reads for the first time.
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
