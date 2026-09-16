@@ -583,8 +583,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/app.ts",
-                  "line": 6
+                  "line": 6,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -603,8 +605,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:Greeter:instantiates",
                 "relationshipType": "instantiates",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/app.ts",
-                  "line": 6
+                  "line": 6,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 1,
@@ -641,8 +645,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/greeter.ts",
-                  "line": 15
+                  "line": 15,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -679,8 +685,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/report.ts:describe:5:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/report.ts",
-                  "line": 5
+                  "line": 5,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -719,8 +727,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:map:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/greeter.ts",
-                  "line": 0
+                  "line": 4,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -757,8 +767,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/greeter.ts",
-                  "line": 0
+                  "line": 4,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -842,8 +854,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/app.ts",
-                  "line": 6
+                  "line": 6,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -880,8 +894,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/greeter.ts",
-                  "line": 15
+                  "line": 15,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -918,8 +934,10 @@
                 "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/report.ts:describe:5:greet:calls",
                 "relationshipType": "calls",
                 "callSite": {
+                  "kind": "declaration",
                   "file": "src/report.ts",
-                  "line": 5
+                  "line": 5,
+                  "note": "this is the calling symbol's declaration, not the call site"
                 },
                 "depth": 0,
                 "confidence": 0.9,
@@ -1042,8 +1060,10 @@
             "confidence": 0.9,
             "isCrossLanguage": false,
             "callSite": {
+              "kind": "declaration",
               "file": "src/app.ts",
-              "line": 6
+              "line": 6,
+              "note": "this is the calling symbol's declaration, not the call site"
             },
             "depth": 0,
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:greet:calls",
@@ -1064,8 +1084,10 @@
             "confidence": 0.9,
             "isCrossLanguage": false,
             "callSite": {
+              "kind": "declaration",
               "file": "src/greeter.ts",
-              "line": 15
+              "line": 15,
+              "note": "this is the calling symbol's declaration, not the call site"
             },
             "depth": 0,
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
@@ -1086,8 +1108,10 @@
             "confidence": 0.9,
             "isCrossLanguage": false,
             "callSite": {
+              "kind": "declaration",
               "file": "src/report.ts",
-              "line": 5
+              "line": 5,
+              "note": "this is the calling symbol's declaration, not the call site"
             },
             "depth": 0,
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/report.ts:describe:5:greet:calls",
@@ -1108,8 +1132,10 @@
             "confidence": 1,
             "isCrossLanguage": false,
             "callSite": {
+              "kind": "declaration",
               "file": "src/app.ts",
-              "line": 6
+              "line": 6,
+              "note": "this is the calling symbol's declaration, not the call site"
             },
             "depth": 0,
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:Greeter:instantiates",
@@ -1132,8 +1158,10 @@
             "confidence": 0.9,
             "isCrossLanguage": false,
             "callSite": {
+              "kind": "declaration",
               "file": "src/greeter.ts",
-              "line": 0
+              "line": 4,
+              "note": "this is the calling symbol's declaration, not the call site"
             },
             "depth": 0,
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
@@ -1154,8 +1182,10 @@
             "confidence": 0.9,
             "isCrossLanguage": false,
             "callSite": {
+              "kind": "declaration",
               "file": "src/greeter.ts",
-              "line": 0
+              "line": 4,
+              "note": "this is the calling symbol's declaration, not the call site"
             },
             "depth": 0,
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:map:calls",
@@ -1280,10 +1310,10 @@
       "error": "bb/graph: symbol 'nonexistent_symbol_xyz' not found — no graph exists (declared error; run `bb index` or check the name)"
     }
   },
-  "generatedAt": "2026-09-16T17:40:30.626Z",
+  "generatedAt": "2026-09-16T22:13:52.232Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:40:33.036Z",
-    "contentSha256": "55f79fadfc093c246006b9b1e9d6faa1add6b0436b38bb621ede5e30387dbd38"
+    "sealedAt": "2026-09-16T22:13:54.732Z",
+    "contentSha256": "a9441ac079fc00f6c606843725cf3a586bfe42d8c7c42adfed4a3533afd366ac"
   }
 }

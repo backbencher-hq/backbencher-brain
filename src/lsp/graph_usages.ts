@@ -28,7 +28,7 @@
 // Pure by construction: no imports beyond types + the traversal contracts —
 // the mutation suite and every consumer exercise it through the same code.
 
-import type { GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence/contracts"
+import type { CallSiteAddress, GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence/contracts"
 
 /** One stored relationship row as it survives grouping. Nothing about the
  *  row is dropped: rowId keeps it traceable, evidenceClass/enrichment ride
@@ -38,8 +38,10 @@ import type { GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence
 export interface GroupedRow {
   rowId: string
   relationshipType: string
-  /** Source-side call site (file relative + 1-based line). */ 
-  callSite?: { file: string; line: number }
+  /** Source-side position, as the M62 address owner derived it. Never a bare
+   *  line: a legacy `0` or a NULL line is `kind: "unknown"` (or a labeled
+   *  `"declaration"` substitute) — see src/intelligence/graph/line-address.ts. */
+  callSite?: CallSiteAddress
   /** Traversal depth of the edge this row came from. */
   depth: number
   confidence: number

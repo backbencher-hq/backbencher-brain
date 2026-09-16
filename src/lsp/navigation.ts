@@ -106,7 +106,6 @@ interface EdgeRow {
   id: string;
   source_symbol_id: string | null;
   target_symbol_id: string | null;
-  line_number: number | null;
   confidence: number;
   relationship_type: string;
   source_path: string | null;
@@ -429,7 +428,16 @@ export function resolveReferences(
   // (includeDeclaration, the LSP context flag).
   const edges = raw
     .prepare(
-      `SELECT r.id, r.source_symbol_id, r.target_symbol_id, r.line_number,
+      // M62.A2 (issue #876): the stored `r.line_number` is deliberately NOT
+      // selected here. This surface navigates to the referencing symbol's own
+      // indexed location (byte-accurate); presenting the stored call-site line
+      // would be a line-only position (character 0) and a SECOND position
+      // claim beside the address owner's. Where a real call-site line exists
+      // it is served by the hub/graph/MCP address surfaces, which derive it
+      // through src/intelligence/graph/line-address.ts. Keeping the raw column
+      // out of this query is what the M62 permanence lint asserts for every
+      // display-side consumer.
+      `SELECT r.id, r.source_symbol_id, r.target_symbol_id,
               r.confidence, r.relationship_type,
               sf.path AS source_path, ss.byte_start AS source_byte_start,
               ss.byte_end AS source_byte_end, ss.line_start AS source_line_start,

@@ -10,15 +10,21 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negatives": 0,
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+  "workingTreeRelevantChanges": [
+    "script/m26/graph-core.ts",
+    "src/lsp/call_hierarchy.ts",
+    "src/lsp/graph_usages.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/rich_hover.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-identity.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-09-16T17:12:41.522Z",
+  "generatedAt": "2026-09-16T22:05:03.224Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:12:41.523Z",
-    "contentSha256": "6818b10173eabd19d75b628929f41ecab362c17d65ab536b2845f05d08c98731"
+    "sealedAt": "2026-09-16T22:05:03.225Z",
+    "contentSha256": "0f8afb20222379e339e571165db6cd5e3c1987ef21f36e5083ed096d6a086ce5"
   }
 }

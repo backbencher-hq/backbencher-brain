@@ -54,6 +54,30 @@ export interface GraphNodeLike {
   isExternal: boolean
 }
 
+/** M62.A2 (issue #876): the address mirror of
+ *  `CallSiteAddress` (src/intelligence/contracts.ts). The owner
+ *  (`src/intelligence/graph/line-address.ts`) derives and formats it; this
+ *  core stays import-pure (W1), so the shape and the formatter are MIRRORED
+ *  here and drift-gated against the owner by script/m62/verify-consumers.ts.
+ *  A renderer may never present a position the owner did not derive: a
+ *  `declaration` is a labeled substitute and an `unknown` has no position at
+ *  all. */
+export interface CallSiteAddressLike {
+  kind: "call-site" | "declaration" | "unknown"
+  file: string
+  line: number | null
+  note?: string
+}
+
+/** Mirror of the owner's `formatAddress` (drift-gated, M62.A2). */
+export function formatCallSiteAddress(a: CallSiteAddressLike): string {
+  const position = a.line === null ? null : a.file.length > 0 ? `${a.file}:${a.line}` : `line ${a.line}`
+  if (a.kind === "call-site") return position ?? "call site not stored"
+  const note = a.note ?? "call site not stored"
+  if (position === null) return a.file.length > 0 ? `${a.file} — ${note}` : note
+  return `${position} — ${note}`
+}
+
 export interface GraphEdgeLike {
   from: string
   to: string
@@ -61,7 +85,7 @@ export interface GraphEdgeLike {
   confidence: number
   isCrossLanguage: boolean
   bridgeMechanism?: string
-  callSite: { file: string; line: number }
+  callSite: CallSiteAddressLike
   depth: number
   rowId?: string
   /** Stored metadata: the analyzer's evidenceClass PLUS (M42.H3) the
@@ -609,7 +633,8 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
 export interface GroupedHubRow {
   rowId: string
   relationshipType: string
-  callSite?: { file: string; line: number }
+  /** M62.A2: the owner-derived address (never a bare fabricated line). */
+  callSite?: CallSiteAddressLike
   depth: number
   confidence: number
   isCrossLanguage: boolean
@@ -705,6 +730,22 @@ function relChips(entry: GroupedHubEntry, parent: GraphDomElement, dom: GraphDom
   parent.appendChild(wrap)
 }
 
+/** M62.A2: the declared address kind of one stored row ("none" when the row
+ *  carries no address). A renderer that shows a position must say which kind
+ *  it is showing. */
+export function callSiteKindOf(row: GroupedHubRow): string {
+  return row.callSite?.kind ?? "none"
+}
+
+/** The address kinds present across a group's stored rows, sorted — the
+ *  machine-readable claim the hub row makes about its positions. One kind when
+ *  the rows agree; several when they differ (the row shows more than one
+ *  claim, and says so rather than picking one). */
+export function callSiteKindsOfEntry(entry: GroupedHubEntry): string {
+  const kinds = [...new Set(entry.rows.map(callSiteKindOf))].sort()
+  return kinds.length > 0 ? kinds.join(",") : "none"
+}
+
 /** Enrichment is stored per ROW; a group is enriched when any member row is.
  *  The labeled chip lists the DISTINCT roles present (never an invented
  *  single answer); data-enriched is presence-gated. */
@@ -730,6 +771,8 @@ function groupRow(entry: GroupedHubEntry, dir: "caller" | "callee", dom: GraphDo
   el.setAttribute("data-row-ids", entry.rows.map((r) => r.rowId).join(" "))
   el.setAttribute("data-occurrences", String(entry.occurrences))
   if (entry.rows.length > 0) el.setAttribute("data-depth", String(Math.min(...entry.rows.map((r) => r.depth))))
+  // M62.A2: the row declares which address kinds it is showing.
+  el.setAttribute("data-callsite-kinds", callSiteKindsOfEntry(entry))
   // H6 machine click targets: index-resolved file/line/symbol — the bridge
   // navigates from these attrs, never from the display text (issue #654).
   const navigable = entry.file.length > 0
@@ -1065,6 +1108,8 @@ function treeRow(
   if (folded) el.setAttribute("data-fold", "cascade")
   const minDepth = entry.rows.length > 0 ? Math.min(...entry.rows.map((r) => r.depth)) : 0
   el.setAttribute("data-depth", String(minDepth))
+  // M62.A2: same declared address kinds as the list view.
+  el.setAttribute("data-callsite-kinds", callSiteKindsOfEntry(entry))
   const navigable = entry.file.length > 0
   if (navigable) el.setAttribute("data-file", entry.file)
   el.setAttribute("data-line", String(entry.line))

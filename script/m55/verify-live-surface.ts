@@ -244,9 +244,17 @@ console.log("\nR2: the frames — read back at the pixel level")
 // that can silently verify the wrong run is exactly what this milestone exists
 // to prevent, so the order is a declared rule here, and R6's M10 mutant plants
 // the name-ordered pick back.
-function newestRun(runs: string[]): string | null {
+/** The declared order as a PURE function of (name, timestamp) pairs, so the
+ *  R6/M10 mutant is proven on a constructed pair and never on whatever happens
+ *  to be in the artifact directory (a can-fail proof that depends on which
+ *  sessions exist is not a proof — found by running this gate, 2026-09-17). */
+function pickNewestRun(entries: Array<{ name: string; at: string }>): string | null {
   let best: { name: string; at: string } | null = null
-  for (const name of runs) {
+  for (const e of entries) if (best === null || e.at > best.at) best = e
+  return best === null ? null : best.name
+}
+function runEntries(runs: string[]): Array<{ name: string; at: string }> {
+  return runs.map((name) => {
     let at = ""
     try {
       const m = JSON.parse(readFileSync(path.join(FRAMES_DIR, name, "manifest.json"), "utf8")) as { generatedAt?: string }
@@ -254,13 +262,23 @@ function newestRun(runs: string[]): string | null {
     } catch {
       at = ""
     }
-    if (best === null || at > best.at) best = { name, at }
-  }
-  return best === null ? null : best.name
+    return { name, at }
+  })
+}
+function newestRun(runs: string[]): string | null {
+  return pickNewestRun(runEntries(runs))
 }
 const runs = existsSync(FRAMES_DIR) ? readdirSync(FRAMES_DIR).filter((d) => existsSync(path.join(FRAMES_DIR, d, "manifest.json"))) : []
-const runName = newestRun(runs)
-check("R2: the newest capture run is picked by timestamp, not by name", runName === null || runs.indexOf(runName) === runs.findIndex((r) => r === runName), runName ?? "no runs")
+const runList = runEntries(runs)
+const runName = pickNewestRun(runList)
+{
+  // The picked run is the newest by its OWN manifest timestamp: every other
+  // run's timestamp is older. (The previous form compared two index lookups of
+  // the same name — always true, a vacuous check.)
+  const pickedAt = runList.find((e) => e.name === runName)?.at ?? ""
+  const older = runList.filter((e) => e.name !== runName && e.at > pickedAt)
+  check("R2: the newest capture run is picked by its manifest timestamp, not by name", runName === null || older.length === 0, older.length > 0 ? `newer run(s) exist: ${older.map((e) => e.name).join(", ")}` : runName ?? "no runs")
+}
 let frameFacts: Record<string, unknown> = {}
 if (runName === null) {
   blocked("R2: the captured frames are read back", `no capture session has run (run: npx tsx script/m55/screenshot-protocol.ts) — expected under ${path.relative(ROOT, FRAMES_DIR)}/<run>/manifest.json`)
@@ -575,14 +593,22 @@ mutant(
   !VERDICTS.some((v) => "## F99 — something · PROBABLY FINE".includes(`\u00b7 ${v}`)),
 )
 // M10: the newest-run pick goes back to sorting by name (the defect this gate
-// ran into: `live-9` sorts after `live-11`, so a stale session was verified).
+// ran into: `live-9` sorts after `live-11`/`live-22`, so a stale session was
+// verified). Proven on a CONSTRUCTED pair whose name order and timestamp order
+// disagree, so the mutant is catchable regardless of which sessions exist on
+// disk — the earlier disk-derived form silently stopped failing when the run
+// naming changed, which is exactly the decay this milestone exists to kill.
 {
-  const byName = [...runs].sort()
-  const namePick = byName.length > 0 ? byName[byName.length - 1] : null
+  const pair = [
+    { name: "session-b", at: "2026-01-01T00:00:00.000Z" },
+    { name: "session-a", at: "2026-01-02T00:00:00.000Z" },
+  ]
+  const namePick = [...pair.map((e) => e.name)].sort().slice(-1)[0] ?? null
+  const declaredPick = pickNewestRun(pair)
   mutant(
     "M10: a name-ordered newest-run pick (can verify a stale session)",
-    namePick === null || namePick !== newestRun(runs) || runs.length < 2,
-    `name pick ${namePick} vs timestamp pick ${newestRun(runs)}`,
+    declaredPick === "session-a" && namePick === "session-b" && namePick !== declaredPick,
+    `name pick ${String(namePick)} vs timestamp pick ${String(declaredPick)}`,
   )
 }
 

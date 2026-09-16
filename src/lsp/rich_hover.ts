@@ -339,10 +339,16 @@ export function usageSitesOf(sites: readonly RichSite[]): RichSite[] {
  * M55.T3 (issue #772): the section renders USAGE SITES only — the owning
  * declaration and callees are filtered out by the vocabulary owner before
  * anything is rendered (the pre-M55 list offered the hovered method's own
- * class as a "usage"). The header declares what the rows ARE, because the
- * analyzers do not store a call-site line (line_number is 0 for the
- * TypeScript/Java writers — see the T3 evidence), so a row's file:line is the
- * REFERENCING symbol's indexed location, where the call is. */
+ * class as a "usage"). The header declares what the rows ARE: a row's
+ * file:line is the REFERENCING symbol's indexed location, where the call is.
+ *
+ * M62.A2 (issue #876): that stays true by construction — this section reads
+ * the referencing symbol's own indexed range (src/lsp/relations.ts), never the
+ * stored `line_number`, so it can never present a call-site line it does not
+ * have. The exact stored call-site address (real line, labeled substitute, or
+ * declared unknown) is served by the address owner
+ * (src/intelligence/graph/line-address.ts) on the hub/graph/MCP surfaces; the
+ * hover's vocabulary is the referencing location, and it says so. */
 export function usagesSection(sites: RichSite[], total: number, forSymbol: string, forFile: string, forLine: number, forCharacter: number): string {
   // Defensive: filter here as well as at the caller — a caller that forgets
   // cannot leak a declaration into the list (the filter is idempotent).

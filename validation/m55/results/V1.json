@@ -12,17 +12,28 @@
     "total": 17,
     "caught": 17
   },
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+  "workingTreeRelevantChanges": [
+    "script/m26/graph-core.ts",
+    "script/m26/verify-evidence-badges.ts",
+    "script/m26/verify-graph-transport.ts",
+    "script/m26/verify-webview-core.ts",
+    "script/m26/verify-webview-harness.ts",
+    "script/m55/verify-live-surface.ts",
+    "src/lsp/call_hierarchy.ts",
+    "src/lsp/graph_usages.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/rich_hover.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-16T17:40:48.692Z",
+  "generatedAt": "2026-09-16T22:14:09.129Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
     "rigAvailable": true,
     "rigMissing": [],
-    "captureRun": "live-21",
+    "captureRun": "live-22",
     "probeFile": "validation/m55/results/V1-probe.json",
     "probeStatus": "read",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
@@ -71,7 +82,7 @@
     },
     "hover:diff": {
       "ok": true,
-      "changedPixels": 161595,
+      "changedPixels": 161577,
       "changedFraction": 0.0779,
       "box": [
         418,
@@ -143,7 +154,7 @@
     },
     "ctor-hover:diff": {
       "ok": true,
-      "changedPixels": 115592,
+      "changedPixels": 115466,
       "changedFraction": 0.0557,
       "box": [
         377,
@@ -224,8 +235,8 @@
     },
     "zero-usage:diff": {
       "ok": true,
-      "changedPixels": 213276,
-      "changedFraction": 0.1029,
+      "changedPixels": 213238,
+      "changedFraction": 0.1028,
       "box": [
         377,
         12,
@@ -305,7 +316,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:40:48.692Z",
-    "contentSha256": "370fc68ffe8ba70b6624a8b83fb32bbc3c0da36f79e456e6793010149369eb5c"
+    "sealedAt": "2026-09-16T22:14:09.129Z",
+    "contentSha256": "be284211b33148e6bcba176e62c9650948434ecef3cc4752241ca97f9a15e307"
   }
 }
