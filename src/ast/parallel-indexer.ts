@@ -1991,6 +1991,26 @@ export async function storeResults(
          }
          const nameToSymbol = new Map<string, any>()
          const containersByStart: { name: string; start: number; end: number }[] = []
+         // M59/#855: intervals of the symbols this file will ACTUALLY STORE, so
+         // an edge whose analyzer source is a synthetic scope the store filters
+         // reject (anonymous_*/block_N/lambda_N/object_N) can be attributed to
+         // the innermost real enclosing symbol instead of losing attribution.
+         // Filled in the symbol loop below (needs the storeableName replica).
+         const storeableSpans: { id: string; start: number; end: number }[] = []
+         // Hoisted out of the relationship loop: it closes over storeableSpans
+         // only, so defining it per relationship would allocate a closure per
+         // edge for no reason.
+         const enclosingStoreableId = (line: number | null): string | null => {
+           if (!line || line < 1) return null
+           // Sorted by start ascending: scanning backwards from the last span that
+           // begins at or before the line returns the INNERMOST holder first.
+           for (let i = storeableSpans.length - 1; i >= 0; i--) {
+             const sp = storeableSpans[i]
+             if (sp.start > line) continue
+             if (sp.end >= line) return sp.id
+           }
+           return null
+         }
          let firstContainerSymbol: any = undefined
  
          // M51.A1/A3 (#716/#718): the storeable-row replica used by BOTH the
@@ -2048,6 +2068,18 @@ export async function storeResults(
              }
            }
            containersByStart.sort((a, b) => a.start - b.start || b.end - a.end)
+
+           // M59/#855: build the storeable-interval index used by the
+           // relationship-source fallback below. Sorted by start ascending, so a
+           // backwards scan returns the INNERMOST enclosing span first.
+           for (const s of result.symbols) {
+             const sStart = s.startLine ?? s.range?.startLine ?? 0
+             const sEnd = s.endLine ?? s.range?.endLine ?? sStart
+             if (sStart < 1) continue
+             if (!storeableName(s.name, sStart)) continue
+             storeableSpans.push({ id: `${fileId}:${s.name}:${sStart}`, start: sStart, end: Math.max(sEnd, sStart) })
+           }
+           storeableSpans.sort((a, b) => a.start - b.start)
            // First container-kind symbol in sorted order (used for this/self resolution)
            const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
            firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
@@ -2566,9 +2598,44 @@ export async function storeResults(
                const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
                return storeableName(leaf, line)
              }
+             // M59/#855: the analyzer's own call-site line, hoisted so the
+             // source-attribution fallback below can key on it. NULL when the
+             // analyzer could not derive one — never a fabricated 0.
+             const relLine =
+               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+             // M59/#855: an edge whose analyzer source is a synthetic scope this
+             // file will not store (anonymous_*/block_N/lambda_N/object_N) used to
+             // be stored with a NULL source id — FK-legal, but UNATTRIBUTABLE, so
+             // every symbol-joined consumer (bb_graph callers, impact, coupling)
+             // silently lost the CALL SITE. Measured on cats-effect: TimeT.scala
+             // line 148 sits in an anonymous Fiber body, so bb_graph answered 3 of
+             // that file's 4 real `liftF` call sites and #855 was filed as an
+             // analyzer emission gap — the analyzer DID emit the edge; the index
+             // dropped the attribution.
+             //
+             // Attribute such an edge to the innermost STOREABLE symbol enclosing
+             // its own call-site line: the lexical owner the call actually
+             // executes under (for TimeT: the anonymous body's enclosing method
+             // `fiberize`). The analyzer's synthetic spelling goes to
+             // metadata.syntheticSource rather than source_external, so
+             // `source_external IS NOT NULL` keeps meaning "unresolved caller".
+             // NOTE (#865): that metadata key is written here but the enrichment
+             // pass currently REPLACES the whole metadata object, so it does not
+             // survive a full index — the durable attribution is the resolved
+             // source id itself, which is exactly what the tool needs.
+             // Falls back to the historical NULL-id external edge when the line
+             // is unknown or no storeable symbol encloses it.
              if (!sameFileIdOk(sourceId)) {
-               sourceExternal = sourceExternal ?? sourceName
-               sourceId = null
+               const enclosingId = enclosingStoreableId(relLine)
+               if (enclosingId) {
+                 sourceId = enclosingId
+                 rel.metadata = rel.metadata || {}
+                 rel.metadata.syntheticSource = sourceName
+                 rel.metadata.attributedToEnclosing = true
+               } else {
+                 sourceExternal = sourceExternal ?? sourceName
+                 sourceId = null
+               }
              }
  
              if (
@@ -2590,8 +2657,6 @@ export async function storeResults(
               // Line-less edges keep the previous identity exactly, so languages
               // whose analyzer emits no line are unchanged (their per-site rows
               // are unprovable until #825 lands — never fabricated here).
-              const relLine =
-                typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
               const relId = `${projectId}:rel:${sourceId}:${targetName}:${relType}:${relLine ?? "?"}`
 
  

@@ -1447,6 +1447,18 @@ const MUTANTS: Mutant[] = [
     transform: dropNonComponentPhantomContainment,
   },
   {
+    id: "scala/anon-member-initializer-call-loss",
+    language: "scala",
+    defectClass: "edge-absence",
+    description: "M59 (#855) regression: a call made from an anonymous-class member INITIALISER loses its emission — every `calls` edge whose source is the anonymous type is dropped, so the edge exists nowhere for the index to attribute. That is the state #855 was mis-diagnosed as (the analyzer was emitting it; the INDEX was nulling the source). Caught by scala/anonymous-member-initializer-call, which pins `calls anonymous_Runnable -> target` at line 29 beside the control `calls mirrored -> target` at 32.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(String(x.type) === "calls" && String(x.source).startsWith("anonymous_")),
+      ),
+    }),
+  },
+  {
     id: "scala/import-statement-start-line",
     language: "scala",
     defectClass: "line-attribution",
