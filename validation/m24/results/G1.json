@@ -7,11 +7,11 @@
   "passed": 23,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "a2aac1e2825c1ae1f1e6d1871e392c7ba21986a0",
+  "currentCommit": "f54030a50b7a64789b995d2ddcebd5e6d615d697",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-16T19:49:02.936Z",
+  "generatedAt": "2026-09-16T19:55:25.593Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
@@ -19,7 +19,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T19:49:02.938Z",
-    "contentSha256": "f06461432d50d3c95a7e476128043ee6d670736e45ecd1102d3ddee405badc45"
+    "sealedAt": "2026-09-16T19:55:25.595Z",
+    "contentSha256": "a51a379427a7ba5caf417212bbe0158258d8c777b48ddb2740561f097a62174e"
   }
 }
