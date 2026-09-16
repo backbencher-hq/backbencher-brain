@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (28/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (29/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "f80b23ce9bc84e84c7949fde40f24f1218642506",
-  "committedAt": "2026-09-16T17:59:40+02:00",
+  "commit": "908cd194c17f49cff67ff62649c2d7345ec3e6e8",
+  "committedAt": "2026-09-16T19:08:29+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -631,26 +631,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 42,
-        "status": "fail",
+        "referencedTypeLiterals": 41,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-php-analyzer.ts:comparison",
-            "line": 1453,
-            "literal": "declaration"
-          },
-          {
-            "context": "real-php-analyzer.ts:comparison",
-            "line": 1580,
-            "literal": "declaration"
-          },
-          {
-            "context": "real-php-analyzer.ts:comparison",
-            "line": 1592,
-            "literal": "declaration"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-php.wasm"
@@ -1000,7 +984,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 91,
+        "referencedTypeLiterals": 92,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1098,10 +1082,10 @@
       }
     },
     "summary": {
-      "fail": 13,
+      "fail": 12,
       "languagesAudited": 41,
-      "pass": 28,
-      "totalUnknownReferences": 37
+      "pass": 29,
+      "totalUnknownReferences": 34
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1126,8 +1110,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-16T15:59:54.204Z",
-  "regeneratedAtCommit": "f80b23ce9bc84e84c7949fde40f24f1218642506",
+  "regeneratedAt": "2026-09-16T17:30:17.229Z",
+  "regeneratedAtCommit": "908cd194c17f49cff67ff62649c2d7345ec3e6e8",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
