@@ -7890,6 +7890,34 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // therefore register per-occurrence method sets and parent links from
   // their OWN extends_clause; scala override emission (below) verifies the
   // first hop against the exact occurrence, never the pooled entry.
+  /**
+   * M49/M37 #867 (scala3 `tests/pos/typeclasses-this.scala`): a Scala 3
+   * `extension (x: Self) def m(...)` GROUP is an `extension_definition` node, so
+   * its `def`s are grandchildren of the template body, not children. The
+   * analyzer registers those defs as members of the ENCLOSING type (#825's
+   * extension work: `trait Functor { extension (x: Self[A]) def map ... }` emits
+   * `map` owned by `Functor`), so the override truth must see them too. Without
+   * this the analyzer's legitimate `Monad.map -> Functor.map` (implicit override
+   * through `trait Monad extends Functor`) was reported as unexplained
+   * FABRICATION by the scala lane — a confident edge the oracle simply could not
+   * derive. Only the group's own defs are promoted; nested bodies are untouched.
+   */
+  const membersOf = (body: any): any[] => {
+    const out: any[] = []
+    for (let i = 0; i < body.namedChildCount; i++) {
+      const m = body.namedChild(i)
+      if (!m) continue
+      if (m.type === "extension_definition") {
+        for (let j = 0; j < m.namedChildCount; j++) {
+          const mm = m.namedChild(j)
+          if (mm) out.push(mm)
+        }
+        continue
+      }
+      out.push(m)
+    }
+    return out
+  }
   const occMethods = new Map<string, Set<string>>()
   const occSigs = new Map<string, Map<string, Set<string>>>()
   const occParents: { childOcc: string; childName: string; parentName: string }[] = []
@@ -7999,8 +8027,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         // cpp classes use field_declaration_list (no 'body' substring)
         const body = n.namedChildren.find((c: any) => /body|field_declaration_list/.test(c.type))
         if (body) {
-          for (let i = 0; i < body.namedChildCount; i++) {
-            const m = body.namedChild(i)
+          for (const m of membersOf(body)) {
             // Method/function nodes only. The old trailing `|declaration`
             // catch-all ALSO admitted NESTED class/interface/enum_declaration
             // nodes, counting the nested type's name as a method of the
@@ -8114,8 +8141,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           const ownMethods = new Set<string>()
           const ownSigs = new Map<string, Set<string>>()
           if (body) {
-            for (let i = 0; i < body.namedChildCount; i++) {
-              const m = body.namedChild(i)
+            for (const m of membersOf(body)) {
               if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
               const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
               if (smn && smn.text !== "constructor" && smn.text !== nm) {
@@ -8175,8 +8201,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     const anonName = `anonymous_${superName}`
     if (!decls[anonName]) {
       decls[anonName] = { parents: [], methods: new Set(), sigs: new Map() }
-      for (let i = 0; i < body.namedChildCount; i++) {
-        const m = body.namedChild(i)
+      for (const m of membersOf(body)) {
         if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
         const mn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
         if (mn && mn.text !== "constructor" && mn.text !== anonName) {
@@ -8195,8 +8220,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const occKey = `${anonName}#0`
         const ownMethods = new Set<string>()
         const ownSigs = new Map<string, Set<string>>()
-        for (let i = 0; i < body.namedChildCount; i++) {
-          const m = body.namedChild(i)
+        for (const m of membersOf(body)) {
           if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
           const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
           if (smn && smn.text !== "constructor" && smn.text !== anonName) {
@@ -9421,7 +9445,13 @@ async function main() {
     }
     if (lane.isSecond) reportSecond[`${langRepo}:${lang}`] = row
     else report[lang] = row
-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%)`)
+    // `heuristic`/`hash` are printed because they are what the gate COMPARES:
+    // the declared-heuristic count is one of the three counts a regression is
+    // scored on (`evaluateDifferential`), and the drawn-set hash is what makes
+    // two runs comparable at all. A lane line that omits them forces a
+    // re-derivation to answer "did this grow?", which is how a rotated sample
+    // gets misread as a code regression.
+    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
 
     // M37.21 #610 operational lesson (web-tree-sitter WASM heap aborts kill
     // the sweep mid-run — twice during the JVM wave): persist each completed
