@@ -1143,8 +1143,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     let extensionReceiver: string | undefined
     let extensionReceiverNode: Node | undefined
     {
-      let receiverNode: any = undefined
-      for (let i = 0; i < node.namedChildCount; i++) {
+      // Field-first, same contract as extractReceiverType (#382 item 3):
+      // `val String.len2: Int` resolves `receiver` to "String" on the pinned
+      // wasm; the positional scan below is the fallback for builds that do not
+      // declare the field.
+      let receiverNode: any = node.childForFieldName("receiver")
+      for (let i = 0; receiverNode == null && i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (c?.type === "simple_identifier") break
         // Upstream grammar (>= wasm 2026-08) wraps the extension receiver in
@@ -1842,9 +1846,13 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Return Type Extraction
    */
   private extractReturnType(node: Node, ctx: KotlinContext): string | undefined {
-    const typeNode =
-      node.childForFieldName("return_type") ||
-      this.findChildByType(node, ["user_type", "nullable_type", "function_type", "type_identifier"])
+    // Positional by necessity: the pinned kotlin wasm exposes exactly four
+    // fields (receiver/alternative/condition/consequence — verified 2026-09-16
+    // against the wasm) and `return_type` is not one of them
+    // (childForFieldName("return_type") is UNDEFINED on `fun f(): Int`).
+    // A field read here was provably dead; F1's field audit now fails on any
+    // field literal the pinned grammar cannot resolve.
+    const typeNode = this.findChildByType(node, ["user_type", "nullable_type", "function_type", "type_identifier"])
 
     if (typeNode) {
       return this.cleanKotlinType(typeNode.text)
@@ -1869,10 +1877,17 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Receiver Type Extraction (for extension functions)
    */
   private extractReceiverType(node: Node, ctx: KotlinContext): string | undefined {
-    // The receiver of an extension function is the leading type child before
-    // the function name (fun String.shout → receiver_type/user_type "String").
-    // Upstream grammar wraps it in receiver_type; older builds expose a bare
-    // user_type — both accepted.
+    // FIELD-FIRST (#382 item 3). The pinned kotlin wasm (upstream 1852ea1,
+    // rebuilt in f51879d9) exposes a `receiver` field — verified live
+    // 2026-09-16: `fun String.clip()` and `val String.len2: Int` both resolve it
+    // to "String" while a plain `fun f()` leaves it undefined. The positional
+    // scan stays as the fallback for a build that does not declare it (upstream
+    // grammar once wrapped the receiver in a bare receiver_type/user_type child).
+    const fieldReceiver = node.childForFieldName("receiver")
+    if (fieldReceiver) return this.cleanKotlinType(fieldReceiver.text)
+
+    // Positional fallback: the leading type child before the function name
+    // (fun String.shout → receiver_type/user_type "String").
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c?.type === "simple_identifier") break
@@ -2094,10 +2109,12 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Kotlin Type Parameters Extraction
    */
   /**
-   * Positional `value_arguments` lookup. The pinned kotlin wasm exposes
-   * ZERO named fields (fieldCount=0), so every childForFieldName call in
-   * this file returns undefined - this helper is the required fallback
-   * for annotation/route argument extraction (M14.1).
+   * Positional `value_arguments` lookup. The pinned kotlin wasm exposes only
+   * four fields (receiver/alternative/condition/consequence — verified
+   * 2026-09-16), none of which is `value_arguments`, so this helper remains the
+   * mechanism for annotation/route argument extraction (M14.1). The earlier
+   * "fieldCount=0" claim in this comment was stale: the 1852ea1 rebuild added
+   * field info, but only `receiver` among the fields this analyzer would want.
    */
   private getValueArguments(node: Node): Node | undefined {
     // annotation > constructor_invocation > value_arguments: grandchild, so a
@@ -2128,10 +2145,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < typeParamList.namedChildCount; i++) {
         const typeParam = typeParamList.namedChild(i)
         if (typeParam?.type === "type_parameter") {
-          // pinned wasm has no named fields: positional name extraction
-          const paramName =
-            typeParam.childForFieldName("name")?.text ||
-            typeParam.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "type_identifier")?.text
+          // Positional: no `name` field on type_parameter in the pinned wasm
+          // (verified — `class A<T>` gives type_parameter > type_identifier).
+          const paramName = typeParam.namedChildren.find(
+            (c: any) => c.type === "simple_identifier" || c.type === "type_identifier",
+          )?.text
           if (paramName) {
             typeParameters.push(paramName)
           }
@@ -2216,15 +2234,17 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
       return this.cleanKotlinType(typeNode.text)
     }
 
-    // Infer from the initializer: it may live inside variable_declaration
-    // (with an initializer field) or as a literal/expression child directly
-    // under the property node (e.g. `const val VERSION = 1`).
-    const initializer =
-      (declarationNode ? declarationNode.childForFieldName("initializer") : null) ||
-      node.childForFieldName("initializer")
-    if (initializer) {
-      return this.inferKotlinTypeFromInitializer(initializer)
-    }
+    // Infer from the initializer expression child (e.g. `const val VERSION = 1`).
+    //
+    // This used to read `childForFieldName("initializer")` on the declaration and
+    // on the property node. Both reads were PROVABLY DEAD: the initializer is not
+    // a named field in the pinned kotlin wasm (verified 2026-09-16 —
+    // `property_declaration` children are binding_pattern_kind, variable_declaration,
+    // `=(anon)`, then the expression), so the expression arm never fired and only
+    // the literal scan below ever produced a type. Removing the dead reads keeps
+    // the measured behaviour identical (it is now explicit rather than accidental).
+    // A positional initializer read (named child after the anonymous `=`) is a
+    // candidate improvement, tracked rather than smuggled in here.
     const LITERAL_TYPES = ["integer_literal", "real_literal", "string_literal", "character_literal", "boolean_literal", "call_expression"]
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
@@ -2975,12 +2995,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
       }
 
-      if (n.type === "infix_expression") {
-        const op = n.childForFieldName("operator")?.text
-        if (op === "&&" || op === "||") {
-          complexity++
-        }
-      }
+      // (The former `infix_expression` + childForFieldName("operator") branch was
+      // deleted 2026-09-16: `operator` is not a field in the pinned wasm, so the
+      // test could never be true — and it was redundant anyway, because `&&`/`||`
+      // parse as conjunction_expression / disjunction_expression, which the switch
+      // above already counts. Verified on `if (a && b) {}`.)
 
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)

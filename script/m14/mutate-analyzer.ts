@@ -1203,6 +1203,42 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).isDecorator && typeof x.line_number === "number" ? { ...x, line_number: x.line_number + 1 } : x) }),
   },
   {
+    id: "typescript/type-parameter-constraint-default-dropped",
+    language: "typescript",
+    defectClass: "payload-fidelity",
+    description: "M14 (#382) regression: a type parameter's constraint and default are dropped from the symbol payload — the exact pre-fix state. The analyzer read non-existent fields (`extends`/`default`) instead of the pinned tsx/typescript grammar's real fields (`constraint`/`value`), so only the bare name survived (`T`, not `T extends HasId = HasId`). It survived every gate because the F1 field oracle captured no field literals at all, and the one existing fixture (generic-constraints) pinned only the name `T`. Caught by typescript/type-parameter-constraint-default, whose five pins are full constraint+default strings.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const strip = (tp: any) => (typeof tp === "string" ? tp.split(/\s+/)[0] : tp)
+        const next: any = { ...s }
+        if (Array.isArray(s.genericParameters)) next.genericParameters = s.genericParameters.map(strip)
+        if (s.metadata && Array.isArray(s.metadata.typeParameters)) {
+          next.metadata = { ...s.metadata, typeParameters: s.metadata.typeParameters.map(strip) }
+        }
+        return next
+      }),
+    }),
+  },
+  {
+    id: "typescript/type-parameter-names-only-positional",
+    language: "typescript",
+    defectClass: "grammar-field",
+    description: "M14 (#382) near-miss: type parameters keep their constraint/default but read them POSITIONALLY (`namedChild(1)`), which for `T extends object = {}` yields the constraint AND the default concatenated into one string — the arithmetic one step away from the fixed code. Caught by typescript/type-parameter-constraint-default: `T extends object = {}` cannot be produced by joining the wrong children.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const mangle = (tp: any) =>
+          typeof tp === "string" && tp.includes(" = ")
+            ? tp.split(" = ")[0] + " = " + tp.split(" = ")[1] + tp.split(" = ")[1]
+            : tp
+        const next: any = { ...s }
+        if (Array.isArray(s.genericParameters)) next.genericParameters = s.genericParameters.map(mangle)
+        return next
+      }),
+    }),
+  },
+  {
     id: "typescript/iface-implements-override-drop",
     language: "typescript",
     defectClass: "relationship-loss",

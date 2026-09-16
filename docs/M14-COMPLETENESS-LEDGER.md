@@ -84,13 +84,16 @@ were stale — java/groovy now carry explicit fixture + mutant pins; the
 #419 section-B gate in `completeness-inventory.ts` is the AUTHORITATIVE
 per-language relationship-kind record).
 
-Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed; stable_type_identifier parents; script-sentinel constructions).  kotlin wasm fieldCount=0 -> #382.
+Scala (Matrix 2 JVM cluster): fixtures 10/10 GATED; differential 95.1% cov / 0.5% unexplained on scala3@HEAD after #385 fixes (trait multi-parent positional bug fixed;  stable_type_identifier parents; script-sentinel constructions).  kotlin wasm fields: REBUILT (upstream 1852ea1, commit f51879d9) -> #382 CLOSED 2026-09-16.
 
 ## AST purity audit (2026-08-23)
 
 Relationship and symbol extraction in java/groovy/kotlin: tree-walk based,
-grammar fields used where the wasm provides them (kotlin wasm: fieldCount=0 -
-positional fallbacks documented). Remaining raw-text semantics, all DECLARED:
+grammar fields used where the wasm provides them (kotlin wasm: rebuilt from
+upstream 1852ea1 in f51879d9, exposes the `receiver` field — verified live
+2026-09-16 — plus alternative/condition/consequence; every other kotlin field
+read in the analyzer was PROVABLY DEAD and has been removed, with positional
+lookups stated as such. See `reviews/m14-field-oracle-round.md`). Remaining raw-text semantics, all DECLARED:
 - java/groovy collectFieldAccessUses split(".") (anti-skip holds; grammar-fields rewrite open)
 - framework/pattern DETECTION labels use content substring matching
   (kotlin stringIncludes(content,"let") etc) - cosmetic metadata, low stakes;
@@ -183,9 +186,30 @@ provenance, and upstream version drift. Known vendored: tree-sitter-groovy
 | Language | wasm source | grammar provenance | version pinned | drift checked |
 |---|---|---|---|---|
 | groovy | grammars/ build -> wasm/ | vendored amaanq 0.1.2 (improved) | YES | wave M14.1 done |
-| fsharp | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING -> #382 |
-| clean | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING -> #382 |
-| all others | wasm/*.wasm (upstream builds) | upstream tree-sitter repos | PENDING per-wave -> #382 | PENDING -> #382 |
+| kotlin | wasm/tree-sitter-kotlin.wasm (rebuilt in-repo) | upstream tree-sitter-kotlin @ 1852ea1 (commit f51879d9) | YES | fields verified live 2026-09-16: `receiver` resolves on extension fn + property; fieldCount=4 |
+| fsharp | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING -> #864 |
+| clean | grammars/ build -> wasm/ | vendored | PENDING wave M14.5 | PENDING -> #864 |
+| all others | wasm/*.wasm (upstream builds) | upstream tree-sitter repos | PENDING per-wave -> #864 | PENDING per-wave -> #864 |
+
+**Field audit (added 2026-09-16, #382 item 4).** F1 records `wasmFieldCounts`
+(the UNION of every grammar an analyzer can legitimately see, which is the
+correct formulation — vue's wasm is field-less but vue also parses script blocks
+with the ts/js grammars) and a `fieldless` flag, for all 41 audited languages.
+Two analyzers are field-less: **css** (single grammar, fieldCount=0) and
+**graphql** (fieldCount=0). css's one `childForFieldName("property")` read was
+provably dead and has been removed; graphql references no field literals, so
+nothing is dead there — but any future `childForFieldName` in graphql is
+silently dead by construction, which is what the flag is for.
+
+**The oracle itself was broken until 2026-09-16** and is now fixed and
+load-bearing: (1) the field-literal extractor read the `arguments` WRAPPER node
+instead of unwrapping it, so `referencedFieldLiterals` was **0 for every
+language** — a file with 138 `childForFieldName` calls reported none; (2) field
+ids are 1-based (`fieldNameForId(0)` is null), so the `i < fieldCount` loop
+dropped the alphabetically-last field of every grammar — typescript/javascript/
+vue `value` and kotlin `receiver`. With both fixed, java/kotlin/scala/groovy/
+typescript/javascript/vue/svelte report **0 unknown field literals**; lua/perl/r
+report pre-existing dead reads held as a registered residual (#863).
 
 Standing sub-checks for every analyzer audit (added to seven stations):
 8. grammar provenance + version recorded in evidence; upstream drift diffed

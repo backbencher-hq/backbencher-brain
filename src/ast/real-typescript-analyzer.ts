@@ -1055,13 +1055,19 @@ class TypeInferenceEngine {
           const nameNode = param.childForFieldName("name")
           if (nameNode) {
             let paramStr = nameNode.text
-            const extendsNode = param.childForFieldName("extends")
-            const defaultNode = param.childForFieldName("default")
-            if (extendsNode) {
-              paramStr += ` extends ${stripLeadingColon(extendsNode.text)}`
+            // Field names verified against the pinned tsx/typescript wasm
+            // (2026-09-16): a type_parameter carries name, constraint and value —
+            // NOT `extends`/`default`, which this code read while the F1 field
+            // oracle was blind (it captured no field literals at all until that
+            // same fix). `constraint` text includes the keyword ("extends object"),
+            // hence the strip before appending.
+            const constraintNode = param.childForFieldName("constraint")
+            const defaultValueNode = param.childForFieldName("value")
+            if (constraintNode) {
+              paramStr += ` extends ${stripLeadingColon(constraintNode.text.replace(/^extends\s+/, ""))}`
             }
-            if (defaultNode) {
-              paramStr += ` = ${stripLeadingEquals(defaultNode.text)}`
+            if (defaultValueNode) {
+              paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
             }
             typeParams.push(paramStr)
           } else {
@@ -1121,7 +1127,12 @@ class TypeInferenceEngine {
   }
 
   private findParameterType(funcNode: Node, name: string): string | undefined {
-    const params = funcNode.childForFieldName("parameters") || funcNode.childForFieldName("formal_parameters")
+    // `formal_parameters` is a node TYPE, not a field: that second read could
+    // never resolve. The positional fallback keeps the original intent for any
+    // shape that carries an unnamed parameter list.
+    const params =
+      funcNode.childForFieldName("parameters") ||
+      funcNode.namedChildren.find((c: Node | null) => c?.type === "formal_parameters")
     if (!params) return undefined
     for (let i = 0; i < params.namedChildCount; i++) {
       const p = params.namedChild(i)
@@ -1607,13 +1618,19 @@ class TypeScriptAnalysisRunner {
           const nameNode = param.childForFieldName("name")
           if (nameNode) {
             let paramStr = nameNode.text
-            const extendsNode = param.childForFieldName("extends")
-            const defaultNode = param.childForFieldName("default")
-            if (extendsNode) {
-              paramStr += ` extends ${stripLeadingColon(extendsNode.text)}`
+            // Field names verified against the pinned tsx/typescript wasm
+            // (2026-09-16): a type_parameter carries name, constraint and value —
+            // NOT `extends`/`default`, which this code read while the F1 field
+            // oracle was blind (it captured no field literals at all until that
+            // same fix). `constraint` text includes the keyword ("extends object"),
+            // hence the strip before appending.
+            const constraintNode = param.childForFieldName("constraint")
+            const defaultValueNode = param.childForFieldName("value")
+            if (constraintNode) {
+              paramStr += ` extends ${stripLeadingColon(constraintNode.text.replace(/^extends\s+/, ""))}`
             }
-            if (defaultNode) {
-              paramStr += ` = ${stripLeadingEquals(defaultNode.text)}`
+            if (defaultValueNode) {
+              paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
             }
             typeParams.push(paramStr)
           } else {
@@ -4661,7 +4678,11 @@ class TypeScriptAnalysisRunner {
   private extractParameters(node: Node): ASTEngine.Parameter[] {
     const params: ASTEngine.Parameter[] = []
 
-    const paramsNode = node.childForFieldName("parameters") || node.childForFieldName("formal_parameters")
+    // Same correction as findParameterType: `formal_parameters` is a node type,
+    // not a field name in the pinned grammar — positional fallback instead.
+    const paramsNode =
+      node.childForFieldName("parameters") ||
+      node.namedChildren.find((c: Node | null) => c?.type === "formal_parameters")
     if (!paramsNode) return params
 
     for (let i = 0; i < paramsNode.namedChildCount; i++) {
@@ -5739,13 +5760,19 @@ export class RealTypeScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nameNode = param.childForFieldName("name")
           if (nameNode) {
             let paramStr = nameNode.text
-            const extendsNode = param.childForFieldName("extends")
-            const defaultNode = param.childForFieldName("default")
-            if (extendsNode) {
-              paramStr += ` extends ${stripLeadingColon(extendsNode.text)}`
+            // Field names verified against the pinned tsx/typescript wasm
+            // (2026-09-16): a type_parameter carries name, constraint and value —
+            // NOT `extends`/`default`, which this code read while the F1 field
+            // oracle was blind (it captured no field literals at all until that
+            // same fix). `constraint` text includes the keyword ("extends object"),
+            // hence the strip before appending.
+            const constraintNode = param.childForFieldName("constraint")
+            const defaultValueNode = param.childForFieldName("value")
+            if (constraintNode) {
+              paramStr += ` extends ${stripLeadingColon(constraintNode.text.replace(/^extends\s+/, ""))}`
             }
-            if (defaultNode) {
-              paramStr += ` = ${stripLeadingEquals(defaultNode.text)}`
+            if (defaultValueNode) {
+              paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
             }
             typeParams.push(paramStr)
           } else {

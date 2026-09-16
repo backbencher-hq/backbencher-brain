@@ -738,7 +738,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processDeclaration(node: Node, currentSelector: string, ctx: CssContext) {
     // Create Uses relationship between selector and property
     if (currentSelector) {
-      const propNode = node.childForFieldName("property") || this.findChild(node, (c: Node) => c.type === "property_name")
+      // Positional lookup only: the pinned tree-sitter-css wasm exposes
+      // fieldCount=0 (probe: childForFieldName("property") is UNDEFINED on
+      // `color: red`), so a field call here would be provably dead code. F1's
+      // field audit now fails on any field literal a grammar cannot resolve.
+      const propNode = this.findChild(node, (c: Node) => c.type === "property_name")
       if (propNode) {
         ctx.relationships.push({
           source: currentSelector,
