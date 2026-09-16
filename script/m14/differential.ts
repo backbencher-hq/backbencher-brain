@@ -1349,13 +1349,22 @@ export function deriveGroovyEdges(root: any): { label: string; from: string; tar
       const fParts = String(n.text).split(".").map((p: string) => (p.endsWith("?") || p.endsWith("*") ? p.slice(0, -1) : p))
       if (fParts.length >= 2 && !fIsWrite && !fIsCallee && fParts[fParts.length - 1]) push("uses", fParts[fParts.length - 1])
     } else if (t === "leading_dot_call") {
-      // #851: a paren-less continuation is a member READ (the paren-ful one is a
-      // call, handled above). Mirrored so the restored read is COMPARED rather
-      // than invisible — the state that let it ship broken.
+      // #851: a continuation segment is a CALL only with an argument list
+      // (`.build(1)`); a paren-less `.label` is a member READ. BOTH live in this
+      // one arm. There used to be a separate calls-only arm for this node type
+      // further down the chain; adding the read arm in front of it made that one
+      // UNREACHABLE — two `else if`s on the same node type never both fire — and
+      // calls truth silently stopped being derived for paren-ful continuations.
+      // Caught by the corpus lane, not by reading the diff: three `calls` edges
+      // surfaced as unexplained on the grails-core groovy lane. The arms are
+      // merged here so the class cannot recur.
       const ldName = n.childForFieldName?.("name")
       const ldArgs = n.childForFieldName?.("arguments")
         ?? (n.namedChildren ?? []).find((c: any) => c.type === "argument_list")
-      if (!ldArgs && ldName && !isBuiltin(ldName.text)) push("uses", ldName.text)
+      if (ldName && !isBuiltin(ldName.text)) {
+        if (ldArgs) push("calls", ldName.text)
+        else push("uses", ldName.text)
+      }
     } else if (t === "array_access") {
       // KAD1 sweep (M37 #597) mirror: a read of the array expression is a use;
       // the assignment-LHS span is a write and must not emit.
@@ -1408,17 +1417,6 @@ export function deriveGroovyEdges(root: any): { label: string; from: string; tar
           : nameNode
         push("calls", leaf.text)
       }
-    } else if (t === "leading_dot_call") {
-      // #851: a continuation segment is a call ONLY with an argument list
-      // (`.build(1)`); a paren-less `.label` is a member READ and is
-      // deliberately NOT calls truth. This branch did not exist, so the
-      // analyzer's fabricated `calls` for the property form had no oracle to
-      // disagree with it, and the legitimate paren-ful call had no truth
-      // either.
-      const nameNode = n.childForFieldName?.("name")
-      const args = n.childForFieldName?.("arguments")
-        ?? (n.namedChildren ?? []).find((c: any) => c.type === "argument_list")
-      if (args && nameNode && !isBuiltin(nameNode.text)) push("calls", nameNode.text)
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
   }
