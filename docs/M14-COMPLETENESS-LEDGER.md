@@ -947,3 +947,38 @@ typescript carries `["inject"]`), no decorator `references` edge is emitted at a
 class-body decorator stays a call by the enclosing class. The suppression is only safe
 after the member-scoped reference exists, so doing it here would have fixed one contract
 by breaking another.
+
+**[#868](https://github.com/backbencher-hq/backbencher-brain/issues/868) — javascript decorator
+metadata, CLOSED.** The layer #861 named and could not land: a decorator is metadata on the
+symbol it decorates, its name is a `references` edge from that symbol at the DECORATOR's own
+line, and it is neither a call nor a read of whoever encloses it. Four gaps measured against
+the typescript twin before anything was written (`script/m14/tmp/868-ts-vs-js-decorators.ts`):
+the field path never asked for its decorator, no decorator `references` edge existed, a
+class-body decorator was a `calls` by the enclosing class, and its name was a bare-read `uses`
+from its carrier. A fifth gap the issue did not know about: an EXPORTED class dropped its
+decorator entirely, because this grammar puts it on the wrapping `export_statement` where the
+own-child reader never looked — the most common real-world spelling. `inDecoratorPosition`
+(the typescript rule) now guards both JS walkers, `collectOwnDecoratorDetails` keeps
+`decoratorLines` in lockstep with `decorators` on classes/methods/FIELDS, and
+`collectClassDecoratorDetails` reads both placements. **The one existing fixture that had
+pinned the wrong answer was corrected, not deleted**: `javascript/decorator-declaration-lines-861`
+pinned the bare-read `uses` rows *because* they were the decorator's only trace; they moved to
+`forbid` with the reasoning recorded, and the `references` rows replaced them. 4 fixtures
+(javascript + vue + svelte), **9 mutants all CAUGHT** (including two that subtract the recorded
+seam offset), all 22 lanes green, M49.G9 49/49. Set-wise sweep of **9,067 web corpus files**:
+`+0/-0` symbols, `+0/-0` relationships, 0 re-attributed, 0 source-moved.
+
+**The seam defect that measurement found (fixed here, same contract):** the SFC seam shifted
+`line_number` but left the metadata LINE MIRRORS script-relative, so in a `.vue` with a template
+above the script `references Service -> sealed` said `line_number=6` while its own metadata said
+`decoratorLine=5` — one row, two answers, with `sfcLineOffset: 1` recorded on the very row that
+disagreed. Invisible whenever the script starts on line 1, which is why every earlier vue/svelte
+fixture missed it; the two new SFC fixtures put the script lower and pin `meta.decoratorLine`
+(also `meta.decoratorLines` on symbols — the harness compared arrays with `!==`, so those lists
+had been UNPINNABLE; arrays now compare by sorted JSON as imports already did).
+
+**Measured and NOT folded in (filed as [#873](https://github.com/backbencher-hq/backbencher-brain/issues/873)):**
+the payload carries TWO line bases on one row — `line_number` and `decoratorLine` are 1-based,
+`metadata.line` is `startPosition.row` (0-based), uniformly across eight analyzers in four
+families and read by nothing yet. That is M60.P1's subject (the payload-seam matrix) and it
+deserves a base column there rather than eight drive-by edits inside a decorator fix.

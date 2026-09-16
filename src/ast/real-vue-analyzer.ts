@@ -23,6 +23,33 @@ import { ASTEngine } from "./engine"
 import { RealJavaScriptAnalyzer } from "./real-javascript-analyzer"
 import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 
+/**
+ * M49 #868 — the SFC seam must shift the delegate's metadata LINE MIRRORS, not
+ * only its `line_number`/symbol ranges.
+ *
+ * Measured on a decorated class in this file family: in a .vue with a template
+ * above the script block, the row `references Service -> sealed` carried
+ * `line_number=6` — the line `@sealed` is written on — while its own metadata
+ * still said `decoratorLine=5`, the SCRIPT-relative value, unshifted. The
+ * applied offset was recorded on that very row (`sfcLineOffset: 1`), so the
+ * payload contradicted both itself and the file, and a consumer reading the
+ * mirror got a line above the decorator it names.
+ *
+ * Only keys whose NAME is a line (`decoratorLine`, `line`, `decoratorLines`)
+ * are touched, and only numeric values: a decorator whose line was never
+ * recorded stays null rather than becoming a number (never invent a line, #823).
+ */
+function shiftMetadataLineMirrors(md: Record<string, unknown> | undefined, lineOffset: number): void {
+  if (!md || lineOffset === 0) return
+  for (const [k, v] of Object.entries(md)) {
+    if (!/line/i.test(k)) continue
+    if (typeof v === "number") md[k] = v + lineOffset
+    else if (Array.isArray(v) && v.some((x) => typeof x === "number")) {
+      md[k] = v.map((x) => (typeof x === "number" ? x + lineOffset : x))
+    }
+  }
+}
+
 // ============================================================================
 // BUILTIN TAG FILTERS — template component-usage detection
 // ============================================================================
@@ -312,6 +339,9 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (s.range.startLine === 1 + lineOffset) s.range.startColumn += colOffset
         if (scriptStartIndex && s.range.startIndex !== undefined) s.range.startIndex += scriptStartIndex
         if (scriptStartIndex && s.range.endIndex !== undefined) s.range.endIndex += scriptStartIndex
+        // M49 #868: the symbol's own metadata line mirrors travel with its range
+        // (metadata.decoratorLines is a SCRIPT-relative list of line numbers).
+        shiftMetadataLineMirrors(s.metadata as Record<string, unknown> | undefined, lineOffset)
         symbols.push(s)
       }
       for (const r of sub.relationships ?? []) {
@@ -327,6 +357,8 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         // pinned 40-file sample: vue 562 of 585 line-bearing edges INCONSISTENT
         // (svelte 19 of 58) — the near-miss look of a real defect.
         if (typeof r.line_number === "number") r.line_number += lineOffset
+        // M49 #868: the metadata line mirrors move with it (see the helper).
+        shiftMetadataLineMirrors(r.metadata as Record<string, unknown> | undefined, lineOffset)
         // The seam is RECORDED on the edge, not just applied to it: which block it
         // came from and the offset that was added. Without this the shift is only
         // observable by re-deriving the script's position, so no fixture could

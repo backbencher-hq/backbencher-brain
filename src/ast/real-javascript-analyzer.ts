@@ -87,6 +87,25 @@ function hasBraceEquals(text: string): boolean {
   return false
 }
 
+/**
+ * M49 #868: the decorator's NAME, from a `decorator` node's own text.
+ * `@observable` -> observable; `@computed({x})` -> computed;
+ * `@lib.inject("db")` -> lib.inject (the callee expression, arguments
+ * stripped). Previously inlined in the own-child collector; shared now that
+ * three call sites need it (class, method, field) and they must agree on the
+ * spelling the reference edge carries.
+ */
+function jsDecoratorName(decorator: Node): string {
+  const inner = decorator.namedChild(0)
+  const nameText =
+    inner && (inner.type === "call_expression" || inner.type === "member_expression" || inner.type === "identifier")
+      ? inner.type === "call_expression"
+        ? (inner.childForFieldName("function")?.text ?? inner.text.split("(")[0])
+        : inner.text.split("(")[0]
+      : decorator.text
+  return nameText.replace(/^@/, "") || decorator.text.replace(/^@/, "")
+}
+
 function stripWhitespace(text: string): string {
   let out = ""
   for (let i = 0; i < text.length; i++) {
@@ -235,7 +254,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const name = node.childForFieldName("name")?.text
           if (name) {
             const comments = this.collectComments(node)
-            const decorators = this.collectOwnDecorators(node)
+            const dec = this.collectClassDecoratorDetails(node)
+            const decorators = dec.names
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Class,
@@ -244,7 +264,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               visibility: "public",
               decorators: decorators.length > 0 ? decorators : undefined,
               comments,
-              metadata: { isClass: true },
+              metadata: {
+                isClass: true,
+                // M49 #868: parallel to `decorators`, so a decorator's
+                // reference edge can name the line the decorator is written
+                // on (the M59 #860 contract the typescript twin already has).
+                ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
+              },
             })
             scopeStack.push({ name, kind: JSScopeKind.Class })
             nextInClassBody = true
@@ -364,7 +390,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // Decorators are OWN children of method_definition in the JS
               // grammar (unlike TS where method decorators are class_body
               // siblings).
-              const decorators = this.collectOwnDecorators(node)
+              const dec = this.collectOwnDecoratorDetails(node)
+              const decorators = dec.names
             var methodSymbol: ASTEngine.UniversalSymbol = {
               // #813: the declared spelling IS the member's name (every edge
               // that reads it carries the `#`; see the TS site's note).
@@ -381,7 +408,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               decorators: decorators.length > 0 ? decorators : undefined,
               comments,
               complexity: this.methodComplexity(node),
-              metadata: { isAccessor, isAsync, isGenerator, ...((kindSlot ? { accessorKind: kindSlot === ":get" ? "get" : "set" } : {}) as Record<string, unknown>) },
+              metadata: {
+                isAccessor,
+                isAsync,
+                isGenerator,
+                ...((kindSlot ? { accessorKind: kindSlot === ":get" ? "get" : "set" } : {}) as Record<string, unknown>),
+                // M49 #868: the decorator's own line, parallel to
+                // `decorators` (same lockstep as the typescript twin).
+                ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
+              },
             }
             }
             if (seenIdx === undefined) {
@@ -427,6 +462,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // #813: keep the declared `#` spelling.
             const name = prop.text
             const owner = scopeOwnerName(scopeStack)
+            // M49 #868: a FIELD decorator was dropped entirely — the class and
+            // method paths called the collector, this one never did, so
+            // `@inject("db") pool = 1` attached nothing to `pool` while the
+            // identical shape in typescript yielded `decorators=["inject"]`.
+            // The JS grammar nests the decorator INSIDE field_definition
+            // (probe: `field_definition children=[decorator@6,
+            // property_identifier@7, =@7, number@7]`), so the own-child
+            // collector is the right reader here.
+            const dec = this.collectOwnDecoratorDetails(node)
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Property,
@@ -438,7 +482,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // the old hardcoded "public" contradicted metadata.isPrivate
               // on the same symbol.
               visibility: prop.type === "private_property_identifier" ? "private" : "public",
-              metadata: { isPrivate: prop.type === "private_property_identifier" },
+              decorators: dec.names.length > 0 ? dec.names : undefined,
+              metadata: {
+                isPrivate: prop.type === "private_property_identifier",
+                ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
+              },
             })
           }
           break
@@ -952,6 +1000,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     this.extractCallRelationships(rootNode, symbols, relationships, moduleName, deadSpans)
     this.extractExportRelationships(exports, relationships, moduleName)
+    // M49 #868: decorators are metadata on the symbol they decorate, so their
+    // only edge is a reference FROM that symbol, at the decorator's own line.
+    this.extractDecoratorRelationships(symbols, relationships)
 
     // --- Metadata ------------------------------------------------------------
     const architecturalScore = Math.min(100, Math.max(0, 100 - errors.length * 5))
@@ -1166,6 +1217,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const processNode = (n: Node, current: string | null): void => {
       // J3: superseded duplicate bodies contribute no edges.
       if (isNodeInDeadSpans(deadSpans, n)) return
+      // M49 #868: no call edge from decorator position — the decorator's name
+      // is a reference from the symbol it decorates (extractDecoratorRelationships),
+      // not a call by whoever lexically encloses it. The subtree is skipped
+      // whole, so a call nested in a decorator's ARGUMENTS (`@inject(make())`)
+      // is decorator position too — the web-family rule the typescript twin
+      // already applies.
+      if (this.inDecoratorPosition(n)) return
       current = resolveCurrent(n, current)
       const callSource = current || moduleName
 
@@ -1300,21 +1358,125 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Decorator names from a node's OWN children (JS grammar placement). */
   private collectOwnDecorators(node: Node): string[] {
-    const out: string[] = []
+    return this.collectOwnDecoratorDetails(node).names
+  }
+
+  /**
+   * M49 #868: the JS twin of the typescript analyzer's `decoratorLines`. The
+   * name list is what the store reads on the symbol; the PARALLEL line list
+   * lets the decorator's reference edge name the line the decorator is
+   * written on. A name already recorded keeps its FIRST position, so the two
+   * lists stay in lockstep by construction.
+   */
+  private collectOwnDecoratorDetails(node: Node): { names: string[]; lines: Array<number | null> } {
+    const names: string[] = []
+    const lines: Array<number | null> = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type !== "decorator") continue
-      // decorator text without arguments: @observable -> observable;
-      // @computed({x}) -> computed. First named child of a decorated call
-      // is the callee expression.
-      let nameText = c.text
-      const inner = c.namedChild(0)
-      if (inner && (inner.type === "call_expression" || inner.type === "member_expression" || inner.type === "identifier")) {
-        nameText = inner.text.split("(")[0]
-      }
-      out.push(nameText.replace(/^@/, ""))
+      const name = jsDecoratorName(c)
+      if (name.length === 0 || names.includes(name)) continue
+      names.push(name)
+      lines.push(c.startPosition.row + 1)
     }
-    return out
+    return { names, lines }
+  }
+
+  /**
+   * M49 #868 — is this node written in DECORATOR position?
+   *
+   * A decorator is METADATA on the symbol it decorates, not a call or a read
+   * made by whoever lexically encloses it. The family already rules this way
+   * (typescript: `inDecoratorPosition`, real-typescript-analyzer.ts; the JVM
+   * analyzers attach annotations as metadata and emit no edge; the python
+   * oracle documents PYD1). javascript was the exception: a class-body
+   * `@inject("db")` is syntactically a call expression, so the walk attributed
+   * it to the enclosing CLASS — `calls Service -> inject` beside the
+   * member-scoped edge that should carry it — and the bare-read pass turned
+   * every decorator name into a `uses` edge from the decorated symbol.
+   *
+   * The walk stops at the enclosing statement/declaration boundary rather than
+   * walking to the root: a decorator on a METHOD cannot make the method's own
+   * body a decorator position (its decorators are siblings, never ancestors of
+   * the body).
+   */
+  private inDecoratorPosition(n: Node): boolean {
+    let p: Node | null = n.parent
+    while (p) {
+      if (p.type === "decorator") return true
+      if (
+        p.type === "class_declaration" ||
+        p.type === "class" ||
+        p.type === "function_declaration" ||
+        p.type === "generator_function_declaration" ||
+        p.type === "method_definition" ||
+        p.type === "statement_block" ||
+        p.type === "program"
+      ) {
+        return false
+      }
+      p = p.parent
+    }
+    return false
+  }
+
+  /**
+   * M49 #868 — CLASS decorators, which the JS grammar places in TWO spots:
+   * own children of `class_declaration`, or own children of the WRAPPING
+   * `export_statement` when the class is exported (probe:
+   * `export_statement children=[decorator@2, export@3, class_declaration@3]`).
+   * The own-child reader alone therefore dropped every decorator on an
+   * exported class — `@sealed export class A {}` produced no decorators on `A`
+   * and no reference edge at all, while the typescript twin's
+   * `collectDecoratorsForClass` already checks the export_statement.
+   */
+  private collectClassDecoratorDetails(node: Node): { names: string[]; lines: Array<number | null> } {
+    const own = this.collectOwnDecoratorDetails(node)
+    const wrapping = node.parent?.type === "export_statement"
+      ? this.collectOwnDecoratorDetails(node.parent)
+      : { names: [], lines: [] as Array<number | null> }
+    if (wrapping.names.length === 0) return own
+    const names = [...own.names]
+    const lines = [...own.lines]
+    for (let i = 0; i < wrapping.names.length; i++) {
+      if (names.includes(wrapping.names[i])) continue
+      names.push(wrapping.names[i])
+      lines.push(wrapping.lines[i])
+    }
+    return { names, lines }
+  }
+
+  /**
+   * M49 #868: a decorator is metadata on the symbol it decorates, so its name
+   * is reachable as a REFERENCE from that symbol (the typescript twin's
+   * `extractDecoratorRelationships`, and the shape the M59 #860 fixture pins
+   * there). Emitted for every decorated symbol, with the decorator's OWN line:
+   * a decorator whose line was never recorded stays line-less rather than
+   * borrowing the declaration's line (never invent a line, #823).
+   */
+  private extractDecoratorRelationships(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    for (const symbol of symbols) {
+      if (!symbol.decorators || symbol.decorators.length === 0) continue
+      const lines = symbol.metadata?.decoratorLines as Array<number | null> | undefined
+      for (let i = 0; i < symbol.decorators.length; i++) {
+        const decorator = symbol.decorators[i]
+        const line = lines?.[i]
+        relationships.push({
+          source: symbol.name,
+          target: decorator,
+          type: ASTEngine.RelationshipType.References,
+          confidence: 1.0,
+          ...(typeof line === "number" ? { line_number: line } : {}),
+          metadata: {
+            isDecorator: true,
+            decoratorLine: typeof line === "number" ? line : null,
+          },
+        })
+      }
+    }
   }
 
   private hasToken(node: Node, token: string): boolean {
@@ -1724,6 +1886,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       const node: Node = item.node
       const owner = item.owner
       const method = item.method
+
+      // M49 #868: a decorator's name is not a READ by the decorated symbol —
+      // it is a reference (extractDecoratorRelationships). Pre-fix every
+      // decorator produced a bare-read `uses` edge from the enclosing
+      // declaration, which the typescript twin does not emit. Subtree skipped
+      // whole (arguments included), matching the calls walk above.
+      if (this.inDecoratorPosition(node)) continue
 
       if (
         node.type === "class_declaration" ||

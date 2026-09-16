@@ -28,6 +28,33 @@ import { ASTEngine } from "./engine"
 import { RealJavaScriptAnalyzer } from "./real-javascript-analyzer"
 import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 
+/**
+ * M49 #868 — the SFC seam must shift the delegate's metadata LINE MIRRORS, not
+ * only its `line_number`/symbol ranges.
+ *
+ * Measured on a decorated class inside a .vue script block (the same container
+ * logic the svelte twin uses): the row `references Service -> sealed` carried
+ * `line_number=6` — the line `@sealed` is actually written on — while its own
+ * metadata still said `decoratorLine=5`, the SCRIPT-relative value, unshifted.
+ * The applied offset was recorded on that very row (`sfcLineOffset: 1`), so the
+ * payload contradicted both itself and the file, and a tool reading the mirror
+ * got a line above the decorator it names.
+ *
+ * Only keys whose NAME is a line (`decoratorLine`, `line`, `decoratorLines`)
+ * are touched, and only numeric values: a decorator whose line was never
+ * recorded stays null rather than becoming a number (never invent a line, #823).
+ */
+function shiftMetadataLineMirrors(md: Record<string, unknown> | undefined, lineOffset: number): void {
+  if (!md || lineOffset === 0) return
+  for (const [k, v] of Object.entries(md)) {
+    if (!/line/i.test(k)) continue
+    if (typeof v === "number") md[k] = v + lineOffset
+    else if (Array.isArray(v) && v.some((x) => typeof x === "number")) {
+      md[k] = v.map((x) => (typeof x === "number" ? x + lineOffset : x))
+    }
+  }
+}
+
 // ============================================================================
 // BUILTIN TAG FILTERS — template component-usage detection
 // ============================================================================
@@ -456,6 +483,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         if (scriptBlockIndex && s.range.startIndex !== undefined) s.range.startIndex += scriptBlockIndex
         if (scriptBlockIndex && s.range.endIndex !== undefined) s.range.endIndex += scriptBlockIndex
+        // M49 #868: the symbol's own metadata line mirrors travel with its range
+        // (metadata.decoratorLines is a SCRIPT-relative list of line numbers).
+        shiftMetadataLineMirrors(s.metadata as Record<string, unknown> | undefined, lineOffset)
         // Svelte prop: `export let x` — JS analyzer reports Variable + export;
         // reclassify as Property (the component's public prop API). Exported
         // bindings (export let/const/function/class) are component-owned
@@ -496,6 +526,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         // INCONSISTENT (vue 562 of 585). The applied offset is recorded on the
         // edge so the seam is auditable and testable (see the vue twin).
         if (typeof r.line_number === "number") r.line_number += lineOffset
+        // M49 #868: the metadata line mirrors move with it (see the helper).
+        shiftMetadataLineMirrors(r.metadata as Record<string, unknown> | undefined, lineOffset)
         r.metadata = { ...(r.metadata ?? {}), sfcDelegated: true, sfcLineOffset: lineOffset }
         relationships.push(r)
       }
