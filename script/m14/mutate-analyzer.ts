@@ -269,6 +269,31 @@ function revertToChainOpeningLine(r: any) {
   }
 }
 
+// M59 (#825) extension-receiver follow-through: the PRE-FIX line semantics
+// EXACTLY. The receiver-type use used to be stamped with the OWNING method's
+// declaration line, but the type is written on the extension clause — which on
+// the real scala3 warn suite (`ext-override.scala`) sits on a different line
+// than the method. Simulated off the result's own symbol table (the def line
+// the old stamp read), so it cannot silently stop matching on a rename.
+function revertToExtensionReceiverMethodLine(r: any) {
+  const defLine = new Map<string, number>()
+  for (const s of r.symbols ?? []) {
+    if (typeof s?.range?.startLine === "number") defLine.set(String(s.name), s.range.startLine)
+  }
+  const rels: any[] = r.relationships ?? []
+  const isExtUse = (x: any) =>
+    String(x.type ?? x.relationshipType) === "uses" && x.metadata?.isExtension === true
+  if (!rels.some(isExtUse)) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) => {
+      if (!isExtUse(x)) return x
+      const m = defLine.get(String(x.source ?? x.from ?? "?"))
+      return m === undefined ? x : { ...x, line_number: m }
+    }),
+  }
+}
+
 // M59 (#825), synthesised-member half: the PRE-FIX line semantics EXACTLY. A
 // phantom symbol's range IS its enclosing declaration's range (kotlin's data
 // class, java's lombok field / Spring-Data interface), so the containment edge
@@ -1031,6 +1056,13 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: restores the receiver-start line, collapsing every call in a multi-line chain onto the line the chain opened on. Exactly the defect the fix removed — on cats-effect Example.scala `.as(ExitCode(2))` written on 23 was reported on 22. Caught by scala/callsite-lines-825, whose forbid entries name `.as` on line 12 and `.filter` on line 16, the pre-fix positions.",
     transform: revertToChainOpeningLine,
+  },
+  {
+    id: "scala/extension-receiver-method-line",
+    language: "scala",
+    defectClass: "line-attribution",
+    description: "M59 (#825) follow-through regression: the extension receiver-type use goes back to being stamped with the OWNING METHOD's declaration line — the exact pre-fix behaviour the oracle caught on scala3 tests/warn/ext-override.scala, where `extension (x: Bla)` names Bla on the extension line and the method body follows below. Caught by scala/extension-method-flag, which pins shout->String at 3 and greet->Bla at 11 (the receiver-type lines) and forbids the method lines 4 and 13.",
+    transform: revertToExtensionReceiverMethodLine,
   },
   {
     id: "java/annotation-start-line",

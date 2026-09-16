@@ -1247,11 +1247,109 @@ export function deriveGroovyEdges(root: any): { label: string; from: string; tar
     }
     return `${objectNode.text}.${methodName}`
   }
+  // G7 mirror: interpolation reads. Before the grammar fix there was nothing to
+  // mirror — `string_fragment` swallowed `$` and `{`, so no interpolated name
+  // could reach the analyzer and this oracle was green by blindness. The
+  // analyzer now reads a BARE name (`$name`, `${name}`) and DEFERS member/call
+  // positions to the field-access and call walks, so the mirror must skip
+  // exactly the identifiers those walks own — a mirror that read `${o.p}` again
+  // would invent an edge the analyzer never emits, and one that missed the bare
+  // local would leave the real edge unexplained. Both rules are the analyzer's,
+  // copied rather than re-derived: the same five owning parents, the same
+  // bound-name climb (through nested closures, stopping at the type boundary),
+  // and the same owner gate — a script-level interpolation has no owner, so it
+  // emits nothing and the oracle must agree (probe: `def s = "${unknownName}"`
+  // at script level emits no edge, while the same line inside a class method
+  // emits `uses m -> unknownName`).
+  const INTERP_OWNED_BY_MEMBER_WALK = new Set([
+    "field_access", "method_invocation", "juxt_function_call",
+    "array_access", "object_creation_expression",
+  ])
+  const groovyBoundNames = (n: any): Set<string> => {
+    const acc = new Set<string>()
+    let p = n.parent
+    let guard = 0
+    while (p && guard++ < 24) {
+      const pt = p.type
+      if (pt === "method_declaration" || pt === "constructor_declaration" ||
+          pt === "function_definition" || pt === "lambda_expression" ||
+          pt === "closure" || pt === "program") {
+        const work: any[] = []
+        for (let i = 0; i < p.namedChildCount; i++) { const c = p.namedChild(i); if (c) work.push(c) }
+        while (work.length > 0) {
+          const m = work.pop()
+          if (m.type === "formal_parameter" || m.type === "catch_formal_parameter" || m.type === "variable_declarator") {
+            const nm = m.childForFieldName?.("name")
+            if (nm) acc.add(nm.text)
+          }
+          for (let i = 0; i < m.namedChildCount; i++) { const c = m.namedChild(i); if (c) work.push(c) }
+        }
+        if (pt === "closure") acc.add("it")
+      }
+      if (pt === "class_declaration" || pt === "interface_declaration" ||
+          pt === "trait_declaration" || pt === "enum_declaration") break
+      p = p.parent
+    }
+    return acc
+  }
+  // The analyzer's `method ?? owner`, which is what decides whether a read has a
+  // source at all. It is NOT "has an enclosing method": the walk writes `method`
+  // from a method_declaration's DIRECT `identifier` child (findChild is
+  // direct-children-only) and `owner` from a type declaration's, so a declaration
+  // whose name is not an identifier leaves the source null and the read is
+  // silently dropped. Measured on the corpus (probe: BB_G7_DEBUG over
+  // grails-core/…/RestfulResourceMappingSpec.groovy): `$town` is VISITED with
+  // parentType=string_literal, bound=false, candidates=1 — and source=null,
+  // because a Spock feature method is named by a `string_literal` and the file
+  // fails to parse as one whole-file ERROR node, so no class context survives
+  // either. That file's reads are therefore honestly absent from the analyzer,
+  // and a mirror that only asked "is there a method above me?" would report four
+  // phantom truths corpus-wide (measured: 4 in 2 of 8,383 files). Climb and
+  // return the nearest written name, method-kind or type-kind, exactly as the
+  // walk's `method ?? owner` resolves.
+  const groovySourceName = (n: any): string | null => {
+    let p = n.parent
+    let guard = 0
+    while (p && guard++ < 40) {
+      const pt = p.type
+      if (pt === "method_declaration" || pt === "constructor_declaration" ||
+          pt === "function_definition" || pt === "class_declaration" ||
+          pt === "interface_declaration" || pt === "trait_declaration" ||
+          pt === "enum_declaration") {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c && c.type === "identifier") return c.text
+        }
+      }
+      p = p.parent
+    }
+    return null
+  }
+  const groovyHasOwner = (n: any): boolean => groovySourceName(n) !== null
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
     const t = n.type
-    if (t === "method_invocation") {
+    if (t === "interpolated_identifier") {
+      const pt = n.parent ? n.parent.type : ""
+      if (pt !== "juxt_function_call" && pt !== "field_access" && groovyHasOwner(n)) {
+        const raw = String(n.text)
+        const nm = raw.startsWith("$") ? raw.slice(1) : raw
+        if (nm && !groovyBoundNames(n).has(nm)) push("uses", nm)
+      }
+    } else if (t === "string_interpolation") {
+      const collect = (m: any): void => {
+        if (m.type === "identifier") {
+          const pt = m.parent ? m.parent.type : ""
+          if (!INTERP_OWNED_BY_MEMBER_WALK.has(pt) && groovyHasOwner(m) && !groovyBoundNames(m).has(m.text)) {
+            push("uses", m.text)
+          }
+          return
+        }
+        for (let i = 0; i < m.namedChildCount; i++) { const c = m.namedChild(i); if (c) collect(c) }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) collect(c) }
+    } else if (t === "method_invocation") {
       const nameNode = n.childForFieldName?.("name")
       if (nameNode) {
         const methodName = nameNode.text

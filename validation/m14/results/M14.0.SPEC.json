@@ -94,7 +94,7 @@
     },
     {
       "description": "every named node type classified (groovy)",
-      "detail": "153 types, 68 handled, 66 silent, 8 gaps, 16 decisions",
+      "detail": "161 types, 72 handled, 72 silent, 8 gaps, 16 decisions",
       "id": "section-a-structural",
       "language": "groovy",
       "status": "pass"
@@ -1049,14 +1049,14 @@
       "status": "pass"
     },
     {
-      "description": "dart: 8 ruled, 18 pending owner",
+      "description": "dart: 10 ruled, 20 pending owner",
       "id": "design-decisions-tracked",
       "language": "dart",
       "status": "pass"
     },
     {
       "description": "every named node type classified (dart)",
-      "detail": "222 types, 91 handled, 101 silent, 5 gaps, 26 decisions",
+      "detail": "222 types, 91 handled, 101 silent, 5 gaps, 30 decisions",
       "id": "section-a-structural",
       "language": "dart",
       "status": "pass"
@@ -1123,14 +1123,14 @@
       "status": "pass"
     },
     {
-      "description": "swift: 7 ruled, 8 pending owner",
+      "description": "swift: 10 ruled, 15 pending owner",
       "id": "design-decisions-tracked",
       "language": "swift",
       "status": "pass"
     },
     {
       "description": "every named node type classified (swift)",
-      "detail": "185 types, 58 handled, 118 silent, 3 gaps, 15 decisions",
+      "detail": "185 types, 59 handled, 117 silent, 3 gaps, 25 decisions",
       "id": "section-a-structural",
       "language": "swift",
       "status": "pass"
@@ -1197,14 +1197,14 @@
       "status": "pass"
     },
     {
-      "description": "objc: 6 ruled, 7 pending owner",
+      "description": "objc: 7 ruled, 10 pending owner",
       "id": "design-decisions-tracked",
       "language": "objc",
       "status": "pass"
     },
     {
       "description": "every named node type classified (objc)",
-      "detail": "214 types, 43 handled, 138 silent, 3 gaps, 13 decisions",
+      "detail": "214 types, 43 handled, 138 silent, 3 gaps, 17 decisions",
       "id": "section-a-structural",
       "language": "objc",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "144db7186a0b95c286ce6d8c9420f882b1bde3d1",
-  "committedAt": "2026-09-14T20:17:31+02:00",
+  "commit": "0c49a67bb9a86ac940f54e475392665837163970",
+  "committedAt": "2026-09-16T02:25:48+02:00",
   "data": {
     "languages": {
       "c": {
@@ -1756,7 +1756,9 @@
           "DT-B",
           "DT-C",
           "DT-D",
-          "DT-F"
+          "DT-F",
+          "DT2-A",
+          "DT2-B"
         ],
         "ruledDecisions": [
           "DARTD1",
@@ -1766,11 +1768,13 @@
           "DARTD5",
           "DARTD11",
           "DT-E",
-          "DT-R1"
+          "DT-R1",
+          "DT2-C",
+          "DT2-D"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "222 types, 91 handled, 101 silent, 5 gaps, 26 decisions",
+            "detail": "222 types, 91 handled, 101 silent, 5 gaps, 30 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -1879,7 +1883,7 @@
           "G7: @interface Marker emits no symbol",
           "G8: imports relationship kind unpinned (isGroovyImport edge exists but no fixture guards it)"
         ],
-        "nodeTypeCount": 153,
+        "nodeTypeCount": 161,
         "pendingDecisions": [
           "GD19",
           "GD20",
@@ -1902,7 +1906,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "153 types, 68 handled, 66 silent, 8 gaps, 16 decisions",
+            "detail": "161 types, 72 handled, 72 silent, 8 gaps, 16 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2232,7 +2236,10 @@
           "OBJCD8",
           "OC-B",
           "OC-D",
-          "OC-E"
+          "OC-E",
+          "OC-F",
+          "OC-G",
+          "OC-H"
         ],
         "ruledDecisions": [
           "OBJCD1",
@@ -2240,11 +2247,12 @@
           "OBJCD3",
           "OBJCD4",
           "OC-R1",
-          "OC-R2"
+          "OC-R2",
+          "OC-R3"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "214 types, 43 handled, 138 silent, 3 gaps, 13 decisions",
+            "detail": "214 types, 43 handled, 138 silent, 3 gaps, 17 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2683,7 +2691,14 @@
           "SWIFTD17",
           "SWIFTD18",
           "SWIFTD19",
-          "SWIFTD20"
+          "SWIFTD20",
+          "SW-A",
+          "SW-B",
+          "SW-D",
+          "SW-E",
+          "SW-F",
+          "SW-G",
+          "SW-H"
         ],
         "ruledDecisions": [
           "SWIFTD1",
@@ -2692,11 +2707,14 @@
           "SWIFTD4",
           "SWIFTD5",
           "SWD2",
-          "M3710-COMPANION"
+          "M3710-COMPANION",
+          "SW-R1",
+          "SW-R2",
+          "SW-R3"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "185 types, 58 handled, 118 silent, 3 gaps, 15 decisions",
+            "detail": "185 types, 59 handled, 117 silent, 3 gaps, 25 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2943,8 +2961,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-09-14T18:24:28.111Z",
-  "regeneratedAtCommit": "144db7186a0b95c286ce6d8c9420f882b1bde3d1",
+  "regeneratedAt": "2026-09-16T00:52:31.917Z",
+  "regeneratedAtCommit": "0c49a67bb9a86ac940f54e475392665837163970",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"

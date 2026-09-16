@@ -224,6 +224,15 @@ module.exports = grammar(Java, {
     [$.template_expression, $.method_invocation],
     // #841 round 3: `super.m()[i]` — self-nesting through the super prefix.
     [$.method_invocation],
+    // G7: `[(Byte[]): v]` — a parenthesised parenthesised-ARRAY-TYPE map key
+    // shares its whole prefix with a parenthesised type in expression position
+    // (`'[' '(' _unannotated_type • ')'`), and tree-sitter refuses to generate
+    // without a ruling. GLR settles it correctly rather than by preference: the
+    // expression reading has no continuation, because the `:` that follows the
+    // `)` only exists in `map_item`. Declared here as the narrowest available
+    // ruling — raising `map_item`'s precedence instead would change every other
+    // map and command-argument parse in the grammar.
+    [$.map_item, $._unannotated_type],
     // #841 round 3: closure-body starts (`{ x …`) share the declarator/expr
     // prefix — the established quartet with closure added.
     [$.primary_expression, $._variable_declarator_id, $._unannotated_type, $.closure],
@@ -822,7 +831,19 @@ module.exports = grammar(Java, {
         // is why the census's largest first-error signature was a bare `ID {`.
         $._reserved_identifier,
         $._literal,
-        seq('(', $.expression, ')'),
+        // A parenthesised key may be an EXPRESSION (`(x)`, `(x.y)`, `(1+2)`) or
+        // an ARRAY TYPE. The array arm was missing, so
+        // `[(Byte[]): CustomScalars.X]` — a real Groovy idiom in type-registry
+        // maps, and the construct that left
+        // `DefaultGraphQLTypeManager.groovy` unparsed — was an ERROR, while
+        // `[(Integer): 1]` happened to work only because `Integer` is also a
+        // legal expression. Deliberately `$.array_type` and NOT
+        // `$._unannotated_type`: the broader type choice makes
+        // `[ (T) ]` ambiguous with a parenthesised type in expression position
+        // (`'[' '(' _unannotated_type • ')'`) and tree-sitter refuses to
+        // generate without a precedence override, which is a far wider hammer
+        // than a missing `T[]` key needs.
+        seq('(', choice($.expression, $.array_type), ')'),
       )),
       ':',
       field('value', $.expression),
@@ -904,7 +925,13 @@ module.exports = grammar(Java, {
         repeat(choice(
           alias($._multiline_string_fragment_single, $.multiline_string_fragment),
           $._escape_sequence,
-          $.string_interpolation,
+          // G7: NO `string_interpolation` here, deliberately. Groovy's
+          // single-quoted forms (single or tripled) NEVER interpolate, so the
+          // inherited Java alternative was dead only because `string_interpolation`
+          // required a `\{` that Groovy source never contains. Now that the rule
+          // is Groovy's `${…}`/`$name`, leaving it in would make `'''${x}'''`
+          // interpolate — which is wrong Groovy — so it is removed rather than
+          // left to be suppressed by the fragment token's appetite.
         )),
         '\'\'\'',
       ),
@@ -914,14 +941,71 @@ module.exports = grammar(Java, {
           alias($._multiline_string_fragment_double, $.multiline_string_fragment),
           $._escape_sequence,
           $.string_interpolation,
+          $.interpolated_identifier,
+          // G7: a `$` that starts no interpolation (`"""100$"""`) is literal.
+          token.immediate('$'),
         )),
         '"""',
       ),
     ),
 
+    // G7: `$` is no longer fragment text, so the fragment stops AT an
+    // interpolation instead of swallowing it.
     _multiline_string_fragment_double: _ => choice(
-      /[^"\\]+/,
-      /"([^"\\]|\\")*/,
+      /[^"\\$]+/,
+      /"([^"\\$]|\\")*/,
+    ),
+
+    // ── G7: Groovy string interpolation ──────────────────────────────────
+    // Inherited from Java, neither of these was overridden, and together they
+    // made interpolation invisible: `string_fragment` is
+    // `token.immediate(prec(1, /[^"\\]+/))` — everything except `"` and `\`,
+    // which INCLUDES `$` and `{` — so `${…}` and `$name` lexed as ONE OPAQUE
+    // FRAGMENT, and `string_interpolation` was Java's text-block `'\{'` form,
+    // which Groovy source never contains. No interpolated expression could
+    // reach the analyzer, so `${obj.method()}` produced no `calls` edge,
+    // `${obj.prop}` no `uses` edge, and the nested-quote subset
+    // (`"${getenv("X")}"`) did not even parse. Measured on grails-core:
+    // 2,115 of 7,701 groovy-surface files (27.5%) contain interpolation,
+    // 13,830 sites, every one contributing 0 reads.
+    string_fragment: _ => token.immediate(prec(1, /[^"\\$]+/)),
+
+    // The `$name` short form is a TOKEN, not `seq('$', $.identifier)`, and that
+    // is measured rather than stylistic. As a sequence, the parser had to choose
+    // a token at `name` while standing inside a string, where BOTH `identifier`
+    // and `string_fragment` are valid — and `string_fragment` carries `prec(1)`
+    // inherited from Java, so the fragment won the lexical tie and
+    // `"value $field"` parsed as TWO FRAGMENTS with no interpolation node at
+    // all. Verified against the CLI rather than inferred: the fragments sit at
+    // [0,9]-[0,15] and [0,16]-[0,21], with the `$` eaten by the literal-dollar
+    // token. `prec.dynamic` on the rule did not change it, because the tie is
+    // LEXICAL — a single token can only be matched or not, so the tie is gone.
+    //
+    // Aliased to `interpolated_identifier` because that is the node name the
+    // kotlin analyzer already reads for its own `$name` form; the family
+    // convention is reused rather than reinvented.
+    interpolated_identifier: _ => token.immediate(/\$[A-Za-z_][A-Za-z0-9_]*/),
+
+    // The `${ expr }` form is a real expression, so `${obj.method()}` and
+    // `${obj.prop}` reach the call and field walks exactly as the same
+    // expression would outside a string — the family contract that the same
+    // expression emits the same edges.
+    string_interpolation: $ => seq('${', $.expression, '}'),
+
+    // A `$` that begins neither form — `"cost: $5"`, `"100$"`, `"a$$b"` — is
+    // literal text and needs its OWN alternative here. It cannot be folded into
+    // the fragment pattern with a lookahead: tree-sitter's regex engine has no
+    // lookahead, so `/[^"\\$]+|\$(?![{a-zA-Z_])/` is not expressible.
+    _string_literal: $ => seq(
+      '"',
+      repeat(choice(
+        $.string_fragment,
+        $.escape_sequence,
+        $.string_interpolation,
+        $.interpolated_identifier,
+        token.immediate('$'),
+      )),
+      '"',
     ),
 
     _multiline_string_fragment_single: _ => choice(
@@ -944,15 +1028,35 @@ module.exports = grammar(Java, {
       $.slashy_string,
     ),
 
-    slashy_string: $ => prec.dynamic(5, token(seq(
+    // G7 (slashy half): Groovy's slashy string INTERPOLATES, like the
+    // double-quoted family (`/${className}.groovy/` renames a file per class;
+    // `/$ext/` builds a path pattern). The token that used to swallow `/…/`
+    // whole could not model that, so this is now a RULE carrying the same three
+    // interpolation alternatives as `_string_literal`. Measured before the
+    // change, over 2,000 grails-core files: 154 `slashy_string` tokens, 3 of
+    // them carrying an interpolation-shaped `$` in 2 files, every one of which
+    // emitted no read (the other 26 `$`-bearing tokens are regex ANCHORS —
+    // `/^…$/` — which Groovy never interpolates, so they must stay literal and
+    // are why the fragment only stops at an interpolation-SHAPED `$`).
+    //
+    // The fragment keeps backslash escapes (`\/`, `\x`) because Groovy's slashy
+    // escape is `\/` — Java's `escape_sequence` has no `/`, so the fragment has
+    // to own them or `a\/b` would stop parsing. It is an ANONYMOUS immediate
+    // token on purpose: a named fragment node would be a new node type with no
+    // contract to keep, and the completeness inventory rightly refuses those.
+    // Dynamic precedence (5) is unchanged — the `/` decision is the same one the
+    // declared `[$.slashy_string, $.binary_expression]` conflict already rules
+    // on, and the slashy reading still has to survive GLR against division.
+    slashy_string: $ => prec.dynamic(5, seq(
       '/',
       repeat(choice(
-        /[^\/\\\n\r]/,
-        /\\\//,
-        /\\[^\n\r]/,
+        token.immediate(prec(1, /([^\/\\\n\r$]|\\[\s\S])+/)),
+        $.string_interpolation,
+        $.interpolated_identifier,
+        token.immediate('$'),
       )),
       '/',
-    ))),
+    )),
 
     decimal_floating_point_literal: _ => token(choice(
       seq(DECIMAL_DIGITS, '.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),

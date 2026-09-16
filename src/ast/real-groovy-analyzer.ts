@@ -47,6 +47,21 @@ interface StackItem {
   isExit?: boolean
 }
 
+/**
+ * G7: parent node types that OWN an identifier inside a string interpolation,
+ * because a different walk already emits it. `obj.prop` is emitted by the
+ * `field_access` walk, `obj.method()` by the call walk, `Foo()` by the
+ * instantiates walk and `xs[0]` by the `array_access` walk — so a bare-name
+ * emitter must skip them or one access becomes two edges.
+ */
+const INTERPOLATION_OWNED_BY_MEMBER_WALK = new Set([
+  "field_access",
+  "method_invocation",
+  "juxt_function_call",
+  "array_access",
+  "object_creation_expression",
+])
+
 const GROOVY_BUILTINS = new Set([  // Groovy language builtins
   "println", "print", "printf", "sprintf",
   "assert", "sleep", "synchronized",
@@ -1276,6 +1291,69 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       { node: rootNode, owner: null, method: null },
     ]
     const seen = new Set<string>()
+
+    // G7: the names the enclosing callable binds — parameters, local
+    // declarators, catch parameters — plus `it` for any closure, because
+    // Groovy closures take an implicit `it` whether or not they declare a
+    // parameter list. Memoised per scope node: a file with many interpolations
+    // re-asks for the same scope, and the answer cannot change mid-analyze.
+    //
+    // The climb deliberately passes THROUGH nested closures up to the method: a
+    // `local` bound in the method body is still bound for an interpolation
+    // inside a `{ -> "$local" }` nested in it, and stopping at the inner
+    // closure would fabricate an edge for it.
+    const boundCache = new Map<number, Set<string>>()
+    const boundNamesOf = (scope: Node): Set<string> => {
+      const cached = boundCache.get(scope.id)
+      if (cached) return cached
+      const out = new Set<string>()
+      const push = (n: Node | null | undefined): void => {
+        if (n && n.type === "identifier") out.add(n.text)
+      }
+      const work: Node[] = []
+      for (let i = 0; i < scope.namedChildCount; i++) {
+        const c = scope.namedChild(i)
+        if (c) work.push(c)
+      }
+      while (work.length > 0) {
+        const n = work.pop()!
+        if (n.type === "formal_parameter" || n.type === "catch_formal_parameter") push(n.childForFieldName("name"))
+        else if (n.type === "variable_declarator") push(n.childForFieldName("name"))
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) work.push(c)
+        }
+      }
+      if (scope.type === "closure") out.add("it")
+      boundCache.set(scope.id, out)
+      return out
+    }
+    // UNION across every enclosing scope, not the first one found: a closure
+    // whose only binding is the implicit `it` still has a non-empty set, so
+    // returning on the first non-empty scope would hide a `local` bound by the
+    // method it sits inside. `.program` is collected too — a `def x` at script
+    // level binds `x` for an interpolation in the same script.
+    const locallyBoundNames = (n: Node): Set<string> => {
+      const acc = new Set<string>()
+      let p: Node | null = n.parent
+      let guard = 0
+      while (p && guard++ < 24) {
+        if (
+          p.type === "method_declaration" || p.type === "constructor_declaration" ||
+          p.type === "function_definition" || p.type === "lambda_expression" ||
+          p.type === "closure" || p.type === "program"
+        ) {
+          for (const t of boundNamesOf(p)) acc.add(t)
+        }
+        if (
+          p.type === "class_declaration" || p.type === "interface_declaration" ||
+          p.type === "trait_declaration" || p.type === "enum_declaration"
+        ) break
+        p = p.parent
+      }
+      return acc
+    }
+
     while (stack.length > 0) {
       const item = stack.pop()!
       const { node, owner, method } = item
@@ -1385,6 +1463,94 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+      // ── G7: interpolation reads ────────────────────────────────────────
+      //
+      // The pinned grammar did not model Groovy interpolation at all: Java's
+      // `string_fragment` token swallowed `$` and `{` as opaque text, so
+      // `${user.name}` produced NO read, `${obj.method()}` NO call, and the
+      // nested-quote subset (`"${getenv("X")}"`) did not even parse. Measured on
+      // grails-core: 2,115 of 7,701 groovy-surface files (27.5%) contain
+      // interpolation, 13,830 sites, every one contributing 0 relationships.
+      //
+      // The grammar now produces a real `string_interpolation` (a `${…}`
+      // expression) and an `interpolated_identifier` (the `$name` short form),
+      // so the two node kinds are handled separately on purpose:
+      //
+      //  * `${obj.prop}` / `${obj.method()}` / `${f(x)}` are ordinary nodes now,
+      //    and the field-access and call walks above already emit them — the
+      //    family contract is that the SAME expression emits the SAME edges
+      //    inside a string as outside it, so nothing is added for them here.
+      //  * a BARE name (`$count`, `${count}`) is the part those walks cannot see
+      //    — this analyzer has no bare-identifier read path at all — so it is
+      //    emitted here, at dart's `isInterpolationRead` confidence and with
+      //    the identifier's OWN line.
+      if (node.type === "interpolated_identifier" || node.type === "string_interpolation") {
+        const source = method ?? owner
+        const candidates: Node[] = []
+        if (node.type === "interpolated_identifier") {
+          // G7 slashy half: the parent check keeps the double-quoted and slashy
+          // families on ONE contract. In a double-quoted string this node's
+          // parent is the `_string_literal` body (no walk owns it); in the
+          // slashy form it can ALSO be the callee position of a juxtaposition
+          // call — `/re/ args` — where the `juxt_function_call` branch already
+          // emits `calls` for the whole slashy token. Reading the callee there
+          // would put one node in the graph twice (the #852 defect class).
+          const parentType = node.parent?.type ?? ""
+          if (parentType === "juxt_function_call" || parentType === "field_access") continue
+          candidates.push(node)
+        } else {
+          // COLLECT is bounded to this interpolation: a nested string's own
+          // `$name` is an `interpolated_identifier` reached by the outer walk,
+          // never re-collected here.
+          const collect = (n: Node): void => {
+            if (n.type === "identifier") {
+              // Positions the member and call walks OWN: a receiver, a member
+              // leaf, a callee. Emitting them here would double-emit `obj.prop`
+              // as both a bare read and a field read.
+              const pt = n.parent?.type ?? ""
+              if (!INTERPOLATION_OWNED_BY_MEMBER_WALK.has(pt)) candidates.push(n)
+              return
+            }
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c) collect(c)
+            }
+          }
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c) collect(c)
+          }
+        }
+        for (const n of candidates) {
+          const name = n.text.startsWith("$") ? n.text.slice(1) : n.text
+          if (!name || !source) continue
+          // The family rule (dart documents it as "declaration-shaped names
+          // still bind"; kotlin implements it as `isLocallyBound`): a use of a
+          // name the CURRENT function binds locally is not graph-worthy. Without
+          // this, `"${count}"` where `count` is a parameter fabricates a `uses`
+          // edge to a name that has no symbol at all.
+          //
+          // G7 slashy boundary, measured before coding it: `/${className}.groovy/`
+          // where `className` IS the method's parameter must emit NOTHING (the
+          // name is bound), while the corpus shape it comes from —
+          // GspTagSourceMacro writing `/${className}.groovy/` inside a scope
+          // where `className` is free — must emit the read. The rule is the
+          // binding test, not the string form: /…/ and "…" behave identically.
+          if (locallyBoundNames(n).has(name)) continue
+          const key = `interp:${source}.${name}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          relationships.push({
+            source,
+            target: name,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.9,
+            ...this.lineField(n, n),
+            metadata: { isInterpolationRead: true },
+          })
+        }
+      }
+
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) stack.push({ node: child, owner, method: nextMethod })

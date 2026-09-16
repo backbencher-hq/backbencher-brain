@@ -2,7 +2,7 @@
   "language": "groovy",
   "grammar": "tree-sitter-groovy.wasm",
   "handled_verified": {
-    "types": [
+    "types": ["interpolated_identifier", "leading_dot_call", "slashy_string", "string_interpolation", 
       "annotation",
       "argument_list",
       "array_type",
@@ -74,7 +74,7 @@
     ]
   },
   "internal_silent": {
-    "types": [
+    "types": ["operator_continuation", "reserved_word", "spread_argument", "spread_map_argument", "spread_map_item", "template_expression", 
       "annotated_type",
       "annotation_argument_list",
       "annotation_type_body",
@@ -214,11 +214,11 @@
   "design_decision": {
     "decisions": [
       {
-        "id": "S1",
-        "node_type": "string_interpolation,template_expression,string_fragment,multiline_string_fragment",
-        "status": "RULED",
-        "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior).",
-        "resolution": "DECLARED LIMITATION: tree-sitter-groovy produces NO string_interpolation/template nodes (probed 2026-08-27: \"hi ${name}\", triple-quoted and slashy forms all parse as opaque string literals). Interpolated identifiers cannot emit Uses without string parsing \u2014 out of scope; gstring-interpolation fixture pins no-garbage-symbols."
+      "id": "S1",
+      "node_type": "string_interpolation,interpolated_identifier,string_fragment,multiline_string_fragment,slashy_string",
+      "status": "RULED",
+      "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior).",
+      "resolution": "SUPERSEDED 2026-09-15 by M49 ledger G7 (was: DECLARED LIMITATION — the pinned grammar produced no interpolation nodes at all, probed 2026-08-27). The grammar now produces `string_interpolation` (${…}) and `interpolated_identifier` ($name) for the double-quoted AND slashy families, and the analyzer emits Uses for FREE names at confidence 0.9 with metadata.isInterpolationRead. Bound names (parameters, locals, closure `it`) are suppressed by the local-binding gate; single-quoted forms never interpolate; regex ANCHORS (/x$/) stay literal. Pinned by groovy/interpolation-reads-g7 with four mutants."
       },
       {
         "id": "S2",
