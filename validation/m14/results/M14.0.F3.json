@@ -26,25 +26,25 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "42/42 fixtures pass",
+      "detail": "43/43 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "53/53 fixtures pass",
+      "detail": "54/54 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "39/39 fixtures pass",
+      "detail": "40/40 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
     {
       "description": "scala adversarial fixtures",
-      "detail": "52/52 fixtures pass",
+      "detail": "53/53 fixtures pass",
       "id": "fixtures-scala",
       "status": "pass"
     },
@@ -110,9 +110,9 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "5/6 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-php",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "ruby adversarial fixtures",
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "73c477fb361d5937170a009b8d76404d8822d11c",
-  "committedAt": "2026-09-16T17:12:06+02:00",
+  "commit": "f80b23ce9bc84e84c7949fde40f24f1218642506",
+  "committedAt": "2026-09-16T17:59:40+02:00",
   "data": {
     "details": [
       {
@@ -1049,6 +1049,11 @@
         "problems": []
       },
       {
+        "fixture": "java/anonymous-field-member",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/argument-count-comment-exclusion",
         "ok": true,
         "problems": []
@@ -1260,6 +1265,11 @@
       },
       {
         "fixture": "groovy/anon-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/anonymous-field-member",
         "ok": true,
         "problems": []
       },
@@ -1524,6 +1534,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/anonymous-field-member",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/api-contract-routes",
         "ok": true,
         "problems": []
@@ -1725,6 +1740,11 @@
       },
       {
         "fixture": "scala/anonymous-body-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scala/anonymous-field-member",
         "ok": true,
         "problems": []
       },
@@ -2299,6 +2319,11 @@
         "problems": []
       },
       {
+        "fixture": "php/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/external-override",
         "ok": true,
         "problems": []
@@ -2315,10 +2340,8 @@
       },
       {
         "fixture": "php/payload-and-complexity",
-        "ok": false,
-        "problems": [
-          "forbidden relationship present: {\"type\":\"uses\",\"target\":\"gateway\"} (found uses[__construct->gateway]@0.9)"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "php/procedural-enum",
@@ -2389,7 +2412,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 53
+        "pass": 54
       },
       "haskell": {
         "fail": 0,
@@ -2397,7 +2420,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 42
+        "pass": 43
       },
       "javascript": {
         "fail": 0,
@@ -2405,15 +2428,15 @@
       },
       "kotlin": {
         "fail": 0,
-        "pass": 39
+        "pass": 40
       },
       "objc": {
         "fail": 0,
         "pass": 6
       },
       "php": {
-        "fail": 1,
-        "pass": 5
+        "fail": 0,
+        "pass": 7
       },
       "python": {
         "fail": 0,
@@ -2429,7 +2452,7 @@
       },
       "scala": {
         "fail": 0,
-        "pass": 52
+        "pass": 53
       },
       "svelte": {
         "fail": 0,
@@ -2470,8 +2493,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-16T15:13:32.303Z",
-  "regeneratedAtCommit": "73c477fb361d5937170a009b8d76404d8822d11c",
+  "regeneratedAt": "2026-09-16T16:03:47.866Z",
+  "regeneratedAtCommit": "f80b23ce9bc84e84c7949fde40f24f1218642506",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

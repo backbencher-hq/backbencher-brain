@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "73c477fb361d5937170a009b8d76404d8822d11c",
-  "committedAt": "2026-09-16T17:12:06+02:00",
+  "commit": "f80b23ce9bc84e84c7949fde40f24f1218642506",
+  "committedAt": "2026-09-16T17:59:40+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -468,7 +468,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 368,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 73,
+        "referencedTypeLiterals": 74,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -637,17 +637,17 @@
         "unknownNodeTypes": [
           {
             "context": "real-php-analyzer.ts:comparison",
-            "line": 1450,
+            "line": 1453,
             "literal": "declaration"
           },
           {
             "context": "real-php-analyzer.ts:comparison",
-            "line": 1577,
+            "line": 1580,
             "literal": "declaration"
           },
           {
             "context": "real-php-analyzer.ts:comparison",
-            "line": 1589,
+            "line": 1592,
             "literal": "declaration"
           }
         ],
@@ -773,7 +773,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 82,
+        "referencedTypeLiterals": 83,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1126,8 +1126,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-16T15:13:29.243Z",
-  "regeneratedAtCommit": "73c477fb361d5937170a009b8d76404d8822d11c",
+  "regeneratedAt": "2026-09-16T15:59:54.204Z",
+  "regeneratedAtCommit": "f80b23ce9bc84e84c7949fde40f24f1218642506",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
