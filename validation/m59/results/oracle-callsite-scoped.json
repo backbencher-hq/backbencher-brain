@@ -1,0 +1,2534 @@
+{
+  "probe": "M59.O1",
+  "at": "2026-09-16T12:58:03.615Z",
+  "corpus": "$HOME/fixtures/repositories",
+  "filesPerLang": 40,
+  "oracleIndependence": {
+    "importsAnalyzerCode": false,
+    "importsGraphOrStoreCode": false,
+    "readsEmittedRelationshipsVia": "ASTEngine.parseFile (the thing under test)",
+    "expectedValueSource": "the file's own text",
+    "sharedWithAnalyzers": "the tree-sitter parser only",
+    "tierA": "necessary condition — a pass means 'consistent', not 'correct'",
+    "tierB": "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
+    "notCheckable": "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "sigilJoinedIdentifierAccepted": true,
+      "xmlNamespaceSyntheticNameFails": true,
+      "xmlNamespaceAttributeMatches": true,
+      "xmlNamespacePrefixedAttributeMatches": true,
+      "xmlNamespaceWrongLineStillFails": true
+    },
+    "tokenSelfTest": {
+      "importModuleItemUsesItem": true,
+      "importNamespaceStarUsesModuleLeaf": true,
+      "importRelativePathUsesItem": true,
+      "importBareModuleUnchanged": true,
+      "nonImportCallKeepsSeparator": true,
+      "nonImportReferenceKeepsSeparator": true
+    }
+  },
+  "mutation": {
+    "file": "typescript:vue-core/packages-private/dts-built-test/src/index.ts",
+    "token": "defineComponent",
+    "trueLine": 3,
+    "trueLineConsistent": true,
+    "mutatedLine": 2,
+    "mutatedLineHasToken": false,
+    "caught": true
+  },
+  "totals": {
+    "typescript": {
+      "files": 40,
+      "rels": 2074,
+      "withLine": 2074,
+      "noLine": 0,
+      "consistent": 2064,
+      "inconsistent": 0,
+      "notCheckable": 10
+    },
+    "javascript": {
+      "files": 40,
+      "rels": 2057,
+      "withLine": 2057,
+      "noLine": 0,
+      "consistent": 2049,
+      "inconsistent": 0,
+      "notCheckable": 8
+    },
+    "vue": {
+      "files": 40,
+      "rels": 1051,
+      "withLine": 1051,
+      "noLine": 0,
+      "consistent": 1018,
+      "inconsistent": 0,
+      "notCheckable": 33
+    },
+    "svelte": {
+      "files": 40,
+      "rels": 111,
+      "withLine": 111,
+      "noLine": 0,
+      "consistent": 109,
+      "inconsistent": 0,
+      "notCheckable": 2
+    }
+  },
+  "sampleHash": {
+    "typescript": "36bd4f36c4ee",
+    "javascript": "8fb9615ccfea",
+    "vue": "e2727e5b75dd",
+    "svelte": "293890b3240b"
+  },
+  "samplePins": {
+    "typescript": [
+      {
+        "file": "vue-core/packages-private/dts-built-test/src/index.ts",
+        "contentSha": "5d44f16d7982"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/appDirective.test-d.ts",
+        "contentSha": "788be8b4d58d"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/appUse.test-d.ts",
+        "contentSha": "4df9d959bd92"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/built.test-d.ts",
+        "contentSha": "6c4e537b814c"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/compiler.test-d.ts",
+        "contentSha": "768c690c6908"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/component.test-d.ts",
+        "contentSha": "920251c0cc62"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/defineCustomElement.test-d.ts",
+        "contentSha": "902d1938d7d9"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/directives.test-d.ts",
+        "contentSha": "8b6f260059d3"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/extractProps.test-d.ts",
+        "contentSha": "979299eb1fe9"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/h.test-d.ts",
+        "contentSha": "f06763aa699a"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/inject.test-d.ts",
+        "contentSha": "c042e7931007"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/reactivity.test-d.ts",
+        "contentSha": "f419cb23ba14"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/ref.test-d.ts",
+        "contentSha": "7bd8aac80977"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/scheduler.test-d.ts",
+        "contentSha": "920851e9fdf8"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/setupHelpers.test-d.ts",
+        "contentSha": "99843fdda7aa"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/utils.d.ts",
+        "contentSha": "5c438f9c6f2a"
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/watch.test-d.ts",
+        "contentSha": "b00a819ea127"
+      },
+      {
+        "file": "vue-core/packages-private/global.d.ts",
+        "contentSha": "4cf31d7eb858"
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/download/download.ts",
+        "contentSha": "13757055bdef"
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/main.ts",
+        "contentSha": "a73a1cd075f7"
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/vue-dev-proxy-prod.ts",
+        "contentSha": "da0c0b3623e2"
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/vue-dev-proxy.ts",
+        "contentSha": "707e1f675c3d"
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/vue-server-renderer-dev-proxy.ts",
+        "contentSha": "b46298d007a7"
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/vite.config.ts",
+        "contentSha": "45c59279387f"
+      },
+      {
+        "file": "vue-core/packages-private/template-explorer/src/index.ts",
+        "contentSha": "27bbee9bbd26"
+      },
+      {
+        "file": "vue-core/packages-private/template-explorer/src/options.ts",
+        "contentSha": "1a61f0e59ba0"
+      },
+      {
+        "file": "vue-core/packages-private/template-explorer/src/theme.ts",
+        "contentSha": "f485502d24b4"
+      },
+      {
+        "file": "vue-core/packages-private/vite-debug/main.ts",
+        "contentSha": "b091050eed53"
+      },
+      {
+        "file": "vue-core/packages-private/vite-debug/vite.config.ts",
+        "contentSha": "de5b56ab35f8"
+      },
+      {
+        "file": "vue-core/packages/global.d.ts",
+        "contentSha": "716791f69891"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/__tests__/compiler.spec.ts",
+        "contentSha": "bc2c472b01d3"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/__tests__/componentAsync.spec.ts",
+        "contentSha": "6a916677d4d8"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/createCompatVue.ts",
+        "contentSha": "46978a80bee1"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/dev.ts",
+        "contentSha": "e3a328636aac"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/esm-index.ts",
+        "contentSha": "2632409fc512"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/esm-runtime.ts",
+        "contentSha": "15382e60b440"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/index.ts",
+        "contentSha": "1206d405f203"
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/runtime.ts",
+        "contentSha": "7b789085a0bb"
+      },
+      {
+        "file": "vue-core/scripts/setup-vitest.ts",
+        "contentSha": "6bc3196d8b0d"
+      },
+      {
+        "file": "vue-core/vitest.config.ts",
+        "contentSha": "98db4cc683fa"
+      }
+    ],
+    "javascript": [
+      {
+        "file": "vue-element-admin/.eslintrc.js",
+        "contentSha": "906d40e1a316"
+      },
+      {
+        "file": "vue-element-admin/babel.config.js",
+        "contentSha": "0f11b2232200"
+      },
+      {
+        "file": "vue-element-admin/jest.config.js",
+        "contentSha": "db2aed25ec75"
+      },
+      {
+        "file": "vue-element-admin/plopfile.js",
+        "contentSha": "4c5b58fc3789"
+      },
+      {
+        "file": "vue-element-admin/postcss.config.js",
+        "contentSha": "fb498e168299"
+      },
+      {
+        "file": "vue-element-admin/src/main.js",
+        "contentSha": "228c5bd0a1c3"
+      },
+      {
+        "file": "vue-element-admin/src/permission.js",
+        "contentSha": "6406e6c29bc8"
+      },
+      {
+        "file": "vue-element-admin/src/settings.js",
+        "contentSha": "d133b3af95d6"
+      },
+      {
+        "file": "vue-element-admin/src/store/getters.js",
+        "contentSha": "31d4f72678cb"
+      },
+      {
+        "file": "vue-element-admin/src/store/index.js",
+        "contentSha": "3c65c4d28654"
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/app.js",
+        "contentSha": "60b8915b6bf9"
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/errorLog.js",
+        "contentSha": "a1d4d4e79308"
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/permission.js",
+        "contentSha": "27691ed67402"
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/settings.js",
+        "contentSha": "1947f2a258b8"
+      },
+      {
+        "file": "vue-element-admin/src/utils/auth.js",
+        "contentSha": "37fc40e3038d"
+      },
+      {
+        "file": "vue-element-admin/src/utils/clipboard.js",
+        "contentSha": "0fbcd1a4f2aa"
+      },
+      {
+        "file": "vue-element-admin/src/utils/error-log.js",
+        "contentSha": "0a18d466b6b7"
+      },
+      {
+        "file": "vue-element-admin/src/utils/get-page-title.js",
+        "contentSha": "cee361415b1c"
+      },
+      {
+        "file": "vue-element-admin/src/utils/index.js",
+        "contentSha": "d8d344181547"
+      },
+      {
+        "file": "vue-element-admin/src/utils/open-window.js",
+        "contentSha": "b17b09bdbf71"
+      },
+      {
+        "file": "vue-element-admin/src/utils/permission.js",
+        "contentSha": "432128779860"
+      },
+      {
+        "file": "vue-element-admin/src/utils/request.js",
+        "contentSha": "5abe23ca5e30"
+      },
+      {
+        "file": "vue-element-admin/src/utils/scroll-to.js",
+        "contentSha": "d86224d5f5f3"
+      },
+      {
+        "file": "vue-element-admin/src/utils/validate.js",
+        "contentSha": "057f8953b4f1"
+      },
+      {
+        "file": "vue-element-admin/src/views/dashboard/admin/components/mixins/resize.js",
+        "contentSha": "0af6721bf9df"
+      },
+      {
+        "file": "vue-element-admin/src/views/example/components/Dropdown/index.js",
+        "contentSha": "75eb7655b9d1"
+      },
+      {
+        "file": "vue-element-admin/src/views/guide/steps.js",
+        "contentSha": "0de4af0a1033"
+      },
+      {
+        "file": "vue-element-admin/src/views/icons/element-icons.js",
+        "contentSha": "2edf9e99a571"
+      },
+      {
+        "file": "vue-element-admin/src/views/icons/svg-icons.js",
+        "contentSha": "22bb365882a0"
+      },
+      {
+        "file": "vue-element-admin/src/views/pdf/content.js",
+        "contentSha": "7da51950e2d4"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/.eslintrc.js",
+        "contentSha": "94229d972667"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/components/Hamburger.spec.js",
+        "contentSha": "597a565b50e3"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/components/SvgIcon.spec.js",
+        "contentSha": "ebc719e1c5c1"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/formatTime.spec.js",
+        "contentSha": "f9357b833a2a"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/param2Obj.spec.js",
+        "contentSha": "d81b997779ce"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/parseTime.spec.js",
+        "contentSha": "398cfa0d1b91"
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/validate.spec.js",
+        "contentSha": "a821638aea02"
+      },
+      {
+        "file": "vue-element-admin/vue.config.js",
+        "contentSha": "20c895c73327"
+      },
+      {
+        "file": "zig/lib/build-web/main.js",
+        "contentSha": "16660e008909"
+      },
+      {
+        "file": "zig/lib/docs/main.js",
+        "contentSha": "66f603efeff6"
+      }
+    ],
+    "vue": [
+      {
+        "file": "vue-element-admin/src/App.vue",
+        "contentSha": "59d9b615e6d8"
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/export-excel.vue",
+        "contentSha": "3ffc4f664464"
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/merge-header.vue",
+        "contentSha": "996e48205a73"
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/select-excel.vue",
+        "contentSha": "73d47418840a"
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/upload-excel.vue",
+        "contentSha": "135fa625e074"
+      },
+      {
+        "file": "vue-element-admin/src/views/guide/index.vue",
+        "contentSha": "e7e721322772"
+      },
+      {
+        "file": "vue-element-admin/src/views/icons/index.vue",
+        "contentSha": "a64c35dc88b2"
+      },
+      {
+        "file": "vue-element-admin/src/views/login/auth-redirect.vue",
+        "contentSha": "03a1a15fc52c"
+      },
+      {
+        "file": "vue-element-admin/src/views/login/components/SocialSignin.vue",
+        "contentSha": "943bf7cdf572"
+      },
+      {
+        "file": "vue-element-admin/src/views/login/index.vue",
+        "contentSha": "d4060ccfde48"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/index.vue",
+        "contentSha": "93ac4bdffd26"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-1/index.vue",
+        "contentSha": "bc8312067530"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-2/index.vue",
+        "contentSha": "11fbdff2ada4"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-2/menu1-2-1/index.vue",
+        "contentSha": "c10fe506b6bb"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-2/menu1-2-2/index.vue",
+        "contentSha": "90de2abe8c18"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-3/index.vue",
+        "contentSha": "e511df8870a0"
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu2/index.vue",
+        "contentSha": "726456aa0dc3"
+      },
+      {
+        "file": "vue-element-admin/src/views/pdf/download.vue",
+        "contentSha": "b465e15015a4"
+      },
+      {
+        "file": "vue-element-admin/src/views/pdf/index.vue",
+        "contentSha": "dcc7b876af67"
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/components/SwitchRoles.vue",
+        "contentSha": "e6ba043cf274"
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/directive.vue",
+        "contentSha": "72305f44791a"
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/page.vue",
+        "contentSha": "7538d2416732"
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/role.vue",
+        "contentSha": "9fbc49c7cb94"
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/Account.vue",
+        "contentSha": "eaa0627cf1b9"
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/Activity.vue",
+        "contentSha": "6705d548f111"
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/Timeline.vue",
+        "contentSha": "9cba063c64c3"
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/UserCard.vue",
+        "contentSha": "ee510888c09f"
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/index.vue",
+        "contentSha": "6df4f833decd"
+      },
+      {
+        "file": "vue-element-admin/src/views/qiniu/upload.vue",
+        "contentSha": "1135c562d701"
+      },
+      {
+        "file": "vue-element-admin/src/views/redirect/index.vue",
+        "contentSha": "65df7f6c5541"
+      },
+      {
+        "file": "vue-element-admin/src/views/tab/components/TabPane.vue",
+        "contentSha": "f364a45dd4d6"
+      },
+      {
+        "file": "vue-element-admin/src/views/tab/index.vue",
+        "contentSha": "3a72f2b05674"
+      },
+      {
+        "file": "vue-element-admin/src/views/table/complex-table.vue",
+        "contentSha": "d425bc3eab6c"
+      },
+      {
+        "file": "vue-element-admin/src/views/table/drag-table.vue",
+        "contentSha": "5a18279a18b3"
+      },
+      {
+        "file": "vue-element-admin/src/views/table/dynamic-table/components/FixedThead.vue",
+        "contentSha": "791f644bad9a"
+      },
+      {
+        "file": "vue-element-admin/src/views/table/dynamic-table/components/UnfixedThead.vue",
+        "contentSha": "bb5c0673c800"
+      },
+      {
+        "file": "vue-element-admin/src/views/table/dynamic-table/index.vue",
+        "contentSha": "ada2c8e524ad"
+      },
+      {
+        "file": "vue-element-admin/src/views/table/inline-edit-table.vue",
+        "contentSha": "1df79a3b4566"
+      },
+      {
+        "file": "vue-element-admin/src/views/theme/index.vue",
+        "contentSha": "f941dfe4015a"
+      },
+      {
+        "file": "vue-element-admin/src/views/zip/index.vue",
+        "contentSha": "e1cea95d83a9"
+      }
+    ],
+    "svelte": [
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-fragment-placement-2/input.svelte",
+        "contentSha": "41c2f8933756"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-head-attributes/input.svelte",
+        "contentSha": "a181d00ce6ff"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-export-let-unused/input.svelte",
+        "contentSha": "08ad2dc4bc75"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-non-reactive-update/input.svelte",
+        "contentSha": "44e0045b9803"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-self-deprecated/input.svelte",
+        "contentSha": "f38ed5f74fb9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svg-child-component-declared-namespace/input.svelte",
+        "contentSha": "abec114de0b9"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-missing/input.svelte",
+        "contentSha": "8b286f5c664c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-true/input.svelte",
+        "contentSha": "8b286f5c664c"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-emoji/input.svelte",
+        "contentSha": "4e2f1dd66f31"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-hyphen/input.svelte",
+        "contentSha": "ff8eff9f4fd7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-invalid/input.svelte",
+        "contentSha": "66e9b7808624"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-non-string/input.svelte",
+        "contentSha": "1b18a35e8d86"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-reserved/input.svelte",
+        "contentSha": "42eebe9dabee"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/textarea-value-children/input.svelte",
+        "contentSha": "662e27925353"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-attributes/input.svelte",
+        "contentSha": "1e64eab57dbc"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-children/input.svelte",
+        "contentSha": "ba9653f100d0"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in-transition/input.svelte",
+        "contentSha": "e80e15a5ceaf"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in/input.svelte",
+        "contentSha": "cf726c72fd49"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out-transition/input.svelte",
+        "contentSha": "5d1ab8d646dc"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out/input.svelte",
+        "contentSha": "3409f3692270"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-in/input.svelte",
+        "contentSha": "b62f10a77a48"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-out/input.svelte",
+        "contentSha": "9e36049994de"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition/input.svelte",
+        "contentSha": "fc39cef15d89"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-on-component/input.svelte",
+        "contentSha": "93ba1462d8c8"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-accessor/input.svelte",
+        "contentSha": "4651476b2d7b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-decorator/input.svelte",
+        "contentSha": "a3dcaa8268e4"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-enum/input.svelte",
+        "contentSha": "12670addaade"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier-readonly/input.svelte",
+        "contentSha": "0262b1ef295d"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier/input.svelte",
+        "contentSha": "b84315016f31"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-namespace/input.svelte",
+        "contentSha": "4bf1279c9de7"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unknown-code/input.svelte",
+        "contentSha": "6a0eb716d1ca"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables-each/input.svelte",
+        "contentSha": "288671a55739"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables/input.svelte",
+        "contentSha": "3771bd95c200"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/use-the-platform/input.svelte",
+        "contentSha": "dfa818361f8b"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/valid-reactive-vars/input.svelte",
+        "contentSha": "1d60819fb530"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-dimensions/input.svelte",
+        "contentSha": "2498f1896310"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-innerwidth/input.svelte",
+        "contentSha": "29a11cebbf5a"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid/input.svelte",
+        "contentSha": "373d9a6666bd"
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-online/input.svelte",
+        "contentSha": "fe9a732df674"
+      },
+      {
+        "file": "svelte/playgrounds/sandbox/scripts/main.template.svelte",
+        "contentSha": "28ab7a0d063b"
+      }
+    ]
+  },
+  "sampleDrift": {
+    "typescript": {
+      "prev": "36bd4f36c4ee",
+      "now": "36bd4f36c4ee",
+      "same": true
+    },
+    "javascript": {
+      "prev": "8fb9615ccfea",
+      "now": "8fb9615ccfea",
+      "same": true
+    },
+    "vue": {
+      "prev": "e2727e5b75dd",
+      "now": "e2727e5b75dd",
+      "same": true
+    },
+    "svelte": {
+      "prev": "293890b3240b",
+      "now": "293890b3240b",
+      "same": true
+    }
+  },
+  "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
+  "perFile": {
+    "typescript": [
+      {
+        "file": "vue-core/packages-private/dts-built-test/src/index.ts",
+        "language": "typescript",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/appDirective.test-d.ts",
+        "language": "typescript",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/appUse.test-d.ts",
+        "language": "typescript",
+        "rels": 61,
+        "withLine": 61,
+        "noLine": 0,
+        "consistent": 61,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/built.test-d.ts",
+        "language": "typescript",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/compiler.test-d.ts",
+        "language": "typescript",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/component.test-d.ts",
+        "language": "typescript",
+        "rels": 269,
+        "withLine": 269,
+        "noLine": 0,
+        "consistent": 268,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/defineCustomElement.test-d.ts",
+        "language": "typescript",
+        "rels": 43,
+        "withLine": 43,
+        "noLine": 0,
+        "consistent": 43,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/directives.test-d.ts",
+        "language": "typescript",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/extractProps.test-d.ts",
+        "language": "typescript",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/h.test-d.ts",
+        "language": "typescript",
+        "rels": 110,
+        "withLine": 110,
+        "noLine": 0,
+        "consistent": 110,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/inject.test-d.ts",
+        "language": "typescript",
+        "rels": 46,
+        "withLine": 46,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/reactivity.test-d.ts",
+        "language": "typescript",
+        "rels": 113,
+        "withLine": 113,
+        "noLine": 0,
+        "consistent": 113,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/ref.test-d.ts",
+        "language": "typescript",
+        "rels": 365,
+        "withLine": 365,
+        "noLine": 0,
+        "consistent": 365,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/scheduler.test-d.ts",
+        "language": "typescript",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/setupHelpers.test-d.ts",
+        "language": "typescript",
+        "rels": 264,
+        "withLine": 264,
+        "noLine": 0,
+        "consistent": 264,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/utils.d.ts",
+        "language": "typescript",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/dts-test/watch.test-d.ts",
+        "language": "typescript",
+        "rels": 108,
+        "withLine": 108,
+        "noLine": 0,
+        "consistent": 108,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/global.d.ts",
+        "language": "typescript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/download/download.ts",
+        "language": "typescript",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/main.ts",
+        "language": "typescript",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/vue-dev-proxy-prod.ts",
+        "language": "typescript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/vue-dev-proxy.ts",
+        "language": "typescript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/src/vue-server-renderer-dev-proxy.ts",
+        "language": "typescript",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/sfc-playground/vite.config.ts",
+        "language": "typescript",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/template-explorer/src/index.ts",
+        "language": "typescript",
+        "rels": 114,
+        "withLine": 114,
+        "noLine": 0,
+        "consistent": 114,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/template-explorer/src/options.ts",
+        "language": "typescript",
+        "rels": 64,
+        "withLine": 64,
+        "noLine": 0,
+        "consistent": 64,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/template-explorer/src/theme.ts",
+        "language": "typescript",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/vite-debug/main.ts",
+        "language": "typescript",
+        "rels": 4,
+        "withLine": 4,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages-private/vite-debug/vite.config.ts",
+        "language": "typescript",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/global.d.ts",
+        "language": "typescript",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/__tests__/compiler.spec.ts",
+        "language": "typescript",
+        "rels": 96,
+        "withLine": 96,
+        "noLine": 0,
+        "consistent": 96,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/__tests__/componentAsync.spec.ts",
+        "language": "typescript",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 53,
+        "inconsistent": 0,
+        "notCheckable": 3,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/createCompatVue.ts",
+        "language": "typescript",
+        "rels": 23,
+        "withLine": 23,
+        "noLine": 0,
+        "consistent": 23,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/dev.ts",
+        "language": "typescript",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/esm-index.ts",
+        "language": "typescript",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/esm-runtime.ts",
+        "language": "typescript",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/index.ts",
+        "language": "typescript",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 46,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/packages/vue-compat/src/runtime.ts",
+        "language": "typescript",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/scripts/setup-vitest.ts",
+        "language": "typescript",
+        "rels": 48,
+        "withLine": 48,
+        "noLine": 0,
+        "consistent": 48,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-core/vitest.config.ts",
+        "language": "typescript",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      }
+    ],
+    "javascript": [
+      {
+        "file": "vue-element-admin/.eslintrc.js",
+        "language": "javascript",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/babel.config.js",
+        "language": "javascript",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/jest.config.js",
+        "language": "javascript",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/plopfile.js",
+        "language": "javascript",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/postcss.config.js",
+        "language": "javascript",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/main.js",
+        "language": "javascript",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/permission.js",
+        "language": "javascript",
+        "rels": 42,
+        "withLine": 42,
+        "noLine": 0,
+        "consistent": 42,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/settings.js",
+        "language": "javascript",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/store/getters.js",
+        "language": "javascript",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/store/index.js",
+        "language": "javascript",
+        "rels": 19,
+        "withLine": 19,
+        "noLine": 0,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/app.js",
+        "language": "javascript",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/errorLog.js",
+        "language": "javascript",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/permission.js",
+        "language": "javascript",
+        "rels": 29,
+        "withLine": 29,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/store/modules/settings.js",
+        "language": "javascript",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/auth.js",
+        "language": "javascript",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 11,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/clipboard.js",
+        "language": "javascript",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/error-log.js",
+        "language": "javascript",
+        "rels": 24,
+        "withLine": 24,
+        "noLine": 0,
+        "consistent": 24,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/get-page-title.js",
+        "language": "javascript",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/index.js",
+        "language": "javascript",
+        "rels": 188,
+        "withLine": 188,
+        "noLine": 0,
+        "consistent": 187,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/open-window.js",
+        "language": "javascript",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 28,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/permission.js",
+        "language": "javascript",
+        "rels": 13,
+        "withLine": 13,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/request.js",
+        "language": "javascript",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 39,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/scroll-to.js",
+        "language": "javascript",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/utils/validate.js",
+        "language": "javascript",
+        "rels": 34,
+        "withLine": 34,
+        "noLine": 0,
+        "consistent": 34,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/dashboard/admin/components/mixins/resize.js",
+        "language": "javascript",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/example/components/Dropdown/index.js",
+        "language": "javascript",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/guide/steps.js",
+        "language": "javascript",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/icons/element-icons.js",
+        "language": "javascript",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/icons/svg-icons.js",
+        "language": "javascript",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/pdf/content.js",
+        "language": "javascript",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/.eslintrc.js",
+        "language": "javascript",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/components/Hamburger.spec.js",
+        "language": "javascript",
+        "rels": 25,
+        "withLine": 25,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/components/SvgIcon.spec.js",
+        "language": "javascript",
+        "rels": 22,
+        "withLine": 22,
+        "noLine": 0,
+        "consistent": 22,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/formatTime.spec.js",
+        "language": "javascript",
+        "rels": 40,
+        "withLine": 40,
+        "noLine": 0,
+        "consistent": 40,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/param2Obj.spec.js",
+        "language": "javascript",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/parseTime.spec.js",
+        "language": "javascript",
+        "rels": 47,
+        "withLine": 47,
+        "noLine": 0,
+        "consistent": 47,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/tests/unit/utils/validate.spec.js",
+        "language": "javascript",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 56,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/vue.config.js",
+        "language": "javascript",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 56,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/lib/build-web/main.js",
+        "language": "javascript",
+        "rels": 361,
+        "withLine": 361,
+        "noLine": 0,
+        "consistent": 361,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "zig/lib/docs/main.js",
+        "language": "javascript",
+        "rels": 774,
+        "withLine": 774,
+        "noLine": 0,
+        "consistent": 774,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ],
+    "vue": [
+      {
+        "file": "vue-element-admin/src/App.vue",
+        "language": "vue",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/export-excel.vue",
+        "language": "vue",
+        "rels": 53,
+        "withLine": 53,
+        "noLine": 0,
+        "consistent": 52,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/merge-header.vue",
+        "language": "vue",
+        "rels": 38,
+        "withLine": 38,
+        "noLine": 0,
+        "consistent": 37,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/select-excel.vue",
+        "language": "vue",
+        "rels": 50,
+        "withLine": 50,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/excel/upload-excel.vue",
+        "language": "vue",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/guide/index.vue",
+        "language": "vue",
+        "rels": 15,
+        "withLine": 15,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/icons/index.vue",
+        "language": "vue",
+        "rels": 20,
+        "withLine": 20,
+        "noLine": 0,
+        "consistent": 19,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/login/auth-redirect.vue",
+        "language": "vue",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/login/components/SocialSignin.vue",
+        "language": "vue",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/login/index.vue",
+        "language": "vue",
+        "rels": 85,
+        "withLine": 85,
+        "noLine": 0,
+        "consistent": 84,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/index.vue",
+        "language": "vue",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-1/index.vue",
+        "language": "vue",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-2/index.vue",
+        "language": "vue",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-2/menu1-2-1/index.vue",
+        "language": "vue",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-2/menu1-2-2/index.vue",
+        "language": "vue",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu1/menu1-3/index.vue",
+        "language": "vue",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/nested/menu2/index.vue",
+        "language": "vue",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/pdf/download.vue",
+        "language": "vue",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 2,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/pdf/index.vue",
+        "language": "vue",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/components/SwitchRoles.vue",
+        "language": "vue",
+        "rels": 16,
+        "withLine": 16,
+        "noLine": 0,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/directive.vue",
+        "language": "vue",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 13,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/page.vue",
+        "language": "vue",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/permission/role.vue",
+        "language": "vue",
+        "rels": 157,
+        "withLine": 157,
+        "noLine": 0,
+        "consistent": 156,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/Account.vue",
+        "language": "vue",
+        "rels": 11,
+        "withLine": 11,
+        "noLine": 0,
+        "consistent": 10,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/Activity.vue",
+        "language": "vue",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/Timeline.vue",
+        "language": "vue",
+        "rels": 7,
+        "withLine": 7,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/components/UserCard.vue",
+        "language": "vue",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/profile/index.vue",
+        "language": "vue",
+        "rels": 28,
+        "withLine": 28,
+        "noLine": 0,
+        "consistent": 27,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/qiniu/upload.vue",
+        "language": "vue",
+        "rels": 26,
+        "withLine": 26,
+        "noLine": 0,
+        "consistent": 25,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/redirect/index.vue",
+        "language": "vue",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 7,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/tab/components/TabPane.vue",
+        "language": "vue",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/tab/index.vue",
+        "language": "vue",
+        "rels": 27,
+        "withLine": 27,
+        "noLine": 0,
+        "consistent": 26,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/complex-table.vue",
+        "language": "vue",
+        "rels": 184,
+        "withLine": 184,
+        "noLine": 0,
+        "consistent": 183,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/drag-table.vue",
+        "language": "vue",
+        "rels": 56,
+        "withLine": 56,
+        "noLine": 0,
+        "consistent": 55,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/dynamic-table/components/FixedThead.vue",
+        "language": "vue",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/dynamic-table/components/UnfixedThead.vue",
+        "language": "vue",
+        "rels": 10,
+        "withLine": 10,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/dynamic-table/index.vue",
+        "language": "vue",
+        "rels": 5,
+        "withLine": 5,
+        "noLine": 0,
+        "consistent": 4,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/table/inline-edit-table.vue",
+        "language": "vue",
+        "rels": 37,
+        "withLine": 37,
+        "noLine": 0,
+        "consistent": 36,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/theme/index.vue",
+        "language": "vue",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 20,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/zip/index.vue",
+        "language": "vue",
+        "rels": 39,
+        "withLine": 39,
+        "noLine": 0,
+        "consistent": 38,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      }
+    ],
+    "svelte": [
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-fragment-placement-2/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-head-attributes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-export-let-unused/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-ignore-non-reactive-update/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svelte-self-deprecated/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/svg-child-component-declared-namespace/input.svelte",
+        "language": "svelte",
+        "rels": 12,
+        "withLine": 12,
+        "noLine": 0,
+        "consistent": 12,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-missing/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-custom-element-options-true/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-emoji/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-hyphen/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-non-string/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/tag-reserved/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/textarea-value-children/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-attributes/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/title-no-children/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in-transition/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out-transition/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-in/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-out/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/transition-on-component/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-accessor/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-decorator/input.svelte",
+        "language": "svelte",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-enum/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier-readonly/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-modifier/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-namespace/input.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unknown-code/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables-each/input.svelte",
+        "language": "svelte",
+        "rels": 17,
+        "withLine": 17,
+        "noLine": 0,
+        "consistent": 17,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/unreferenced-variables/input.svelte",
+        "language": "svelte",
+        "rels": 49,
+        "withLine": 49,
+        "noLine": 0,
+        "consistent": 49,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/use-the-platform/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/valid-reactive-vars/input.svelte",
+        "language": "svelte",
+        "rels": 6,
+        "withLine": 6,
+        "noLine": 0,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-dimensions/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid-innerwidth/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-invalid/input.svelte",
+        "language": "svelte",
+        "rels": 1,
+        "withLine": 1,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/packages/svelte/tests/validator/samples/window-binding-online/input.svelte",
+        "language": "svelte",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "svelte/playgrounds/sandbox/scripts/main.template.svelte",
+        "language": "svelte",
+        "rels": 3,
+        "withLine": 3,
+        "noLine": 0,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      }
+    ]
+  },
+  "skipped": []
+}
