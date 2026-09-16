@@ -243,6 +243,32 @@ function revertDelegatedLineToScriptRelative(r: any) {
   }
 }
 
+// M49 (#868): the SFC seam applied the offset to `line_number` but not to the
+// metadata LINE MIRRORS, so one row named two different lines (metadata
+// script-relative, line_number file-relative). The applied offset is recorded on
+// the row (`sfcLineOffset`), so subtracting it from every numeric line mirror
+// reproduces the pre-fix state exactly rather than approximating it.
+function revertDelegatedMetadataLineMirrors(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const isDelegated = (x: any) => x?.metadata?.sfcDelegated === true && typeof x?.metadata?.sfcLineOffset === "number"
+  if (!rels.some(isDelegated)) return r
+  const shiftBack = (md: any, off: number) => {
+    const out: any = { ...md }
+    for (const [k, v] of Object.entries(out)) {
+      if (!/line/i.test(k) || k === "sfcLineOffset") continue
+      if (typeof v === "number") out[k] = v - off
+      else if (Array.isArray(v)) out[k] = v.map((x) => (typeof x === "number" ? x - off : x))
+    }
+    return out
+  }
+  return {
+    ...r,
+    relationships: rels.map((x: any) =>
+      isDelegated(x) ? { ...x, metadata: shiftBack(x.metadata, x.metadata.sfcLineOffset) } : x,
+    ),
+  }
+}
+
 // M59 (#825), the 0-based/1-based class: every line shifted down by one, which is
 // what emitting `startPosition.row` instead of `row + 1` produces. This is the
 // classic off-by-one this contract is one keystroke away from, and it is the
@@ -495,6 +521,116 @@ function readdScopeScopedDecoratorEdges() {
         const lineField = typeof line === "number" ? { line_number: line } : {}
         extra.push({ source, target: s.decorators[i], type: "calls", confidence: 0.8, ...lineField, metadata: { calleeExpression: s.decorators[i] } })
         extra.push({ source, target: s.decorators[i], type: "references", confidence: 0.8, ...lineField, metadata: {} })
+      }
+    }
+    if (extra.length === 0) return r
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+  }
+}
+
+// M49 #868 — the javascript decorator-metadata layer as faithful reverts. Each
+// transform reproduces ONE measured pre-fix state off the result's own tables,
+// so it stays valid on any fixture rather than hard-coding one file's rows.
+
+/** Contract 1 pre-fix: a FIELD's decorator was never attached. */
+function dropJsFieldDecorators() {
+  return (r: any) => {
+    const stripped = (r.symbols ?? []).filter(
+      (s: any) => String(s.kind) === "property" && Array.isArray(s.decorators) && s.decorators.length > 0,
+    ).map((s: any) => s.name)
+    if (stripped.length === 0) return r
+    const names = new Set(stripped)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        names.has(s.name) && String(s.kind) === "property" ? { ...s, decorators: undefined, metadata: { ...(s.metadata ?? {}), decoratorLines: undefined } } : s,
+      ),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.metadata?.isDecorator && names.has(String(x.source))),
+      ),
+    }
+  }
+}
+
+/** Contract 2 pre-fix: no decorator `references` edge existed at all. */
+function dropDecoratorReferences() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => !x.metadata?.isDecorator),
+  })
+}
+
+/** Contract 2 near-miss: the decorator edge borrows the DECLARATION's line. */
+function decoratorEdgeBorrowsDeclarationLine() {
+  return (r: any) => {
+    const lineByName = new Map<string, number>()
+    for (const s of r.symbols ?? []) {
+      const l = s.range?.startLine
+      if (typeof l === "number") lineByName.set(String(s.name), l)
+    }
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x.metadata?.isDecorator) return x
+        const l = lineByName.get(String(x.source))
+        return typeof l === "number" ? { ...x, line_number: l } : x
+      }),
+    }
+  }
+}
+
+/** The M59 #860 pre-fix state: a decorator edge with NO line at all. */
+function dropDecoratorEdgeLines() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x.metadata?.isDecorator) return x
+      const { line_number, ...rest } = x
+      return { ...rest, line_number: null }
+    }),
+  })
+}
+
+/** Contract 4 pre-fix: an EXPORTED class's decorator was dropped entirely. */
+function dropExportedClassDecorators() {
+  return (r: any) => {
+    const exported = new Set<string>(
+      (r.relationships ?? []).filter((x: any) => String(x.type) === "exports").map((x: any) => String(x.target)),
+    )
+    const dropped = (r.symbols ?? []).filter(
+      (s: any) => String(s.kind) === "class" && exported.has(String(s.name)) && Array.isArray(s.decorators) && s.decorators.length > 0,
+    ).map((s: any) => s.name)
+    if (dropped.length === 0) return r
+    const names = new Set(dropped)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        names.has(s.name) ? { ...s, decorators: undefined, metadata: { ...(s.metadata ?? {}), decoratorLines: undefined } } : s,
+      ),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.metadata?.isDecorator && names.has(String(x.source))),
+      ),
+    }
+  }
+}
+
+/** Contract 3 pre-fix: a decorator's name is a bare READ from its carrier. */
+function readdDecoratorPositionReads() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (!Array.isArray(s.decorators) || s.decorators.length === 0) continue
+      const lines = s.metadata?.decoratorLines as Array<number | null> | undefined
+      for (let i = 0; i < s.decorators.length; i++) {
+        const line = lines?.[i]
+        extra.push({
+          source: s.name,
+          target: s.decorators[i],
+          type: "uses",
+          confidence: 0.6,
+          ...(typeof line === "number" ? { line_number: line } : {}),
+          metadata: { isFieldAccess: true, bareRead: true },
+        })
       }
     }
     if (extra.length === 0) return r
@@ -1652,8 +1788,71 @@ const MUTANTS: Mutant[] = [
     id: "javascript/decorator-range-includes-decorator",
     language: "javascript",
     defectClass: "line-attribution",
-    description: "M59 (#861) regression: javascript's decorated-declaration ranges go back onto the decorator (this grammar nests the decorator INSIDE class/field/method nodes), so contains Service -> pool reads 34 and Service -> method reads 37 — caught by javascript/decorator-declaration-lines-861, which pins 35/38 and forbids both.",
+    description: "M59 (#861) regression: javascript's decorated-declaration ranges go back onto the decorator (this grammar nests the decorator INSIDE class/field/method nodes), so contains Service -> pool reads 36 and Service -> method reads 39 — caught by javascript/decorator-declaration-lines-861, which pins 37/40 and forbids both.",
     transform: revertDecoratorRangeExclusion(),
+  },
+  {
+    id: "javascript/field-decorator-dropped",
+    language: "javascript",
+    defectClass: "symbol-payload-loss",
+    description: "M49 (#868) regression: a FIELD's decorator is attached to nothing again — the state the field path emitted while the class and method paths called the collector, so `@inject(DB)` above `pool = make()` left `pool` with no decorator and no reference edge. Caught by javascript/decorator-metadata-868, which pins the field's `references pool -> inject` at the decorator's line.",
+    transform: dropJsFieldDecorators(),
+  },
+  {
+    id: "javascript/decorator-references-removed",
+    language: "javascript",
+    defectClass: "relationship-loss",
+    description: "M49 (#868) regression: no decorator is reachable by name from the symbol it decorates — the pre-fix state where javascript emitted no decorator `references` edge at all. Caught by javascript/decorator-metadata-868's four expected decorator rows (46/48/51/54) and by javascript/decorator-declaration-lines-861's three.",
+    transform: dropDecoratorReferences(),
+  },
+  {
+    id: "javascript/decorator-edge-borrows-declaration-line",
+    language: "javascript",
+    defectClass: "line-attribution",
+    description: "M49 (#868) near-miss: a decorator's reference edge names the DECLARATION's line instead of the line the `@name` is written on. Caught by javascript/decorator-metadata-868, whose decorators sit on different lines from their declarations (46/48/51/54 vs 47/49/52/55) and which forbids the declaration lines for those rows.",
+    transform: decoratorEdgeBorrowsDeclarationLine(),
+  },
+  {
+    id: "javascript/decorator-edge-loses-line",
+    language: "javascript",
+    defectClass: "line-attribution",
+    description: "M59 (#860) regression applied to javascript: decorator reference edges go back to carrying NO line, the pre-#860 state. Caught by javascript/decorator-metadata-868, which forbids the line-less decorator edge.",
+    transform: dropDecoratorEdgeLines(),
+  },
+  {
+    id: "javascript/exported-class-decorator-dropped",
+    language: "javascript",
+    defectClass: "symbol-payload-loss",
+    description: "M49 (#868) regression: an EXPORTED class's decorator is dropped again, because this grammar puts it on the wrapping export_statement where the own-child reader never looked — `@sealed export class Service` lost both the decorator entry and its reference edge. Caught by javascript/decorator-metadata-868's expected `references Service -> sealed` at 46.",
+    transform: dropExportedClassDecorators(),
+  },
+  {
+    id: "javascript/decorator-position-rows-restored",
+    language: "javascript",
+    defectClass: "misattribution",
+    description: "M49 (#868) regression: restores the class-scoped decorator rows — the decorator invocation is again a `calls` by the enclosing class and the decorator's name again a bare-read `uses` from its carrier, beside the correct `references` row. Caught by javascript/decorator-metadata-868's forbid entries (`calls Service -> inject`, `uses Service -> sealed`, `uses method -> sealed`).",
+    transform: readdScopeScopedDecoratorEdges(),
+  },
+  {
+    id: "vue/decorator-metadata-mirror-stale",
+    language: "vue",
+    defectClass: "line-attribution",
+    description: "M49 (#868) regression: the SFC seam shifts `line_number` but leaves the metadata LINE MIRRORS script-relative, so `references Service -> sealed` claims the file line while its own metadata names the line above the script block. Caught by vue/decorator-metadata-868, which pins meta.decoratorLine=24 beside line_number=24 and forbids the script-relative 10.",
+    transform: revertDelegatedMetadataLineMirrors,
+  },
+  {
+    id: "svelte/decorator-metadata-mirror-stale",
+    language: "svelte",
+    defectClass: "line-attribution",
+    description: "M49 (#868) regression, svelte twin: the seam's metadata line mirrors stay script-relative. Caught by svelte/decorator-metadata-868 (script on line 10, offset 7), which pins meta.decoratorLine=17 and forbids the unshifted 10.",
+    transform: revertDelegatedMetadataLineMirrors,
+  },
+  {
+    id: "javascript/decorator-position-reads-restored",
+    language: "javascript",
+    defectClass: "misattribution",
+    description: "M49 (#868) regression: the bare-read half alone — each decorator's name becomes a `uses` edge from the symbol that carries it, the spelling #868 replaces with the reference edge. Caught by javascript/decorator-metadata-868 and by javascript/decorator-declaration-lines-861, which both forbid that row.",
+    transform: readdDecoratorPositionReads(),
   },
   {
     id: "java/drop-anon-body-field-member",

@@ -84,7 +84,16 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
       if (!vals.some(x => x.endsWith(v))) return false
     } else if (k.startsWith("meta.")) {
       const mk = k.slice(5)
-      if ((actual.metadata ?? {})[mk] !== v) return false
+      const mv = (actual.metadata ?? {})[mk]
+      // M49 (#868): metadata LIST mirrors (a symbol's `decoratorLines`, parallel
+      // to `decorators`) were unpinnable — the strict `!==` can never be true for
+      // an array, so a fixture could not state the list it wanted. Arrays now
+      // compare by sorted JSON, exactly as the imports matcher above does, so a
+      // list mirror is pinned as a set rather than being silently unassertable.
+      if (Array.isArray(v)) {
+        if (!Array.isArray(mv)) return false
+        if (JSON.stringify([...mv].sort()) !== JSON.stringify([...v].sort())) return false
+      } else if (mv !== v) return false
     } else if (actual[k] !== v) {
       // relationship field aliases
       const aliases: Record<string, string[]> = {
