@@ -6,35 +6,35 @@
   "entries": [
     {
       "file": "real-vue-analyzer.ts",
-      "line": 966,
+      "line": 1021,
       "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
       "operation": "other",
       "classification": "needs_review",
-      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
+      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent [M49.W21: line corrected 966 -> 1021 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-vue-analyzer.ts",
-      "line": 978,
+      "line": 1033,
       "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 978 -> 1033 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-vue-analyzer.ts",
-      "line": 988,
+      "line": 1047,
       "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 988 -> 1047 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-vue-analyzer.ts",
-      "line": 990,
+      "line": 1049,
       "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
       "operation": "other",
       "classification": "needs_review",
-      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent"
+      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent [M49.W21: line corrected 990 -> 1049 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-csharp-analyzer.ts",
@@ -42,7 +42,7 @@
       "source": "/\\boperator\\s+(implicit|explicit)\\s+([\\w.<>]+)/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
     },
     {
       "file": "real-csharp-analyzer.ts",
@@ -50,39 +50,39 @@
       "source": "/\\boperator\\s+(checked\\s+)?([^\\s(]+)/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 586,
+      "line": 587,
       "source": "/^module\\.exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 586,
+      "line": 587,
       "source": "/^exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-javascript-analyzer.ts",
-      "line": 1285,
+      "line": 1315,
       "source": "/^@/",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 1285 -> 1315 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-svelte-analyzer.ts",
-      "line": 986,
+      "line": 1051,
       "source": "/^(.*?)\\s+(?:then|as)\\s+/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [Sv1 #736: line shifted by wave edits; regex retained for inline then/as split] [Sv2 #736: line shifted by D-wave edits 932->986]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [Sv1 #736: line shifted by wave edits; regex retained for inline then/as split] [Sv2 #736: line shifted by D-wave edits 932->986] [M49.W21: line corrected 986 -> 1051 by the web-line round's insertions; source unchanged, identity is file+source]"
     },
     {
       "file": "real-cpp-analyzer.ts",
@@ -106,7 +106,7 @@
       "source": "/\\b(Serialize|Deserialize)\\b/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained]"
     },
     {
       "file": "real-rust-analyzer.ts",
@@ -114,7 +114,7 @@
       "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained]"
     },
     {
       "file": "real-php-analyzer.ts",
