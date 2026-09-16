@@ -883,6 +883,23 @@ probed in both trees: the anonymous symbol is still filtered, but the containmen
 persisted and its source follows the owner (`contains P -> anonymous_IntIdTable` becomes
 `contains inMethod -> anonymous_IntIdTable`), so the graph's containment answer gets truer.
 
+**The sweep's one parity anomaly, fixed in the ORACLE:** scala3
+`tests/pos/typeclasses-this.scala:34` — an analyzer `overrides Monad.map -> Functor.map`
+(1.0, `implicitOverride`) the oracle could not derive, because a Scala 3
+`extension (x: Self) def m(...)` group is an `extension_definition` node and its `def`s are
+grandchildren of the template body while the oracle's member scan read direct children.
+The analyzer was right and the instrument was wrong; fixed with one `membersOf(body)`
+helper feeding all three member scans, probed with a positive case and three controls
+(`script/m14/tmp/867-oracle-scala-extension.ts`), then re-verified on fresh samples in both
+scala lanes. The other sweep flags (five `heuristic` growths, five `perf` breaches) are the
+unpinned-baseline comparison, adjudicated by measurement — java's `heuristic` reads 81 / 265
+/ 86 across three rotations with **no** java code change since the pin, and a same-sample
+A/B over three trees shows the metric's counts do not move at all for #866/#867 (it matches
+on `(label, target)` and never compares the source). See
+`reviews/m49-f5-lane-flag-adjudication.md`; the instrument gaps are #871, and the two
+non-JVM parity anomalies the same sweep surfaced are #870 (c/cpp/csharp edges with no line)
+and #872 (go/haskell missed heritage edges).
+
 **Second defect class the sweep exposed (measured, then pinned):** kotlin's file-import
 reference edges are emitted on a `root` placeholder and rewritten onto the file's primary
 top-level TYPE, and an OWNERLESS anonymous object qualified — so a top-level function's
