@@ -80,6 +80,10 @@ const DECL_KEYWORDS = [
   "fun", "def", "void", "int", "long", "double", "float", "boolean", "bool", "char", "byte", "short",
   "String", "Object", "public", "private", "protected", "internal", "static", "final", "abstract",
   "synchronized", "native", "override", "open", "suspend", "operator", "inline", "external",
+  // 3rd instrument defect (#855 round): javascript/typescript declare with
+  // `function`, which no keyword here covered — the callee's own declaration
+  // line was counted as a call site. Covered by the self-test below.
+  "function",
 ]
 const COMMENT_PREFIX = ["//", "*", "/*", "#", "--"]
 
@@ -94,6 +98,17 @@ const COMMENT_PREFIX = ["//", "*", "/*", "#", "--"]
 export function calledLines(lines: string[], token: string): number[] {
   const call = new RegExp(`(^|[^\\w])${escapeRe(token)}\\s*\\(`)
   const decl = new RegExp(`(^|\\s)(${DECL_KEYWORDS.join("|")})\\b[^;]*\\b${escapeRe(token)}\\s*\\(`)
+  // 3rd instrument defect of the #855 round, found by moving typescript from
+  // UNLINED to LINED: `fun`/`def`/`int`/`static` cover java/kotlin/scala/groovy/
+  // python declarations, but javascript and typescript declare with `function`
+  // and `const f = () => …`, neither of which was excluded — so the CALLEE'S OWN
+  // DECLARATION LINE was counted as a call site and the harness demanded a site
+  // the tool correctly does not report (`fixture has 5 call(s) on [1,3,4,5,6]`
+  // for a source with 4 real calls). The assignment form is matched separately:
+  // `target = (…)`/`target = async (…)`/`target = x =>` declare; `target(` calls;
+  // and a `=` BEFORE the token (an initialisation like `val a = target()`) still
+  // counts as a call — which is why the two are not merged into one regex.
+  const declAssign = new RegExp(`(^|[^\\w])${escapeRe(token)}\\s*=\\s*(async\\s*)?(\\(|function\\b|\\w+\\s*=>)`)
   const out: number[] = []
   // BLOCK COMMENTS must be tracked across lines. Measured false accusations
   // before this: `/*def raceLeftCedeYields … F.pure(a)) <-> F.pure(Right(a))*/`
@@ -134,7 +149,7 @@ export function calledLines(lines: string[], token: string): number[] {
     // A declaration names the token without assigning anything. If an `=` sits
     // before the token the line is an initialisation/call (`val a = target()`),
     // so it still counts as a call site.
-    if (!before.includes("=") && decl.test(line)) return
+    if (!before.includes("=") && (decl.test(line) || declAssign.test(line))) return
     out.push(i + 1)
   })
   return out
@@ -312,6 +327,12 @@ async function main() {
     codeAfterBlockCommentEndsCounted: calledLines(["/* c", "*/ val a = target()"], "target").length === 1,
     qualifiedCallCounted: calledLines(["  io.unsafeRunSync()", "  IO.raiseError(e)", "  .getOrElse(x)"], "getOrElse").length === 1,
     dollarPrefixedNameCounted: calledLines(['  $target(1)'], "target").length === 1,
+    // Typescript declaration shapes must not count (defect 3 above).
+    typescriptFunctionDeclarationNotCounted: calledLines(["export function target(): number { return 1 }"], "target").length === 0,
+    typescriptArrowConstDeclarationNotCounted: calledLines(["export const target = () => 1"], "target").length === 0,
+    typescriptAsyncArrowDeclarationNotCounted: calledLines(["const target = async (x: number) => x"], "target").length === 0,
+    // …while the same name in a call position on an initialisation line still counts.
+    typescriptInitialisationCallStillCounted: calledLines(["  const a = target()"], "target").length === 1,
   }
   const boundOk = Object.values(boundSelfTest).every(Boolean)
   check("lower-bound-predicate-self-test", boundOk, JSON.stringify(boundSelfTest))
@@ -333,9 +354,31 @@ async function main() {
     { lang: "kotlin", file: "F.kt", callee: "targetKt", caller: "callerKt", src: (c: string, k: string) => `fun ${c}(): Int { return 1 }\nfun ${k}(): Int {\n  val a = ${c}()\n  val b = ${c}()\n  val c = ${c}()\n  val d = ${c}()\n  return a + b + c + d\n}\n` },
     { lang: "scala", file: "F.scala", callee: "targetScala", caller: "callerScala", src: (c: string, k: string) => `object F {\n  def ${c}(): Int = 1\n  def ${k}(): Int = {\n    val a = ${c}()\n    val b = ${c}()\n    val c = ${c}()\n    val d = ${c}()\n    a + b + c + d\n  }\n}\n` },
     { lang: "groovy", file: "F.groovy", callee: "targetGroovy", caller: "callerGroovy", src: (c: string, k: string) => `class F {\n  static int ${c}() { return 1 }\n  static int ${k}() {\n    int a = ${c}()\n    int b = ${c}()\n    int c = ${c}()\n    int d = ${c}()\n    return a + b + c + d\n  }\n}\n` },
-  ]
-  const UNLINED = [
+    // M59 (#855): the anonymous-member-INITIALISER shape, end-to-end. The callee
+    // is called from the `val` initialisers of an anonymous class body, where the
+    // analyzer's edge source is the anonymous type itself (`anonymous_Runnable`)
+    // — a name the store's artifact filter refuses to persist
+    // (src/ast/analysis-exclusions.ts). Before the index-layer fix both rows were
+    // stored with a NULL source, so the tool could answer NO site here; on
+    // cats-effect the same shape made it answer 3 of 4 real `liftF` call sites
+    // (TimeT.scala:148). `from` must therefore be the innermost STOREABLE
+    // enclosing symbol — this fixture's caller — or this check cannot pass. Only
+    // `val` initialisers are used deliberately: a call from a `def` inside the
+    // body attributes to that def's own storeable symbol and would exercise
+    // nothing.
+    { lang: "scala-anon-initializer", file: "Fanon.scala", callee: "targetScalaAnon", caller: "callerScalaAnon", src: (c: string, k: string) => `object Fanon {\n  def ${c}(): Int = 1\n  def ${k}(): Unit =\n    new Runnable {\n      val a =\n        ${c}()\n      val b =\n        ${c}()\n    }\n}\n` },
+    // M59 web round: typescript moved here from UNLINED. It stopped being an
+    // "unknown line" language when the web line work landed (#825 family: the
+    // ts lanes read 2074/2074 with 0 inconsistent), so the old membership was a
+    // STALE expectation that failed this harness on every run after that round —
+    // a red check that no longer described the product. Moving it converts the
+    // assertion from "must stay null" to the stronger "reports every site".
     { lang: "typescript", file: "f.ts", callee: "targetTs", caller: "callerTs", src: (c: string, k: string) => `export function ${c}(): number { return 1 }\nexport function ${k}(): number {\n  const a = ${c}()\n  const b = ${c}()\n  const c = ${c}()\n  const d = ${c}()\n  return a + b + c + d\n}\n` },
+  ]
+  // Languages whose analyzers still emit NO call-site line: the tool must
+  // report null rather than a substituted number (#823). python is the control
+  // that keeps this state covered now that typescript has landed lines.
+  const UNLINED = [
     { lang: "python", file: "f.py", callee: "targetPy", caller: "callerPy", src: (c: string, k: string) => `def ${c}():\n    return 1\n\ndef ${k}():\n    a = ${c}()\n    b = ${c}()\n    c = ${c}()\n    d = ${c}()\n    return a + b + c + d\n` },
   ]
 
