@@ -447,6 +447,51 @@ function revertToTypeSource(r: any) {
   }
 }
 
+// M49/M37 #866: the two halves of the anonymous-body MEMBER contract as
+// faithful reverts of the measured pre-fix behaviour (kotlin and scala dropped
+// the field member; kotlin also flattened its initialiser call onto the
+// enclosing method). Both are written off the result's own symbol table so
+// they stay valid on any fixture.
+//
+// `dropAnonBodyMember` removes the FIELD member of an anonymous body together
+// with its containment edge — the exact state kotlin and scala emitted before
+// the fix (no symbol at all). Scoped to a member whose OWNER is an anonymous
+// type, so it cannot be caught by an ordinary class-field fixture.
+function dropAnonBodyMember(memberName: string) {
+  return (r: any) => {
+    const anonNames = new Set<string>(
+      (r.symbols ?? [])
+        .filter((s: any) => String(s.name ?? "").startsWith("anonymous_"))
+        .map((s: any) => s.name),
+    )
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter(
+        (s: any) => !(s.name === memberName && anonNames.has(s.ownerName)),
+      ),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "contains" && x.target === memberName && anonNames.has(x.source)),
+      ),
+    }
+  }
+}
+
+// `reattributeAnonBodyCall` flattens every call made from an anonymous body
+// onto the named outer declaration — kotlin's pre-fix answer for a member
+// initialiser (`calls build -> target` instead of `calls anonymous_Runnable
+// -> target`). It reverts the resolver side only; the symbol side is left
+// intact so the two halves of the contract are provably independent.
+function reattributeAnonBodyCall(outerName: string) {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      String(x.type) === "calls" && String(x.source ?? "").startsWith("anonymous_")
+        ? { ...x, source: outerName, from: outerName, fromSymbol: outerName }
+        : x,
+    ),
+  })
+}
+
 const MUTANTS: Mutant[] = [
   {
     id: "c/drop-field-access-uses",
@@ -1457,6 +1502,62 @@ const MUTANTS: Mutant[] = [
         (x: any) => !(String(x.type) === "calls" && String(x.source).startsWith("anonymous_")),
       ),
     }),
+  },
+  {
+    id: "java/drop-anon-body-field-member",
+    language: "java",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#866) regression: drops a FIELD member declared inside an anonymous class body (and its containment edge) — the state kotlin and scala emitted, applied to the language that defines the family contract. Caught by java/anonymous-field-member, which pins `field` as a property owned by anonymous_Runnable.",
+    transform: dropAnonBodyMember("field"),
+  },
+  {
+    id: "java/reattribute-anon-field-initializer-call",
+    language: "java",
+    defectClass: "misattribution",
+    description: "M49/M37 (#866) regression: flattens calls made from an anonymous body onto the enclosing method, so `calls anonymous_Runnable -> target` becomes `calls build -> target` (kotlin's pre-fix answer). Caught by java/anonymous-field-member's forbid pin on `build -> target` at the initialiser's line.",
+    transform: reattributeAnonBodyCall("build"),
+  },
+  {
+    id: "groovy/drop-anon-body-field-member",
+    language: "groovy",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#866) regression: drops a FIELD member declared inside an anonymous class body (and its containment edge) — the state kotlin and scala emitted. Caught by groovy/anonymous-field-member, which pins `field` as a property owned by anonymous_Runnable.",
+    transform: dropAnonBodyMember("field"),
+  },
+  {
+    id: "groovy/reattribute-anon-field-initializer-call",
+    language: "groovy",
+    defectClass: "misattribution",
+    description: "M49/M37 (#866) regression: flattens calls made from an anonymous body onto the enclosing method (`calls anonymous_Runnable -> target` becomes `calls build -> target`). Caught by groovy/anonymous-field-member's forbid pin on `build -> target` at the initialiser's line.",
+    transform: reattributeAnonBodyCall("build"),
+  },
+  {
+    id: "kotlin/drop-anon-body-field-member",
+    language: "kotlin",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#866) regression: reverts the extractProperty boundary (object_literal no longer stops the ancestor scan), so `val field` inside `object : Runnable { ... }` is classified as a function-local and vanishes — the pre-fix kotlin state. Caught by kotlin/anonymous-field-member.",
+    transform: dropAnonBodyMember("field"),
+  },
+  {
+    id: "kotlin/reattribute-anon-field-initializer-call",
+    language: "kotlin",
+    defectClass: "misattribution",
+    description: "M49/M37 (#866) regression: reverts resolveCallSource's object_literal boundary, so the member initialiser's call attributes to the OUTER method `build` instead of the anonymous type — the pre-fix kotlin answer (java/groovy/scala all said the anonymous type). Caught by kotlin/anonymous-field-member's forbid pin on `build -> target` at the initialiser's line.",
+    transform: reattributeAnonBodyCall("build"),
+  },
+  {
+    id: "scala/drop-anon-body-field-member",
+    language: "scala",
+    defectClass: "symbol-loss",
+    description: "M49/M37 (#866) regression: reverts the handleVariable boundary (an anonymous body's template_body no longer stops the ancestor scan), so `val field` inside `new Runnable { ... }` is reclassified as a function-local and vanishes — the pre-fix scala state, and what made cats-effect TimeT.scala's symbol list end at anonymous_Fiber. Caught by scala/anonymous-field-member.",
+    transform: dropAnonBodyMember("field"),
+  },
+  {
+    id: "scala/reattribute-anon-field-initializer-call",
+    language: "scala",
+    defectClass: "misattribution",
+    description: "M49/M37 (#866) regression: flattens calls made from an anonymous body onto the enclosing method. scala's own attribution was already correct, so this pins that half of the contract for the language too — Caught by scala/anonymous-field-member's forbid pin on `build -> target` at the initialiser's line.",
+    transform: reattributeAnonBodyCall("build"),
   },
   {
     id: "scala/import-statement-start-line",

@@ -132,6 +132,16 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               const clsName = cls ? this.findChildByType(cls, ["type_identifier", "simple_identifier"])?.text : undefined
               return clsName ?? "constructor"
             }
+            // M49/M37 #866: an object_literal (`object : Runnable { ... }`)
+            // is its own declaration boundary — a call written in a member
+            // initialiser belongs to that anonymous type, NOT to whatever
+            // method lexically encloses the literal (the pre-fix answer was
+            // the OUTER method `build`, while java/groovy/scala all say the
+            // anonymous type). Same derivation as the symbol emitter, so the
+            // field symbol and its initialiser call can never disagree.
+            if (p.type === "object_literal") {
+              return this.anonymousObjectName(p)
+            }
             if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
               const nameNode = this.findChildByType(p, ["simple_identifier", "type_identifier"])
               if (nameNode) return nameNode.text
@@ -697,9 +707,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           const deleg = this.findChildByType(n, ["delegation_specifier"])
           let superName: string | undefined
           if (deleg) {
-            // The type identifier is nested (delegation_specifier -> user_type
-            // -> type_identifier), so findChildByType's direct-children scan
-            // is insufficient — recurse for the first type_identifier.
+            // The supertype name is read through the shared derivation below
+            // (single source of truth, shared with the call-source resolver).
             const findType = (node: Node): Node | null => {
               if (node.type === "type_identifier") return node
               for (let i = 0; i < node.namedChildCount; i++) {
@@ -711,7 +720,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             const tId = findType(deleg)
             if (tId) superName = tId.text
           }
-          const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
+          const anonName = this.anonymousObjectName(n)
           ctx.classStack.push(anonName)
           pushedName = anonName
           nextParentClass = anonName
@@ -1106,11 +1115,46 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * M49/M37 #866: the name an anonymous object's members — and the calls made
+   * from them — attribute to. ONE derivation, shared by the symbol emitter and
+   * the call-source resolver, so a field symbol and its initialiser call can
+   * never disagree about which type they belong to (java/groovy convention:
+   * `anonymous_<SuperName>`).
+   */
+  private anonymousObjectName(node: Node): string {
+    const deleg = this.findChildByType(node, ["delegation_specifier"])
+    let superName: string | undefined
+    if (deleg) {
+      // The type identifier is nested (delegation_specifier -> user_type ->
+      // type_identifier), so findChildByType's direct-children scan is
+      // insufficient — recurse for the first type_identifier.
+      const findType = (n: Node): Node | null => {
+        if (n.type === "type_identifier") return n
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) { const r = findType(c); if (r) return r }
+        }
+        return null
+      }
+      const tId = findType(deleg)
+      if (tId) superName = tId.text
+    }
+    return superName ? `anonymous_${superName}` : "anonymous_object"
+  }
+
+  /**
    * Extract Kotlin property with getters/setters and delegation
    */
   private extractProperty(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: KotlinContext, parentClass?: string, relationships?: ASTEngine.UniversalRelationship[]) {
+    // Locals inside a function body are not project-level symbols. The scan
+    // stops at the nearest DECLARATION: class_declaration / object_declaration
+    // and now object_literal — a `val` that is a member of an anonymous class
+    // body is a MEMBER, even though it is lexically inside the enclosing
+    // method (M49/M37 #866: the scan previously walked straight past the
+    // literal, hit that method, and dropped the field entirely — java and
+    // groovy emit it as `property field owner=anonymous_Runnable`).
     let ancestor = node.parent
-    while (ancestor && ancestor.type !== "class_declaration" && ancestor.type !== "object_declaration" && ancestor.type !== "source_file") {
+    while (ancestor && ancestor.type !== "class_declaration" && ancestor.type !== "object_declaration" && ancestor.type !== "object_literal" && ancestor.type !== "source_file") {
       if (ancestor.type === "function_declaration") return
       ancestor = ancestor.parent
     }
