@@ -1189,6 +1189,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.type === "implements" ? { ...x, line_number: undefined } : x) }),
   },
   {
+    id: "typescript/decorator-lines-dropped",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description: "M59 (#860) regression: decorator `references` edges go back to carrying NO line while every other kind stays stamped — the exact pre-fix state (`extractDecoratorRelationships` had no line field at all, which is why the svelte lane's pinned 40-file sample read 110/111). Caught by typescript/decorator-lines-860, which pins the class decorator at 18, the field decorator at 20 and the method decorator at 23 — each on a DIFFERENT line from the declaration it decorates — and forbids the lineless emission on all three.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).isDecorator ? { ...x, line_number: undefined } : x) }),
+  },
+  {
+    id: "typescript/decorator-line-off-by-one",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description: "M59 (#860) near-miss: a decorator edge names the DECORATOR's line shifted by one (the arithmetic this contract is one keystroke away from, and the wrong answer that still points at the decorator rather than at nothing). Caught by typescript/decorator-lines-860, whose forbid entries name 19/21/24 — exactly the shifted values of the expected 18/20/23 — so the fixture pins the ARITHMETIC and not merely the presence of a number.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).isDecorator && typeof x.line_number === "number" ? { ...x, line_number: x.line_number + 1 } : x) }),
+  },
+  {
     id: "typescript/iface-implements-override-drop",
     language: "typescript",
     defectClass: "relationship-loss",

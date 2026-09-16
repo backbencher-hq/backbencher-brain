@@ -368,6 +368,20 @@ interface ModifierInfo {
   isConst: boolean
   isOverride: boolean
   decorators: string[]
+  /** Decorator lines, PARALLEL to `decorators` (M59 #860). The name list is
+   *  what the store reads on the symbol; this list lets a decorator's reference
+   *  edge name the line the decorator is written on, exactly as
+   *  extendsLines/implementsLines do for heritage. */
+  decoratorLines: Array<number | null>
+}
+
+/** Record a decorator name WITH its own line, keeping the two lists in
+ *  lockstep. A name already recorded keeps its first line (the same decorator
+ *  is seen by both the own-children scan and the sibling collector). */
+function addDecorator(m: ModifierInfo, name: string, line: number | null): void {
+  if (m.decorators.includes(name)) return
+  m.decorators.push(name)
+  m.decoratorLines.push(line)
 }
 
 function extractModifiersFromNode(node: Node): ModifierInfo {
@@ -385,6 +399,7 @@ function extractModifiersFromNode(node: Node): ModifierInfo {
     isConst: false,
     isOverride: false,
     decorators: [],
+    decoratorLines: [],
   }
 
   // Check for decorators first (they come before modifiers)
@@ -395,7 +410,7 @@ function extractModifiersFromNode(node: Node): ModifierInfo {
     if (child.type === "decorator") {
       const decoratorName = extractDecoratorName(child)
       if (decoratorName) {
-        result.decorators.push(decoratorName)
+        addDecorator(result, decoratorName, child.startPosition.row + 1)
       }
     }
   }
@@ -1924,6 +1939,7 @@ class TypeScriptAnalysisRunner {
         isDefault: exportStatus.isDefault,
         isDeclare: modifiers.isDeclare,
         complexity: this.calculateComplexity(node),
+        decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
 
@@ -1949,11 +1965,11 @@ class TypeScriptAnalysisRunner {
     let modifiers = extractModifiersFromNode(node)
     const exportStatus = isNodeExported(node)
     // Class decorators live on the wrapping export_statement or as own children.
-    const classDecoratorNames = collectDecoratorsForClass(node)
-      .map((d) => extractDecoratorName(d))
-      .filter((n): n is string => !!n)
-    for (const d of classDecoratorNames) {
-      if (!modifiers.decorators.includes(d)) modifiers.decorators.push(d)
+    // M59 #860: the sibling/export-statement collectors hold the decorator
+    // NODES, so the class's decorators are recorded with their own lines.
+    for (const d of collectDecoratorsForClass(node)) {
+      const n = extractDecoratorName(d)
+      if (n) addDecorator(modifiers, n, d.startPosition.row + 1)
     }
 
     // Extract heritage (extends/implements)
@@ -1979,6 +1995,7 @@ class TypeScriptAnalysisRunner {
         extendsLines: heritage.extendsLines,
         implements: heritage.implements,
         implementsLines: heritage.implementsLines,
+        decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
 
@@ -2452,6 +2469,7 @@ class TypeScriptAnalysisRunner {
           isDeclare: modifiers.isDeclare,
           complexity:
             kind === ASTEngine.SymbolKind.Function && valueNode ? this.calculateComplexity(valueNode) : undefined,
+          decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
         },
       }
 
@@ -2549,11 +2567,11 @@ class TypeScriptAnalysisRunner {
     const modifiers = extractModifiersFromNode(node)
     // Member decorators are class_body SIBLINGS, not children of the
     // method_definition — merge the sibling-collected names in.
-    const siblingDecoratorNames = (decoratorNodes ?? [])
-      .map((d) => extractDecoratorName(d))
-      .filter((n): n is string => !!n)
-    for (const d of siblingDecoratorNames) {
-      if (!modifiers.decorators.includes(d)) modifiers.decorators.push(d)
+    // M59 #860: method decorators are siblings, and those nodes carry the line
+    // their reference edge must name.
+    for (const d of decoratorNodes ?? []) {
+      const n = extractDecoratorName(d)
+      if (n) addDecorator(modifiers, n, d.startPosition.row + 1)
     }
     const params = this.extractParameters(node)
     const returnType = this.extractReturnType(node)
@@ -2646,6 +2664,7 @@ class TypeScriptAnalysisRunner {
         })(),
         isAccessor,
         complexity: this.calculateComplexity(node),
+        decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
 
@@ -2781,6 +2800,7 @@ class TypeScriptAnalysisRunner {
         isPrivateField: name.startsWith("#"),
         isAbstract: modifiers.isAbstract,
         hasInitializer: !!valueNode,
+        decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
 
@@ -4062,20 +4082,32 @@ class TypeScriptAnalysisRunner {
     processNode(node, null)
   }
 
+  /**
+   * M59 #860: a decorator's reference edge names the DECORATOR's own line. The
+   * line travels in metadata.decoratorLines, parallel to symbol.decorators (the
+   * same lockstep pattern as extendsLines/implementsLines). A decorator whose
+   * line was never recorded stays line-less rather than borrowing the
+   * declaration's line — never invent a line (#823).
+   */
   private extractDecoratorRelationships(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
     for (const symbol of symbols) {
       if (symbol.decorators && symbol.decorators.length > 0) {
-        for (const decorator of symbol.decorators) {
+        const lines = symbol.metadata?.decoratorLines as Array<number | null> | undefined
+        for (let i = 0; i < symbol.decorators.length; i++) {
+          const decorator = symbol.decorators[i]
+          const line = lines?.[i]
           relationships.push({
             source: symbol.name,
             target: decorator,
             type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
+            ...(typeof line === "number" ? { line_number: line } : {}),
             metadata: {
               isDecorator: true,
+              decoratorLine: typeof line === "number" ? line : null,
             },
           })
         }
