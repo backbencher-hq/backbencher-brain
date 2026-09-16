@@ -226,6 +226,15 @@
     }
 ,
     {
+        "id": "DT2",
+        "title": "Dart second review wave (issue #856): DT2-A bound locals/params, DT2-B file-scope values",
+        "status": "verified",
+        "notes": "Hostile battery over the DT-F deferral + audit of co-agent #752 gates; oracle mirrors in deriveDartBareUses. Fully gated: fixture dart/value-reads (new), 4 mutants, spec DT2-A/B/C/D. Lanes: proxicall + dart-http, pinned + 5 rotations, 0/0/0. F3 all pass, F4 582/582, R1 124/124, R2 15/15. Seam trace in-wave (P1-dart.json secondReview).",
+        "evidenceFile": "reviews/dart/second-review.md",
+        "verifiedAtCommit": "d4536e77"
+    }
+,
+    {
         "id": "PHP1",
         "title": "PHP first review wave (issue #835): PHP-A receiver reads, PHP-H static reads, PHP-D const fetch, PHP-E tear-offs, PHP-F interpolation, PHP-B subscripts, PHP-C captures, PHP-O1/O2 oracle holes",
         "status": "verified",
