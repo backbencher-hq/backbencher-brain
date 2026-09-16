@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "5223213e712067b380421c4cde4671872c1ec368",
+  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-16T00:03:34.408Z",
+  "generatedAt": "2026-09-16T17:22:28.204Z",
   "storedPairs": [
     {
       "source": "kotlin",
@@ -50,14 +50,14 @@
       "origin": "real project index"
     }
   ],
-  "realDbsScanned": 59,
+  "realDbsScanned": 63,
   "limitations": [
     "Launch launch-language pairs with no stored rows are declared absent (doc generated per scan).",
     "Coverage scan reads real project dbs read-only; unreadable dbs are skipped and counted in realDbsScanned."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T00:03:34.408Z",
-    "contentSha256": "58af7eb25a61d89e406ec7a314f9e339d124850767612741a716f662e043e14f"
+    "sealedAt": "2026-09-16T17:22:28.205Z",
+    "contentSha256": "f44f81a82d8ed1edc4f0505287ed0f3ca1d7cd2d1d17810880b3eb75cd4f0527"
   }
 }

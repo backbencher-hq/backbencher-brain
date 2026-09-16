@@ -25,7 +25,7 @@ The co-agent lanes landed on main after the M44 closure HEAD (`0df02f01`):
   at or above every M44-era differential floor. Evidence:
   `validation/m53/results/R2.json`.
 - **R3 (issue #733)** — branch audit: ZERO-TOUCH + merge-required-before-release. The co-agents never
-  edited an LSP-lane file (merge-base `9afe0fac` → branch `6c7a3363`,
+  edited an LSP-lane file (merge-base `c341cfeb` → branch `92a800ae`,
   lane diff empty). Evidence: `validation/m53/results/R3.json`.
 
 ## Two real defects found and fixed BY this review (fixture-first, F7)

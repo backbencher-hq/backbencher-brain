@@ -12,18 +12,14 @@
     "total": 3,
     "caught": 3
   },
-  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
-  "workingTreeRelevantChanges": [
-    "script/m55/screenshot-protocol.ts",
-    "script/m55/verify-live-surface.ts",
-    "script/m55/navigation.ts"
-  ],
+  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-09-13T23:37:50.032Z",
+  "generatedAt": "2026-09-16T17:12:48.058Z",
   "fixture": {
-    "workspace": "/tmp/m55-t3-ws-kRDxqx",
-    "projectId": "6d405c1c6af3bf77a81dc122cbd3eaafe09f00ab",
+    "workspace": "/tmp/m55-t3-ws-25Rz5L",
+    "projectId": "c956531afb3fca37041618f1f61bf7461f399eb5",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -60,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.581Z",
-    "contentSha256": "35e5fe50792c218e831f0ce1564b732aa5df3f6b544c4002d5d719ded4c7cde2"
+    "sealedAt": "2026-09-16T17:12:48.059Z",
+    "contentSha256": "af58bc8943cb645c45291c4e535f1a8ef1e7e5a40d2ea97934271c25ced947e2"
   }
 }

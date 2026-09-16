@@ -590,7 +590,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -610,7 +610,7 @@
                 "confidence": 1,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "producer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -648,7 +648,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -686,7 +686,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -726,7 +726,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -764,7 +764,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -849,7 +849,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -887,7 +887,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -925,7 +925,7 @@
                 "confidence": 0.9,
                 "isCrossLanguage": false,
                 "enrichment": {
-                  "inferredAt": 1789138169952,
+                  "inferredAt": 1789512095878,
                   "role": "consumer",
                   "layerFlow": "core→core",
                   "criticality": "low",
@@ -1049,7 +1049,7 @@
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:greet:calls",
             "metadata": {
               "enrichment": {
-                "inferredAt": 1789138169952,
+                "inferredAt": 1789512095878,
                 "role": "consumer",
                 "layerFlow": "core→core",
                 "criticality": "low",
@@ -1071,7 +1071,7 @@
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
             "metadata": {
               "enrichment": {
-                "inferredAt": 1789138169952,
+                "inferredAt": 1789512095878,
                 "role": "consumer",
                 "layerFlow": "core→core",
                 "criticality": "low",
@@ -1093,7 +1093,7 @@
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/report.ts:describe:5:greet:calls",
             "metadata": {
               "enrichment": {
-                "inferredAt": 1789138169952,
+                "inferredAt": 1789512095878,
                 "role": "consumer",
                 "layerFlow": "core→core",
                 "criticality": "low",
@@ -1115,7 +1115,7 @@
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/app.ts:main:6:Greeter:instantiates",
             "metadata": {
               "enrichment": {
-                "inferredAt": 1789138169952,
+                "inferredAt": 1789512095878,
                 "role": "producer",
                 "layerFlow": "core→core",
                 "criticality": "low",
@@ -1139,7 +1139,7 @@
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:greet:calls",
             "metadata": {
               "enrichment": {
-                "inferredAt": 1789138169952,
+                "inferredAt": 1789512095878,
                 "role": "consumer",
                 "layerFlow": "core→core",
                 "criticality": "low",
@@ -1161,7 +1161,7 @@
             "rowId": "693ac0d258eee9282c48710e76362d6ba159c7af:rel:693ac0d258eee9282c48710e76362d6ba159c7af:src/greeter.ts:greetAll:15:map:calls",
             "metadata": {
               "enrichment": {
-                "inferredAt": 1789138169952,
+                "inferredAt": 1789512095878,
                 "role": "consumer",
                 "layerFlow": "core→core",
                 "criticality": "low",
@@ -1280,10 +1280,10 @@
       "error": "bb/graph: symbol 'nonexistent_symbol_xyz' not found — no graph exists (declared error; run `bb index` or check the name)"
     }
   },
-  "generatedAt": "2026-09-14T03:28:40.388Z",
+  "generatedAt": "2026-09-16T17:40:30.626Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.584Z",
-    "contentSha256": "c3c6036a825d85673866e8e7276a7f33588feef7f6200bd0a96f68298e2c048a"
+    "sealedAt": "2026-09-16T17:40:33.036Z",
+    "contentSha256": "55f79fadfc093c246006b9b1e9d6faa1add6b0436b38bb621ede5e30387dbd38"
   }
 }

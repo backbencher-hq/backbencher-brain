@@ -10,19 +10,15 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negatives": 0,
-  "currentCommit": "fbfbba013c4218ccb4f9e6c8e62924d99085acf8",
-  "workingTreeRelevantChanges": [
-    "script/m55/screenshot-protocol.ts",
-    "script/m55/verify-live-surface.ts",
-    "script/m55/navigation.ts"
-  ],
+  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-identity.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-09-13T23:37:40.638Z",
+  "generatedAt": "2026-09-16T17:12:41.522Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.581Z",
-    "contentSha256": "3b7e59b06ded113792000de8f0bb1a8d2f9b630a543d650c3eecdec09dc9d4ab"
+    "sealedAt": "2026-09-16T17:12:41.523Z",
+    "contentSha256": "6818b10173eabd19d75b628929f41ecab362c17d65ab536b2845f05d08c98731"
   }
 }
