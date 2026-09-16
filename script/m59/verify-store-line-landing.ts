@@ -229,12 +229,23 @@ async function main() {
   const outDir = path.join(ROOT, "validation/m59/results")
   const { mkdirSync, writeFileSync } = await import("node:fs")
   mkdirSync(outDir, { recursive: true })
+  // M59 (#859 precedent, applied here too): this artifact names numbers, so it
+  // must name the code that produced them. A non-zero `treeModifiedInputs`
+  // means a WORKING-TREE measurement, not a commit's.
+  const { execSync } = await import("node:child_process")
+  const commit = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
+  const treeModifiedInputs = execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" })
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("?? ")).length
   writeFileSync(
     path.join(outDir, "store-line-landing.json"),
     JSON.stringify(
       {
         probe: "M59.O3",
         at: new Date().toISOString(),
+        atCommit: commit,
+        treeModifiedInputs,
         repo: TARGET_REPO,
         tempDataDir: EMPTY,
         indexStats: {

@@ -721,6 +721,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (tId) superName = tId.text
           }
           const anonName = this.anonymousObjectName(n)
+          // M49/M37 #867: who OWNS the anonymous type. The census over all four
+          // JVM analyzers measured kotlin alone reporting the enclosing CLASS
+          // for a literal declared inside a method, while java/groovy/scala all
+          // report the enclosing method. Ruled: ownerName = the innermost
+          // enclosing DECLARATION (java/groovy/scala already do this; a type
+          // declared in a method body is scoped to that method, not a member of
+          // the class). Kotlin reported the class only because this walker
+          // carries `pClass` and no function context, not by design.
+          const anonOwner = this.anonymousObjectOwner(n, pClass)
           ctx.classStack.push(anonName)
           pushedName = anonName
           nextParentClass = anonName
@@ -730,8 +739,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.symbolRange(n),
             scope: this.currentScope(ctx),
             visibility: this.determineVisibility(this.extractModifiers(n, ctx), ctx),
-            ownerName: pClass,
-            ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
+            ownerName: anonOwner.name,
+            ownerKind: anonOwner.kind,
             decorators: this.extractAnnotations(n, ctx),
             metadata: {
               modifiers: [],
@@ -1112,6 +1121,40 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     symbols.push(symbol)
+  }
+
+  /**
+   * M49/M37 #867: the DECLARATION that owns an anonymous type — the innermost
+   * enclosing `function_declaration` when the literal sits inside one, and the
+   * enclosing class (`pClass`) otherwise.
+   *
+   * Ruled language-wide (not just here): `ownerName` = innermost enclosing
+   * declaration. Three of the four JVM analyzers already did that before this
+   * ruling — java's own source comment claimed to "mirror the kotlin family
+   * convention exactly" while its code used the enclosing declaration, so the
+   * comment and the majority disagreed and kotlin was the outlier. Lambdas and
+   * `init` blocks are not declarations: a literal inside one is still owned by
+   * the enclosing function/class, matching java (which pushes no context for a
+   * lambda either).
+   */
+  private anonymousObjectOwner(node: Node, pClass?: string): { name?: string; kind?: ASTEngine.SymbolKind } {
+    let ancestor = node.parent
+    while (ancestor && ancestor.type !== "source_file") {
+      if (ancestor.type === "function_declaration") {
+        const nameNode = this.findChildByType(ancestor, ["simple_identifier"])
+        // `method`, not `function`: this analyzer emits every function_declaration
+        // symbol as ASTEngine.SymbolKind.Method, and the owner kind must agree
+        // with the syntax that names it (java/groovy/scala all report `method`
+        // for the same context).
+        if (nameNode) return { name: nameNode.text, kind: ASTEngine.SymbolKind.Method }
+        break
+      }
+      // A nested class starts a fresh ownership scope: the inner literal's
+      // owner is the inner type, never a method of the outer one.
+      if (ancestor.type === "class_declaration" || ancestor.type === "object_declaration") break
+      ancestor = ancestor.parent
+    }
+    return { name: pClass, kind: pClass ? ASTEngine.SymbolKind.Class : undefined }
   }
 
   /**

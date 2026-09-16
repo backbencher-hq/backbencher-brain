@@ -858,6 +858,38 @@ the class-level-property context). No consumer sees it (`anonymous_*` is filtere
 the store), java's own comment says "ownerName = enclosing type", and the new fixtures
 deliberately do NOT pin it, so neither side is enshrined by a fixture.
 
+## 2026-09-16 — JVM anonymous-type OWNER ruled: the innermost enclosing declaration (#867)
+
+The question #866 measured and deliberately left open is now ruled, not just filed. The
+3–1 split (java/groovy/scala = the enclosing METHOD for a literal inside a method, kotlin =
+the enclosing CLASS) is resolved in the majority's favour: **`ownerName` = the innermost
+enclosing DECLARATION**. A type declared in a method body is scoped to that method; kotlin's
+class-level answer was an artifact of a walker that carries `pClass` and no function
+context. kotlin now derives the owner from the AST, and java's comment — which claimed to
+mirror kotlin's "enclosing type" while its code did the opposite — now states the ruling.
+
+**An existing fixture had enshrined the outlier**: `kotlin/object-literal` (M14 #419 K6)
+pins `anonymous_Runner`'s owner as `P` for a literal inside `fun run()`. Updated with the
+ruling recorded in its rationale — that is why #866's own fixtures could not have caught
+this, and why "kotlin verified already-correct" (JD18 above) needs the same correction.
+
+**Evidence:** one fixture per language pinning BOTH contexts (`<lang>/anonymous-type-owner`)
+and forbidding each crossed containment edge · **9 new mutants, all CAUGHT** (registry
+614→623): per language the pre-ruling re-owning and the class-level-owner-stripped
+over-reach, plus the follow-on import class below · kotlin corpus sweep, 1,830 files, two
+trees: **0 symbols and 0 relationships lost**, 1,245 anonymous-type owners re-attributed,
+1,282 relation sources moved (all `contains <declaration> -> anonymous_*`) · index layer
+probed in both trees: the anonymous symbol is still filtered, but the containment ROW is
+persisted and its source follows the owner (`contains P -> anonymous_IntIdTable` becomes
+`contains inMethod -> anonymous_IntIdTable`), so the graph's containment answer gets truer.
+
+**Second defect class the sweep exposed (measured, then pinned):** kotlin's file-import
+reference edges are emitted on a `root` placeholder and rewritten onto the file's primary
+top-level TYPE, and an OWNERLESS anonymous object qualified — so a top-level function's
+literal claimed the whole file's imports (`kotlinx-coroutines/reactor/Flux.kt`: 8 edges;
+same shape in Mono.kt, RxAwait.kt, RxConvert.kt). Now unreachable; pinned by
+`kotlin/anon-type-not-file-primary-type` + `kotlin/anon-type-claims-file-imports`.
+
 ## 2026-09-16 — decorated declarations: the line belongs to the name (#861, web family)
 
 Filed from the #860 round (which pinned a decorator's OWN line on its `references` edge
