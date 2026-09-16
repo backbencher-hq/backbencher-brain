@@ -2,16 +2,16 @@
   "issue": "M42.G1",
   "code": "G1",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 25,
-  "passed": 25,
-  "failed": 0,
+  "passed": 24,
+  "failed": 1,
   "negativeCases": 7,
-  "currentCommit": "65c1920d02b34072a17ac7bb1f87bff204d1e70f",
+  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-09T19:39:45.414Z",
+  "generatedAt": "2026-09-16T12:45:32.822Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -20,7 +20,7 @@
     "hubOpenP95Ms": 300
   },
   "m29Bar": {
-    "gateExit": 0
+    "gateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",

@@ -2,11 +2,11 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "sourceFingerprint": "30cad45e27c3c9a962c2d17affccf6c5e49757649222be82cd0ecfdc9a9434be",
+  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
+  "sourceFingerprint": "af96c63f747ff5fdfd7733c7d725993180294a7d3f678c7cbb8117e5bce1ba91",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-09-08T19:41:12.785Z",
+  "generatedAt": "2026-09-16T12:39:24.027Z",
   "passed": 18,
   "failed": 0,
   "failures": [],
@@ -23,7 +23,5 @@
     "heuristic edges from the engine are included; their ratio is declared by the engine's provenance",
     "ranges for engine nodes use line-level precision when the engine lacks byte columns",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
-  ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  ]
 }
