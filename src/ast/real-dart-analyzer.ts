@@ -993,6 +993,23 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       set.add(s.name)
     }
+    // DT2 (second review): file-scope VALUE names — top-level variables,
+    // constants, functions and accessors. Types (classes, enums, mixins,
+    // extensions, typedefs) are never values. Locals shadow globals and
+    // members shadow both (Dart scoping); the arms below are mutually
+    // exclusive by construction.
+    const topLevelValues = new Set<string>()
+    for (const s of symbols) {
+      if (s.ownerName) continue
+      if (
+        s.kind === ASTEngine.SymbolKind.Variable ||
+        s.kind === ASTEngine.SymbolKind.Constant ||
+        s.kind === ASTEngine.SymbolKind.Function ||
+        s.kind === ASTEngine.SymbolKind.Property
+      ) {
+        topLevelValues.add(s.name)
+      }
+    }
     // DT-D (first review): superclass per class (resolved, alias-free) for
     // `super(...)` initializer targets. Superclass-child clauses only —
     // mixin-application bases are vanishingly rare as super targets.
@@ -1098,6 +1115,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (bound.size > 0) {
           childLocals = new Set(locals)
           for (const nm of bound) childLocals.add(nm)
+        }
+      }
+      // DT2: constructor initializer lists (`: x = p`, `: super(p)`) read
+      // the constructor's parameters, but the list is a SIBLING of the
+      // signature — not under any body. Bind the sibling signature's
+      // params for this subtree (same collectDartLocals machinery).
+      if (t === "initializers") {
+        const par = n.parent
+        if (par) {
+          for (let k = 0; k < par.namedChildCount; k++) {
+            const sib = par.namedChild(k)
+            if (sib && (sib.type === "constructor_signature" || sib.type === "method_signature" || sib.type === "function_signature")) {
+              const bound = this.collectDartLocals(sib)
+              if (bound.size > 0) {
+                childLocals = new Set(locals)
+                for (const nm of bound) childLocals.add(nm)
+              }
+              break
+            }
+          }
         }
       }
       // Dart grammar: a function_body/function_expression_body is a named
@@ -1266,30 +1303,65 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           !!this.findChildByType(next, "argument_part")
         const declName = this.isDartDeclNameParent(ptype) || this.isDartDeclaredName(n)
         const isWrite = this.selectorIsLhsWrite(n)
-        const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
-        if (
+        // DT2: labels (`cb:`), label definitions and control-transfer
+        // targets (`break outer`) name, never read.
+        const isLabel = ptype === "labeled_statement" || ptype === "break_statement" ||
+          ptype === "continue_statement"
+        // DT2: field-initializer targets (`: x = v`) bind the field —
+        // only the value reads. The target is the first named child.
+        const isFieldInitTarget = ptype === "field_initializer" && (() => {
+          const first = n.parent?.namedChild(0)
+          return !!first && first.startIndex === n.startIndex && first.endIndex === n.endIndex
+        })()
+        // DT2: `this`/`super` are keyword receivers, never value reads
+        // (verified non-identifier in the pinned grammar; belt and braces).
+        if (txt === "this" || txt === "super") {
+          // fall through to no arm (silent)
+        } else if (
           !memberLink &&
           !nextIsCall &&
           !declName &&
           !isWrite &&
-          !locals.has(txt) &&
-          isDeclaredMember
+          !isLabel &&
+          !isFieldInitTarget
         ) {
-          relationships.push({
-            source: callSource,
-            target: txt,
-            type: ASTEngine.RelationshipType.Uses,
-            confidence: 0.6,
-            metadata: { isBareRead: true },
-          })
+          const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+          if (!locals.has(txt) && isDeclaredMember) {
+            relationships.push({
+              source: callSource,
+              target: txt,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.6,
+              metadata: { isBareRead: true },
+            })
+          } else if (locals.has(txt)) {
+            // DT2: bound locals/params read as values (OC-E parity).
+            // Exact scope resolution — confidence 0.9, lane-compared.
+            relationships.push({
+              source: callSource,
+              target: txt,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { isLocalRead: true },
+            })
+          } else if (!isDeclaredMember && topLevelValues.has(txt)) {
+            // DT2: file-scope values read as values. Members shadow
+            // globals (checked above); locals shadow both (checked above).
+            relationships.push({
+              source: callSource,
+              target: txt,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              metadata: { isGlobalRead: true },
+            })
+          }
         }
       }
 
       // DT-D: constructor redirection in initializer lists — `B() : super(1)`,
       // `B.named() : super.named(2)` construct the superclass (resolved,
       // alias-free); `B() : this.named(x)` constructs the own class.
-      if (t === "initializer_list_entry") {
-        let headIsSuper = false
+      if (t === "initializer_list_entry") {        let headIsSuper = false
         let headIsThis = false
         const firstRaw = n.child(0)
         if (firstRaw && !firstRaw.isNamed && (firstRaw.text === "super" || firstRaw.text === "this")) {
@@ -1796,12 +1868,76 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const id = this.findChildByType(n, "identifier")
         if (id) out.add(id.text)
       }
+      // DT2 (second review): for-in loop variables (`for (var x in xs)` —
+      // the identifier preceding the `in` token) and pattern-bound names
+      // (`variable_pattern` always; `constant_pattern` only under a binding
+      // ancestor — a bare `case Foo:` tests a type, it binds nothing).
+      if (n.type === "for_loop_parts") {
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c && !c.isNamed && c.text === "in") {
+            for (let j = 0; j < i; j++) {
+              const pc = n.child(j)
+              if (pc && pc.isNamed && pc.type === "identifier") out.add(pc.text)
+            }
+            break
+          }
+        }
+      }
+      if (n.type === "variable_pattern") {
+        const id = this.deepIdentifier(n)
+        if (id) out.add(id.text)
+      }
+      if (n.type === "constant_pattern" && this.isBindingPatternContext(n)) {
+        const id = this.deepIdentifier(n)
+        if (id) out.add(id.text)
+      }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
     return out
+  }
+
+  /**
+   * DT2: first document-order `identifier` in a subtree (pattern contents
+   * nest — direct-child lookup misses `var (a, b)`-style bindings).
+   */
+  private deepIdentifier(n: Node): Node | null {
+    const stack: Node[] = [n]
+    while (stack.length > 0) {
+      const c = stack.pop()!
+      if (c.type === "identifier") return c
+      for (let i = c.namedChildCount - 1; i >= 0; i--) {
+        const ch = c.namedChild(i)
+        if (ch) stack.push(ch)
+      }
+    }
+    return null
+  }
+
+  /**
+   * DT2: is this pattern node inside a BINDING context? Only structural
+   * descent counts: a `var (a, b)` destructuring binds through record /
+   * list / map wrappers to the declaration (or for-in head). A case TEST
+   * (`InvitationStatus.declined => ...` inside `var x = switch ...`)
+   * crosses a switch/if boundary — it tests, never binds, even when the
+   * whole switch initializes a variable.
+   */
+  private isBindingPatternContext(n: Node): boolean {
+    let p: Node | null | undefined = n.parent
+    let guard = 0
+    while (p && guard++ < 8) {
+      const t = p.type
+      if (t === "pattern_variable_declaration" || t === "for_loop_parts") return true
+      if (
+        t !== "record_pattern" && t !== "list_pattern" && t !== "map_pattern" &&
+        t !== "constant_pattern" && t !== "variable_pattern"
+      ) return false
+      p = p.parent
+    }
+    return false
   }
 
   /**

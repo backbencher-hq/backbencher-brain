@@ -421,6 +421,38 @@
         "question": "First review: `a + b` / `a == b` and enum `a(1)` constant constructions emit nothing on either side.",
         "resolution": "Silent by design (both sides): operator dispatch is arithmetic, not a named dependency; enum-constant invocations are declarations (their constants are read via member uses, e.g. uses->a). Documented, not gated.",
         "issue": "M49.DT1 dart first review"
+      },
+      {
+        "id": "DT2-A",
+        "node_type": "bare identifiers bound in scope",
+        "status": "FIXED",
+        "question": "Second review: parameters, body locals, loop/for-in/catch/lambda bindings, cascade receivers and constructor-initializer params invisible on both sides \u2014 every `return depth`, `foo(k)`, `use(x)` silent (OC-E parity gap).",
+        "resolution": "Exact scope inventory (frames already threaded; for-in/pattern bindings added to the collector; initializer lists bind sibling-signature params): bound names emit uses@0.9 isLocalRead, mutually exclusive with member reads (gate B) by construction. Oracle mirrors frames, bindings and arms exactly (including the direct-child param fix the first lane caught). Gated by fixture dart/value-reads (19 local pins) + mutant dart/drop-local-read-uses.",
+        "issue": "M49.DT2 dart second review"
+      },
+      {
+        "id": "DT2-B",
+        "node_type": "file-scope value names",
+        "status": "FIXED",
+        "question": "Second review: top-level variables/constants/functions/accessors read from anywhere (`return gTotal`, `var f = helper`) invisible \u2014 members-only inventory stopped at the file boundary.",
+        "resolution": "Top-level values resolve (symbols without ownerName, types excluded); members shadow globals, locals shadow both \u2014 all three arms mutually exclusive. Function names as values close the OC-H gap (recursion still calls via callee-skip). Gated by fixture + mutant dart/drop-global-read-uses.",
+        "issue": "M49.DT2 dart second review"
+      },
+      {
+        "id": "DT2-C",
+        "node_type": "labels, writes, declaration sites, type positions",
+        "status": "RULED",
+        "question": "Second review: which bare positions must NEVER read, now that reads are the default for bound names?",
+        "resolution": "Named-argument labels (label parent), label definitions and break/continue targets (labeled/break/continue parents), assignment-LHS writes (span-matched, plain `=` only \u2014 compound reads per C parity), declaration names (positional), field-initializer targets (first-child positional), callee heads, member-link positions, heritage/type/cast positions (type_identifier), and this/super keywords never read \u2014 mirrored exactly both sides. Pinned by forbids (labels, write-only global) + mutants (label/write fabrication).",
+        "issue": "M49.DT2 dart second review"
+      },
+      {
+        "id": "DT2-D",
+        "node_type": "switch-case patterns, interpolation overlap",
+        "status": "RULED",
+        "question": "Second review: `InvitationStatus.declined => ...` under `var x = switch` \u2014 binding or test? And member+blanket double edges in `${count}`?",
+        "resolution": "Case TESTS never bind: constant patterns bind only through structural descent (record/list/map) to a declaration or for-in head \u2014 crossing a switch/if boundary tests (the first lane caught the broad version: 3 MISSING). The member(0.6)+blanket(0.9) double in interpolation is inherited DT1 contract (both sides, lane-neutral, presence-pinned) \u2014 ruled, not re-litigated.",
+        "issue": "M49.DT2 dart second review"
       }
     ],
     "lastUpdated": "2026-09-06 (M37 master-review 2: DARTD12-DARTD17)"
