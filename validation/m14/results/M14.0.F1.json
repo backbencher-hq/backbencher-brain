@@ -13,20 +13,20 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (34/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (28/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "a5598e542c00d95cf92ef4a662285ab65ff809f5",
-  "committedAt": "2026-09-16T15:01:38+02:00",
+  "commit": "be49c1e46ca129aa6e96f806beb46afd6618ea47",
+  "committedAt": "2026-09-16T15:22:33+02:00",
   "data": {
     "languages": {
       "bash": {
         "analyzer": "src/ast/real-bash-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 18,
+        "oracleFieldCount": 19,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 238,
         "referencedFieldLiterals": 0,
@@ -51,10 +51,10 @@
       "c": {
         "analyzer": "src/ast/real-c-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 38,
+        "oracleFieldCount": 39,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 13,
         "referencedTypeLiterals": 44,
         "status": "pass",
         "unknownFields": [],
@@ -70,7 +70,7 @@
       "clean": {
         "analyzer": "src/ast/real-clean-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 27,
+        "oracleFieldCount": 28,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 271,
         "referencedFieldLiterals": 0,
@@ -89,10 +89,10 @@
       "clojure": {
         "analyzer": "src/ast/real-clojure-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 10,
+        "oracleFieldCount": 11,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 75,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 5,
         "status": "pass",
         "unknownFields": [],
@@ -108,10 +108,10 @@
       "cpp": {
         "analyzer": "src/ast/real-cpp-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 49,
+        "oracleFieldCount": 50,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 491,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 7,
         "referencedTypeLiterals": 61,
         "status": "pass",
         "unknownFields": [],
@@ -127,10 +127,10 @@
       "csharp": {
         "analyzer": "src/ast/real-csharp-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 25,
+        "oracleFieldCount": 26,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 70,
         "status": "pass",
         "unknownFields": [],
@@ -171,7 +171,7 @@
           },
           {
             "context": "real-css-analyzer.ts:comparison",
-            "line": 752,
+            "line": 756,
             "literal": "variable_name"
           }
         ],
@@ -186,13 +186,19 @@
       "dart": {
         "analyzer": "src/ast/real-dart-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 21,
+        "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 81,
         "status": "fail",
-        "unknownFields": [],
+        "unknownFields": [
+          {
+            "context": "real-dart-analyzer.ts:field-call:childForFieldName",
+            "line": 2205,
+            "literal": "return_type"
+          }
+        ],
         "unknownNodeTypes": [
           {
             "context": "real-dart-analyzer.ts:comparison",
@@ -211,7 +217,7 @@
       "elixir": {
         "analyzer": "src/ast/real-elixir-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 8,
+        "oracleFieldCount": 9,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 205,
         "referencedFieldLiterals": 0,
@@ -230,7 +236,7 @@
       "erlang": {
         "analyzer": "src/ast/real-erlang-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 50,
+        "oracleFieldCount": 51,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 302,
         "referencedFieldLiterals": 0,
@@ -260,7 +266,7 @@
       "fsharp": {
         "analyzer": "src/ast/real-fsharp-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 27,
+        "oracleFieldCount": 28,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
         "referencedFieldLiterals": 0,
@@ -279,13 +285,19 @@
       "go": {
         "analyzer": "src/ast/real-go-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 34,
+        "oracleFieldCount": 35,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 213,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 13,
         "referencedTypeLiterals": 53,
-        "status": "pass",
-        "unknownFields": [],
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-go-analyzer.ts:field-call:childForFieldName",
+            "line": 3435,
+            "literal": "package_identifier"
+          }
+        ],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -317,10 +329,10 @@
       "groovy": {
         "analyzer": "src/ast/real-groovy-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 43,
+        "oracleFieldCount": 44,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 372,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 7,
         "referencedTypeLiterals": 67,
         "status": "pass",
         "unknownFields": [],
@@ -336,10 +348,10 @@
       "haskell": {
         "analyzer": "src/ast/real-haskell-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 83,
+        "oracleFieldCount": 84,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 55,
         "status": "pass",
         "unknownFields": [],
@@ -355,7 +367,7 @@
       "hcl": {
         "analyzer": "src/ast/real-hcl-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 1,
+        "oracleFieldCount": 2,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 123,
         "referencedFieldLiterals": 0,
@@ -374,7 +386,7 @@
       "html": {
         "analyzer": "src/ast/real-html-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 37,
+        "oracleFieldCount": 38,
         "oracleGrammars": 2,
         "oracleNodeTypeCount": 285,
         "referencedFieldLiterals": 0,
@@ -395,10 +407,10 @@
       "java": {
         "analyzer": "src/ast/real-java-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 39,
+        "oracleFieldCount": 40,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 10,
         "referencedTypeLiterals": 67,
         "status": "pass",
         "unknownFields": [],
@@ -414,10 +426,10 @@
       "javascript": {
         "analyzer": "src/ast/real-javascript-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 37,
+        "oracleFieldCount": 38,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 15,
         "referencedTypeLiterals": 60,
         "status": "pass",
         "unknownFields": [],
@@ -433,10 +445,10 @@
       "json": {
         "analyzer": "src/ast/real-json-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 1,
+        "oracleFieldCount": 2,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 28,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 6,
         "status": "pass",
         "unknownFields": [],
@@ -452,11 +464,11 @@
       "kotlin": {
         "analyzer": "src/ast/real-kotlin-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 3,
+        "oracleFieldCount": 4,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 368,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 74,
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 73,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -471,13 +483,39 @@
       "lua": {
         "analyzer": "src/ast/real-lua-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 21,
+        "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 12,
         "referencedTypeLiterals": 13,
-        "status": "pass",
-        "unknownFields": [],
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
+            "line": 158,
+            "literal": "name_list"
+          },
+          {
+            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
+            "line": 183,
+            "literal": "name_list"
+          },
+          {
+            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
+            "line": 208,
+            "literal": "function"
+          },
+          {
+            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
+            "line": 297,
+            "literal": "expression_list"
+          },
+          {
+            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
+            "line": 393,
+            "literal": "key"
+          }
+        ],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -490,7 +528,7 @@
       "makefile": {
         "analyzer": "src/ast/real-makefile-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 23,
+        "oracleFieldCount": 24,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 175,
         "referencedFieldLiterals": 0,
@@ -515,7 +553,7 @@
       "markdown": {
         "analyzer": "src/ast/real-markdown-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 0,
+        "oracleFieldCount": 1,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 196,
         "referencedFieldLiterals": 0,
@@ -545,10 +583,10 @@
       "objective-c": {
         "analyzer": "src/ast/real-objective-c-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 45,
+        "oracleFieldCount": 46,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 535,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 49,
         "status": "pass",
         "unknownFields": [],
@@ -564,13 +602,19 @@
       "perl": {
         "analyzer": "src/ast/real-perl-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 43,
+        "oracleFieldCount": 44,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 9,
         "referencedTypeLiterals": 18,
-        "status": "pass",
-        "unknownFields": [],
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-perl-analyzer.ts:field-call:childForFieldName",
+            "line": 487,
+            "literal": "parameters"
+          }
+        ],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -583,14 +627,30 @@
       "php": {
         "analyzer": "src/ast/real-php-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 30,
+        "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 35,
-        "status": "pass",
+        "referencedFieldLiterals": 6,
+        "referencedTypeLiterals": 42,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "line": 1450,
+            "literal": "declaration"
+          },
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "line": 1577,
+            "literal": "declaration"
+          },
+          {
+            "context": "real-php-analyzer.ts:comparison",
+            "line": 1589,
+            "literal": "declaration"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-php.wasm"
@@ -602,10 +662,10 @@
       "powershell": {
         "analyzer": "src/ast/real-powershell-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 13,
+        "oracleFieldCount": 14,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 412,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 1,
         "referencedTypeLiterals": 18,
         "status": "pass",
         "unknownFields": [],
@@ -621,10 +681,10 @@
       "python": {
         "analyzer": "src/ast/real-python-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 31,
+        "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 266,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 61,
         "status": "pass",
         "unknownFields": [],
@@ -640,13 +700,19 @@
       "r": {
         "analyzer": "src/ast/real-r-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 19,
+        "oracleFieldCount": 20,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 137,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 9,
         "referencedTypeLiterals": 15,
-        "status": "pass",
-        "unknownFields": [],
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-r-analyzer.ts:field-call:childForFieldName",
+            "line": 558,
+            "literal": "default_value"
+          }
+        ],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -659,10 +725,10 @@
       "ruby": {
         "analyzer": "src/ast/real-ruby-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 31,
+        "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 286,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 4,
         "referencedTypeLiterals": 38,
         "status": "pass",
         "unknownFields": [],
@@ -678,13 +744,19 @@
       "rust": {
         "analyzer": "src/ast/real-rust-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 30,
+        "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 16,
         "referencedTypeLiterals": 79,
-        "status": "pass",
-        "unknownFields": [],
+        "status": "fail",
+        "unknownFields": [
+          {
+            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
+            "line": 1186,
+            "literal": "declarator"
+          }
+        ],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -697,10 +769,10 @@
       "scala": {
         "analyzer": "src/ast/real-scala-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 34,
+        "oracleFieldCount": 35,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 8,
         "referencedTypeLiterals": 82,
         "status": "pass",
         "unknownFields": [],
@@ -716,10 +788,10 @@
       "sql": {
         "analyzer": "src/ast/real-sql-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 52,
+        "oracleFieldCount": 53,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 727,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 37,
         "status": "fail",
         "unknownFields": [],
@@ -801,10 +873,10 @@
       "svelte": {
         "analyzer": "src/ast/real-svelte-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 46,
+        "oracleFieldCount": 48,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 4,
         "referencedTypeLiterals": 28,
         "status": "pass",
         "unknownFields": [],
@@ -824,7 +896,7 @@
       "swift": {
         "analyzer": "src/ast/real-swift-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 44,
+        "oracleFieldCount": 45,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
@@ -924,10 +996,10 @@
       "typescript": {
         "analyzer": "src/ast/real-typescript-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 45,
+        "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 24,
         "referencedTypeLiterals": 90,
         "status": "pass",
         "unknownFields": [],
@@ -947,10 +1019,10 @@
       "vue": {
         "analyzer": "src/ast/real-vue-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 45,
+        "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 420,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 30,
         "status": "pass",
         "unknownFields": [],
@@ -970,7 +1042,7 @@
       "xml": {
         "analyzer": "src/ast/real-xml-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 1,
+        "oracleFieldCount": 2,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 142,
         "referencedFieldLiterals": 0,
@@ -989,10 +1061,10 @@
       "yaml": {
         "analyzer": "src/ast/real-yaml-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 1,
+        "oracleFieldCount": 2,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 142,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 2,
         "referencedTypeLiterals": 23,
         "status": "pass",
         "unknownFields": [],
@@ -1008,7 +1080,7 @@
       "zig": {
         "analyzer": "src/ast/real-zig-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 15,
+        "oracleFieldCount": 16,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 0,
@@ -1026,10 +1098,10 @@
       }
     },
     "summary": {
-      "fail": 7,
+      "fail": 13,
       "languagesAudited": 41,
-      "pass": 34,
-      "totalUnknownReferences": 24
+      "pass": 28,
+      "totalUnknownReferences": 37
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1046,10 +1118,16 @@
     },
     {
       "description": "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria"
+    },
+    {
+      "description": "field oracle: the extractor now unwraps the `arguments` node and enumerates field ids 1..fieldCount inclusive (both bugs fixed 2026-09-16 under #382 — before that, referencedFieldLiterals was 0 in every language and the alphabetically-last field of each grammar was invisible)"
+    },
+    {
+      "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-16T13:01:52.069Z",
-  "regeneratedAtCommit": "a5598e542c00d95cf92ef4a662285ab65ff809f5",
+  "regeneratedAt": "2026-09-16T13:59:58.468Z",
+  "regeneratedAtCommit": "be49c1e46ca129aa6e96f806beb46afd6618ea47",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

@@ -148,7 +148,12 @@ async function main() {
         nodeTypes.add(name)
         if (grammar.nodeTypeIsNamed(i)) namedTypes.add(name)
       }
-      for (let i = 0; i < grammar.fieldCount; i++) {
+      // Field ids are 1-BASED: fieldNameForId(0) is null and the real fields are
+      // ids 1..fieldCount INCLUSIVE. The earlier `i < fieldCount` loop therefore
+      // dropped the alphabetically-last field of every grammar — including
+      // typescript/javascript/vue `value` (id 43 of 43) and kotlin `receiver`
+      // (id 4 of 4). Found 2026-09-16 under #382 while auditing the field oracle.
+      for (let i = 0; i <= grammar.fieldCount; i++) {
         const f = grammar.fieldNameForId(i)
         if (f) fields.add(f)
       }
@@ -208,11 +213,32 @@ async function main() {
         const name = fn?.type === "member_expression" ? fn.children[fn.children.length - 1]?.text : fn?.text
         if (typeof name === "string") {
           if (isFieldCall(name)) {
-            for (let i = 1; i < node.namedChildCount; i++) {
-              const arg = node.namedChild(i)
-              const lit = arg.type === "string" ? strOf(arg) : arg.type === "parenthesized_expression" ? strOf(arg.namedChild(0)) : null
-              if (lit != null) addRef(fieldRefs, lit, { literal: lit, line: node.startPosition.row + 1, context: `${entry.analyzer}:field-call:${name}` })
+            // The argument list is an `arguments` WRAPPER node, not the literal:
+            // node.namedChild(1).type === "arguments". The earlier version read
+            // that wrapper directly and matched neither `string` nor
+            // `parenthesized_expression`, so it captured NOTHING — every
+            // language reported referencedFieldLiterals=0 and the field half of
+            // this oracle was vacuous (found 2026-09-16 under #382; the same
+            // vacuity is why the kotlin fieldCount=0 class stayed invisible).
+            // Recursive unwrap mirrors the type-literal branch below.
+            const collectFieldArgs = (n: any) => {
+              if (!n) return
+              const lit = n.type === "string" ? strOf(n) : null
+              if (lit != null) {
+                addRef(fieldRefs, lit, {
+                  literal: lit,
+                  line: node.startPosition.row + 1,
+                  // A field-less grammar makes EVERY childForFieldName dead; say so
+                  // in the finding so the failure explains itself.
+                  context: `${entry.analyzer}:field-call:${name}${fieldless ? ":FIELD-LESS-WASM" : ""}`,
+                })
+                return
+              }
+              if (n.type === "arguments" || n.type === "parenthesized_expression" || n.type === "array") {
+                for (let j = 0; j < n.namedChildCount; j++) collectFieldArgs(n.namedChild(j))
+              }
             }
+            for (let i = 1; i < node.namedChildCount; i++) collectFieldArgs(node.namedChild(i))
           } else if (isTypeCall(name)) {
             const argsNode = node.namedChild(1)
             const collectStrings = (n: any) => {
@@ -310,6 +336,8 @@ async function main() {
       { description: "auditor detects dead references only; missing node-type coverage requires fixtures (F3) and wave work", },
       { description: "extraction covers comparison/switch/helper-call/const-array positions; dynamic type-string construction would be missed (none observed)" },
       { description: "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria" },
+      { description: "field oracle: the extractor now unwraps the `arguments` node and enumerates field ids 1..fieldCount inclusive (both bugs fixed 2026-09-16 under #382 — before that, referencedFieldLiterals was 0 in every language and the alphabetically-last field of each grammar was invisible)" },
+      { description: "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)" },
     ],
     data: {
       summary: { languagesAudited: LANGUAGES.length, pass: passing, fail: failing, totalUnknownReferences: totalUnknown },

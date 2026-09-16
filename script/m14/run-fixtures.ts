@@ -282,6 +282,21 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           problems.push('expected ' + want.symbol + ' typeParameters to include "' + inc + '"; got: ' + JSON.stringify(tps))
         }
       }
+      // `exact` exists because `includes` is a SUBSTRING test: a mutant that
+      // appends or duplicates text still contains the pinned substring and
+      // survives. Found 2026-09-16 (#382) — the near-miss mutant
+      // typescript/type-parameter-names-only-positional produced
+      // "T extends HasId = HasIdHasId" and passed an `includes` pin unchanged,
+      // so the pin had to state the whole list, not a fragment of it.
+      if (want.exact) {
+        const got = [...tps].map(String).sort()
+        const expected = [...want.exact].map(String).sort()
+        if (JSON.stringify(got) !== JSON.stringify(expected)) {
+          problems.push(
+            'expected ' + want.symbol + ' typeParameters to be exactly ' + JSON.stringify(expected) + '; got: ' + JSON.stringify(tps),
+          )
+        }
+      }
     }
     for (const want of exp.expectParameters ?? []) {
       // ownerName-aware lookup (mirrors expectSymbols): overloaded names like
