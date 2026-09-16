@@ -3433,6 +3433,15 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
     if (!set) { set = new Set<string>(); membersByOwner.set(s.ownerName, set) }
     set.add(s.name)
   }
+  // DT2 mirror: file-scope values (top-level variables, constants,
+  // functions, accessors) — same filter as the analyzer's topLevelValues.
+  const topLevelValues = new Set<string>()
+  for (const s of symbols ?? []) {
+    if (!s || typeof s.name !== "string" || s.ownerName) continue
+    if (s.kind === "variable" || s.kind === "constant" || s.kind === "function" || s.kind === "property") {
+      topLevelValues.add(s.name)
+    }
+  }
   const push = (name: string): void => {
     const key = "uses\u0000" + name
     if (seen.has(key)) return
@@ -3514,8 +3523,52 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
         m.type === "simple_formal_parameter" || m.type === "super_formal_parameter" ||
         m.type === "catch_clause_parameter" || m.type === "catch_parameters"
       ) {
+        // Direct child only (analyzer parity): a deep search binds the
+        // INNER names of function-typed parameters (`Function(Uri uri, ...)
+        // webSocketFactory` would bind `uri` — a type-signature name that
+        // is not readable in this scope — while missing the outer name).
+        const id = m.namedChildren.find((c: any) => c.type === "identifier")
+        if (id) out.add(id.text)
+      }
+      // DT2 mirror: for-in variables (identifier before `in`) and pattern
+      // binds (variable_pattern; constant_pattern only under a binding
+      // ancestor — a bare `case Foo:` tests, never binds).
+      if (m.type === "for_loop_parts") {
+        for (let k = 0; k < m.childCount; k++) {
+          const c = m.child(k)
+          if (c && !c.isNamed && c.text === "in") {
+            for (let j = 0; j < k; j++) {
+              const pc = m.child(j)
+              if (pc && pc.isNamed && pc.type === "identifier") out.add(pc.text)
+            }
+            break
+          }
+        }
+      }
+      if (m.type === "variable_pattern") {
         const id = firstIdentifier(m)
         if (id) out.add(id.text)
+      }
+      if (m.type === "constant_pattern") {
+        // Structural descent only (record/list/map to a destructuring
+        // declaration or for-in head); case TESTS across a switch/if
+        // boundary never bind, even under `var x = switch ...`.
+        let p: any = m.parent
+        let g = 0
+        let binding = false
+        while (p && g++ < 8) {
+          const t = p.type
+          if (t === "pattern_variable_declaration" || t === "for_loop_parts") { binding = true; break }
+          if (
+            t !== "record_pattern" && t !== "list_pattern" && t !== "map_pattern" &&
+            t !== "constant_pattern" && t !== "variable_pattern"
+          ) break
+          p = p.parent
+        }
+        if (binding) {
+          const id = firstIdentifier(m)
+          if (id) out.add(id.text)
+        }
       }
       for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
     }
@@ -3548,6 +3601,25 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
         for (const nm of bound) childLocals.add(nm)
       }
     }
+    // DT2 mirror: constructor initializer lists read the constructor's
+    // parameters (sibling signature, not under any body).
+    if (t === "initializers") {
+      const par = n.parent
+      if (par) {
+        for (let k = 0; k < par.namedChildCount; k++) {
+          const sib = par.namedChild(k)
+          if (sib && (sib.type === "constructor_signature" || sib.type === "method_signature" || sib.type === "function_signature")) {
+            const bound = new Set<string>()
+            collectLocals(sib, bound)
+            if (bound.size > 0) {
+              childLocals = new Set(locals)
+              for (const nm of bound) childLocals.add(nm)
+            }
+            break
+          }
+        }
+      }
+    }
     if (t === "identifier") {
       const txt = n.text
       const pt = n.parent ? n.parent.type : ""
@@ -3555,15 +3627,33 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
       const nextIsCall = !!nx && nx.type === "selector" && hasType(nx, "argument_part")
       const owner = enclosingClass(n)
       const isMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
-      if (
+      // DT2 skips: labels and control-transfer targets name, never read;
+      // field-initializer targets bind; this/super are keyword receivers.
+      const isLabelish = pt === "labeled_statement" || pt === "break_statement" || pt === "continue_statement"
+      let isFieldTarget = false
+      if (pt === "field_initializer" && n.parent) {
+        const first = n.parent.namedChild(0)
+        isFieldTarget = !!first && first.startIndex === n.startIndex && first.endIndex === n.endIndex
+      }
+      if (txt === "this" || txt === "super") {
+        // silent by design
+      } else if (
         !LINK_PARENTS.has(pt) &&
         !DECL_PARENTS.has(pt) &&
         !declaredName(n) &&
         !nextIsCall &&
         !isWrite(n) &&
-        !locals.has(txt) &&
-        isMember
-      ) push(txt)
+        !isLabelish &&
+        !isFieldTarget
+      ) {
+        if (!locals.has(txt) && isMember) {
+          push(txt)
+        } else if (locals.has(txt)) {
+          push(txt)
+        } else if (!isMember && topLevelValues.has(txt)) {
+          push(txt)
+        }
+      }
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, childLocals) }
   }
