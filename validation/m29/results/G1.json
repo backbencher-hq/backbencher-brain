@@ -7,13 +7,13 @@
   "passed": 70,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "02eb66896c9bfc36151f1aa98715603078f1635f",
+  "currentCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
   "workingTreeRelevantChanges": [
     "docs/m29/PRECISION-LEDGER.md"
   ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-16T20:18:53.039Z",
+  "generatedAt": "2026-09-16T23:05:17.700Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
@@ -25,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T20:18:53.042Z",
-    "contentSha256": "b9449cd48656d08e690f1a152e778f87d16477994a642746bb12cc4e42f44d2a"
+    "sealedAt": "2026-09-16T23:05:17.703Z",
+    "contentSha256": "5cea6af8f381de5ab426638ea7f76468b97e6c85e1ae7b326f6741ee36976de2"
   }
 }
