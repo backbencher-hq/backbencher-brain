@@ -9,6 +9,22 @@
   "foldTarget": "M49",
   "handOff": "M14",
   "invariant": "A family may be called closed only when its closure gate is green AND every payload cell of every onboarded language in it is alive — produced by the analyzer, preserved by the store, reachable at query, and truthful at the tool. Any closure claim not backed by a live gate is itself a defect. No new milestone may be created to carry work that belongs to an existing one.",
+  "families": {
+    "jvm": {
+      "languages": ["java", "kotlin", "scala", "groovy"],
+      "remainder": "M60.J1",
+      "remainderIssue": 830,
+      "source": "docs/m60/PLAN.md §1 'The JVM remainder (family `jvm`)': #739 java · #740 kotlin · #741 scala · #742 groovy"
+    },
+    "web": {
+      "languages": ["typescript", "javascript", "vue", "svelte"],
+      "remainder": "M60.W1",
+      "remainderIssue": 831,
+      "remainderLanes": ["dart"],
+      "source": "docs/m60/PLAN.md §2 'The Web remainder (family `web`)': #816 (name-resolution FP) · #818 (dart lane re-measure)",
+      "remainderLanesNote": "M60.W1's remainder names #818, a dart F5-lane deferral, alongside #816 — so dart appears in this family's REMAINDER accounting while its analyzer is not one of the family's language set here. Recorded rather than silently absorbed: dart's own review folder and analyzer are tracked by their own wave, and the closure conditions that read this language list (folders closed, analyzers committed, cells alive) must not be widened to languages this family does not own without that being a decision."
+    }
+  },
   "standingRules": [
     {
       "id": "R1",
