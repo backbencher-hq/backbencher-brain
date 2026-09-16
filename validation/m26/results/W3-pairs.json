@@ -38,10 +38,10 @@
     }
   ],
   "realDbsScanned": 65,
-  "generatedAt": "2026-09-16T18:52:18.331Z",
+  "generatedAt": "2026-09-16T19:38:55.081Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T18:52:18.335Z",
-    "contentSha256": "71eee29c3275139fc9b1c215d1d29995e5ce3609845ffbee39fabbfd93900f37"
+    "sealedAt": "2026-09-16T19:38:55.085Z",
+    "contentSha256": "5df9fbd24bbf42eea00527f67d1c261742fb958d90e54fb666417197eb9723a0"
   }
 }
