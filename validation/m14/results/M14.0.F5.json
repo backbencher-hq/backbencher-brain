@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "the analyzers, oracle and specs that produced these rows are this commit's",
-      "detail": "every measured input clean at head 29a3d7a149",
+      "detail": "every measured input clean at head 135eca911b",
       "id": "differential-code-inputs",
       "status": "pass"
     },
@@ -14,15 +14,15 @@
     },
     {
       "description": "vue-core: tree-truth vs analyzer diff @f8975657d7",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0.1%; regression detected",
       "id": "differential-typescript",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "Exposed: tree-truth vs analyzer diff @1be664715f",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
       "id": "differential-kotlin",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "scala3: tree-truth vs analyzer diff @18df09c05f",
@@ -32,15 +32,15 @@
     },
     {
       "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
       "id": "differential-java",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0.1%; regression detected",
       "id": "differential-groovy",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "element-plus: tree-truth vs analyzer diff @1b45ace0a0",
@@ -62,15 +62,15 @@
     },
     {
       "description": "sqlite: tree-truth vs analyzer diff @86a15af2b1",
-      "detail": "60 files, coverage 99.9%, unexplained 1.6%; regression detected",
+      "detail": "60 files, coverage 100%, unexplained 0.1%",
       "id": "differential-c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "ripgrep: tree-truth vs analyzer diff @3fce3b5bb0",
-      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-rust",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "go-tools: tree-truth vs analyzer diff @bf54bcd2f1",
@@ -80,9 +80,9 @@
     },
     {
       "description": "zig: tree-truth vs analyzer diff @738d2be9d6",
-      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-zig",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "powershell: tree-truth vs analyzer diff @91ce9844e2",
@@ -91,16 +91,16 @@
       "status": "fail"
     },
     {
-      "description": "proxicall: tree-truth vs analyzer diff @91fecf1a6b",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "description": "proxicall: tree-truth vs analyzer diff @bad0ec795a",
+      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
       "id": "differential-dart",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "swift-nio: tree-truth vs analyzer diff @ec51fff05f",
-      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-swift",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "sdwebimage: tree-truth vs analyzer diff @c3ad5e1a9b",
@@ -110,9 +110,9 @@
     },
     {
       "description": "phpunit: tree-truth vs analyzer diff @c8d6921fb6",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 99.8%, unexplained 0%; regression detected",
       "id": "differential-php",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
@@ -122,9 +122,9 @@
     },
     {
       "description": "cython: tree-truth vs analyzer diff @51a460b7d7",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0.4%; regression detected",
       "id": "differential-python",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "cabal: tree-truth vs analyzer diff @670955a4fb",
@@ -188,9 +188,9 @@
     },
     {
       "description": "jq: tree-truth vs analyzer diff (second corpus) @41b8edfe54",
-      "detail": "45 files, coverage 99.9%, unexplained 0.8%; regression detected",
+      "detail": "45 files, coverage 100%, unexplained 0%",
       "id": "differential-jq:c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "cargo: tree-truth vs analyzer diff (second corpus) @94faf9175f",
@@ -236,7 +236,7 @@
     },
     {
       "description": "phpmyadmin: tree-truth vs analyzer diff (second corpus) @4061095a59",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 99.9%, unexplained 0.1%",
       "id": "differential-phpmyadmin:php",
       "status": "pass"
     },
@@ -260,8 +260,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "29a3d7a149ab06065377032e2f50b59bd7367485",
-  "committedAt": "2026-09-14T02:26:52+02:00",
+  "commit": "135eca911baf1eace977b5c7e1d49844bcf670f6",
+  "committedAt": "2026-09-16T04:47:01+02:00",
   "data": {
     "baselineComparison": {
       "pinnedLanes": 0,
@@ -300,7 +300,7 @@
     "codeInputs": {
       "clean": true,
       "dirty": [],
-      "head": "29a3d7a149ab06065377032e2f50b59bd7367485"
+      "head": "135eca911baf1eace977b5c7e1d49844bcf670f6"
     },
     "corpusPins": {
       "Exposed": "1be664715fc581cda0ec6141b2914908dabe184e",
@@ -326,7 +326,7 @@
       "phpmyadmin": "4061095a59e1769128776ad24154cc7058de51aa",
       "phpunit": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
       "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4",
-      "proxicall": "91fecf1a6b7317bc118bde1ce86c7a71e8ec5e63",
+      "proxicall": "bad0ec795a4b20e96a19b3be87c80dc456ecd8f6",
       "rack": "2c98a0385cca650774a4cabc3f4a112f76c3dacd",
       "rake": "dd5e851d75fd850a730aae4482f6ca59843ac869",
       "requests": "dae7ef63b4df6eded86637f251fc4e3a06c3b479",
@@ -346,21 +346,21 @@
     "pinDrift": {},
     "report": {
       "c": {
-        "analyzerEdges": 7700,
-        "coveragePct": 99.9,
-        "coveredByAnalyzer": 7578,
-        "explainableByTree": 7580,
-        "fabricationPct": 1.6,
+        "analyzerEdges": 7322,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 7317,
+        "explainableByTree": 7317,
+        "fabricationPct": 0.1,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
-        "missingInAnalyzer": 9,
+        "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 204.7,
+          "avgMsPerFile": 99.5,
           "loadAvgRetried": true,
-          "maxMsPerFile": 17320.7,
+          "maxMsPerFile": 2813.9,
           "samplesTimed": 60
         },
-        "sampleSetHash": "ef6794727cd236d8",
+        "sampleSetHash": "3cfedf5b568fe1fb",
         "samples": [
           {
             "confidence": 1,
@@ -397,997 +397,14 @@
           {
             "confidence": 1,
             "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "aBuffer"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "openFlags"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "iColumn"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "op"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "usable"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "iTermOffset"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "desc"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "argvIndex"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "omit"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "cstr"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "ppV"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "v8"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "zPos"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "fileExisted"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "pFile"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "flagsOut"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "pIo"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "blockSize"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "doUnlock"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "nWrote"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "ext/wasm/api/sqlite3-wasm.c",
-            "label": "uses",
-            "line": 0,
-            "target": "pOpfs"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "JIM_COMPAT"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "HAVE_LINK"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "jim_ext_file"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "JIM_SIGNAL_H"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "JIMREGEXP_H"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "JIM_SUBCMD_H"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "__JIM__H"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "UTF8_UTIL_H"
-          },
-          {
-            "dir": "MISSING",
-            "file": "autosetup/jimsh0.c",
-            "from": "(expr)",
-            "label": "uses",
-            "target": "JIM_WIN32COMPAT_H"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "WBUF_OPT_NONE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "WBUF_OPT_LINE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "WBUF_OPT_FULL"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_BADPAT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_NOMATCH"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
             "file": "autosetup/jimsh0.c",
             "label": "uses",
             "line": 0,
             "target": "jim_wide"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_LSORT_ASCII"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_LSORT_NOCASE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_LSORT_INTEGER"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_LSORT_REAL"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_LSORT_COMMAND"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_LSORT_DICT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "DICT_HASH_FIND"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "DICT_HASH_REMOVE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "DICT_HASH_ADD"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_INT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_WIDE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_ROUND"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_UNARYPLUS"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_DOUBLE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_ABS"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_UNARYMINUS"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_NOT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_BITNOT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_SRAND"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_RAND"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_SIN"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_COS"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_TAN"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_ASIN"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_ACOS"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_ATAN"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_SINH"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_COSH"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_TANH"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_CEIL"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_FLOOR"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_EXP"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_LOG"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_LOG10"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_SQRT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_LSHIFT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_RSHIFT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_BITAND"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_BITXOR"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_BITOR"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_MOD"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_ROTL"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_ROTR"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_POW"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_POW"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_ADD"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_SUB"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_MUL"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_DIV"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_LT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_GT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_LTE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_GTE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_NUMEQ"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_NUMNE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_ATAN2"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_HYPOT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_FUNC_FMOD"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STREQ"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRNE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRLT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRGT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRLE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRGE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRIN"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRNI"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRGLOB"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_STRRE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "OP_RIGHT_ASSOC"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "OP_FUNC"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_COLON"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "JIM_EXPROP_TERNARY"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_NULL_ARGUMENT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_NOMEM"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_TOO_BIG"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_UNMATCHED_PAREN"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_JUNK_ON_END"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_OPERAND_COULD_BE_EMPTY"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_BAD_COUNT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_UNMATCHED_BRACES"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_NESTED_COUNT"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_UNMATCHED_BRACKET"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_NULL_CHAR"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_INVALID_ESCAPE"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_INTERNAL"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_COUNT_FOLLOWS_NOTHING"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_CORRUPTED"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_NOERROR"
-          },
-          {
-            "confidence": 1,
-            "dir": "UNEXPLAINED",
-            "file": "autosetup/jimsh0.c",
-            "label": "uses",
-            "line": 0,
-            "target": "REG_ERR_NUM"
           }
         ],
-        "treeTruthEdges": 7587,
-        "unexplainedInAnalyzer": 120
+        "treeTruthEdges": 7317,
+        "unexplainedInAnalyzer": 5
       },
       "cpp": {
         "analyzerEdges": 4656,
@@ -1399,9 +416,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 218.4,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 3120.4,
+          "avgMsPerFile": 97.6,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 1087.7,
           "samplesTimed": 60
         },
         "sampleSetHash": "89b51095c4659906",
@@ -1419,123 +436,132 @@
         "unexplainedInAnalyzer": 1
       },
       "csharp": {
-        "analyzerEdges": 1318,
+        "analyzerEdges": 2442,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1371,
-        "explainableByTree": 1318,
+        "coveredByAnalyzer": 2557,
+        "explainableByTree": 2442,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 133.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 1607.1,
+          "avgMsPerFile": 121.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 1331.2,
           "samplesTimed": 60
         },
-        "sampleSetHash": "3b3dd5e9fc860788",
+        "sampleSetHash": "191d24c78e4748b9",
         "samples": [],
-        "treeTruthEdges": 1371,
+        "treeTruthEdges": 2557,
         "unexplainedInAnalyzer": 0
       },
       "dart": {
-        "analyzerEdges": 1750,
+        "analyzerEdges": 4399,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1887,
-        "explainableByTree": 1750,
+        "coveredByAnalyzer": 4838,
+        "explainableByTree": 4399,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 73.1,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 3619.5,
+          "avgMsPerFile": 97.1,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 1192.3,
           "samplesTimed": 60
         },
-        "sampleSetHash": "c023dc1db0af6ee0",
+        "sampleSetHash": "833469ee5619fb93",
         "samples": [],
-        "treeTruthEdges": 1887,
+        "treeTruthEdges": 4838,
         "unexplainedInAnalyzer": 0
       },
       "go": {
-        "analyzerEdges": 919,
+        "analyzerEdges": 942,
         "coveragePct": 100,
-        "coveredByAnalyzer": 927,
-        "explainableByTree": 919,
+        "coveredByAnalyzer": 957,
+        "explainableByTree": 942,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 56.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 667.9,
+          "avgMsPerFile": 16.7,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 110.9,
           "samplesTimed": 60
         },
-        "sampleSetHash": "ae9449eb50c1f68f",
+        "sampleSetHash": "56296fa21a0c2ffd",
         "samples": [],
-        "treeTruthEdges": 927,
+        "treeTruthEdges": 957,
         "unexplainedInAnalyzer": 0
       },
       "groovy": {
-        "analyzerEdges": 529,
+        "analyzerEdges": 1207,
         "coveragePct": 100,
-        "coveredByAnalyzer": 506,
-        "explainableByTree": 502,
-        "fabricationPct": 0,
+        "coveredByAnalyzer": 1201,
+        "explainableByTree": 1182,
+        "fabricationPct": 0.1,
         "filesSampled": 60,
-        "heuristicUnexplained": 27,
+        "heuristicUnexplained": 24,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 21,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 107.5,
+          "avgMsPerFile": 10.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 71.3,
           "samplesTimed": 60
         },
-        "sampleSetHash": "3a9248865d3bbbd9",
-        "samples": [],
-        "treeTruthEdges": 506,
-        "unexplainedInAnalyzer": 0
+        "sampleSetHash": "40f9bc7df957a133",
+        "samples": [
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "grails-datamapping-rx/src/main/groovy/org/grails/gorm/rx/finders/FindByFinder.groovy",
+            "label": "overrides",
+            "line": 44,
+            "target": "FindByFinder.doInvokeInternal"
+          }
+        ],
+        "treeTruthEdges": 1201,
+        "unexplainedInAnalyzer": 1
       },
       "haskell": {
-        "analyzerEdges": 614,
+        "analyzerEdges": 292,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1173,
-        "explainableByTree": 614,
+        "coveredByAnalyzer": 364,
+        "explainableByTree": 292,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 14.6,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 968.6,
+          "avgMsPerFile": 4.5,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 46.6,
           "samplesTimed": 60
         },
-        "sampleSetHash": "2040e3ad57636818",
+        "sampleSetHash": "8e3322a69ae6eea9",
         "samples": [],
-        "treeTruthEdges": 1173,
+        "treeTruthEdges": 364,
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 816,
+        "analyzerEdges": 1002,
         "coveragePct": 100,
-        "coveredByAnalyzer": 739,
-        "explainableByTree": 735,
+        "coveredByAnalyzer": 916,
+        "explainableByTree": 914,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 81,
+        "heuristicUnexplained": 88,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7.4,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 140.6,
+          "avgMsPerFile": 9.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 113.7,
           "samplesTimed": 60
         },
-        "sampleSetHash": "2fff892462bb64ee",
+        "sampleSetHash": "53cfccb2f5e09c96",
         "samples": [],
-        "treeTruthEdges": 739,
+        "treeTruthEdges": 916,
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
@@ -1548,9 +574,9 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 11.8,
+          "avgMsPerFile": 7.1,
           "loadAvgRetried": false,
-          "maxMsPerFile": 168,
+          "maxMsPerFile": 86.8,
           "samplesTimed": 52
         },
         "sampleSetHash": "32c4318f0f3db775",
@@ -1559,84 +585,173 @@
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
-        "analyzerEdges": 1511,
+        "analyzerEdges": 1711,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1586,
-        "explainableByTree": 1454,
+        "coveredByAnalyzer": 1809,
+        "explainableByTree": 1644,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 57,
+        "heuristicUnexplained": 67,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 108.2,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 1874.4,
+          "avgMsPerFile": 62.3,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 376.9,
           "samplesTimed": 60
         },
-        "sampleSetHash": "f39e30d3648bd4a2",
+        "sampleSetHash": "a4e5540be0fe9d86",
         "samples": [],
-        "treeTruthEdges": 1586,
+        "treeTruthEdges": 1809,
         "unexplainedInAnalyzer": 0
       },
       "objc": {
-        "analyzerEdges": 4024,
+        "analyzerEdges": 3961,
         "coveragePct": 100,
-        "coveredByAnalyzer": 3861,
-        "explainableByTree": 3861,
+        "coveredByAnalyzer": 3798,
+        "explainableByTree": 3798,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 163,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 23.2,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 413.6,
+          "avgMsPerFile": 15.7,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 97,
           "samplesTimed": 60
         },
-        "sampleSetHash": "8234cb008232a69b",
+        "sampleSetHash": "57206c868b9e01b2",
         "samples": [],
-        "treeTruthEdges": 3861,
+        "treeTruthEdges": 3798,
         "unexplainedInAnalyzer": 0
       },
       "php": {
-        "analyzerEdges": 927,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 833,
-        "explainableByTree": 833,
+        "analyzerEdges": 738,
+        "coveragePct": 99.8,
+        "coveredByAnalyzer": 575,
+        "explainableByTree": 575,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 94,
-        "missingInAnalyzer": 0,
+        "heuristicUnexplained": 163,
+        "missingInAnalyzer": 1,
         "perf": {
-          "avgMsPerFile": 2.1,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 222.5,
+          "avgMsPerFile": 3.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 41.4,
           "samplesTimed": 60
         },
-        "sampleSetHash": "4be02ca7685ed414",
-        "samples": [],
-        "treeTruthEdges": 833,
+        "sampleSetHash": "b69dc2dba846b4ce",
+        "samples": [
+          {
+            "dir": "MISSING",
+            "file": "tests/end-to-end/_files/data-provider/ClosureThrowsExceptionTest.php",
+            "from": "(expr)",
+            "label": "instantiates",
+            "target": "RuntimeException"
+          }
+        ],
+        "treeTruthEdges": 576,
         "unexplainedInAnalyzer": 0
       },
       "python": {
-        "analyzerEdges": 3255,
+        "analyzerEdges": 2565,
         "coveragePct": 100,
-        "coveredByAnalyzer": 2751,
-        "explainableByTree": 2827,
-        "fabricationPct": 0,
+        "coveredByAnalyzer": 2083,
+        "explainableByTree": 2201,
+        "fabricationPct": 0.4,
         "filesSampled": 60,
-        "heuristicUnexplained": 428,
+        "heuristicUnexplained": 354,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 71.6,
+          "avgMsPerFile": 13.1,
           "loadAvgRetried": true,
-          "maxMsPerFile": 3144.7,
+          "maxMsPerFile": 321.6,
           "samplesTimed": 60
         },
-        "sampleSetHash": "d44b4e45b381caec",
-        "samples": [],
-        "treeTruthEdges": 2751,
-        "unexplainedInAnalyzer": 0
+        "sampleSetHash": "fd4eea87957f1576",
+        "samples": [
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_xdecref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_decref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_xdecref_clear_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_decref_clear_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_xincref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_gotref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_xgotref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_giveref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_xgiveref_code"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "Cython/Compiler/PyrexTypes.py",
+            "label": "overrides",
+            "line": 0,
+            "target": "PyrexType.get_xdecref_set_code"
+          }
+        ],
+        "treeTruthEdges": 2083,
+        "unexplainedInAnalyzer": 10
       },
       "ruby": {
         "analyzerEdges": 1330,
@@ -1648,9 +763,9 @@
         "heuristicUnexplained": 307,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 7,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 356.2,
+          "avgMsPerFile": 5.9,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 59,
           "samplesTimed": 60
         },
         "sampleSetHash": "0c505b9b4aeda127",
@@ -1659,143 +774,152 @@
         "unexplainedInAnalyzer": 0
       },
       "rust": {
-        "analyzerEdges": 1899,
+        "analyzerEdges": 1909,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1949,
-        "explainableByTree": 1899,
+        "coveredByAnalyzer": 1959,
+        "explainableByTree": 1909,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 98.8,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 777.6,
+          "avgMsPerFile": 37.6,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 319.1,
           "samplesTimed": 60
         },
-        "sampleSetHash": "3726f83d65a6e09a",
+        "sampleSetHash": "a3c3b0ec3d2b0d71",
         "samples": [],
-        "treeTruthEdges": 1949,
+        "treeTruthEdges": 1959,
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 560,
+        "analyzerEdges": 397,
         "coveragePct": 100,
-        "coveredByAnalyzer": 628,
-        "explainableByTree": 505,
+        "coveredByAnalyzer": 476,
+        "explainableByTree": 362,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 55,
+        "heuristicUnexplained": 35,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 11.4,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 335.4,
+          "avgMsPerFile": 6,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 110.9,
           "samplesTimed": 60
         },
-        "sampleSetHash": "807ae633353d4d0f",
+        "sampleSetHash": "16cc1c86c8ae47c8",
         "samples": [],
-        "treeTruthEdges": 628,
+        "treeTruthEdges": 476,
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
-        "analyzerEdges": 25,
+        "analyzerEdges": 28,
         "coveragePct": 100,
-        "coveredByAnalyzer": 25,
-        "explainableByTree": 25,
+        "coveredByAnalyzer": 28,
+        "explainableByTree": 28,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 11.5,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 56.6,
+          "avgMsPerFile": 17.2,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 665.2,
           "samplesTimed": 60
         },
-        "sampleSetHash": "c1c6f9e95bf02a6b",
+        "sampleSetHash": "0fa9cf121eb45c0b",
         "samples": [],
-        "treeTruthEdges": 25,
+        "treeTruthEdges": 28,
         "unexplainedInAnalyzer": 0
       },
       "swift": {
-        "analyzerEdges": 1837,
+        "analyzerEdges": 2312,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1837,
-        "explainableByTree": 1837,
+        "coveredByAnalyzer": 2329,
+        "explainableByTree": 2312,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 101.6,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 2734.7,
+          "avgMsPerFile": 72.5,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 780.4,
           "samplesTimed": 60
         },
         "sampleSetHash": "ea2ac2a489ca0853",
         "samples": [],
-        "treeTruthEdges": 1837,
+        "treeTruthEdges": 2329,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 1068,
+        "analyzerEdges": 1087,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1081,
-        "explainableByTree": 1068,
-        "fabricationPct": 0,
+        "coveredByAnalyzer": 1093,
+        "explainableByTree": 1086,
+        "fabricationPct": 0.1,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 133.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 2328.8,
+          "avgMsPerFile": 79.1,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 1046.2,
           "samplesTimed": 60
         },
-        "sampleSetHash": "771c854fefb7fcdc",
-        "samples": [],
-        "treeTruthEdges": 1081,
-        "unexplainedInAnalyzer": 0
+        "sampleSetHash": "ed184e5603fa0299",
+        "samples": [
+          {
+            "confidence": 0.9,
+            "dir": "UNEXPLAINED",
+            "file": "packages/server-renderer/src/renderToStream.ts",
+            "label": "calls",
+            "line": 0,
+            "target": "require"
+          }
+        ],
+        "treeTruthEdges": 1093,
+        "unexplainedInAnalyzer": 1
       },
       "vue": {
-        "analyzerEdges": 418,
+        "analyzerEdges": 407,
         "coveragePct": 100,
-        "coveredByAnalyzer": 418,
-        "explainableByTree": 418,
+        "coveredByAnalyzer": 407,
+        "explainableByTree": 407,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 17.9,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 177.3,
+          "avgMsPerFile": 11.4,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 77.3,
           "samplesTimed": 60
         },
-        "sampleSetHash": "31404f2ddefaec87",
+        "sampleSetHash": "1fff5343192610ea",
         "samples": [],
-        "treeTruthEdges": 418,
+        "treeTruthEdges": 407,
         "unexplainedInAnalyzer": 0
       },
       "zig": {
-        "analyzerEdges": 2760,
+        "analyzerEdges": 1701,
         "coveragePct": 100,
-        "coveredByAnalyzer": 2779,
-        "explainableByTree": 2760,
+        "coveredByAnalyzer": 1712,
+        "explainableByTree": 1701,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 97,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 1094.3,
+          "avgMsPerFile": 32.1,
+          "loadAvgRetried": false,
+          "maxMsPerFile": 428,
           "samplesTimed": 60
         },
-        "sampleSetHash": "053fa67f6663fddb",
+        "sampleSetHash": "31dd1177170efd17",
         "samples": [],
-        "treeTruthEdges": 2779,
+        "treeTruthEdges": 1712,
         "unexplainedInAnalyzer": 0
       }
     },
@@ -1826,218 +950,218 @@
       },
       "report": {
         "afnetworking:objc": {
-          "analyzerEdges": 3200,
+          "analyzerEdges": 3205,
           "coveragePct": 100,
-          "coveredByAnalyzer": 2885,
-          "explainableByTree": 2885,
+          "coveredByAnalyzer": 2890,
+          "explainableByTree": 2890,
           "fabricationPct": 0,
           "filesSampled": 49,
           "heuristicUnexplained": 315,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 35.5,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 242.7,
+            "avgMsPerFile": 13.5,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 80,
             "samplesTimed": 49
           },
           "sampleSetHash": "29684f4b8391be9f",
           "samples": [],
-          "treeTruthEdges": 2885,
+          "treeTruthEdges": 2890,
           "unexplainedInAnalyzer": 0
         },
         "alamofire:swift": {
-          "analyzerEdges": 1441,
+          "analyzerEdges": 2271,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1441,
-          "explainableByTree": 1441,
+          "coveredByAnalyzer": 2319,
+          "explainableByTree": 2271,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 107.4,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 1762.2,
+            "avgMsPerFile": 74.7,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 582.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "0052e892f6e0d27b",
+          "sampleSetHash": "9c4b3185739ba2cd",
           "samples": [],
-          "treeTruthEdges": 1441,
+          "treeTruthEdges": 2319,
           "unexplainedInAnalyzer": 0
         },
         "cargo:rust": {
-          "analyzerEdges": 1697,
+          "analyzerEdges": 1007,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1738,
-          "explainableByTree": 1697,
+          "coveredByAnalyzer": 1041,
+          "explainableByTree": 1007,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 61.2,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 713.7,
+            "avgMsPerFile": 18.3,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 128.5,
             "samplesTimed": 60
           },
-          "sampleSetHash": "e09029111a6cc4ec",
+          "sampleSetHash": "056563e2b30b65c1",
           "samples": [],
-          "treeTruthEdges": 1738,
+          "treeTruthEdges": 1041,
           "unexplainedInAnalyzer": 0
         },
         "cats-effect:scala": {
-          "analyzerEdges": 1209,
+          "analyzerEdges": 1163,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1462,
-          "explainableByTree": 1125,
+          "coveredByAnalyzer": 1394,
+          "explainableByTree": 1143,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 84,
+          "heuristicUnexplained": 20,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 33.5,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 1327.9,
+            "avgMsPerFile": 23.6,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 250.3,
             "samplesTimed": 60
           },
-          "sampleSetHash": "8e07cd86346c004a",
+          "sampleSetHash": "3f6c9493ddc44726",
           "samples": [],
-          "treeTruthEdges": 1462,
+          "treeTruthEdges": 1394,
           "unexplainedInAnalyzer": 0
         },
         "clojure:java": {
-          "analyzerEdges": 1117,
+          "analyzerEdges": 1344,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1082,
-          "explainableByTree": 1053,
+          "coveredByAnalyzer": 1456,
+          "explainableByTree": 1291,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 64,
+          "heuristicUnexplained": 53,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 19.6,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 577.6,
+            "avgMsPerFile": 21.1,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 275.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "86f37ca7cf27bbd4",
+          "sampleSetHash": "2b31ba5e4741e5b5",
           "samples": [],
-          "treeTruthEdges": 1082,
+          "treeTruthEdges": 1456,
           "unexplainedInAnalyzer": 0
         },
         "dart-http:dart": {
-          "analyzerEdges": 736,
+          "analyzerEdges": 4035,
           "coveragePct": 100,
-          "coveredByAnalyzer": 780,
-          "explainableByTree": 736,
+          "coveredByAnalyzer": 4368,
+          "explainableByTree": 4035,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 4.7,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 86.2,
+            "avgMsPerFile": 110.7,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 4388.4,
             "samplesTimed": 60
           },
-          "sampleSetHash": "549143339f0cfaa9",
+          "sampleSetHash": "805083e943a0e23f",
           "samples": [],
-          "treeTruthEdges": 780,
+          "treeTruthEdges": 4368,
           "unexplainedInAnalyzer": 0
         },
         "element-plus:typescript": {
-          "analyzerEdges": 419,
+          "analyzerEdges": 320,
           "coveragePct": 100,
-          "coveredByAnalyzer": 420,
-          "explainableByTree": 419,
+          "coveredByAnalyzer": 321,
+          "explainableByTree": 320,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 43.6,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 461.3,
+            "avgMsPerFile": 9.3,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 59.8,
             "samplesTimed": 60
           },
-          "sampleSetHash": "02f7248d60f646f7",
+          "sampleSetHash": "37fecff50cdcab9d",
           "samples": [],
-          "treeTruthEdges": 420,
+          "treeTruthEdges": 321,
           "unexplainedInAnalyzer": 0
         },
         "fsharp:csharp": {
-          "analyzerEdges": 1280,
+          "analyzerEdges": 1229,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1283,
-          "explainableByTree": 1280,
+          "coveredByAnalyzer": 1232,
+          "explainableByTree": 1229,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 92.6,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 1062.4,
+            "avgMsPerFile": 41.4,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 380.6,
             "samplesTimed": 60
           },
-          "sampleSetHash": "ff6eeb46eef5e9d4",
+          "sampleSetHash": "676936488c70f183",
           "samples": [],
-          "treeTruthEdges": 1283,
+          "treeTruthEdges": 1232,
           "unexplainedInAnalyzer": 0
         },
         "geb:groovy": {
-          "analyzerEdges": 557,
+          "analyzerEdges": 774,
           "coveragePct": 100,
-          "coveredByAnalyzer": 530,
-          "explainableByTree": 526,
+          "coveredByAnalyzer": 784,
+          "explainableByTree": 755,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 31,
+          "heuristicUnexplained": 19,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 9.6,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 130.2,
+            "avgMsPerFile": 5.2,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 24.5,
             "samplesTimed": 60
           },
-          "sampleSetHash": "afddb7a7aeb00bd8",
+          "sampleSetHash": "932cbba96554c0ce",
           "samples": [],
-          "treeTruthEdges": 530,
+          "treeTruthEdges": 784,
           "unexplainedInAnalyzer": 0
         },
         "hledger:haskell": {
-          "analyzerEdges": 1075,
+          "analyzerEdges": 1051,
           "coveragePct": 100,
-          "coveredByAnalyzer": 2040,
-          "explainableByTree": 1075,
+          "coveredByAnalyzer": 1778,
+          "explainableByTree": 1051,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 20.2,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 966.3,
+            "avgMsPerFile": 16.8,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 127.4,
             "samplesTimed": 60
           },
-          "sampleSetHash": "d1c3ed0e861d118d",
+          "sampleSetHash": "49889544d3c14b7e",
           "samples": [],
-          "treeTruthEdges": 2040,
+          "treeTruthEdges": 1778,
           "unexplainedInAnalyzer": 0
         },
         "jq:c": {
-          "analyzerEdges": 2962,
-          "coveragePct": 99.9,
-          "coveredByAnalyzer": 2934,
-          "explainableByTree": 2939,
-          "fabricationPct": 0.8,
+          "analyzerEdges": 2930,
+          "coveragePct": 100,
+          "coveredByAnalyzer": 2928,
+          "explainableByTree": 2929,
+          "fabricationPct": 0,
           "filesSampled": 45,
           "heuristicUnexplained": 0,
-          "missingInAnalyzer": 4,
+          "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 325.8,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 3973.8,
+            "avgMsPerFile": 75.5,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 926.4,
             "samplesTimed": 45
           },
           "sampleSetHash": "2b743b65d0eac283",
@@ -2045,237 +1169,33 @@
             {
               "confidence": 1,
               "dir": "UNEXPLAINED",
-              "file": "src/jv.c",
-              "label": "uses",
-              "line": 0,
-              "target": "ITER_FINISHED"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
               "file": "src/parser.c",
               "label": "uses",
               "line": 0,
               "target": "YY_INITIAL_VALUE"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yyg"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_cp"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_current_state"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_act"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "escapes"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_amount_of_matched_text"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "yy_next_state"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/lexer.c",
-              "label": "uses",
-              "line": 0,
-              "target": "offset"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "last_var"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "is_empty_var"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "call_arg"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "if_empty"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "builtin_defs"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "builtin_def_1arg"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "rangestart"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "rangevar"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/builtin.c",
-              "label": "uses",
-              "line": 0,
-              "target": "range"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "ROUND_BIASED"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "Sudden_Underflow"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "NO_HEX_FP"
-            },
-            {
-              "dir": "MISSING",
-              "file": "src/jv_dtoa.c",
-              "from": "(expr)",
-              "label": "uses",
-              "target": "Avoid_Underflow"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_up"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_down"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_near"
-            },
-            {
-              "confidence": 1,
-              "dir": "UNEXPLAINED",
-              "file": "src/jv_dtoa.c",
-              "label": "uses",
-              "line": 0,
-              "target": "Round_zero"
             }
           ],
-          "treeTruthEdges": 2938,
-          "unexplainedInAnalyzer": 23
+          "treeTruthEdges": 2928,
+          "unexplainedInAnalyzer": 1
         },
         "kotlinx-coroutines:kotlin": {
-          "analyzerEdges": 979,
+          "analyzerEdges": 692,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1012,
-          "explainableByTree": 898,
+          "coveredByAnalyzer": 749,
+          "explainableByTree": 673,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 81,
+          "heuristicUnexplained": 19,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 14.9,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 103.1,
+            "avgMsPerFile": 11.9,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 66.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "d2351846d054edea",
+          "sampleSetHash": "725774b9c080c1f9",
           "samples": [],
-          "treeTruthEdges": 1012,
+          "treeTruthEdges": 749,
           "unexplainedInAnalyzer": 0
         },
         "lodash:javascript": {
@@ -2288,9 +1208,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 2089.5,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 55216.6,
+            "avgMsPerFile": 440.2,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 6849.2,
             "samplesTimed": 55
           },
           "sampleSetHash": "494e1b94766e8ade",
@@ -2308,9 +1228,9 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 117.9,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 4314.3,
+            "avgMsPerFile": 83.7,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 1285.3,
             "samplesTimed": 17
           },
           "sampleSetHash": "88dc095dd86d8301",
@@ -2319,43 +1239,59 @@
           "unexplainedInAnalyzer": 0
         },
         "phpmyadmin:php": {
-          "analyzerEdges": 1171,
-          "coveragePct": 100,
-          "coveredByAnalyzer": 1012,
-          "explainableByTree": 1012,
-          "fabricationPct": 0,
+          "analyzerEdges": 1388,
+          "coveragePct": 99.9,
+          "coveredByAnalyzer": 1247,
+          "explainableByTree": 1247,
+          "fabricationPct": 0.1,
           "filesSampled": 60,
-          "heuristicUnexplained": 159,
-          "missingInAnalyzer": 0,
+          "heuristicUnexplained": 140,
+          "missingInAnalyzer": 1,
           "perf": {
-            "avgMsPerFile": 5.3,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 259.7,
+            "avgMsPerFile": 7.7,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 44.4,
             "samplesTimed": 60
           },
-          "sampleSetHash": "a6ec6aafaf16080e",
-          "samples": [],
-          "treeTruthEdges": 1012,
-          "unexplainedInAnalyzer": 0
+          "sampleSetHash": "ecd2870629c53731",
+          "samples": [
+            {
+              "dir": "MISSING",
+              "file": "src/Utils/HttpRequest.php",
+              "from": "(expr)",
+              "label": "calls",
+              "target": "http_get_last_response_headers"
+            },
+            {
+              "confidence": 0.9,
+              "dir": "UNEXPLAINED",
+              "file": "src/Utils/HttpRequest.php",
+              "label": "calls",
+              "line": 0,
+              "target": "\\http_get_last_response_headers"
+            }
+          ],
+          "treeTruthEdges": 1248,
+          "unexplainedInAnalyzer": 1
         },
         "rack:ruby": {
-          "analyzerEdges": 1611,
+          "analyzerEdges": 1610,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1551,
-          "explainableByTree": 1553,
+          "coveredByAnalyzer": 1550,
+          "explainableByTree": 1552,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 58,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 5.7,
+            "avgMsPerFile": 4.1,
             "loadAvgRetried": true,
-            "maxMsPerFile": 172.1,
+            "maxMsPerFile": 54,
             "samplesTimed": 60
           },
-          "sampleSetHash": "cbf9b090af441408",
+          "sampleSetHash": "5fa43c6b547184e3",
           "samples": [],
-          "treeTruthEdges": 1551,
+          "treeTruthEdges": 1550,
           "unexplainedInAnalyzer": 0
         },
         "requests:python": {
@@ -2368,9 +1304,9 @@
           "heuristicUnexplained": 118,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 59,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 897,
+            "avgMsPerFile": 24.2,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 374.6,
             "samplesTimed": 37
           },
           "sampleSetHash": "e3679fa2131e9b78",
@@ -2379,83 +1315,83 @@
           "unexplainedInAnalyzer": 0
         },
         "shadcn-svelte:svelte": {
-          "analyzerEdges": 505,
+          "analyzerEdges": 348,
           "coveragePct": 100,
-          "coveredByAnalyzer": 509,
-          "explainableByTree": 505,
+          "coveredByAnalyzer": 353,
+          "explainableByTree": 348,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 25.6,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 140.8,
+            "avgMsPerFile": 8.9,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 119.5,
             "samplesTimed": 60
           },
-          "sampleSetHash": "ed416fc8cc76ca47",
+          "sampleSetHash": "5f2b824d81a81af1",
           "samples": [],
-          "treeTruthEdges": 509,
+          "treeTruthEdges": 353,
           "unexplainedInAnalyzer": 0
         },
         "terraform:go": {
-          "analyzerEdges": 1450,
+          "analyzerEdges": 1073,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1451,
-          "explainableByTree": 1450,
+          "coveredByAnalyzer": 1076,
+          "explainableByTree": 1073,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 91.2,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 1966.4,
+            "avgMsPerFile": 24.6,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 262.6,
             "samplesTimed": 60
           },
-          "sampleSetHash": "9c09cea779eb5ca6",
+          "sampleSetHash": "fb95979519cde720",
           "samples": [],
-          "treeTruthEdges": 1451,
+          "treeTruthEdges": 1076,
           "unexplainedInAnalyzer": 0
         },
         "vue-element-admin:vue": {
-          "analyzerEdges": 407,
+          "analyzerEdges": 412,
           "coveragePct": 100,
-          "coveredByAnalyzer": 410,
-          "explainableByTree": 407,
+          "coveredByAnalyzer": 415,
+          "explainableByTree": 412,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 44.1,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 527.9,
+            "avgMsPerFile": 27.6,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 494.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "b38e2e502caa0f35",
+          "sampleSetHash": "3c769d56d5b06ec2",
           "samples": [],
-          "treeTruthEdges": 410,
+          "treeTruthEdges": 415,
           "unexplainedInAnalyzer": 0
         },
         "zls:zig": {
-          "analyzerEdges": 4445,
+          "analyzerEdges": 4968,
           "coveragePct": 100,
-          "coveredByAnalyzer": 4476,
-          "explainableByTree": 4445,
+          "coveredByAnalyzer": 5000,
+          "explainableByTree": 4968,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 97.9,
-            "loadAvgRetried": true,
-            "maxMsPerFile": 1467.5,
+            "avgMsPerFile": 67.5,
+            "loadAvgRetried": false,
+            "maxMsPerFile": 804.4,
             "samplesTimed": 60
           },
-          "sampleSetHash": "c1285552d459a43a",
+          "sampleSetHash": "a279542a6a3b1ade",
           "samples": [],
-          "treeTruthEdges": 4476,
+          "treeTruthEdges": 5000,
           "unexplainedInAnalyzer": 0
         }
       }
@@ -2483,8 +1419,8 @@
       "description": "the measured code is this checkout's working tree, so `differential-code-inputs` fails — and the run exits 6 — when any analyzer, oracle or spec input differs from `regeneratedAtCommit`; a dirty tree can measure lanes but cannot claim them"
     }
   ],
-  "regeneratedAt": "2026-09-14T01:21:57.407Z",
-  "regeneratedAtCommit": "29a3d7a149ab06065377032e2f50b59bd7367485",
+  "regeneratedAt": "2026-09-16T02:52:23.595Z",
+  "regeneratedAtCommit": "135eca911baf1eace977b5c7e1d49844bcf670f6",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Differential corpus harness (two-corpus gate)"
