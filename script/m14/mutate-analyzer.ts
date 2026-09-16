@@ -1203,6 +1203,18 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).isDecorator && typeof x.line_number === "number" ? { ...x, line_number: x.line_number + 1 } : x) }),
   },
   {
+    id: "typescript/wrapped-new-routed-to-calls",
+    language: "typescript",
+    defectClass: "payload-fidelity",
+    description: "M14 (#858) regression: a wrapped `new` (constructor written on the next line) is emitted as a CALL and its instantiation is dropped — the exact pre-fix state, where the pinned grammar closed the statement at the bare `new` and the constructor call arrived as the next statement's call_expression. Caught by typescript/wrapped-new-858, which pins instantiates at the constructor's own line (16, not the keyword's 15) AND the equivalence with the unwrapped control on line 14, and forbids the fabricated calls edge.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "instantiates" ? { ...x, type: "calls" } : x,
+      ),
+    }),
+  },
+  {
     id: "typescript/type-parameter-constraint-default-dropped",
     language: "typescript",
     defectClass: "payload-fidelity",

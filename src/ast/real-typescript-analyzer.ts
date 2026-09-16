@@ -3581,6 +3581,18 @@ class TypeScriptAnalysisRunner {
         if (n.type === "call_expression") {
           const callee = n.namedChild(0)
           if (callee) {
+            // M14 #858: the constructor call of a wrapped `new` is not a call at
+            // all — it is the instantiation the grammar failed to build. Emit it
+            // through the same helper the new_expression path uses, walk the
+            // arguments (nested real calls live there), and emit nothing else.
+            if (this.isWrappedNewConstructor(n)) {
+              this.pushInstantiation(callee, n, callSource, relationships)
+              for (let i = 0; i < n.namedChildCount; i++) {
+                const child = n.namedChild(i)
+                if (child) processNode(child, currentSymbol)
+              }
+              return
+            }
             // M14 #419 T7: dynamic import() is a module dependency, not a
             // call — skip it here so no spurious calls edge to `import` is
             // emitted (the imports edge comes from extractImportRelationships).
@@ -3842,6 +3854,16 @@ class TypeScriptAnalysisRunner {
         // TSD5: an identifier in instanceof-RHS position is a TYPE check —
         // extractDeclaredTypeRefs emits the instanceof_check reference, so
         // a second plain references edge here is double-emission.
+        // M14 #858 NOTE: the callee of a wrapped `new` is deliberately NOT
+        // suppressed here. The unwrapped control (`new Engine(1)` with Engine a
+        // declared symbol) also emits this `references` edge today — measured on
+        // the fixture at this commit — and the contract this fix establishes is
+        // that the wrapped form is INDISTINGUISHABLE from the unwrapped one. An
+        // extra suppression limited to the wrapped spelling would have created
+        // the very asymmetry the issue is about. Whether a constructed class
+        // name should emit `references` at all is a separate, wider question
+        // (the oracle derives only `instantiates` for new_expression) and is
+        // filed rather than changed inside this fix.
         const rhsOfTypeCheck =
           n.parent?.type === "binary_expression" &&
           (() => {
@@ -4047,45 +4069,12 @@ class TypeScriptAnalysisRunner {
       const instSource = currentSymbol || { name: this.moduleLeafName(), scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (n.type === "new_expression") {
         const constructor = n.namedChild(0)
-        if (constructor) {
-          let className = constructor.text
-
-          // Handle generic instantiation: new Map<K, V>()
-          if (constructor.type === "generic_type") {
-            const typeName = constructor.namedChild(0)
-            if (typeName) {
-              className = typeName.text
-            }
-          }
-          // TSD3 (leaf identity contract): qualified `new ns.Thing()` —
-          // target is the LEAF (Thing), matching the JS analyzer and TS's
-          // own member-call reduction; emitting "ns.Thing" fabricated
-          // targets no symbol index could join (the import alias is not a
-          // type). Also strip generic arguments from member ctors.
-          const dot = className.lastIndexOf(".")
-          if (dot !== -1 && dot < className.length - 1) className = className.slice(dot + 1)
-          const lt = className.indexOf("<")
-          if (lt !== -1) className = className.slice(0, lt)
-
-          // Global constructor intrinsics/DOM APIs: `new Promise()` is
-          // construction of the RUNTIME, not of a project type — same
-          // rationale as the JVM stdlib filters (family parity with JS).
-          if (!JS_GLOBAL_CONSTRUCTORS.has(className)) {
-          relationships.push({
-            source: instSource.name,
-            target: className,
-            type: ASTEngine.RelationshipType.Instantiates,
-            confidence: 1.0,
-            // The CLASS NAME node: for `new ns.Thing()` that is the property
-            // leaf, since the target is the leaf (TSD3 leaf identity).
-            ...this.lineField(constructor.type === "member_expression" ? (constructor.childForFieldName("property") ?? constructor) : constructor),
-            metadata: {
-              line: n.startPosition.row,
-            } as any,
-          })
-          }
-        }
+        if (constructor) this.pushInstantiation(constructor, n, instSource, relationships)
       }
+      // A `new` whose constructor is written on the NEXT line never reaches this
+      // branch (the grammar does not build a new_expression for it — #858); it is
+      // emitted from the call pass below through the same helper, so both forms
+      // produce identical edges rather than merely similar ones.
 
       // Recurse
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -4097,6 +4086,79 @@ class TypeScriptAnalysisRunner {
     }
 
     processNode(node, null)
+  }
+
+  /**
+   * M14 #858: emit the instantiation edge for a constructor node. Extracted from
+   * the new_expression branch so the wrapped-`new` path (below) and the parser's
+   * own new_expression path cannot drift apart — same leaf-identity rule (TSD3),
+   * same generic-argument strip, same intrinsic filter.
+   */
+  private pushInstantiation(
+    constructor: Node,
+    expressionNode: Node,
+    source: { name: string },
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    let className = constructor.text
+
+    // Handle generic instantiation: new Map<K, V>()
+    if (constructor.type === "generic_type") {
+      const typeName = constructor.namedChild(0)
+      if (typeName) className = typeName.text
+    }
+    // TSD3 (leaf identity contract): qualified `new ns.Thing()` — target is the
+    // LEAF (Thing), matching the JS analyzer and TS's own member-call reduction;
+    // emitting "ns.Thing" fabricated targets no symbol index could join (the
+    // import alias is not a type). Also strip generic arguments from member ctors.
+    const dot = className.lastIndexOf(".")
+    if (dot !== -1 && dot < className.length - 1) className = className.slice(dot + 1)
+    const lt = className.indexOf("<")
+    if (lt !== -1) className = className.slice(0, lt)
+
+    // Global constructor intrinsics/DOM APIs: `new Promise()` is construction of
+    // the RUNTIME, not of a project type — same rationale as the JVM stdlib
+    // filters (family parity with JS).
+    if (JS_GLOBAL_CONSTRUCTORS.has(className)) return
+
+    relationships.push({
+      source: source.name,
+      target: className,
+      type: ASTEngine.RelationshipType.Instantiates,
+      confidence: 1.0,
+      // The CLASS NAME node: for `new ns.Thing()` that is the property leaf,
+      // since the target is the leaf (TSD3 leaf identity).
+      ...this.lineField(constructor.type === "member_expression" ? (constructor.childForFieldName("property") ?? constructor) : constructor),
+      metadata: {
+        line: expressionNode.startPosition.row,
+      } as any,
+    })
+  }
+
+  /**
+   * M14 #858: a `new` whose constructor is written on the NEXT line is not a
+   * new_expression in the pinned tsx/typescript grammar. Verified on the wasm:
+   *
+   *   const b = new        lexical_declaration[ ..., identifier("new") ]
+   *     Other(2)           expression_statement[ call_expression[ identifier("Other") ] ]
+   *
+   * The grammar closes the statement at the bare `new`, so the instantiation was
+   * silently lost while a `calls` edge AND a bare-identifier `references` edge
+   * were fabricated for a class name that is never called as a method. Recognised
+   * from the tree rather than heuristically: the call_expression's previous
+   * statement sibling must END with a bare `new` identifier written on an
+   * earlier line than the call.
+   */
+  private isWrappedNewConstructor(call: Node): boolean {
+    if (call.type !== "call_expression") return false
+    const stmt = call.parent
+    if (!stmt || stmt.type !== "expression_statement") return false
+    const prev = stmt.previousSibling
+    if (!prev) return false
+    let last: Node | null = prev
+    while (last && last.namedChildCount > 0) last = last.namedChild(last.namedChildCount - 1)
+    if (!last || last.type !== "identifier" || last.text !== "new") return false
+    return last.startPosition.row < call.startPosition.row
   }
 
   /**
