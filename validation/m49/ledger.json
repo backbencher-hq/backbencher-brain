@@ -187,6 +187,14 @@
       "verifiedAtCommit": "00c49c59"
     },
     {
+      "id": "CS2",
+      "title": "C# second review wave (M49.CS1 follow-up on issue #804): CS-C1 initializer designators, CS-C2 type-context gates, CS-C3 declarator roles, CS-C4 class-scope attribution",
+      "status": "verified",
+      "notes": "Registered retrospectively during PHP2 close-out; no separate wave issue (wave message records it as M49.CS1 follow-up on #804). Scope per wave commit: CS-C1 designators read/write (assignment-LHS gate covers), CS-C2 type gates + 17 dead field/type_identifier disjuncts removed, CS-C3 declaratorRole climb, CS-C4 class-scope attribution; fixture csharp/bare-value-reads extended (Build case + designator forbids); 1 mutant csharp/reemit-initializer-designator-reads; spec CS-C1-CS-C4. Wave-time numbers from commit message: F3 csharp 3/3, F4 483/483 (csharp 21/21), R1 89/89, tsc clean, lanes powershell+fsharp 0/0. Re-verified at registration on current tree: csharp fixtures 3/3 pass, csharp mutants 21/21 caught.",
+      "evidenceFile": "reviews/csharp/second-review.md",
+      "verifiedAtCommit": "a2f5f76b"
+    },
+    {
       "id": "RB1",
       "title": "Ruby second review wave (issue #812): RB-F endless bodies, RB-G defined?/undef, RB-H attr strings, RB-I dynamic classes, RB-J autoload, RB-K nested singleton defs",
       "status": "verified",
