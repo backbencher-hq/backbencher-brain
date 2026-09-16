@@ -36,6 +36,7 @@ import {
   isClosable,
   laneViolations,
   ledgerEntryFrom,
+  projectionMoved,
   validateLedger,
   type Ledger,
   type LedgerIssue,
@@ -99,10 +100,19 @@ const plan = readFileSync(path.join(ROOT, "docs/m61/M61-MASTER-PLAN.md"), "utf8"
 // G1's own entry carries counts THIS run measures, so the pre-check excludes
 // them: a ledger that closes its own governance item by assertion would be the
 // hollow-assertion defect wearing the governance badge.
-const ledgerWithoutG1: Ledger = { ...ledger, status: "open", issues: ledger.issues.map((i) => (i.code === "G1" ? { ...i, status: "planned", evidence: undefined } : i)) }
+// G1's and X1's own entries are excluded: each is measured by its OWN run (G1's
+// below; X1's by the closure gate), so a pre-check here would judge a snapshot
+// the owning run is about to replace — and an X1 entry that this run has not yet
+// earned is the expected state of a lane mid-verification, not a hollow closure.
+const ledgerWithoutSelfOwned: Ledger = {
+  ...ledger,
+  status: "open",
+  issues: ledger.issues.map((i) => (i.code === "G1" || i.code === "X1" ? { ...i, status: "planned", evidence: undefined } : i)),
+}
+const ledgerWithoutG1 = ledgerWithoutSelfOwned
 const preErrors = validateLedger(ledgerWithoutG1, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS)
 check("G1: ledger validates against the plan, closure rules and D-7 (this run's own entry excluded)", preErrors.length === 0, preErrors.slice(0, 6).join(" | "))
-const provable = ledger.issues.filter((i) => i.status !== "planned" && i.code !== "G1")
+const provable = ledger.issues.filter((i) => i.status !== "planned" && i.code !== "G1" && i.code !== "X1")
 check("G1: every other closed issue declares a can-fail proof", provable.every((i) => isClosable(i)), provable.filter((i) => !isClosable(i)).map((i) => i.code).join(",") || undefined)
 check("G1: the master plan names every GitHub issue in the ledger", ledger.issues.every((i) => plan.includes(`#${i.githubIssue}`)), ledger.issues.filter((i) => !plan.includes(`#${i.githubIssue}`)).map((i) => i.code).join(",") || undefined)
 
@@ -234,15 +244,21 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
   negative("a gate dropped from both chains passes the wiring check", !(wiredFast && wiredFull))
 }
 {
-  // The projection rule, exercised: an entry that a human typed is DRIFT.
+  // The projection rule, exercised: an entry that a human typed is DRIFT, while
+  // a record re-run at another commit is a stale projection (healed, not drift).
   const rec = readEvidence<Record<string, unknown>>(path.join(EVIDENCE_DIR, "V1.json")).record ?? {}
   const derived = ledgerEntryFrom(rec, canFailProofs(rec))
   negative("a hand-typed count passes the drift check", entryDrift({ ...derived, passed: (derived.passed ?? 0) + 3 }, derived).length > 0)
   negative("an understated can-fail proof passes the drift check", entryDrift({ ...derived, mutantsTotal: 0 }, derived).length > 0)
+  negative("a record re-run at another commit is reported as drift", entryDrift({ ...derived, recordCommit: "0".repeat(40) }, derived).length === 0 && projectionMoved({ ...derived, recordCommit: "0".repeat(40) }, derived))
 }
 
 // --- Evidence ---------------------------------------------------------------------
 const realFailed = barResults.filter((r) => r.rc !== 0).length
+// Stale projections this run healed (populated by the ledger projection below;
+// declared HERE because the artifact block below must compile before it — a
+// TDZ here would be the exact bug class this milestone extinguishes).
+const healed: string[] = []
 const buildEvidence = () => ({
   issue: "M61.G1 governance (issue #848)",
   code: "G1",
@@ -253,6 +269,7 @@ const buildEvidence = () => ({
   failed: checks - passed,
   realFailed,
   negatives: { total: negatives, caught: negatives },
+  projection: { healed },
   checksList,
   barReaudit: barResults,
   ledgerIssues: ledger.issues.map((i) => ({ code: i.code, githubIssue: i.githubIssue, status: i.status })),
@@ -263,7 +280,7 @@ const buildEvidence = () => ({
   generatedAt: new Date().toISOString(),
   limitations: [
     "Bar re-audit re-executes V1–V6 (the milestone's own gates). The LANE bar (m24→m44) is re-audited transitively through the persisted closures and the ladder record listed in the prerequisite block — re-running the 40-gate ladder here would cost ~40 minutes per governance run and is X1's job.",
-    "Every ledger entry is a PROJECTION of the record it points at, re-derived on each run through the same can-fail derivation the verifier lint uses: a count that moves in a record moves in the ledger without a hand edit, and a hand-typed entry is a loud drift failure (then repaired by the projection).",
+    "Every ledger entry is a PROJECTION of the record it points at, re-derived on each run through the same can-fail derivation the verifier lint uses. A record re-run at a different commit legitimately moves its entry: that is a stale projection, reported as `projection.healed` and repaired (not a drift failure). Drift is the decidable case — the record has NOT moved yet the ledger states something else — and it fails loudly.",
     "D-7 lane discipline is enforced over the ledger's declared paths and this milestone's own working tree; the co-agent lanes' history is untouched by design.",
   ],
 })
@@ -283,9 +300,12 @@ writeSealed(path.join(EVIDENCE_DIR, "G1.json"), buildEvidence())
 // would persist the inconsistency into the authority record itself.
 console.log("\nledger projection: every entry is the derivation of its record")
 const entryOf = (record: Record<string, unknown>) => ledgerEntryFrom(record, canFailProofs(record))
+// G1 and X1 own their own entries (measured by their own runs, written from their
+// own snapshots) — they are not projections of a record some OTHER gate re-runs.
+const SELF_OWNED = new Set(["G1", "X1"])
 const driftFindings: string[] = []
 for (const issue of ledger.issues) {
-  if (issue.code === "G1" || issue.status === "planned") continue
+  if (SELF_OWNED.has(issue.code) || issue.status === "planned") continue
   const file = issue.evidence?.evidenceFile
   const abs = file ? path.join(EVIDENCE_DIR, file) : ""
   if (!file || !existsSync(abs)) {
@@ -298,10 +318,17 @@ for (const issue of ledger.issues) {
     continue
   }
   const derived = entryOf(read.record)
+  if (projectionMoved(issue.evidence, derived)) healed.push(`${issue.code}: ${issue.evidence?.status ?? "?"} ${issue.evidence?.passed ?? 0} → ${derived.status} ${derived.passed}`)
   const drift = entryDrift(issue.evidence, derived)
+  // The ISSUE's status is a projection too: a record that went red must not
+  // leave the ledger declaring `verified` for it (nothing is closed by
+  // assertion — the status is the record's, not the ledger's opinion).
+  if (issue.status !== derived.status) drift.push(`issue.status: ledger=${issue.status} record=${derived.status}`)
   if (drift.length > 0) driftFindings.push(`${issue.code}: ${drift.join(", ")}`)
   issue.evidence = derived
+  issue.status = derived.status
 }
+for (const h of healed) console.log(`  stale projection healed: ${h}`)
 check("G1: every ledger entry is the derivation of the record it points at (no hand-typed counts)", driftFindings.length === 0, driftFindings.slice(0, 4).join(" | "))
 
 // --- The ledger's own entry: measured by this run, written from ONE snapshot -------
