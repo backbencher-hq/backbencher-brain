@@ -51,6 +51,9 @@ const LEDGER_PATH = path.join(EVIDENCE_DIR, "manifest.json")
 const INVENTORY = path.join(EVIDENCE_DIR, "KNOWN-GAPS.md")
 const SPOT_PACK = path.join(EVIDENCE_DIR, "SPOT-CHECK-PACK.md")
 const LADDER_RECORD = "validation/m53/results/R1.json"
+/** This gate, and the record it writes last — excluded from the inventory's
+ *  census so the generated artifact is stable across its own runs. */
+const SELF_GATE = "script/m61/verify-closure.ts"
 
 /** The lane's closure gates, re-audited at HEAD in this order. */
 const LANE_CLOSURES: Array<[string, string]> = [
@@ -150,8 +153,15 @@ function renderInventory(): string {
   lines.push("")
   lines.push("## The lint's census (wiring residue)")
   lines.push("")
+  // The census excludes THIS gate and its own record. X1.json is written at the
+  // END of the run that generates this file, so counting it would make the
+  // generated artifact change the instant its own generator finished — the
+  // self-reference this milestone bans everywhere else. The exclusion is stated
+  // in the output, never a silent subtraction.
   const report = lint(loadRegistry())
-  lines.push(`- gates: ${report.gateCount}; records: ${report.recordCount}; on-demand gates: ${report.onDemandCount}`)
+  const selfGates = report.gates.filter((g) => g.gate === SELF_GATE).length
+  const selfRecords = existsSync(path.join(EVIDENCE_DIR, "X1.json")) ? 1 : 0
+  lines.push(`- gates: ${report.gateCount - selfGates} (this gate's own row excluded); records: ${report.recordCount - selfRecords} (X1.json excluded); on-demand gates: ${report.onDemandCount}`)
   lines.push(`- declared non-gates: ${report.declaredNonGates.length}; declared artifact records: ${report.artifactRecords.length}`)
   for (const g of report.gates.filter((x) => x.tiers.includes("on-demand"))) lines.push(`  - on-demand: ${g.gate}`)
   lines.push("")
@@ -169,7 +179,8 @@ let passed = 0
 let mutantsCaught = 0
 let mutantsTotal = 0
 const failures: string[] = []
-const checksList: string[] = []function check(label: string, ok: boolean, detail?: string): void {
+const checksList: string[] = []
+function check(label: string, ok: boolean, detail?: string): void {
   checks++
   if (ok) passed++
   else failures.push(detail ? `${label} — ${detail}` : label)
