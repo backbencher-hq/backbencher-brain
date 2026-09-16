@@ -40,6 +40,7 @@ import {
   ladderFindings,
   ledgerEntryFrom,
   packFindings,
+  SELF_OWNED_CODES,
   validateLedger,
   type Ledger,
   type LadderDeps,
@@ -211,15 +212,20 @@ if (!ledgerRead.ok) {
   check("X1: the ledger reads through the trusted path", true)
   const plan = readFileSync(path.join(ROOT, "docs/m61/M61-MASTER-PLAN.md"), "utf8")
   const ledger = ledgerRead.record
-  const ledgerErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS)
+  const ledgerErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS, SELF_OWNED_CODES.filter((c) => c !== "G1"))
   check("X1: the ledger validates whole (structure, closure, D-7)", ledgerErrors.length === 0, ledgerErrors.slice(0, 5).join(" | "))
 
   // Every entry the ledger carries is the derivation of the record it points at —
   // the projection rule, re-checked here from DISK (G1 derives it on write; this
   // audit re-derives it independently, so a hand edit after G1's run is caught).
+  // X1's OWN entry is checked too — against the record the PREVIOUS run left, not
+  // this run's snapshot (which is written below). The closure rule exempts the
+  // auditor's entry (only its own run may judge that); the derivation rule must
+  // not be exempted with it, or a hand-typed X1 entry would ride into the ledger
+  // unexamined by anyone.
   const projectionDrift: string[] = []
   for (const issue of ledger.issues) {
-    if (issue.code === "X1" || issue.status === "planned") continue
+    if (issue.status === "planned") continue
     const file = issue.evidence?.evidenceFile
     const abs = file ? path.join(EVIDENCE_DIR, file) : ""
     if (!file || !existsSync(abs)) {
@@ -289,6 +295,22 @@ if (!ledgerRead.ok) {
     mutant("a hand-typed ledger entry passes the projection audit", entryDrift({ ...derived, passed: (derived.passed ?? 0) + 1 }, derived).length > 0)
   }
   {
+    // The auditor's own entry: exempt from the CLOSURE rule, never from the
+    // derivation rule. A hand-typed X1 count in the ledger must fail here.
+    const x1 = readEvidence<Record<string, unknown>>(path.join(EVIDENCE_DIR, "X1.json")).record ?? {}
+    const derived = ledgerEntryFrom(x1, canFailProofs(x1))
+    mutant("a hand-typed X1 ledger entry passes the projection audit", entryDrift({ ...derived, passed: (derived.passed ?? 0) + 1 }, derived).length > 0)
+    // ...and the closure exemption stays narrow: a hollow projected entry is still
+    // caught while the auditor's own entry is exempted.
+    const leaked = clone(ledger)
+    const v3 = leaked.issues.find((i) => i.code === "V3")!
+    v3.evidence = { ...v3.evidence, failed: 4, realFailed: 4 }
+    mutant(
+      "the self-owned exemption leaks to a projected entry",
+      validateLedger(leaked, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS, SELF_OWNED_CODES.filter((c) => c !== "G1")).some((e) => e.startsWith("hollow-verified:V3")),
+    )
+  }
+  {
     const red = { status: "verified", gates: [{ name: "a", ok: true }, { name: "b", ok: false }], mutantsCaught: 1, currentCommit: HEAD }
     mutant("a ladder with a red gate passes the lane audit", ladderFindings(red, LADDER_DEPS).length > 0)
     const noProof = { status: "verified", gates: [{ name: "a", ok: true }], currentCommit: HEAD }
@@ -340,7 +362,7 @@ if (!ledgerRead.ok) {
   const x1 = ledger.issues.find((i) => i.code === "X1")!
   Object.assign(x1, { status: staged.status, evidence: ledgerEntryFrom(staged as unknown as Record<string, unknown>, canFailProofs(staged as unknown as Record<string, unknown>)) })
   ledger.status = ledger.issues.every((i) => i.status === "verified") ? "closed" : "open"
-  const finalErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS)
+  const finalErrors = validateLedger(ledger, plan, EXPECTED_CODES, EXPECTED_ISSUE_NUMBERS, SELF_OWNED_CODES.filter((c) => c !== "G1"))
   check("X1: the ledger validates WHOLE with this run's own measured X1 entry", finalErrors.length === 0, finalErrors.slice(0, 5).join(" | "))
   const final = buildEvidence(HEAD)
   Object.assign(x1, { status: final.status, evidence: ledgerEntryFrom(final as unknown as Record<string, unknown>, canFailProofs(final as unknown as Record<string, unknown>)) })

@@ -182,7 +182,24 @@ export function isClosable(issue: LedgerIssue): boolean {
   return Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile && (e.passed ?? 0) > 0 && realFailed === 0 && canFail)
 }
 
-export function validateLedger(l: Partial<Ledger>, planText: string, expectedCodes: string[], expectedNumbers: number[]): string[] {
+/** Entries that no SIBLING gate may judge the closure state of, because the
+ *  gate that audits the ledger is the gate that measures them: G1's entry is
+ *  measured by G1's own run, X1's by the closure gate's. Judging them from a
+ *  sibling would be the self-referential trap this milestone exists to name —
+ *  G1 cannot establish X1's freshness without running X1, and X1 runs last.
+ *
+ *  What the exemption does NOT skip: every structural rule (identity, tools,
+ *  artifacts, acceptance/closure requirements, order, D-7, status consistency)
+ *  still applies to the entry, and the ledger's `status` is still derived from
+ *  every entry. The CLOSURE rule for these codes is enforced where the entry is
+ *  written: the owning run substitutes its measured entry and validates the
+ *  whole ledger with it (verify-governance.ts / verify-closure.ts), and a red
+ *  run reports known-gap, which keeps the ledger `open` — nothing is closed by
+ *  assertion. The caller names the codes it is exempting (`selfOwned`), so the
+ *  narrowness of the exemption is visible at every call site. */
+export const SELF_OWNED_CODES = ["G1", "X1"]
+
+export function validateLedger(l: Partial<Ledger>, planText: string, expectedCodes: string[], expectedNumbers: number[], selfOwned: string[] = []): string[] {
   const errors: string[] = []
   if (l.schemaVersion !== 1) errors.push("schemaVersion")
   if (l.milestone !== "M61" || l.githubMilestone !== 61) errors.push("milestone")
@@ -206,7 +223,7 @@ export function validateLedger(l: Partial<Ledger>, planText: string, expectedCod
     if (!Array.isArray(issue.artifacts) || issue.artifacts.length === 0) errors.push(`artifacts:${issue.code}`)
     if (!Array.isArray(issue.acceptanceCriteria) || issue.acceptanceCriteria.length < 2) errors.push(`acceptance:${issue.code}`)
     if (!Array.isArray(issue.closureRequirements) || issue.closureRequirements.length < 2) errors.push(`closure:${issue.code}`)
-    if (issue.status !== "planned" && !isClosable(issue)) errors.push(`hollow-${issue.status}:${issue.code}`)
+    if (issue.status !== "planned" && !selfOwned.includes(issue.code) && !isClosable(issue)) errors.push(`hollow-${issue.status}:${issue.code}`)
     if (issue.status === "planned" && issue.evidence) errors.push(`planned-evidence:${issue.code}`)
     if (!["planned", "verified", "known-gap", "blocked"].includes(issue.status)) errors.push(`state:${issue.code}`)
   }
