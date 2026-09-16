@@ -12,15 +12,15 @@
   "negatives": 0,
   "currentHost": "linux",
   "focusLeg": "pending — column count + active editor are asserted in-editor by V1's rig (closure requirement)",
-  "currentCommit": "40ad56ba9b85fddd35226ffdf1832b1dc1f06283",
+  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-16T17:12:56.269Z",
+  "generatedAt": "2026-09-16T22:05:18.428Z",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T17:12:56.269Z",
-    "contentSha256": "55426099fdf77d2bb9abbb9af22b1929c3ba756bcd9717b07ee724eaeffd5931"
+    "sealedAt": "2026-09-16T22:05:18.428Z",
+    "contentSha256": "47ee50f53f15ca0a24057d9f6bab96f99a8684d1a10de7ef054db39dce104cbd"
   }
 }

@@ -100,9 +100,9 @@ function fixtureEdges(): { result: any; callers: any[] } {
   const c2 = mk("sym:c2", "c2")
   const c3 = mk("sym:c3", "c3")
   const callers = [
-    { from: c1.id, to: root.id, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "c1.ts", line: 1 }, depth: 0 }, // structural (derived, above floor)
-    { from: c2.id, to: root.id, relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { file: "c2.ts", line: 1 }, depth: 0, metadata: { evidenceClass: "inferred" } }, // stored inferred
-    { from: c3.id, to: root.id, relationshipType: "imports", confidence: 0.8, isCrossLanguage: false, callSite: { file: "c3.ts", line: 1 }, depth: 0 }, // import_based
+    { from: c1.id, to: root.id, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { kind: "call-site", file: "c1.ts", line: 1 }, depth: 0 }, // structural (derived, above floor)
+    { from: c2.id, to: root.id, relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { kind: "call-site", file: "c2.ts", line: 1 }, depth: 0, metadata: { evidenceClass: "inferred" } }, // stored inferred
+    { from: c3.id, to: root.id, relationshipType: "imports", confidence: 0.8, isCrossLanguage: false, callSite: { kind: "call-site", file: "c3.ts", line: 1 }, depth: 0 }, // import_based
   ]
   const result = {
     root,
@@ -249,7 +249,7 @@ async function main(): Promise<void> {
           if (!detected) {
             const dSub = makeDom()
             const fxSub = fixtureEdges()
-            fxSub.result.callers = [{ from: "sym:c1", to: "sym:root", relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { file: "c1.ts", line: 1 }, depth: 0 }]
+            fxSub.result.callers = [{ from: "sym:c1", to: "sym:root", relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { kind: "call-site", file: "c1.ts", line: 1 }, depth: 0 }]
             m.renderGraph(fxSub.result, dSub as never)
             detected = dSub.el.findAll("bb-badge-structural").length > 0 // sub-floor call wearing structural
           }

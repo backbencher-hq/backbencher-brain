@@ -78,7 +78,7 @@ export type SearchResults = SearchResult[] & {
 
 export interface CallGraphEntry {
   function: FunctionInfo
-  callSite: { file: string; line: number }
+  callSite: CallSiteAddress
   depth: number
   enrichment?: unknown
   _v?: string
@@ -155,6 +155,28 @@ export interface SemanticSearchResults {
 
 // Graph traversal contracts
 
+/** M62.A1 (issue #875): where an edge's source-side position comes from, and
+ *  what may be shown as a result. This replaces the old
+ *  `callSite: { file: string; line: number }`, which made "unknown"
+ *  unrepresentable and let `line: row.lineNumber || node.line` present the
+ *  calling symbol's declaration as the call site (see
+ *  `src/intelligence/graph/line-address.ts`, the single owner).
+ *
+ *  - `call-site`   the stored `brain_relationship.line_number` was REAL
+ *                  (`> 0`, 1-based). This is the only kind that may be rendered
+ *                  as a bare `file:line`.
+ *  - `declaration` the stored line was unknown; the calling symbol's own
+ *                  declaration is shown INSTEAD, always with `note`.
+ *  - `unknown`     no position is known and none may be shown. `line` is null
+ *                  — never 0, never clamped to 1. `note` says why.
+ *
+ *  `file` is the calling symbol's relative path, or "" when the store names
+ *  none (declared, never invented). */
+export type CallSiteAddress =
+  | { kind: "call-site"; file: string; line: number }
+  | { kind: "declaration"; file: string; line: number; note: string }
+  | { kind: "unknown"; file: string; line: null; note: string }
+
 export interface GraphNode {
   id: string                 // symbol id, or "ext:<name>" for unresolved externals
   name: string
@@ -175,7 +197,7 @@ export interface GraphEdge {
   confidence: number
   isCrossLanguage: boolean
   bridgeMechanism?: string
-  callSite: { file: string; line: number } // source-side location of the edge
+  callSite: CallSiteAddress // source-side location of the edge (M62.A1)
   depth: number
   /** brain_relationship row id. Every edge traces to its stored row
    *  (M26.W2 evidence requirement); an edge without one must never be

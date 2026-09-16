@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M62",
+  "githubMilestone": 62,
+  "title": "Address Truth — nothing shows a position it does not know",
+  "status": "open",
+  "authority": "docs/m62/M62-MASTER-PLAN.md (Issues / Issue groups)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
+  "prerequisite": "M55 and M61 completion bars met — re-audited by G1 on every run through the persisted closure records",
+  "laneDiscipline": "D-7: script/m62/*, script/m26/*, script/lib/*, validation/m62/*, docs/m62/* plus the IDE-lane sources this milestone owns (src/lsp/*, src/intelligence/*, src/mcp/tool-handlers.ts); co-agent lanes (M14/M37/M58/M59/M60) are read-only",
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 874,
+      "tool": "m62-governance",
+      "status": "verified",
+      "scope": "the M62 ledger; the bar re-audit that re-executes A1/A2/A3/D1 on every run; the chain wiring audit; the lane's prerequisites (M55 + M61 bars)",
+      "acceptanceCriteria": [
+        "gate exits 0 only on a fully verified ledger; a hollow closure, a removed issue, a mis-ordered group, a lane escape, a tampered record, an unwired gate and a hand-edited count each FAIL (proven by in-memory negatives)",
+        "this run's own ledger entry is written from measurements and validated whole, never asserted",
+        "the lane's own bars (M55 X1, M61 X1) are re-audited here on every run"
+      ],
+      "closureRequirements": [
+        "G1 evidence (verified, sealed) at the closing HEAD",
+        "the bar re-audit reports A1/A2/A3/D1 green in the same run",
+        "every M62 gate command present in npm run verify and verify:fast"
+      ],
+      "artifacts": [
+        "script/m62/verify-governance.ts",
+        "script/m62/governance_core.ts",
+        "validation/m62/results/manifest.json"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m62/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 10,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 8,
+        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45"
+      }
+    },
+    {
+      "code": "A1",
+      "githubIssue": 875,
+      "tool": "m62-address",
+      "status": "verified",
+      "scope": "the address owner: CallSiteAddress contract, pure derivation, one formatter, the 0-based projection",
+      "acceptanceCriteria": [
+        "> 0 -> call-site; 0 -> unknown (legacy); null/undefined -> unknown (not-stored); negative/fractional/NaN/Infinity -> unknown (unusable), and a substitute is produced only as a labeled declaration for the store's declared unknown states",
+        "a bare file:line is producible only for kind call-site; addressLine0 returns a line only for a call site and agrees with the position owner",
+        "the mutation suite catches every planted defect, including the present-vs-absent class the fixture exposed"
+      ],
+      "closureRequirements": [
+        "validation/m62/results/A1.json verified at the closing HEAD with realFailed 0 and declared mutant totals",
+        "the contract change is compile-clean with every consumer narrowed"
+      ],
+      "artifacts": [
+        "src/intelligence/graph/line-address.ts",
+        "src/intelligence/contracts.ts",
+        "script/m62/verify-address.ts",
+        "script/m62/a1-fixture.ts"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m62/verify-address.ts",
+        "evidenceFile": "A1.json",
+        "passed": 76,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 9,
+        "mutantsTotal": 9,
+        "negativeCases": 9,
+        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+        "recordSealedAt": "2026-09-16T22:11:01.623Z"
+      }
+    },
+    {
+      "code": "A2",
+      "githubIssue": 876,
+      "tool": "m62-consumers",
+      "status": "verified",
+      "scope": "consumer adoption: the engine, the hub payload, bb_graph, the webview mirror and the declared kinds; the permanence lint",
+      "acceptanceCriteria": [
+        "no surface shows an unlabeled substitute or a fabricated position; the engine has no positional fallback",
+        "the hub payload and the bb_graph payload serve the engine's addresses (differential); the webview declares the address kinds it shows",
+        "the permanence lint fails on a planted display-side read of the raw stored line"
+      ],
+      "closureRequirements": [
+        "validation/m62/results/A2.json verified at the closing HEAD with realFailed 0",
+        "the lane's IDE gates re-earned at the closing HEAD (m24/m26/m42/m44/m55 suites)"
+      ],
+      "artifacts": [
+        "src/intelligence/graph/graph-engine.ts",
+        "src/lsp/graph_usages.ts",
+        "src/mcp/tool-handlers.ts",
+        "script/m26/graph-core.ts",
+        "script/m62/verify-consumers.ts"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m62/verify-consumers.ts",
+        "evidenceFile": "A2.json",
+        "passed": 16,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
+        "negativeCases": 6,
+        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+        "recordSealedAt": "2026-09-16T22:11:02.892Z"
+      }
+    },
+    {
+      "code": "A3",
+      "githubIssue": 877,
+      "tool": "m62-arrival",
+      "status": "verified",
+      "scope": "the generated address doc and the M59 arrival hook (three store states, the no-code-change upgrade, multiplicity, declared coverage)",
+      "acceptanceCriteria": [
+        "docs/m62/LINE-ADDRESS.md is generated and byte-identical to a fresh generation",
+        "the arrival hook proves on a real index that a real line is an exact call site, both unknown stores are declared, the unusable store is never substituted, and a re-index upgrade needs no consumer change",
+        "per-language real-line coverage is declared as M59's lane, not claimed here"
+      ],
+      "closureRequirements": [
+        "validation/m62/results/A3.json and D1.json verified at the closing HEAD",
+        "the generated doc committed and byte-identical at the closing HEAD"
+      ],
+      "artifacts": [
+        "script/m62/verify-arrival.ts",
+        "script/m62/verify-docs.ts",
+        "docs/m62/LINE-ADDRESS.md"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m62/verify-arrival.ts",
+        "evidenceFile": "A3.json",
+        "passed": 26,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 2,
+        "mutantsTotal": 2,
+        "negativeCases": 2,
+        "recordCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
+        "recordSealedAt": "2026-09-16T22:11:03.971Z"
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 878,
+      "tool": "m62-closure",
+      "status": "planned",
+      "scope": "the lane closure audit: M62 plus the IDE lane re-audited at one HEAD, with generated packs",
+      "acceptanceCriteria": [
+        "the audit requires the m62 ledger closed, every M62 gate re-executed in the same run, and the lane bars fresh by relevance",
+        "5+ negatives: a stale lane pin, a missing record, a hollow m62 entry, a hand-edited pack and a lane escape each FAIL",
+        "the address invariants hold over every payload the audit reads"
+      ],
+      "closureRequirements": [
+        "validation/m62/results/X1.json verified at the closing HEAD",
+        "the GitHub issues 874-877 closed with pinned evidence in their comments"
+      ],
+      "artifacts": [
+        "script/m62/verify-closure.ts",
+        "validation/m62/results/SPOT-CHECK-PACK.md",
+        "validation/m62/results/KNOWN-GAPS.md"
+      ]
+    }
+  ]
+}

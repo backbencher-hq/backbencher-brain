@@ -101,7 +101,9 @@ type Edge = {
   relationshipType: string
   confidence: number
   isCrossLanguage: boolean
-  callSite: { file: string; line: number }
+  // M62.A2 (issue #876): the address shape the owner derives — a fixture may
+  // only construct an address the owner could have produced.
+  callSite: { kind: "call-site" | "declaration" | "unknown"; file: string; line: number | null; note?: string }
   depth: number
   rowId?: string
   metadata?: { evidenceClass?: string }
@@ -135,7 +137,7 @@ function fixture(overrides: { edgeCount?: number; tierOverride?: string; confide
       relationshipType: "calls",
       confidence: overrides.confidenceOverride ?? 0.95,
       isCrossLanguage: false,
-      callSite: { file: node.file, line: node.line },
+      callSite: { kind: "call-site", file: node.file, line: node.line },
       depth: 0,
     }
     if (overrides.tierOverride) e.metadata = { evidenceClass: overrides.tierOverride }
@@ -211,7 +213,7 @@ async function main(): Promise<void> {
   const dNodes = makeDom()
   const manyNodes = fixture({ edgeCount: 0 })
   for (let i = 0; i < 510; i++) manyNodes.nodes[`sym:x${i}`] = { id: `sym:x${i}`, name: `x${i}`, symbolType: "function", file: `f${i}.ts`, line: 1, lineEnd: 2, language: "typescript", isExternal: false }
-  manyNodes.callees = Array.from({ length: 510 }, (_, i) => ({ from: "sym:root", to: `sym:x${i}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "r.ts", line: 1 }, depth: 0 }))
+  manyNodes.callees = Array.from({ length: 510 }, (_, i) => ({ from: "sym:root", to: `sym:x${i}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { kind: "call-site", file: "r.ts", line: 1 }, depth: 0 }))
   manyNodes.summary = { totalCallers: 0, totalCallees: 510, truncated: false, crossLanguageEdges: 0 }
   const statsNodes = core.renderGraph(manyNodes as never, dNodes as never)
   check("P4: node budget enforced at 500", statsNodes.nodesRendered === 500 && statsNodes.nodesTruncated === true)
@@ -247,8 +249,8 @@ async function main(): Promise<void> {
   // Exactly the pinned budget: 1 root + 499 nodes = 500; 750 + 1250 = 2000
   // edges (multiple edges may share endpoints — budget is about render cost).
   for (let i = 0; i < 499; i++) fullFixture.nodes[`sym:n${i}`] = { id: `sym:n${i}`, name: `n${i}`, symbolType: "function", file: `f${i}.ts`, line: 1, lineEnd: 2, language: "typescript", isExternal: false }
-  fullFixture.callers = Array.from({ length: 750 }, (_, i) => ({ from: `sym:n${i % 499}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { file: "p.ts", line: 1 }, depth: 0 }))
-  fullFixture.callees = Array.from({ length: 1250 }, (_, i) => ({ from: "sym:root", to: `sym:n${i % 499}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "r.ts", line: 1 }, depth: 0 }))
+  fullFixture.callers = Array.from({ length: 750 }, (_, i) => ({ from: `sym:n${i % 499}`, to: "sym:root", relationshipType: "calls", confidence: 0.95, isCrossLanguage: false, callSite: { kind: "call-site", file: "p.ts", line: 1 }, depth: 0 }))
+  fullFixture.callees = Array.from({ length: 1250 }, (_, i) => ({ from: "sym:root", to: `sym:n${i % 499}`, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { kind: "call-site", file: "r.ts", line: 1 }, depth: 0 }))
   fullFixture.summary = { totalCallers: 750, totalCallees: 1250, truncated: false, crossLanguageEdges: 0 }
   const samples: number[] = []
   for (let i = 0; i < 30; i++) {
