@@ -977,11 +977,36 @@ export function deriveTypeScriptEdges(root: any): { label: string; from: string;
     if (TS_OBJECT_LEAF_METHODS.has(targetName)) return true
     return false
   }
+  // M59 (#861): a decorator invocation is METADATA on the decorated symbol, not
+  // a call — the python oracle already rules this way (PYD1) and the analyzer now
+  // does too (inDecoratorPosition in real-typescript-analyzer.ts). Without this
+  // mirror the analyzer's dropped edges would surface as fake MISSING rows
+  // (`@inject("db")` is a call_expression in the tree). Walks up to the enclosing
+  // statement boundary so a method's body is never treated as decorator position.
+  const inDecoratorPosition = (n: any): boolean => {
+    let p = n.parent
+    while (p) {
+      if (p.type === "decorator") return true
+      if (
+        p.type === "class_declaration" ||
+        p.type === "abstract_class_declaration" ||
+        p.type === "class" ||
+        p.type === "function_declaration" ||
+        p.type === "method_definition" ||
+        p.type === "statement_block" ||
+        p.type === "program"
+      ) {
+        return false
+      }
+      p = p.parent
+    }
+    return false
+  }
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
     const t = n.type
-    if (t === "call_expression") {
+    if (t === "call_expression" && !inDecoratorPosition(n)) {
       const callee = n.namedChild(0)
       // W2 mirror: computed member calls (cbs.doneEnter[trueSerialized](),
       // nodeTransforms[i](...)) are SKIPPED on the analyzer side (JS family

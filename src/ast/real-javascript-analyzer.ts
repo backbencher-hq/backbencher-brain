@@ -2092,12 +2092,41 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
+    // M59 (#861): a DECORATED declaration's node STARTS AT ITS DECORATOR in the
+    // pinned javascript grammar — measured:
+    //
+    //   @sealed
+    //   class Service {           class_declaration children
+    //                             [decorator@4, class@5, identifier@5, class_body@5]
+    //     @inject("db")
+    //     pool = 1                field_definition children
+    //                             [decorator@6, property_identifier@7, ...]
+    //     @sealed
+    //     method() {}             method_definition children
+    //                             [decorator@9, property_identifier@10, ...]
+    //
+    // (note this grammar nests decorators INSIDE the member; the typescript one
+    // puts a method decorator in class_body as a sibling), so the symbol's own
+    // line and every edge derived from it (`contains`, `exports`) named the line
+    // the DECORATOR is written on. The M59 contract is the line the named token
+    // is written on, and the family rule is the one scala fixed in
+    // scala/declaration-lines-825: leading annotations are excluded from the
+    // range. Advancing to the first non-decorator child keeps the range coherent
+    // — startLine/startColumn/startIndex move together, to the `class` keyword or
+    // the member's own name.
+    let startSource = node
+    {
+      let i = 0
+      while (i < node.childCount && node.child(i)?.type === "decorator") i++
+      const first = i < node.childCount ? node.child(i) : null
+      if (i > 0 && first) startSource = first
+    }
     return {
-      startLine: node.startPosition.row + 1,
-      startColumn: node.startPosition.column + 1,
+      startLine: startSource.startPosition.row + 1,
+      startColumn: startSource.startPosition.column + 1,
       endLine: node.endPosition.row + 1,
       endColumn: node.endPosition.column + 1,
-      startIndex: node.startIndex,
+      startIndex: startSource.startIndex,
       endIndex: node.endIndex,
     }
   }

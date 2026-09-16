@@ -857,3 +857,44 @@ enclosing CLASS where java/groovy/scala attribute it to the enclosing METHOD (id
 the class-level-property context). No consumer sees it (`anonymous_*` is filtered before
 the store), java's own comment says "ownerName = enclosing type", and the new fixtures
 deliberately do NOT pin it, so neither side is enshrined by a fixture.
+
+## 2026-09-16 — decorated declarations: the line belongs to the name (#861, web family)
+
+Filed from the #860 round (which pinned a decorator's OWN line on its `references` edge
+and refused to pin the two adjacent shapes). Measured over the pinned grammars: a
+decorated declaration's node STARTS AT ITS DECORATOR — typescript `export_statement`
+`[decorator@18, export@19, class_declaration@19]` and `public_field_definition`
+`[decorator@20, accessibility_modifier@21, ...]`; javascript nests it inside
+`class_declaration`, `field_definition` AND `method_definition` — so a symbol's own line,
+its `exports` line and its `contains` line named a line that contains `@sealed`, not the
+name. Method decorators were already right in typescript because that grammar puts them in
+`class_body` as SIBLINGS: the defect is about the node, not about decorators.
+
+The second contract on the same shape: a decorator is METADATA on the symbol it
+decorates, not a call by whoever lexically encloses it — the family rule (JVM annotations
+are metadata; the python oracle states it as PYD1 and skips the position). typescript was
+the exception: `@inject("db")` emitted `calls Service -> inject` AND
+`references Service -> inject` from the CLASS beside the correct `references pool ->
+inject`.
+
+**Fixed:** leading decorator children skipped in typescript's `nodeRange` and
+javascript's `nodeToRange` (the rule scala fixed in scala/declaration-lines-825), an
+`inDecoratorPosition` guard at the top of both typescript walkers, and the oracle mirror
+in `deriveTypeScriptEdges` so the dropped edges cannot surface as fake MISSING.
+
+**Evidence:** fixtures `typescript/decorator-declaration-lines-861` (ranges 39/41/44,
+exports 39, contains 41/44, member-scoped decorator references 38/40/43, and forbids for
+all four pre-fix answers) and `javascript/decorator-declaration-lines-861` (ranges
+33/35/38, contains 35/38); lanes typescript 67 · javascript 59 · vue 30 · svelte 27, 0
+failures, #860 unchanged · 3 new mutants, all CAUGHT · **set-wise sweep of 9,065 web
+corpus files in two trees: typescript/javascript/vue change surface exactly zero, svelte
+exactly ONE file** — the corpus's own decorator sample
+(`validator/samples/ts-unsupported-decorator/input.svelte`), where `Foo` moves from the
+decorator's line 2 to the class's line 3 and the fabricated `calls Foo -> foo` disappears.
+
+**Measured and NOT folded in (filed as #868):** javascript has no decorator-metadata
+layer — a FIELD decorator is never attached (`pool` carries `decorators=[]` where
+typescript carries `["inject"]`), no decorator `references` edge is emitted at all, and a
+class-body decorator stays a call by the enclosing class. The suppression is only safe
+after the member-scoped reference exists, so doing it here would have fixed one contract
+by breaking another.
