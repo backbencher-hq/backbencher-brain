@@ -216,6 +216,74 @@ function revertKotlinHeritageToDeclarationLine(r: any) {
   }
 }
 
+// M59 (#825), the SFC seam: the PRE-FIX state of a DELEGATED relationship.
+//
+// vue and svelte hand their script block to the js/ts analyzer, whose lines are
+// SCRIPT-relative, and the merge must add the block's line offset. This is not a
+// simulated approximation: the delegate records its own 0-based row in
+// `metadata.line` on the edges it emits, so `metadata.line + 1` IS the unshifted
+// value the wrapper used to push. Measured on the corpus before the fix: 562 of
+// 585 line-bearing vue edges and 19 of 58 svelte ones were INCONSISTENT.
+function revertDelegatedLineToScriptRelative(r: any) {
+  const rels: any[] = r.relationships ?? []
+  // The OFFSET the wrapper applied is recorded on the edge (`sfcLineOffset`), so
+  // subtracting it reproduces the pre-fix value exactly. A first version of this
+  // mutant keyed on the delegate's `metadata.line` and SURVIVED: the js analyzer
+  // sets that field only in some places, so the seam regression had no faithful
+  // simulation — which is why the wrapper now records the offset it applied.
+  const isDelegated = (x: any) => x?.metadata?.sfcDelegated === true && typeof x?.metadata?.sfcLineOffset === "number"
+  if (!rels.some(isDelegated)) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) =>
+      isDelegated(x) && typeof x.line_number === "number"
+        ? { ...x, line_number: x.line_number - x.metadata.sfcLineOffset }
+        : x,
+    ),
+  }
+}
+
+// M59 (#825), the 0-based/1-based class: every line shifted down by one, which is
+// what emitting `startPosition.row` instead of `row + 1` produces. This is the
+// classic off-by-one this contract is one keystroke away from, and it is the
+// mutation that proves the fixtures pin the ARITHMETIC, not just the presence of
+// a number (a fixture that only checked "has a line" would survive it).
+function shiftLineNumbersZeroBased(r: any) {
+  const rels: any[] = r.relationships ?? []
+  if (!rels.some((x) => typeof x?.line_number === "number")) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) =>
+      typeof x?.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x,
+    ),
+  }
+}
+
+// M59 (#825), the vue OPTIONS-API prop class: the PRE-FIX state EXACTLY. Every
+// prop/emit symbol was stamped with the `props: { … }` PAIR's range, so all of
+// them named one line instead of their own keys (measured on the corpus after the
+// seam was fixed: Account.vue claimed `user` at 17, the `props: {` line, while
+// `user` is written at 18). Replayed off the result's own symbol table: the pair's
+// line is the minimum line among the flagged symbols, which is where they all
+// pointed before.
+function revertPropLineToPropsPair(r: any) {
+  const props = (r.symbols ?? []).filter(
+    (s: any) => s?.metadata?.isProp === true || s?.metadata?.isEmit === true,
+  )
+  if (props.length === 0) return r
+  const pairLine = Math.min(...props.map((p: any) => p?.range?.startLine ?? Infinity))
+  if (!Number.isFinite(pairLine)) return r
+  const names = new Set(props.map((p: any) => p.name))
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const t = String(x?.type ?? x?.relationshipType ?? "")
+      if (t !== "contains" || !names.has(x?.target)) return x
+      return { ...x, line_number: pairLine }
+    }),
+  }
+}
+
 // M59 (#825), import half: the PRE-FIX import line EXACTLY. The edge's target is
 // the dotted module; the pre-fix line was that import statement's own start, so
 // an import whose last segment is written later (a renamed selector inside a
@@ -1098,6 +1166,62 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: xml's relationships go back to carrying NO line. xml had no fixture lane at all before this round, so nothing pinned its line contract even though it was one of only two analyzers that emitted one. Caught by xml/lines-825, which pins every element, every attribute, the default-namespace edge (whose target is the synthesised name `default`) and the prefixed-namespace edge.",
     transform: dropAllLineNumbers,
+  },
+  {
+    id: "typescript/line-zero-based",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: every line is emitted 0-based (startPosition.row instead of row + 1), the off-by-one this contract is one keystroke away from. Caught by typescript/callsite-lines-825, which pins the import specifiers at 17/18, the base name at 27 and the chain's callee at 33 — all shifted down by one here. It is the mutation that proves the fixture pins the ARITHMETIC and not merely the presence of a number.",
+    transform: shiftLineNumbersZeroBased,
+  },
+  {
+    id: "typescript/lines-dropped",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: typescript's relationships go back to carrying NO line — the exact pre-fix state (measured: 0 of 2,074 relationships on the round's pinned 40-file sample). Caught by typescript/callsite-lines-825, which pins 17 relationships across imports/extends/contains/calls/instantiates/references/uses/exports.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "javascript/lines-dropped",
+    language: "javascript",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: javascript's relationships go back to carrying NO line — the exact pre-fix state (measured: 0 of 5,818 on the round's pinned sample, the largest silent lane in the product, and the one vue and svelte delegate to). Caught by javascript/callsite-lines-825.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "vue/lines-dropped",
+    language: "vue",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: vue's relationships go back to carrying NO line — the exact pre-fix state (measured: 0 of 3,940 on the round's pinned sample). Caught by vue/template-lines-825, whose forbid entries are the measured HEAD values for every one of its 16 relationships.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "svelte/lines-dropped",
+    language: "svelte",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: svelte's relationships go back to carrying NO line — the exact pre-fix state (measured: 0 of 526 on the round's pinned sample). Caught by svelte/template-lines-825.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "vue/delegated-line-not-shifted",
+    language: "vue",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a DELEGATED relationship keeps the js/ts analyzer's script-relative line, i.e. the SFC merge does not add the block offset — the exact pre-fix behaviour, measured on the corpus as 562 of 585 line-bearing vue edges INCONSISTENT. Caught by vue/template-lines-825, which pins the imported component at file line 25.",
+    transform: revertDelegatedLineToScriptRelative,
+  },
+  {
+    id: "svelte/delegated-line-not-shifted",
+    language: "svelte",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: same seam regression for svelte (measured pre-fix: 19 of 58 line-bearing edges INCONSISTENT). Caught by svelte/template-lines-825, which pins the imported component at file line 12 and the script-side read at 18.",
+    transform: revertDelegatedLineToScriptRelative,
+  },
+  {
+    id: "vue/prop-line-from-props-pair",
+    language: "vue",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: every prop/emit containment edge goes back to the `props: { … }` PAIR's line — the exact pre-fix state, measured on the corpus (Account.vue:17) and on the fixture itself at HEAD (both props stamped 30 while written on 31/32). Caught by vue/template-lines-825, which forbids 30 for `label` and `count`.",
+    transform: revertPropLineToPropsPair,
   },
   {
     id: "groovy/parenless-continuation-call",

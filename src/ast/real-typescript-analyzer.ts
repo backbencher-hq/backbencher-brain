@@ -706,6 +706,58 @@ function extractImportClause(importNode: Node): ImportClauseInfo {
   return result
 }
 
+/**
+ * M59 (#825): the same items as `extractImportItems`, each paired with the node
+ * that SPELLS the imported name — for `{ A as B }` that is `A`, because the edge
+ * target is `module:A` and the line must be where the target is written. This is
+ * scala mechanism 5 transferred: an import whose named segment sits on a later
+ * line than its `import` keyword must not take the statement's first line, and a
+ * string-only item list cannot say which line that is. Kept beside
+ * `extractImportItems` so the two cannot drift (one is that walk's names, the
+ * other its names plus their nodes).
+ */
+function extractImportItemsWithNodes(importNode: Node): Array<{ item: string; node: Node }> {
+  const out: Array<{ item: string; node: Node }> = []
+  for (let i = 0; i < importNode.namedChildCount; i++) {
+    const child = importNode.namedChild(i)
+    if (!child) continue
+    if (child.type === "import_clause") {
+      for (let j = 0; j < child.namedChildCount; j++) {
+        const c = child.namedChild(j)
+        if (!c) continue
+        if (c.type === "identifier") {
+          out.push({ item: c.text, node: c })
+        } else if (c.type === "namespace_import") {
+          const asName = c.childForFieldName("name") ?? c.namedChild(0)
+          if (asName) out.push({ item: `* as ${asName.text}`, node: asName })
+        } else if (c.type === "named_imports") {
+          for (let k = 0; k < c.namedChildCount; k++) {
+            const spec = c.namedChild(k)
+            if (!spec || spec.type !== "import_specifier") continue
+            const name = spec.childForFieldName("name")
+            const alias = spec.childForFieldName("alias")
+            if (name) out.push({ item: alias ? `${name.text} as ${alias.text}` : name.text, node: name })
+          }
+        }
+      }
+    } else if (child.type === "identifier") {
+      out.push({ item: child.text, node: child })
+    } else if (child.type === "namespace_import") {
+      const asName = child.childForFieldName("name") ?? child.namedChild(0)
+      if (asName) out.push({ item: `* as ${asName.text}`, node: asName })
+    } else if (child.type === "named_imports") {
+      for (let k = 0; k < child.namedChildCount; k++) {
+        const spec = child.namedChild(k)
+        if (!spec || spec.type !== "import_specifier") continue
+        const name = spec.childForFieldName("name")
+        const alias = spec.childForFieldName("alias")
+        if (name) out.push({ item: alias ? `${name.text} as ${alias.text}` : name.text, node: name })
+      }
+    }
+  }
+  return out
+}
+
 function extractImportItems(importNode: Node): string[] {
   const clause = extractImportClause(importNode)
   const items: string[] = []
@@ -1924,6 +1976,7 @@ class TypeScriptAnalysisRunner {
         isDefault: exportStatus.isDefault,
         isDeclare: modifiers.isDeclare,
         extends: heritage.extends,
+        extendsLines: heritage.extendsLines,
         implements: heritage.implements,
       },
     }
@@ -2031,7 +2084,8 @@ class TypeScriptAnalysisRunner {
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
-        extends: extendsClause,
+        extends: extendsClause?.names,
+        extendsLines: extendsClause?.lines,
       },
     }
 
@@ -2755,6 +2809,26 @@ class TypeScriptAnalysisRunner {
       }
     }
 
+    /**
+     * M59 (#825): the same walk as `collectTypeNames`, returning each name WITH
+     * the node that spells it. A type expression's start is NOT the line of the
+     * types inside it — a multi-line generic argument list opens on the base name
+     * and puts its arguments on later lines (scala mechanism 2, measured on real
+     * source), so the line has to come from the name node and the string-only walk
+     * cannot supply it. Kept beside `collectTypeNames` so the two cannot drift: one
+     * is that walk's names, the other its names plus their nodes.
+     */
+    const collectTypeNameNodes = (n: Node, out: Array<{ name: string; node: Node }>): void => {
+      if (n.type === "type_identifier" || n.type === "nested_type_identifier") {
+        if (!PRIMITIVES.has(n.text) && !out.some((o) => o.name === n.text)) out.push({ name: n.text, node: n })
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNameNodes(c, out)
+      }
+    }
+
     const resolveSource = (start: Node): string => {
       let p: Node | null = start.parent
       while (p) {
@@ -2780,13 +2854,13 @@ class TypeScriptAnalysisRunner {
         if (!r) continue
         // Expression-position targets (instanceof) lex as plain identifiers;
         // type positions use type_identifier — accept both here.
-        const names: string[] = []
+        const pairs: Array<{ name: string; node: Node }> = []
         if (r.type === "identifier") {
-          if (!PRIMITIVES.has(r.text)) names.push(r.text)
+          if (!PRIMITIVES.has(r.text)) pairs.push({ name: r.text, node: r })
         } else {
-          collectTypeNames(r, names)
+          collectTypeNameNodes(r, pairs)
         }
-        for (const t of names) {
+        for (const { name: t, node: tNode } of pairs) {
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -2795,6 +2869,7 @@ class TypeScriptAnalysisRunner {
             target: t,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
+            ...this.lineField(tNode),
             metadata: { relationshipType: relType },
           })
         }
@@ -3367,6 +3442,30 @@ class TypeScriptAnalysisRunner {
     this.extractExportRelationships(exports, relationships, symbols)
   }
 
+  /**
+   * M59 (#825): the `line_number` field for a relationship, taken from the node
+   * that CARRIES THE NAME the edge is about.
+   *
+   * typescript and javascript start where java did: **0 lines on every
+   * relationship** — measured by the M59 oracle at 40 files/language before this
+   * round: typescript 0 of 444, javascript 0 of 5,818, vue 0 of 3,940, svelte 0 of
+   * 526, and the oracle could not even run its mutation self-test because no
+   * line-bearing relationship existed. The contract is inherited from scala's
+   * corrected reference, not re-invented, and it is one sentence: **the line
+   * belongs to the name, never to the construct that contains it.** A
+   * `call_expression` starts at its RECEIVER (scala mechanism 1), a type
+   * expression's start is not the line of the types inside it (mechanism 2), and
+   * a definition node can start at its decorators. So callers pass the NAME node,
+   * and this returns nothing at all when there is none — never `0`, because
+   * #820/#821 made `0` mean "unknown" to every reader and unknown must be absent.
+   *
+   * `fallback` exists only for sites whose construct has no name-bearing child.
+   */
+  private lineField(nameNode: Node | null | undefined, fallback?: Node | null): { line_number?: number } {
+    const n = nameNode ?? fallback
+    return n ? { line_number: n.startPosition.row + 1 } : {}
+  }
+
   private extractInheritanceRelationships(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
@@ -3374,13 +3473,19 @@ class TypeScriptAnalysisRunner {
     for (const symbol of symbols) {
       if (symbol.kind === ASTEngine.SymbolKind.Class || symbol.kind === ASTEngine.SymbolKind.Interface) {
         const extendsTypes = symbol.metadata?.extends as string[] | undefined
+        // M59 (#825): the base NAME's line, parallel to the name list (absent
+        // when the heritage collector could not locate a node for it — unknown
+        // must be absent, never `0`).
+        const extendsLines = symbol.metadata?.extendsLines as number[] | undefined
         if (extendsTypes) {
-          for (const baseType of extendsTypes) {
+          for (let i = 0; i < extendsTypes.length; i++) {
+            const baseType = extendsTypes[i]
             relationships.push({
               source: symbol.name,
               target: baseType,
               type: ASTEngine.RelationshipType.Extends,
               confidence: 1.0,
+              ...(extendsLines?.[i] ? { line_number: extendsLines[i] } : {}),
               metadata: {
                 sourceKind: symbol.kind,
               },
@@ -3500,6 +3605,9 @@ class TypeScriptAnalysisRunner {
               target: targetName,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
+              // M59 (#825): the callee LEAF — for `a.b.c()` the property node, so
+              // a chain's call does not take the chain's opening line.
+              ...this.lineField(callee.type === "member_expression" ? (callee.childForFieldName("property") ?? callee) : callee),
               metadata: {
                 calleeExpression: callee.text,
                 line: n.startPosition.row,
@@ -3521,6 +3629,7 @@ class TypeScriptAnalysisRunner {
                   target: identifier.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.9,
+                  ...this.lineField(identifier),
                   metadata: {
                     jsxElement: identifier.text,
                     line: n.startPosition.row,
@@ -3633,6 +3742,7 @@ class TypeScriptAnalysisRunner {
                   target: name,
                   type: ASTEngine.RelationshipType.Instantiates,
                   confidence: 0.95,
+                  ...this.lineField(id),
                   metadata: {
                     isJsxComponent: true,
                     jsxTag: tag,
@@ -3710,6 +3820,7 @@ class TypeScriptAnalysisRunner {
               target: name,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.8,
+              ...this.lineField(n),
               metadata: {
                 line: n.startPosition.row,
               },
@@ -3733,6 +3844,11 @@ class TypeScriptAnalysisRunner {
               target: typeName,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              // A `generic_type` starts at its base name, but the USED name here
+              // is that base too — take the base node so a multi-line type
+              // argument list cannot pull the line onto a bracket (scala
+              // mechanism 2).
+              ...this.lineField(n.type === "generic_type" ? (n.namedChild(0) ?? n) : n),
               metadata: {
                 isTypeReference: true,
                 line: n.startPosition.row,
@@ -3788,6 +3904,7 @@ class TypeScriptAnalysisRunner {
                   target: c.text,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.85,
+                  ...this.lineField(c),
                   metadata: {
                     isTemplateInterpolation: true,
                     line: c.startPosition.row,
@@ -3849,6 +3966,7 @@ class TypeScriptAnalysisRunner {
                   target: name,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.85,
+                  ...this.lineField(prop),
                   metadata: {
                     isFieldAccess: true,
                     line: prop.startPosition.row,
@@ -3914,6 +4032,9 @@ class TypeScriptAnalysisRunner {
             target: className,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 1.0,
+            // The CLASS NAME node: for `new ns.Thing()` that is the property
+            // leaf, since the target is the leaf (TSD3 leaf identity).
+            ...this.lineField(constructor.type === "member_expression" ? (constructor.childForFieldName("property") ?? constructor) : constructor),
             metadata: {
               line: n.startPosition.row,
             } as any,
@@ -3974,6 +4095,9 @@ class TypeScriptAnalysisRunner {
               target: `${baseClass}.${symbol.name}`,
               type: ASTEngine.RelationshipType.Overrides,
               confidence: 0.95,
+              // The OVERRIDING declaration's own range (M59 #825): the edge names
+              // the member, so it takes the member's line, not the class's.
+              ...(symbol.range?.startLine ? { line_number: symbol.range.startLine } : {}),
               metadata: {
                 baseClass,
               },
@@ -4033,6 +4157,9 @@ class TypeScriptAnalysisRunner {
               target: `${base}.${m.name}`,
               type: ASTEngine.RelationshipType.Overrides,
               confidence: 0.95,
+              // The redeclaring member's own line (M59 #825), from its symbol
+              // range rather than the interface's.
+              ...(m.range?.startLine ? { line_number: m.range.startLine } : {}),
               metadata: {
                 baseInterface: base,
               },
@@ -4168,10 +4295,10 @@ class TypeScriptAnalysisRunner {
       if (!sourceNode) return
 
       const modulePath = stringContent(sourceNode)
-      const items = extractImportItems(node)
+      const items = extractImportItemsWithNodes(node)
 
       // Create import relationships (leaf identity: source is the module leaf)
-      for (const item of items) {
+      for (const { item, node: itemNode } of items) {
         const itemName = item.split(" as ")[0].replace("* as ", "")
 
         relationships.push({
@@ -4179,6 +4306,8 @@ class TypeScriptAnalysisRunner {
           target: `${modulePath}:${itemName}`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
+          // M59 (#825): the imported NAME's own line, not the `import` line.
+          ...this.lineField(itemNode),
           metadata: {
             module: modulePath,
             alias: item.indexOf(" as ") !== -1 ? item.split(" as ")[1] : undefined,
@@ -4204,6 +4333,8 @@ class TypeScriptAnalysisRunner {
             target: `${modulePath}:*`,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
+            // M59 (#825): a dynamic import's target is named by its path argument.
+            ...this.lineField(pathArg),
             metadata: {
               module: modulePath,
               isDynamic: true,
@@ -4233,6 +4364,10 @@ class TypeScriptAnalysisRunner {
         target: item.name,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
+        // M59 (#825): the exported NAME's line, from the export's own range when
+        // the collector recorded one. Absent rather than invented when it did not
+        // — an absent line reads as "unknown" and a guessed one reads as true.
+        ...(item.range?.startLine ? { line_number: item.range.startLine } : {}),
         metadata: {
           isDefault: item.isDefault,
           kind: item.type,
@@ -4264,6 +4399,9 @@ class TypeScriptAnalysisRunner {
             target: symbol.name,
             type: ASTEngine.RelationshipType.Contains,
             confidence: 1.0,
+            // M59 (#825): the MEMBER's declaration line — the edge names the
+            // member, so it takes the member's range, not the container's.
+            ...(symbol.range?.startLine ? { line_number: symbol.range.startLine } : {}),
             metadata: {},
           })
         }
@@ -4515,8 +4653,8 @@ class TypeScriptAnalysisRunner {
     return this.typeInference.inferFunctionReturnType(node)
   }
 
-  private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[] } {
-    const result: { extends?: string[]; implements?: string[] } = {}
+  private extractClassHeritage(node: Node): { extends?: string[]; implements?: string[]; extendsLines?: number[] } {
+    const result: { extends?: string[]; implements?: string[]; extendsLines?: number[] } = {}
 
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -4529,6 +4667,7 @@ class TypeScriptAnalysisRunner {
 
           if (heritageClause.type === "extends_clause") {
             result.extends = []
+            result.extendsLines = []
             for (let k = 0; k < heritageClause.namedChildCount; k++) {
               const type = heritageClause.namedChild(k)
               if (!type) continue
@@ -4538,6 +4677,10 @@ class TypeScriptAnalysisRunner {
               // argument nodes; take the base type text only.
               if (type.type === "type_arguments") continue
               result.extends.push(type.text)
+              // M59 (#825): the base TYPE NAME's line, kept parallel to the
+              // name list. The subclass's own declaration line is NOT it —
+              // `class A extends\n  B {}` writes B on the next line.
+              result.extendsLines.push(type.startPosition.row + 1)
             }
           } else if (heritageClause.type === "implements_clause") {
             result.implements = []
@@ -4554,7 +4697,7 @@ class TypeScriptAnalysisRunner {
     return result
   }
 
-  private extractInterfaceExtends(node: Node): string[] | undefined {
+  private extractInterfaceExtends(node: Node): { names: string[]; lines: number[] } | undefined {
     // Interface heritage parses as extends_type_clause — NOT extends_clause
     // (that is the CLASS heritage node) and interface_declaration has no
     // "extends" FIELD. The old lookup missed both and returned undefined,
@@ -4567,6 +4710,7 @@ class TypeScriptAnalysisRunner {
     if (!clause) return undefined
 
     const types: string[] = []
+    const lines: number[] = []
     for (let i = 0; i < clause.namedChildCount; i++) {
       const type = clause.namedChild(i)
       if (!type || type.type === "type_arguments") continue
@@ -4580,9 +4724,11 @@ class TypeScriptAnalysisRunner {
       if (lt !== -1) t = t.slice(0, lt).trim()
       const dot = t.lastIndexOf(".")
       types.push(dot !== -1 ? t.slice(dot + 1) : t)
+      // M59 (#825): parallel line list — the base type node's own line.
+      lines.push(type.startPosition.row + 1)
     }
 
-    return types.length > 0 ? types : undefined
+    return types.length > 0 ? { names: types, lines } : undefined
   }
 
   private extractComments(node: Node): string[] | undefined {

@@ -25,7 +25,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
-import { computeFamilyClosure, FAMILY_LANGS } from "./family-closure"
+import { computeFamilyClosure, loadFamilies } from "./family-closure"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/G1.json")
@@ -123,7 +123,7 @@ function foldRecordDetail(): string {
   if (!existsSync(p)) return "validation/m49/ledger.json missing"
   let fold: Record<string, any> = {}
   try { fold = JSON.parse(readFileSync(p, "utf8")).foldRecords ?? {} } catch { return "validation/m49/ledger.json unreadable" }
-  const families = Object.keys(FAMILY_LANGS)
+  const families = Object.keys(loadFamilies(ROOT))
   const landed = families.filter((f) => fold[f] && typeof fold[f].summary === "string" && fold[f].summary.trim().length >= 20)
   const missing = families.filter((f) => !landed.includes(f))
   return missing.length === 0
