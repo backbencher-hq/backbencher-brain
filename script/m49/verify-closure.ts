@@ -5,9 +5,14 @@
 // or carries an explicit open-claims marker that X1 lists honestly.
 //
 // Run: bun script/m49/verify-closure.ts
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import path from "node:path"
+// The folder rule and the dirty-analyzer rule have ONE definition, shared with
+// M60's family-closure computation (script/m60/family-closure.ts). This gate
+// used to carry its own copies; two definitions of "a family is closed" is how
+// the wave-code vocabulary drifted out of its gate twice.
+import { reviewFolderState, dirtyAnalyzers as dirtyAnalyzerMap } from "../m60/family-closure"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const REVIEWS = path.join(ROOT, "reviews")
@@ -26,22 +31,8 @@ function runGate(script: string): boolean {
 
 // Map a review folder to its analyzer file and report the ones with uncommitted
 // changes. Family/process folders (web-family, systems-family, convergence) have
-// no analyzer of their own and are skipped.
-function dirtyAnalyzers(): Record<string, string> {
-  const out: Record<string, string> = {}
-  const r = spawnSync("git", ["status", "--porcelain", "--", "src/ast"], { cwd: ROOT, encoding: "utf8" })
-  if (r.status !== 0) return out
-  const dirtyFiles = String(r.stdout).split("\n").map((l) => l.slice(3).trim()).filter(Boolean)
-  let folders: string[] = []
-  try {
-    folders = readdirSync(REVIEWS).filter((f) => statSync(path.join(REVIEWS, f)).isDirectory())
-  } catch { /* reviews dir absent */ }
-  for (const lang of folders) {
-    const analyzer = `src/ast/real-${lang}-analyzer.ts`
-    if (existsSync(path.join(ROOT, analyzer)) && dirtyFiles.includes(analyzer)) out[lang] = "analyzer"
-  }
-  return out
-}
+// no analyzer of their own and are skipped. Defined in script/m60/family-closure.ts.
+const dirtyAnalyzers = () => dirtyAnalyzerMap(ROOT, REVIEWS)
 
 function main() {
   // Ledger must be governance-clean.
@@ -66,25 +57,10 @@ function main() {
   // or CLOSED (with a commit hash — R1 enforces that). Open folders REFUSE
   // closure; X1 flips to verified in the ledger only when this gate passes.
   //
-  // M49 W3 hardening (the marker is UPPERCASE and word-bounded): the old
-  // case-insensitive substring test meant ordinary prose flipped a folder shut.
-  // Observed twice in one session — a probe filename containing "closeout" in
-  // reviews/svelte/ and the word "unresolved" in reviews/typescript/ both
-  // counted as closure claims. Uppercase is the established convention in every
-  // real marker (see the folders below), so requiring it removes the trap
-  // without weakening any legitimate claim.
-  const openFolders: string[] = []
-  const closedFolders: string[] = []
-  for (const lang of readdirSync(REVIEWS).filter((f) => {
-    const p = path.join(REVIEWS, f)
-    return statSync(p).isDirectory()
-  })) {
-    const dir = path.join(REVIEWS, lang)
-    const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
-    const resolved = files.some((f) => /\b(?:RESOLVED|RESOLUTION|CLOSED)\b/.test(readFileSync(path.join(dir, f), "utf8")))
-    if (resolved) closedFolders.push(lang)
-    else openFolders.push(lang)
-  }
+  // The marker rule (UPPERCASE, word-bounded — M49 W3 hardening) lives in
+  // script/m60/family-closure.ts, together with the family split that reads it
+  // at family scope. One definition, two gates.
+  const { closed: closedFolders, open: openFolders } = reviewFolderState(REVIEWS)
   check("closure: no open review folders", openFolders.length === 0,
     openFolders.length ? `open: ${openFolders.join(", ")} — process the waves or mark resolutions` : "")
 

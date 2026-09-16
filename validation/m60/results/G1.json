@@ -1,13 +1,13 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-15T17:03:07.731Z",
-  "atCommit": "42d4a50a827ebc2c09c256fce7bfd01b8f03745e",
+  "at": "2026-09-16T03:11:08.039Z",
+  "atCommit": "181c869e6066369f745f970fb56274697fc6d778",
   "passed": 22,
   "failed": 1,
   "negatives": 6,
   "failures": [
-    "R4 live: M49 ledger carries the M60 fold record — M49 ledger carries no M60 fold record (the fold happens at X1 close)"
+    "R4 live: M49 ledger carries the M60 fold record — M49 ledger carries no M60 fold row for web (the fold happens at that family's close)"
   ],
   "verdict": "FAIL",
   "machinery": {
