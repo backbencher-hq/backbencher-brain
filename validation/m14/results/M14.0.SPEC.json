@@ -1271,14 +1271,14 @@
       "status": "pass"
     },
     {
-      "description": "php: 11 ruled, 14 pending owner",
+      "description": "php: 11 ruled, 18 pending owner",
       "id": "design-decisions-tracked",
       "language": "php",
       "status": "pass"
     },
     {
       "description": "every named node type classified (php)",
-      "detail": "177 types, 65 handled, 92 silent, 2 gaps, 25 decisions",
+      "detail": "177 types, 65 handled, 92 silent, 2 gaps, 29 decisions",
       "id": "section-a-structural",
       "language": "php",
       "status": "pass"
@@ -1556,8 +1556,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "0c49a67bb9a86ac940f54e475392665837163970",
-  "committedAt": "2026-09-16T02:25:48+02:00",
+  "commit": "908cd194c17f49cff67ff62649c2d7345ec3e6e8",
+  "committedAt": "2026-09-16T19:08:29+02:00",
   "data": {
     "languages": {
       "c": {
@@ -2305,7 +2305,11 @@
           "PHP-B",
           "PHP-C",
           "PHP-O1",
-          "PHP-O2"
+          "PHP-O2",
+          "PHP2-A",
+          "PHP2-B",
+          "PHP2-C",
+          "PHP2-D"
         ],
         "ruledDecisions": [
           "PHPD1",
@@ -2322,7 +2326,7 @@
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "177 types, 65 handled, 92 silent, 2 gaps, 25 decisions",
+            "detail": "177 types, 65 handled, 92 silent, 2 gaps, 29 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
@@ -2961,8 +2965,8 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-09-16T00:52:31.917Z",
-  "regeneratedAtCommit": "0c49a67bb9a86ac940f54e475392665837163970",
+  "regeneratedAt": "2026-09-16T17:31:08.086Z",
+  "regeneratedAtCommit": "908cd194c17f49cff67ff62649c2d7345ec3e6e8",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
