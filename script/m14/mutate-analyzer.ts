@@ -1182,6 +1182,20 @@ const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "typescript/implements-lines-dropped",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description: "M49 W22 regression: implements edges go back to carrying NO line while every other kind stays stamped — the exact pre-fix state of the ONE relationship kind the M59 web round left uncovered (measured: 6 edges unstamped across the four TS corpora + 1 delegated from svelte; the 40-file oracle sample drew none, so the milestone instrument read 0 noLine). Caught by typescript/class-implements-interface-overrides, whose implements entries pin 33/47/52/57 and whose forbid names the lineless emission.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => x.type === "implements" ? { ...x, line_number: undefined } : x) }),
+  },
+  {
+    id: "typescript/iface-implements-override-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M49 W22 regression: the class-implements-interface arm is deleted, so a class supplying an in-file interface's members emits no overrides again — the exact pre-fix state (vue-core ReactiveEffect.notify -> Subscriber.notify permanently MISSING). Caught by typescript/class-implements-interface-overrides, which pins BOTH gains (the direct Effect.notify pair and the transitive Derived.notify pair through Base extends Subscriber); the abstention forbid entries keep a naive name-only reimplementation from passing the same fixture.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && (x.metadata ?? {}).implementedInterface)) }),
+  },
+  {
     id: "javascript/lines-dropped",
     language: "javascript",
     defectClass: "line-attribution",

@@ -20,7 +20,7 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "62/62 fixtures pass",
+      "detail": "63/63 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
@@ -134,8 +134,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "1eef668cfcbbf85a3da2bbb55694df71c32c94d8",
-  "committedAt": "2026-09-16T05:16:20+02:00",
+  "commit": "b483de06e5b1110a57613c5361b9d784b5cf681d",
+  "committedAt": "2026-09-16T10:52:56+02:00",
   "data": {
     "details": [
       {
@@ -740,6 +740,11 @@
       },
       {
         "fixture": "typescript/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/class-implements-interface-overrides",
         "ok": true,
         "problems": []
       },
@@ -2414,7 +2419,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 62
+        "pass": 63
       },
       "vue": {
         "fail": 0,
@@ -2443,9 +2448,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-16T04:17:16.614Z",
-  "regeneratedAtCommit": "1eef668cfcbbf85a3da2bbb55694df71c32c94d8",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-09-16T09:10:33.074Z",
+  "regeneratedAtCommit": "b483de06e5b1110a57613c5361b9d784b5cf681d",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }
