@@ -49,11 +49,13 @@ export function ledgerEntryFrom(
     passed?: unknown
     failed?: unknown
     realFailed?: unknown
+    currentCommit?: unknown
   },
   proofs: ProofCounts,
 ): NonNullable<LedgerIssue["evidence"]> {
   const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0)
   const str = (v: unknown): string => (typeof v === "string" ? v : "")
+  const commit = str(record.currentCommit)
   return {
     status: str(record.status),
     verifierCommand: str(record.verifierCommand),
@@ -66,14 +68,39 @@ export function ledgerEntryFrom(
     // Absent (0) counts are omitted so an entry states only the proof it has:
     // a zero-valued field would read as "declared zero", not "not applicable".
     ...(proofs.negatives > 0 ? { negativeCases: proofs.negatives } : {}),
+    // The commit the projected record was RUN at. This is what makes the drift
+    // check decidable: a record re-run at a different commit has legitimately
+    // moved, and the projection is stale rather than hand-typed.
+    ...(/^[0-9a-f]{40}$/.test(commit) ? { recordCommit: commit } : {}),
   }
+}
+
+/** True when the entry's record was re-run at a different commit since the
+ *  ledger projected it — the stale-projection case, which the gate HEALS and
+ *  reports rather than a drift failure. An entry with NO recorded commit was
+ *  projected by a gate version that did not yet stamp commits; that too is a
+ *  stale projection (the oldest kind), and after healing it carries the stamp,
+ *  so any LATER hand edit without a record move is decidable drift. */
+export function projectionMoved(
+  disk: Partial<NonNullable<LedgerIssue["evidence"]>> | undefined,
+  derived: NonNullable<LedgerIssue["evidence"]>,
+): boolean {
+  const a = (disk as Record<string, unknown> | undefined)?.recordCommit
+  const b = (derived as Record<string, unknown>).recordCommit
+  if (typeof b !== "string") return false
+  return typeof a !== "string" || a !== b
 }
 
 /** The field-by-field refusal used by G1's drift check (the entry on disk vs the
  *  derivation of the record it points at). Compares only the fields the
  *  derivation OWNS, so an entry may not carry counts from anywhere else. */
 export function entryDrift(disk: Partial<NonNullable<LedgerIssue["evidence"]>> | undefined, derived: NonNullable<LedgerIssue["evidence"]>): string[] {
-  const owned = ["status", "verifierCommand", "evidenceFile", "passed", "failed", "realFailed", "mutantsCaught", "mutantsTotal", "negativeCases"] as const
+  // A stale projection is not a drift: the record ran again since, so the gate
+  // heals the entry this run (and says so). Drift is the DECIDABLE case — the
+  // record has not moved, yet the ledger states something else, which a human
+  // typed or an old writer left behind.
+  if (projectionMoved(disk, derived)) return []
+  const owned = ["status", "verifierCommand", "evidenceFile", "passed", "failed", "realFailed", "mutantsCaught", "mutantsTotal", "negativeCases", "recordCommit"] as const
   const out: string[] = []
   const d = disk ?? {}
   for (const k of owned) {

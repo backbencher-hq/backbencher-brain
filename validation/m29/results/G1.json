@@ -4,21 +4,20 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 70,
-  "passed": 68,
-  "failed": 2,
+  "passed": 70,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "27be4201646606dab63a33e9b00b3bfc2a8121ef",
+  "currentCommit": "5223213e712067b380421c4cde4671872c1ec368",
   "workingTreeRelevantChanges": [
-    "docs/m29/PRECISION-LEDGER.md",
-    "package.json"
+    "docs/m29/PRECISION-LEDGER.md"
   ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-15T23:39:17.277Z",
+  "generatedAt": "2026-09-16T00:35:06.448Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
-    "m28GateExit": 1
+    "m28GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
@@ -26,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T23:39:17.280Z",
-    "contentSha256": "26de97aaeced73a819713bbff0be7737e9094765e8b39ba68d0c17620ccaf2b4"
+    "sealedAt": "2026-09-16T00:35:06.451Z",
+    "contentSha256": "8a372e3cd0009472f522d0cc1eeacd59a70b08a741d81b80b47d19b7112ba9dc"
   }
 }
