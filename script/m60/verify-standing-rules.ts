@@ -25,6 +25,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { computeFamilyClosure, FAMILY_LANGS } from "./family-closure"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/G1.json")
@@ -70,15 +71,15 @@ export function findingDocsMissingIssues(docMap: Record<string, string>): string
 
 // ============================================================================
 // R2 machinery: the closure computation, pure so it can be negative-tested.
+// The three-state reading lives in script/m60/family-closure.ts with the rest
+// of the family-closure definition (one definition, imported by this gate and
+// by the live X1 computation) and is re-exported here so the standing-rules
+// surface keeps its own entry point.
 //   closed-computable  ⟺ zero BLOCKED cells AND zero open family issues
 //   blocked            ⟺ a BLOCKED cell exists (family cannot close, full stop)
 //   open-remainder     ⟺ tracker shows open family work
 // ============================================================================
-export function computeFamilyClosure(blockedCells: string[], openFamilyIssues: string[]): "closed-computable" | "blocked" | "open-remainder" {
-  if (blockedCells.length > 0) return "blocked"
-  if (openFamilyIssues.length > 0) return "open-remainder"
-  return "closed-computable"
-}
+export { computeFamilyClosure }
 
 // ============================================================================
 // R1 machinery: open GitHub milestones must be documented under docs/.
@@ -112,12 +113,22 @@ function undocumentedOpenMilestones(): string[] {
 // ============================================================================
 // R4 machinery: the M49 ledger must carry the fold record.
 // ============================================================================
+// Read STRUCTURALLY, per family. The rule is R4 verbatim — "M60's family results
+// are recorded into M49 as the evidence its jvm/web closure claims are true" —
+// and it names two families, so a keyword test reported the fold as landed for a
+// ledger that merely mentioned M60 in prose, or for one family's row while the
+// other's was absent. The fold is per family because the claim it evidences is.
 function foldRecordDetail(): string {
   const p = path.join(ROOT, "validation/m49/ledger.json")
   if (!existsSync(p)) return "validation/m49/ledger.json missing"
-  const txt = readFileSync(p, "utf8")
-  const m = txt.match(/M60[^"]{0,200}/)
-  return m ? `fold present: ${m[0].slice(0, 120)}` : "M49 ledger carries no M60 fold record (the fold happens at X1 close)"
+  let fold: Record<string, any> = {}
+  try { fold = JSON.parse(readFileSync(p, "utf8")).foldRecords ?? {} } catch { return "validation/m49/ledger.json unreadable" }
+  const families = Object.keys(FAMILY_LANGS)
+  const landed = families.filter((f) => fold[f] && typeof fold[f].summary === "string" && fold[f].summary.trim().length >= 20)
+  const missing = families.filter((f) => !landed.includes(f))
+  return missing.length === 0
+    ? `fold present for ${landed.join(" + ")}: ${String(fold[landed[0]].summary).slice(0, 100)}`
+    : `M49 ledger carries no M60 fold row for ${missing.join(", ")} (the fold happens at that family's close)`
 }
 
 function main() {
