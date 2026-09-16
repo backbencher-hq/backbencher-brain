@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "0c49a67bb9a86ac940f54e475392665837163970",
-  "committedAt": "2026-09-16T02:25:48+02:00",
+  "commit": "135eca911baf1eace977b5c7e1d49844bcf670f6",
+  "committedAt": "2026-09-16T04:47:01+02:00",
   "data": {
     "languages": {
       "bash": {
@@ -1048,8 +1048,8 @@
       "description": "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria"
     }
   ],
-  "regeneratedAt": "2026-09-16T00:51:29.010Z",
-  "regeneratedAtCommit": "0c49a67bb9a86ac940f54e475392665837163970",
+  "regeneratedAt": "2026-09-16T03:01:17.162Z",
+  "regeneratedAtCommit": "135eca911baf1eace977b5c7e1d49844bcf670f6",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
