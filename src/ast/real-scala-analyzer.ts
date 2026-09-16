@@ -2282,7 +2282,18 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         ancestor.type === "class_definition" ||
         ancestor.type === "trait_definition" ||
         ancestor.type === "object_definition" ||
-        ancestor.type === "enum_definition"
+        ancestor.type === "enum_definition" ||
+        // M49/M37 #866: `template_body` is the body of an anonymous class
+        // (`new Runnable { val field = target() }`). A val/var written
+        // directly in it is a MEMBER of that type, not a local of the method
+        // the literal happens to sit in — so the boundary check comes first,
+        // exactly like the three named type forms above. Pre-fix the scan
+        // walked past the body, reached the enclosing `def`, and dropped the
+        // member entirely (java/groovy emit `property field
+        // owner=anonymous_Runnable`). The body's PARENT must be the
+        // instance_expression, otherwise this is a named/anonymous class body
+        // handled by the branches above.
+        (ancestor.type === "template_body" && ancestor.parent?.type === "instance_expression")
       ) {
         break
       }
