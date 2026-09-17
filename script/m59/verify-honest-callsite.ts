@@ -25,9 +25,16 @@
 //     never against a value the engine itself derived.
 //   - Evidence is written by this run, with the exact command, to
 //     validation/m59/results/honest-callsite.json. No hand-authored "verified".
-//   - Scope: one small fixture project (kotlin + typescript), indexed fresh in
-//     a throwaway BB_DATA_DIR. Kotlin emits lines (M59 #825); typescript does
-//     not yet — which is exactly the mixed world the tool must report honestly.
+//   - Scope: one small fixture project (kotlin + python), indexed fresh in a
+//     throwaway BB_DATA_DIR. Kotlin emits lines (M59 #825); python does not yet
+//     — which is exactly the mixed world the tool must report honestly.
+//     STALE-CONTROL FIX (2026-09-17): this fixture used typescript as the
+//     unknown-line world. The M59.A7 web round gave typescript real lines, so
+//     the fixture stopped containing an unknown world and the gate aborted on
+//     its own shape check — a red that described a past product, not a defect.
+//     The control moved to python, which the fresh oracle still measures at 0
+//     lines of 4,524 relationships. Same class of staleness the acceptance
+//     harness documented when it moved typescript out of UNLINED.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -72,19 +79,17 @@ async function main() {
     ].join("\n"),
   )
 
-  // TypeScript: the TS analyzer does not yet emit line_number → UNKNOWN world.
-  // helper() is called on line 3. Any number the tool reports for this edge
+  // Python: the python analyzer does not yet emit line_number → UNKNOWN world.
+  // helper() is called on line 5. Any number the tool reports for this edge
   // that is not the DB's NULL surfaced as null is a fabrication.
   writeFileSync(
-    path.join(FIXTURE, "app.ts"),
+    path.join(FIXTURE, "app.py"),
     [
-      "export function helper(): number {",
+      "def helper():",
       "    return 1",
-      "}",
       "",
-      "export function main(): number {",
+      "def main():",
       "    return helper()",
-      "}",
       "",
     ].join("\n"),
   )
@@ -269,7 +274,7 @@ async function main() {
         fixture: FIXTURE,
         checks,
         audit: { auditedKnown, auditedUnknown, fabricated, misreportedKnown, lspFabricated },
-        scope: "one kotlin+typescript fixture project, fresh index; excludes corpus-scale languages",
+        scope: "one kotlin+python fixture project, fresh index; excludes corpus-scale languages",
       },
       null,
       2,
