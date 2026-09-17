@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "verified",
-  "count": 20,
+  "count": 21,
   "inventory": [
     {
       "code": "G1",
@@ -26,6 +26,10 @@
     {
       "code": "U2",
       "limitation": "darwin/windows editor legs are CI-PENDING per the standing OS matrix (linux runs real)."
+    },
+    {
+      "code": "U2",
+      "limitation": "This record is a DERIVATION of the m26 webview harness run it names: it re-states that run's numbers and pin, and adds no proof of its own. The harness's record is the evidence; a red or missing harness run derives a RED U2 (law L2)."
     },
     {
       "code": "U3",
@@ -87,7 +91,7 @@
   "note": "Compiled by script/m44/verify-closure.ts from the m44 evidence limitations + closure-time items (deterministic; no wall clock). Every entry carries its disposition in docs/m44/LAUNCH-RECORD.md (fixed / documented-with-reason / owner / CI-pending). None silent.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:23:43.819Z",
-    "contentSha256": "4d8b9af7b427e51ed2a83f69e39b326ef8ffc99e96b7df6a5ec4c24c9d5c1e86"
+    "sealedAt": "2026-09-17T02:01:28.373Z",
+    "contentSha256": "cf283d4672a90655690b2d796059fc835ddcd85cd60ea7fc4671e962f09fa615"
   }
 }
