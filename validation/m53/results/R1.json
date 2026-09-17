@@ -3,7 +3,7 @@
   "code": "R1",
   "milestone": "M53",
   "status": "verified",
-  "passed": 40,
+  "passed": 41,
   "failed": 0,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
@@ -15,7 +15,7 @@
     "flipped": true,
     "bogusRc": 1
   },
-  "gatesTotal": 40,
+  "gatesTotal": 41,
   "gates": [
     {
       "name": "m24-closure",
@@ -277,6 +277,13 @@
       "ok": true
     },
     {
+      "name": "m44-hub-list",
+      "script": "script/m44/verify-hub-list.ts",
+      "rc": 0,
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 890ee8ae)",
+      "ok": true
+    },
+    {
       "name": "m44-usages-fallback",
       "script": "script/m44/verify-usages-fallback.ts",
       "rc": 0,
@@ -298,12 +305,12 @@
       "ok": true
     }
   ],
-  "currentCommit": "ab5ff8841c830e01b5e9faaad86f21fe82ca1630",
+  "currentCommit": "890ee8aee95530c67953cf7a3654f3ad8fbf17b6",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-17T01:12:11.950Z",
+  "generatedAt": "2026-09-17T02:01:29.269Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:12:11.951Z",
-    "contentSha256": "47bbc90ab6e7e966a72ddf2ffa6e5dc8db42bd438cd03756125bc7f001f67e97"
+    "sealedAt": "2026-09-17T02:01:29.269Z",
+    "contentSha256": "f797a65d6b0fbf2888618b30c73ed331683526b562c8cd04195f8cc631c6f668"
   }
 }
