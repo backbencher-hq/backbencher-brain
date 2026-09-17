@@ -61,6 +61,14 @@ type FieldSpec = {
   tool?: { needle: RegExp }
   ruling?: string
   note?: string
+  // #873 / M60.R6: for a field that CARRIES a line, the base it is counted from.
+  // A field can be alive (produced, stored, read) and still name the wrong line —
+  // which is exactly what a 0-based `metadata.line` next to a 1-based
+  // `line_number` did, and on the cpp/hpp rows there is no second field to
+  // disagree with it, so the wrong number was the row's ONLY line. Recorded here
+  // so the matrix states the base per field; ENFORCED at the source by R6 in
+  // verify-standing-rules.ts, which fails any writer that is not provably 1-based.
+  lineBase?: string
 }
 
 const INDEXER = "src/ast/parallel-indexer.ts"
@@ -86,6 +94,7 @@ const SPECS: Record<string, FieldSpec> = {
     store: { needle: /symbol\.range\?\.startLine/, via: `${INDEXER}:2085-2099 -> line_start/line_end/byte_start/byte_end` },
     query: { needle: /line_start/, via: "doc-engine.ts:171,175 (ORDER BY s.line_start)" },
     tool: { needle: /line/ },
+    lineBase: "1-based (R6) — line_start/line_end are 1-based; the M59 oracle checks them against the source text",
   },
   scope: {
     iface: "UniversalSymbol",
@@ -213,6 +222,14 @@ const SPECS: Record<string, FieldSpec> = {
     store: { needle: /symbol\.metadata/, via: `${INDEXER}:2198-2200 -> annotations (json)` },
     query: { needle: /annotations/, via: "doc-engine.ts:171 (s.*) + tool surface annotations" },
     tool: { needle: /annotations/ },
+    // The LINE-VALUED keys inside this field are the ones #873 was about:
+    // `metadata.line` on a relationship (only typescript and cpp write it at
+    // all — 10 writers, census in reviews/m59-873-one-line-base.md) and the web
+    // family's `decoratorLine`/`decoratorLines`. R6 requires every one of them to
+    // be provably 1-based, so the base is a property of this field's line keys,
+    // not a suggestion. The field itself being `alive` never implied this: the
+    // defect existed on rows that were alive at every seam stage.
+    lineBase: "1-based (R6) — `metadata.line`, `decoratorLine`/`decoratorLines`; only typescript and cpp write a `line` mirror, and null is the ruled absence state",
   },
 
   // ---- UniversalRelationship (11) ----
@@ -293,6 +310,7 @@ const SPECS: Record<string, FieldSpec> = {
     // A ruling that misstates its own data is worse than no ruling.
     ruling: "M59.O2 — call-site line or NULL, never a fabricated 0.",
     rulingNamesProducers: true,
+    lineBase: "1-based (R6) — the call site, checkable against the source; NULL means the site is not attributable, never 0",
   },
   // relationship.metadata handled under symbol.metadata share (same seam).
 }
@@ -418,6 +436,7 @@ function main() {
       queryOk,
       toolOk,
       verdict,
+      lineBase: spec.lineBase ?? null,
       ruling: spec.ruling
         ? (spec as any).rulingNamesProducers
           ? `${spec.ruling} Producers (${emitCount} of ${langs.length}): ${Object.entries(emitByLang).filter(([, v]) => v).map(([k]) => k).join(", ") || "(none)"}. The remaining ${langs.length - emitCount} carry NULL by ruling, which is the ruled ALIVE shape.`
