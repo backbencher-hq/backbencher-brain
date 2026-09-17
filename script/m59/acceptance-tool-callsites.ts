@@ -374,6 +374,16 @@ async function main() {
     // `val` initialisers are used deliberately: a call from a `def` inside the
     // body attributes to that def's own storeable symbol and would exercise
     // nothing.
+    //
+    // 2026-09-17 — this fixture went RED at the #866 tree and the cause was
+    // checked layer by layer (script/m59/probe-anon-init-regression.ts), not
+    // assumed: the analyzer emits both calls, the store persists both with lines
+    // 6/8, and the tool returns both — attributed to the anonymous body's field
+    // members `a`/`b` (owner_symbol_id NULL), not to `callerScalaAnon`. So
+    // membership here is "caller OR a symbol lexically inside the caller", and
+    // the missing link is asserted separately by
+    // `nested-site-source-reaches-the-caller` (declared known red) instead of
+    // being hidden by loosening the site check.
     { lang: "scala-anon-initializer", file: "Fanon.scala", callee: "targetScalaAnon", caller: "callerScalaAnon", src: (c: string, k: string) => `object Fanon {\n  def ${c}(): Int = 1\n  def ${k}(): Unit =\n    new Runnable {\n      val a =\n        ${c}()\n      val b =\n        ${c}()\n    }\n}\n` },
     // M59 web round: typescript moved here from UNLINED. It stopped being an
     // "unknown line" language when the web line work landed (#825 family: the
@@ -405,6 +415,35 @@ async function main() {
   const fpid = getProjectId(project) as any
   await indexProjectParallel(fpid, project, {})
 
+  // ── fixture attribution helper ────────────────────────────────────────────
+  // The tool's `from` is a symbol id. Before #866 a call from an anonymous
+  // body's `val` initialiser was attributed to the innermost STOREABLE enclosing
+  // symbol (the caller itself). #866 emits the body's field member as a real
+  // symbol, so the same call is now attributed to that member (`a`, line 5) —
+  // lexically INSIDE the caller. Membership must therefore be "the caller, or a
+  // symbol contained within the caller's own line span", otherwise a correct
+  // finer-grained answer is read as "the site vanished".
+  const fraw: any = await BrainDatabase.getRawInstance(fpid)
+  const symInfo = (id: string) =>
+    fraw
+      .prepare(`SELECT name, file_id, line_start, line_end, owner_symbol_id FROM brain_symbol WHERE id = ?`)
+      .get(id) as
+      | { name: string; file_id: string; line_start: number; line_end: number; owner_symbol_id: string | null }
+      | undefined
+  const callerSpans = new Map<string, { fileId: string; start: number; end: number } | null>()
+  const callerSpanOf = (name: string) => {
+    if (!callerSpans.has(name)) {
+      const r = fraw
+        .prepare(`SELECT file_id, line_start, line_end FROM brain_symbol WHERE name = ? ORDER BY line_start LIMIT 1`)
+        .get(name) as any
+      callerSpans.set(name, r ? { fileId: r.file_id, start: r.line_start, end: r.line_end } : null)
+    }
+    return callerSpans.get(name)!
+  }
+  let nestedSites = 0
+  let nestedReachingCaller = 0
+  let nestedUnreachable = 0
+
   const fixtureResults: any[] = []
   for (const e of expectations) {
     let t: any
@@ -414,11 +453,34 @@ async function main() {
       check(`${e.lang}-tool-answers`, false, `graphTraversal threw: ${err?.message}`)
       continue
     }
-    const edges = (t.callers ?? []).filter((x: any) => String(x.from).includes(e.caller))
+    const span = callerSpanOf(e.caller)
+    const isDirect = (x: any) => String(x.from ?? "").includes(e.caller)
+    const isNested = (x: any) => {
+      const s = symInfo(String(x.from ?? ""))
+      return !!(s && span && s.file_id === span.fileId && s.line_start >= span.start && s.line_end <= span.end)
+    }
+    const edges = (t.callers ?? []).filter((x: any) => isDirect(x) || isNested(x))
     const lines: Array<number | null> = edges.map((x: any) => x.callSite?.line ?? null)
     const known = [...new Set(lines.filter((l): l is number => typeof l === "number" && l > 0))].sort((a, b) => a - b)
     const nulls = lines.filter((l) => l === null).length
-    fixtureResults.push({ lang: e.lang, toolSites: edges.length, knownLines: known, nullLines: nulls, expectedLines: e.expectedLines })
+    const nested = edges.filter((x: any) => !isDirect(x) && isNested(x))
+    nestedSites += nested.length
+    for (const x of nested) {
+      // Walk the owner chain up to the caller: the answer is only interpretable
+      // if the agent can get from the reported source to the symbol it asked
+      // about. A NULL owner is a dead end (this is what #866 leaves behind).
+      let cur = symInfo(String(x.from))?.owner_symbol_id ?? null
+      let reaches = false
+      for (let hop = 0; hop < 12 && cur; hop++) {
+        const s = symInfo(cur)
+        if (!s) break
+        if (s.name === e.caller) { reaches = true; break }
+        cur = s.owner_symbol_id
+      }
+      if (reaches) nestedReachingCaller++
+      else nestedUnreachable++
+    }
+    fixtureResults.push({ lang: e.lang, toolSites: edges.length, knownLines: known, nullLines: nulls, expectedLines: e.expectedLines, nestedSites: nested.length })
 
     if (e.lined) {
       check(
@@ -434,6 +496,20 @@ async function main() {
       )
     }
   }
+
+  // DECLARED KNOWN RED — do not delete and do not weaken. #855's fixture exists
+  // to prove a call from an anonymous body's initialiser stays attributable to
+  // the caller. #866 made the body's field members real symbols, so the site is
+  // now attributed to the MEMBER — fine-grained but stored with
+  // owner_symbol_id = NULL, so the answer names a generic symbol (`a`) that no
+  // owner chain connects to the caller. The site is not lost (checked above,
+  // containment); what is missing is the link that makes the answer readable.
+  // Filed against the JVM/analyzer lane; this check stays red until it is fixed.
+  check(
+    "nested-site-source-reaches-the-caller",
+    nestedUnreachable === 0,
+    `${nestedSites} nested-source site(s); ${nestedReachingCaller} reach the caller by owner chain, ${nestedUnreachable} dead-end at a NULL owner`,
+  )
 
   // ── C: the real corpus ────────────────────────────────────────────────────
   const rpid = getProjectId(REPO) as any

@@ -1,7 +1,7 @@
 {
   "probe": "M59.P4",
   "issue": "#822",
-  "at": "2026-09-16T14:50:52.380Z",
+  "at": "2026-09-17T00:44:16.405Z",
   "command": "npx tsx script/m59/verify-line-key-idempotency.ts",
   "question": "after making row identity line-keyed, do edits leave stale rows, and does the repair path duplicate a site?",
   "fullIndex": {

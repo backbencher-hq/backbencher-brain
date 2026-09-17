@@ -1,0 +1,475 @@
+{
+  "probe": "M59.MTX",
+  "at": "2026-09-17T21:48:44.583Z",
+  "mergedFrom": [
+    {
+      "file": "validation/m59/results/matrix-tool-language.scala.json",
+      "at": "2026-09-17T20:58:19.617Z",
+      "commit": "4a4ae5666e3fcd9bd99a3db199aa453ab9db37a0",
+      "languages": [
+        "scala"
+      ],
+      "cells": 8
+    },
+    {
+      "file": "validation/m59/results/matrix-tool-language.java.json",
+      "at": "2026-09-17T21:47:08.328Z",
+      "commit": "2628d764bf5234fef68460ab228fbbc259895723",
+      "languages": [
+        "java"
+      ],
+      "cells": 8
+    }
+  ],
+  "scope": "MERGED from separate half-runs (the sweep exceeds one command budget). bb_graph driven through the REAL MCP handler on file slices of real corpus repos; predicate is a NECESSARY condition (lower bound), so \"consistent\" is never proof of correctness; \"missed\" is only reported when the callee name maps to exactly one symbol (ambiguous names print AMBIG(k)); every language reports whether its in-run mutation actually turned the audit red",
+  "languages": [
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "filesIndexed": 150,
+      "indexSeconds": 26,
+      "relationships": {
+        "total": 19082,
+        "zero": 0,
+        "nul": 0,
+        "real": 19082
+      },
+      "mutation": {
+        "ran": true,
+        "callee": "flatMap",
+        "rowId": "82d2f986e6ba45e5f5ec39ac468636112d42d1b0:rel:82d2f986e6ba45e5f5ec39ac468636112d42d1b0:kernel/shared/src/main/scala/cats/effect/kernel/Async.scala:evalOnExecutor:181:flatMap:calls:187",
+        "file": "kernel/shared/src/main/scala/cats/effect/kernel/Async.scala",
+        "originalLine": 187,
+        "consistentBefore": 65,
+        "consistentDuring": 64,
+        "consistentAfter": 65,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true
+      },
+      "topCallees": 8
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "sliceFingerprint": "51a2102029a3ef31c23d4f4abf7887d5107c55f6",
+      "filesIndexed": 150,
+      "indexSeconds": 29,
+      "relationships": {
+        "total": 37757,
+        "zero": 0,
+        "nul": 0,
+        "real": 37757
+      },
+      "mutation": {
+        "ran": true,
+        "callee": "ret1",
+        "rowId": "4ff1cd8937af125518b53438c42252d9838da9b1:rel:4ff1cd8937af125518b53438c42252d9838da9b1:src/jvm/clojure/lang/AFn.java:applyTo:143:ret1:calls:144",
+        "file": "src/jvm/clojure/lang/AFn.java",
+        "originalLine": 144,
+        "consistentBefore": 200,
+        "consistentDuring": 199,
+        "consistentAfter": 200,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true
+      },
+      "topCallees": 8
+    }
+  ],
+  "cells": [
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "map",
+      "tool": "bb_graph",
+      "sites": 199,
+      "consistent": 199,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 8,
+      "missed": null,
+      "missedUpperBound": 270,
+      "grepMentions": 320,
+      "grepRealCalls": 270,
+      "grepOnlyNoise": 50,
+      "detail": "bb_analyze: nodes=185 callSite fields=294",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:115 — .map(_ => ())",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:175 — IO.unit.map(_ => ()) >>",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/native/src/main/scala/catseffect/examplesplatform.scala:64 — .map(_().main(args.tail))"
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "flatMap",
+      "tool": "bb_graph",
+      "sites": 65,
+      "consistent": 65,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 17,
+      "missed": null,
+      "missedUpperBound": 265,
+      "grepMentions": 309,
+      "grepRealCalls": 265,
+      "grepOnlyNoise": 44,
+      "detail": "bb_analyze: nodes=118 callSite fields=297",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:50 — .flatMap(_ => IO.println(\"sadness\"))",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:58 — IO(throw new OutOfMemoryError(\"Boom!\")).attempt.flatMap(_ => IO.println(\"sadness\"))",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:78 — }.attempt.flatMap(_ => IO.println(\"sadness (attempt)\"))"
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "pure",
+      "tool": "bb_graph",
+      "sites": 55,
+      "consistent": 55,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 19,
+      "missed": null,
+      "missedUpperBound": 153,
+      "grepMentions": 227,
+      "grepRealCalls": 153,
+      "grepOnlyNoise": 74,
+      "detail": "bb_analyze: nodes=80 callSite fields=183",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:150 — Console[IO].errorln(\"boom\").whenA(!r.eq(runtime)) >> IO.pure(ExitCode.Success)",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:167 — Console[IO].errorln(\"boom\").whenA(r.eq(runtime)) >> IO.pure(ExitCode.Success)",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/js/src/main/scala/catseffect/examplesplatform.scala:110 — def run(args: List[String]): IO[ExitCode] = IO.pure(ExitCode.Success)"
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "f",
+      "tool": "bb_graph",
+      "sites": 137,
+      "consistent": 137,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 139,
+      "grepMentions": 601,
+      "grepRealCalls": 139,
+      "grepOnlyNoise": 462,
+      "detail": "bb_analyze: nodes=180 callSite fields=290",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/testkit/shared/src/main/scala/cats/effect/testkit/TestConsole.scala:421 — def modify(f: String => String): Chunk = Chunk(f(value), charset)",
+        "../..$HOME/fixtures/repositories/cats-effect/std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:74 — modify { a => (f(a), ()) }",
+        "../..$HOME/fixtures/repositories/cats-effect/std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:85 — modify { a => (f(a), a) }"
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "delay",
+      "tool": "bb_graph",
+      "sites": 86,
+      "consistent": 86,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 151,
+      "grepMentions": 178,
+      "grepRealCalls": 151,
+      "grepOnlyNoise": 27,
+      "detail": "bb_analyze: nodes=111 callSite fields=179",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:219 — F.delay {",
+        "../..$HOME/fixtures/repositories/cats-effect/std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:225 — F.delay {",
+        "../..$HOME/fixtures/repositories/cats-effect/std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:232 — F.delay(cell).flatMap(f).flatMap {"
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "liftF",
+      "tool": "bb_graph",
+      "sites": 116,
+      "consistent": 116,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 1,
+      "missed": 117,
+      "missedUpperBound": 117,
+      "grepMentions": 118,
+      "grepRealCalls": 117,
+      "grepOnlyNoise": 1,
+      "detail": "bb_analyze: nodes=75 callSite fields=226",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/scalafix/v3_0_0/input/src/main/scala/fix/ResourceRewrites.scala:12 — Resource.liftF(IO.unit)",
+        "../..$HOME/fixtures/repositories/cats-effect/scalafix/v3_0_0/input/src/main/scala/fix/ResourceRewrites.scala:15 — Resource.liftF(IO.unit).parZip(Resource.liftF(IO.unit)).void",
+        "../..$HOME/fixtures/repositories/cats-effect/kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala:55 — def liftF[F[_], A](fa: F[A]): TimeT[F, A] ="
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "raiseError",
+      "tool": "bb_graph",
+      "sites": 23,
+      "consistent": 23,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 18,
+      "missed": null,
+      "missedUpperBound": 90,
+      "grepMentions": 99,
+      "grepRealCalls": 90,
+      "grepOnlyNoise": 9,
+      "detail": "bb_analyze: nodes=34 callSite fields=74",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:96 — IO.raiseError[Unit](new OutOfMemoryError(\"Boom!\"))",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:105 — IO.raiseError[Unit](new OutOfMemoryError(\"Boom!\"))",
+        "../..$HOME/fixtures/repositories/cats-effect/tests/shared/src/main/scala/catseffect/examples.scala:114 — IO.raiseError[Unit](new OutOfMemoryError(\"Boom!\"))"
+      ]
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "mapK",
+      "tool": "bb_graph",
+      "sites": 24,
+      "consistent": 24,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 28,
+      "missed": null,
+      "missedUpperBound": 103,
+      "grepMentions": 105,
+      "grepRealCalls": 103,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=69 callSite fields=123",
+      "missedSamples": [
+        "../..$HOME/fixtures/repositories/cats-effect/testkit/shared/src/main/scala/cats/effect/testkit/TestControl.scala:425 — val embedded = c.results.flatMap(_.map(_.mapK(nt).embed(onCancel)).getOrElse(onNever))",
+        "../..$HOME/fixtures/repositories/cats-effect/testkit/shared/src/main/scala/cats/effect/testkit/TestInstances.scala:206 — .unsafeRunAsyncOutcome { oc => results = oc.mapK(someK) }(materializeRuntime)",
+        "../..$HOME/fixtures/repositories/cats-effect/std/shared/src/main/scala/cats/effect/std/ConsoleCrossPlatform.scala:92 — def mapK[G[_]](f: F ~> G): Console[G]"
+      ]
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "ret1",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 3237,
+      "grepMentions": 3439,
+      "grepRealCalls": 3437,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=48 callSite fields=296",
+      "missedSamples": [
+        "src/jvm/clojure/lang/Compiler.java:4224 — return fn.applyTo(RT.seq( Util.ret1(argvs, argvs = null) ));",
+        "src/jvm/clojure/lang/MultiFn.java:509 — Util.ret1(arg11,arg11=null),",
+        "src/jvm/clojure/lang/MultiFn.java:510 — Util.ret1(arg12,arg12=null),"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "next",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 78,
+      "missed": null,
+      "missedUpperBound": 453,
+      "grepMentions": 789,
+      "grepRealCalls": 653,
+      "grepOnlyNoise": 136,
+      "detail": "bb_analyze: nodes=135 callSite fields=453",
+      "missedSamples": [
+        "src/jvm/clojure/lang/AFn.java:157 — , Util.ret1((arglist = arglist.next()).first(),arglist = null)",
+        "src/jvm/clojure/lang/AFn.java:161 — , (arglist = arglist.next()).first()",
+        "src/jvm/clojure/lang/AFn.java:162 — , Util.ret1((arglist = arglist.next()).first(),arglist = null)"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "first",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 36,
+      "missed": null,
+      "missedUpperBound": 442,
+      "grepMentions": 752,
+      "grepRealCalls": 642,
+      "grepOnlyNoise": 110,
+      "detail": "bb_analyze: nodes=126 callSite fields=434",
+      "missedSamples": [
+        "src/jvm/clojure/lang/AFn.java:154 — return ifn.invoke(Util.ret1(arglist.first(),arglist = null));",
+        "src/jvm/clojure/lang/AFn.java:156 — return ifn.invoke(arglist.first()",
+        "src/jvm/clojure/lang/AFn.java:157 — , Util.ret1((arglist = arglist.next()).first(),arglist = null)"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "intern",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 10,
+      "missed": null,
+      "missedUpperBound": 189,
+      "grepMentions": 435,
+      "grepRealCalls": 389,
+      "grepOnlyNoise": 46,
+      "detail": "bb_analyze: nodes=118 callSite fields=462",
+      "missedSamples": [
+        "src/jvm/clojure/lang/Compiler.java:45 — static final Symbol DEF = Symbol.intern(\"def\");",
+        "src/jvm/clojure/lang/Compiler.java:46 — static final Symbol LOOP = Symbol.intern(\"loop*\");",
+        "src/jvm/clojure/lang/Compiler.java:47 — static final Symbol RECUR = Symbol.intern(\"recur\");"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "invoke",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 225,
+      "missed": null,
+      "missedUpperBound": 154,
+      "grepMentions": 620,
+      "grepRealCalls": 354,
+      "grepOnlyNoise": 266,
+      "detail": "bb_analyze: nodes=164 callSite fields=242",
+      "missedSamples": [
+        "src/jvm/clojure/main.java:27 — REQUIRE.invoke(CLOJURE_MAIN);",
+        "src/jvm/clojure/main.java:28 — LEGACY_REPL.invoke(RT.seq(args));",
+        "src/jvm/clojure/main.java:33 — REQUIRE.invoke(CLOJURE_MAIN);"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "create",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 63,
+      "missed": null,
+      "missedUpperBound": 127,
+      "grepMentions": 422,
+      "grepRealCalls": 327,
+      "grepOnlyNoise": 95,
+      "detail": "bb_analyze: nodes=140 callSite fields=883",
+      "missedSamples": [
+        "src/jvm/clojure/lang/APersistentMap.java:175 — return create(seq.next());",
+        "src/jvm/clojure/lang/APersistentMap.java:243 — return create(seq.next());",
+        "src/jvm/clojure/lang/APersistentMap.java:278 — return MapEntry.create(key, val);"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "doInvoke",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 24,
+      "missed": null,
+      "missedUpperBound": 73,
+      "grepMentions": 299,
+      "grepRealCalls": 273,
+      "grepOnlyNoise": 26,
+      "detail": "bb_analyze: nodes=3 callSite fields=200",
+      "missedSamples": [
+        "src/jvm/clojure/lang/RestFn.java:2965 — return doInvoke(",
+        "src/jvm/clojure/lang/RestFn.java:2986 — return doInvoke(",
+        "src/jvm/clojure/lang/RestFn.java:3007 — return doInvoke("
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "count",
+      "tool": "bb_graph",
+      "sites": 179,
+      "consistent": 179,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "nameMultiplicity": 47,
+      "missed": null,
+      "missedUpperBound": 89,
+      "grepMentions": 457,
+      "grepRealCalls": 268,
+      "grepOnlyNoise": 189,
+      "detail": "bb_analyze: nodes=154 callSite fields=473",
+      "missedSamples": [
+        "src/jvm/clojure/lang/APersistentSet.java:45 — return impl.count();",
+        "src/jvm/clojure/lang/APersistentSet.java:78 — if(m.size() != s1.count())",
+        "src/jvm/clojure/lang/APersistentSet.java:181 — return count();"
+      ],
+      "truncated": false
+    }
+  ],
+  "aggregate": {
+    "cells": 16,
+    "wrongLine": 0,
+    "missed": 117,
+    "missedUpperBound": 6052,
+    "ambiguousCells": 15,
+    "consistent": 2284,
+    "unknownLine": 0,
+    "notCheckable": 0,
+    "grepMentions": 9170,
+    "grepRealCalls": 7631,
+    "grepOnlyNoise": 1539,
+    "mutationsCaught": 2,
+    "languagesMeasured": 2
+  }
+}

@@ -1,6 +1,6 @@
 {
   "probe": "M59.O1",
-  "at": "2026-09-16T04:20:14.125Z",
+  "at": "2026-09-17T00:37:36.722Z",
   "corpus": "$HOME/fixtures/repositories",
   "filesPerLang": 40,
   "oracleIndependence": {
@@ -109,9 +109,9 @@
     },
     "svelte": {
       "files": 40,
-      "rels": 111,
+      "rels": 110,
       "withLine": 110,
-      "noLine": 1,
+      "noLine": 0,
       "consistent": 108,
       "inconsistent": 0,
       "notCheckable": 2
@@ -199,9 +199,9 @@
     },
     "php": {
       "files": 40,
-      "rels": 5271,
+      "rels": 7908,
       "withLine": 0,
-      "noLine": 5271,
+      "noLine": 7908,
       "consistent": 0,
       "inconsistent": 0,
       "notCheckable": 0
@@ -3835,114 +3835,114 @@
   },
   "sampleDrift": {
     "java": {
-      "prev": null,
+      "prev": "ced46727246a",
       "now": "ced46727246a",
-      "same": false
+      "same": true
     },
     "kotlin": {
-      "prev": null,
+      "prev": "b1d4c707841c",
       "now": "b1d4c707841c",
-      "same": false
+      "same": true
     },
     "scala": {
-      "prev": null,
+      "prev": "da7d56a8c040",
       "now": "da7d56a8c040",
-      "same": false
+      "same": true
     },
     "groovy": {
-      "prev": null,
+      "prev": "6b1802934608",
       "now": "6b1802934608",
-      "same": false
+      "same": true
     },
     "typescript": {
-      "prev": null,
+      "prev": "36bd4f36c4ee",
       "now": "36bd4f36c4ee",
-      "same": false
+      "same": true
     },
     "javascript": {
-      "prev": null,
+      "prev": "8fb9615ccfea",
       "now": "8fb9615ccfea",
-      "same": false
+      "same": true
     },
     "vue": {
-      "prev": null,
+      "prev": "e2727e5b75dd",
       "now": "e2727e5b75dd",
-      "same": false
+      "same": true
     },
     "svelte": {
-      "prev": null,
+      "prev": "293890b3240b",
       "now": "293890b3240b",
-      "same": false
+      "same": true
     },
     "c": {
-      "prev": null,
+      "prev": "7c9dc9e3b37b",
       "now": "7c9dc9e3b37b",
-      "same": false
+      "same": true
     },
     "cpp": {
-      "prev": null,
+      "prev": "3ab3b859d8de",
       "now": "3ab3b859d8de",
-      "same": false
+      "same": true
     },
     "rust": {
-      "prev": null,
+      "prev": "343d596a3503",
       "now": "343d596a3503",
-      "same": false
+      "same": true
     },
     "go": {
-      "prev": null,
+      "prev": "46d22d0072dd",
       "now": "46d22d0072dd",
-      "same": false
+      "same": true
     },
     "zig": {
-      "prev": null,
+      "prev": "2ae1472bf878",
       "now": "2ae1472bf878",
-      "same": false
+      "same": true
     },
     "csharp": {
-      "prev": null,
+      "prev": "db6b9463d143",
       "now": "db6b9463d143",
-      "same": false
+      "same": true
     },
     "dart": {
-      "prev": null,
+      "prev": "4e7f40938f60",
       "now": "4e7f40938f60",
-      "same": false
+      "same": true
     },
     "swift": {
-      "prev": null,
+      "prev": "faa8da850ef1",
       "now": "faa8da850ef1",
-      "same": false
+      "same": true
     },
     "objc": {
-      "prev": null,
+      "prev": "5cd956991bcb",
       "now": "5cd956991bcb",
-      "same": false
+      "same": true
     },
     "php": {
-      "prev": null,
+      "prev": "73db359618f5",
       "now": "73db359618f5",
-      "same": false
+      "same": true
     },
     "ruby": {
-      "prev": null,
+      "prev": "97ff0939d1bf",
       "now": "97ff0939d1bf",
-      "same": false
+      "same": true
     },
     "python": {
-      "prev": null,
+      "prev": "fdad75a53a2d",
       "now": "fdad75a53a2d",
-      "same": false
+      "same": true
     },
     "haskell": {
-      "prev": null,
+      "prev": "188887c0827d",
       "now": "188887c0827d",
-      "same": false
+      "same": true
     },
     "xml": {
-      "prev": null,
+      "prev": "c45fb1dcfac9",
       "now": "c45fb1dcfac9",
-      "same": false
+      "same": true
     }
   },
   "sampleDriftNote": "same:false with prev:null means no prior sample pin existed in the artifact this run writes (every run before M59.O1 defect #4 recorded none). same:false with prev!=null means the sample CHANGED — a before/after across those two artifacts is not a delta of one measurement.",
@@ -7320,9 +7320,9 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/ts-unsupported-decorator/input.svelte",
         "language": "svelte",
-        "rels": 2,
+        "rels": 1,
         "withLine": 1,
-        "noLine": 1,
+        "noLine": 0,
         "consistent": 1,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11465,9 +11465,9 @@
       {
         "file": "slim/tests/AppTest.php",
         "language": "php",
-        "rels": 2016,
+        "rels": 2928,
         "withLine": 0,
-        "noLine": 2016,
+        "noLine": 2928,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11476,9 +11476,9 @@
       {
         "file": "slim/tests/CallableResolverTest.php",
         "language": "php",
-        "rels": 461,
+        "rels": 603,
         "withLine": 0,
-        "noLine": 461,
+        "noLine": 603,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11487,9 +11487,9 @@
       {
         "file": "slim/tests/Middleware/BodyParsingMiddlewareTest.php",
         "language": "php",
-        "rels": 56,
+        "rels": 90,
         "withLine": 0,
-        "noLine": 56,
+        "noLine": 90,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11498,9 +11498,9 @@
       {
         "file": "slim/tests/Middleware/ContentLengthMiddlewareTest.php",
         "language": "php",
-        "rels": 17,
+        "rels": 27,
         "withLine": 0,
-        "noLine": 17,
+        "noLine": 27,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11509,9 +11509,9 @@
       {
         "file": "slim/tests/Middleware/ErrorMiddlewareTest.php",
         "language": "php",
-        "rels": 204,
+        "rels": 343,
         "withLine": 0,
-        "noLine": 204,
+        "noLine": 343,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11520,9 +11520,9 @@
       {
         "file": "slim/tests/Middleware/MethodOverrideMiddlewareTest.php",
         "language": "php",
-        "rels": 88,
+        "rels": 133,
         "withLine": 0,
-        "noLine": 88,
+        "noLine": 133,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11531,9 +11531,9 @@
       {
         "file": "slim/tests/MiddlewareDispatcherTest.php",
         "language": "php",
-        "rels": 484,
+        "rels": 705,
         "withLine": 0,
-        "noLine": 484,
+        "noLine": 705,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11542,9 +11542,9 @@
       {
         "file": "slim/tests/Mocks/CallableTest.php",
         "language": "php",
-        "rels": 7,
+        "rels": 9,
         "withLine": 0,
-        "noLine": 7,
+        "noLine": 9,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11553,9 +11553,9 @@
       {
         "file": "slim/tests/Mocks/InvocationStrategyTest.php",
         "language": "php",
-        "rels": 3,
+        "rels": 5,
         "withLine": 0,
-        "noLine": 3,
+        "noLine": 5,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11575,9 +11575,9 @@
       {
         "file": "slim/tests/Mocks/MiddlewareTest.php",
         "language": "php",
-        "rels": 12,
+        "rels": 16,
         "withLine": 0,
-        "noLine": 12,
+        "noLine": 16,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11586,9 +11586,9 @@
       {
         "file": "slim/tests/Mocks/MockAction.php",
         "language": "php",
-        "rels": 7,
+        "rels": 10,
         "withLine": 0,
-        "noLine": 7,
+        "noLine": 10,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11608,6 +11608,17 @@
       {
         "file": "slim/tests/Mocks/MockCustomRequestHandlerInvocationStrategy.php",
         "language": "php",
+        "rels": 6,
+        "withLine": 0,
+        "noLine": 6,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
+        "file": "slim/tests/Mocks/MockMiddlewareSlimCallable.php",
+        "language": "php",
         "rels": 4,
         "withLine": 0,
         "noLine": 4,
@@ -11617,22 +11628,11 @@
         "inconsistentSample": []
       },
       {
-        "file": "slim/tests/Mocks/MockMiddlewareSlimCallable.php",
-        "language": "php",
-        "rels": 2,
-        "withLine": 0,
-        "noLine": 2,
-        "consistent": 0,
-        "inconsistent": 0,
-        "notCheckable": 0,
-        "inconsistentSample": []
-      },
-      {
         "file": "slim/tests/Mocks/MockMiddlewareWithConstructor.php",
         "language": "php",
-        "rels": 7,
+        "rels": 11,
         "withLine": 0,
-        "noLine": 7,
+        "noLine": 11,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11641,9 +11641,9 @@
       {
         "file": "slim/tests/Mocks/MockMiddlewareWithoutConstructor.php",
         "language": "php",
-        "rels": 7,
+        "rels": 12,
         "withLine": 0,
-        "noLine": 7,
+        "noLine": 12,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11685,17 +11685,6 @@
       {
         "file": "slim/tests/Mocks/MockRequestHandler.php",
         "language": "php",
-        "rels": 8,
-        "withLine": 0,
-        "noLine": 8,
-        "consistent": 0,
-        "inconsistent": 0,
-        "notCheckable": 0,
-        "inconsistentSample": []
-      },
-      {
-        "file": "slim/tests/Mocks/MockSequenceMiddleware.php",
-        "language": "php",
         "rels": 10,
         "withLine": 0,
         "noLine": 10,
@@ -11705,11 +11694,22 @@
         "inconsistentSample": []
       },
       {
+        "file": "slim/tests/Mocks/MockSequenceMiddleware.php",
+        "language": "php",
+        "rels": 14,
+        "withLine": 0,
+        "noLine": 14,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": []
+      },
+      {
         "file": "slim/tests/Mocks/MockStream.php",
         "language": "php",
-        "rels": 97,
+        "rels": 117,
         "withLine": 0,
-        "noLine": 97,
+        "noLine": 117,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11718,9 +11718,9 @@
       {
         "file": "slim/tests/Mocks/RequestHandlerTest.php",
         "language": "php",
-        "rels": 21,
+        "rels": 27,
         "withLine": 0,
-        "noLine": 21,
+        "noLine": 27,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11729,9 +11729,9 @@
       {
         "file": "slim/tests/Mocks/SlowPokeStream.php",
         "language": "php",
-        "rels": 34,
+        "rels": 41,
         "withLine": 0,
-        "noLine": 34,
+        "noLine": 41,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11740,9 +11740,9 @@
       {
         "file": "slim/tests/Mocks/SmallChunksStream.php",
         "language": "php",
-        "rels": 32,
+        "rels": 38,
         "withLine": 0,
-        "noLine": 32,
+        "noLine": 38,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11751,9 +11751,9 @@
       {
         "file": "slim/tests/Providers/PSR7ObjectProvider.php",
         "language": "php",
-        "rels": 18,
+        "rels": 26,
         "withLine": 0,
-        "noLine": 18,
+        "noLine": 26,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11773,9 +11773,9 @@
       {
         "file": "slim/tests/ResponseEmitterTest.php",
         "language": "php",
-        "rels": 159,
+        "rels": 241,
         "withLine": 0,
-        "noLine": 159,
+        "noLine": 241,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11784,9 +11784,9 @@
       {
         "file": "slim/tests/Routing/DispatcherTest.php",
         "language": "php",
-        "rels": 115,
+        "rels": 192,
         "withLine": 0,
-        "noLine": 115,
+        "noLine": 192,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11795,9 +11795,9 @@
       {
         "file": "slim/tests/Routing/FastRouteDispatcherTest.php",
         "language": "php",
-        "rels": 208,
+        "rels": 440,
         "withLine": 0,
-        "noLine": 208,
+        "noLine": 440,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11806,9 +11806,9 @@
       {
         "file": "slim/tests/Routing/RouteCollectorProxyTest.php",
         "language": "php",
-        "rels": 275,
+        "rels": 448,
         "withLine": 0,
-        "noLine": 275,
+        "noLine": 448,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11817,9 +11817,9 @@
       {
         "file": "slim/tests/Routing/RouteCollectorTest.php",
         "language": "php",
-        "rels": 124,
+        "rels": 181,
         "withLine": 0,
-        "noLine": 124,
+        "noLine": 181,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11828,9 +11828,9 @@
       {
         "file": "slim/tests/Routing/RouteContextTest.php",
         "language": "php",
-        "rels": 76,
+        "rels": 104,
         "withLine": 0,
-        "noLine": 76,
+        "noLine": 104,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11839,9 +11839,9 @@
       {
         "file": "slim/tests/Routing/RouteParserTest.php",
         "language": "php",
-        "rels": 89,
+        "rels": 138,
         "withLine": 0,
-        "noLine": 89,
+        "noLine": 138,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11850,9 +11850,9 @@
       {
         "file": "slim/tests/Routing/RouteResolverTest.php",
         "language": "php",
-        "rels": 36,
+        "rels": 52,
         "withLine": 0,
-        "noLine": 36,
+        "noLine": 52,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11861,9 +11861,9 @@
       {
         "file": "slim/tests/Routing/RouteRunnerTest.php",
         "language": "php",
-        "rels": 20,
+        "rels": 37,
         "withLine": 0,
-        "noLine": 20,
+        "noLine": 37,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11872,9 +11872,9 @@
       {
         "file": "slim/tests/Routing/RouteTest.php",
         "language": "php",
-        "rels": 513,
+        "rels": 814,
         "withLine": 0,
-        "noLine": 513,
+        "noLine": 814,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11883,9 +11883,9 @@
       {
         "file": "slim/tests/TestCase.php",
         "language": "php",
-        "rels": 36,
+        "rels": 55,
         "withLine": 0,
-        "noLine": 36,
+        "noLine": 55,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
@@ -11894,9 +11894,9 @@
       {
         "file": "slim/tests/bootstrap.php",
         "language": "php",
-        "rels": 5,
+        "rels": 11,
         "withLine": 0,
-        "noLine": 5,
+        "noLine": 11,
         "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
