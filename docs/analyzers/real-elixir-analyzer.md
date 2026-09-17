@@ -24,7 +24,7 @@
 
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | ✅ | `defmodule` → module name from the `arguments` `alias` (nested modules qualified: `MyApp.User`); `def`/`defp`/`defdelegate` → the signature `call`'s identifier (`defdelegate` honors the `as:` rename — `defdelegate rstrip(b), to: M, as: :trim_trailing` → `trim_trailing`); `defmacro`/`defmacrop`/`defguard`/`defguardp` → macro; `defstruct` → struct named by the enclosing module; struct fields → `pair > keyword` (colon-stripped); `@type`/`@typep`/`@opaque` → the `::` left-side identifier; `defprotocol` → protocol name; `defimpl` → class named by the `for:` target type |
+| name | ✅ | `defmodule` → module name from the `arguments` `alias` (nested modules qualified: `MyApp.User`); `def`/`defp`/`defdelegate` → the signature `call`'s identifier (`defdelegate` preserves the local declaration — `defdelegate rstrip(b), to: M, as: :trim_trailing` → `rstrip`; `as:` names the remote target, not the declaration); `defmacro`/`defmacrop`/`defguard`/`defguardp` → macro; `defstruct` → struct named by the enclosing module; struct fields → `pair > keyword` (colon-stripped); `@type`/`@typep`/`@opaque` → the `::` left-side identifier; `defprotocol` → protocol name; `defimpl` → class named by the `for:` target type |
 | kind | ✅ | `defmodule` → `module`; `defprotocol` → `interface`; `defimpl` → `class` (named by for-type, `implements` edge to protocol); `defstruct` → `struct` + field `property`s; `def`/`defp`/`defdelegate` → `function` (or `method` when inside a protocol/impl scope); `defmacro`/`defmacrop`/`defguard`/`defguardp` → `macro`; `@type` → `type` |
 | qualified/container name | ✅ | `ownerName` = enclosing module (functions, types, struct, fields); protocol/impl members owned by their protocol/class; nested modules owned by the parent (`contains MyApp -> MyApp.User`) |
 | range (start/end line + column) | ✅ | the declaration node |
@@ -119,8 +119,8 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 
 ## Supported / unsupported constructs
 
-Supported: modules (nested), functions (def/defp/defdelegate with `as:`
-renames, multi-clause heads merged), macros (defmacro/defmacrop/defguard/
+Supported: modules (nested), functions (def/defp/defdelegate preserving local
+names independently of remote `as:` targets, multi-clause heads merged), macros (defmacro/defmacrop/defguard/
 defguardp), protocols (defprotocol), protocol impls (defimpl), structs
 (defstruct, bare and list forms), type aliases (@type/@typep/@opaque),
 behaviours (@behaviour), directives (use/import/alias/require, `as:` aliases),

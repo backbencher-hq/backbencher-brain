@@ -304,28 +304,6 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  // `defdelegate foo(...), to: M, as: :bar` — the `as:` atom renames the
-  // generated function (the head name alone would be wrong).
-  private extractAsName(node: Node): string | null {
-    const argsNode = this.findChild(node, (c) => c?.type === "arguments")
-    if (!argsNode) return null
-    const keywordsNode = this.findChild(argsNode, (c) => c?.type === "keywords")
-    if (!keywordsNode) return null
-    for (let i = 0; i < keywordsNode.namedChildCount; i++) {
-      const pair = keywordsNode.namedChild(i)
-      if (!pair || pair.type !== "pair") continue
-      const kw = this.findChild(pair, (c) => c?.type === "keyword")
-      if (kw?.text.startsWith("as") && pair.namedChildCount > 1) {
-        const val = pair.namedChild(1)
-        if (!val?.text) return null
-        // Atom value: `as: :trim_trailing` — strip the leading colon.
-        const txt = val.text
-        return txt.length > 0 && txt[0] === ":" ? txt.slice(1) : txt
-      }
-    }
-    return null
-  }
-
   // The top non-function scope on the stack — the module/class whose declared
   // set governs unqualified-call resolution for the current call site.
   private enclosingDeclaredScope(scopeStack: Scope[]): string | undefined {
@@ -673,13 +651,6 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             parameters.push({ name: actualCall.childCount > 0 ? actualCall.child(0)?.text || "left" : "left", type: "dynamic" })
             parameters.push({ name: actualCall.childCount > 2 ? actualCall.child(2)?.text || "right" : "right", type: "dynamic" })
         }
-    }
-
-    // defdelegate/defguard/defguardp may rename or scope the generated
-    // function/macro: `as:` overrides the head name; defguardp is private.
-    if (defType === "defdelegate") {
-      const asName = this.extractAsName(node)
-      if (asName) name = asName
     }
 
     const visibility = (defType === "defp" || defType === "defmacrop" || defType === "defguardp") ? "private" : "public"
