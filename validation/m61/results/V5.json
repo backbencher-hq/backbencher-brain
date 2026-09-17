@@ -8,7 +8,7 @@
   "failed": 1,
   "realFailed": 1,
   "failures": [
-    "C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\" | m26-x1: published 0 row(s), expected \"X1 closure gate 48/50 with per-mutant records\""
+    "C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\""
   ],
   "checksList": [
     "ok: C0: no registry problems",
@@ -17,7 +17,7 @@
     "ok: C0: more than one derivation kind is exercised",
     "ok: C1: no claim is blocked (every cited source resolves)",
     "ok: C1: every claim's derivation yields numbers",
-    "FAIL: C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\" | m26-x1: published 0 row(s), expected \"X1 closure gate 48/50 with per-mutant records\"",
+    "FAIL: C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\"",
     "ok: C2: the pins are live (at least one row was found for every claim)",
     "ok: C3: every declared doc exists and honors its coverage status",
     "ok: C3: the audit set covers README, the website and the docs end to end",
@@ -40,10 +40,10 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
+  "currentCommit": "bba0c5d498e4c85df318749433eac74130013651",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-09-17T00:00:44.098Z",
+  "generatedAt": "2026-09-17T00:29:16.299Z",
   "claims": [
     {
       "id": "m25-issues",
@@ -126,10 +126,9 @@
     {
       "id": "m26-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
-      "rendered": "X1 closure gate 48/50 with per-mutant records",
-      "published": 0,
-      "reason": "published row does not match the ledger: expected to find \"X1 closure gate 48/50 with per-mutant records\""
+      "outcome": "pinned",
+      "rendered": "X1 closure gate 50/50 with per-mutant records",
+      "published": 1
     }
   ],
   "coverage": [
@@ -189,7 +188,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:00:44.098Z",
-    "contentSha256": "be251755a6937b747dc8aa0a6a53281488a1c5e3536712711e7af6f739442181"
+    "sealedAt": "2026-09-17T00:29:16.299Z",
+    "contentSha256": "087d3c8688b4bc05406b4283617b29e646214fa9fae6ae3953b3f931e07dc95f"
   }
 }
