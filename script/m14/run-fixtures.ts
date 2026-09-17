@@ -644,6 +644,32 @@ async function main() {
     ? process.argv[process.argv.indexOf("--lang") + 1].split(",")
     : Object.keys(LANGS)
 
+  // M49 G8 (#841 round) — the scoped-run hazard, found by doing it.
+  // `--lang groovy` used to run the selected lane and then emit the result as
+  // **M14.0.F3**, i.e. it replaced the canonical 22-language fixture evidence
+  // with a one-language file (22 checks → 1; 21 languages' fixture detail —
+  // thousands of pinned expectations' outcomes — deleted, with nothing in the
+  // artifact saying so) and, worse, `--update-baseline` on such a run would have
+  // DROPPED every language it did not touch from `fixture-baseline.json`, i.e.
+  // silenced their regression gate permanently. This is the same defect class
+  // the W21 oracle guard closed in `script/m59/oracle-callsite.ts` (`oracle-callsite.ts`
+  // had no scoped-run guard, so `--only=groovy --files-per-lang=40` replaced the
+  // canonical 22-language evidence with a 40-file single-language one). A lane
+  // run is for inspecting a lane, so it now writes NO evidence and cannot touch
+  // the baseline: the canonical artifact is only ever produced by a run that
+  // covers every lane, which is what a milestone claim has to rest on.
+  const scoped = argLangs.length !== Object.keys(LANGS).length
+  if (scoped) {
+    console.log(
+      `\nSCOPED run (${argLangs.join(",")} of ${Object.keys(LANGS).length} lanes): results are printed here and NO evidence is written — ` +
+        `the canonical validation/m14/results/M14.0.F3.json is NOT touched, and --update-baseline is refused, because either would shrink the milestone's claim to the lanes this run covered.`,
+    )
+  }
+  if (scoped && process.argv.includes("--update-baseline")) {
+    console.error("refusing --update-baseline on a scoped run: it would drop every lane the run did not cover")
+    process.exit(5)
+  }
+
   const allDetails: any[] = []
   const summary: Record<string, { pass: number; fail: number }> = {}
   for (const lang of argLangs) {
@@ -667,7 +693,7 @@ async function main() {
     status: s.fail === 0 ? ("pass" as const) : ("fail" as const),
     detail: `${s.pass}/${s.pass + s.fail} fixtures pass`,
   }))
-  emitEvidence({
+  if (!scoped) emitEvidence({
     issueId: "M14.0.F3",
     title: "Adversarial fixture corpus",
     claimLevel: "L1",
@@ -690,6 +716,7 @@ async function main() {
     console.log("fixture baseline updated:", currentFail)
   } else if (fs.existsSync(BASELINE)) {
     const base = JSON.parse(fs.readFileSync(BASELINE, "utf8"))
+    if (scoped) console.log(`(baseline gate covers only the ${argLangs.length} lane(s) this scoped run selected; a full run is the milestone's gate)`)
     const regressions = Object.keys(currentFail).filter(l => base[l] !== undefined && currentFail[l] > base[l])
     for (const r of regressions) console.error(`FIXTURE REGRESSION ${r}: ${base[r]} -> ${currentFail[r]} failures`)
     if (regressions.length) process.exit(4)
