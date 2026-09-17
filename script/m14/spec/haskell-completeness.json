@@ -268,6 +268,13 @@
     "status": "RULED",
     "question": "Bare constructor VALUES in body position (`x = Just`, `registry = C.Registry`) emit nothing while constructor APPLICATIONS (`x = Just 1`, `f = C.Registry 1`) emit instantiates. Asymmetric-looking: is the bare-value silence a gap?",
     "resolution": "RULED a coherent semantic boundary (probe 2026-09-04, F9 battery authoring): a bare constructor reference binds a FUNCTION VALUE, not an instance — instantiates means an instance is created, which requires application. Ruling holds for BOTH qualified and unqualified forms (verified symmetric). Bare values are rare in real code; corpus differentials (cabal/hledger/postgrest/shellcheck at 100%/0/0) show no unexplained residue. Recorded as declared design decision, not a silent hole."
+   },
+   {
+    "id": "HS-D9",
+    "node_type": "class context (superclass constraint tree)",
+    "status": "RULED",
+    "question": "#872 (F5 rotated-sample finding, Cabal-syntax FieldGrammar/Class.hs): which superclass heads emit extends? The old direct-apply + one-parens fallback missed tuple lists, applied heads (Eq (f a) => D f a), qualified heads (P.Show a), and quantified bodies (forall a. Applicative (f a)); the oracle shared the direct-apply blind spot and additionally over-emitted (descended into arguments).",
+    "resolution": "RULED: the context is a CONSTRAINT TREE. Analyzer and oracle walk the same set of wrappers (context/tuple/parens/forall-body); an apply contributes its LEFT-SPINE head — name, constructor, or qualified (verbatim dotted text) — as the superclass; type arguments never become classes. Fixture pins Mergeable2->Show/Eq + Applied->Eq (payload-and-complexity); mutants haskell/drop-tuple-superclass + haskell/apply-head-as-argument; both pinned corpora 100%/0/0 @200/186 after the fix."
    }
   ]
  }
