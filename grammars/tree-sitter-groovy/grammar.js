@@ -622,7 +622,16 @@ module.exports = grammar(Java, {
         // #841 round 3: GString (`delegate."$entry.key"(v)`) and quoted
         // (`bean."autowire"`) method names — dynamic dispatch by name. Also
         // slashy names: `mock./print.*/(* _)` names methods by regex.
-        field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.template_expression, $.slashy_string)),
+        // #841 G9: `$.character_literal` in BOTH name choices — Groovy's
+        // single-quoted string lexes as character_literal (the #742 residual),
+        // so the PARENTHESISED form of a quoted callee had no rule at all:
+        // `'/500'(view: '/error')` (grails UrlMappings), `'in'(list)` and
+        // `'*'(...)` in Constraints DSL blocks, `'user-type'(...)` in Hibernate
+        // mapping builders. The command (paren-less) form always accepted it
+        // through `_juxt_function_name`'s `$.primary_expression` — which is why
+        // only the paren form failed, and why `"$quoted"(...)` always worked
+        // (that is a real string_literal).
+        field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.character_literal, $.template_expression, $.slashy_string)),
         seq(
           field('object', choice($.primary_expression, $.super)),
           // Groovy adds safe navigation (?.) and spread-dereference (*.) to
@@ -633,7 +642,7 @@ module.exports = grammar(Java, {
             '.',
           )),
           field('type_arguments', optional($.type_arguments)),
-          field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.template_expression, $.slashy_string)),
+          field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.character_literal, $.template_expression, $.slashy_string)),
         ),
       ),
       choice(
