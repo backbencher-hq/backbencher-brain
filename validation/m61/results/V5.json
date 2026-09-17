@@ -2,14 +2,12 @@
   "issue": "M61.V5 claim pins (issue #846)",
   "code": "V5",
   "milestone": "M61",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 28,
-  "passed": 27,
-  "failed": 1,
-  "realFailed": 1,
-  "failures": [
-    "C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\""
-  ],
+  "passed": 28,
+  "failed": 0,
+  "realFailed": 0,
+  "failures": [],
   "checksList": [
     "ok: C0: no registry problems",
     "ok: C0: the registry pins a non-trivial number of claims",
@@ -17,7 +15,7 @@
     "ok: C0: more than one derivation kind is exercised",
     "ok: C1: no claim is blocked (every cited source resolves)",
     "ok: C1: every claim's derivation yields numbers",
-    "FAIL: C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\"",
+    "ok: C2: no published claim has drifted from its ledger",
     "ok: C2: the pins are live (at least one row was found for every claim)",
     "ok: C3: every declared doc exists and honors its coverage status",
     "ok: C3: the audit set covers README, the website and the docs end to end",
@@ -40,10 +38,10 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "bba0c5d498e4c85df318749433eac74130013651",
+  "currentCommit": "2fbae6c9c0d145908ec433b4038bb9ddcc5d0543",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-09-17T00:29:16.299Z",
+  "generatedAt": "2026-09-17T01:12:48.578Z",
   "claims": [
     {
       "id": "m25-issues",
@@ -90,10 +88,9 @@
     {
       "id": "m44-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
-      "rendered": "closure gate verified (X1 43/48 at HEAD)",
-      "published": 0,
-      "reason": "published row does not match the ledger: expected to find \"closure gate verified (X1 43/48 at HEAD)\""
+      "outcome": "pinned",
+      "rendered": "closure gate verified (X1 48/48 at HEAD)",
+      "published": 1
     },
     {
       "id": "m26-mutants",
@@ -188,7 +185,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:29:16.299Z",
-    "contentSha256": "087d3c8688b4bc05406b4283617b29e646214fa9fae6ae3953b3f931e07dc95f"
+    "sealedAt": "2026-09-17T01:12:48.578Z",
+    "contentSha256": "41994296e584688fd43092f84cad94d839ffd1a933325c4bd099c57efcbb72c8"
   }
 }
