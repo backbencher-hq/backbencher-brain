@@ -11,26 +11,26 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 370,
-  "cleanFiles": 6194,
-  "missingNodeFiles": 84,
-  "errorNodeFiles": 359,
+  "errorFiles": 322,
+  "cleanFiles": 6242,
+  "missingNodeFiles": 74,
+  "errorNodeFiles": 311,
   "errorRates": {
-    "any": 5.6,
-    "missing": 1.3,
-    "error": 5.5
+    "any": 4.9,
+    "missing": 1.1,
+    "error": 4.7
   },
-  "grammarErrorFiles": 370,
+  "grammarErrorFiles": 322,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 77612,
+  "wallMs": 101030,
   "missingTokens": {
-    ";": 150,
-    "identifier": 36,
-    "}": 25,
+    ";": 130,
+    "identifier": 32,
+    "}": 17,
     "decimal_integer_literal": 14,
-    ")": 8,
+    ")": 7,
     "]": 2,
     "/": 2,
     "type_identifier": 1,
@@ -38,67 +38,64 @@
   },
   "errorLineSignatures": {
     "ID ID = ID ID": 77,
-    "}": 55,
-    "ID ID() {": 53,
-    "@ID(ID)": 53,
     "ID.ID.ID()": 53,
+    "@ID(ID)": 51,
+    "}": 49,
     "@ID": 45,
     "ID.ID.ID(ID)": 43,
-    "/*": 35,
     "ID(10) { ID.ID.ID() > 0 }": 26,
-    "ID ID {": 25,
+    "/*": 24,
     "<%=ID ? ID : ID%>": 24,
     "ID * ID.ID() >> ID": 20,
+    "ID ID() {": 20,
     "ID.ID{ID}ID = ID(ID{ID}ID) {": 18,
     ".ID() == ID": 16,
     "ID = ID ID": 16,
-    "ID ID(ID ID) {": 15,
     "(ID.ID): { ID.ID ID, ID ID, ID ID = ID, ID ID = ID ->": 14,
     "ID ID, ID": 14,
-    "ID ID ID ID {": 13,
     "ID ID < ID": 13,
     "ID ID ID ID(ID ID, ID ID, ID ID) {": 12,
-    "ID(ID, [ID])": 12,
-    "ID(ID: ID)": 12,
     "(ID.ID): { ID.ID ID, ID ID, ID ID=ID, ID ID = ID ->": 12,
-    "ID.ID()": 11,
+    "ID ID(ID ID) {": 12,
     "ID * ID.ID(ID) >> ID": 11,
+    "ID ID ID ID {": 11,
     "(ID.ID): { ID, ID ID, ID.ID ID, ID ID = { ID } ->": 11,
+    "ID ID = ID.ID ID": 11,
+    "ID ID {": 11,
     "}()": 11,
-    "ID ID = ID.ID ID": 10,
     "ID @ID.ID@ID {": 10,
     "ID @ID.ID@ID ID ID ID ID<@ID.ID@ID> {": 10,
     "ID (ID.ID.ID) {": 10,
+    "ID.ID()": 9,
     "ID @ID.ID.ID@": 9,
     "ID ID.ID.ID": 9,
     "ID ID.ID(ID, ID)": 8,
     "ID ID.ID(ID)": 8,
     "ID.ID.ID(ID) {": 7,
     "ID.ID.ID(ID, ID)": 7,
-    "ID: ID": 7,
-    "ID ID.ID.*": 7
+    "ID ID.ID.*": 7,
+    "ID ID{ID}ID {": 7,
+    "ID.ID.ID.ID(ID)": 6,
+    "ID.ID.ID(ID.ID)": 6
   },
   "firstErrorLineSignatures": {
-    "/*": 35,
-    "}": 31,
-    "ID ID {": 23,
+    "}": 30,
+    "/*": 24,
     "@ID": 18,
-    "ID ID ID ID {": 12,
-    "@ID(ID)": 11,
+    "ID ID {": 11,
+    "ID ID ID ID {": 10,
     "ID.ID.ID(ID)": 9,
-    "ID(ID: ID)": 6,
+    "@ID(ID)": 9,
+    "ID ID = ID.ID ID": 7,
     "ID.ID.ID(ID.ID)": 5,
     "ID @ID.ID.ID@": 5,
-    "ID ID = ID.ID ID": 5,
     "@ID(ID<ID>)": 5,
     "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4,
     "ID = ID.ID { ID * 2 } ID { ID ID ID(ID)} ID { ID + 6 }": 3,
-    "ID ID() {": 3,
     "@ID.ID@": 3,
     "ID ID = ID.ID(ID)": 3,
     "ID.ID = ID.ID(ID.ID ? ID.ID(ID) : 10, 100)": 3,
     "ID.ID.ID(ID, ID)": 2,
-    "ID(ID {": 2,
     "ID * ID.ID() >> ID": 2,
     "ID !== ID": 2,
     "@ID(ID\"ID ID{ID ID}": 2,
@@ -116,9 +113,12 @@
     "ID = ID ID": 2,
     "ID(10) { ID.ID.ID() > 0 }": 2,
     "ID : ID.ID(ID) ?: 0,": 2,
-    "ID(ID:ID)": 2,
     "ID.ID.ID.ID(ID.ID + ID + ID.ID)": 1,
-    "}.ID { ID ID -> ID.ID.ID.ID }": 1
+    "}.ID { ID ID -> ID.ID.ID.ID }": 1,
+    "ID ID = ID?.ID() { ID ID -> ID.ID.ID(ID) }": 1,
+    "ID (ID && ID.ID() { ID ID -> ID.ID.ID(ID) }) {": 1,
+    "ID.ID { ID ID, ID ID -> ID.ID.ID(ID, ID) }": 1,
+    "ID[] ID = ID.ID(ID, ID[])": 1
   },
   "errorFileList": [
     {
@@ -226,16 +226,6 @@
       "pipelineErrors": 12
     },
     {
-      "file": "end-to-end/spring-dependency-management/grails-app/controllers/UrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 20,
-      "firstKind": "ERROR",
-      "firstLine": "class UrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-async/core/src/test/groovy/grails/async/FutureTaskPromiseFactorySpec.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -304,16 +294,6 @@
       "firstKind": "ERROR",
       "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad')} then { it + 6 }",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-beans-dsl/src/test/groovy/org/grails/compiler/beans/GrailsBeansASTTransformationSpec.groovy",
-      "nodes": 7,
-      "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 1966,
-      "firstKind": "ERROR",
-      "firstLine": "def \"a bean named after a default method from a directly implemented interface does not override it\"() {",
-      "pipelineErrors": 14
     },
     {
       "file": "grails-bootstrap/src/main/groovy/grails/io/ResourceUtils.groovy",
@@ -438,16 +418,6 @@
       "pipelineErrors": 12
     },
     {
-      "file": "grails-data-hibernate5/core/src/main/groovy/org/grails/orm/hibernate/AbstractHibernateGormStaticApi.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 713,
-      "firstKind": "ERROR",
-      "firstLine": "criteria.add(Restrictions.'in'(identityName, ids))",
-      "pipelineErrors": 4
-    },
-    {
       "file": "grails-data-hibernate5/core/src/main/groovy/org/grails/orm/hibernate/AbstractHibernateGormValidationApi.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -456,26 +426,6 @@
       "firstKind": "ERROR",
       "firstLine": "abstract applyManualFlush(Session session)",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-data-hibernate5/core/src/test/groovy/grails/gorm/hibernate/mapping/MappingBuilderSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 318,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(property {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/BasicCollectionInQuerySpec.groovy",
-      "nodes": 6,
-      "missingTokens": [],
-      "errorNodes": 6,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 12
     },
     {
       "file": "grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/DetachedCriteriaJoinSpec.groovy",
@@ -488,16 +438,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/compositeid/GlobalConstraintWithCompositeIdSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 47,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable: true)",
-      "pipelineErrors": 4
-    },
-    {
       "file": "grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/services/DataServiceSpec.groovy",
       "nodes": 7,
       "missingTokens": [],
@@ -506,16 +446,6 @@
       "firstKind": "ERROR",
       "firstLine": "@Query(\"select $p.name from ${Product p} where $p.type like $pattern\")",
       "pipelineErrors": 14
-    },
-    {
-      "file": "grails-data-hibernate5/core/src/test/groovy/org/grails/orm/hibernate/DefaultConstraintsSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 41,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable: true)",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-data-hibernate5/core/src/test/groovy/org/grails/orm/hibernate/connections/DataServiceMultiDataSourceSpec.groovy",
@@ -540,39 +470,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/hibernate/mapping/HibernateMappingBuilderSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [
-        "}",
-        ";"
-      ],
-      "errorNodes": 4,
-      "firstRow": 848,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 12
-    },
-    {
-      "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/hibernate/mapping/MappingBuilderSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 317,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(property {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/BasicCollectionInQuerySpec.groovy",
-      "nodes": 6,
-      "missingTokens": [],
-      "errorNodes": 6,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 12
-    },
-    {
       "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/HibernateMappingFactorySpec.groovy",
       "nodes": 3,
       "missingTokens": [
@@ -583,16 +480,6 @@
       "firstKind": "MISSING ;",
       "firstLine": "MappingFactoryBaseEnumMarshaller() { super(Enum) }",
       "pipelineErrors": 3
-    },
-    {
-      "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/compositeid/GlobalConstraintWithCompositeIdSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 47,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable: true)",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/hibernatequery/HibernateQuerySpec.groovy",
@@ -625,29 +512,6 @@
       "firstKind": "ERROR",
       "firstLine": "_ * builder.getTargetClass() >> CBEmployee",
       "pipelineErrors": 18
-    },
-    {
-      "file": "grails-data-hibernate7/core/src/test/groovy/grails/orm/HibernateCriteriaBuilderSpec.groovy",
-      "nodes": 32,
-      "missingTokens": [
-        "}",
-        ";"
-      ],
-      "errorNodes": 28,
-      "firstRow": 581,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 60
-    },
-    {
-      "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/DefaultConstraintsSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 41,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable: true)",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/HibernateGormInstanceApiSpec.groovy",
@@ -828,19 +692,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-data-mongodb/core/src/test/groovy/grails/gorm/tests/listener/PersistenceEventListenerSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [
-        "}",
-        ";"
-      ],
-      "errorNodes": 2,
-      "firstRow": 272,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 10
-    },
-    {
       "file": "grails-data-mongodb/core/src/test/groovy/org/apache/grails/data/mongo/core/GrailsDataMongoTckManager.groovy",
       "nodes": 9,
       "missingTokens": [],
@@ -893,19 +744,6 @@
       "firstKind": "MISSING ;",
       "firstLine": "void \"test canary\"() { expect: true }",
       "pipelineErrors": 1
-    },
-    {
-      "file": "grails-data-neo4j/grails-datastore-gorm-neo4j/src/test/groovy/grails/gorm/tests/PersistenceEventListenerSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [
-        "}",
-        ";"
-      ],
-      "errorNodes": 2,
-      "firstRow": 271,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 10
     },
     {
       "file": "grails-data-simple/src/main/groovy/org/grails/datastore/mapping/simple/query/SimpleMapQuery.groovy",
@@ -998,16 +836,6 @@
       "firstKind": "ERROR",
       "firstLine": "simple.mappingContext.addEntityValidator(entity, [",
       "pipelineErrors": 6
-    },
-    {
-      "file": "grails-datamapping-core-test/src/test/groovy/org/grails/datastore/gorm/EmbeddedAssociationWithNoEntityAndGlobalNullableConstraintSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 38,
-      "firstKind": "ERROR",
-      "firstLine": "DatastoreUtils.createPropertyResolver((Settings.SETTING_DEFAULT_CONSTRAINTS): { '*'(nullable: true) }),",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-datamapping-core/src/main/groovy/org/grails/compiler/gorm/DirtyCheckingTransformer.groovy",
@@ -1133,50 +961,6 @@
       "firstKind": "ERROR",
       "firstLine": "observables.add datastoreClient.get(toOne.associatedEntity.javaClass, ((ObservableProxy)currentValue).getProxyKey(), que",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-datamapping-tck/src/main/groovy/org/apache/grails/data/testing/tck/tests/DomainEventsSpec.groovy",
-      "nodes": 10,
-      "missingTokens": [
-        ";"
-      ],
-      "errorNodes": 9,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 19
-    },
-    {
-      "file": "grails-datamapping-tck/src/main/groovy/org/apache/grails/data/testing/tck/tests/PersistenceEventListenerSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [
-        "}"
-      ],
-      "errorNodes": 7,
-      "firstRow": 277,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 15
-    },
-    {
-      "file": "grails-datamapping-tck/src/main/groovy/org/apache/grails/data/testing/tck/tests/WhereQueryIssueVerificationSpec.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 250,
-      "firstKind": "ERROR",
-      "firstLine": "'in'('id', [author1.id])",
-      "pipelineErrors": 8
-    },
-    {
-      "file": "grails-datamapping-tck/src/main/groovy/org/apache/grails/data/testing/tck/tests/WhereQueryLeftJoinSpec.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 34,
-      "firstKind": "ERROR",
-      "firstLine": "@Requires({ Boolean.getBoolean('hibernate5.gorm.suite') || Boolean.getBoolean('hibernate7.gorm.suite') })",
-      "pipelineErrors": 8
     },
     {
       "file": "grails-datastore-core/src/main/groovy/org/grails/datastore/mapping/config/ConfigurationBuilder.groovy",
@@ -1590,16 +1374,6 @@
       "pipelineErrors": 28
     },
     {
-      "file": "grails-gsp/plugin/src/test/groovy/org/grails/web/mapping/RestfulReverseUrlRenderingTests.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 61,
-      "firstKind": "ERROR",
-      "firstLine": "@Artefact('UrlMappings')",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-gsp/plugin/src/test/groovy/org/grails/web/pages/AliasedTagPropertySpec.groovy",
       "nodes": 2,
       "missingTokens": [
@@ -1622,16 +1396,6 @@
       "firstKind": "ERROR",
       "firstLine": "assertTrue yesterdayIndex < twoDaysAgoIndex",
       "pipelineErrors": 38
-    },
-    {
-      "file": "grails-gsp/plugin/src/test/groovy/org/grails/web/taglib/FormTagLibTests.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 526,
-      "firstKind": "ERROR",
-      "firstLine": "@Artefact('UrlMappings')",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-gsp/plugin/src/test/groovy/org/grails/web/taglib/JavascriptTagLibTests.groovy",
@@ -2383,26 +2147,6 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-spring-security/acl/plugin/src/main/groovy/grails/plugin/springsecurity/acl/jdbc/GormAclLookupStrategy.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-spring-security/oauth2/plugin/grails-app/controllers/grails/plugin/springsecurity/oauth2/SpringSecurityOauth2UrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 26,
-      "firstKind": "ERROR",
-      "firstLine": "class SpringSecurityOauth2UrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-spring-security/oauth2/plugin/grails-app/services/grails/plugin/springsecurity/oauth2/SpringSecurityOauth2BaseService.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -2643,16 +2387,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-spring-security/rest/core/grails-app/controllers/grails/plugin/springsecurity/rest/RestOauthUrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class RestOauthUrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-spring-security/rest/core/grails-app/services/grails/plugin/springsecurity/rest/RestOauthService.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -2787,16 +2521,6 @@
       "pipelineErrors": 6
     },
     {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/UrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class UrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/async/AsyncTestController.groovy",
       "nodes": 3,
       "missingTokens": [],
@@ -2891,16 +2615,6 @@
       "pipelineErrors": 1
     },
     {
-      "file": "grails-test-examples/demo33/grails-app/controllers/demo/DemoUrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class DemoUrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-examples/demo33/grails-app/taglib/demo/SampleTagLib.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -2909,16 +2623,6 @@
       "firstKind": "ERROR",
       "firstLine": "class SampleTagLib {",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/demo33/src/test/groovy/demo/DefaultNullableConstraintConfigSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 30,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable: true)",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-test-examples/geb/src/integration-test/groovy/org/demo/spock/ContainerFileDetectorAnnotationSpec.groovy",
@@ -3006,16 +2710,6 @@
       "firstKind": "ERROR",
       "firstLine": "@Query(\"update ${Product p} set $p.amount = $newAmount where $p.name = $name\")",
       "pipelineErrors": 6
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/UrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class UrlMappings {",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/async/AsyncTestController.groovy",
@@ -3112,16 +2806,6 @@
       "pipelineErrors": 1
     },
     {
-      "file": "grails-test-examples/hibernate7/demo33/grails-app/controllers/demo/DemoUrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class DemoUrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-examples/hibernate7/demo33/grails-app/taglib/demo/SampleTagLib.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -3130,16 +2814,6 @@
       "firstKind": "ERROR",
       "firstLine": "class SampleTagLib {",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/demo33/src/test/groovy/demo/DefaultNullableConstraintConfigSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 30,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable: true)",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-test-examples/hibernate7/gorm/grails-app/services/gorm/BookDataService.groovy",
@@ -3212,26 +2886,6 @@
       "firstRow": 44,
       "firstKind": "ERROR",
       "firstLine": "offset      : params.int(\"offset\") ?: 0,",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/issue-11102/grails-app/controllers/issue11102/UrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class UrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/redis/grails-app/controllers/com/example/UrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 22,
-      "firstKind": "ERROR",
-      "firstLine": "class UrlMappings {",
       "pipelineErrors": 2
     },
     {
@@ -3448,26 +3102,13 @@
     },
     {
       "file": "grails-test-suite-uber/src/test/groovy/grails/spring/BeanBuilderTests.groovy",
-      "nodes": 20,
-      "missingTokens": [
-        ";",
-        ")"
-      ],
-      "errorNodes": 16,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 36
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/grails/spring/DynamicElementReaderTests.groovy",
-      "nodes": 2,
+      "nodes": 8,
       "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 29,
+      "errorNodes": 8,
+      "firstRow": 711,
       "firstKind": "ERROR",
-      "firstLine": "class DynamicElementReaderTests {",
-      "pipelineErrors": 4
+      "firstLine": "assertNotNull beanDefinitions['jeff'], 'beanDefinitions did not contain jeff'",
+      "pipelineErrors": 16
     },
     {
       "file": "grails-test-suite-uber/src/test/groovy/grails/test/MetaTestHelper.groovy",
@@ -3488,36 +3129,6 @@
       "firstKind": "ERROR",
       "firstLine": "params.max = Math.min(params.max ? params.int('max') : 10, 100)",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/grails/test/mixin/DomainClassWithDefaultConstraintsUnitTestMixinTests.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 29,
-      "firstKind": "ERROR",
-      "firstLine": "'*'(nullable:true)",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/grails/test/mixin/UrlMappingsTestMixinTests.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 321,
-      "firstKind": "ERROR",
-      "firstLine": "class ResourceTestUrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/grails/validation/DomainConstraintGettersSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 51,
-      "firstKind": "ERROR",
-      "firstLine": "config.grails.gorm.default.constraints = { '*'(nullable: false) }",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-test-suite-uber/src/test/groovy/grails/web/JSONBuilderSpec.groovy",
@@ -3567,36 +3178,6 @@
       "firstRow": 159,
       "firstKind": "ERROR",
       "firstLine": "def allMappings = evaluator.evaluateMappings mappings",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/org/grails/plugins/web/rest/render/atom/AtomDomainClassRendererSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 35,
-      "firstKind": "ERROR",
-      "firstLine": "class AtomDomainClassRendererSpec extends BaseDomainClassRendererSpec {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/org/grails/plugins/web/rest/render/hal/HalDomainClassJsonRendererSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/org/grails/plugins/web/rest/render/hal/HalDomainClassXmlRendererSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
       "pipelineErrors": 2
     },
     {
@@ -3652,18 +3233,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-testing-support-core/src/main/groovy/org/grails/testing/GrailsApplicationBuilder.groovy",
-      "nodes": 7,
-      "missingTokens": [
-        ";"
-      ],
-      "errorNodes": 6,
-      "firstRow": 291,
-      "firstKind": "ERROR",
-      "firstLine": "void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {",
-      "pipelineErrors": 13
-    },
-    {
       "file": "grails-testing-support-dbcleanup-h2/src/test/groovy/org/apache/grails/testing/cleanup/h2/H2DatabaseCleanerSpec.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -3682,18 +3251,6 @@
       "firstKind": "ERROR",
       "firstLine": "def datastore = mongoDatastoreClass.getDeclaredConstructor(Map<String, Object>, Package[]).newInstance(configuration, pa",
       "pipelineErrors": 12
-    },
-    {
-      "file": "grails-testing-support-web/src/main/groovy/org/grails/testing/spock/WebSetupSpecInterceptor.groovy",
-      "nodes": 26,
-      "missingTokens": [
-        "identifier"
-      ],
-      "errorNodes": 22,
-      "firstRow": 171,
-      "firstKind": "ERROR",
-      "firstLine": "}",
-      "pipelineErrors": 48
     },
     {
       "file": "grails-validation/src/test/groovy/grails/validation/ValidateableTraitAdHocSpec.groovy",
@@ -3916,75 +3473,33 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-web-url-mappings/src/main/groovy/org/grails/web/mapping/DefaultUrlMappings.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 27,
-      "firstKind": "ERROR",
-      "firstLine": "class DefaultUrlMappings {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-web-url-mappings/src/test-cli/groovy/org/grails/web/mapping/reporting/AnsiConsoleUrlMappingsRendererSpec.groovy",
-      "nodes": 7,
-      "missingTokens": [
-        "}"
-      ],
-      "errorNodes": 5,
-      "firstRow": 134,
-      "firstKind": "MISSING }",
-      "firstLine": "",
-      "pipelineErrors": 12
-    },
-    {
-      "file": "grails-web-url-mappings/src/test/groovy/grails/web/mapping/CollectionWithVariableUrlMappingSpec.groovy",
       "nodes": 1,
       "missingTokens": [],
       "errorNodes": 1,
-      "firstRow": 1,
+      "firstRow": 130,
       "firstKind": "ERROR",
-      "firstLine": "/*",
+      "firstLine": "def allMappings = evaluator.evaluateMappings mappings",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-web-url-mappings/src/test/groovy/grails/web/mapping/GroupedUrlMappingSpec.groovy",
-      "nodes": 13,
-      "missingTokens": [],
-      "errorNodes": 13,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 26
     },
     {
       "file": "grails-web-url-mappings/src/test/groovy/grails/web/mapping/RestfulResourceMappingSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-web-url-mappings/src/test/groovy/org/grails/web/mapping/DefaultUrlMappingEvaluatorSpec.groovy",
       "nodes": 2,
       "missingTokens": [],
       "errorNodes": 2,
-      "firstRow": 24,
+      "firstRow": 1362,
       "firstKind": "ERROR",
-      "firstLine": "class DefaultUrlMappingEvaluatorSpec extends Specification {",
+      "firstLine": "def allMappings = evaluator.evaluateMappings mappings",
       "pipelineErrors": 4
     },
     {
-      "file": "grails-web-url-mappings/src/test/groovy/org/grails/web/mapping/GroupDefaultsSpec.groovy",
+      "file": "grails-web-url-mappings/src/test/groovy/org/grails/web/mapping/DefaultUrlMappingEvaluatorSpec.groovy",
       "nodes": 1,
       "missingTokens": [],
       "errorNodes": 1,
-      "firstRow": 1,
+      "firstRow": 31,
       "firstKind": "ERROR",
-      "firstLine": "/*",
+      "firstLine": "List<UrlMapping> mappings = defaultUrlMappingEvaluator.evaluateMappings closure",
       "pipelineErrors": 2
     },
     {
@@ -3998,16 +3513,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-web-url-mappings/src/test/groovy/org/grails/web/mapping/UrlMappingsHolderFactoryBeanSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 64,
-      "firstKind": "ERROR",
-      "firstLine": "'/**'(controller:\"index\")",
-      "pipelineErrors": 4
-    },
-    {
       "file": "grails-web-url-mappings/src/test/groovy/org/grails/web/mapping/UrlMappingsWithHttpMethodSpec.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -4016,16 +3521,6 @@
       "firstKind": "ERROR",
       "firstLine": "def mappings = evaluator.evaluateMappings mappings",
       "pipelineErrors": 4
-    },
-    {
-      "file": "grails-web-url-mappings/src/test/groovy/org/grails/web/mapping/mvc/WildcardActionValidationSpec.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 134,
-      "firstKind": "ERROR",
-      "firstLine": "void 'applies wildcard filtering to match() results'() {",
-      "pipelineErrors": 8
     },
     {
       "file": "grails-wrapper/src/test/groovy/grails/init/GrailsVersionSpec.groovy",
