@@ -107,6 +107,69 @@ export async function enrichRelationships(
   const updateStmt = rawDb.prepare(`
     UPDATE brain_relationship SET metadata = ? WHERE id = ? AND project_id = ?
   `)
+  // #865 acceptance item 1: the enrichment must PRESERVE keys it does not own
+  // (evidenceClass, phpSpecific, scalaSpecific, syntheticSource, …). The pass
+  // used to build a fresh object and write it wholesale, destroying every
+  // analyzer-written key on every row it could see — exactly the keys M59's
+  // contracts treat as the durable record of the analyzer's evidence. The
+  // merge is enrichment-owned-key-wins for the ten dimensions this pass
+  // computes (a re-run must refresh its OWN values, including unsetting flags
+  // that no longer apply), and analyzer-owned-key-survives for everything
+  // else. `inferredAt` is always overwritten: it is the marker that the
+  // enrichment READ path (src/lsp/enrichment.ts) uses to recognise an
+  // enrichment record, and #865 item 2 requires that a merged row stays an
+  // enrichment record rather than resurrecting an analyzer-only row as one.
+  const ENRICHMENT_OWNED_KEYS = new Set([
+    "role",
+    "pattern",
+    "layerFlow",
+    "criticality",
+    "frequency",
+    "isTestCode",
+    "isGeneratedCode",
+    "isFrameworkContract",
+    "isDependencyInjection",
+    "inferredAt",
+  ])
+  let rowsWithoutParseableMetadata = 0
+  type ComputedEnrichment = {
+    layerFlow: string
+    criticality: string
+    frequency: string
+    isTestCode: boolean
+    isGeneratedCode: boolean
+    isFrameworkContract: boolean
+    isDI: boolean
+    pattern: RelationshipEnrichment["pattern"]
+    role: RelationshipEnrichment["role"]
+  }
+  const mergeMetadata = (row: any, computed: ComputedEnrichment): any => {
+    let existing: Record<string, unknown> = {}
+    if (typeof row.metadata === "string" && row.metadata.length > 0) {
+      try {
+        const parsed = JSON.parse(row.metadata)
+        if (parsed !== null && typeof parsed === "object") existing = parsed
+        else rowsWithoutParseableMetadata++
+      } catch {
+        // Unparseable pre-existing metadata cannot be merged without losing
+        // either side's shape; count it and let the enrichment overwrite.
+        rowsWithoutParseableMetadata++
+      }
+    }
+    const meta: any = { ...existing }
+    for (const k of Object.keys(meta)) if (ENRICHMENT_OWNED_KEYS.has(k)) delete meta[k]
+    meta.layerFlow = computed.layerFlow
+    meta.criticality = computed.criticality
+    meta.frequency = computed.frequency
+    if (computed.isTestCode) meta.isTestCode = true
+    if (computed.isGeneratedCode) meta.isGeneratedCode = true
+    if (computed.isFrameworkContract) meta.isFrameworkContract = true
+    if (computed.isDI) meta.isDependencyInjection = true
+    if (computed.pattern) meta.pattern = computed.pattern
+    if (computed.role) meta.role = computed.role
+    meta.inferredAt = now
+    return meta
+  }
   let enriched = 0
   let patternsFound = 0
   const processBatch = (batch: any[]) => {
@@ -138,17 +201,17 @@ export async function enrichRelationships(
         })
         const role = inferRole(row.relationship_type, row.source_type || "", row.target_type || "", pattern)
 
-        const meta: any = {}
-        meta.layerFlow = layerFlow
-        meta.criticality = criticality
-        meta.frequency = frequency
-        if (isTestCode) meta.isTestCode = true
-        if (isGeneratedCode) meta.isGeneratedCode = true
-        if (isFrameworkContract) meta.isFrameworkContract = true
-        if (isDI) meta.isDependencyInjection = true
-        if (pattern) meta.pattern = pattern
-        if (role) meta.role = role
-        meta.inferredAt = now
+        const meta = mergeMetadata(row, {
+          layerFlow,
+          criticality,
+          frequency,
+          isTestCode,
+          isGeneratedCode,
+          isFrameworkContract,
+          isDI,
+          pattern,
+          role,
+        })
 
         updateStmt.run(JSON.stringify(meta), row.id, projectId)
         if (pattern) patternsFound++
@@ -168,7 +231,7 @@ export async function enrichRelationships(
       const chunk = scopeIds.slice(i, i + CHUNK)
       const placeholders = chunk.map(() => "?").join(",")
       const batch = rawDb.prepare(`
-      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id,
+      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id, r.metadata,
              s.layer as source_layer, s.symbol_type as source_type, s.name as source_name,
              t.layer as target_layer, t.symbol_type as target_type, t.name as target_name,
              sf.relative_path as source_file
@@ -185,7 +248,7 @@ export async function enrichRelationships(
     let offset = 0
     while (true) {
       const batch = rawDb.prepare(`
-      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id,
+      SELECT r.id, r.relationship_type, r.source_symbol_id, r.target_symbol_id, r.metadata,
              s.layer as source_layer, s.symbol_type as source_type, s.name as source_name,
              t.layer as target_layer, t.symbol_type as target_type, t.name as target_name,
              sf.relative_path as source_file
