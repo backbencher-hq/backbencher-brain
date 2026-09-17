@@ -7,11 +7,11 @@
   "passed": 24,
   "failed": 2,
   "negativeCases": 9,
-  "currentCommit": "e3ab451eecd5971a18c4fd2568c3cd4c3bde2c75",
+  "currentCommit": "bba0c5d498e4c85df318749433eac74130013651",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-13T17:26:44.868Z",
+  "generatedAt": "2026-09-17T00:23:29.934Z",
   "ledger": "validation/m44/results/manifest.json",
   "m42Bar": {
     "gateExit": 1
@@ -22,7 +22,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.552Z",
-    "contentSha256": "0a17b248d4e25a58d216c1b48846a9f7d23172563123eb8e0731058f5116d55c"
+    "sealedAt": "2026-09-17T00:23:29.938Z",
+    "contentSha256": "1ff85751def73d8e453bf4617791820bcd5fb7a5ec0fff50d40c09cc6426f333"
   }
 }
