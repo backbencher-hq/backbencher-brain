@@ -291,6 +291,26 @@ function revertMetadataLineBase(r: any) {
   }
 }
 
+// M60.P1 (#873), the same class on the rows where the mirror is the ONLY line:
+// the cpp analyzer's Calls and Instantiates rows carry `metadata.line` and NO
+// `line_number` at all, so `revertMetadataLineBase` above cannot see them (it
+// requires both fields). This mutation restores `startPosition.row` on exactly
+// those rows — the pre-fix writer, measured as 708 cpp and 1,327 hpp rows in a
+// three-file-per-language sample. It exists because a mutant that only knows the
+// two-field shape would let the one-field shape regress unnoticed.
+function revertMetadataOnlyLineBase(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const has = (x: any) =>
+    typeof x?.line_number !== "number" && typeof x?.metadata?.line === "number"
+  if (!rels.some(has)) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) =>
+      has(x) ? { ...x, metadata: { ...x.metadata, line: x.metadata.line - 1 } } : x,
+    ),
+  }
+}
+
 // M59 (#825), the 0-based/1-based class: every line shifted down by one, which is
 // what emitting `startPosition.row` instead of `row + 1` produces. This is the
 // classic off-by-one this contract is one keystroke away from, and it is the
@@ -1612,6 +1632,14 @@ const MUTANTS: Mutant[] = [
     description:
       "M60.P1 (#873) regression: the metadata line mirror goes back to the 0-based `startPosition.row` while the row's `line_number` stays 1-based — the exact pre-fix state of the eight typescript writers (measured through the production pipeline: typescript 148 of 155 rows off by one, tsx 173 of 179, vue 3 of 3, and ZERO on java/scala/groovy/gradle/cpp/python/js). Caught by typescript/one-line-base-873, which pins both fields on three rows and forbids the one-below values.",
     transform: revertMetadataLineBase,
+  },
+  {
+    id: "cpp/metadata-only-line-second-base",
+    language: "cpp",
+    defectClass: "line-attribution",
+    description:
+      "M60.P1 (#873) regression, the ONE-FIELD shape: the metadata line mirror goes back to the 0-based `startPosition.row` on the rows that carry NO `line_number` — the cpp/hpp Calls and Instantiates rows, where the mirror is the row's entire line (measured before the fix: 708 cpp and 1,327 hpp such rows in a three-file-per-language sample). The two-field mutant cannot reach this shape, so it is mutated separately. Caught by cpp/metadata-line-base-873, which pins the instantiation on source line 18 and the call on 19 and forbids the one-above values 17 and 18.",
+    transform: revertMetadataOnlyLineBase,
   },
   {
     id: "svelte/lines-dropped",
