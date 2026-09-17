@@ -1768,6 +1768,32 @@ class TypeScriptAnalysisRunner {
     }
     this._dupKeyDeadSpans = null
 
+    // M60.P1 (#873): ONE row, ONE line base. `line_number` is 1-based
+    // (`lineField`, every other analyzer, and the store column), while the
+    // `metadata.line` mirror was written as `startPosition.row` at eight call
+    // sites — 0-based, and sometimes a different NODE than the one `lineField`
+    // stamped. Measured through the production pipeline (script/m14/tmp/
+    // probe-metadata-line-base.ts, one file per language from real corpora):
+    // typescript 148 of 155 rows off by one and 7 by more, tsx 173 of 179, vue 3
+    // of 3 — and ZERO rows on java, kotlin, scala, groovy, cpp, python, js or
+    // swift, because only this analyzer writes the mirror. The eight writers now
+    // write the 1-based site, and this pass makes the two fields agree BY
+    // CONSTRUCTION, so a ninth writer cannot reintroduce a second base by
+    // forgetting one of them. It only ever corrects a present number: absence
+    // stays absence (the ruled "unknown is a first-class state" contract).
+    let baseMismatches = 0
+    for (const r of relationships) {
+      const meta = r.metadata as { line?: unknown } | undefined
+      if (!meta || typeof r.line_number !== "number") continue
+      if (typeof meta.line === "number" && meta.line !== r.line_number) {
+        meta.line = r.line_number
+        baseMismatches++
+      }
+    }
+    // (No logging here: the analyzer is a pure function of the source text, and
+    // the count is observable in the payload matrix and in the sweep probe.)
+    void baseMismatches
+
     return {
       language: "typescript",
       symbols,
@@ -3712,7 +3738,7 @@ class TypeScriptAnalysisRunner {
               ...this.lineField(callee.type === "member_expression" ? (callee.childForFieldName("property") ?? callee) : callee),
               metadata: {
                 calleeExpression: callee.text,
-                line: n.startPosition.row,
+                line: n.startPosition.row + 1,
               } as any,
             })
           }
@@ -3734,7 +3760,7 @@ class TypeScriptAnalysisRunner {
                   ...this.lineField(identifier),
                   metadata: {
                     jsxElement: identifier.text,
-                    line: n.startPosition.row,
+                    line: n.startPosition.row + 1,
                   } as any,
                 })
               }
@@ -3854,7 +3880,7 @@ class TypeScriptAnalysisRunner {
                   metadata: {
                     isJsxComponent: true,
                     jsxTag: tag,
-                    line: n.startPosition.row,
+                    line: n.startPosition.row + 1,
                   },
                 })
               }
@@ -3940,7 +3966,7 @@ class TypeScriptAnalysisRunner {
               confidence: 0.8,
               ...this.lineField(n),
               metadata: {
-                line: n.startPosition.row,
+                line: n.startPosition.row + 1,
               },
             })
           }
@@ -3969,7 +3995,7 @@ class TypeScriptAnalysisRunner {
               ...this.lineField(n.type === "generic_type" ? (n.namedChild(0) ?? n) : n),
               metadata: {
                 isTypeReference: true,
-                line: n.startPosition.row,
+                line: n.startPosition.row + 1,
               },
             })
           }
@@ -4025,7 +4051,7 @@ class TypeScriptAnalysisRunner {
                   ...this.lineField(c),
                   metadata: {
                     isTemplateInterpolation: true,
-                    line: c.startPosition.row,
+                    line: c.startPosition.row + 1,
                   },
                 })
               }
@@ -4087,7 +4113,7 @@ class TypeScriptAnalysisRunner {
                   ...this.lineField(prop),
                   metadata: {
                     isFieldAccess: true,
-                    line: prop.startPosition.row,
+                    line: prop.startPosition.row + 1,
                   },
                 })
               }
@@ -4182,7 +4208,10 @@ class TypeScriptAnalysisRunner {
       // since the target is the leaf (TSD3 leaf identity).
       ...this.lineField(constructor.type === "member_expression" ? (constructor.childForFieldName("property") ?? constructor) : constructor),
       metadata: {
-        line: expressionNode.startPosition.row,
+        // #873: the site line is the SAME node `lineField` stamps above, in the
+        // SAME base — a row must not carry two different sites, let alone two
+        // different bases (this one differed by up to 5 rows on element-plus).
+        line: (constructor.type === "member_expression" ? (constructor.childForFieldName("property") ?? constructor) : constructor).startPosition.row + 1,
       } as any,
     })
   }
@@ -4517,7 +4546,9 @@ class TypeScriptAnalysisRunner {
   /**
    * M49 dup-key ruling (#746) post-walk half: drop phantom edges sourced
    * from a collapsed (dead) object member's body. Calls/uses/references
-   * carry metadata.line (0-based row of the site); an edge whose source is
+   * carry metadata.line — the site row, 1-based and equal to the row's own
+   * `line_number` since #873 (it used to be a 0-based `startPosition.row`, so
+   * the same row carried two bases); an edge whose source is
    * the dead member's name AND whose site lies inside the dead span
    * belonged to the body runtime never executes.
    */
@@ -4526,9 +4557,13 @@ class TypeScriptAnalysisRunner {
     dead: { name: string; startRow: number; endRow: number; startCol: number; endCol: number }[],
   ): void {
     if (dead.length === 0) return
+    // #873: `dead[*].startRow/endRow` are 0-based rows; `metadata.line` is now
+    // 1-based (the same base as `line_number`), so the span comparison moves with
+    // it. Comparing a 1-based site against 0-based bounds would silently widen the
+    // dead span by a line at each end.
     const inDead = (name: string, line: unknown): boolean => {
       if (typeof line !== "number") return false
-      return dead.some((d) => d.name === name && line >= d.startRow && line <= d.endRow)
+      return dead.some((d) => d.name === name && line >= d.startRow + 1 && line <= d.endRow + 1)
     }
     const kept = relationships.filter((r) => {
       const meta = r.metadata as { line?: unknown } | undefined
