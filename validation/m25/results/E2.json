@@ -9,10 +9,10 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negativeCases": 5,
-  "currentCommit": "bba0c5d498e4c85df318749433eac74130013651",
+  "currentCommit": "ab5ff8841c830e01b5e9faaad86f21fe82ca1630",
   "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
   "evidenceFile": "E2.json",
-  "generatedAt": "2026-09-17T00:27:59.646Z",
+  "generatedAt": "2026-09-17T00:59:11.102Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -24,7 +24,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:27:59.647Z",
-    "contentSha256": "e2627f4d99ad4a542fdabe480953019f93894be62d844092d0c6be5343c6d237"
+    "sealedAt": "2026-09-17T00:59:11.103Z",
+    "contentSha256": "9d13b98187729272a13e75090a8d72dc975faecf8e8e69456dd1b85e7f81985d"
   }
 }

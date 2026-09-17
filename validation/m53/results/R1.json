@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 36,
-  "failed": 4,
+  "status": "verified",
+  "passed": 40,
+  "failed": 0,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -104,9 +104,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (48/50 passed, 3 negative)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (50/50 passed, 3 negative)",
+      "ok": true
     },
     {
       "name": "m27-nvim",
@@ -202,9 +202,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (29/32 passed, 3 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true
     },
     {
       "name": "m42-enrichment",
@@ -251,9 +251,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (25/30 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
+      "ok": true
     },
     {
       "name": "m44-hub-tree",
@@ -293,17 +293,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (43/48 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
+      "ok": true
     }
   ],
-  "currentCommit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
+  "currentCommit": "ab5ff8841c830e01b5e9faaad86f21fe82ca1630",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-16T23:58:20.931Z",
+  "generatedAt": "2026-09-17T01:12:11.950Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T23:58:20.932Z",
-    "contentSha256": "1e7391ba0a6cf19c03527bbb99e5bf8e8cb0433381d4777bbe6c7d9198c008af"
+    "sealedAt": "2026-09-17T01:12:11.951Z",
+    "contentSha256": "47bbc90ab6e7e966a72ddf2ffa6e5dc8db42bd438cd03756125bc7f001f67e97"
   }
 }
