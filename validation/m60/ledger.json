@@ -1,42 +1,28 @@
 {
   "schemaVersion": 1,
   "milestone": "M60",
-  "title": "Family Truth Reconciliation \u2014 the standing rules, and the JVM/web remainder",
+  "title": "Family Truth Reconciliation — the standing rules, and the JVM/web remainder",
   "ownerOrdered": true,
   "terminalMilestone": true,
   "purpose": "M14, M37 and M49 each certify the JVM and Web families as done, while 14 M49-CONV issues remain open across every family. The mechanism is scope: each milestone measured its own artifact (M14 the analyzer oracle, M37 the families against each other, M49 external claims against code) and none measured payload truth across the seam emit -> store -> query -> tool, so every new dimension looked like a new phase instead of an unfinished one. M60 closes the remainder, converts 'family closed' from prose into a computed boolean (green gate AND zero non-alive payload cells), and establishes the standing rules that bind every milestone so no new milestone is minted to carry work that belongs to an existing one. Fold target: M49. Hand-off: M14-clean receives one milestone for all remaining analyzers.",
-  "dependsOn": [
-    "M59"
-  ],
+  "dependsOn": ["M59"],
   "foldTarget": "M49",
   "handOff": "M14",
-  "invariant": "A family may be called closed only when its closure gate is green AND every payload cell of every onboarded language in it is alive \u2014 produced by the analyzer, preserved by the store, reachable at query, and truthful at the tool. Any closure claim not backed by a live gate is itself a defect. No new milestone may be created to carry work that belongs to an existing one.",
+  "invariant": "A family may be called closed only when its closure gate is green AND every payload cell of every onboarded language in it is alive — produced by the analyzer, preserved by the store, reachable at query, and truthful at the tool. Any closure claim not backed by a live gate is itself a defect. No new milestone may be created to carry work that belongs to an existing one.",
   "families": {
     "jvm": {
-      "languages": [
-        "java",
-        "kotlin",
-        "scala",
-        "groovy"
-      ],
+      "languages": ["java", "kotlin", "scala", "groovy"],
       "remainder": "M60.J1",
       "remainderIssue": 830,
-      "source": "docs/m60/PLAN.md \u00a71 'The JVM remainder (family `jvm`)': #739 java \u00b7 #740 kotlin \u00b7 #741 scala \u00b7 #742 groovy"
+      "source": "docs/m60/PLAN.md §1 'The JVM remainder (family `jvm`)': #739 java · #740 kotlin · #741 scala · #742 groovy"
     },
     "web": {
-      "languages": [
-        "typescript",
-        "javascript",
-        "vue",
-        "svelte"
-      ],
+      "languages": ["typescript", "javascript", "vue", "svelte"],
       "remainder": "M60.W1",
       "remainderIssue": 831,
-      "remainderLanes": [
-        "dart"
-      ],
-      "source": "docs/m60/PLAN.md \u00a72 'The Web remainder (family `web`)': #816 (name-resolution FP) \u00b7 #818 (dart lane re-measure)",
-      "remainderLanesNote": "M60.W1's remainder names #818, a dart F5-lane deferral, alongside #816 \u2014 so dart appears in this family's REMAINDER accounting while its analyzer is not one of the family's language set here. Recorded rather than silently absorbed: dart's own review folder and analyzer are tracked by their own wave, and the closure conditions that read this language list (folders closed, analyzers committed, cells alive) must not be widened to languages this family does not own without that being a decision."
+      "remainderLanes": ["dart"],
+      "source": "docs/m60/PLAN.md §2 'The Web remainder (family `web`)': #816 (name-resolution FP) · #818 (dart lane re-measure)",
+      "remainderLanesNote": "M60.W1's remainder names #818, a dart F5-lane deferral, alongside #816 — so dart appears in this family's REMAINDER accounting while its analyzer is not one of the family's language set here. Recorded rather than silently absorbed: dart's own review folder and analyzer are tracked by their own wave, and the closure conditions that read this language list (folders closed, analyzers committed, cells alive) must not be widened to languages this family does not own without that being a decision."
     }
   },
   "standingRules": [
@@ -67,7 +53,7 @@
     },
     {
       "id": "R6",
-      "rule": "One line base for every line in the payload: `line_number`, `range`, `decoratorLine` and the `metadata.line` mirror are 1-based, and no analyzer may emit a mirror that is not provably so (#873's class; the cpp/hpp rows carry no `line_number` at all, so the mirror was their entire line).",
+      "rule": "One line base for every line in the payload: `line_number`, `range`, `decoratorLine` and the `metadata.line` mirror are 1-based, and no analyzer may emit a mirror that is not provably so (#873; the cpp/hpp rows carry no `line_number` at all, so a wrong mirror there was the row's entire line).",
       "enforcedBy": "G1"
     }
   ],
@@ -79,7 +65,7 @@
       "status": "verified",
       "evidenceFile": "validation/m60/results/G1.json",
       "verifiedAtCommit": "HEAD",
-      "notes": "script/m60/verify-standing-rules.ts: rules written where every milestone reads them (ledger standingRules), machinery pure + negative-tested (6 negatives: BLOCKED forbids closed, open-issue forbids closed, empty computes closed; R3 scan flags violation, passes compliant, ignores non-finding). R3 live scan drove real registrations: #839 (W9 zig binding), #840 (W16 sweep-state); #825/#801 citations added. R1 live check found M7/M8/M39 finished-but-open and M56/M58 undocumented \u2014 registry docs/milestones.md created, all open milestones now documented. Wired into package.json verify."
+      "notes": "script/m60/verify-standing-rules.ts: rules written where every milestone reads them (ledger standingRules), machinery pure + negative-tested (6 negatives: BLOCKED forbids closed, open-issue forbids closed, empty computes closed; R3 scan flags violation, passes compliant, ignores non-finding). R3 live scan drove real registrations: #839 (W9 zig binding), #840 (W16 sweep-state); #825/#801 citations added. R1 live check found M7/M8/M39 finished-but-open and M56/M58 undocumented — registry docs/milestones.md created, all open milestones now documented. Wired into package.json verify."
     },
     {
       "id": "P1",
@@ -88,7 +74,7 @@
       "status": "verified",
       "evidenceFile": "validation/m60/results/P1.json",
       "verifiedAtCommit": "HEAD",
-      "notes": "script/m60/payload-matrix.ts: fields parsed from types.ts (fatal on undeclared/rotting spec), every needle verified live, fatal two-direction rot-checks (a binding appearing or disappearing both fail). Reproduces the plan's PoC rows and adds: verdict taxonomy alive/alive-partial/ruled-dead/BLOCKED; per-language emit cells (672, 337 alive); two UNDECLARED store bindings surfaced (symbol.docstring, symbol.complexity). Found and fixed #837: scope_kind DDL'd but never INSERTed \u2014 bound, live-verified (scope837-verify), negative proven."
+      "notes": "script/m60/payload-matrix.ts: fields parsed from types.ts (fatal on undeclared/rotting spec), every needle verified live, fatal two-direction rot-checks (a binding appearing or disappearing both fail). Reproduces the plan's PoC rows and adds: verdict taxonomy alive/alive-partial/ruled-dead/BLOCKED; per-language emit cells (672, 337 alive); two UNDECLARED store bindings surfaced (symbol.docstring, symbol.complexity). Found and fixed #837: scope_kind DDL'd but never INSERTed — bound, live-verified (scope837-verify), negative proven."
     },
     {
       "id": "J1",
@@ -97,7 +83,7 @@
       "status": "verified",
       "evidenceFile": "validation/m60/results/J1.json",
       "verifiedAtCommit": "HEAD",
-      "notes": "#739/#740 fixed+closed earlier waves. #741 fixed+closed this wave (c6df719b: Spring/Jackson/jsoniter/sttp detection, fixture + 2 mutants incl. forbidFrameworks direction, lane 100/0/0). #742 FIXED + CLOSED this wave (bab8342d, M49 W18): the registered environment-blocked remedy was never verified against the vendored tree \u2014 the grammar source is in-repo at grammars/tree-sitter-groovy/ and the repo's local tree-sitter CLI builds wasm with its bundled WASI toolchain (no emcc, no emsdk, no network). Measured through the production parseFile pipeline on grails-core (6,564 files): 59.0% -> 25.0% error files (3,874 -> 1,643); the recorded M12 400-file sample 250/400 -> 115/400; the 15-cell construct matrix 11/15 -> 15/15; corpus-wide MISSING ';' 2,698 -> 340. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast mis-parse marker; re-keyed to the structural cast_type). Residual registered as #841. J1.json carries the per-issue disposition."
+      "notes": "#739/#740 fixed+closed earlier waves. #741 fixed+closed this wave (c6df719b: Spring/Jackson/jsoniter/sttp detection, fixture + 2 mutants incl. forbidFrameworks direction, lane 100/0/0). #742 FIXED + CLOSED this wave (bab8342d, M49 W18): the registered environment-blocked remedy was never verified against the vendored tree — the grammar source is in-repo at grammars/tree-sitter-groovy/ and the repo's local tree-sitter CLI builds wasm with its bundled WASI toolchain (no emcc, no emsdk, no network). Measured through the production parseFile pipeline on grails-core (6,564 files): 59.0% -> 25.0% error files (3,874 -> 1,643); the recorded M12 400-file sample 250/400 -> 115/400; the 15-cell construct matrix 11/15 -> 15/15; corpus-wide MISSING ';' 2,698 -> 340. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast mis-parse marker; re-keyed to the structural cast_type). Residual registered as #841. J1.json carries the per-issue disposition."
     },
     {
       "id": "W1",
@@ -114,7 +100,7 @@
       "title": "Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required",
       "status": "pending",
       "evidenceFile": "validation/m60/results/X1.json",
-      "notes": "script/m60/verify-family-closure-truth.ts implemented and emitting X1/J1/W1.json; the closure verdict is COMPUTED (closed-computable vs not-closed). Current verdict: not-closed \u2014 honest blockers: (1) the M60 container issues #830/#831 are themselves OPEN and their titles match this gate's own family scan \u2014 a circularity: they cannot close while the gate counts them as findings, so the fold must record them as containers, not as defects; (2) M49 closure refuses live (X1 5/7: 11 review folders open \u2014 dart, rust, go, csharp, ruby, cpp, zig, swift, systems-family, php, objc \u2014 i.e. the co-agent's in-flight waves and the unprocessed first-pass folders; G6 census-lineage was red on one stale register position, corrected 1054 -> 1236 in this wave); (3) R4 fold record not yet written into the M49 ledger (lands at milestone close by design). Fold + M14 hand-off decision belong to the owner at close."
+      "notes": "script/m60/verify-family-closure-truth.ts implemented and emitting X1/J1/W1.json; the closure verdict is COMPUTED (closed-computable vs not-closed). Current verdict: not-closed — honest blockers: (1) the M60 container issues #830/#831 are themselves OPEN and their titles match this gate's own family scan — a circularity: they cannot close while the gate counts them as findings, so the fold must record them as containers, not as defects; (2) M49 closure refuses live (X1 5/7: 11 review folders open — dart, rust, go, csharp, ruby, cpp, zig, swift, systems-family, php, objc — i.e. the co-agent's in-flight waves and the unprocessed first-pass folders; G6 census-lineage was red on one stale register position, corrected 1054 -> 1236 in this wave); (3) R4 fold record not yet written into the M49 ledger (lands at milestone close by design). Fold + M14 hand-off decision belong to the owner at close."
     }
   ]
 }
