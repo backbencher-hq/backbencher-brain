@@ -293,7 +293,7 @@ const buildEvidence = () => ({
   evidenceFile: "G1.json",
   generatedAt: new Date().toISOString(),
   limitations: [
-    "Bar re-audit re-executes V1–V6 (the milestone's own gates). The LANE bar (m24→m44) is re-audited transitively through the persisted closures and the ladder record listed in the prerequisite block — re-running the 40-gate ladder here would cost ~40 minutes per governance run and is X1's job.",
+    "Bar re-audit re-executes V1–V6 (the milestone's own gates). The LANE bar (m24→m44) is re-audited transitively through the persisted closures and the ladder record listed in the prerequisite block — re-running the 41-gate ladder here would cost ~40 minutes per governance run and is X1's job.",
     "Every ledger entry is a PROJECTION of the record it points at, re-derived on each run through the same can-fail derivation the verifier lint uses. A record re-run at a different commit legitimately moves its entry: that is a stale projection, reported as `projection.healed` and repaired (not a drift failure). Drift is the decidable case — the record has NOT moved yet the ledger states something else — and it fails loudly.",
     "D-7 lane discipline is enforced over the ledger's declared paths and this milestone's own working tree; the co-agent lanes' history is untouched by design.",
   ],

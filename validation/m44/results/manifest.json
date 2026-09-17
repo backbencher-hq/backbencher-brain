@@ -81,12 +81,13 @@
       "evidence": {
         "status": "verified",
         "currentCommit": "see U2.json",
-        "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
+        "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
         "evidenceFile": "U2.json",
         "passed": 29,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 7
+        "negativeCases": 7,
+        "note": "U2 is DERIVED: its own owner gate (script/m44/verify-hub-list.ts) derives this record from the m26 webview harness run it names, under six gated laws. The declaration lives in script/m44/u2-declaration.json."
       }
     },
     {
@@ -240,7 +241,7 @@
   "closedAt": "2026-09-09",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.555Z",
-    "contentSha256": "578831dda67f5ed4e994808ca4251f6263692283fd531b7b2665ce8614de5608"
+    "sealedAt": "2026-09-17T01:36:14.721Z",
+    "contentSha256": "8f36ff1b05a0ac03a274678f0c953b220b65b3ea7bca3c9d41e40fc600eb63a4"
   }
 }
