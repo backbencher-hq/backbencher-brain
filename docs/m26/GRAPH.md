@@ -49,7 +49,7 @@ text, no claimed bridge.
 | json | typescript | 246 | name-resolution | real project index |
 | typescript | json | 3 | name-resolution | real project index |
 
-Real project dbs scanned: 67 (skipped/unreadable: 3).
+Real project dbs scanned: 71 (skipped/unreadable: 3).
 
 ## Verification status (generated from the M26 evidence ledger)
 
