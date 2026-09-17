@@ -7,14 +7,11 @@
   "passed": 69,
   "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
-  "workingTreeRelevantChanges": [
-    "docs/m26/CROSS-LANGUAGE.md",
-    "docs/m26/GRAPH.md"
-  ],
+  "currentCommit": "bba0c5d498e4c85df318749433eac74130013651",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-17T00:18:08.828Z",
+  "generatedAt": "2026-09-17T00:23:29.108Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "closed",
@@ -26,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:18:08.835Z",
-    "contentSha256": "9a976ba1741926126818cd049ae00f1242a5b58cea051b8dbe2c5d388e3714e4"
+    "sealedAt": "2026-09-17T00:23:29.113Z",
+    "contentSha256": "ee7d47d5b689f142ca14ce18d7993dc4ccac43158226b8f6dcd445e995aa2ee3"
   }
 }
