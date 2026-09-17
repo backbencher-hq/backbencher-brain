@@ -528,6 +528,118 @@ the subject of a mutation test.
 **Not wired into `npm run verify` on purpose:** it indexes a real repo (~3 min). It is the on-demand
 acceptance instrument, run before and after each analyzer wave.
 
+### 3k. Independent re-measurement at `2ef3523e`, and two stale controls (2026-09-17)
+
+Re-run by hand at HEAD `2ef3523e` (`git status` showed only `script/m14/tmp` scratch uncommitted, so the
+measurement is of committed source), not read from the previous artifact — which is how a stale artifact
+was caught: `validation/m59/results/oracle-callsite.json` claimed `at: 2026-09-16T04:20Z` while its mtime
+was 8.5 h later, i.e. it had been **restored, not re-run**. `at` is generated at run time
+(`oracle-callsite.ts:570`), so a file whose timestamp precedes its mtime is a copy. Re-ran it fresh:
+
+| lane | rels | with line | INCONSISTENT |
+|---|---|---|---|
+| java · kotlin · scala · groovy | 6,406 · 2,254 · 423 · 865 | **all** | 0 |
+| typescript · javascript · vue · svelte | 2,074 · 2,057 · 1,051 · 110 | **all** | 0 |
+| xml | 266 | **all** | 0 |
+| the other 13 lanes | 79,649 | **0** | — |
+
+`TOTAL 880 files · 95,155 relationships · 15,506 with a line · 0 INCONSISTENT`, boundary self-test 11/11,
+mutation caught. So the real line-emitting set is **9 lanes** (java, kotlin, scala, groovy, typescript,
+javascript, vue, svelte, xml) and the analyzer lane's remaining work is **13 lanes / 79,649 relationships**.
+
+**Two reds were then found to be stale controls, not defects** — both caused by the very progress the
+lane landed, and both fixed rather than excused:
+
+1. `verify-honest-callsite.ts` **aborted** on its own shape check: its unknown-line world was a
+   **typescript** fixture, and #825 gave typescript real lines, so the fixture no longer contained a
+   non-emitting language. Control moved to **python** (still 0 lines of 4,524). Gate green again:
+   1 unknown edge audited, **0 fabricated**; 2 known edges, 0 misreported; LSP ranges finite; mutation
+   visible. (Same class of staleness the acceptance harness had already documented for its own
+   `UNLINED` list.)
+2. `acceptance-tool-callsites.ts` went **14/14 → 13/14** on `scala-anon-initializer`. Cause established
+   layer by layer with `probe-anon-init-regression.ts` (`f80b23ce`, #866): analyzer emits both calls,
+   store persists both at lines 6/8, the **tool returns both** — but attributed to the anonymous body's
+   field members (`a`, `b`), which are stored with `owner_symbol_id = NULL`. The site is not lost; the
+   **identity** is a dead end. Fixture membership is now "the caller, or a symbol lexically inside the
+   caller", and the missing link is its own check — see **#879** below.
+
+**The harness now reports 14/15 with one declared red**, deliberately: `nested-site-source-reaches-the-caller`
+(`2 nested-source site(s); 0 reach the caller by owner chain, 2 dead-end at a NULL owner`). It was not
+deleted and the site check was not weakened to hide it. Filed as **#879** (M59.A10, lane: JVM/analyzer,
+#866 lineage) with the scale measured on a fresh cats-effect index (404 files, 33,314 rels): **126**
+ownerless constants/variables lexically nested inside another symbol in scala/kt files, and **70** call
+edges whose source symbol is ownerless and ≤3 characters. Write-up: `reviews/m59-nested-source-owner-dead-end.md`.
+
+My four gates at this HEAD, all green: `verify-honest-callsite` (5/5) · `verify-rel-multiplicity` (4/4) ·
+`verify-legacy-zero-heal` (2/2) · `verify-line-key-idempotency` (6/6). Corpus half of the acceptance
+harness: **1,083 sites, 0 fabricated, 0 wrong lines, 0 sites the tool dropped**, both in-run mutations
+behaving (21 → 20 → 21 on delete; clean → red → clean on a corrupted line).
+
+### 3l. The per-language tool-answer matrix, and three product findings it produced (2026-09-17)
+
+`script/m59/matrix-tool-language.ts` — the instrument this milestone was missing: for each language, index a
+real corpus slice, then ask `bb_graph` **through the real MCP handler** and audit every returned site against
+the source file it names, plus grep as the baseline. Merged evidence:
+`validation/m59/results/matrix-tool-language.json` (built by `merge-matrix-halves.ts` from the half-runs, and
+recording `mergedFrom` so a partial sweep can never masquerade as a complete one).
+
+**Result so far — 2 of 9 languages, 16 cells, `consistent=2,284`, `WRONG=0`, `unknown=0`, `notCheckable=0`,
+`mutationsCaught=2/2`:**
+
+| language | repo | slice | rels | cells | consistent | WRONG | mutation |
+|---|---|---|---|---|---|---|---|
+| scala | cats-effect | 150 files, fp `60b339f9…` | 19,082 (0 zeros) | 8 | 705 | 0 | caught (65→64, wrong 0→1, restore 65) |
+| java | clojure | 150 files | — | 8 | 1,579 | 0 | caught (200→199, wrong 0→1, restore 200) |
+
+**Seven defects in this instrument were found and fixed before any of its numbers were reported** — the same
+pattern the acceptance harness set, because an instrument that accuses correct code is worse than none:
+
+1. **type-applied calls read as wrong lines.** `MapRef.scala:230` is `delay[F[Option[B]]] {` — a real call;
+   the predicate only knew `token(`/`token {`. One WRONG was purely this. Self-tests added.
+2. **a mutation that could not fail.** The first mutation compared SQL row counts at two lines and printed
+   `caught:false` for every cell (`clean=1, corrupted=1, restored=1`). Replaced by re-running the **real
+   audit**: corrupt a row's line past EOF, require `consistent` to drop by exactly one and recover.
+3. **a green over an empty world.** Files under a `test/` directory are excluded by the indexer's own
+   `skipPatterns` (`/\/test\//`, project-relative), so a 60-file slice landed entirely inside
+   `src/test/**`, discovery returned **0 files**, and the sweep printed `WRONG=0`. The instrument now mirrors
+   the product's directory exclusions and **refuses to print a verdict** if the slice or the index is empty.
+4. **`missed` was always the whole set.** The scan used `path.relative(proj, f)` with `f` an absolute *corpus*
+   path (strings like `../../home/…`), so `reported` and `realCallLines` could never intersect: `liftF`
+   showed `missed=117` of `realCalls=117` — exact equality is the tell. Fixed, and `missed` for `liftF`
+   collapsed **117 → 1**, which matches the already-filed analyzer gap #855.
+5. **the tool's truncation flag was read from the wrong depth.** The engine nests it
+   (`summary.truncated`); reading the top level made every capped cell look complete.
+6. **the mutation could be skipped entirely** when every cell sat at the 200-row cap (`mutation:{"ran":false}`
+   on java). Now it falls back to a capped cell rather than proving nothing.
+7. **`bb_analyze callers` was unbounded** in the sweep: `maxDepth=3` on a common name exceeded 7 minutes of
+   a 500 s budget. Bounded to 20 s and recorded as "NO ANSWER within 20s" — never as slow success.
+
+Three product findings, all filed, none papered over:
+
+- **[#888](https://github.com/backbencher-hq/backbencher-brain/issues/888) — `bb_graph` silently returns ≤200 callers.**
+  `graph-engine.ts:160` carries a hard `LIMIT 200`; `truncated` is set only on budget exhaustion, so a symbol
+  with **3,437** real call sites answers with 200 and `truncated: false`. 7 of 8 java cells sat exactly at the
+  cap. The 200 it does return are correct (`200/200` consistent, 0 fabricated) — that is the point: the tool
+  is not wrong, it is **silent about the rest**, which is the exact shape of "bb_analyze found fewer than grep".
+- **[#885](https://github.com/ishaq2321/mcp/backbencher-brain/issues/885) — the same slice indexed twice binds
+  755 edges to different targets.** Identical slice fingerprint, identical 19,082 rows, identical zero count —
+  and 146 of 3,473 gravity scores (4.2%) plus 755 relationship endpoints differ. Extraction is provably
+  deterministic (`(source,type,line)` sets identical, 12,927); **100% of the differing edges are pure binding
+  differences**, dominated by duplicated short names (`F` 62, `all` 31, `flatMap` 23, `raiseError` 20, `C` 10).
+  Consequence measured across four builds of one slice: `map` sites = 199 / 161 / 160 / 144. The tool is exactly
+  reproducible *on one index* (3 rounds × 2 processes, identical hashes) and different *between indexes of
+  identical input*. Write-up: `reviews/m59-index-binding-nondeterminism.md`.
+- **[#887](https://github.com/backbencher-hq/backbencher-brain/issues/887) — tool calls block for minutes when
+  queried in the process that just finished indexing.** The kotlin sweep indexed 150 files in 7 s, printed 2 of
+  8 cells, then made no progress: `real 8m20s, user 1.0s` — blocked, not computing. The *same* calls on the
+  *same* index in a fresh process answer in **≤67 ms** (`probe-name-latency.ts`). This is why the sweep is
+  currently 2 of 9 languages: kotlin is blocked by #887, not skipped.
+
+**Declared honestly:** the matrix is not a certification. Its predicate is a *necessary* condition (a lower
+bound on call lines), `missed` is reported only for names that map to exactly one symbol (ambiguous names
+print `AMBIG(k)`), and cells at the 200 cap carry `truncated`. #888 and #885 mean two of the numbers above are
+floors and one class of answer is not reproducible — both stated in the evidence file itself.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
@@ -565,6 +677,9 @@ asking a different question.
 - `validation/m44/results/U1.json` · `U3.json` · `U4.json` — the three gates re-run at HEAD with the
   hand-supplied lines deleted; each now carries `failures: []` and pins to the current commit
 - `reviews/m49-callsite-line-gap.md` — the contract handoff to the analyzer lane
+- `reviews/m59-nested-source-owner-dead-end.md` — #879, with the layer-by-layer fixture evidence
+- `script/m59/probe-anon-init-regression.ts` — the probe that classified the #866 red (analyzer vs store
+  vs tool), so the verdict came from measurement rather than from the failing check's name
 
 ## Reproduce
 
@@ -577,6 +692,8 @@ npx tsx script/m59/verify-rel-multiplicity.ts
 npx tsx script/m59/verify-line-key-idempotency.ts
 # M59.ACC — the standing tool-layer acceptance harness (fresh index, ~3 min)
 npx tsx script/m59/acceptance-tool-callsites.ts
+# #879 — why a nested-source site answers with an ownerless symbol (analyzer / store / tool, separately)
+npx tsx script/m59/probe-anon-init-regression.ts
 # #823 / #821 — the tool stops fabricating; legacy zeros cannot return
 npx tsx script/m59/verify-honest-callsite.ts
 npx tsx script/m59/verify-legacy-zero-heal.ts

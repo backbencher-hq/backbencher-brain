@@ -1,10 +1,10 @@
 {
   "gate": "M59.O4",
   "issue": "#823",
-  "at": "2026-09-15T23:06:00.730Z",
+  "at": "2026-09-17T00:44:46.193Z",
   "command": "npx tsx script/m59/verify-honest-callsite.ts",
   "status": "pass",
-  "fixture": "/tmp/m59-honest-ia4AjW/fixture",
+  "fixture": "/tmp/m59-honest-6EZW2p/fixture",
   "checks": [
     {
       "name": "null-stays-null",
@@ -39,5 +39,5 @@
     "misreportedKnown": 0,
     "lspFabricated": 0
   },
-  "scope": "one kotlin+typescript fixture project, fresh index; excludes corpus-scale languages"
+  "scope": "one kotlin+python fixture project, fresh index; excludes corpus-scale languages"
 }
