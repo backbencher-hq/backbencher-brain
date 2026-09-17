@@ -1,5 +1,5 @@
 // script/m60/verify-standing-rules.ts — M60.G1: the gate that enforces the
-// standing rules R1–R4 against every milestone, present and future.
+// standing rules R1–R6 against every milestone, present and future.
 //
 // Charter (docs/m60/PLAN.md §4):
 //   R1  No new milestone for work that belongs to an existing one; findings
@@ -11,6 +11,12 @@
 //       worked. A doc is not a queue.
 //   R4  Fold contract: at close, M60's family results are recorded into M49
 //       as the evidence its jvm/web closure claims are true.
+//   R5  M14-clean receives one milestone covering all remaining analyzers, each
+//       carrying the accumulated checks of every prior milestone. (Enforced by
+//       X1, not here; listed for completeness so the numbering has one home.)
+//   R6  One line base for every line in the payload: `line_number`, `range`,
+//       `decoratorLine` and the `metadata.line` mirror are 1-based, and no
+//       writer may emit a mirror that is not provably so (#873's class).
 //
 // G1 verifies the ENFORCEMENT MACHINERY: the rules are written where every
 // future milestone reads them (the M60 ledger), the computations they need
@@ -108,6 +114,73 @@ function undocumentedOpenMilestones(): string[] {
     out.push(n)
   }
   return out
+}
+
+// ============================================================================
+// R6 machinery: ONE line base for every line in the payload.
+// ============================================================================
+// `line_number` is 1-based (the store column, `lineField`, every analyzer, and
+// the M59 oracle's rule that a line must be checkable against the source). A
+// `metadata.line` mirror written as `startPosition.row` is therefore not a
+// mirror: it is the line ABOVE the site it names. That defect (#873) shipped for
+// as long as it did because nothing failed when it appeared — the field was
+// emitted, unpinned and one below its own row, and on the cpp/hpp rows there is
+// no `line_number` at all to disagree with it, so the wrong number was the row's
+// ONLY line.
+//
+// This check is STATIC and total over the analyzer sources: every `metadata: { … }`
+// object literal that carries a `line` key must assign it an expression that is
+// provably 1-based (`… .startPosition.row + 1`). It is deliberately FAIL-CLOSED:
+// a legitimate writer that derives a 1-based line some other way (a helper, a
+// node captured elsewhere) trips it, and the fix is to teach this rule that
+// shape — an adjudication a human makes once — rather than to let an
+// unverifiable expression through. A guard that silently accepts is the reason
+// #873 needed two rounds and a corpus sweep to be found.
+//
+// It is static on purpose, and is not a replacement for the runtime measurement:
+// a normalisation pass that rewrites the mirror to match `line_number` at emit
+// would make every WITER bug invisible instead of caught (which is why the pass
+// added in a47d5607 lives in one analyzer and this rule does not).
+const ONE_BASED_LINE = /(\.|^)startPosition\.row\s*\+\s*1\b/
+
+export function lineBaseWriters(sources: { file: string; src: string }[]): { at: string; value: string }[] {
+  const out: { at: string; value: string }[] = []
+  for (const { file, src } of sources) {
+    for (const m of src.matchAll(/metadata:\s*\{/g)) {
+      // Walk the object literal by brace depth so a nested object cannot hide
+      // the key or leak the next writer's into this one.
+      let i = m.index + m[0].length - 1
+      let depth = 0
+      const start = i
+      while (i < src.length) {
+        if (src[i] === "{") depth++
+        else if (src[i] === "}") { depth--; if (depth === 0) break }
+        i++
+      }
+      const block = src.slice(start, i + 1)
+      // The key must be in PROPERTY position — start of the literal or after a
+      // comma. Matching a bare `line :` anywhere also hits a ternary
+      // (`decoratorLine: typeof line === "number" ? line : null`), which is
+      // exactly how the issue that filed #873 over-counted its own writer list
+      // by grepping `line:` without requiring the key: 8 reported analyzers,
+      // 2 real ones. The same trap this rule guards must not itself fall in.
+      const lm = block.match(/(?:\{|,)\s*line\s*:\s*([^,\n}]+)/)
+      if (!lm) continue
+      const at = `${file}:${src.slice(0, m.index).split("\n").length}`
+      out.push({ at, value: lm[1].trim() })
+    }
+  }
+  return out
+}
+
+export function lineBaseViolations(sources: { file: string; src: string }[]): string[] {
+  // `null` is not a base — it is the ruled ABSENCE state ("unknown is a
+  // first-class state"), so an explicit null passes: the writer is saying it has
+  // no line, which no consumer can misread by one. Anything else must be
+  // provably 1-based.
+  return lineBaseWriters(sources)
+    .filter((w) => w.value !== "null" && !ONE_BASED_LINE.test(w.value))
+    .map((w) => `${w.at} — metadata.line is not provably 1-based: \`line: ${w.value}\``)
 }
 
 // ============================================================================
@@ -211,6 +284,30 @@ function main() {
   const undoc = undocumentedOpenMilestones()
   check("R1 live: every open GitHub milestone is documented in docs/", undoc.length === 0, undoc.join(", ") || "(none)")
 
+  // ---- R6 live: every metadata.line writer is provably 1-based -------------
+  const analyzerSources: { file: string; src: string }[] = []
+  try {
+    const dir = path.join(ROOT, "src/ast")
+    for (const f of readdirSync(dir)) {
+      if (/^real-.*-analyzer\.ts$/.test(f)) analyzerSources.push({ file: `src/ast/${f}`, src: readFileSync(path.join(dir, f), "utf8") })
+    }
+  } catch { /* unreadable — the live check below reports it as vacuous */ }
+  check("R6 surface: analyzer sources are enumerable", analyzerSources.length > 0, `${analyzerSources.length} analyzers`)
+  const writers = lineBaseWriters(analyzerSources)
+  const violations = lineBaseViolations(analyzerSources)
+  check("R6 live: every metadata.line writer is provably 1-based", violations.length === 0, violations.join(" | ") || `${writers.length} writer(s) of a line mirror, all 1-based`)
+  negative("R6 negative: the writer census is not vacuous (this tree HAS writers to check)", writers.length > 0)
+
+  // ---- R6 negatives: the scan must discriminate ---------------------------
+  const r6 = (src: string) => lineBaseViolations([{ file: "probe.ts", src }])
+  negative("R6 negative: a 0-based mirror is flagged", r6(`metadata: { line: node.startPosition.row, qualified: q }`).length === 1)
+  negative("R6 negative: a 1-based mirror passes", r6(`metadata: { line: node.startPosition.row + 1, qualified: q }`).length === 0)
+  negative("R6 negative: the scan is not vacuous (a non-metadata `line:` key is ignored)", r6(`const t: { line: number } = { line: n.startPosition.row }`).length === 0)
+  negative("R6 negative: a nested object cannot hide the key", r6(`metadata: { note: { inner: 1 }, line: n.startPosition.row }`).length === 1)
+  negative("R6 negative: one writer does not mask the next", r6(`metadata: { line: a.startPosition.row + 1 }\nmetadata: { line: b.startPosition.row }`).length === 1)
+  negative("R6 negative: an explicit null is absence, not a base", r6(`metadata: { line: null }`).length === 0 && lineBaseWriters([{ file: "p", src: `metadata: { line: null }` }]).length === 1)
+  negative("R6 negative: a ternary `? line :` in a sibling key is not the key", r6(`metadata: { decoratorLine: typeof line === "number" ? line : null }`).length === 0 && lineBaseWriters([{ file: "p", src: `metadata: { decoratorLine: typeof line === "number" ? line : null }` }]).length === 0)
+
   // ---- R4 live: fold record (fails until X1 lands the fold) ---------------
   const fold = foldRecordDetail()
   check("R4 live: M49 ledger carries the M60 fold record", fold.startsWith("fold present"), fold)
@@ -234,6 +331,7 @@ function finish(head: string) {
       R2: "computeFamilyClosure(blocked, open) — pure, negative-tested; live application in verify-family-closure-truth.ts",
       R3: "findingDocsMissingIssues(docs) — reviews/*.md registration scan, negative-tested",
       R4: "foldRecordDetail() — M49 ledger fold record",
+    R6: "lineBaseViolations(sources) — every metadata.line writer must be provably 1-based (static, fail-closed), negative-tested; live application in verify-standing-rules.ts itself",
     },
   }
   writeFileSync(OUT, JSON.stringify(result, null, 2) + "\n")
