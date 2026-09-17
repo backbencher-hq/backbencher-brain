@@ -3,6 +3,13 @@
 // instead of by headline counts — a headline can hide a fix and a break that
 // cancel out. Usage:
 //   bun script/m59/compare-groovy-grammar.ts --repo grails-core --out /tmp/x.json
+//   bun script/m59/compare-groovy-grammar.ts --repo grails-core --list /tmp/subset.txt --out /tmp/x.json
+//     `--list` restricts the run to an explicit file list (repo-relative, one
+//     per line). It exists so a grammar change can be A/B'd on the BOUNDED set
+//     it could possibly affect — the union of the two sides' failing sets plus
+//     a deterministic clean control — instead of paying the whole 6,564-file
+//     corpus twice, and so the reduced run is still reproducible from the list
+//     rather than from whatever /tmp happened to hold.
 //
 // The criterion is the TREE'S OWN `rootNode.hasError`, not a hand-rolled walk.
 // Measured reason (this is the instrument's own defect, found by disagreement):
@@ -29,11 +36,14 @@ async function main(): Promise<void> {
   const wasmSha = createHash("sha256")
     .update(readFileSync("$HOME/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"))
     .digest("hex")
-  const files = execFileSync("git", ["-C", REPO, "ls-files", `*.${EXT}`], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 })
-    .trim()
-    .split("\n")
-    .filter(Boolean)
-    .sort()
+  const list = arg("--list", "")
+  const files = list
+    ? readFileSync(list, "utf8").trim().split("\n").map((s) => s.trim()).filter(Boolean)
+    : execFileSync("git", ["-C", REPO, "ls-files", `*.${EXT}`], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 })
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .sort()
 
   const per: Record<string, { errors: number; missing: number; rels: number; hasError: boolean }> = {}
   for (const file of files) {
