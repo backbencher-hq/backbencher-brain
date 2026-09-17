@@ -151,6 +151,14 @@ module.exports = grammar(Java, {
     // field's delimiter is optional; GLR decides (the constructor reading
     // wins wherever a block follows).
     [$._variable_declarator_id, $.compact_constructor_declaration],
+    // #841 residual (W22): with a dotted CONTINUATION legal after a field's
+    // declarator, a bare `name .` at class-body level is genuinely ambiguous — a
+    // field's DECLARATOR (`Foo b • .exclude()` continuing on the next line) vs a
+    // SCOPED TYPE that continues (`a.b` ⏎ `.C x`). Both readings are real; GLR
+    // decides, and the type reading wins only where a declarator/type actually
+    // follows the dotted name. Declared rather than prec'd, so neither reading is
+    // blanket-suppressed.
+    [$._variable_declarator_id, $.scoped_type_identifier],
     // #841: same squeeze at the field_declaration level — shift the delimiter
     // (more fields on one line) vs reduce the field now (optional delimiter).
     [$.field_declaration],
@@ -794,17 +802,48 @@ module.exports = grammar(Java, {
     // enum_constant handling was dead code and enum constants produced no
     // symbol. No legitimate class-body construct is lost: a bare name list with
     // no modifier is not a Groovy field.
+    // #841 residual (W22): a class-level FIELD whose initializer continues on
+    // lines beginning with a dot. Not an edge case — it is the Grails/Gradle
+    // idiom (`Path scriptDir = Paths.get(getClass()` ⏎ `.protectionDomain` ⏎
+    // `.codeSource` …; `Builder b = pm.builder()` ⏎ `.excludeTimestamps()` …)
+    // and it used to abort the whole class body: the declarator is complete and
+    // DELIMITED before the first dotted line, and a class body has no rule for a
+    // bare '.', so the parser inserted a MISSING '}' and everything after the
+    // field collapsed. That is why the census's largest remaining first-error
+    // line was a bare '}' (57 files) — collateral, not a cause.
+    //
+    // The SAME `leading_dot_call` node the statement form uses (W20's contract),
+    // bound to the field it continues, so the analyzer (real-groovy-analyzer
+    // L587) and the oracle (differential L1376) consume it unchanged. The
+    // delimiter is consumed ONCE, before the chain: inside the `repeat` the
+    // newline between two continuation segments would be eaten as a DELIMITER
+    // and the following `.x()` would have nowhere to go (measured — that
+    // intermediate build failed on the class body's own close brace, probe case
+    // 7 of script/m14/tmp/g841-chain-probe.ts). Between two segments the newline
+    // is skipped as an extra, because DELIMITER is not a valid token inside the
+    // suffix.
+    //
+    // The first implementation offered this node as a CLASS-BODY DECLARATION
+    // instead (the obvious mirror of the statement-level escape). It passed
+    // every hasError-based instrument — file sets 384 → 370 with 0 regressed —
+    // and it was wrong: two corpus files' entire program collapsed into a single
+    // top-level ERROR node and lost 18 relationships between them, because the
+    // declared ambiguity above is then live at every `modifiers identifier .` in
+    // every class body. Only the per-file RELATIONSHIP comparison saw it. Do not
+    // move this node back up to the class body.
     field_declaration: $ => choice(
       seq(
         optional($.modifiers),
         field('type', $._unannotated_type),
         $._variable_declarator_list,
         optional(DELIMITER),
+        repeat($.leading_dot_call),
       ),
       seq(
         $.modifiers,
         $._variable_declarator_list,
         optional(DELIMITER),
+        repeat($.leading_dot_call),
       ),
     ),
 

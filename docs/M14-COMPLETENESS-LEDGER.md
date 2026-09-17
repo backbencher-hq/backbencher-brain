@@ -982,3 +982,43 @@ the payload carries TWO line bases on one row — `line_number` and `decoratorLi
 `metadata.line` is `startPosition.row` (0-based), uniformly across eight analyzers in four
 families and read by nothing yet. That is M60.P1's subject (the payload-seam matrix) and it
 deserves a base column there rather than eight drive-by edits inside a decorator fix.
+
+## 2026-09-17 — groovy: a class-level field's dotted continuation (#841, `G8`)
+
+**Status:** the largest remaining *reducible* groovy parse-failure class is fixed, measured and
+pinned — corpus parse-failures **384 → 370 of 6,564** (5.9% → 5.6%), failing-file sets compared
+file by file: **14 fixed, 0 regressed**; on the bounded set that could be affected,
+relationships **57,127 → 57,354** with **0 files losing a single relationship**. Issue #841
+stays open with a smaller, measured residue (three classes, four snippets, each with a clean
+bound).
+
+**The class, and why the census had been pointing at the wrong line.** The largest remaining
+first-error signature was a bare `}` (57 files). A close brace is a recovery point, not a
+cause: a **class-level field whose initializer continues on lines that begin with a dot**
+(`Path scriptDir = Paths.get(getClass()` ⏎ `.protectionDomain` …; `Builder b = pm.builder()` ⏎
+`.excludeTimestamps()` …) is complete and delimited before the first dotted line, and the class
+body had no rule for a bare `.`, so the parser inserted `MISSING '}'` and the rest of the class
+body collapsed. The same chain in a method body has always parsed (the `leading_dot_call`
+contract from the W20 round); this round mirrors that reading at the field, as a suffix of
+`field_declaration`, so the analyzer and the oracle needed no change at all.
+
+**The round's real finding is about instruments.** The first implementation offered the
+continuation as a *class-body declaration* instead. It passed every `hasError`-based
+instrument — file sets 384 → 370 with 0 regressed, fixture lane green — and it was wrong: with
+it, two files' **entire program collapsed into a single top-level `ERROR` node** and lost 18
+relationships (220 → 209, 44 → 37). Both files still "failed" on both sides, so no failure-set
+comparison could see it and neither file even contains the target construct. Only the per-file
+**relationship** A/B saw it, which is why both variants were measured and not just the
+intended one.
+
+**Evidence:** `validation/m59/results/g841-w22-grammar-ab.json` (census, bounded-set A/B,
+`.gradle` null, latency A/B, fixture lane, differential probes, per-file deltas),
+`validation/m59/results/g841-w22-filelist.txt` (the bounded set), fixture
+`groovy/class-body-dot-continuation-841` (+ wasm-swap negative control: pre-fix wasm gives
+groovy 55 pass / 1 fail, exactly that fixture), `validation/m12/results/groovy-corpus-errors.json`
+re-emitted at the new wasm (`fcfead14d8c0` → `5a1d1b21d71f`). **Latency is not a claim from
+one run:** measured per file with both builds in one process, the new build is **0.99×**.
+**Not folded in:** the remaining groovy residue stays declared
+(`script/m59/probe-groovy-residual-classes.ts`, 3 classes), and whether the `*.groovy` corpus
+should count `grails-profiles`' GSP-style templates (8 files, `@artifact.package@`) as parse
+failures is a **policy question, left open** rather than silently excluded.
