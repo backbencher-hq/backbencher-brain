@@ -33,6 +33,10 @@
 //      difference between HEAD and the working tree, with entries that
 //      introduce a regex SOURCE the census has never seen marked NEW, so an
 //      uncommitted new regex can never hide behind "it's someone else's file".
+//   5. Policy doc ↔ census (FATAL): reviews/regex-policy.md declares its
+//      survivor count in a machine-readable line, asserted here. The document
+//      is the human-facing "why each regex survives" record and it HAD drifted
+//      (it said 22 while the census carried 26) because nothing read it.
 //
 // Run: bun script/m49/verify-r2-regex.ts [--require-clean]
 import { readFileSync, existsSync } from "node:fs"
@@ -161,6 +165,45 @@ async function main() {
       "no baseline recorded yet")
   }
 
+  // ── 3b. Policy document ↔ census ─────────────────────────────────────────
+  // The policy file is the human-facing record of WHY each regex survives.
+  // It used to carry prose counts nothing maintained, and did drift (it said
+  // 22 survivors while the census carried 26). It now declares its count in a
+  // machine-readable line that this gate asserts, so the document cannot
+  // describe a regex set that no longer exists.
+  const POLICY = argValue("--policy") ?? path.join(ROOT, "reviews/regex-policy.md")
+  const DECLARED = "Declared survivor count:"
+  // Char-scan, not regex (this file's own policy): first digit run after the label.
+  const declaredCountIn = (text: string): number | null => {
+    const label = text.split("\n").find((l) => l.includes(DECLARED))
+    if (label === undefined) return null
+    const after = label.slice(label.indexOf(DECLARED) + DECLARED.length)
+    let digits = ""
+    for (let i = 0; i < after.length; i++) {
+      const c = after[i]
+      if (c >= "0" && c <= "9") digits += c
+      else if (digits.length > 0) break
+    }
+    return digits.length > 0 ? Number(digits) : null
+  }
+  const policyText = existsSync(POLICY) ? readFileSync(POLICY, "utf8") : ""
+  const declaredCount = declaredCountIn(policyText)
+
+  check("policy doc declares a survivor count", declaredCount !== null,
+    declaredCount === null ? `${POLICY} carries no "${DECLARED}" line` : "")
+
+  check("policy doc's declared count matches the census",
+    declaredCount !== null && declaredCount === census.totalRegexUsages,
+    `policy declares ${declaredCount ?? "nothing"}, census carries ${census.totalRegexUsages}`)
+
+  check("policy doc's declared count matches HEAD's live scan",
+    declaredCount !== null && declaredCount === head.length,
+    `policy declares ${declaredCount ?? "nothing"}, HEAD scan finds ${head.length}`)
+
+  negative("a policy count that disagrees with the census is convictable",
+    declaredCountIn(`> ${DECLARED} 999`) === 999 && 999 !== census.totalRegexUsages,
+    "synthetic disagreement was not parsed as a disagreement")
+
   // ── 4. Working-tree drift (disclosed; fatal only under --require-clean) ────
   const work = await scanWorkingAnalyzers()
   const drift = await analyzerDrift(head, work)
@@ -220,7 +263,7 @@ async function main() {
     })
     .filter((x) => x.real.length > 0 && !x.real.includes(Number(x.row.split(":").pop())))
 
-  console.log(`regex census: ${committed.length} committed / ${head.length} HEAD / ${work.length} working | review-class: ${reviewEntries.length} (baseline ${register.baselineTotal >= 0 ? register.baselineTotal : "n/a"})`)
+  console.log(`regex census: ${committed.length} committed / ${head.length} HEAD / ${work.length} working | review-class: ${reviewEntries.length} (baseline ${register.baselineTotal >= 0 ? register.baselineTotal : "n/a"}) | policy doc declares ${declaredCount ?? "nothing"}`)
   if (stalePositions.length) {
     console.log(`advisory: ${stalePositions.length} register row(s) carry a stale line number (identity is file+source; HEAD positions shown) — first: ${stalePositions.slice(0, 3).map((s) => `${s.row} -> ${s.real.join("/")}`).join(", ")}`)
   }
