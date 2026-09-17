@@ -803,6 +803,27 @@ function reattributeAnonBodyCall(outerName: string) {
 
 const MUTANTS: Mutant[] = [
   {
+    id: "elixir/delegate-remote-name-as-local",
+    language: "elixir",
+    defectClass: "symbol-identity-corruption",
+    description: "ELXD1: substitutes the remote delegate target for the declared local function name",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "local_name" && s.ownerName === "DelegateIdentity" ? { ...s, name: "remote_name" } : s) }),
+  },
+  {
+    id: "elixir/delegate-local-call-drop",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD1: drops calls to the locally declared delegate after incorrect declaration-set resolution",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "calls" && x.target === "local_name")) }),
+  },
+  {
+    id: "elixir/delegate-remote-head-merge",
+    language: "elixir",
+    defectClass: "symbol-identity-corruption",
+    description: "ELXD1: merges a delegate with a distinct same-arity function named like its remote target",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "trim_trailing" && s.ownerName === "DelegateCollision" ? { ...s, metadata: { ...s.metadata, heads: 2 } } : s) }),
+  },
+  {
     id: "c/drop-field-access-uses",
     language: "c",
     defectClass: "relationship-loss",
