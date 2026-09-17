@@ -12,14 +12,14 @@
     "total": 3,
     "caught": 3
   },
-  "currentCommit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
+  "currentCommit": "72340a90057cb6f90d2b5b1f0db5b57ceaf484f7",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-09-16T23:29:15.400Z",
+  "generatedAt": "2026-09-17T00:50:57.394Z",
   "fixture": {
-    "workspace": "/tmp/m55-t3-ws-LXcWoC",
-    "projectId": "7964eb88a305c6a244c7d768920d34e5aff95bc1",
+    "workspace": "/tmp/m55-t3-ws-blxOvf",
+    "projectId": "879352dcd35feba46b5ac95ef1d9c8f84f9296ed",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -56,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T23:29:15.401Z",
-    "contentSha256": "6c27defd39027483c7f068f2bd2cdf09d6088828f858bd89df944e896ef5e455"
+    "sealedAt": "2026-09-17T00:50:57.396Z",
+    "contentSha256": "269e33e89162da4f57808b1ceae7c58d526148df9329ac646619f77649013cd7"
   }
 }
