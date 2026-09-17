@@ -803,6 +803,20 @@ function reattributeAnonBodyCall(outerName: string) {
 
 const MUTANTS: Mutant[] = [
   {
+    id: "elixir/drop-atom-struct-fields",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "ELXD2: atom-list struct fields disappear while keyword fields remain",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.metadata?.isStructField && ["id", "name", "email", "file"].includes(s.name))) }),
+  },
+  {
+    id: "elixir/export-owned-struct",
+    language: "elixir",
+    defectClass: "export-duplication",
+    description: "ELXD3: an owned struct is exported again under its module name",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), ...(r.symbols ?? []).filter(s => s.kind === "struct" && s.ownerName === s.name).map(s => ({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility }))] }),
+  },
+  {
     id: "elixir/delegate-remote-name-as-local",
     language: "elixir",
     defectClass: "symbol-identity-corruption",
