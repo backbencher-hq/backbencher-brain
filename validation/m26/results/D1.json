@@ -16,16 +16,16 @@
   ],
   "mutantsCaught": 2,
   "mutantsTotal": 2,
-  "realDbsScanned": 67,
+  "realDbsScanned": 71,
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 3,
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+  "currentCommit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-16T22:17:54.758Z",
+  "generatedAt": "2026-09-17T00:19:47.321Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T22:17:54.759Z",
-    "contentSha256": "917a63b193f18e6b311e5b2f4b26abf204e3f86d42b4705b84cc70f45e9f4b34"
+    "sealedAt": "2026-09-17T00:19:47.321Z",
+    "contentSha256": "d7f1013f55605e82ad843c724f0d18c244bc51f24d8c8cd9b85d216f5a5bd917"
   }
 }

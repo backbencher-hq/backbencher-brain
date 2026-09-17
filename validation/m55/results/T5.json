@@ -12,24 +12,14 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "fd48c16c2cf1b0649f8eaae0ff35b1d7977a9d45",
-  "workingTreeRelevantChanges": [
-    "script/m26/graph-core.ts",
-    "script/m26/verify-evidence-badges.ts",
-    "script/m26/verify-graph-transport.ts",
-    "script/m26/verify-webview-core.ts",
-    "script/m26/verify-webview-harness.ts",
-    "src/lsp/call_hierarchy.ts",
-    "src/lsp/graph_usages.ts",
-    "src/lsp/navigation.ts",
-    "src/lsp/rich_hover.ts"
-  ],
+  "currentCommit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
   "evidenceFile": "T5.json",
-  "generatedAt": "2026-09-16T22:05:06.697Z",
+  "generatedAt": "2026-09-16T23:29:23.652Z",
   "fixture": {
-    "workspace": "/tmp/m55-t5-ws-blJZGu",
-    "projectId": "56081503159e07b49ec00d8aec9606585b9cb0b9",
+    "workspace": "/tmp/m55-t5-ws-AKMhPp",
+    "projectId": "78f50477850222ffe46a2384325e12135e206fc2",
     "symbols": 7,
     "rows": 9
   },
@@ -77,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T22:05:06.697Z",
-    "contentSha256": "36a8f3489bfe35ef970d97b5894ce299f87a1830b33260631f779e7d520b3bed"
+    "sealedAt": "2026-09-16T23:29:23.652Z",
+    "contentSha256": "5f9971a15abd06c468f440f6a11c9c12c827acf17e5865a4bfd8659065366374"
   }
 }
