@@ -1,98 +1,54 @@
 {
-  "language": "c",
   "raw": {
-    "references": [
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
-        "range": {
-          "start": {
-            "line": 15,
-            "character": 0
-          },
-          "end": {
-            "line": 22,
-            "character": 1
-          }
-        }
-      },
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
-        "range": {
-          "start": {
-            "line": 11,
-            "character": 0
-          },
-          "end": {
-            "line": 13,
-            "character": 1
-          }
-        }
-      }
-    ],
     "definition": {
       "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
       "range": {
         "start": {
-          "line": 11,
-          "character": 0
+          "character": 0,
+          "line": 11
         },
         "end": {
-          "line": 13,
-          "character": 1
+          "character": 1,
+          "line": 13
         }
       }
     },
     "hover": {
       "contents": {
-        "value": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_greet** — function, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.c:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D))_",
-        "kind": "markdown"
+        "kind": "markdown",
+        "value": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_greet** — function, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.c:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c:12](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D))_"
+      },
+      "range": {
+        "start": {
+          "character": 0,
+          "line": 11
+        },
+        "end": {
+          "character": 1,
+          "line": 13
+        }
       },
       "data": {
         "provenance": {
-          "stale": false,
           "source": "bb_index",
           "evidenceClass": "structural",
           "engine": "bb_lsp hover@m24.l2",
           "limitations": [
             "index-sourced; no compiler-backed types (complement stance)"
-          ]
+          ],
+          "stale": false
         },
         "symbol": {
+          "definition": {
+            "character": 0,
+            "line": 11
+          },
           "usageCount": 1,
           "evidenceTiers": [
             "structural",
             "usage_contextual"
           ],
-          "parameters": [
-            {
-              "isOptional": false,
-              "type": "struct Greeter",
-              "isRest": false,
-              "name": "g"
-            },
-            {
-              "isOptional": false,
-              "type": "char",
-              "isRest": false,
-              "name": "name"
-            },
-            {
-              "isOptional": false,
-              "type": "char",
-              "isRest": false,
-              "name": "out"
-            },
-            {
-              "isOptional": false,
-              "type": "size_t",
-              "isRest": false,
-              "name": "out_size"
-            }
-          ],
-          "definition": {
-            "line": 11,
-            "character": 0
-          },
+          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_",
           "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.c:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)",
           "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greeter_greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)",
           "crossLanguageSection": "",
@@ -100,244 +56,288 @@
           "freshnessStatus": "fresh",
           "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
           "lineStart": 12,
-          "lineEnd": 14,
+          "parameters": [
+            {
+              "name": "g",
+              "type": "struct Greeter",
+              "isRest": false,
+              "isOptional": false
+            },
+            {
+              "name": "name",
+              "type": "char",
+              "isRest": false,
+              "isOptional": false
+            },
+            {
+              "name": "out",
+              "type": "char",
+              "isRest": false,
+              "isOptional": false
+            },
+            {
+              "name": "out_size",
+              "type": "size_t",
+              "isRest": false,
+              "isOptional": false
+            }
+          ],
           "stale": false,
           "qualifiedName": "global.greeter_greet",
           "symbolType": "function",
           "signature": "public function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void",
           "name": "greeter_greet",
-          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fc%2Fmain.c%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 1 referring row · low criticality (enriched by index)_"
-        }
-      },
-      "range": {
-        "start": {
-          "line": 11,
-          "character": 0
-        },
-        "end": {
-          "line": 13,
-          "character": 1
+          "lineEnd": 14
         }
       }
     },
-    "documentSymbol": [
+    "workspaceAbsence": [],
+    "references": [
       {
-        "kind": 23,
-        "detail": "Greeter.Greeter",
-        "name": "Greeter",
-        "children": [
-          {
-            "kind": 10,
-            "detail": "Greeter.prefix",
-            "name": "prefix",
-            "children": [],
-            "selectionRange": {
-              "start": {
-                "line": 4,
-                "character": 9
-              },
-              "end": {
-                "line": 4,
-                "character": 19
-              }
-            },
-            "data": {
-              "notIndexed": false,
-              "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:prefix:5",
-              "evidenceTier": "indexed"
-            },
-            "range": {
-              "start": {
-                "line": 4,
-                "character": 9
-              },
-              "end": {
-                "line": 4,
-                "character": 19
-              }
-            }
-          }
-        ],
-        "selectionRange": {
-          "start": {
-            "line": 3,
-            "character": 0
-          },
-          "end": {
-            "line": 5,
-            "character": 1
-          }
-        },
-        "data": {
-          "notIndexed": false,
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:Greeter:4",
-          "evidenceTier": "indexed"
-        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
         "range": {
           "start": {
-            "line": 3,
-            "character": 0
+            "character": 0,
+            "line": 15
           },
           "end": {
-            "line": 5,
-            "character": 1
+            "character": 1,
+            "line": 22
           }
         }
       },
       {
-        "kind": 12,
-        "detail": "global.greeter_init",
-        "name": "greeter_init",
-        "children": [],
-        "selectionRange": {
-          "start": {
-            "line": 7,
-            "character": 0
-          },
-          "end": {
-            "line": 9,
-            "character": 1
-          }
-        },
-        "data": {
-          "notIndexed": false,
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:greeter_init:8",
-          "evidenceTier": "indexed"
-        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/c/main.c",
         "range": {
           "start": {
-            "line": 7,
-            "character": 0
+            "character": 0,
+            "line": 11
           },
           "end": {
-            "line": 9,
-            "character": 1
-          }
-        }
-      },
-      {
-        "kind": 12,
-        "detail": "global.greeter_greet",
-        "name": "greeter_greet",
-        "children": [],
-        "selectionRange": {
-          "start": {
-            "line": 11,
-            "character": 0
-          },
-          "end": {
-            "line": 13,
-            "character": 1
-          }
-        },
-        "data": {
-          "notIndexed": false,
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:greeter_greet:12",
-          "evidenceTier": "indexed"
-        },
-        "range": {
-          "start": {
-            "line": 11,
-            "character": 0
-          },
-          "end": {
-            "line": 13,
-            "character": 1
-          }
-        }
-      },
-      {
-        "kind": 12,
-        "detail": "global.main",
-        "name": "main",
-        "children": [],
-        "selectionRange": {
-          "start": {
-            "line": 15,
-            "character": 0
-          },
-          "end": {
-            "line": 22,
-            "character": 1
-          }
-        },
-        "data": {
-          "notIndexed": false,
-          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:main:16",
-          "evidenceTier": "indexed"
-        },
-        "range": {
-          "start": {
-            "line": 15,
-            "character": 0
-          },
-          "end": {
-            "line": 22,
-            "character": 1
+            "character": 1,
+            "line": 13
           }
         }
       }
     ],
-    "workspaceAbsence": []
+    "documentSymbol": [
+      {
+        "name": "Greeter",
+        "selectionRange": {
+          "start": {
+            "character": 0,
+            "line": 3
+          },
+          "end": {
+            "character": 1,
+            "line": 5
+          }
+        },
+        "data": {
+          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:Greeter:4",
+          "notIndexed": false,
+          "evidenceTier": "indexed"
+        },
+        "kind": 23,
+        "range": {
+          "start": {
+            "character": 0,
+            "line": 3
+          },
+          "end": {
+            "character": 1,
+            "line": 5
+          }
+        },
+        "detail": "Greeter.Greeter",
+        "children": [
+          {
+            "name": "prefix",
+            "selectionRange": {
+              "start": {
+                "character": 9,
+                "line": 4
+              },
+              "end": {
+                "character": 19,
+                "line": 4
+              }
+            },
+            "data": {
+              "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:prefix:5",
+              "notIndexed": false,
+              "evidenceTier": "indexed"
+            },
+            "kind": 10,
+            "range": {
+              "start": {
+                "character": 9,
+                "line": 4
+              },
+              "end": {
+                "character": 19,
+                "line": 4
+              }
+            },
+            "detail": "Greeter.prefix",
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "greeter_init",
+        "selectionRange": {
+          "start": {
+            "character": 0,
+            "line": 7
+          },
+          "end": {
+            "character": 1,
+            "line": 9
+          }
+        },
+        "data": {
+          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:greeter_init:8",
+          "notIndexed": false,
+          "evidenceTier": "indexed"
+        },
+        "kind": 12,
+        "range": {
+          "start": {
+            "character": 0,
+            "line": 7
+          },
+          "end": {
+            "character": 1,
+            "line": 9
+          }
+        },
+        "detail": "global.greeter_init",
+        "children": []
+      },
+      {
+        "name": "greeter_greet",
+        "selectionRange": {
+          "start": {
+            "character": 0,
+            "line": 11
+          },
+          "end": {
+            "character": 1,
+            "line": 13
+          }
+        },
+        "data": {
+          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:greeter_greet:12",
+          "notIndexed": false,
+          "evidenceTier": "indexed"
+        },
+        "kind": 12,
+        "range": {
+          "start": {
+            "character": 0,
+            "line": 11
+          },
+          "end": {
+            "character": 1,
+            "line": 13
+          }
+        },
+        "detail": "global.greeter_greet",
+        "children": []
+      },
+      {
+        "name": "main",
+        "selectionRange": {
+          "start": {
+            "character": 0,
+            "line": 15
+          },
+          "end": {
+            "character": 1,
+            "line": 22
+          }
+        },
+        "data": {
+          "id": "f7eebfd365cee9dc7b135aac82b13fa1befe4bee:main.c:main:16",
+          "notIndexed": false,
+          "evidenceTier": "indexed"
+        },
+        "kind": 12,
+        "range": {
+          "start": {
+            "character": 0,
+            "line": 15
+          },
+          "end": {
+            "character": 1,
+            "line": 22
+          }
+        },
+        "detail": "global.main",
+        "children": []
+      }
+    ]
   },
   "checks": [
     {
-      "ok": true,
+      "name": "S6: launch order resolves a server",
       "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
-      "name": "S6: launch order resolves a server"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: vim.lsp.start launched bb_lsp",
       "detail": "1",
-      "name": "S6: vim.lsp.start launched bb_lsp"
+      "ok": true
     },
     {
-      "ok": true,
-      "detail": "table: 0x7b525f488928",
-      "name": "S6: client initialized"
+      "name": "S6: client initialized",
+      "detail": "table: 0x781424ba1f98",
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: capabilities advertised",
       "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
-      "name": "S6: capabilities advertised"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: hover renders the symbol",
       "detail": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_gr",
-      "name": "S6: hover renders the symbol"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: hover carries evidence tier (contract §2)",
       "detail": "```\npublic function greeter_greet(g: struct Greeter, name: char, out: char, out_size: size_t) → void\n```\n\n**greeter_gr",
-      "name": "S6: hover carries evidence tier (contract §2)"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: definition resolves",
       "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 1,\n      line = 13\n    },\n    start = {\n      character = 0,\n      line = 11\n    }\n  },\n  uri = \"file://$HOME",
-      "name": "S6: definition resolves"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: references returns locations",
       "detail": "2",
-      "name": "S6: references returns locations"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: documentSymbols include the class",
       "detail": "{ \"Greeter\", \"greeter_init\", \"greeter_greet\", \"main\" }",
-      "name": "S6: documentSymbols include the class"
+      "ok": true
     },
     {
-      "ok": true,
+      "name": "S6: declared absence is honored (no fabricated symbols)",
       "detail": "{}",
-      "name": "S6: declared absence is honored (no fabricated symbols)"
+      "ok": true
     }
   ],
+  "language": "c",
   "session": [],
   "status": "verified",
-  "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
+  "commit": "30c669a0816c74b2011162da7e5dbd8b72a09d7e",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-16T23:02:53.683Z",
-    "contentSha256": "db1b432a9466c65a2539cc903c532491f9d96c7b13318966c63317e8e27f6309"
+    "sealedAt": "2026-09-17T00:04:44.375Z",
+    "contentSha256": "c1ec9c51ee319512ae3fb04fdcc64852b946be9c99fc33b69f2add0a30cf280c"
   }
 }
