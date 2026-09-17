@@ -24,7 +24,7 @@
 
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | ✅ | `defmodule` → module name from the `arguments` `alias` (nested modules qualified: `MyApp.User`); `def`/`defp`/`defdelegate` → the signature `call`'s identifier (`defdelegate` preserves the local declaration — `defdelegate rstrip(b), to: M, as: :trim_trailing` → `rstrip`; `as:` names the remote target, not the declaration); `defmacro`/`defmacrop`/`defguard`/`defguardp` → macro; `defstruct` → struct named by the enclosing module; struct fields → `pair > keyword` (colon-stripped); `@type`/`@typep`/`@opaque` → the `::` left-side identifier; `defprotocol` → protocol name; `defimpl` → class named by the `for:` target type |
+| name | ✅ | `defmodule` → module name from the `arguments` `alias` (nested modules qualified: `MyApp.User`); `def`/`defp`/`defdelegate` → the signature `call`'s identifier (`defdelegate` preserves the local declaration — `defdelegate rstrip(b), to: M, as: :trim_trailing` → `rstrip`; `as:` names the remote target, not the declaration); `defmacro`/`defmacrop`/`defguard`/`defguardp` → macro; `defstruct` → struct named by the enclosing module; struct fields → `atom` elements of the bare list (`[:id, :name]`, colon-stripped) and `pair > keyword` for the keyword form; `@type`/`@typep`/`@opaque` → the `::` left-side identifier; `defprotocol` → protocol name; `defimpl` → class named by the `for:` target type |
 | kind | ✅ | `defmodule` → `module`; `defprotocol` → `interface`; `defimpl` → `class` (named by for-type, `implements` edge to protocol); `defstruct` → `struct` + field `property`s; `def`/`defp`/`defdelegate` → `function` (or `method` when inside a protocol/impl scope); `defmacro`/`defmacrop`/`defguard`/`defguardp` → `macro`; `@type` → `type` |
 | qualified/container name | ✅ | `ownerName` = enclosing module (functions, types, struct, fields); protocol/impl members owned by their protocol/class; nested modules owned by the parent (`contains MyApp -> MyApp.User`) |
 | range (start/end line + column) | ✅ | the declaration node |
@@ -59,6 +59,14 @@
 - Anonymous functions (`fn x -> x + 1`) and captures — pattern marking only,
   never synthetic lambda symbols (M11.11 closure boundary).
 - Params/locals never become symbols.
+
+## Export contract
+
+- The export list is the module's importable units: ownerless Module/Function/
+  Interface/Struct symbols only (`!s.ownerName`). An owned `defstruct` Struct
+  symbol is never re-exported under its module's name — the pre-ELXD3 export
+  pass (`ownerName === name`) produced two exports named `StructFields` for one
+  module, which the F3 export-uniqueness invariant rejects.
 
 ## Complexity model (live, verified against emitted shapes)
 
