@@ -80,11 +80,11 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   },
   bb_edit: {
     returns: ["Structured mutation result or dry-run preview", "Validation, formatting, rollback, and reindex status", "Affected paths and caller protection outcomes"],
-    errors: ["Path escape or symlink escape", "Stale or ambiguous indexed symbol bounds", "Caller protection, parse, formatting, or reindex failure"],
-    limitations: ["Named symbol edits require a fresh index", "Refactoring is identifier-aware static rewriting, not a full language-server proof"],
+    errors: ["Path escape or symlink escape", "Ambiguous symbol name (the message names filePath/lineStart)", "Symbol renamed or removed since the target file was indexed (refreshed first, then refused by name)", "Caller protection, parse, formatting, or reindex failure"],
+    limitations: ["Named symbol edits need an INDEX, not a fresh one: when the target file changed after it was indexed, the tool refreshes that ONE file's rows and re-resolves the symbol before planning, so bounds always come from the bytes on disk and never from a stale span (M59.A11, #890). The refresh is reported in `warnings`; if the symbol was renamed or removed in the meantime the edit is refused by name instead of guessing a span", "Directly after a write, the file's own evidence is current but cross-file relationships are only re-derived within the bounded post-pass, so a caller in an unrelated file may lag until the next dir index (same bound as bb_index)", "Refactoring is identifier-aware static rewriting, not a full language-server proof", "Per-mode argument rejection names the offending fields but not the accepted set for the mode (e.g. `bb_edit update mode does not accept: position` does not say that `update` accepts only `mode, dryRun, filePath, symbolName, lineStart, content/newContent, format`); callers must consult the mode contract in this page when constructing payloads. Known gap in `validateEditArguments` (src/mcp/tool-validation.ts). proof"],
     performance: "Only affected files are written, formatted, validated, and reindexed.",
-    safety: "Write-capable. Uses project-root path checks, atomic writes, snapshots, validation, and rollback; use dryRun before risky edits.",
-    evidence: "Mutation bounds come from indexed AST bytes; validation and reindex state report whether post-edit evidence is current.",
+    safety: "Write-capable. Uses project-root path checks, atomic writes, snapshots, validation, and rollback; use dryRun before risky edits. dryRun writes no source file, but a stale target file is still refreshed in the INDEX first (derived data only), because the bounds it previews must be the bounds the real edit would use.",
+    evidence: "Mutation bounds come from indexed AST bytes, re-resolved from the file on disk whenever the indexed rows are stale; validation and reindex state report whether post-edit evidence is current.",
   },
   bb_index: {
     returns: ["Indexed, deleted, and error counts for the refreshed path", "Mode actually applied (auto resolved, file, or dir)", "Per-file error names for any file that failed to reindex"],
@@ -197,6 +197,12 @@ export const RELATIONS: Record<string, string> = {
 }
 
 function stalenessSection(tool: any): string {
+  // M59.A11 (#890): bb_edit is the one tool that CONSUMES a stale target by
+  // refreshing it rather than reading around it or refusing. Stated here so the
+  // generated page cannot claim it "does not auto-refresh".
+  if (tool.name === "bb_edit") {
+    return `No freshness flags are returned — this tool does not summarize OTHER files' staleness, and it does not read stale data: a stale TARGET file is refreshed (that file only) and the symbol re-resolved from the bytes on disk before the edit is planned, and the refresh is named in \`warnings\`. If that change renamed or removed the symbol, the edit is refused by name rather than applied to a stale span. For unrelated files, remediation stays manual: project scope → \`${FRESHNESS_REMEDIATION.dir}\`.`
+  }
   const info = FRESHNESS_TOOLS[tool.name]
   if (!info) {
     // M48.D1 (#701): explicit about auto-refresh so the section cannot be
