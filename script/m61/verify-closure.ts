@@ -10,7 +10,7 @@
 //           projection rule — every entry is the derivation of its record)
 //           through the same pure core G1 enforces, plus this run's own entry.
 //   Pass 3  the lane: the m24/m29/m42/m44/m55 closure gates re-executed at HEAD,
-//           plus the 40-gate ladder record read as the lane's machine record of
+//           plus the 41-gate ladder record read as the lane's machine record of
 //           its own run — green AND fresh (the one freshness rule this program
 //           uses: the pin is an ancestor of HEAD and no lane file changed since;
 //           a pin equal to HEAD is un-passable, since evidence must be committed).
@@ -116,7 +116,7 @@ const LADDER_DEPS: LadderDeps = {
  *  the moment the run that generated it finishes (a self-referential drift). */
 const X1_LIMITATIONS = [
   "X1 is the auditor, so its own ledger entry is written from THIS run's measurements (the projection rule) and then validated whole — a pre-existing pin would make a fresh HEAD unverifiable, and the m29 self-referential-trap rationale applies.",
-  "The lane re-audit re-executes the five closure gates; the 40-gate ladder is read as the lane's machine record (green AND fresh by the shared relevance rule) rather than re-run — X1 re-running it would duplicate ~40 minutes, and the ladder's own refresh is covered by the lane's own gates.",
+  "The lane re-audit re-executes the five closure gates; the 41-gate ladder is read as the lane's machine record (green AND fresh by the shared relevance rule) rather than re-run — X1 re-running it would duplicate ~40 minutes, and the ladder's own refresh is covered by the lane's own gates.",
   "The known-gaps inventory is byte-gated against a fresh generation: it carries the records' declared limitations and the residue censuses, not an opinion about them.",
   "The verdict is the OWNER's (IDE Honesty Contract §8 rule 5). This gate proves the audit is complete and CAN FAIL; it never self-closes the milestone.",
 ]
@@ -256,7 +256,7 @@ if (!ledgerRead.ok) {
 
   const ladderRead = readEvidence<{ status?: string; gates?: Array<{ ok?: boolean; name?: string }>; mutantsCaught?: number; currentCommit?: string }>(path.join(ROOT, LADDER_RECORD))
   const ladderErrors = ladderRead.ok ? ladderFindings(ladderRead.record, LADDER_DEPS) : [`the ladder record is not a trusted read: ${ladderRead.kind}`]
-  check("X1: the 40-gate lane ladder record is green AND fresh at this HEAD, with its can-fail proof", ladderErrors.length === 0, ladderErrors.join(" | "))
+  check("X1: the 41-gate lane ladder record is green AND fresh at this HEAD, with its can-fail proof", ladderErrors.length === 0, ladderErrors.join(" | "))
 
   // --- Pass 4: the known-gaps inventory (generated, byte-gated) -------------------
   console.log("\npass 4: the known-gaps inventory — generated from the live records")

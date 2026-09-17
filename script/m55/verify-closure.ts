@@ -14,7 +14,7 @@
 //               The pre-closure state was exactly this: eight issues verified
 //               and G1 recording a ladder-skipped run.
 //   C2 audit:   the lane ladder's own machine record
-//               (validation/m53/results/R1.json — the 40-gate m24->m44 chain)
+//               (validation/m53/results/R1.json — the 41-gate m24->m44 chain)
 //               is green and fresh against the lane's source, and G1's own bar
 //               re-audit agrees with it (two independent records must match).
 //               Per-milestone rows carry the gate command, exit code and the
@@ -487,7 +487,7 @@ const result = {
   failures,
   limitations: [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
-    "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 40 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
+    "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 41 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
     "The verdict pack has no timestamp by design: a generated doc that changes on every run cannot be drift-gated byte-for-byte.",
   ],
 }

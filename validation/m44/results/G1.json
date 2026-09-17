@@ -7,14 +7,19 @@
   "passed": 25,
   "failed": 1,
   "negativeCases": 9,
-  "currentCommit": "302c4952836eb80104ed97a1ccad9decc18d9a15",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "25aff38aa2033951119d4643ad6e89356a9b7b8a",
+  "workingTreeRelevantChanges": [
+    "package.json",
+    "script/m44/hub-list-derivation.ts",
+    "script/m44/u2-declaration.json",
+    "script/m44/verify-hub-list.ts"
+  ],
   "verifierCommand": "npx tsx script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-17T00:49:46.535Z",
+  "generatedAt": "2026-09-17T01:36:52.093Z",
   "ledger": "validation/m44/results/manifest.json",
   "m42Bar": {
-    "gateExit": 0
+    "gateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M42 bar (M29 re-audited transitively); it does not verify the hub features themselves (U1–U6 own those).",
@@ -22,7 +27,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:49:46.537Z",
-    "contentSha256": "aeed9a77c3d5deb4dbe32844f3c0118f04c2b8aa43eb394ae18b1bfef761dd9f"
+    "sealedAt": "2026-09-17T01:36:52.100Z",
+    "contentSha256": "3e0c47b5192ea533fc5c5fa2cc67cc301561fafb7da191779fff19089f7779f8"
   }
 }

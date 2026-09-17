@@ -72,6 +72,9 @@ const GATES: Array<[string, string]> = [
   ["m44-hub-tree", "script/m44/verify-hub-tree.ts"],
   ["m44-impact-resolution", "script/m44/verify-impact-resolution.ts"],
   ["m44-legend", "script/m44/verify-legend.ts"],
+  // U2's owner gate: derives U2's record from the m26 webview harness record
+  // (it must run AFTER m26-webview-harness above, whose fresh record it reads).
+  ["m44-hub-list", "script/m44/verify-hub-list.ts"],
   ["m44-usages-fallback", "script/m44/verify-usages-fallback.ts"],
   ["m44-usages-groups", "script/m44/verify-usages-groups.ts"],
   ["m44-closure", "script/m44/verify-closure.ts"],
