@@ -2,12 +2,14 @@
   "issue": "M61.V5 claim pins (issue #846)",
   "code": "V5",
   "milestone": "M61",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 28,
-  "passed": 28,
-  "failed": 0,
-  "realFailed": 0,
-  "failures": [],
+  "passed": 27,
+  "failed": 1,
+  "realFailed": 1,
+  "failures": [
+    "C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\""
+  ],
   "checksList": [
     "ok: C0: no registry problems",
     "ok: C0: the registry pins a non-trivial number of claims",
@@ -15,7 +17,7 @@
     "ok: C0: more than one derivation kind is exercised",
     "ok: C1: no claim is blocked (every cited source resolves)",
     "ok: C1: every claim's derivation yields numbers",
-    "ok: C2: no published claim has drifted from its ledger",
+    "FAIL: C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\"",
     "ok: C2: the pins are live (at least one row was found for every claim)",
     "ok: C3: every declared doc exists and honors its coverage status",
     "ok: C3: the audit set covers README, the website and the docs end to end",
@@ -38,10 +40,10 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "57df6656ab8a071ebc62c404cd17820a5aecb188",
+  "currentCommit": "83230b19a558136806586e273d07ae84c5ae86e2",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-09-17T01:14:19.468Z",
+  "generatedAt": "2026-09-17T02:10:07.127Z",
   "claims": [
     {
       "id": "m25-issues",
@@ -88,9 +90,10 @@
     {
       "id": "m44-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "pinned",
-      "rendered": "closure gate verified (X1 48/48 at HEAD)",
-      "published": 1
+      "outcome": "drifted",
+      "rendered": "closure gate verified (X1 43/48 at HEAD)",
+      "published": 0,
+      "reason": "published row does not match the ledger: expected to find \"closure gate verified (X1 43/48 at HEAD)\""
     },
     {
       "id": "m26-mutants",
@@ -185,7 +188,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:14:19.468Z",
-    "contentSha256": "5ef42e198c30ba49356992c7ab59fd3fcb9198c1dd65fe0836aa0b4d4c898d6a"
+    "sealedAt": "2026-09-17T02:10:07.127Z",
+    "contentSha256": "e5b35933bf99e6fc014c352eef5f69627c364fa0abbbb3e5a2352802daabf137"
   }
 }
