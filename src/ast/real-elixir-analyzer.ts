@@ -245,7 +245,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     for (const s of ctx.symbols) {
-      const isModLevel = !s.ownerName || s.ownerName === s.name
+      const isModLevel = !s.ownerName
       const isPub = s.visibility === "public"
       const isExp = [ASTEngine.SymbolKind.Module, ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Interface, ASTEngine.SymbolKind.Struct].includes(s.kind)
       if (isModLevel && isPub && isExp) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility }) }
@@ -580,6 +580,15 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         const kwGroups: Node[] =
           child.type === "keywords" ? [child] :
           child.type === "list" ? this.filterChildren(child, (c) => c?.type === "keywords") : []
+        if (child.type === "list") {
+          for (let j = 0; j < child.namedChildCount; j++) {
+            const el = child.namedChild(j)
+            if (!el || el.type !== "atom") continue
+            const fieldName = el.text.startsWith(":") ? el.text.slice(1) : el.text
+            if (!fieldName) continue
+            ctx.symbols.push({ name: fieldName, kind: ASTEngine.SymbolKind.Property, range: this.nodeToRange(el), ownerName: currentScope.name, ownerKind: currentScope.kind, scope: currentScope.name, visibility: "public", metadata: { elixirSpecific: true, isStructField: true } })
+          }
+        }
         for (const kwGroup of kwGroups) {
           for (let j = 0; j < kwGroup.namedChildCount; j++) {
             const pair = kwGroup.namedChild(j)
