@@ -30,7 +30,9 @@ import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
 import {
   computeFamilyClosureVerdict, computeMilestoneVerdict, reviewFolderState,
-  dirtyAnalyzers as dirtyAnalyzerMap, loadFamilies, type FamilyConditions,
+  dirtyAnalyzers as dirtyAnalyzerMap, loadFamilies, familyRemaindersNamedBy,
+  loadFamilyRemainderRegistry, type FamilyConditions, type FamilyRemainderRegistry,
+  type IssueLike,
 } from "./family-closure"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -52,24 +54,51 @@ function gh(args: string[]): string | null {
   try { return execFileSync("gh", args, { cwd: ROOT, encoding: "utf8", timeout: 30_000 }) } catch { return null }
 }
 
-// (d) the family remainder = open issues whose title carries the family's
-// registered CONV ids (the convergence sweep's registered defects), or the
-// M60 remainder issues themselves.
-const FAMILY_CONV: Record<string, RegExp[]> = {
-  jvm: [/CONV-J-1/, /CONV-K-1/, /CONV-S-1/, /CONV-G-1/, /M60\.J1/],
-  web: [/CONV-(TS|JS|VUE|SVELTE|HTML)-/, /M60\.W1/],
+// (d) the family remainder = open issues that name the family's remainder. The
+// rule itself is one definition in ./family-closure (an issue is this family's
+// remainder when it IS the registered remainder issue, or carries a registered
+// code, or names one of the family's registered languages as a WHOLE WORD) —
+// this function only reads the tracker and hands it over.
+//
+// The previous implementation matched five literal legacy codes and, measured
+// against the live tracker on 2026-09-16, detected zero of 115 open issues for
+// either family while the jvm's own registered residual (#841 groovy) and two
+// web issues (#868, #834) were open. See the module comment for the measurement.
+function openFamilyIssues(registry: Record<string, FamilyRemainderRegistry>): Record<string, { number: number; title: string; why: string }[]> {
+  const empty: Record<string, { number: number; title: string; why: string }[]> = {}
+  for (const fam of Object.keys(registry)) empty[fam] = []
+  const j = gh(["issue", "list", "--state", "open", "--limit", "400", "--json", "number,title"])
+  if (j === null) return empty // caller treats gh-unavailability as unverifiable
+  const issues = JSON.parse(j) as IssueLike[]
+  return familyRemaindersNamedBy(issues, registry)
 }
 
-function openFamilyIssues(): Record<string, string[]> {
-  const out: Record<string, string[]> = { jvm: [], web: [] }
-  const j = gh(["issue", "list", "--state", "open", "--limit", "400", "--json", "number,title"])
-  if (j === null) return out // caller treats gh-unavailability as unverifiable
-  for (const it of JSON.parse(j) as Array<{ number: number; title: string }>) {
-    for (const [fam, res] of Object.entries(FAMILY_CONV)) {
-      if (res.some((r) => r.test(it.title))) out[fam].push(`#${it.number} ${it.title}`.slice(0, 100))
-    }
+/**
+ * Self-test for the classifier, in BOTH directions. A rule that cannot say no
+ * is the defect this milestone was opened for, so the negatives are the point:
+ * a title naming only another language must open nothing, and `java` must not
+ * match inside `JavaScript` — the whole-word rule is what keeps the families
+ * from contaminating each other.
+ */
+function classifierSelfTest(): { cases: number; failures: string[] } {
+  const reg: Record<string, FamilyRemainderRegistry> = {
+    jvm: { languages: ["java", "kotlin", "scala", "groovy"], codes: [/CONV-J-1/, /M60\.J1/], remainderIssue: 830 },
+    web: { languages: ["typescript", "javascript", "vue", "svelte"], codes: [/CONV-(TS|JS)-/, /M60\.W1/], remainderIssue: 831 },
   }
-  return out
+  const f: string[] = []
+  let cases = 0
+  const named = (number: number, title: string) => familyRemaindersNamedBy([{ number, title }], reg)
+  const expect = (label: string, ok: boolean) => { cases++; if (!ok) f.push(label) }
+
+  expect("a family language named in a title is caught", named(1, "Groovy grammar residual parse failures").jvm.length === 1)
+  expect("matching is case-insensitive", named(1, "KOTLIN emits no member uses").jvm.length === 1)
+  expect("'JavaScript' does not match the jvm language 'java'", named(1, "javascript has no decorator-metadata layer").jvm.length === 0)
+  expect("a web language opens the web family", named(1, "javascript has no decorator-metadata layer").web.length === 1)
+  expect("a registered code is caught without a language name", named(1, "CONV-J-1 member reads are lost").jvm.length === 1)
+  expect("the registered remainder issue is caught by number", named(830, "some unrelated title").jvm.length === 1)
+  expect("an unrelated title opens no family", named(1, "M56.L1 Languages Substance on the Homepage").jvm.length === 0 && named(1, "M56.L1 Languages Substance on the Homepage").web.length === 0)
+  expect("a language in neither family opens neither", named(1, "dart second review wave: DT2-A/B").jvm.length === 0 && named(1, "dart second review wave: DT2-A/B").web.length === 0)
+  return { cases, failures: f }
 }
 
 function matrixCells(): { blocked: string[]; ruledDead: string[]; rulingsMissing: string[] } {
@@ -160,8 +189,11 @@ function main() {
   const st = selfTest()
   check(`verdict self-test discriminates (${st.cases} cases, every condition load-bearing)`, st.failures.length === 0, st.failures.join("; "))
   const cells = matrixCells()
-  const open = openFamilyIssues()
+  const remainderRegistry = loadFamilyRemainderRegistry(ROOT)
+  const open = openFamilyIssues(remainderRegistry)
   const ghUnavailable = gh(["issue", "view", "1", "--json", "number"]) === null
+  const cst = classifierSelfTest()
+  check(`remainder classifier discriminates (${cst.cases} cases, both directions)`, cst.failures.length === 0, cst.failures.join("; "))
   const folders = reviewFolderState(REVIEWS)
   const dirty = dirtyAnalyzerMap(ROOT, REVIEWS)
   const fold = foldRows(Object.keys(FAMILY_LANGS))
@@ -174,7 +206,8 @@ function main() {
   if (ghUnavailable) check("tracker reachable (gh)", false, "gh unavailable — cannot verify the remainder")
   else {
     for (const fam of Object.keys(FAMILY_LANGS)) {
-      check(`${fam} remainder fully closed on the tracker`, open[fam].length === 0, open[fam].join(" | ") || "(none)")
+      check(`${fam} remainder fully closed on the tracker`, open[fam].length === 0,
+        open[fam].map((o) => `#${o.number} [${o.why}] ${o.title}`.slice(0, 110)).join(" | ") || "(none)")
     }
   }
 
@@ -231,6 +264,10 @@ function main() {
     },
     families,
     selfTest: { cases: st.cases, failures: st.failures },
+    remainderClassifier: {
+      contract: "an open issue names a family's remainder when it IS the registered remainder issue, or carries a registered code, or names one of the family's registered languages as a whole word",
+      selfTest: { cases: cst.cases, failures: cst.failures },
+    },
     blockedCells: cells.blocked,
     ruledDeadCells: cells.ruledDead,
     openRemainder: open,
@@ -284,8 +321,9 @@ function main() {
     console.log(`  ${fam} family: ${families[fam].verdict}${fold.present[fam] ? " (folded)" : " (no fold row)"}`)
   }
   console.log(`  blocked cells: ${cells.blocked.join(", ") || "(none)"}`)
-  console.log(`  open jvm remainder: ${open.jvm.length ? open.jvm.map((s) => s.split(" ")[0]).join(", ") : "(none)"}`)
-  console.log(`  open web remainder: ${open.web.length ? open.web.map((s) => s.split(" ")[0]).join(", ") : "(none)"}`)
+  for (const fam of Object.keys(FAMILY_LANGS)) {
+    console.log(`  open ${fam} remainder: ${open[fam].length ? open[fam].map((o) => `#${o.number} (${o.why})`).join(", ") : "(none)"}`)
+  }
   console.log(`  M49 closure gate live: ${m49Live}`)
   console.log(`G1-style tally: ${passed} passed, ${failed} failed`)
   for (const f of failures) console.log(`  FAIL: ${f}`)

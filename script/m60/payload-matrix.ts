@@ -8,7 +8,12 @@
 // Surface (parsed from src/ast/types.ts, never hand-copied):
 //   UniversalSymbol       — 22 declared fields
 //   UniversalRelationship — 11 declared fields
-// Languages: the 21 onboarded languages (validation/m14/fixtures/*).
+// Languages: the ONBOARDED languages, enumerated from
+// `validation/m14/fixtures/*` at emit time (`onboardedLanguages()`), never a
+// transcribed count. The count in this comment was 21 and the enumeration
+// silently became 22 when xml got a fixture lane and an analyzer — a comment
+// that disagrees with its own artifact is how a downstream gate came to
+// hardcode 21 and go permanently red (found 2026-09-16).
 // Seams: emit (analyzer) → store (persister) → query (readers) → tool (MCP).
 //
 // Every needle below was verified against the live tree on 2026-09-14
@@ -278,7 +283,16 @@ const SPECS: Record<string, FieldSpec> = {
     store: { needle: /typeof rel\.line_number === "number" && rel\.line_number > 0 \? rel\.line_number : null/, via: `${INDEXER}:2570-2573 -> line_number` },
     query: { needle: /r\.line_number AS lineNumber/, via: "graph-engine.ts:150,213" },
     tool: { needle: /callSite|line/ },
-    ruling: "M59.O2 — call-site line or NULL, never a fabricated 0. Producers: scala, xml (+1). The 18 other languages' edges carry NULL by ruling, which is the ruled ALIVE shape.",
+    // The ruling states the POLICY; the measured producer set is appended in
+    // main(), where `emitByLang` exists (a template here would reference a local
+    // that is not in scope, and did — caught by tsc). The previous text was a
+    // transcription ("Producers: scala, xml (+1) ... The 18 other languages")
+    // that had drifted from its own artifact to the point of contradicting it:
+    // the measured emit set is nine languages, and all four JVM and all four web
+    // languages are in it — the M59.A7 claim this matrix exists to corroborate.
+    // A ruling that misstates its own data is worse than no ruling.
+    ruling: "M59.O2 — call-site line or NULL, never a fabricated 0.",
+    rulingNamesProducers: true,
   },
   // relationship.metadata handled under symbol.metadata share (same seam).
 }
@@ -404,7 +418,11 @@ function main() {
       queryOk,
       toolOk,
       verdict,
-      ruling: spec.ruling ?? null,
+      ruling: spec.ruling
+        ? (spec as any).rulingNamesProducers
+          ? `${spec.ruling} Producers (${emitCount} of ${langs.length}): ${Object.entries(emitByLang).filter(([, v]) => v).map(([k]) => k).join(", ") || "(none)"}. The remaining ${langs.length - emitCount} carry NULL by ruling, which is the ruled ALIVE shape.`
+          : spec.ruling
+        : null,
       note: spec.note ?? null,
     })
   }
@@ -428,7 +446,7 @@ function main() {
 
   const result = {
     gate: "M60.P1",
-    title: "Payload-seam matrix — 33 declared fields × 21 onboarded languages × 4 seam stages",
+    title: `Payload-seam matrix — ${symbolFields.length + relFields.length} declared fields × ${langs.length} onboarded languages × 4 seam stages`,
     at: new Date().toISOString(),
     method: "fields parsed from src/ast/types.ts; every needle verified against the live tree (fatal on mismatch, so the matrix cannot rot silently); emit measured per-language against src/ast/real-<lang>-analyzer.ts; store against parallel-indexer/schema-ddl; query against brain.sql/graph-engine/doc-engine/taint; tool against the MCP surface.",
     surface: {
