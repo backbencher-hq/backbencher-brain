@@ -4,16 +4,14 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 70,
-  "passed": 70,
-  "failed": 0,
+  "passed": 69,
+  "failed": 1,
   "negativeCases": 10,
-  "currentCommit": "4c47d2beb32ebee0a1d61fc14fd88f89882a3db4",
-  "workingTreeRelevantChanges": [
-    "docs/m29/PRECISION-LEDGER.md"
-  ],
+  "currentCommit": "6c417a707ab0e6463cf45d3fc6bf448f9472eac8",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-17T00:42:57.412Z",
+  "generatedAt": "2026-09-17T00:43:15.103Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
@@ -25,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:42:57.415Z",
-    "contentSha256": "a3d058c6119004e6f87c52f965e7e9569624a97c5150322ec4b70b535cd1e365"
+    "sealedAt": "2026-09-17T00:43:15.112Z",
+    "contentSha256": "bf9fb452df85a84b4d1fdc301370830a42fd29c1554907ee46e8c5755cf56cb3"
   }
 }
