@@ -417,7 +417,7 @@
     },
     {
       "gate": "script/m53/verify-r1-ladder.ts",
-      "reason": "the lane integration ladder (40 gates, ~15 min) \u2014 run deliberately, not per edit"
+      "reason": "the lane integration ladder (41 gates, ~15 min) \u2014 run deliberately, not per edit"
     }
   ]
 }
