@@ -2,18 +2,16 @@
   "issue": "M26.G1",
   "code": "G1",
   "milestone": "M26",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 70,
   "passed": 70,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "25aff38aa2033951119d4643ad6e89356a9b7b8a",
-  "workingTreeRelevantChanges": [
-    "package.json"
-  ],
+  "currentCommit": "2398b3829e5b859653e8c387b18d88df4942a6e8",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m26/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-17T01:38:02.631Z",
+  "generatedAt": "2026-09-17T01:39:45.788Z",
   "ledger": "validation/m26/results/manifest.json",
   "m25Bar": {
     "ledgerStatus": "closed",
@@ -25,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:38:02.633Z",
-    "contentSha256": "4a13c3e083c35a91f32bc6d729b524d93e0236a6f35ecc8dd83ef2703fe029e2"
+    "sealedAt": "2026-09-17T01:39:45.791Z",
+    "contentSha256": "4409e39137a7d15c65f9aa234174176c168f071ca5bac1ee9cd0d3d351e7dab6"
   }
 }
