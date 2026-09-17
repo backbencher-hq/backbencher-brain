@@ -269,6 +269,28 @@ function revertDelegatedMetadataLineMirrors(r: any) {
   }
 }
 
+// M60.P1 (#873), the TWO-BASES class on one row: the metadata line mirror goes
+// back to `startPosition.row` while the row's own `line_number` stays 1-based —
+// exactly what the eight typescript writers did before the fix, measured through
+// the production pipeline as typescript 148/155 rows off by one (7 by more), tsx
+// 173/179, vue 3/3, and zero rows on any JVM language. The mirror is
+// reconstructed off the row's own 1-based line, so the mutation is the pre-fix
+// OFF-BY-ONE state rather than an approximation; the larger disagreements came
+// from the mirror naming a different NODE, which is what the writers' alignment
+// fixes and what the fixture's pair-pins record.
+function revertMetadataLineBase(r: any) {
+  const rels: any[] = r.relationships ?? []
+  const has = (x: any) =>
+    typeof x?.line_number === "number" && typeof x?.metadata?.line === "number"
+  if (!rels.some(has)) return r
+  return {
+    ...r,
+    relationships: rels.map((x: any) =>
+      has(x) ? { ...x, metadata: { ...x.metadata, line: x.line_number - 1 } } : x,
+    ),
+  }
+}
+
 // M59 (#825), the 0-based/1-based class: every line shifted down by one, which is
 // what emitting `startPosition.row` instead of `row + 1` produces. This is the
 // classic off-by-one this contract is one keystroke away from, and it is the
@@ -1582,6 +1604,14 @@ const MUTANTS: Mutant[] = [
     defectClass: "line-attribution",
     description: "M59 (#825) regression: vue's relationships go back to carrying NO line — the exact pre-fix state (measured: 0 of 3,940 on the round's pinned sample). Caught by vue/template-lines-825, whose forbid entries are the measured HEAD values for every one of its 16 relationships.",
     transform: dropAllLineNumbers,
+  },
+  {
+    id: "typescript/metadata-line-second-base",
+    language: "typescript",
+    defectClass: "line-attribution",
+    description:
+      "M60.P1 (#873) regression: the metadata line mirror goes back to the 0-based `startPosition.row` while the row's `line_number` stays 1-based — the exact pre-fix state of the eight typescript writers (measured through the production pipeline: typescript 148 of 155 rows off by one, tsx 173 of 179, vue 3 of 3, and ZERO on java/scala/groovy/gradle/cpp/python/js). Caught by typescript/one-line-base-873, which pins both fields on three rows and forbids the one-below values.",
+    transform: revertMetadataLineBase,
   },
   {
     id: "svelte/lines-dropped",
