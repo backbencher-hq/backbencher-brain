@@ -1,0 +1,204 @@
+{
+  "probe": "M59.EDIT — bb_edit per-mode behavioural probe",
+  "at": "2026-09-17T23:10:19.460Z",
+  "dataDir": "/tmp/m59-edit-data-E8SNlA",
+  "cases": 18,
+  "refused": 4,
+  "expectationsUnmet": 0,
+  "results": [
+    {
+      "case": "01-update-full-method-decl",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "02-update-full-function-decl",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "03-update-body-fragment",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "04-update-uses-content-field",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "05-update-ambiguous-no-filePath",
+      "toolRefused": true,
+      "reason": "symbol helper is ambiguous; provide filePath and lineStart",
+      "changedOnDisk": false,
+      "reindexed": null,
+      "derived": null,
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "06-update-ambiguous-with-filePath",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "07-insert-inside-top-method",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "08-insert-after-function",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "09-delete-function",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "10-write-new-file",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "11-update-after-external-change",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "12-update-dry-run",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": false,
+      "reindexed": false,
+      "derived": null,
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "13-refactor-rename",
+      "toolRefused": false,
+      "reason": null,
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "14-update-with-position-arg",
+      "toolRefused": true,
+      "reason": "error: bb_edit update mode does not accept: position",
+      "changedOnDisk": false,
+      "reindexed": null,
+      "derived": null,
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "15-update-allowStaleIndex-on-wire",
+      "toolRefused": true,
+      "reason": "error: bb_edit: unknown or irrelevant options: allowStaleIndex — accepted options: mode, dryRun, filePath, symbolName, lineStart, content, newContent, targetSymbolName, p",
+      "changedOnDisk": false,
+      "reindexed": null,
+      "derived": null,
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "16-stale-then-index-then-edit",
+      "toolRefused": false,
+      "reason": null,
+      "prelude": [
+        {
+          "tool": "bb_index",
+          "isError": false,
+          "head": "{ \"mode\": \"file\", \"path\": \"/tmp/m59-edit-fix-TtKvsL/src/shapes.ts\", \"indexed\": 1, \"deleted\": 0, \"errors\": 0, \"derived\": "
+        }
+      ],
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "17-two-edits-in-a-row",
+      "toolRefused": false,
+      "reason": null,
+      "prelude": [
+        {
+          "tool": "bb_edit",
+          "isError": false,
+          "head": "{ \"mode\": \"update\", \"dryRun\": false, \"changes\": [ { \"path\": \"/tmp/m59-edit-fix-17NX8u/src/shapes.ts\", \"before\": \"export "
+        }
+      ],
+      "changedOnDisk": true,
+      "reindexed": true,
+      "derived": "bounded",
+      "expectationMet": true,
+      "expectationProblem": null
+    },
+    {
+      "case": "18-stale-then-symbol-renamed-outside",
+      "toolRefused": true,
+      "reason": "symbol helper not found after refreshing /tmp/m59-edit-fix-YXPtCj/src/shapes.ts — it was renamed or removed since it was indexed",
+      "changedOnDisk": false,
+      "reindexed": null,
+      "derived": null,
+      "expectationMet": true,
+      "expectationProblem": null
+    }
+  ]
+}

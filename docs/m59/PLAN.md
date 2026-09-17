@@ -640,6 +640,20 @@ bound on call lines), `missed` is reported only for names that map to exactly on
 print `AMBIG(k)`), and cells at the 200 cap carry `truncated`. #888 and #885 mean two of the numbers above are
 floors and one class of answer is not reproducible — both stated in the evidence file itself.
 
+### 3m. `bb_edit` refused every edit whose file changed since indexing — and the user's own fix, verified (2026-09-17, #890)
+
+The user reported "the bb edit tool is not working at all". Instead of arguing, the tool was exercised through the **real wire path** (`validateToolArguments` → handler, exactly as `src/mcp/server.ts` does) on an isolated indexed fixture: `script/m59/probe-bb-edit-modes.ts`, 18 cases covering all five modes.
+
+**13 of 14 five-mode paths already worked** — update (full declaration, and body fragment), insert (all four positions), delete, write, refactor, ambiguity refusal with an actionable message, dry-run, per-mode argument rejection (`bb_edit update mode does not accept: position` — the documented behaviour, confirmed on the wire). Two instrument facts were established first, because both had already produced false verdicts in this round: the handler path bypasses parameter validation (calling `createToolHandlers()` alone is *not* the tool), and `allowStaleIndex` is deliberately absent from the registry schema, so the engine's own escape hatch is unreachable from a client.
+
+The real defect was the stale gate: **any** named-symbol edit on a file that changed after indexing was refused — `stale index bounds for helper; reindex before editing` — even when the change was a comment appended at the END of the file, which cannot move the symbol. This is the *normal* agent state (another tool wrote, a pull landed, the human edited), and every read tool refreshes in that state (`BB_NO_AUTO_REFRESH`), so the first symbol edit after any external change was a hard stop and the agent fell back to native edit tools.
+
+**Fix (landed):** on a stale declaration file the tool refreshes **that one file** and re-resolves the symbol, so bounds always come from the bytes on disk — strictly safer than trusting the old span. If the symbol was renamed or removed by that change, it refuses by name (`symbol X not found after refreshing <file> — it was renamed or removed since it was indexed`) instead of editing a guessed span; if the refresh itself fails (index lock held), the refusal names the remediation. The refresh is reported in `warnings`, so it is never silent. Caller freshness is untouched (that is the safety property `verify-edit-freshness` pins).
+
+**Measured, before → after:** fixture gate **16/18 → 18/18 expectations met, 0 unmet**; real repo slice (graphql-js, 46 files: `script/m59/probe-edit-refresh-cost.ts`) — edit after an external change now answers in **3,413 ms with the refresh reported**, an untouched file answers in **41 ms with no refresh**, and `dryRun` wrote no source. Regression gates unchanged: E5 freshness 14/14 · E8 integration 17/17 · m15 crossfile E4/E5/E8 VERIFIED · E7 18/20 (pre-existing known gap).
+
+The user's uncommitted `declaresSelf` change was verified with a controlled revert: **without it** the full-declaration method update (case 01) fails `validation failed … Syntax ERROR` and is rolled back — the pre-fix engine nested the declaration inside the old declaration; **with it** the case passes. That is why their fix was necessary, measured rather than assumed.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
@@ -661,7 +675,10 @@ asking a different question.
 | #825 analyzer lane emission — synthesised members | **JVM family done** — a synthesised member (`metadata.isPhantom`: kotlin's data-class `componentN`/`copy`/`equals`/`hashCode`/`toString`, java's lombok accessors and Spring-Data repository methods) carries NO line; a declared member keeps its real one. Both analyzers used to take the ENCLOSING declaration's range, so `contains DataHolder.component1` claimed the class line and no source check could ever satisfy it. kotlin's injector also set `ownerName` for `componentN` but not for the other four, so those members had no containment edge at all. Fixtures `kotlin/data-class-phantoms` (extended) and `java/phantom-contains-lines` (new), mutants `kotlin/phantom-containment-line`, `java/phantom-containment-line`, `kotlin/phantom-uncontained` (all CAUGHT), and the runner gained the `line_number: null` assertion the gate was missing. The oracle now flags a phantom target that CLAIMS a line as inconsistent (it previously classified the whole class `notCheckable` by name shape, which is how 32 wrong-line kotlin edges passed a 6,787/6,787 "carries a line, 0 inconsistent" claim) |
 | #825 analyzer lane emission | **JVM family done, others open** — at the 840-file oracle sweep, scala **1,989/1,989** · java **1,920/1,920** · kotlin **6,787/6,787** · groovy **761/761** carry a line on **every** relationship, **0 inconsistent** (groovy also 2,864/2,864 at a 150-file sample). Every mechanism is fixture- and mutant-pinned (scala 5 mutants, java 3, kotlin 2, groovy 3). Still open: the other 17 languages emit **0 lines across 77,170 relationships**. xml is now closed too — added to the oracle (569/569 consistent, 0 inconsistent at 40 files) and given the fixture lane it never had (`xml/lines-825`, 22 lanes / 429 fixtures) |
 | #825 analyzer lane emission — **web family** | **web family done** — typescript · javascript · vue · svelte carried **0 lines on all 5,293 relationships** of the pinned 40-file sample (measured at HEAD in a worktree with the same instrument and the same sample pins, so the baseline is a real baseline). Now **5,292/5,293** carry one with **0 INCONSISTENT** (typescript 2,074/2,074 · javascript 2,057/2,057 · vue 1,051/1,051 · svelte 110/111; the one absent line is the honest unknown, never `0`). Three defect classes beyond the silence: the **SFC seam** (a delegated relationship kept the js/ts analyzer's SCRIPT-relative line — 562 of 585 line-bearing vue edges and 19 of 58 svelte ones INCONSISTENT once the delegate began emitting lines; the wrapper now shifts and **records** the offset it applied), the **name-vs-construct** rule (chain callee leaf, import specifier, base name, `new` class name), and **vue's props** (every prop/emit symbol stamped with the `props: { … }` pair's line — `Account.vue:17` for a key written on 18). Pinned by four new fixtures (`typescript/callsite-lines-825`, `javascript/callsite-lines-825`, `vue/template-lines-825`, `svelte/template-lines-825` — the vue/svelte `forbid` values MEASURED by running the same fixture at HEAD) and **eight mutants, all CAUGHT** (per-lane drop, seam-not-shifted for vue and svelte, props-pair, and `typescript/line-zero-based` — the off-by-one that proves the fixtures pin the arithmetic). Two instrument defects had to be fixed first: the callee token for a TS/JS import target was the whole `module:item` (22 of 24 typescript INCONSISTENT verdicts were that, every one on a CORRECT line) and the `default` export sentinel was checked as a written name. Fixtures **440/440** across 22 languages, mutants **591/591**, typecheck clean. Registered as `reviews/m59-web-lines-round` |
+| #890 `bb_edit` stale-file refusal | **fixed and verified** — refresh-one-file instead of refusing; fixture gate 18/18 · real-repo slice measured · four edit gates re-run unchanged · docs regenerated (`npm run docs:generate`, TOOL DOCS: PASS) |
 | #826 closure gate | **open** |
+
+**Tracking gap, stated:** this table's `closed` rows (#821–#824) are closed *in substance* — each was delivered, measured and pinned — but their GitHub issues were never transitioned, so the milestone still reports 10 open / 1 closed. Closing them is bookkeeping, not work, and it is the last honest step before #826 X1 can run.
 
 ## Evidence
 
@@ -680,6 +697,10 @@ asking a different question.
 - `reviews/m59-nested-source-owner-dead-end.md` — #879, with the layer-by-layer fixture evidence
 - `script/m59/probe-anon-init-regression.ts` — the probe that classified the #866 red (analyzer vs store
   vs tool), so the verdict came from measurement rather than from the failing check's name
+- `validation/m59/results/probe-bb-edit-modes.json` — #890: all five `bb_edit` modes through the real
+  wire, the stale refusal reproduced, the rename-outside refusal, and the declared `allowStaleIndex` gap
+- `validation/m59/results/probe-edit-refresh-cost.json` — #890: the same path on a real repo slice,
+  with the refresh cost and the no-refresh cost separated
 
 ## Reproduce
 
@@ -697,6 +718,9 @@ npx tsx script/m59/probe-anon-init-regression.ts
 # #823 / #821 — the tool stops fabricating; legacy zeros cannot return
 npx tsx script/m59/verify-honest-callsite.ts
 npx tsx script/m59/verify-legacy-zero-heal.ts
+# #890 — bb_edit per mode through the real wire, plus the stale-file refresh cost on a real repo
+npx tsx script/m59/probe-bb-edit-modes.ts          # 18 cases, expects 18/18 met
+npx tsx script/m59/probe-edit-refresh-cost.ts --files=150
 # #824 — the certification that can fail (A6)
 bun run script/verify-graph.ts
 npx tsx script/m44/verify-usages-groups.ts   # U1 20/20

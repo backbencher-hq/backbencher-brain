@@ -1,0 +1,27 @@
+{
+  "probe": "M59.A11 — bb_edit stale-file refresh, real repo slice",
+  "at": "2026-09-17T23:13:45.453Z",
+  "repo": "$HOME/fixtures/repositories/graphql-js",
+  "sliceFiles": 46,
+  "indexMs": 9524,
+  "target": "src/args.ts",
+  "symbol": "getArguments",
+  "freshRead": {
+    "isError": false,
+    "ms": null,
+    "head": "{ \"mode\": \"update\", \"dryRun\": true, \"changes\": [ { \"path\": \"/tmp/m59-editcost-f4ZXwa/src/args.ts\", \"before\": \""
+  },
+  "afterExternalChange": {
+    "isError": false,
+    "ms": 3413,
+    "head": "{ \"mode\": \"update\", \"dryRun\": true, \"changes\": [ { \"path\": \"/tmp/m59-editcost-f4ZXwa/src/args.ts\", \"before\": \"import fs from 'node:fs';\\nimport path from 'node:"
+  },
+  "refreshTriggered": true,
+  "untouchedFile": {
+    "symbol": "changeExtensionInImportPaths",
+    "isError": false,
+    "ms": 41,
+    "refreshTriggered": false
+  },
+  "noSourceWrite": true
+}

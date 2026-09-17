@@ -269,18 +269,73 @@ export function findDeclarationName(
   return best ? best.startIndex : undefined
 }
 
-async function uniqueSymbol(projectId: string, name: string, filePath?: string, lineStart?: number, allowStaleIndex = false): Promise<SymbolMatch> {
-  const found: any = await ASTEngine.findSymbol(projectId, name, filePath, lineStart)
-  const matches = (found?.matches ?? []).filter((m: any) => m.byteStart != null && m.byteEnd != null)
-  if (matches.length === 0) throw new Error(`symbol ${name} not found or has no byte bounds`)
-  if (matches.length > 1) throw new Error(`symbol ${name} is ambiguous; provide filePath and lineStart`)
-  const match = matches[0] as SymbolMatch
-  if (allowStaleIndex) return match
+/**
+ * M59.A11 (#889): the declaration file's indexed rows no longer match disk.
+ * Returns the file path when the mismatch is real (the file changed since it
+ * was indexed), null when the row is fresh or the hash still agrees.
+ */
+async function staleDeclarationFile(projectId: string, match: SymbolMatch): Promise<string | null> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const freshness = checkSymbolFreshness(raw, match.id)
-  if (freshness?.status === "fresh") return match
+  if (freshness?.status === "fresh") return null
   const row = raw.prepare("SELECT file_hash FROM brain_file WHERE path=? AND project_id=?").get(match.fileId, projectId) as { file_hash?: string } | undefined
-  if (!row?.file_hash || !fileUnchangedSince(match.fileId, row.file_hash)) throw new Error(`stale index bounds for ${name}; reindex before editing`)
+  if (!row?.file_hash || !fileUnchangedSince(match.fileId, row.file_hash)) return match.fileId
+  return null
+}
+
+function matchesOf(found: any): SymbolMatch[] {
+  return (found?.matches ?? []).filter((m: any) => m.byteStart != null && m.byteEnd != null)
+}
+
+async function uniqueSymbol(
+  projectId: string,
+  name: string,
+  filePath?: string,
+  lineStart?: number,
+  allowStaleIndex = false,
+  projectPath?: string,
+  warnings?: string[],
+): Promise<SymbolMatch> {
+  const found: any = await ASTEngine.findSymbol(projectId, name, filePath, lineStart)
+  let matches = matchesOf(found)
+  if (matches.length === 0) throw new Error(`symbol ${name} not found or has no byte bounds`)
+  if (matches.length > 1) throw new Error(`symbol ${name} is ambiguous; provide filePath and lineStart`)
+  let match = matches[0] as SymbolMatch
+  if (allowStaleIndex) return match
+
+  const staleFile = await staleDeclarationFile(projectId, match)
+  if (!staleFile) return match
+
+  // M59.A11 (#889): agent-real. Every other read tool refreshes a stale file
+  // within budget (BB_NO_AUTO_REFRESH) — editing refused instead, so the first
+  // symbol edit after ANY external change (another tool, a git pull, the human)
+  // was a hard stop, and the symbol's own bounds were never the problem when
+  // the change did not touch it. Refreshing just this ONE file makes the bounds
+  // CURRENT rather than stale, so the edit is applied to the bytes on disk with
+  // bounds derived from them. `allowStaleIndex` (which would trust the old
+  // bounds) stays unreachable from the wire — correctness first, convenience
+  // second.
+  if (!projectPath) throw new Error(`stale index bounds for ${name}; reindex before editing`)
+  try {
+    await reindexFilesParallel(projectId as any, realpathSync(projectPath), [{ path: staleFile, type: "modified" }])
+  } catch (e: any) {
+    throw new Error(
+      `stale index bounds for ${name}: ${staleFile} changed after indexing and refreshing it failed (${e?.message ?? String(e)}); run bb_index for that file, then retry`,
+    )
+  }
+
+  // Re-resolve AFTER the refresh: the symbol may have moved, been renamed, been
+  // removed, or become ambiguous. Reporting the fresh truth beats editing a
+  // stale span.
+  const reFound: any = await ASTEngine.findSymbol(projectId, name, filePath, lineStart)
+  matches = matchesOf(reFound)
+  if (matches.length === 0) throw new Error(`symbol ${name} not found after refreshing ${staleFile} — it was renamed or removed since it was indexed`)
+  if (matches.length > 1) throw new Error(`symbol ${name} is ambiguous; provide filePath and lineStart`)
+  match = matches[0] as SymbolMatch
+  if (await staleDeclarationFile(projectId, match)) {
+    throw new Error(`stale index bounds for ${name} persist after refreshing ${staleFile}; reindex before editing`)
+  }
+  warnings?.push(`refreshed stale index rows for ${path.basename(match.fileId)} before editing (the file changed after it was indexed)`)
   return match
 }
 
@@ -332,7 +387,7 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
 
   const symbolName = request.mode === "insert" ? request.targetSymbolName : request.symbolName
   if (!symbolName) throw new Error(`${request.mode} requires ${request.mode === "insert" ? "targetSymbolName" : "symbolName"}`)
-  const match = await uniqueSymbol(projectId, symbolName, request.filePath, request.lineStart, request.allowStaleIndex === true)
+  const match = await uniqueSymbol(projectId, symbolName, request.filePath, request.lineStart, request.allowStaleIndex === true, projectPath, warnings)
   resolveSafeEditPath(projectPath, match.fileId)
   const original = readFileSync(match.fileId, "utf8")
 
@@ -345,7 +400,14 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     // does not declare the symbol itself, it is treated as the new body:
     // the declaration and signature are kept, only the body block changes.
     const escaped = symbolName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-    const declaresSelf = new RegExp(`(?:function|class|interface|type|enum|struct|impl|def|fn|func|method|const|let|var|val)\\s+${escaped}\\b`).test(newContent)
+    // A class METHOD declares itself without `function`/`def`/etc. — TS/Java-style
+    // `private annotationLine(...)`. If only the bare keyword list is tested,
+    // a full-declaration method replacement is misread as a body FRAGMENT and
+    // nested inside the old declaration (illegal). A qualifier immediately
+    // before the name is the self-declaration shape for those languages.
+    const declaresSelf =
+      new RegExp(`(?:function|class|interface|type|enum|struct|impl|def|fn|func|method|const|let|var|val)\\s+${escaped}\\b`).test(newContent) ||
+      new RegExp(`\\b(?:public|private|protected|internal|static|abstract|override|readonly|final|sealed|export|declare|async)\\s+(?:async\\s+)?${escaped}\\b`).test(newContent)
     if (declaresSelf) return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, newContent) }], warnings }
     const parsed = await parseForSafety(match.fileId, original)
     const body = findSymbolBody(parsed, match.byteStart, match.byteEnd)
