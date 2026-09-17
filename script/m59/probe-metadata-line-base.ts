@@ -66,6 +66,9 @@ async function main(): Promise<void> {
   let totalOffByOne = 0
   let totalOther = 0
   const examples: string[] = []
+  let totalMetaOnly = 0
+  let totalMetaOnlyOnSite = 0
+  let totalMetaOnlyOneAbove = 0
 
   for (const [ext, list] of files) {
     if (list.length === 0) continue
@@ -74,7 +77,19 @@ async function main(): Promise<void> {
     let offByOne = 0
     let other = 0
     let rows = 0
+    let metaOnly = 0
+    // SOURCE TRUTH for the meta-only rows (M60.P1 #873, the cpp/hpp shape):
+    // these rows carry no line_number, so comparing two fields is impossible —
+    // the only honest check is whether the row's own target leaf is written on
+    // the line the mirror names. `on-site` counts rows whose target appears on
+    // `metadata.line`; `one-above` counts rows whose target appears only on the
+    // line before it (the pre-fix 0-based value, i.e. the defect).
+    let metaOnlyOnSite = 0
+    let metaOnlyOneAbove = 0
+    let metaOnlyNeither = 0
+    const metaOnlyExamples: string[] = []
     for (const file of list) {
+      const srcLines = fs.readFileSync(file, "utf8").split("\n")
       const root = ROOTS.find((r) => file.startsWith(r)) ?? path.dirname(file)
       let res: any
       try {
@@ -89,7 +104,18 @@ async function main(): Promise<void> {
         const meta = r.metadata as any
         const metaLine = meta && typeof meta.line === "number" ? meta.line : undefined
         const rowLine = typeof r.line_number === "number" ? r.line_number : undefined
-        if (metaLine === undefined || rowLine === undefined) continue
+        if (metaLine === undefined) continue
+        if (rowLine === undefined) {
+          metaOnly++
+          const leaf = String(r.target ?? "").split(".").pop() ?? ""
+          const atLine = srcLines[metaLine - 1] ?? ""
+          const prevLine = srcLines[metaLine - 2] ?? ""
+          if (leaf && atLine.includes(leaf)) metaOnlyOnSite++
+          else if (leaf && prevLine.includes(leaf)) metaOnlyOneAbove++
+          else metaOnlyNeither++
+          if (metaOnlyExamples.length < show) metaOnlyExamples.push(`  ${ext}: ${path.basename(file)}  ${r.type} ${r.source} -> ${r.target}  metadata.line=${metaLine} (no line_number)  src[${metaLine}]=${JSON.stringify(atLine.trim().slice(0, 40))}  src[${metaLine - 1}]=${JSON.stringify(prevLine.trim().slice(0, 40))}`)
+          continue
+        }
         both++
         const diff = rowLine - metaLine
         if (diff === 0) agree++
@@ -111,10 +137,15 @@ async function main(): Promise<void> {
     totalOffByOne += offByOne
     totalOther += other
     console.log(
-      `${ext.padEnd(7)} files=${String(list.length).padStart(2)} rows=${String(rows).padStart(5)}  both=${String(both).padStart(4)}  agree=${String(agree).padStart(4)}  off-by-one=${String(offByOne).padStart(4)}  other=${String(other).padStart(3)}`,
+      `${ext.padEnd(7)} files=${String(list.length).padStart(2)} rows=${String(rows).padStart(5)}  both=${String(both).padStart(4)}  agree=${String(agree).padStart(4)}  off-by-one=${String(offByOne).padStart(4)}  other=${String(other).padStart(3)}  meta-only=${String(metaOnly).padStart(4)} (on-site ${metaOnlyOnSite} / one-above ${metaOnlyOneAbove} / neither ${metaOnlyNeither})`,
     )
+    totalMetaOnly += metaOnly
+    totalMetaOnlyOnSite += metaOnlyOnSite
+    totalMetaOnlyOneAbove += metaOnlyOneAbove
+    if (metaOnly > 0) for (const e of metaOnlyExamples) examples.push(e)
   }
   console.log(`\nTOTAL rows with both fields: ${totalBoth}  agree ${totalAgree}  off-by-one ${totalOffByOne}  other ${totalOther}`)
+  console.log(`TOTAL rows with only a metadata line (source-truth checked): ${totalMetaOnly}  target on the named line ${totalMetaOnlyOnSite}  target only on the line above ${totalMetaOnlyOneAbove}`)
   if (examples.length) {
     console.log("examples:")
     for (const e of examples) console.log(e)

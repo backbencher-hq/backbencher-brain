@@ -1304,7 +1304,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               fromSymbol: source,
               toSymbol: qualifiedName,
               type: ASTEngine.RelationshipType.Calls,
-              metadata: { line: node.startPosition.row, qualified: qualifiedName },
+              // M60.P1 (#873): the line mirror is 1-based, the same base as the
+              // row's own `line_number` everywhere else in the payload. Written
+              // as `startPosition.row` until now — and these rows carry NO
+              // `line_number` at all, so the mirror was their only line and it
+              // was a row below the source line (measured: cpp 708 and hpp 1,327
+              // such rows in a 3-file-per-language sample, via
+              // script/m59/probe-metadata-line-base.ts).
+              metadata: { line: node.startPosition.row + 1, qualified: qualifiedName },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
             // :: separators), attributed to the enclosing function/method
@@ -1370,7 +1377,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               toSymbol: typeNode.text,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: typeNode.hasError ? 0.6 : 1.0,
-              metadata: { line: node.startPosition.row, isNew: true },
+              metadata: { line: node.startPosition.row + 1, isNew: true },
             })
           }
         }
