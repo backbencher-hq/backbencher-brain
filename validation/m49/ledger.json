@@ -815,7 +815,16 @@
       "summary": "M60.J1's four JVM remainders are fixed, pinned and closed with per-issue evidence in J1.json: #739 java bare member reads (3256a83e, fixture + 2 mutants), #740 kotlin member reads (29f0c1e5, fixture + 3 mutants), #741 scala framework detection (c6df719b, fixture + 2 mutants incl. the forbid-direction), #742 groovy grammar coverage (M49 W18 rebuild). Re-verified live on 2026-09-16 rather than trusted from that record: the G7 groovy read round landed (37cd5215, 36f64a38, 135eca91), F1-F9 were regenerated at 135eca91 with the M14 honesty gate green, and the F5 canonical differential claimed from a clean tree measures java 0 missing / 0 unexplained, kotlin 0/0, scala 0/0, groovy 0 missing / 1 unexplained \u2014 that single edge being the ruled SCALA-D1 external-qualified-base @Override, not a defect \u2014 with both JVM second-corpus lanes (clojure:java, cats-effect:scala, kotlinx-coroutines:kotlin, geb:groovy) at 0/0. Family conditions at recording: review folders closed for all four languages, their analyzers committed, every payload cell alive, no blocked cell.",
       "openAtRecording": [
         "#830 (the M60.J1 umbrella itself \u2014 its four children are closed; the tracker close is the owner's)"
-      ]
+      ],
+      "stillOpenAt": {
+        "measuredAt": "2026-09-16",
+        "measuredAtCommit": "4b7c5029",
+        "by": "script/m60/verify-family-closure-truth.ts (remainder classifier, corrected 2026-09-16)",
+        "open": [
+          "#841 \u2014 groovy grammar residual parse failures (the registered residual of the #742 fix recorded above)"
+        ],
+        "note": "The four remainders named in this row are fixed and closed, but the family does NOT compute closed-computable: #841 is open and names a jvm language, so `trackerClean` is false and the M60 verdict is not-closed. The earlier record could not see this because the classifier matched five literal legacy codes and returned zero open issues for both families against a tracker that carried 115 \u2014 the condition its own contract defines (\"no open issue naming this family's remainder\") implemented narrower than it is written. Corrected, with a both-directions self-test."
+      }
     },
     "web": {
       "family": "web",
@@ -834,7 +843,17 @@
       "summary": "M60.W1's web remainder is closed with per-issue evidence in W1.json plus the M59 rounds that landed after it. Its two named issues are fixed and closed: #816 (cross-language name-resolution false positive, 15c918af \u2014 nearest-candidate deterministic resolver, pinned in verify-index.ts and proven by revert) and #818 (dart F5 lane re-measure \u2014 the DT wave landed, lane 100/0/0). The family's line coverage finished at this state: #825 (M59.A7) landed relationship lines for all four web analyzers (typescript/javascript/vue/svelte, 68262f08), M49 W22 closed the last two holes at ff1e3124 (a class implementing an IN-FILE interface emitted no `overrides` while the oracle derives them, and `implements` edges carried no line while every other kind did \u2014 +7 overrides edges, 0 removed across 4,464 files set-wise), and #860 closed the final one at a5598e54 (a decorator's `references` edge carried NO line at all \u2014 the only relationship emitter in the web family with no line field, measured as the svelte lane's 110/111). Measured at this state rather than trusted from earlier records: fixtures 442/442 with 0 failures (typescript 64, javascript 58, vue 30, svelte 27 \u2014 179 web); mutations 595/595 caught with 0 survivors, the round's three new mutants each caught by exactly its own fixture (typescript/implements-lines-dropped, typescript/iface-implements-override-drop, typescript/decorator-lines-dropped, typescript/decorator-line-off-by-one); the canonical F5 differential claimed from a clean tree at a5598e54 measures every web lane at coverage 100% / missing 0 / unexplained 0% / fabrication 0% (typescript, javascript, vue, svelte primary plus element-plus:typescript, vue-element-admin:vue, shadcn-svelte:svelte and lodash:javascript second-corpus lanes); and the M59 line instrument at the same state shows all four web lanes carrying a line on EVERY relationship with 0 inconsistent (typescript 2,074/2,074, javascript 2,057/2,057, vue 1,051/1,051, svelte 111/111). Family conditions at recording: review folders closed for all four languages, the analyzers committed, every payload cell alive and no blocked cell. Limitations carried at recording: (1) F5's strict count comparison still flags javascript/lodash:javascript as `regression detected` while its substance metrics are coverage 100% / missing 0 / unexplained 0% \u2014 the pre-G5 unpinned-baseline class (pinnedLanes 0 over 154 rows) documented in reviews/m49-w14-gate-false-positives.md and adjudicated like-for-like at a pinned tree (identical edge counts, 54,231, both trees); the other flagged lanes at this state (java, kotlin, groovy, cpp, csharp, php, haskell) are the same class and are not web lanes; (2) two adjacent decorated-declaration defects measured while closing #860 are filed as #861 and deliberately left unpinned, because a pin would have frozen a wrong answer as the expected one; (3) the M59 web-lane numbers above are the 40-file scoped run at this state \u2014 the canonical 22-language artifact is the 2026-09-16T04:20Z run, because a co-agent's in-flight PHP analyzer edit made a 22-language run non-measurable at that moment (a broken analyzer's silence is not a measurement).",
       "openAtRecording": [
         "#831 (the M60.W1 umbrella itself \u2014 its named children #816/#818 are fixed and closed; the tracker close is the owner's)"
-      ]
+      ],
+      "stillOpenAt": {
+        "measuredAt": "2026-09-16",
+        "measuredAtCommit": "4b7c5029",
+        "by": "script/m60/verify-family-closure-truth.ts (remainder classifier, corrected 2026-09-16)",
+        "open": [
+          "#868 \u2014 javascript decorator-metadata layer: fix landed at bf6fd1ad (nine mutants, #873 filed alongside); the issue's acceptance mapping + closure are owed",
+          "#834 \u2014 javascript/typescript (and csharp) still have no executable grammar-error evidence; nothing gates the gap"
+        ],
+        "note": "The two remainders named in this row are fixed and closed, and the M59/M49 line work that landed after them is measured and pinned \u2014 but the family does NOT compute closed-computable: #868 and #834 are open and name web languages. See the jvm row for why the earlier record read clean."
+      }
     }
   }
 }

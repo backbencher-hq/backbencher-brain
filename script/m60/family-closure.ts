@@ -109,6 +109,136 @@ export function computeFamilyClosure(blockedCells: string[], openFamilyIssues: s
   return "closed-computable"
 }
 
+// ============================================================================
+// The tracker half of `trackerClean`: WHICH OPEN ISSUES NAME A FAMILY'S
+// REMAINDER. One definition, in the module the gates already import.
+//
+// Why this lives here, and why it was rewritten (2026-09-16). The condition's
+// own contract is "the tracker carries no open issue naming this family's
+// remainder", but the implementation matched only five literal legacy codes
+// (`CONV-J-1`, `CONV-K-1`, `CONV-S-1`, `CONV-G-1`, `M60.J1` for jvm). Measured
+// against the live tracker: that classifier detected **zero** of the 115 open
+// issues for either family, while a groovy grammar defect (#841 — the
+// registered residual of the jvm remainder's own #742) and two web issues
+// (#868 javascript, #834 javascript/typescript) were open. A false green on the
+// one condition that reads the outside world is the failure mode M60 exists to
+// kill, so the rule is now the registry's own: an issue names a family's
+// remainder when it is the family's registered remainder issue, or carries one
+// of the family's registered codes, or **names one of the family's registered
+// languages as a whole word**. The language list is NOT a literal here — it is
+// the milestone's own composition (`validation/m60/ledger.json` → `families`),
+// read by `loadFamilyRemainderRegistry`.
+//
+// Direction of error, chosen deliberately: this classifier errs toward
+// OPEN. An issue that names a family's language but is really cross-cutting
+// keeps the family open (the honest cost of a conservative reading), whereas a
+// false "clean" is the sin the milestone was opened for. Whole-word matching is
+// what makes that safe: `\bjava\b` does not match `JavaScript`, so a web defect
+// does not close or open the jvm.
+// ============================================================================
+
+/** Escape a literal so it can be interpolated into a RegExp safely. */
+export function escapeRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/** An open issue, as the classifier needs it (title is the tracked surface). */
+export interface IssueLike { number: number; title: string }
+
+/** What makes an issue a family's remainder, and which rule matched. */
+export interface RemainderMatch { number: number; title: string; why: string }
+
+/**
+ * A family's registered remainder surface: the languages the milestone's own
+ * ledger holds it accountable for, the historical code vocabulary that names
+ * its converged defects, and (when registered) its remainder issue itself.
+ */
+export interface FamilyRemainderRegistry {
+  languages: string[]
+  codes: RegExp[]
+  remainderIssue?: number
+}
+
+/**
+ * The M49 convergence sweep's registered code vocabulary, retained per family so
+ * a historical title that carries a code but no language name is still caught.
+ * The language-name rule below is now the primary one; these are a superset
+ * guard, not the mechanism.
+ */
+export const FAMILY_REMAINDER_CODES: Record<string, RegExp[]> = {
+  jvm: [/CONV-J-1/, /CONV-K-1/, /CONV-S-1/, /CONV-G-1/, /M60\.J1/],
+  web: [/CONV-(TS|JS|VUE|SVELTE|HTML)-/, /M60\.W1/],
+}
+
+/**
+ * Read the family remainder registry from the milestone's OWN governance
+ * artifact — languages and `remainderIssue` come from `validation/m60/ledger.json`
+ * (a missing composition throws, exactly as `loadFamilies` does, because
+ * defaulting would silently answer a different question), and the code
+ * vocabulary comes from `FAMILY_REMAINDER_CODES`.
+ */
+export function loadFamilyRemainderRegistry(root: string): Record<string, FamilyRemainderRegistry> {
+  const ledgerPath = path.join(root, "validation/m60/ledger.json")
+  let ledger: any
+  try {
+    ledger = JSON.parse(readFileSync(ledgerPath, "utf8"))
+  } catch (e) {
+    throw new Error(`M60 family composition unreadable at ${ledgerPath}: ${(e as Error).message}`)
+  }
+  const families = ledger?.families
+  if (!families || typeof families !== "object" || Object.keys(families).length === 0) {
+    throw new Error(`M60 ledger at ${ledgerPath} declares no 'families' — the family remainder cannot be classified without the milestone's own composition`)
+  }
+  const out: Record<string, FamilyRemainderRegistry> = {}
+  for (const [fam, spec] of Object.entries<any>(families)) {
+    const langs = spec?.languages
+    if (!Array.isArray(langs) || langs.length === 0 || !langs.every((l) => typeof l === "string")) {
+      throw new Error(`M60 family '${fam}' declares no language list — its remainder is unclassifiable`)
+    }
+    out[fam] = {
+      languages: langs as string[],
+      codes: FAMILY_REMAINDER_CODES[fam] ?? [],
+      remainderIssue: typeof spec?.remainderIssue === "number" ? spec.remainderIssue : undefined,
+    }
+  }
+  return out
+}
+
+/**
+ * Classify open issues into per-family remainders. Pure, so the gate can prove
+ * it discriminates in BOTH directions (a title naming a family language must be
+ * caught; a title naming only another family's language must not be) instead of
+ * asserting its own behaviour — the discipline every other verdict here follows.
+ */
+export function familyRemaindersNamedBy(
+  issues: IssueLike[],
+  registry: Record<string, FamilyRemainderRegistry>,
+): Record<string, RemainderMatch[]> {
+  const out: Record<string, RemainderMatch[]> = {}
+  for (const fam of Object.keys(registry)) out[fam] = []
+  for (const it of issues) {
+    for (const [fam, reg] of Object.entries(registry)) {
+      const why = remainderReason(it, reg)
+      if (why) out[fam].push({ number: it.number, title: it.title, why })
+    }
+  }
+  return out
+}
+
+/** The first rule that matches, named — so the record can say WHY it is open. */
+export function remainderReason(it: IssueLike, reg: FamilyRemainderRegistry): string | null {
+  if (reg.remainderIssue !== undefined && it.number === reg.remainderIssue) {
+    return `registered remainder issue #${reg.remainderIssue}`
+  }
+  for (const code of reg.codes) {
+    if (code.test(it.title)) return `registered code ${String(code)}`
+  }
+  for (const lang of reg.languages) {
+    if (new RegExp(`\\b${escapeRegExp(lang)}\\b`, "i").test(it.title)) return `language:${lang}`
+  }
+  return null
+}
+
 
 /**
  * The M60 families and the languages each is accountable for.

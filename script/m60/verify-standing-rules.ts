@@ -153,7 +153,27 @@ function main() {
   if (existsSync(MATRIX)) {
     const m = JSON.parse(readFileSync(MATRIX, "utf8"))
     check("matrix names its gate (machine-emitted)", m.gate === "M60.P1")
-    check("matrix enumerates the full declared surface", m.surface?.declaredFieldCount === 33 && Array.isArray(m.surface?.languages) && m.surface.languages.length === 21, `got ${m.surface?.declaredFieldCount}×${m.surface?.languages?.length}`)
+    // The expected surface is the ONBOARDED language set — the fixture
+    // directories the matrix itself enumerates (`script/m60/payload-matrix.ts`
+    // reads `validation/m14/fixtures/*`) — compared as a SET, which is strictly
+    // stronger than a count: a swapped language used to pass while the count
+    // held. This check used to hardcode `=== 21`, and went RED the moment a
+    // 22nd language (xml) got a fixture lane and an analyzer: the gate accused
+    // a correct matrix of being wrong, and no run could ever make it pass
+    // again. A verifier's expectation must be derived from the authority, not
+    // transcribed from the count that happened to hold when it was written.
+    const fixturesDir = path.join(ROOT, "validation/m14/fixtures")
+    const onboarded = existsSync(fixturesDir)
+      ? readdirSync(fixturesDir).filter((f) => { try { return statSync(path.join(fixturesDir, f)).isDirectory() } catch { return false } }).sort()
+      : []
+    const matrixLangs = Array.isArray(m.surface?.languages) ? [...m.surface.languages].sort() : []
+    check("matrix languages are enumerable (authority readable)", onboarded.length > 0, `fixtures dir: ${onboarded.length}`)
+    check("matrix enumerates the full declared surface",
+      m.surface?.declaredFieldCount === 33 && matrixLangs.join(",") === onboarded.join(","),
+      `declared ${m.surface?.declaredFieldCount} fields × ${matrixLangs.length} languages; onboarded ${onboarded.length}` +
+        (matrixLangs.join(",") === onboarded.join(",") ? "" : ` — symmetric difference: ${[...new Set([...matrixLangs.filter((l) => !onboarded.includes(l)), ...onboarded.filter((l) => !matrixLangs.includes(l))])].join(",") || "(none)"}`))
+    negative("matrix/surface comparison convicts a swapped language at equal count",
+      JSON.stringify([...onboarded.slice(0, -1), "not-a-language"].sort()) !== JSON.stringify(onboarded))
     check("matrix verdicts come from the closed vocabulary", (m.fields ?? []).every((f: any) => /^(alive|ruled-dead|BLOCKED)/.test(String(f.verdict))))
     const ruled = (m.fields ?? []).filter((f: any) => String(f.verdict).startsWith("ruled-dead"))
     check("every ruled-dead cell cites a ruling (>20 chars)", ruled.every((f: any) => typeof f.ruling === "string" && f.ruling.length > 20))

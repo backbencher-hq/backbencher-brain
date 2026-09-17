@@ -2,28 +2,39 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-16T04:25:26.332Z",
+  "generatedAt": "2026-09-16T21:43:48.027Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 20,
+  "totalRegexUsages": 26,
   "analyzersScanned": 41,
   "byClassification": {
-    "needs_review": 16,
-    "normalization": 4
+    "needs_review": 18,
+    "normalization": 8
   },
   "byReceiverCategory": {
-    "identifier": 13,
-    "node_text": 4,
+    "identifier": 15,
+    "node_text": 8,
     "other": 3
   },
   "perFile": [
     {
       "file": "real-vue-analyzer.ts",
-      "count": 5,
+      "count": 6,
       "usages": [
         {
           "file": "real-vue-analyzer.ts",
-          "line": 284,
+          "line": 45,
+          "column": 10,
+          "source": "/line/i",
+          "operation": "test",
+          "receiver": "k",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-vue-analyzer.ts",
+          "line": 311,
           "column": 49,
           "source": "/['\"]/g",
           "operation": "replace",
@@ -34,7 +45,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 1021,
+          "line": 1053,
           "column": 20,
           "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
           "operation": "other",
@@ -45,7 +56,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 1033,
+          "line": 1065,
           "column": 15,
           "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
           "operation": "test",
@@ -56,7 +67,7 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 1047,
+          "line": 1079,
           "column": 15,
           "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
           "operation": "test",
@@ -67,13 +78,113 @@
         },
         {
           "file": "real-vue-analyzer.ts",
-          "line": 1049,
+          "line": 1081,
           "column": 16,
           "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
           "operation": "other",
           "receiver": "",
           "receiverCategory": "other",
           "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-javascript-analyzer.ts",
+      "count": 4,
+      "usages": [
+        {
+          "file": "real-javascript-analyzer.ts",
+          "line": 106,
+          "column": 27,
+          "source": "/^@/",
+          "operation": "replace",
+          "receiver": "nameText",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-javascript-analyzer.ts",
+          "line": 106,
+          "column": 63,
+          "source": "/^@/",
+          "operation": "replace",
+          "receiver": "decorator.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-javascript-analyzer.ts",
+          "line": 635,
+          "column": 35,
+          "source": "/^module\\.exports\\./",
+          "operation": "replace",
+          "receiver": "objText",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-javascript-analyzer.ts",
+          "line": 635,
+          "column": 69,
+          "source": "/^exports\\./",
+          "operation": "replace",
+          "receiver": "objText.replace(/^module\\.exports\\./, \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "count": 4,
+      "usages": [
+        {
+          "file": "real-typescript-analyzer.ts",
+          "line": 1067,
+          "column": 85,
+          "source": "/^extends\\s+/",
+          "operation": "replace",
+          "receiver": "constraintNode.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-typescript-analyzer.ts",
+          "line": 1630,
+          "column": 85,
+          "source": "/^extends\\s+/",
+          "operation": "replace",
+          "receiver": "constraintNode.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-typescript-analyzer.ts",
+          "line": 3096,
+          "column": 40,
+          "source": "/^:\\s*/",
+          "operation": "replace",
+          "receiver": "child.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-typescript-analyzer.ts",
+          "line": 5915,
+          "column": 85,
+          "source": "/^extends\\s+/",
+          "operation": "replace",
+          "receiver": "constraintNode.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
           "justification": ""
         }
       ]
@@ -118,38 +229,38 @@
       ]
     },
     {
-      "file": "real-javascript-analyzer.ts",
+      "file": "real-svelte-analyzer.ts",
       "count": 3,
       "usages": [
         {
-          "file": "real-javascript-analyzer.ts",
-          "line": 587,
-          "column": 35,
-          "source": "/^module\\.exports\\./",
-          "operation": "replace",
-          "receiver": "objText",
+          "file": "real-svelte-analyzer.ts",
+          "line": 50,
+          "column": 10,
+          "source": "/line/i",
+          "operation": "test",
+          "receiver": "k",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
         },
         {
-          "file": "real-javascript-analyzer.ts",
-          "line": 587,
-          "column": 69,
-          "source": "/^exports\\./",
-          "operation": "replace",
-          "receiver": "objText.replace(/^module\\.exports\\./, \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
+          "file": "real-svelte-analyzer.ts",
+          "line": 897,
+          "column": 26,
+          "source": "/context=[\"']module[\"']/",
+          "operation": "test",
+          "receiver": "startTag.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
           "justification": ""
         },
         {
-          "file": "real-javascript-analyzer.ts",
-          "line": 1315,
-          "column": 33,
-          "source": "/^@/",
-          "operation": "replace",
-          "receiver": "nameText",
+          "file": "real-svelte-analyzer.ts",
+          "line": 1083,
+          "column": 17,
+          "source": "/^(.*?)\\s+(?:then|as)\\s+/",
+          "operation": "test",
+          "receiver": "text",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
@@ -213,63 +324,18 @@
       ]
     },
     {
-      "file": "real-svelte-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 865,
-          "column": 26,
-          "source": "/context=[\"']module[\"']/",
-          "operation": "test",
-          "receiver": "startTag.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-svelte-analyzer.ts",
-          "line": 1051,
-          "column": 17,
-          "source": "/^(.*?)\\s+(?:then|as)\\s+/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
       "file": "real-php-analyzer.ts",
       "count": 1,
       "usages": [
         {
           "file": "real-php-analyzer.ts",
-          "line": 1236,
+          "line": 1720,
           "column": 26,
           "source": "/^\\\\+/",
           "operation": "replace",
           "receiver": "raw",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-typescript-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-typescript-analyzer.ts",
-          "line": 3058,
-          "column": 40,
-          "source": "/^:\\s*/",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]
