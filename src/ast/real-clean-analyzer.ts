@@ -256,42 +256,27 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private processImport(node: Node, ctx: CleanContext) {
-    const modNode = this.findChild(node, (n) => n.type === "module_name")
-    if (!modNode) return
-    const modName = this.assembleModuleName(modNode)
-    // `import qualified` is an anonymous keyword token — scan all children
-    // (including anonymous ones).
-    const isQualified = (() => {
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i)
-        if (c && c.type === "qualified") return true
-      }
-      return node.text.startsWith("import qualified")
-    })()
-    // The `as` alias is a second module_name child (M in `as M`)
-    let alias: string | undefined
-    let foundAlias = false
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const c = node.namedChild(i)
-      if (c?.type === "module_name" && c !== modNode) {
-        alias = this.assembleModuleName(c)
-        foundAlias = true
-      }
+    const modules = node.childrenForFieldName("module")
+    const aliasNode = node.childForFieldName("alias")
+    const alias = aliasNode ? this.assembleModuleName(aliasNode) : undefined
+    const isQualified = node.children.some((child) => child !== null && child.type === "qualified")
+    for (const modNode of modules) {
+      if (!modNode) continue
+      const modName = this.assembleModuleName(modNode)
+      ctx.imports.push({
+        module: modName,
+        source: modName,
+        items: [],
+        isTypeOnly: false,
+        range: this.nodeToRange(node),
+        metadata: { cleanSpecific: true, isQualified, alias },
+      })
+      this.pushRel(ctx, ctx.currentModule || "", modName, ASTEngine.RelationshipType.References, 1.0, {
+        cleanSpecific: true,
+        isImportDependency: true,
+      })
+      if (modName.indexOf("StdEnv") !== -1) ctx.patterns["Standard Environment"] = true
     }
-    ctx.imports.push({
-      module: modName,
-      source: modName,
-      items: [],
-      isTypeOnly: false,
-      range: this.nodeToRange(node),
-      metadata: { cleanSpecific: true, isQualified, alias: foundAlias ? alias : undefined },
-    })
-    // Module dependency: references module -> dep (FP-family contract).
-    this.pushRel(ctx, ctx.currentModule || "", modName, ASTEngine.RelationshipType.References, 1.0, {
-      cleanSpecific: true,
-      isImportDependency: true,
-    })
-    if (modName.indexOf("StdEnv") !== -1) ctx.patterns["Standard Environment"] = true
   }
 
   private processTypeDefinition(node: Node, ctx: CleanContext, scopeStack: Scope[]): boolean {
