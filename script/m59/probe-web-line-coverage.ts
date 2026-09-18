@@ -10,22 +10,62 @@
 //
 // It reads the analyzer (ASTEngine.parseFile) as the thing under test, exactly
 // as the oracle does, and derives nothing itself.
-import { readFileSync, existsSync } from "node:fs"
+import { readFileSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const SCOPED = path.join(ROOT, "validation/m59/results/oracle-callsite-scoped.json")
+const OUT_DIR = path.join(ROOT, "validation/m59/results")
 const CORPUS = "$HOME/fixtures/repositories"
 
 const lang = process.argv.find((a) => a.startsWith("--lang="))?.split("=")[1] ?? "typescript"
 
+/**
+ * Which scoped artifact to read.
+ *
+ * This used to be the single name `oracle-callsite-scoped.json`. Now that a scoped
+ * run is named after what it measured (see script/m59/oracle-callsite.ts), the probe
+ * DISCOVERS the artifact that actually contains this lane instead of naming one: the
+ * web lane must not be answerable by whichever language ran last. Every candidate's
+ * `perFile[lang]` is inspected, and the choice is printed, so a wrong pick is visible
+ * rather than silent. Deepest sample wins, since that is the stronger measurement.
+ */
+function scopedArtifactFor(lang: string): { file: string; oracle: any } {
+  const candidates = readdirSync(OUT_DIR)
+    .filter((f) => /^oracle-callsite-scoped-.*\.json$/.test(f))
+    .sort()
+  const scored: Array<{ file: string; oracle: any; files: number }> = []
+  for (const f of candidates) {
+    const p = path.join(OUT_DIR, f)
+    let oracle: any
+    try {
+      oracle = JSON.parse(readFileSync(p, "utf8"))
+    } catch {
+      continue
+    }
+    const files = (oracle?.perFile?.[lang] ?? []).length
+    if (files > 0) scored.push({ file: f, oracle, files })
+  }
+  scored.sort((a, b) => b.files - a.files)
+  if (scored.length === 0) {
+    console.log(
+      `no scoped oracle artifact contains a ${lang} sample — run: bun script/m59/oracle-callsite.ts --only=${lang} --files-per-lang=40`,
+    )
+    process.exit(1)
+  }
+  const pick = scored[0]
+  console.log(`reading ${pick.file} (${pick.files} ${lang} file(s) sampled)`)
+  return pick.oracle
+}
+
 async function main() {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
-  const oracle = JSON.parse(readFileSync(SCOPED, "utf8"))
+  const oracle = scopedArtifactFor(lang)
   const files: string[] = (oracle.perFile?.[lang] ?? []).map((r: any) => r.file)
   if (files.length === 0) {
-    console.log(`no sampled ${lang} files in ${path.relative(ROOT, SCOPED)} — run the scoped oracle first`)
+    // Unreachable via scopedArtifactFor (it exits when no artifact has the lane), kept
+    // so the type-narrowing of the lookup above is not the only thing defending this.
+    console.log(`no sampled ${lang} files in any scoped artifact — run the scoped oracle first`)
     return
   }
 
