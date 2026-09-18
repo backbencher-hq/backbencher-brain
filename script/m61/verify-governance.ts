@@ -34,6 +34,7 @@ import {
   SELF_OWNED_CODES,
   V_GATES,
   entryDrift,
+  issueStatusDrift,
   isClosable,
   laneViolations,
   ledgerEntryFrom,
@@ -265,6 +266,11 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
   negative("a hand-typed count passes the drift check", entryDrift({ ...derived, passed: (derived.passed ?? 0) + 3 }, derived).length > 0)
   negative("an understated can-fail proof passes the drift check", entryDrift({ ...derived, mutantsTotal: 0 }, derived).length > 0)
   negative("a record re-run at another commit is reported as drift", entryDrift({ ...derived, recordCommit: "0".repeat(40) }, derived).length === 0 && projectionMoved({ ...derived, recordCommit: "0".repeat(40) }, derived))
+  // The issue-status projection obeys the same two-sided rule; both halves are
+  // asserted, because a status rule that only ever heals closes a red issue by
+  // assertion, and one that never heals cannot survive a fixed gate.
+  negative("a hand-typed issue status at the record's own commit passes", issueStatusDrift("verified", derived, { ...derived, status: "known-gap" }) !== null)
+  negative("a record re-run at another commit reports its status as drift", issueStatusDrift("known-gap", { ...derived, recordCommit: "0".repeat(40) }, derived) === null)
 }
 
 // --- Evidence ---------------------------------------------------------------------
@@ -334,10 +340,8 @@ for (const issue of ledger.issues) {
   const derived = entryOf(read.record)
   if (projectionMoved(issue.evidence, derived)) healed.push(`${issue.code}: ${issue.evidence?.status ?? "?"} ${issue.evidence?.passed ?? 0} → ${derived.status} ${derived.passed}`)
   const drift = entryDrift(issue.evidence, derived)
-  // The ISSUE's status is a projection too: a record that went red must not
-  // leave the ledger declaring `verified` for it (nothing is closed by
-  // assertion — the status is the record's, not the ledger's opinion).
-  if (issue.status !== derived.status) drift.push(`issue.status: ledger=${issue.status} record=${derived.status}`)
+  const statusDrift = issueStatusDrift(issue.status, issue.evidence, derived)
+  if (statusDrift) drift.push(statusDrift)
   if (drift.length > 0) driftFindings.push(`${issue.code}: ${drift.join(", ")}`)
   issue.evidence = derived
   issue.status = derived.status

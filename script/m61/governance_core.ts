@@ -111,6 +111,25 @@ export function entryDrift(disk: Partial<NonNullable<LedgerIssue["evidence"]>> |
   return out
 }
 
+/** The ISSUE's own status is a projection of its record too: a record that went
+ *  red must not leave the ledger declaring `verified` for it (nothing is closed
+ *  by assertion — the status is the record's, not the ledger's opinion). The
+ *  stale-projection rule is the same one every other field follows, and it is
+ *  the difference between a heal and a lie: a record that RAN AGAIN at another
+ *  commit legitimately moved its status (a fixed gate goes known-gap →
+ *  verified), which the governor heals and says so; a status the record did NOT
+ *  move to — the same commit, a different word — is decidable drift and fails.
+ *  Returns the finding, or null when the status is the record's. */
+export function issueStatusDrift(
+  diskStatus: string,
+  diskEvidence: Partial<NonNullable<LedgerIssue["evidence"]>> | undefined,
+  derived: NonNullable<LedgerIssue["evidence"]>,
+): string | null {
+  if (projectionMoved(diskEvidence, derived)) return null
+  if (diskStatus !== derived.status) return `issue.status: ledger=${diskStatus} record=${derived.status}`
+  return null
+}
+
 export type LedgerIssue = {
   code: string
   githubIssue: number
