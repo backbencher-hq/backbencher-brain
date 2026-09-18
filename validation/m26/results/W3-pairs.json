@@ -66,13 +66,13 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 85,
+    "scanned": 89,
     "skipped": 3
   },
-  "generatedAt": "2026-09-18T20:53:14.231Z",
+  "generatedAt": "2026-09-18T21:20:50.953Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:53:14.233Z",
-    "contentSha256": "836e6fab1013b5a7e2c05bfe26188b38a82a5fdaab76893f6825b85be65d7fa2"
+    "sealedAt": "2026-09-18T21:20:50.956Z",
+    "contentSha256": "868595d76033ddeecc314f3e53e0679298168de13cdce8ad9a6208eb955087e7"
   }
 }
