@@ -184,6 +184,6 @@ function validateProperty(tool: string, name: string, value: unknown, schema: Js
     : typeof value === "object" && !Array.isArray(value)
   if (!valid) throw new Error(`${tool}: ${name} must be ${schema.type}`)
   if (schema.enum && !schema.enum.includes(value as string)) throw new Error(`${tool}: ${name} must be one of: ${schema.enum.join(", ")}`)
-  if (schema.type === "number" && (name === "limit" || name === "offset" || name === "sampleSize" || name === "maxFiles" || name === "maxNodes" || name === "maxLinks" || name === "maxTokens" || name === "lineStart") && (value as number) < 0) throw new Error(`${tool}: ${name} must be non-negative`)
+  if (schema.type === "number" && (name === "limit" || name === "offset" || name === "sampleSize" || name === "maxFiles" || name === "maxNodes" || name === "maxLinks" || name === "maxTokens" || name === "lineStart" || name === "edgeLimit") && (value as number) < 0) throw new Error(`${tool}: ${name} must be non-negative`)
   if (name === "confidenceThreshold" && ((value as number) < 0 || (value as number) > 1)) throw new Error(`${tool}: confidenceThreshold must be between 0 and 1`)
 }

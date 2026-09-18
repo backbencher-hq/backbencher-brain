@@ -211,6 +211,10 @@ export interface GraphTraversalOptions {
   includeCrossLanguage?: boolean
   callerBudget?: number
   calleeBudget?: number
+  /** M59.A12 (#888): per-symbol site limit for one edge query (default 200, max
+   *  5000). Reaching it is DECLARED as truncation, with the root's true site
+   *  count reported when computable — it is never a silent cap. */
+  edgeLimit?: number
 }
 
 export interface GraphTraversalResult {
@@ -220,12 +224,26 @@ export interface GraphTraversalResult {
   nodes: Record<string, GraphNode>
   provenance: EvidenceProvenance
   summary: {
+    /** Edges RETURNED for callers. When `truncated` is true this is a floor,
+     *  not the total — read `callersIfUncapped` for the count when it is known
+     *  (M59.A12 / #888: this used to be presented as the total). */
     totalCallers: number
+    /** Edges RETURNED for callees; see `totalCallers`. */
     totalCallees: number
     maxDepthReached: number
     crossLanguageEdges: number
     truncated: boolean
     truncationReason?: string
+    /** M59.A12 (#888): the declared per-query site limit that was in force. */
+    edgeLimit: number
+    /** How many edge queries hit that limit (any depth). */
+    cappedQueries: number
+    /** The root's true site count, counted with the same query and the same
+     *  noise filters. `null` = not counted (no cap reached, or not computable),
+     *  never zero. A lower bound when `totalsAreLowerBounds` is true. */
+    callersIfUncapped: number | null
+    calleesIfUncapped: number | null
+    totalsAreLowerBounds: boolean
   }
   /** M28.A2 (D-6): the root symbol's agent/human annotations, author-labeled.
    *  Empty array when none — the webview then renders NO annotation badge. */

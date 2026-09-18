@@ -10,6 +10,25 @@ const DEFAULT_REL_TYPES = ["calls", "instantiates", "extends", "implements"]
 const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
 
+/**
+ * M59.A12 (#888): the per-symbol site limit for one edge query.
+ *
+ * This bound always existed (a bare `LIMIT 200`), but it was INVISIBLE: a symbol
+ * with 3,437 call sites answered 200 rows with `truncated: false`, so a caller
+ * could not tell a complete answer from a 6% sample. A bound is fine; an
+ * undeclared bound is not. When this limit is reached the traversal now declares
+ * truncation, names the limit, and reports the true total whenever it is
+ * computable (the root symbol's own site count) — never a floor presented as a
+ * total. Overridable up to MAX_EDGE_QUERY_LIMIT so a caller can ask for more
+ * instead of guessing.
+ */
+const DEFAULT_EDGE_QUERY_LIMIT = 200
+const MAX_EDGE_QUERY_LIMIT = 5000
+/** Ceiling for the declared-total counting scan: past this the total is a
+ *  declared lower bound rather than a silent one. Only reached when a cap was
+ *  hit, so the normal path pays nothing. */
+const MAX_TOTAL_COUNT_SCAN = 50_000
+
 type SymbolRow = {
   id: string
   name: string
@@ -109,16 +128,66 @@ export async function traverseGraph(
   projectId: ProjectID,
   root: SymbolRow,
   options: GraphTraversalOptions = {},
-): Promise<{ callers: GraphEdge[]; callees: GraphEdge[]; nodes: Record<string, GraphNode>; truncated: boolean; truncationReason?: string; maxDepthReached: number }> {
+): Promise<{
+  callers: GraphEdge[]
+  callees: GraphEdge[]
+  nodes: Record<string, GraphNode>
+  truncated: boolean
+  truncationReason?: string
+  maxDepthReached: number
+  /** M59.A12 (#888): the declared per-query site limit in force for this run. */
+  edgeLimit: number
+  /** How many edge queries hit that limit (a query can hit it at any depth). */
+  cappedQueries: number
+  /** True site count of the ROOT symbol, counted with the same query and the
+   *  same noise filters. Present only when a cap was reached and the count was
+   *  computable; `null` means "not counted", never zero. */
+  totalCallersIfKnown: number | null
+  totalCalleesIfKnown: number | null
+  /** The count is a lower bound because the counting scan itself is bounded. */
+  totalsAreLowerBounds: boolean
+}> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const maxDepth = Math.min(options.maxDepth || DEFAULT_MAX_DEPTH, 10)
   const relTypes = options.relationshipTypes?.length ? options.relationshipTypes : DEFAULT_REL_TYPES
   const relPlaceholders = relTypes.map(() => "?").join(",")
+  const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
 
   const nodes: Record<string, GraphNode> = {}
   let truncated = false
-  let truncationReason: string | undefined
+  // M59.A12: every bound that fires contributes its own name — a cap AND a budget
+  // are both true at once, so joining them beats letting the last one win.
+  const reasons = new Set<string>()
+  const noteReason = (reason: string) => {
+    reasons.add(reason)
+    truncated = true
+  }
   let maxDepthReached = 0
+  let cappedQueries = 0
+  let totalCallersIfKnown: number | null = null
+  let totalCalleesIfKnown: number | null = null
+  let totalsAreLowerBounds = false
+
+  /** The same noise filters the edge loops apply, so a declared total counts
+   *  exactly what a caller WOULD receive if no limit existed. */
+  const survivesFilters = (row: EdgeRow, name: string | null, includeCrossLanguage: boolean): boolean => {
+    if (!name || AnalysisExclusions.isNoiseSymbolName(name)) return false
+    if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) return false
+    if (includeCrossLanguage === false && row.isCrossLang) return false
+    return true
+  }
+  const includeCrossLanguage = options.includeCrossLanguage !== false
+
+  /** Count what the uncapped query would return, bounded by a scan ceiling. */
+  const countSurviving = (sqlWithoutLimit: string, params: unknown[], nameOf: (row: EdgeRow) => string | null): number => {
+    let total = 0
+    const scanned = raw.prepare(sqlWithoutLimit + " LIMIT ?").all(...params, MAX_TOTAL_COUNT_SCAN) as EdgeRow[]
+    for (const row of scanned) {
+      if (survivesFilters(row, nameOf(row), includeCrossLanguage)) total++
+    }
+    if (total >= MAX_TOTAL_COUNT_SCAN) totalsAreLowerBounds = true
+    return total
+  }
 
   const registerNode = (node: GraphNode) => {
     if (!nodes[node.id]) nodes[node.id] = node
@@ -146,19 +215,35 @@ export async function traverseGraph(
     visitedCallers.add(symbolId)
     const { prefix, upper } = cascadeBounds(symbolId)
     const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
-    const rows = raw.prepare(
+    const callerSql =
       "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
-        "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
-        "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
-        "s.complexity AS complexity, s.symbol_type AS symType, " +
-        "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
-        "f.relative_path AS srcFileRel, NULL AS extName " +
-        "FROM brain_relationship r " +
-        "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
-        "JOIN brain_file f ON f.id = s.file_id " +
-        "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-        "AND r.target_symbol_id IN (" + cascade + ") LIMIT 200",
-    ).all(projectId, ...relTypes, symbolId, prefix, upper, projectId) as EdgeRow[]
+      "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
+      "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
+      "s.complexity AS complexity, s.symbol_type AS symType, " +
+      "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
+      "f.relative_path AS srcFileRel, NULL AS extName " +
+      "FROM brain_relationship r " +
+      "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
+      "JOIN brain_file f ON f.id = s.file_id " +
+      "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
+      "AND r.target_symbol_id IN (" + cascade + ")"
+    const callerParams = [projectId, ...relTypes, symbolId, prefix, upper, projectId]
+    // Deterministic order (M59.A12, #888 sibling of #885): a bare LIMIT on an
+    // unordered query returned a DIFFERENT 200 rows per run, so two identical
+    // questions could disagree. Stable order makes the bound reproducible.
+    const rows = raw
+      .prepare(callerSql + " ORDER BY fileRel, lineNumber, rowId LIMIT ?")
+      .all(...callerParams, edgeLimit) as EdgeRow[]
+    if (rows.length >= edgeLimit) {
+      cappedQueries++
+      noteReason(depth === 0 ? "caller-site-limit" : "caller-site-limit-at-depth")
+      // The root's true total is the number an agent actually asks for, and it
+      // is countable in one bounded scan. Deeper symbols report the cap itself
+      // (cappedQueries) rather than a total nobody could cheaply compute.
+      if (depth === 0 && totalCallersIfKnown === null) {
+        totalCallersIfKnown = countSurviving(callerSql + " ORDER BY fileRel, lineNumber, rowId", callerParams, (r) => r.symName)
+      }
+    }
 
     const children: string[] = []
     for (const row of rows) {
@@ -188,8 +273,7 @@ export async function traverseGraph(
 
     for (const childId of children) {
       if (callerBudget <= 0) {
-        truncated = true
-        truncationReason = "caller-budget-exhausted"
+        noteReason("caller-budget-exhausted")
         break
       }
       if (depth >= maxDepth - 1) break
@@ -224,7 +308,7 @@ export async function traverseGraph(
     if (isExternal) {
       rows = []
     } else {
-      rows = raw.prepare(
+      const calleeSql =
         selectCols +
           "FROM brain_relationship r " +
           "JOIN brain_symbol s ON s.id = r.target_symbol_id AND s.project_id = r.project_id " +
@@ -241,12 +325,20 @@ export async function traverseGraph(
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-          "AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL AND r.source_symbol_id IN (" + cascade + ") " +
-          "LIMIT 200",
-      ).all(
+          "AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL AND r.source_symbol_id IN (" + cascade + ")"
+      const calleeParams = [
         projectId, ...relTypes, symbolId, prefix, upper, projectId,
         projectId, ...relTypes, symbolId, prefix, upper, projectId,
-      ) as EdgeRow[]
+      ]
+      const calleeOrder = " ORDER BY fileRel, lineNumber, rowId"
+      rows = raw.prepare(calleeSql + calleeOrder + " LIMIT ?").all(...calleeParams, edgeLimit) as EdgeRow[]
+      if (rows.length >= edgeLimit) {
+        cappedQueries++
+        noteReason(depth === 0 ? "callee-site-limit" : "callee-site-limit-at-depth")
+        if (depth === 0 && totalCalleesIfKnown === null) {
+          totalCalleesIfKnown = countSurviving(calleeSql + calleeOrder, calleeParams, (r) => r.symName || r.extName)
+        }
+      }
     }
 
     const children: Array<{ id: string; file: string }> = []
@@ -278,8 +370,7 @@ export async function traverseGraph(
 
     for (const child of children) {
       if (calleeBudget <= 0) {
-        truncated = true
-        truncationReason = "callee-budget-exhausted"
+        noteReason("callee-budget-exhausted")
         break
       }
       if (depth >= maxDepth - 1) break
@@ -293,7 +384,19 @@ export async function traverseGraph(
   if (options.direction !== "callees") traceCallers(root.id, 0)
   if (options.direction !== "callers") traceCallees(root.id, root.relativePath, 0)
 
-  return { callers, callees, nodes, truncated, truncationReason, maxDepthReached }
+  return {
+    callers,
+    callees,
+    nodes,
+    truncated,
+    truncationReason: reasons.size > 0 ? [...reasons].join("+") : undefined,
+    maxDepthReached,
+    edgeLimit,
+    cappedQueries,
+    totalCallersIfKnown,
+    totalCalleesIfKnown,
+    totalsAreLowerBounds,
+  }
 }
 
 // Resolve a symbol name to its highest-gravity match (exact, then fuzzy).
@@ -331,7 +434,19 @@ export async function graphTraversal(
 ): Promise<GraphTraversalResult> {
   const root = await resolveGraphRoot(projectId, name)
   if (!root) throw new Error(`Symbol '${name}' not found`)
-  const { callers, callees, nodes, truncated, truncationReason, maxDepthReached } = await traverseGraph(projectId, root, options)
+  const {
+    callers,
+    callees,
+    nodes,
+    truncated,
+    truncationReason,
+    maxDepthReached,
+    edgeLimit,
+    cappedQueries,
+    totalCallersIfKnown,
+    totalCalleesIfKnown,
+    totalsAreLowerBounds,
+  } = await traverseGraph(projectId, root, options)
   const rootNode = nodes[root.id]!
   const crossLanguageEdges = [...callers, ...callees].filter((e) => e.isCrossLanguage).length
   return {
@@ -347,6 +462,15 @@ export async function graphTraversal(
       crossLanguageEdges,
       truncated,
       truncationReason,
+      // M59.A12 (#888): `totalCallers`/`totalCallees` above are the RETURNED
+      // counts. These fields say so explicitly and add the true root count when
+      // a cap was hit and it was computable — a floor can no longer be read as a
+      // total by a caller that only looks at the summary.
+      edgeLimit,
+      cappedQueries,
+      callersIfUncapped: totalCallersIfKnown,
+      calleesIfUncapped: totalCalleesIfKnown,
+      totalsAreLowerBounds,
     },
   }
 }
