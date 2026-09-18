@@ -563,6 +563,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private processStruct(node: Node, ctx: ElixirContext, currentScope: Scope | undefined) {
+    // A defstruct-shaped call in a declaration head (defmacro defstruct(fields))
+    // is the macro head, not a struct declaration — same class as def heads
+    // (isDefHead) and attributes. Without this the defstruct IMPLEMENTATION
+    // itself fabricates struct:defstruct (ELXD4, kernel.ex:5624).
+    if (this.isDefHead(node) || this.isInAttribute(node) || this.isInQuotedCode(node)) return
     if (!currentScope) return
     const structName = currentScope.name
     ctx.symbols.push({ name: structName, kind: ASTEngine.SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope.name, ownerName: currentScope.name, ownerKind: currentScope.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } })

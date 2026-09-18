@@ -817,6 +817,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, exports: [...(r.exports ?? []), ...(r.symbols ?? []).filter(s => s.kind === "struct" && s.ownerName === s.name).map(s => ({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility }))] }),
   },
   {
+    id: "elixir/emit-defhead-struct",
+    language: "elixir",
+    defectClass: "symbol-fabrication",
+    description: "ELXD4: a defstruct-shaped declaration head emits a phantom struct (defmacro defstruct head)",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "defstruct", kind: "struct", scope: "defstruct", ownerName: "defstruct", visibility: "public" }], relationships: [...(r.relationships ?? []), { type: "contains", source: "defstruct", target: "defstruct", confidence: 1, metadata: {} }] }),
+  },
+  {
     id: "elixir/delegate-remote-name-as-local",
     language: "elixir",
     defectClass: "symbol-identity-corruption",
