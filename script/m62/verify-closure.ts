@@ -298,11 +298,24 @@ async function main(): Promise<void> {
   console.log("\nR3: the IDE lane's closure records (verified AND still true of this tree)")
   const laneFindings: Array<{ name: string; findings: string[] }> = []
   for (const [name, file] of LANE_BARS) {
-    const read = readEvidence<{ status?: string; passed?: number; mutantsCaught?: number; currentCommit?: string }>(path.join(ROOT, file))
+    const read = readEvidence<{ status?: string; passed?: number; currentCommit?: string }>(path.join(ROOT, file))
     const findings = read.ok ? laneBarFindings(read.record, { isAncestor, laneChanged: laneChangedSince }) : [read.reason]
     laneFindings.push({ name, findings })
     check(`R3: ${name} is verified and fresh`, findings.length === 0, findings.join("; "))
   }
+  // The proof rule reads the HOUSE shapes from their single authority (M61's
+  // lint), not one hand-picked field: a record whose proof is DECLARED AS
+  // NEGATIVE CASES is proof-bearing, and only a record with no proof of any
+  // shape fails. Both halves are asserted so the reader cannot silently narrow.
+  // (The lane bars themselves are the live proof that the positive half passes:
+  // m24/m26/m42/m44 declare negative cases, and R3 reads them green above.)
+  const liveDeps = { isAncestor, laneChanged: laneChangedSince }
+  check(
+    "R3: the proof rule accepts the house shapes (mutants OR declared negatives) and rejects a proof-less record",
+    laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit }, liveDeps).length === 0 &&
+      laneBarFindings({ status: "verified", passed: 40, negativeCases: 6, currentCommit }, liveDeps).length === 0 &&
+      laneBarFindings({ status: "verified", passed: 40, currentCommit }, liveDeps).some((f) => f.includes("no can-fail proof")),
+  )
 
   // --- R4: the claim, re-checked on a real index -------------------------------------------
   console.log("\nR4: the address invariants through the REAL engine at this HEAD")
@@ -334,6 +347,7 @@ async function main(): Promise<void> {
   negative("a stale lane pin FAILS the relevance rule", laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit: "0".repeat(40) }, { isAncestor: () => false, laneChanged: () => [] }).length > 0)
   negative("a lane source change since the pin FAILS the relevance rule", laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit: currentCommit }, { isAncestor: () => true, laneChanged: () => ["src/lsp/hover.ts"] }).length > 0)
   negative("a missing lane record FAILS", laneBarFindings(undefined, { isAncestor: () => true, laneChanged: () => [] }).length > 0)
+  negative("a lane record with no proof of any shape FAILS", laneBarFindings({ status: "verified", passed: 40, currentCommit }, { isAncestor: () => true, laneChanged: () => [] }).some((f) => f.includes("no can-fail proof")))
   {
     const hollow = JSON.parse(JSON.stringify(projected)) as Ledger
     const i = hollow.issues.find((x) => x.code !== "X1" && x.code !== "G1")!

@@ -2,14 +2,12 @@
   "issue": "M61.V5 claim pins (issue #846)",
   "code": "V5",
   "milestone": "M61",
-  "status": "known-gap",
-  "checks": 28,
-  "passed": 27,
-  "failed": 1,
-  "realFailed": 1,
-  "failures": [
-    "C2: no published claim has drifted from its ledger — m26-mutants: published 0 row(s), expected \"39 mutants caught across 9 suites | [m26 ledger]\""
-  ],
+  "status": "verified",
+  "checks": 37,
+  "passed": 37,
+  "failed": 0,
+  "realFailed": 0,
+  "failures": [],
   "checksList": [
     "ok: C0: no registry problems",
     "ok: C0: the registry pins a non-trivial number of claims",
@@ -17,7 +15,7 @@
     "ok: C0: more than one derivation kind is exercised",
     "ok: C1: no claim is blocked (every cited source resolves)",
     "ok: C1: every claim's derivation yields numbers",
-    "FAIL: C2: no published claim has drifted from its ledger — m26-mutants: published 0 row(s), expected \"39 mutants caught across 9 suites | [m26 ledger]\"",
+    "ok: C2: no published claim has drifted from its ledger",
     "ok: C2: the pins are live (at least one row was found for every claim)",
     "ok: C3: every declared doc exists and honors its coverage status",
     "ok: C3: the audit set covers README, the website and the docs end to end",
@@ -29,8 +27,17 @@
     "ok: core: classify — an unfilled template is blocked, never compared",
     "ok: core: classify — a found row is pinned",
     "ok: core: classify — no found row is drift",
-    "ok: M: pin-blind (an edited doc number reports as drifted)",
+    "ok: core: classify — a stale row beside a correct one is drift",
+    "ok: core: claimAnchor — the longest literal segment no other claim shares",
+    "ok: core: claimAnchor — a segment shared with another claim is never the anchor",
+    "ok: core: claimAnchor — an all-placeholder template has no anchor",
+    "ok: core: claimAnchor — no unique segment means no anchor",
+    "ok: core: claimAnchor — short segments are never anchors",
+    "ok: core: claimAnchor — the most specific candidate wins over the longest",
+    "ok: M: pin-blind (a doc that no longer states the claim reports as drifted)",
+    "ok: M: stale-row (a stale row beside a correct one is drift, not a passing pin)",
     "ok: M: pin-blind",
+    "ok: M: stale-row-blind",
     "ok: M: blocked-as-ok",
     "ok: M: unfilled-as-ok",
     "ok: M: render-blind",
@@ -40,10 +47,10 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "8ff238b34ec53954edec5d4c4daeae32f4f215ef",
+  "currentCommit": "6cc5891fcd244554d20ad354f2ae0f47d1b6b2e3",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-09-18T21:56:54.000Z",
+  "generatedAt": "2026-09-18T22:34:44.924Z",
   "claims": [
     {
       "id": "m25-issues",
@@ -97,10 +104,9 @@
     {
       "id": "m26-mutants",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "drifted",
+      "outcome": "pinned",
       "rendered": "39 mutants caught across 9 suites | [m26 ledger]",
-      "published": 0,
-      "reason": "published row does not match the ledger: expected to find \"39 mutants caught across 9 suites | [m26 ledger]\""
+      "published": 1
     },
     {
       "id": "m27-mutants",
@@ -188,7 +194,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:56:54.000Z",
-    "contentSha256": "967699625e8d52a5c2aaa563cd0379b22186d0f5e024529552354eb75c248d95"
+    "sealedAt": "2026-09-18T22:34:44.924Z",
+    "contentSha256": "a0ec65f76bdb60d48850bffd60995eb0d0864728fa10acfd3eb4677395f0e1aa"
   }
 }
