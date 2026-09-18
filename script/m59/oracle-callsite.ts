@@ -29,6 +29,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from "node:fs"
 import { createHash } from "node:crypto"
+import { execSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -290,7 +291,23 @@ async function main() {
   // drift check below must compare against the file this run will actually
   // write, so the target is decided here rather than at the write.
   const scoped = only !== null || filesPerLang !== CANONICAL_FILES_PER_LANG
-  const outFile = path.join(OUT_DIR, scoped ? "oracle-callsite-scoped.json" : "oracle-callsite.json")
+  // M59.A7 (#825): a scoped run is named after WHAT IT MEASURED.
+  //
+  // Found live, not hypothesised: the web family's committed evidence —
+  // `oracle-callsite-scoped-typescript-javascript-vue-svelte.json`, 4 lanes at 40
+  // files, 0 inconsistent — lived at the single name `oracle-callsite-scoped.json`,
+  // and a `--only=scala --files-per-lang=200` run silently wrote a scala-only report
+  // over it. The file was restored, but the mechanism was the defect: the guard above
+  // protects the CANONICAL artifact from scoped runs, and nothing protected a scoped
+  // artifact from a LATER scoped run of another lane. Consequence measured in the
+  // working tree: one `git status` away from committing the loss of the web family's
+  // line evidence.
+  //
+  // The name now encodes the lane set and the sample size, so two scoped runs cannot
+  // address the same file unless they measured the same languages at the same depth —
+  // and the file that answers "what did the web lanes score?" keeps its own name.
+  const scopeTag = (only ? [...only].sort().join("-") : "all") + `-f${filesPerLang}`
+  const outFile = path.join(OUT_DIR, scoped ? `oracle-callsite-scoped-${scopeTag}.json` : "oracle-callsite.json")
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
   mkdirSync(OUT_DIR, { recursive: true })
@@ -565,9 +582,22 @@ async function main() {
     if (mutation) break
   }
 
+  // M59 (#859 precedent): the artifact names numbers, so it names the code that
+  // produced them. A non-zero `treeModifiedInputs` means a WORKING-TREE
+  // measurement rather than a commit's — which is exactly how the web family's
+  // scoped artifact was silently replaced (the clobber above) without anyone
+  // being able to see which tree the surviving numbers belonged to.
+  const atCommit = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
+  const treeModifiedInputs = execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" })
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("?? ")).length
+
   const report = {
     probe: "M59.O1",
     at: new Date().toISOString(),
+    atCommit,
+    treeModifiedInputs,
     corpus: CORPUS,
     filesPerLang,
     oracleIndependence: {
@@ -613,7 +643,7 @@ async function main() {
   writeFileSync(outFile, JSON.stringify(report, null, 2))
   if (scoped) {
     console.log(
-      `\nSCOPED run (--only=${only?.join(",")} --files-per-lang=${filesPerLang}): written to ${path.relative(ROOT, outFile)} — the canonical oracle-callsite.json is NOT touched (a scoped run must not shrink the milestone's claim).`,
+      `\nSCOPED run (--only=${only?.join(",")} --files-per-lang=${filesPerLang}): written to ${path.relative(ROOT, outFile)} — the canonical oracle-callsite.json is NOT touched (a scoped run must not shrink the milestone's claim), and because the name carries the lane set and sample size, no OTHER lane's scoped evidence is touched either.`,
     )
   }
 
