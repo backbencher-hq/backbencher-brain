@@ -24,6 +24,10 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
     "maxDepth": {
       "type": "number",
       "description": "traversal depth bound (default 3)"
+    },
+    "edgeLimit": {
+      "type": "number",
+      "description": "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`callersIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer."
     }
   },
   "required": [
@@ -55,6 +59,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 - Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven
 - The graph reflects the index as of the last index run
 - Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row
+- `summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`
 
 ## Performance
 
@@ -66,7 +71,7 @@ Read-only. It does not modify source files or index data.
 
 ## Evidence Semantics
 
-Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence.
+Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json).
 
 ## Relationship to other tools
 

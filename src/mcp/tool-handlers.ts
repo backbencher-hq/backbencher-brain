@@ -939,9 +939,16 @@ const handlers: Record<string, ToolHandler> = {
     if (!Number.isFinite(maxDepth) || maxDepth < 1 || maxDepth > 10) {
       return textResult("bb_graph maxDepth must be a number between 1 and 10", true)
     }
+    // M59.A12 (#888): a caller may ask for a larger per-symbol site limit
+    // instead of receiving a declared 200 and guessing what was missing. The
+    // engine clamps to its own maximum and always declares what it applied.
+    const edgeLimitArg = args.edgeLimit === undefined ? undefined : Number(args.edgeLimit)
+    if (edgeLimitArg !== undefined && (!Number.isFinite(edgeLimitArg) || edgeLimitArg < 1)) {
+      return textResult("bb_graph edgeLimit must be a positive number", true)
+    }
     let result
     try {
-      result = await graphTraversal(projectId as any, symbol, { maxDepth })
+      result = await graphTraversal(projectId as any, symbol, { maxDepth, edgeLimit: edgeLimitArg })
     } catch (error) {
       return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
     }
@@ -975,12 +982,21 @@ const handlers: Record<string, ToolHandler> = {
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
       summary: {
+        // M59.A12 (#888): these are the RETURNED counts. `truncated`, the
+        // declared `edgeLimit`, and `callersIfUncapped` are what tell a reader
+        // whether they hold the whole set — the previous shape reported 200 as
+        // "totalCallers" for a symbol with 3,437 sites and said nothing.
         totalCallers: result.summary?.totalCallers ?? result.callers.length,
         totalCallees: result.summary?.totalCallees ?? result.callees.length,
         maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
         crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
+        edgeLimit: result.summary?.edgeLimit ?? null,
+        cappedQueries: result.summary?.cappedQueries ?? 0,
+        callersIfUncapped: result.summary?.callersIfUncapped ?? null,
+        calleesIfUncapped: result.summary?.calleesIfUncapped ?? null,
+        totalsAreLowerBounds: result.summary?.totalsAreLowerBounds === true,
       },
       provenance: result.provenance ?? null,
     }, null, 2))
