@@ -8,7 +8,7 @@
   "failed": 1,
   "realFailed": 1,
   "failures": [
-    "C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\""
+    "C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\" | m26-mutants: published 0 row(s), expected \"39 mutants caught across 9 suites | [m26 ledger]\" | m26-x1: published 0 row(s), expected \"X1 closure gate 49/50 with per-mutant records\""
   ],
   "checksList": [
     "ok: C0: no registry problems",
@@ -17,7 +17,7 @@
     "ok: C0: more than one derivation kind is exercised",
     "ok: C1: no claim is blocked (every cited source resolves)",
     "ok: C1: every claim's derivation yields numbers",
-    "FAIL: C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\"",
+    "FAIL: C2: no published claim has drifted from its ledger — m44-x1: published 0 row(s), expected \"closure gate verified (X1 43/48 at HEAD)\" | m26-mutants: published 0 row(s), expected \"39 mutants caught across 9 suites | [m26 ledger]\" | m26-x1: published 0 row(s), expected \"X1 closure gate 49/50 with per-mutant records\"",
     "ok: C2: the pins are live (at least one row was found for every claim)",
     "ok: C3: every declared doc exists and honors its coverage status",
     "ok: C3: the audit set covers README, the website and the docs end to end",
@@ -40,10 +40,10 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "83230b19a558136806586e273d07ae84c5ae86e2",
+  "currentCommit": "7a29cb99324536b892b38eeeb278774e8fe1fa68",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-09-17T02:10:07.127Z",
+  "generatedAt": "2026-09-18T20:03:36.921Z",
   "claims": [
     {
       "id": "m25-issues",
@@ -98,9 +98,10 @@
     {
       "id": "m26-mutants",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "pinned",
-      "rendered": "38 mutants caught across 9 suites | [m26 ledger]",
-      "published": 1
+      "outcome": "drifted",
+      "rendered": "39 mutants caught across 9 suites | [m26 ledger]",
+      "published": 0,
+      "reason": "published row does not match the ledger: expected to find \"39 mutants caught across 9 suites | [m26 ledger]\""
     },
     {
       "id": "m27-mutants",
@@ -126,9 +127,10 @@
     {
       "id": "m26-x1",
       "doc": "docs/IDE-PROGRAM-STATUS.md",
-      "outcome": "pinned",
-      "rendered": "X1 closure gate 50/50 with per-mutant records",
-      "published": 1
+      "outcome": "drifted",
+      "rendered": "X1 closure gate 49/50 with per-mutant records",
+      "published": 0,
+      "reason": "published row does not match the ledger: expected to find \"X1 closure gate 49/50 with per-mutant records\""
     }
   ],
   "coverage": [
@@ -188,7 +190,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T02:10:07.127Z",
-    "contentSha256": "e5b35933bf99e6fc014c352eef5f69627c364fa0abbbb3e5a2352802daabf137"
+    "sealedAt": "2026-09-18T20:03:36.921Z",
+    "contentSha256": "16890620982482a62544068f528fab7671c131d84fd126d10d8ae58fa775802e"
   }
 }
