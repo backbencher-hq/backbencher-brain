@@ -39,6 +39,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { execSync } from "node:child_process"
 
 const EMPTY = mkdtempSync(path.join(tmpdir(), "m59-honest-"))
 process.env.BB_DATA_DIR = EMPTY
@@ -269,6 +270,11 @@ async function main() {
         gate: "M59.O4",
         issue: "#823",
         at: new Date().toISOString(),
+        atCommit: execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim(),
+        treeModifiedInputs: execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" })
+          .split("\n")
+          .map((l) => l.trim())
+          .filter((l) => l && !l.startsWith("?? ")).length,
         command: "npx tsx script/m59/verify-honest-callsite.ts",
         status: passed ? "pass" : "fail",
         fixture: FIXTURE,
