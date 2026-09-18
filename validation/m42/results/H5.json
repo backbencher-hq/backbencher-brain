@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "2a8659951d94776cb9b3e3c481cda4dc3280145e",
+  "currentCommit": "c801a3194a5125bc539f440fca4f6e85f01bd188",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-09-18T23:26:26.806Z",
+  "generatedAt": "2026-09-18T23:27:01.128Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
@@ -37,7 +37,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T23:26:26.806Z",
-    "contentSha256": "c45a9bdb59c571b56758a706542a76dada9ea52bfd9d518a472543d3f5b8e2c1"
+    "sealedAt": "2026-09-18T23:27:01.129Z",
+    "contentSha256": "1ba845e770f2edd8f0e1cfb5e3d75009aa5aa540f5f42d95df73276238235043"
   }
 }
