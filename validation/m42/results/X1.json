@@ -28,7 +28,7 @@
     "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "currentCommit": "7a29cb99324536b892b38eeeb278774e8fe1fa68",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -43,7 +43,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-18T20:01:08.377Z",
+  "generatedAt": "2026-09-18T20:08:53.845Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
     "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
@@ -51,7 +51,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:01:08.378Z",
-    "contentSha256": "1dd81f6257f8d94d336bea5cc8e85bd6c052dbf7d1d9986fcc4052bb38365dfa"
+    "sealedAt": "2026-09-18T20:08:53.845Z",
+    "contentSha256": "abbf7c4b9c60fec3b855aef5d55a1cc94644e37788a0e77c4dc31e615d007a0b"
   }
 }

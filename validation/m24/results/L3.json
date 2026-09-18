@@ -2,11 +2,11 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "currentCommit": "7a29cb99324536b892b38eeeb278774e8fe1fa68",
   "sourceFingerprint": "b7c9c4a899453bf2f5e8d7001e53129e6c2a7d46c5a2126e4261c6e576aefd50",
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",
-  "generatedAt": "2026-09-18T19:48:02.470Z",
+  "generatedAt": "2026-09-18T20:05:07.769Z",
   "passed": 27,
   "failed": 0,
   "failures": [],
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T19:48:02.470Z",
-    "contentSha256": "a03f7a881754672ba64df78b754e743787bc94cec1c9727afb9323323aef5fde"
+    "sealedAt": "2026-09-18T20:05:07.769Z",
+    "contentSha256": "b0d0ce49737c71734021c06d08d613ce81f764eeeda679fedc67ccb342e43534"
   }
 }
