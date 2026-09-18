@@ -2,17 +2,17 @@
   "issue": "M55.G1",
   "code": "G1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 16,
-  "passed": 15,
+  "passed": 16,
   "failed": 0,
-  "realFailed": 1,
+  "realFailed": 0,
   "negativeCases": 8,
-  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+  "currentCommit": "331a3ca00e5fcf4534fb245ba5e63ea0ea722916",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-18T21:01:31.913Z",
+  "generatedAt": "2026-09-18T21:49:05.010Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -35,8 +35,8 @@
     "rules": 6
   },
   "bar": {
-    "status": "failed",
-    "reason": "m53-closure exit=1",
+    "status": "verified",
+    "reason": "",
     "ladder": [
       {
         "gate": "m53-ladder",
@@ -45,14 +45,12 @@
       },
       {
         "gate": "m53-closure",
-        "exit": 1,
+        "exit": 0,
         "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
       }
     ]
   },
-  "failures": [
-    "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
-  ],
+  "failures": [],
   "limitations": [
     "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
     "Relevance-based staleness mirrors M24.G1: a file not listed for an issue does not invalidate its evidence. The list is maintained here; a new component must be added to it when its issue lands.",
@@ -60,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:01:31.913Z",
-    "contentSha256": "aff1c6c53b3c4d8b9b403c7588f0ad8c04c83e49b1bfc239a7929ffee46fc751"
+    "sealedAt": "2026-09-18T21:49:05.010Z",
+    "contentSha256": "6028463a168c88c61b80a9b089e7e36889152ec3f03742104799ccfc43af4519"
   }
 }

@@ -8,10 +8,10 @@
   "targetRegistry": "https://open-vsx.org",
   "publishCommand": "OVSX_PAT=... npx --yes ovsx publish --pat $OVSX_PAT ide/vscode/bb-lsp-vscode-0.1.0.vsix",
   "listingUrl": null,
-  "generatedAt": "2026-09-18T21:19:04.441Z",
+  "generatedAt": "2026-09-18T21:39:04.074Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:19:04.451Z",
-    "contentSha256": "0fc9f4fbe0af5eb810e7f3ad9281b84618196e109c7630f53faccc039083c696"
+    "sealedAt": "2026-09-18T21:39:04.081Z",
+    "contentSha256": "d15720ccecb449d542352a02953cf65331122f58d106e3ada8a753bdfb9372d5"
   }
 }
