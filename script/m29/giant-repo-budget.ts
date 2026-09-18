@@ -487,7 +487,23 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
 // CLI entry.
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   void runGiantBudget().then((result) => {
-    writeSealed(path.join(ROOT, "validation/m29/results/R3.json"), result)
+    // Audit 2026-09-18: an `--index-only` run is a CACHE BUILD, not a budget
+    // measurement, but it used to write its `{status:"indexed"}` result over
+    // R3.json — the evidence file the M29 ledger points at for R3. Running the
+    // documented re-earn step therefore destroyed the lane's R3 evidence and
+    // failed four R2/R4 checks until a full measurement run restored it. The
+    // cache-build record now goes to its own file; R3.json is written only by a
+    // real measurement run.
+    const indexOnlyRun = process.argv.includes("--index-only")
+    const evidencePath = path.join(
+      ROOT,
+      indexOnlyRun ? "validation/m29/results/R3-index.json" : "validation/m29/results/R3.json",
+    )
+    writeSealed(evidencePath, result)
+    if (indexOnlyRun) {
+      console.log(`R3: index-only cache build recorded in ${path.relative(ROOT, evidencePath)} (R3.json — the measurement evidence — is untouched)`)
+      process.exit(result.status === "indexed" ? 0 : 1)
+    }
     console.log(`R3: ${String(result.status).toUpperCase()}`)
     const budgets = (result.budgets ?? {}) as Record<string, { budgetViolations?: string[]; overColdHoverBudget?: boolean }>
     for (const [k, v] of Object.entries(budgets)) {
