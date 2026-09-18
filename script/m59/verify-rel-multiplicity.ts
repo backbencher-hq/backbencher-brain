@@ -29,6 +29,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { execSync } from "node:child_process"
 
 const DATA = mkdtempSync(path.join(tmpdir(), "m59-mult-data-"))
 process.env.BB_DATA_DIR = DATA
@@ -183,6 +184,11 @@ async function main() {
         probe: "M59.P3",
         issue: "#822",
         at: new Date().toISOString(),
+        atCommit: execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim(),
+        treeModifiedInputs: execSync("git status --porcelain", { cwd: ROOT, encoding: "utf8" })
+          .split("\n")
+          .map((l) => l.trim())
+          .filter((l) => l && !l.startsWith("?? ")).length,
         command: "npx tsx script/m59/verify-rel-multiplicity.ts",
         question: "4 call sites on 4 lines — does the INDEX keep 4?",
         trueCallSites: { java: javaExpected, typescript: tsExpected },
