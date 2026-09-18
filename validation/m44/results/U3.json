@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "e3a08c0ff61b29dc72bf03d7736eb3d82bb6662b",
+  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
   "evidenceFile": "U3.json",
-  "generatedAt": "2026-09-18T20:43:42.500Z",
+  "generatedAt": "2026-09-18T21:01:22.587Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "nesting": "callers: render -> make -> Widget; callees: Widget -> util -> deep; external callee push"
@@ -29,7 +29,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:43:42.500Z",
-    "contentSha256": "6595e21dfa6bfa7389f054c089078e42cfe98c62f553aa505dadef125bc92378"
+    "sealedAt": "2026-09-18T21:01:22.588Z",
+    "contentSha256": "31a400e23d9c98e48e8a70e5f7f8807d30a76a416775ed3be6cd791239750d30"
   }
 }

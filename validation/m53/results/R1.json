@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 37,
-  "failed": 4,
+  "status": "verified",
+  "passed": 41,
+  "failed": 0,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -104,9 +104,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (49/50 passed, 3 negative)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (50/50 passed, 3 negative)",
+      "ok": true
     },
     {
       "name": "m27-nvim",
@@ -202,9 +202,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (29/32 passed, 3 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true
     },
     {
       "name": "m42-enrichment",
@@ -251,9 +251,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (25/30 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
+      "ok": true
     },
     {
       "name": "m44-hub-tree",
@@ -280,7 +280,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 1cb2e4e0)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ b3e8cd1b)",
       "ok": true
     },
     {
@@ -300,17 +300,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (43/48 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
+      "ok": true
     }
   ],
-  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-18T20:03:07.677Z",
+  "generatedAt": "2026-09-18T21:01:29.361Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:03:07.677Z",
-    "contentSha256": "4087d7285d6e1d743974670f6250e58e29a5dcf67a748e922e06c712f223f680"
+    "sealedAt": "2026-09-18T21:01:29.361Z",
+    "contentSha256": "16de239499d5732e8e2c6e0f79c5b5096d2fcd213a888dc94e1fadc711b27b51"
   }
 }

@@ -16,7 +16,7 @@ The co-agent lanes landed on main after the M44 closure HEAD (`0df02f01`):
 ## The verdict, per gate
 
 - **R1 (issue #731)** — the full lane ladder (41 gates, m24→m44) exits
-  0 — 37/41 green, at the commit pinned in the evidence
+  0 — 41/41 green, at the commit pinned in the evidence
   record (freshness is gated by the prerequisites above). Evidence:
   `validation/m53/results/R1.json`.
 - **R2 (issue #732)** — a fresh index of a real repo written by the CURRENT
