@@ -4,15 +4,15 @@
   "milestone": "M55",
   "status": "known-gap",
   "checks": 16,
-  "passed": 14,
+  "passed": 15,
   "failed": 0,
-  "realFailed": 2,
+  "realFailed": 1,
   "negativeCases": 8,
-  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-18T20:03:10.134Z",
+  "generatedAt": "2026-09-18T21:01:31.913Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -36,11 +36,11 @@
   },
   "bar": {
     "status": "failed",
-    "reason": "m53-ladder exit=1, m53-closure exit=1",
+    "reason": "m53-closure exit=1",
     "ladder": [
       {
         "gate": "m53-ladder",
-        "exit": 1,
+        "exit": 0,
         "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json"
       },
       {
@@ -51,7 +51,6 @@
     ]
   },
   "failures": [
-    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD — Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json",
     "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
   ],
   "limitations": [
@@ -61,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:03:10.134Z",
-    "contentSha256": "e7142f2eaef19330417c93f2692202a55502ba58db49ed50dbfe19757cea31cf"
+    "sealedAt": "2026-09-18T21:01:31.913Z",
+    "contentSha256": "aff1c6c53b3c4d8b9b403c7588f0ad8c04c83e49b1bfc239a7929ffee46fc751"
   }
 }

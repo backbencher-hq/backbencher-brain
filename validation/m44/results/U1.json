@@ -10,10 +10,10 @@
   "negativeCases": 6,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "e3a08c0ff61b29dc72bf03d7736eb3d82bb6662b",
+  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-18T20:43:39.370Z",
+  "generatedAt": "2026-09-18T21:01:21.346Z",
   "schemaVersion": 2,
   "laws": [
     "L1 one-group-per-symbol",
@@ -49,7 +49,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:43:39.371Z",
-    "contentSha256": "a739c74c3051b3e10224ae3dce225f4df4a59842240fcad5c7f603b6dd4f7353"
+    "sealedAt": "2026-09-18T21:01:21.347Z",
+    "contentSha256": "412f92aec46b3a53bf43b3359ef7580852ea634acd4db2e045b70aa5af5a5b15"
   }
 }
