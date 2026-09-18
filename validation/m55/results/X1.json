@@ -12,13 +12,13 @@
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "7a29cb99324536b892b38eeeb278774e8fe1fa68",
+  "currentCommit": "412f2970ae8e8234f256e3fda873eb8709957468",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-18T20:11:03.843Z",
+  "generatedAt": "2026-09-18T20:44:08.655Z",
   "audit": {
-    "head": "7a29cb99324536b892b38eeeb278774e8fe1fa68",
+    "head": "412f2970ae8e8234f256e3fda873eb8709957468",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "known-gap",
@@ -361,7 +361,7 @@
   },
   "failures": [
     "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=1cb2e4e0c771 realFailed=2",
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=1cb2e4e0c771 green=37/41 lane-changed=0",
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=1cb2e4e0c771 green=37/41 lane-changed=1",
     "C2: G1's bar re-audit records every ladder gate green: [{\"gate\":\"m53-ladder\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json\"},{\"gate\":\"m53-closure\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json\"}]",
     "C2: M26 — every ladder gate green (9): m26-closure=1",
     "C2: M29 — every ladder gate green (5): m29-closure=1",
@@ -376,7 +376,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:11:03.846Z",
-    "contentSha256": "fd94d3bd7c00690b6d8d227bb261f368c1dc135463d5f34bd9ce7e14e70ebc22"
+    "sealedAt": "2026-09-18T20:44:08.659Z",
+    "contentSha256": "00bcbdda70626fdf1dc269d03334d3adac6d1455bc98aa1529710007c6c6077a"
   }
 }
