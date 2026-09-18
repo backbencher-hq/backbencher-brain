@@ -113,6 +113,24 @@ async function main() {
   const zero = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE line_number = 0").get() as any).c as number
   const nul = (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE line_number IS NULL").get() as any).c as number
 
+  // #820 vacuity guard: the two FATALs below convict "0 written as a number"
+  // and "a stored line that disagrees with source" — but BOTH pass vacuously
+  // if lines simply STOP landing (regress to the pre-M59 all-0 store, now all
+  // NULL). A probe whose both failure modes are "some row is wrong" is blind
+  // to "no row is right". The floor is corpus-derived: this repo's analyzer
+  // emits lines for its call-bearing languages, so a healthy index must land
+  // at least 1% of rows with a real line; below that is the pre-M59 state
+  // returning through the front door. NULL is still first-class: the remaining
+  // rows are the declared unknown, not an offence.
+  if (total > 0 && withLine < Math.max(1, Math.floor(total * 0.01))) {
+    console.error(
+      `FATAL (#820 vacuity): only ${withLine} of ${total} rows carry line_number > 0 — ` +
+        `the store-line fix has regressed (pre-M59 state: 0 rows with a line); ` +
+        `NULL-when-unknown cannot be satisfied by an index that never lands a line`,
+    )
+    process.exit(1)
+  }
+
   console.log("\n=== DB after the fix (this is the whole point) ===")
   console.log(`  total relationships : ${total}`)
   console.log(`  line_number > 0     : ${withLine}`)
