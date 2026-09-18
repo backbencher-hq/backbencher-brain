@@ -20,6 +20,7 @@
       "target": "json",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af",
       "origin": "real project index"
     },
     {
@@ -27,6 +28,7 @@
       "target": "typescript",
       "edgeCount": 246,
       "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
       "origin": "real project index"
     },
     {
@@ -34,14 +36,43 @@
       "target": "json",
       "edgeCount": 3,
       "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
       "origin": "real project index"
     }
   ],
-  "realDbsScanned": 79,
-  "generatedAt": "2026-09-17T01:51:38.792Z",
+  "realPairRows": [
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    }
+  ],
+  "machineReality": {
+    "dir": "$HOME/.bb/projects",
+    "present": true,
+    "scanned": 81,
+    "skipped": 3
+  },
+  "generatedAt": "2026-09-18T18:54:04.944Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:51:38.795Z",
-    "contentSha256": "7715ac60b357c106951fd671a148311ecb2f87e0a3cd443ba27d0767d34e9472"
+    "sealedAt": "2026-09-18T18:54:04.947Z",
+    "contentSha256": "27099ec3b1275639c1fa110e3eb95e4e625859be4eda6fcf45c431df7c616dea"
   }
 }

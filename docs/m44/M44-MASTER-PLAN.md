@@ -51,7 +51,7 @@ the hover a portal; M44 makes what the portal opens *understandable*.
 |------|-------|-------------|
 | G1 | [#687](https://github.com/backbencher-hq/backbencher-brain/issues/687) Governance + v6-bar check | M44 ledger; closure gate; M29+M42 bars re-audited on every run; Understanding Rules appended to the contract doc and machine-gated |
 | U1 | [#688](https://github.com/backbencher-hq/backbencher-brain/issues/688) Usages dedup & grouping (data shape) | `bb/graph` usages mode returns callers/callees grouped per symbol with declared per-group relationship-type and occurrence counts; file-level/external rows separated with declared labels; no data dropped; fixture + mutation proof |
-| U2 | [#689](https://github.com/backbencher-hq/backbencher-brain/issues/689) Hub list redesign | `renderHubList`: name-first, one row per symbol, relation chips + counts, click affordance (hover/chevron), group headers; DOM harness positive/negative |
+| U2 | [#689](https://github.com/backbencher-hq/backbencher-brain/issues/689) Hub list redesign | `renderHubList`: name-first, one row per symbol, relation chips + counts, click affordance (hover/chevron), group headers; DOM harness positive/negative. Evidence owned by `script/m44/verify-hub-list.ts` (derives U2 from the m26 harness record — see the X1 amendment below) |
 | U3 | [#690](https://github.com/backbencher-hq/backbencher-brain/issues/690) Call tree rework | `renderHubTree`: real expandable tree with per-node counts, labeled leaves, clickable nodes; same harness law |
 | U4 | [#691](https://github.com/backbencher-hq/backbencher-brain/issues/691) Header counts + staleness/legend clarity | panel header counts derived from the rendered groups (rule 4); tier/stale badges visually distinct and consistent with the hover legend |
 | U5 | [#692](https://github.com/backbencher-hq/backbencher-brain/issues/692) Impact resolution for member/keyword targets | constructors (and member-name targets) resolve through the owning declaration; `constructor` case fixed; declared errors only when the symbol is genuinely absent |
@@ -177,3 +177,27 @@ KNOWN-GAPS inventory, and proves the audit CAN FAIL (7 in-memory negatives).
   validation/m44/results/SPOT-CHECK-PACK.md; launch-bar owner rows
   (OpenVSX publish, Windsurf install decision, darwin/win persistence) are
   recorded with reasons, machine-audited, never silent.
+
+### X1 amendment (2026-09-18): U2's record now has an owner
+
+Finding (during M62's lane convergence): U2's acceptance is the m26 webview
+harness's DOM suite, so `validation/m44/results/U2.json` was a **derived record
+with no owning gate** — it was re-pinned by hand (commit d330eb4f), which froze
+its `currentCommit` at bbf9e69e. When M62 changed U2's own subject
+(`script/m26/graph-core.ts`, the call-site address contract), M44's governance
+reported `U2:stale-commit` with **no mechanical way to clear it**. A hand re-pin
+is the class M61 D-1 outlaws (“one write path, one owner”).
+
+Fix: `script/m44/hub-list-derivation.ts` (pure, no fs/clock/db) + the owning
+gate `script/m44/verify-hub-list.ts`, wired into the standard and
+`verify:fast` chains and into the M61 gate registry. The gate reads the harness
+record through the trusted (sealed) read path, derives U2 under six declared
+laws — L1 declaration, L2 a red source derives a red U2, L3 source-named,
+L4 numbers derived not restated, L5 pin follows the source's commit, L6
+source + content hash named in the record — proves the derivation CAN FAIL
+(per-law defective sources in memory + a source-level mutant), and seals U2.json.
+
+Consequence for this milestone's bar: U2's freshness is now a *mechanical
+consequence* of the harness run, not a manual re-pin. The M44.X1 audit's
+admission rule is unchanged (U2 is still admitted from its record); what changed
+is that the record can now be re-earned by running its owner.
