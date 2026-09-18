@@ -92,6 +92,47 @@ always for an `unusable` store, which must never be quietly degraded into a
 - X1 re-audits the IDE lane at one HEAD.
 - Owner verdict per IDE Honesty Contract §8.5 (spot-check pack).
 
+## Lane findings (closure audit, 2026-09-18)
+
+X1 requires every lane bar verified **and fresh by relevance**. Re-earning them
+at one HEAD exposed four defects in the lane that no single milestone's own gate
+could see. Each is fixed at its owner; none is a documentation note.
+
+1. **A byte-gated document asserted machine reality** (M26 `D1`/`W3`).
+   `docs/m26/GRAPH.md` and `docs/m26/CROSS-LANGUAGE.md` are byte-gated against a
+   fresh generation, but their generators embedded `Real project dbs scanned: N`
+   and one row per pair read live from the operator's `~/.bb/projects`. Any
+   `bb index` on the machine therefore rewrote a committed document → the
+   `W3`/`D1` records no longer matched their files (`W3:stale-commit,
+   D1:stale-commit`) → the m26 ladder leg exited 1 → **every downstream closure
+   bar read red**. Fixed: `script/m26/ambient-reality.ts` is the one owner of
+   the scan; machine reality is recorded with its record
+   (`machineReality`, `realPairRows`) and the docs carry a stable pointer.
+   New invariant, with a negative control: **two different machine realities
+   must produce one document** (M26 `G7`; the leaky generator is the mutant).
+   A committed, byte-gated artifact may only assert facts the repository can
+   reproduce.
+2. **Two drift checks could not fail.** `D1` wrote the file and *then* compared
+   it to a fresh generation (the write erased the evidence of a hand edit), and
+   `W3` compared a value to itself (`const regenerated = first`). Both now read
+   the bytes already on disk and compare them before writing: a hand-edited doc
+   fails the next run, which regenerates it. First run after a content change
+   fails by design; the run after is the proof.
+3. **A derived record with no owner** (M44 `U2`). Its acceptance is the m26
+   webview harness, so `validation/m44/results/U2.json` was re-pinned by hand,
+   which froze its commit and made `U2:stale-commit` unclearable. `U2` is now
+   derived and sealed by `script/m44/verify-hub-list.ts` under six declared laws
+   (a red source derives a red record; numbers copied, never restated; the pin
+   follows the source), wired into the standard and `verify:fast` chains.
+   M44's own plan and records are deliberately untouched by this milestone.
+4. **A declared machine dependency in the lane's evidence.** `M29.R3`'s live
+   probe needs a persistent 59k-file index under the system temp dir. When that
+   cache is cleared the gate reports a **declared skip as a failure** (correct —
+   a silent pass would be the bug); the re-earn path is
+   `npx tsx script/m29/giant-repo-budget.ts --reuse --index-only`, then re-run
+   the gate. Recorded here because it is the one lane bar that cannot be re-earned
+   from the repository alone.
+
 ## Not in scope (declared)
 
 - Analyzer emission of call-site lines per language (M59.A7) and the store's
