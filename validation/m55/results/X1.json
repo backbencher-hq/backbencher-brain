@@ -12,17 +12,17 @@
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+  "currentCommit": "56f4cf01e6e745699bff3af3d73fd201c67167f4",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-18T21:08:59.443Z",
+  "generatedAt": "2026-09-18T21:32:18.917Z",
   "audit": {
-    "head": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+    "head": "56f4cf01e6e745699bff3af3d73fd201c67167f4",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
-      "pin": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+      "pin": "111b6d81848bd441f4ebde3b7ba40df2a9e195db",
       "green": 41,
       "total": 41,
       "milestones": {
@@ -371,7 +371,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:08:59.446Z",
-    "contentSha256": "0315d9037a8ce800fe95a9635a4dd76bf8da36e9656507ef953efd2e263e7edd"
+    "sealedAt": "2026-09-18T21:32:18.919Z",
+    "contentSha256": "6ef1f37aadc198e68f82196f7b1d3055f2bb35a4978a4a1850d509b94998ce76"
   }
 }
