@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "2e7e6c1ead1099d3f19c07c1c4dd6a0756014549",
+  "currentCommit": "42f5566523301fb7848e2588924b243b1f30f484",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-18T23:13:53.344Z",
+  "generatedAt": "2026-09-18T23:40:59.857Z",
   "fixturePairs": [
     {
       "source": "kotlin",
@@ -106,7 +106,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T23:13:53.345Z",
-    "contentSha256": "e7702fba370cff8e3e55636dc001193aad103a48fdb5edf63b425ac5c36e7180"
+    "sealedAt": "2026-09-18T23:40:59.858Z",
+    "contentSha256": "6be022930271ae64747358c797ef98b8032c2ee782e181940bc241d60567ef91"
   }
 }
