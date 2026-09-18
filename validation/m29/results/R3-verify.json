@@ -5,17 +5,17 @@
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+  "currentCommit": "2a99737f66baa32d3f59e7d2c0ec70154fa8b0b1",
   "relevantInputsHash": "c0f79a944e4802e8b61fbbd8f0c0b2a949650547",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-18T19:00:52.122Z",
+  "generatedAt": "2026-09-18T19:10:56.607Z",
   "details": [
     "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T19:00:52.123Z",
-    "contentSha256": "4820208119b29af1d140c74e1ec3c507d54e837701a582523bcb0cfb45eade73"
+    "sealedAt": "2026-09-18T19:10:56.608Z",
+    "contentSha256": "559852d806669cc85b4941d9c3c8011ab6e15f7984ac9d15924f2d1d82615120"
   }
 }
