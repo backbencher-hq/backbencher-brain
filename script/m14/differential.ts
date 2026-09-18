@@ -1099,6 +1099,34 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
   while (stack.length > 0) {
     const n = stack.pop()!
     const t = n.type
+    // M49 #868, acceptance item 3's second half — "the javascript oracle
+    // `deriveJavaScriptEdges` needs the same guard".
+    //
+    // The ANALYZER rules a decorator invocation METADATA on the decorated symbol,
+    // so `@inject(DB)` yields no `calls` edge, no `uses` for the decorator's own
+    // name and none for its argument: `processNode` calls
+    // `RealJavaScriptAnalyzer.inDecoratorPosition(n)` FIRST and returns, which
+    // skips the ENTIRE decorator subtree. The TYPESCRIPT mirror in this file has
+    // the matching per-node guard; the JAVASCRIPT mirror did not, and both of its
+    // edge kinds leaked from decorator position. Measured
+    // (`script/m59/verify-868-js-oracle-decorator.ts`) before this change: oracle
+    // `calls ["inject", "make"]` against the analyzer's `["make"]`, and oracle
+    // `uses` including `DB` (a decorator ARGUMENT) and `sealed` (a bare decorator
+    // name) which the analyzer emits as one `references` edge each instead.
+    //
+    // It was LATENT, which is why nothing caught it: the corpus lanes sample plain
+    // `.js` from the web repos, which contain no class-body decorators (the #861
+    // sweep found one affected file in 9,065), and the fixture lanes compare the
+    // analyzer against its EXPECTATION — never against the oracle.
+    //
+    // Expressed as a whole-subtree skip rather than a per-node ancestor walk,
+    // because that is literally what the analyzer does, and because the JS grammar
+    // nests a decorator INSIDE `class_declaration` / `field_definition` /
+    // `method_definition` (unlike TS, where method decorators are class-body
+    // children) — so a decorator node is always reached by this traversal, and
+    // skipping it here cannot miss one. Both edge kinds are covered by
+    // construction rather than by a guard per branch.
+    if (t === "decorator") continue
     if (t === "call_expression") {
       const fn = n.childForFieldName("function")
       const isImportCallee = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
@@ -6775,8 +6803,11 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       if (cn) {
         classMethods.set(cn, new Set())
         classAttrs.set(cn, new Set())
-        // Superclass context: context -> apply(s); first child of each apply
-        // is the superclass name (name/constructor).
+        // Superclass context (#872 lockstep): the constraint tree is walked
+        // exactly as the analyzer now does — tuple lists, parens wrappers,
+        // quantified (forall) bodies, and applied heads take the LEFT-SPINE
+        // class (Eq (f a) => D: the class is Eq, (f a) is its argument);
+        // qualified heads are taken verbatim (P.Show).
         const context = n.namedChildren.find((c: any) => c.type === "context")
         if (context) {
           const supers: string[] = []
@@ -6784,12 +6815,9 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
           while (stackC.length > 0) {
             const x = stackC.pop()!
             if (x.type === "apply") {
-              const first = x.namedChildCount > 0 ? x.namedChild(0) : null
-              if (first && (first.type === "name" || first.type === "constructor")) supers.push(first.text)
-            } else if (x.type === "parens") {
-              const ap = x.namedChildren.find((c: any) => c.type === "apply")
-              const first = ap?.namedChildCount ? ap.namedChild(0) : null
-              if (first && (first.type === "name" || first.type === "constructor")) supers.push(first.text)
+              let head: any = x
+              while (head?.type === "apply") head = head.namedChild(0)
+              if (head && (head.type === "name" || head.type === "constructor" || head.type === "qualified")) supers.push(head.text)
             }
             for (let i = 0; i < x.namedChildCount; i++) stackC.push(x.namedChild(i))
           }
