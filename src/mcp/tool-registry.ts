@@ -208,6 +208,7 @@ const descriptors = [
       properties: {
         symbol: { type: "string", description: "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases)" },
         maxDepth: { type: "number", description: "traversal depth bound (default 3)" },
+        edgeLimit: { type: "number", description: "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`callersIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer." },
       },
       required: ["symbol"],
     },

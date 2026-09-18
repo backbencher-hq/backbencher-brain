@@ -78,6 +78,7 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
 - Static relationships cannot establish runtime behavior
 - Test results describe indexed static evidence, not executed coverage
 - Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class
+- The callers/callees/trace modes bound each edge query by a declared per-symbol site limit (200) and report it in `summary.truncated` / `summary.truncationReason` with the root's true count in `summary.callersIfUncapped`; `summary.totalCallers` is the returned count, never a silent total (M59.A12, #888)
 
 ## Performance
 

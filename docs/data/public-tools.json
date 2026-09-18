@@ -775,7 +775,8 @@
       "limitations": [
         "Static relationships cannot establish runtime behavior",
         "Test results describe indexed static evidence, not executed coverage",
-        "Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class"
+        "Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class",
+        "The callers/callees/trace modes bound each edge query by a declared per-symbol site limit (200) and report it in `summary.truncated` / `summary.truncationReason` with the root's true count in `summary.callersIfUncapped`; `summary.totalCallers` is the returned count, never a silent total (M59.A12, #888)"
       ],
       "performance": "Mode-specific limits and graph traversal bounds prevent unbounded output.",
       "safety": "Read-only. Analysis never creates tests or edits source.",
@@ -1136,6 +1137,10 @@
           "maxDepth": {
             "type": "number",
             "description": "traversal depth bound (default 3)"
+          },
+          "edgeLimit": {
+            "type": "number",
+            "description": "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`callersIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer."
           }
         },
         "required": [
@@ -1179,11 +1184,12 @@
       "limitations": [
         "Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven",
         "The graph reflects the index as of the last index run",
-        "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row"
+        "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row",
+        "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`"
       ],
       "performance": "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
       "safety": "Read-only. It does not modify source files or index data.",
-      "evidence": "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence."
+      "evidence": "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json)."
     },
     {
       "name": "bb_impact",
