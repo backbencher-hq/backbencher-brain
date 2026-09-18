@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "78617dfbf99a1a38597994a2707f26d40ea75e77",
+  "inputsHash": "0877ccb1c18f1d5bc673baacab9edbbcd068aebd",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -70,7 +70,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+          "commit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
           "status": "verified"
         }
       },
@@ -123,7 +123,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+          "commit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
           "status": "verified"
         }
       },
@@ -176,7 +176,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+          "commit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
           "status": "verified"
         }
       },
@@ -229,7 +229,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+          "commit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
           "status": "verified"
         }
       },
@@ -282,7 +282,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+          "commit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
           "status": "verified"
         }
       },
@@ -335,7 +335,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+          "commit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
           "status": "verified"
         }
       },
@@ -349,11 +349,11 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 5.42,
-    "inEditorHoverP95Ms": 5.92,
-    "coldMedianMs": 899,
+    "hoverP95Ms": 5.39,
+    "inEditorHoverP95Ms": 4.77,
+    "coldMedianMs": 838,
     "tierRatio": {
-      "totalRelationships": 785930,
+      "totalRelationships": 785954,
       "inferredRatioBeforePct": 42.1,
       "inferredRatioAfterPct": 0,
       "fix": "hover honors stored metadata.evidenceClass + structural set at the W4 0.7 floor (script/m29/r5-tier-fixture.ts, mutant-gated)"
