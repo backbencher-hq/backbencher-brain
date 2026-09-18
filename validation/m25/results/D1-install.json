@@ -7,7 +7,7 @@
   "passed": 21,
   "failed": 0,
   "failures": [],
-  "currentCommit": "331a3ca00e5fcf4534fb245ba5e63ea0ea722916",
+  "currentCommit": "351cc8a3e5d3531814404be1d79f9abf1640a817",
   "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
   "evidenceFile": "D1-install.json",
   "mutantsCaught": 3,
@@ -17,7 +17,7 @@
     "ok: M: install doc launching without a clean profile passes",
     "ok: M: install doc omitting the status command passes"
   ],
-  "generatedAt": "2026-09-18T21:38:26.194Z",
+  "generatedAt": "2026-09-18T23:05:28.591Z",
   "limitations": [
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
     "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
@@ -25,7 +25,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:38:26.195Z",
-    "contentSha256": "25cc2d712a5b994a144a2388e1e692f7b9c9b6fde5483a084c754c5d9a3ec149"
+    "sealedAt": "2026-09-18T23:05:28.591Z",
+    "contentSha256": "ca6317c573746188295c2c1b735847593c30f9465b5c439cdf7ecd7a7fe403ad"
   }
 }
