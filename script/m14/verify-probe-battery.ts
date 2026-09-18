@@ -445,6 +445,44 @@ class Host
     )
   }
 
+  // ── JS-DECORATOR-METADATA (M49 #868, acceptance item 3) ────────────────
+  // The analyzer rules a decorator invocation METADATA on the decorated symbol
+  // (`inDecoratorPosition`), so `@inject(DB)` yields no `calls` edge, no `uses`
+  // for the decorator's own name and none for its argument — the same family rule
+  // the typescript twin and the python oracle's PYD1 carry. The ORACLE mirror in
+  // `deriveJavaScriptEdges` did not carry the guard, so it derived all three, and
+  // the differential would have reported them as MISSING rows on any `.js` file
+  // with a decorator. Nothing could see it: the corpus lanes sample plain `.js`
+  // from the web repos (no class-body decorators — #861's sweep found one affected
+  // file in 9,065) and the fixture lanes compare the analyzer against its
+  // EXPECTATION, never against the oracle. `oracleForbid` is what makes this
+  // permanent: it fails as `oracle colludes` when the truth derives a forbidden
+  // edge. Executed control: with the guard removed, `oracleForbid` reported
+  // `uses:sealed, uses:DB, calls:inject`; with it, the probe passes.
+  {
+    const jsCfg = { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: ".js" }
+    const src = [
+      `function sealed(t) { return t }`,
+      `function inject(n) { return () => undefined }`,
+      `function make() { return 1 }`,
+      `const DB = "db"`,
+      `@sealed`,
+      `export class Service {`,
+      `  @inject(DB)`,
+      `  pool = make()`,
+      `  @sealed`,
+      `  method() {}`,
+      `}`,
+    ].join("\n") + "\n"
+    await probeLang("F9-PROBE-JSD-DECORATOR-POSITION", "javascript",
+      "a decorator is METADATA on the symbol it decorates on BOTH sides: no `calls` edge for the decorator name, no `uses` for its name or its argument — while an ordinary call in the same class (`make()` in the field initializer) still derives",
+      jsCfg, "deriveJavaScriptEdges", src,
+      ["calls:make"],
+      ["calls:inject", "uses:sealed", "uses:DB"],
+      { oracleForbid: true },
+    )
+  }
+
   // ── SVELTE-DYNAMIC-COMPONENT (M49 W13) ────────────────────────────────
   // The analyzer side of `<svelte:component this={X}/>` is already pinned by
   // fixture svelte/relationship-kinds (instantiates -> Widget). What needed
