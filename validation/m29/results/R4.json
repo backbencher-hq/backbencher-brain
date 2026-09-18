@@ -4,12 +4,12 @@
     "validation/m29/results/PRECISION-LEDGER.json",
     "docs/m29/PRECISION-LEDGER.md"
   ],
-  "inputsHash": "872dfa1a964938c36c8f00f0f5ec5e2fcee4cd1e",
-  "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
-  "generatedAt": "2026-09-18T20:57:14.014Z",
+  "inputsHash": "98653aacb88f738229b9965a4bc16a05e1151a66",
+  "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+  "generatedAt": "2026-09-18T21:05:02.161Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:57:14.014Z",
-    "contentSha256": "8d69467c3c99ced58b2e3acfd3a407bd9220706c4cba425f922e3873b53e09f5"
+    "sealedAt": "2026-09-18T21:05:02.161Z",
+    "contentSha256": "23a0dd53b13aa31d6c5cbdf48783cb573bcaa59fe6c59b9cdde8df8d2430ba2d"
   }
 }
