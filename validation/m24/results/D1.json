@@ -2,11 +2,11 @@
   "issue": "496",
   "code": "D1",
   "status": "verified",
-  "currentCommit": "b0623c5d175cb137f75995eab4a89396bb0189aa",
+  "currentCommit": "61c807325e15670b0570edc66b10e16f33f5b5a6",
   "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-09-18T21:51:14.267Z",
+  "generatedAt": "2026-09-18T22:37:33.187Z",
   "passed": 44,
   "failed": 0,
   "failures": [],
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:51:14.268Z",
-    "contentSha256": "521da658a30b8e4759ec9707020d44ff3303bb997c11f58ad52df0843f959888"
+    "sealedAt": "2026-09-18T22:37:33.188Z",
+    "contentSha256": "f36e34ead676edbae9cccd24172b3e89c62f37d47c202c611e915a409eaf8c02"
   }
 }
