@@ -2,15 +2,19 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 50,
-  "passed": 50,
-  "failed": 0,
-  "failures": [],
+  "passed": 49,
+  "failed": 1,
+  "failures": [
+    "X1: v2 completion bar audited item-by-item — zero violations"
+  ],
   "negativeCases": 3,
-  "currentCommit": "890ee8aee95530c67953cf7a3654f3ad8fbf17b6",
+  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
-  "barViolations": [],
+  "barViolations": [
+    "bar2: per-pair absence not declared in the generated docs"
+  ],
   "perMutantRecords": {
     "W1": [
       {
@@ -168,19 +172,23 @@
     ],
     "D1": [
       {
-        "name": "M1 doctored embedded fact",
+        "name": "M1 doctored embedded fact (drift rule)",
         "caught": true
       },
       {
-        "name": "M2 fabricated pair count",
+        "name": "M2 fabricated reality row",
+        "caught": true
+      },
+      {
+        "name": "M3 ambient leak (leaky control)",
         "caught": true
       }
     ]
   },
-  "generatedAt": "2026-09-17T01:51:47.015Z",
+  "generatedAt": "2026-09-18T19:55:05.414Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:51:47.015Z",
-    "contentSha256": "dd7906d0c21357915c536196ef09c803d73146108dbfb2845e5a6c38d74cdb66"
+    "sealedAt": "2026-09-18T19:55:05.415Z",
+    "contentSha256": "fb894054de63bf608c176be315ae79920cb9a6cb11b695c3e2045669a97d14ec"
   }
 }
