@@ -2,13 +2,11 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 32,
-  "passed": 31,
-  "failed": 1,
-  "failures": [
-    "X1: M29-R3 ladder run green at HEAD: exit=1"
-  ],
+  "passed": 32,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
   "suiteExits": {
     "M24": 0,
@@ -18,13 +16,13 @@
     "M28": 0,
     "M29-R1": 0,
     "M29-R2": 0,
-    "M29-R3": 1,
+    "M29-R3": 0,
     "M29-R5": 0,
     "M29-R4": 0,
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "faa7a47c747ae944cd42350acb2fa0d88f59e223",
+  "currentCommit": "e7afeef782bcaceff70f13b6d2e820271e3ff9d8",
   "verifierCommand": "npx tsx script/m29/verify-closure.ts",
   "evidenceFile": "X1.json",
   "ownerSpotCheck": {
@@ -38,7 +36,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-18T19:02:23.149Z",
+  "generatedAt": "2026-09-18T19:33:14.591Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -47,7 +45,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T19:02:23.150Z",
-    "contentSha256": "327b3f6c2b51dfe57bf5a507a1c18f7caf5266158b2496408b144f2694c0be67"
+    "sealedAt": "2026-09-18T19:33:14.592Z",
+    "contentSha256": "2425108ce9547098ee7a64ca55519cbd03775ed8a3f8e7026e6150317037123d"
   }
 }
