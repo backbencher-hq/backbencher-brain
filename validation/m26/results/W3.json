@@ -3,16 +3,38 @@
   "code": "W3",
   "milestone": "M26",
   "status": "verified",
-  "checks": 17,
-  "passed": 17,
+  "checks": 21,
+  "passed": 21,
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "890ee8aee95530c67953cf7a3654f3ad8fbf17b6",
+  "currentCommit": "9d0659227063d7fb8b82ea2793a32d6739287c2b",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-17T01:51:38.792Z",
+  "generatedAt": "2026-09-18T18:54:04.944Z",
+  "fixturePairs": [
+    {
+      "source": "kotlin",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "kotlin-ts interop",
+      "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "typescript",
+      "target": "kotlin",
+      "edgeCount": 1,
+      "sampleBridge": null,
+      "origin": "fixture (W3 suite, seeded)"
+    }
+  ],
+  "machineReality": {
+    "dir": "$HOME/.bb/projects",
+    "present": true,
+    "scanned": 81,
+    "skipped": 3
+  },
   "storedPairs": [
     {
       "source": "kotlin",
@@ -33,6 +55,7 @@
       "target": "json",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af",
       "origin": "real project index"
     },
     {
@@ -40,6 +63,7 @@
       "target": "typescript",
       "edgeCount": 246,
       "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
       "origin": "real project index"
     },
     {
@@ -47,17 +71,42 @@
       "target": "json",
       "edgeCount": 3,
       "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
       "origin": "real project index"
     }
   ],
-  "realDbsScanned": 79,
+  "realPairRows": [
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    }
+  ],
+  "realDbsScanned": 81,
   "limitations": [
-    "Launch launch-language pairs with no stored rows are declared absent (doc generated per scan).",
-    "Coverage scan reads real project dbs read-only; unreadable dbs are skipped and counted in realDbsScanned."
+    "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
+    "Coverage scan reads real project dbs read-only; unreadable/absent dbs are skipped and counted in machineReality.",
+    "The drift gate compares the bytes on disk before writing: the first run after a content change fails and regenerates, the next run is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:51:38.792Z",
-    "contentSha256": "856b0dcd70bf1a6cc142d5672b6b37d24a731b698434ad93cd1a7f795e9b7990"
+    "sealedAt": "2026-09-18T18:54:04.945Z",
+    "contentSha256": "0501a08e6719971bd4a8604e63919427bf389fbe308b3b495d7ccd07c792ddd3"
   }
 }

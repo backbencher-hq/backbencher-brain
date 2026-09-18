@@ -1,31 +1,68 @@
 {
   "issue": "M26.D1",
   "status": "verified",
-  "passed": 29,
+  "passed": 34,
   "failed": 0,
-  "negativeCases": 2,
+  "negativeCases": 3,
   "mutants": [
     {
-      "name": "M1 doctored embedded fact",
+      "name": "M1 doctored embedded fact (drift rule)",
       "caught": true
     },
     {
-      "name": "M2 fabricated pair count",
+      "name": "M2 fabricated reality row",
+      "caught": true
+    },
+    {
+      "name": "M3 ambient leak (leaky control)",
       "caught": true
     }
   ],
-  "mutantsCaught": 2,
-  "mutantsTotal": 2,
-  "realDbsScanned": 79,
+  "mutantsCaught": 3,
+  "mutantsTotal": 3,
+  "machineReality": {
+    "dir": "$HOME/.bb/projects",
+    "present": true,
+    "scanned": 81,
+    "skipped": 3
+  },
+  "realDbsScanned": 81,
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 3,
+  "realPairRows": [
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    }
+  ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "890ee8aee95530c67953cf7a3654f3ad8fbf17b6",
+  "currentCommit": "9d0659227063d7fb8b82ea2793a32d6739287c2b",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-17T01:51:46.977Z",
+  "generatedAt": "2026-09-18T18:53:31.360Z",
+  "limitations": [
+    "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
+    "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:51:46.978Z",
-    "contentSha256": "f428887abf29d0ae5f0a7b026b81ce20d8f81e36c0aa01bd45a51ac12746dad8"
+    "sealedAt": "2026-09-18T18:53:31.361Z",
+    "contentSha256": "fba7c9d5c280211a403ca0449b9477f4de624c73ecdb1ace334ba302f5a285d5"
   }
 }
