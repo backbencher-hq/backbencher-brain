@@ -1,227 +1,4 @@
 {
-  "language": "cpp",
-  "raw": {
-    "references": [
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
-        "range": {
-          "start": {
-            "line": 17,
-            "character": 0
-          },
-          "end": {
-            "line": 23,
-            "character": 1
-          }
-        }
-      },
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
-        "range": {
-          "start": {
-            "line": 9,
-            "character": 4
-          },
-          "end": {
-            "line": 11,
-            "character": 5
-          }
-        }
-      }
-    ],
-    "documentSymbol": [
-      {
-        "detail": "Greeter",
-        "range": {
-          "start": {
-            "line": 3,
-            "character": 0
-          },
-          "end": {
-            "line": 15,
-            "character": 1
-          }
-        },
-        "name": "Greeter",
-        "children": [
-          {
-            "detail": "constructor",
-            "range": {
-              "start": {
-                "line": 5,
-                "character": 4
-              },
-              "end": {
-                "line": 7,
-                "character": 5
-              }
-            },
-            "name": "constructor",
-            "children": [],
-            "selectionRange": {
-              "start": {
-                "line": 5,
-                "character": 4
-              },
-              "end": {
-                "line": 7,
-                "character": 5
-              }
-            },
-            "data": {
-              "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:constructor:6",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "kind": 9
-          },
-          {
-            "detail": "greet",
-            "range": {
-              "start": {
-                "line": 9,
-                "character": 4
-              },
-              "end": {
-                "line": 11,
-                "character": 5
-              }
-            },
-            "name": "greet",
-            "children": [],
-            "selectionRange": {
-              "start": {
-                "line": 9,
-                "character": 4
-              },
-              "end": {
-                "line": 11,
-                "character": 5
-              }
-            },
-            "data": {
-              "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:greet:10",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "kind": 6
-          },
-          {
-            "detail": "main",
-            "range": {
-              "start": {
-                "line": 17,
-                "character": 0
-              },
-              "end": {
-                "line": 23,
-                "character": 1
-              }
-            },
-            "name": "main",
-            "children": [],
-            "selectionRange": {
-              "start": {
-                "line": 17,
-                "character": 0
-              },
-              "end": {
-                "line": 23,
-                "character": 1
-              }
-            },
-            "data": {
-              "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:main:18",
-              "notIndexed": false,
-              "evidenceTier": "indexed"
-            },
-            "kind": 12
-          }
-        ],
-        "selectionRange": {
-          "start": {
-            "line": 3,
-            "character": 0
-          },
-          "end": {
-            "line": 15,
-            "character": 1
-          }
-        },
-        "data": {
-          "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:Greeter:4",
-          "notIndexed": false,
-          "evidenceTier": "indexed"
-        },
-        "kind": 5
-      }
-    ],
-    "definition": {
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
-      "range": {
-        "start": {
-          "line": 9,
-          "character": 4
-        },
-        "end": {
-          "line": 11,
-          "character": 5
-        }
-      }
-    },
-    "workspaceAbsence": [],
-    "hover": {
-      "range": {
-        "start": {
-          "line": 9,
-          "character": 4
-        },
-        "end": {
-          "line": 11,
-          "character": 5
-        }
-      },
-      "data": {
-        "provenance": {
-          "evidenceClass": "structural",
-          "engine": "bb_lsp hover@m24.l2",
-          "limitations": [
-            "index-sourced; no compiler-backed types (complement stance)"
-          ],
-          "source": "bb_index",
-          "stale": false
-        },
-        "symbol": {
-          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.cpp:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)",
-          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D)",
-          "crossLanguageSection": "",
-          "definition": {
-            "line": 9,
-            "character": 4
-          },
-          "freshnessStatus": "fresh",
-          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
-          "lineStart": 10,
-          "lineEnd": 12,
-          "name": "greet",
-          "stale": false,
-          "qualifiedName": "greet",
-          "symbolType": "method",
-          "signature": "public method greet(…)",
-          "usageCount": 1,
-          "evidenceTiers": [
-            "structural"
-          ],
-          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
-          "annotationSection": ""
-        }
-      },
-      "contents": {
-        "value": "```\npublic method greet(…)\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.cpp:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D))_",
-        "kind": "markdown"
-      }
-    }
-  },
   "checks": [
     {
       "ok": true,
@@ -235,7 +12,7 @@
     },
     {
       "ok": true,
-      "detail": "table: 0x76bfac77c988",
+      "detail": "table: 0x71002c696288",
       "name": "S6: client initialized"
     },
     {
@@ -275,11 +52,234 @@
     }
   ],
   "session": [],
+  "raw": {
+    "hover": {
+      "range": {
+        "end": {
+          "line": 11,
+          "character": 5
+        },
+        "start": {
+          "line": 9,
+          "character": 4
+        }
+      },
+      "contents": {
+        "value": "```\npublic method greet(…)\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.cpp:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp:10](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D))_",
+        "kind": "markdown"
+      },
+      "data": {
+        "provenance": {
+          "evidenceClass": "structural",
+          "engine": "bb_lsp hover@m24.l2",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
+          "name": "greet",
+          "lineEnd": 12,
+          "stale": false,
+          "qualifiedName": "greet",
+          "symbolType": "method",
+          "signature": "public method greet(…)",
+          "usageCount": 1,
+          "evidenceTiers": [
+            "structural"
+          ],
+          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.cpp:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)",
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fcpp%2Fmain.cpp%22%2C%22line%22%3A9%2C%22character%22%3A4%7D%5D)",
+          "definition": {
+            "line": 9,
+            "character": 4
+          },
+          "crossLanguageSection": "",
+          "annotationSection": "",
+          "freshnessStatus": "fresh",
+          "lineStart": 10
+        }
+      }
+    },
+    "references": [
+      {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
+        "range": {
+          "end": {
+            "line": 23,
+            "character": 1
+          },
+          "start": {
+            "line": 17,
+            "character": 0
+          }
+        }
+      },
+      {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
+        "range": {
+          "end": {
+            "line": 11,
+            "character": 5
+          },
+          "start": {
+            "line": 9,
+            "character": 4
+          }
+        }
+      }
+    ],
+    "documentSymbol": [
+      {
+        "name": "Greeter",
+        "kind": 5,
+        "data": {
+          "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:Greeter:4",
+          "evidenceTier": "indexed",
+          "notIndexed": false
+        },
+        "children": [
+          {
+            "name": "constructor",
+            "kind": 9,
+            "data": {
+              "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:constructor:6",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "children": [],
+            "range": {
+              "end": {
+                "line": 7,
+                "character": 5
+              },
+              "start": {
+                "line": 5,
+                "character": 4
+              }
+            },
+            "detail": "constructor",
+            "selectionRange": {
+              "end": {
+                "line": 7,
+                "character": 5
+              },
+              "start": {
+                "line": 5,
+                "character": 4
+              }
+            }
+          },
+          {
+            "name": "greet",
+            "kind": 6,
+            "data": {
+              "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:greet:10",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "children": [],
+            "range": {
+              "end": {
+                "line": 11,
+                "character": 5
+              },
+              "start": {
+                "line": 9,
+                "character": 4
+              }
+            },
+            "detail": "greet",
+            "selectionRange": {
+              "end": {
+                "line": 11,
+                "character": 5
+              },
+              "start": {
+                "line": 9,
+                "character": 4
+              }
+            }
+          },
+          {
+            "name": "main",
+            "kind": 12,
+            "data": {
+              "id": "15012671f7ef0cb1292848dabd4c698e0ec82ce6:main.cpp:main:18",
+              "evidenceTier": "indexed",
+              "notIndexed": false
+            },
+            "children": [],
+            "range": {
+              "end": {
+                "line": 23,
+                "character": 1
+              },
+              "start": {
+                "line": 17,
+                "character": 0
+              }
+            },
+            "detail": "main",
+            "selectionRange": {
+              "end": {
+                "line": 23,
+                "character": 1
+              },
+              "start": {
+                "line": 17,
+                "character": 0
+              }
+            }
+          }
+        ],
+        "range": {
+          "end": {
+            "line": 15,
+            "character": 1
+          },
+          "start": {
+            "line": 3,
+            "character": 0
+          }
+        },
+        "detail": "Greeter",
+        "selectionRange": {
+          "end": {
+            "line": 15,
+            "character": 1
+          },
+          "start": {
+            "line": 3,
+            "character": 0
+          }
+        }
+      }
+    ],
+    "workspaceAbsence": [],
+    "definition": {
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/cpp/main.cpp",
+      "range": {
+        "end": {
+          "line": 11,
+          "character": 5
+        },
+        "start": {
+          "line": 9,
+          "character": 4
+        }
+      }
+    }
+  },
+  "language": "cpp",
   "status": "verified",
-  "commit": "331a3ca00e5fcf4534fb245ba5e63ea0ea722916",
+  "commit": "b0623c5d175cb137f75995eab4a89396bb0189aa",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:44:39.222Z",
-    "contentSha256": "be9b4417d0ba64f3b85014795d2f9672c53bb5596a2ee14f56fd799bd113b587"
+    "sealedAt": "2026-09-18T21:52:27.092Z",
+    "contentSha256": "fc99f5211199a8d9400e722bd35cd39b036974789378eedfa4d17a6b55bd5b86"
   }
 }
