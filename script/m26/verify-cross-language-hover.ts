@@ -9,8 +9,10 @@
 //                 cross-language text at all (absence declared in docs)
 //   P3 tier rule: stored evidenceClass wins; declared derivation otherwise
 //                 (0.7 floor); confidence rendered with the tier
-//   P4 coverage:  docs/m26/CROSS-LANGUAGE.md is GENERATED from the coverage
-//                 scan (real dbs + fixture) and byte-identical on rerun
+//   P4 coverage:  docs/m26/CROSS-LANGUAGE.md is GENERATED from the fixture
+//                 coverage scan (repo-derived) and byte-identical on rerun; the
+//                 real-store scan is RECORDED (machine reality) and the doc
+//                 must not assert it (audit 2026-09-18 — see ambient-reality.ts)
 //   R1 real db:   hover() runs against a real seeded sqlite index (real
 //                 BrainDatabase), not a stub
 //
@@ -24,21 +26,26 @@
 // Run: npx tsx script/m26/verify-cross-language-hover.ts
 // Evidence: validation/m26/results/W3.json + W3-pairs.json (machine-emitted)
 
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs"
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, dirname } from "node:path"
 import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
-import Database from "better-sqlite3"
 import { writeSealed } from "../lib/evidence.ts"
+// M26 ambient split (audited 2026-09-18): machine reality is scanned by the ONE
+// owner and RECORDED; the byte-gated document asserts repository-derived facts
+// only. See script/m26/ambient-reality.ts for the defect this fixes (a doc that
+// embedded the operator's live store count turned every local `bb index` into a
+// lane-wide staleness cascade).
+import { assertAmbientIndependent, leakyControlDoc, realityPointerLines, scanRealPairs, type RealityFacts } from "./ambient-reality.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "cross_language_hover.ts")
 const HOVER = join(ROOT, "src", "lsp", "hover.ts")
 const DOC = join(ROOT, "docs", "m26", "CROSS-LANGUAGE.md")
-const REAL_DATA_DIR = join(process.env.HOME ?? "", ".bb", "projects")
+const RECORD_FILE = "validation/m26/results/W3.json"
 
 let checks = 0
 let passed = 0
@@ -147,33 +154,13 @@ async function main(): Promise<void> {
     // --- P4: coverage scan + generated doc ---------------------------------
     const fixtureCoverage = cl.projectPairCoverage(fx.raw, fx.projectId, ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "python"])
     check("P4: coverage scan sees the stored pair", fixtureCoverage.some((p) => p.source === "kotlin" && p.target === "typescript" && p.edgeCount === 1))
-    // Real project dbs scan (read-only; absent/unreadable recorded honestly).
-    const realPairs: Array<{ source: string; target: string; edgeCount: number; sampleBridge: string | null }> = []
-    let realDbsScanned = 0
-    if (existsSync(REAL_DATA_DIR)) {
-      for (const d of readdirSync(REAL_DATA_DIR)) {
-        try {
-          const ro = new Database(join(REAL_DATA_DIR, d, "brain.db"), { readonly: true })
-          const has = ro.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='brain_relationship'`).get()
-          if (has) {
-            realDbsScanned++
-            const rows = ro.prepare(
-              `SELECT sf.language AS source, tf.language AS target, COUNT(*) AS edgeCount, MAX(r.bridge_mechanism) AS sampleBridge
-               FROM brain_relationship r
-               JOIN brain_symbol ss ON ss.id = r.source_symbol_id AND ss.project_id = r.project_id
-               JOIN brain_file sf ON sf.id = ss.file_id
-               JOIN brain_symbol ts ON ts.id = r.target_symbol_id AND ts.project_id = r.project_id
-               JOIN brain_file tf ON tf.id = ts.file_id
-               WHERE r.is_cross_language = 1 GROUP BY sf.language, tf.language`,
-            ).all() as any[]
-            for (const r of rows) if (r.source && r.target) realPairs.push({ source: r.source, target: r.target, edgeCount: r.edgeCount, sampleBridge: r.sampleBridge ?? null })
-          }
-          ro.close()
-        } catch {}
-      }
-    }
-    // Generate the doc from the scan (fixture-verified pair + real reality).
-    const allPairs = [...fixtureCoverage.map((p) => ({ ...p, origin: "fixture (W3 suite, seeded)" })), ...realPairs.map((p) => ({ ...p, origin: "real project index" }))]
+    // Machine reality (read-only; absent/unreadable recorded honestly) — one
+    // owner, recorded in W3.json, deliberately NOT asserted by the doc.
+    const reality = scanRealPairs()
+    const fixturePairs = fixtureCoverage.map((p) => ({ ...p, origin: "fixture (W3 suite, seeded)" }))
+    // The byte-gated doc: the fixture-verified pair is reproducible from the
+    // repository (this suite seeds it), so it may be tabulated here. Which
+    // pairs a REAL index stores is machine reality and is pointed at instead.
     const lines: string[] = [
       "# Cross-language coverage — generated, not aspirational (M26.W3)",
       "",
@@ -185,10 +172,10 @@ async function main(): Promise<void> {
       "| source language | target language | stored edges | bridge (sample) | verified by |",
       "| --- | --- | --- | --- | --- |",
     ]
-    if (allPairs.length === 0) {
-      lines.push("| _(none — no cross-language rows stored anywhere)_ | | | | |")
+    if (fixturePairs.length === 0) {
+      lines.push("| _(none — the W3 fixture stored no cross-language rows)_ | | | | |")
     }
-    for (const p of allPairs) {
+    for (const p of fixturePairs) {
       lines.push(`| ${p.source} | ${p.target} | ${p.edgeCount} | ${p.sampleBridge ?? "_(row carries no mechanism)_"} | ${p.origin} |`)
     }
     lines.push(
@@ -197,13 +184,35 @@ async function main(): Promise<void> {
       "",
       "Launch languages: java, groovy, kotlin, scala, typescript, javascript, python",
       "(M29 wave-1 extension). Any pair among",
-      "them not in the table above is **declared absent**: no stored rows exist,",
-      "the UI renders no cross-language text for it, and no bridge is claimed.",
-      `Real project dbs scanned: ${realDbsScanned}.`,
+      "them not in the table above and not recorded in the evidence record is",
+      "**declared absent**: no stored rows exist, the UI renders no cross-language",
+      "text for it, and no bridge is claimed.",
       "",
     )
+    for (const line of realityPointerLines(RECORD_FILE, "`machineReality`, `realPairRows`")) lines.push(line)
     const docContent = lines.join("\n") + "\n"
-    writeFileSync(DOC, docContent)
+    // The drift rule reads the bytes ALREADY ON DISK and compares them to the
+    // fresh generation (the old check compared a value to itself).
+    const onDiskDoc = existsSync(DOC) ? readFileSync(DOC, "utf8") : ""
+    check(
+      "P4: drift gate — the on-disk doc is byte-identical to a fresh generation",
+      onDiskDoc === docContent,
+      onDiskDoc === "" ? "doc missing" : "on-disk doc differs (regenerated below — rerun to pin)",
+    )
+    if (onDiskDoc !== docContent) writeFileSync(DOC, docContent)
+    check("P4: after the run the on-disk doc equals the fresh generation", readFileSync(DOC, "utf8") === docContent)
+    check("P4: the doc asserts no machine-reality count", !/dbs scanned/i.test(docContent))
+    check("P4: the doc points at the record that carries machine reality", docContent.includes(RECORD_FILE))
+    // Negative control: the rule that keeps machine reality out of the doc must
+    // reject a generator that embeds it — otherwise the rule cannot fail.
+    {
+      const realityA: RealityFacts = { dir: reality.dir, present: false, scanned: 0, skipped: 0, pairs: [] }
+      const realityB: RealityFacts = { ...reality, present: true, scanned: reality.scanned + 1000, skipped: reality.skipped + 3 }
+      check(
+        "P4 [negative]: an ambient-leaky doc generator is rejected by the ambient-independence rule",
+        !assertAmbientIndependent((r) => leakyControlDoc("# leaky", r), realityA, realityB),
+      )
+    }
 
     // --- Mutants ------------------------------------------------------------
     const compSource = readFileSync(COMPONENT, "utf8")
@@ -298,10 +307,7 @@ async function main(): Promise<void> {
     }
     check("mutation suite: every planted defect is caught", caught === mutantsTotal && mutantsTotal >= 4, `${caught}/${mutantsTotal}`)
 
-    // Byte-identical regeneration of the doc (drift gate, D1-style).
-    const first = readFileSync(DOC, "utf8")
-    const regenerated = first // generator is pure over the same scan; rerun body asserted below via recompute
-    check("P4: generated doc is stable and byte-identical on rerun", regenerated === first && first.includes("generated, not aspirational") && first.includes("declared absent"))
+
 
     // --- Persist evidence -----------------------------------------------------
     const failed = checks - passed
@@ -324,17 +330,22 @@ async function main(): Promise<void> {
       evidenceFile: "W3.json",
       pairsFile: "W3-pairs.json",
       generatedAt: new Date().toISOString(),
-      storedPairs: allPairs,
-      realDbsScanned,
+      fixturePairs,
+      // Machine reality: recorded, explicitly labelled, never asserted in a doc.
+      machineReality: { dir: reality.dir, present: reality.present, scanned: reality.scanned, skipped: reality.skipped },
+      storedPairs: [...fixturePairs, ...reality.pairs.map((p) => ({ ...p, origin: "real project index" }))],
+      realPairRows: reality.pairs,
+      realDbsScanned: reality.scanned,
       limitations: [
-        "Launch launch-language pairs with no stored rows are declared absent (doc generated per scan).",
-        "Coverage scan reads real project dbs read-only; unreadable dbs are skipped and counted in realDbsScanned.",
+        "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
+        "Coverage scan reads real project dbs read-only; unreadable/absent dbs are skipped and counted in machineReality.",
+        "The drift gate compares the bytes on disk before writing: the first run after a content change fails and regenerates, the next run is the proof.",
       ],
     }
     const dir = join(ROOT, "validation/m26/results")
     mkdirSync(dir, { recursive: true })
     writeSealed(join(dir, "W3.json"), result)
-    writeSealed(join(dir, "W3-pairs.json"), { status: result.status, checkedPairs: allPairs, realDbsScanned, generatedAt: result.generatedAt })
+    writeSealed(join(dir, "W3-pairs.json"), { status: result.status, checkedPairs: result.storedPairs, realPairRows: reality.pairs, machineReality: result.machineReality, generatedAt: result.generatedAt })
     console.log(`W3: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
     process.exit(failed === 0 ? 0 : 1)
   } finally {
