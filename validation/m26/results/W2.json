@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "d113299ab5c24a3cc3c3c9820411ae33f25337bb",
+  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
   "evidenceFile": "W2.json",
-  "generatedAt": "2026-09-18T20:16:08.987Z",
+  "generatedAt": "2026-09-18T20:53:12.909Z",
   "schemaVersion": 2,
   "method": "bb/graph",
   "limitations": [
@@ -20,7 +20,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:16:08.988Z",
-    "contentSha256": "96cc1a6817f1c663cfe7e3d41d008f947cf90455bc4d36465236f0624302f769"
+    "sealedAt": "2026-09-18T20:53:12.909Z",
+    "contentSha256": "05bf5d6dabc1a0b93e94c2a326faae826881b0b2872f36015eb516bcfb5dda93"
   }
 }

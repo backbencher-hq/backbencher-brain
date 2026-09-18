@@ -10,10 +10,10 @@
   "negativeCases": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "currentCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-09-18T20:01:14.333Z",
+  "generatedAt": "2026-09-18T20:59:33.805Z",
   "deliverable": {
     "rowAnatomy": "name-first bb-hub-row-main (name + file:line meta) -> relchips (per-type counts + W4 tier) -> enrichment chip (presence-gated) -> chevron; all inside the row (the bridge's click target)",
     "affordance": "data-clickable=1 iff the bridge can navigate (file+line resolved); tabindex=0 + chevron on navigable rows; un-navigable rows declare data-clickable=0, no tab stop, no navigate chevron (SS13.3, visible without hover via left accent + chevron; hover/focus intensify)",
@@ -30,7 +30,7 @@
   "derivedFrom": {
     "record": "validation/m26/results/V1.json",
     "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
-    "contentSha256": "845949bdc8e75859bba2a7d3366195b551ec20688ee9427c636e9279088dbe08",
+    "contentSha256": "251611f8f224f01007a61ea76e0e2b6bdf9e5db43e735920328bf8963ad832bb",
     "rule": "U2's acceptance is the m26 webview harness DOM suite; this record is its derivation (M44.U2 owner gate script/m44/verify-hub-list.ts)"
   },
   "limitations": [
@@ -39,10 +39,10 @@
     "This record is a DERIVATION of the m26 webview harness run it names: it re-states that run's numbers and pin, and adds no proof of its own. The harness's record is the evidence; a red or missing harness run derives a RED U2 (law L2)."
   ],
   "derivationErrors": [],
-  "gateCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "gateCommit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:01:14.333Z",
-    "contentSha256": "437d1f521582441826debda481aa62c23d6dc30deaa699d7552e34b334e03e32"
+    "sealedAt": "2026-09-18T20:59:33.805Z",
+    "contentSha256": "78a8b18b65c4f8e15305178a51624d09a6d0bf0dee846c84372e893f250588a6"
   }
 }
