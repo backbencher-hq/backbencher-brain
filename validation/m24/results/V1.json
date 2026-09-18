@@ -2,11 +2,11 @@
   "issue": "495",
   "code": "V1",
   "status": "verified",
-  "currentCommit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+  "currentCommit": "111b6d81848bd441f4ebde3b7ba40df2a9e195db",
   "sourceFingerprint": "e372583859e96094052d798182ab1abd213752fc1211420a59df01024cf6da91",
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-18T21:03:39.354Z",
+  "generatedAt": "2026-09-18T21:13:54.862Z",
   "passed": 9,
   "failed": 0,
   "failures": [],
@@ -20,7 +20,7 @@
     {
       "runtime": "node-source",
       "status": "verified",
-      "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+      "commit": "111b6d81848bd441f4ebde3b7ba40df2a9e195db",
       "machine": {
         "kernel": "Linux 7.1.1-76070101-generic",
         "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
@@ -36,43 +36,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 8.93604500000015,
+          "p95WarmMs": 6.654905999999983,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 1.141785999999911,
+          "p95WarmMs": 2.2830599999999777,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 1.6977730000000975,
+          "p95WarmMs": 2.1103429999998298,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 1.522903000000042,
+          "p95WarmMs": 2.732874999999922,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 1.6093249999998989,
+          "p95WarmMs": 0.9072630000000572,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 1.2298460000001796,
+          "p95WarmMs": 2.636942999999974,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 2.3606810000001133,
+          "p95WarmMs": 2.2998819999997977,
           "samples": 60,
           "passed": true
         }
@@ -81,7 +81,7 @@
     {
       "runtime": "node-dist",
       "status": "verified",
-      "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+      "commit": "111b6d81848bd441f4ebde3b7ba40df2a9e195db",
       "machine": {
         "kernel": "Linux 7.1.1-76070101-generic",
         "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
@@ -97,43 +97,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 5.601310000000012,
+          "p95WarmMs": 7.646025000000009,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 1.772382000000107,
+          "p95WarmMs": 0.9466480000000956,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 1.653002999999444,
+          "p95WarmMs": 1.5119449999992867,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 1.2734909999999218,
+          "p95WarmMs": 1.4555490000002465,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 1.349156000000221,
+          "p95WarmMs": 0.8388960000002044,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 1.1626330000008238,
+          "p95WarmMs": 1.5599309999997786,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 2.926419000000351,
+          "p95WarmMs": 2.364948999999797,
           "samples": 60,
           "passed": true
         }
@@ -143,7 +143,7 @@
       "runtime": "bun-source",
       "status": "blocked",
       "reason": "bun runtime not found on PATH",
-      "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
+      "commit": "111b6d81848bd441f4ebde3b7ba40df2a9e195db",
       "machine": {
         "kernel": "Linux 7.1.1-76070101-generic",
         "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
@@ -176,7 +176,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:03:39.355Z",
-    "contentSha256": "39bb3bb2f1423a2c2a9fd6f7119b096a2620ffdaa0cded921370e1cd7d61a977"
+    "sealedAt": "2026-09-18T21:13:54.863Z",
+    "contentSha256": "5b347d820bf3bc268793a1de11a1de56ba58821ba1015539c00f4f9090ac579a"
   }
 }
