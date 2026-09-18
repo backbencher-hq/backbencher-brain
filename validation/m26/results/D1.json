@@ -53,16 +53,16 @@
     }
   ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "e46cca976baecc529c0aa4c962b65aef70778811",
+  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-18T18:54:42.514Z",
+  "generatedAt": "2026-09-18T19:55:05.390Z",
   "limitations": [
     "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
     "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T18:54:42.515Z",
-    "contentSha256": "d83a88f045069f193580fbcb176e786bf372463d7e027c35c34a90e116fc24c7"
+    "sealedAt": "2026-09-18T19:55:05.390Z",
+    "contentSha256": "d777eb48a10d5210ebf32349448832408560a48c25d10a78330f058350f5934c"
   }
 }
