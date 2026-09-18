@@ -1,32 +1,29 @@
 {
-  "status": "known-gap",
-  "passed": 11,
-  "failed": 2,
+  "status": "verified",
+  "passed": 13,
+  "failed": 0,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 2,
+    "realComponentFailures": 0,
     "mutantsCaught": 3,
     "mutantsTotal": 3,
     "ok": true
   },
-  "currentCommit": "e075bd5aa32b0421f8fc0ae66042a8fb47f9e996",
+  "currentCommit": "17e4bf3293f77a1b6db89942b896cb7d2e497dea",
   "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
   "evidenceFile": "D1-verify.json",
-  "generatedAt": "2026-09-18T23:20:15.570Z",
+  "generatedAt": "2026-09-18T23:23:15.292Z",
   "limitations": [
     "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
     "The wave doc's registry list is generated from WAVE_LANGUAGES; adding a language to the registry regenerates the doc (drift gate enforces regeneration)."
   ],
-  "details": [
-    "D1: PRECISION-LEDGER.md regenerates byte-identically: hand edit or evidence change — regenerate with --write",
-    "D1: PRECISION-LEDGER.json regenerates byte-identically: hand edit — regenerate with --write"
-  ],
+  "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T23:20:15.570Z",
-    "contentSha256": "ef4674e988c5c89239ebe7e828ef14b1755282d89aa296609ccd193a4af47cad"
+    "sealedAt": "2026-09-18T23:23:15.293Z",
+    "contentSha256": "e84f6926da0cd1516d860d39cb6f292bd64f1ca27d48f27cbd2c4379ae79186c"
   }
 }
