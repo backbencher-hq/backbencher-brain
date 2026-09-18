@@ -40,6 +40,7 @@ import { pathToFileURL } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
 import {
   ROOT,
+  claimAnchor,
   classify,
   derive,
   coverageCensus,
@@ -49,6 +50,7 @@ import {
   registryProblems,
   render,
   type Claim,
+  type ClaimResult,
 } from "./claim_pins.ts"
 
 const RESULTS = path.join(ROOT, "validation/m61/results")
@@ -119,6 +121,34 @@ check("core: classify — a blocked derivation is blocked, whatever else is true
 check("core: classify — an unfilled template is blocked, never compared", classify(undefined, "{a}/{b}", 5) === "blocked")
 check("core: classify — a found row is pinned", classify(undefined, "x/y", 1) === "pinned")
 check("core: classify — no found row is drift", classify(undefined, "x/y", 0) === "drifted")
+check("core: classify — a stale row beside a correct one is drift", classify(undefined, "x/y", 1, 1) === "drifted")
+check(
+  "core: claimAnchor — the longest literal segment no other claim shares",
+  claimAnchor("{mutants} mutants caught across {suites} suites | [m26 ledger]", [
+    "{mutants} mutants caught across {suites} suites | [m27 ledger]",
+  ]) === " suites | [m26 ledger]",
+  `anchor="${claimAnchor("{mutants} mutants caught across {suites} suites | [m26 ledger]", ["{mutants} mutants caught across {suites} suites | [m27 ledger]"])}"`,
+)
+check(
+  "core: claimAnchor — a segment shared with another claim is never the anchor",
+  !claimAnchor("{mutants} mutants caught across {suites} suites | [m26 ledger]", [
+    "{mutants} mutants caught across {suites} suites | [m27 ledger]",
+  ]).includes("mutants caught across"),
+)
+check("core: claimAnchor — an all-placeholder template has no anchor", claimAnchor("{a}/{b}") === "")
+check("core: claimAnchor — no unique segment means no anchor", claimAnchor("{a}/{b}", ["{a}/{b}"]) === "")
+check(
+  "core: claimAnchor — short segments are never anchors",
+  claimAnchor("{a} x {b}", [], ["x {a} x", "x {b} x"]) === "",
+  `anchor="${claimAnchor("{a} x {b}", [], ["x {a} x", "x {b} x"])}"`,
+)
+check(
+  "core: claimAnchor — the most specific candidate wins over the longest",
+  claimAnchor("{n} mutants caught across {s} suites | [m26 ledger]", [], [
+    "a mutants caught across b suites | [m26 ledger]",
+    "17 mutants caught across 5 suites | [m27 ledger]",
+  ]) === " suites | [m26 ledger]",
+)
 
 // --- mutants: the suite CAN FAIL --------------------------------------------------
 console.log("\nmutants: the suite can fail (source-level copies)")
@@ -150,18 +180,56 @@ const patchedDoc = (doc: string, from: string, to: string): Record<string, strin
   [doc]: readFileSync(path.join(ROOT, doc), "utf8").replace(from, to),
 })
 
-// M1: a doc whose number was edited away from the ledger must be caught.
+// M1: a doc whose number was edited away from the ledger must be caught. The
+// doctored row is DERIVED from the claim's own rendered row (never a number
+// typed into the fixture — a hardcoded one went stale the moment the ledger
+// moved, and the mutant silently disarmed). Only the numbers move; the anchor
+// (the ledger link) stays, so the line still states the claim.
+const pinOf = (results: ClaimResult[]): ClaimResult => results.find((x) => x.id === "m26-mutants")!
+const m26Live = pinOf(pinClaims(registry))
+const m26Template = (): string => registry.claims.find((c) => c.id === "m26-mutants")!.template
+/** The same anchor the pin rule resolves — the fixture must doctor the line the
+ *  rule actually watches, or the mutant would prove nothing. */
+const m26Anchor = (lines: string[]): string =>
+  claimAnchor(
+    m26Template(),
+    registry.claims.filter((c) => c.id !== "m26-mutants").map((c) => c.template),
+    lines,
+  )
+const staleRow = (rendered: string, lines: string[]): string => {
+  const anchor = m26Anchor(lines)
+  const head = rendered.slice(0, rendered.indexOf(anchor))
+  return head.replace(/\d+/g, (n) => `${Number(n) + 1000}`) + anchor
+}
+/** `gone`: the claim is no longer stated at all (the counting rule alone must
+ *  catch it). `twice`: a stale row beside a correct one — the case where
+ *  counting matching rows alone is blind. */
+const doctoredDoc = (mode: "gone" | "twice"): Record<string, string> => {
+  const text = readFileSync(path.join(ROOT, m26Live.doc), "utf8")
+  const stale = staleRow(m26Live.rendered, text.split("\n"))
+  const replacement = mode === "gone" ? "(this row was removed)" : `${stale}\n${m26Live.rendered}`
+  return { [m26Live.doc]: text.replace(m26Live.rendered, replacement) }
+}
 {
-  const m26 = registry.claims.find((c) => c.id === "m26-mutants")!
-  const docs1 = patchedDoc(m26.doc, "38 mutants caught across 9 suites", "99 mutants caught across 12 suites")
-  const r = pinClaims(registry, docs1).find((x) => x.id === "m26-mutants")!
-  check("M: pin-blind (an edited doc number reports as drifted)", r.outcome === "drifted", `outcome=${r.outcome}`)
+  const r = pinOf(pinClaims(registry, doctoredDoc("gone")))
+  check("M: pin-blind (a doc that no longer states the claim reports as drifted)", r.outcome === "drifted", `outcome=${r.outcome}`)
+  const t = pinOf(pinClaims(registry, doctoredDoc("twice")))
+  check(
+    "M: stale-row (a stale row beside a correct one is drift, not a passing pin)",
+    t.outcome === "drifted" && t.mismatched === 1 && t.published === 1,
+    `outcome=${t.outcome} published=${t.published} mismatched=${t.mismatched}`,
+  )
 }
 await runMutant("pin-blind", '  return published > 0 ? "pinned" : "drifted"', '  return "pinned"', (mod) => {
-  const m26 = registry.claims.find((c) => c.id === "m26-mutants")!
-  const docs1 = patchedDoc(m26.doc, "38 mutants caught across 9 suites", "99 mutants caught across 12 suites")
-  const rs = (mod.pinClaims as typeof pinClaims)(registry, docs1)
-  return rs.find((x) => x.id === "m26-mutants")!.outcome === "pinned"
+  const rs = (mod.pinClaims as typeof pinClaims)(registry, doctoredDoc("gone"))
+  return pinOf(rs).outcome === "pinned"
+})
+// The strengthened half must be able to fail on its own: with the stale-row rule
+// suppressed, a twice-stated claim keeps passing on the strength of its one
+// correct row.
+await runMutant("stale-row-blind", '  if (mismatched > 0) return "drifted"', '  if (false) return "drifted"', (mod) => {
+  const rs = (mod.pinClaims as typeof pinClaims)(registry, doctoredDoc("twice"))
+  return pinOf(rs).outcome === "pinned"
 })
 
 // The blocked path must be able to fail: if a blocked derivation stopped
@@ -186,7 +254,7 @@ await runMutant("registry-blind", "  const problems: string[] = []", "  return [
   return (mod.registryProblems as typeof registryProblems)(bad as never).length === 0
 })
 
-await runMutant("scan-blind", '    const published = text === null ? 0 : text.split("\\n").filter((l) => l.includes(rendered)).length', "    const published = 0", (mod) => {
+await runMutant("scan-blind", "    const published = lines.filter((l) => l.includes(rendered)).length", "    const published = 0", (mod) => {
   const rs = (mod.pinClaims as typeof pinClaims)(registry)
   return rs.every((x) => x.outcome !== "pinned")
 })

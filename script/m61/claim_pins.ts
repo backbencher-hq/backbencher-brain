@@ -189,24 +189,70 @@ export function coverageCensus(registry: Registry): { doc: string; status: strin
   })
 }
 
+/** The shortest literal segment that may serve as an anchor (in non-space
+ *  characters). Below this, segments like "/" or " | " identify nothing. */
+export const MIN_ANCHOR_CHARS = 6
+
 export type ClaimResult = {
   id: string
   doc: string
   rendered: string
   published: number
+  /** Lines that publish this claim's fixed text (its anchor) but NOT the
+   *  derived numbers. A single stale row among correct ones is drift. */
+  mismatched: number
   outcome: "pinned" | "drifted" | "blocked"
   reason?: string
 }
 
 /**
- * The pin's decision, as a pure function so it can be unit-tested and mutated.
- * Two independent guards, in order: a blocked derivation is never compared, and
- * a template the derivation could not fill is never compared against prose. A
- * claim is only PINNED when a real rendered row was actually found.
+ * A claim's ANCHOR: the longest literal segment of its template (the part no
+ * derivation fills) that NO other claim's template shares. Every line that
+ * publishes the anchor is a line that states THIS claim, so every one of them
+ * must carry the derived numbers — a doc that states the claim twice and
+ * updates only one row is drift, not a passing pin.
+ *
+ * The uniqueness requirement is what makes the rule usable inside a doc that
+ * states several claims: ` mutants caught across ` is shared by the m26/m27/m28
+ * row templates, so it can never identify a single claim — the tail segment
+ * (` suites | [m26 ledger]`) does. Derived from the registry, never declared
+ * twice. '' means "this claim has no distinguishing literal; its pin rests on
+ * the rendered row alone".
  */
-export function classify(blocked: string | undefined, rendered: string, published: number): ClaimResult["outcome"] {
+export function claimAnchor(template: string, others: string[] = [], lines: string[] = []): string {
+  const candidates = template
+    .split(/\{\w+\}/)
+    .filter((s) => s.replace(/\s+/g, "").length >= MIN_ANCHOR_CHARS && !others.some((o) => o.includes(s)))
+  if (candidates.length === 0) return ""
+  // With doc lines available, the MOST SPECIFIC candidate wins: the one the
+  // fewest lines contain, which is what distinguishes this claim's row from the
+  // prose and from other milestones' rows. Ties (and the no-doc case) go to the
+  // longest. `M26 closed: ` (1 line) beats " issues verified" (5 lines).
+  const occurrences = (s: string): number => (lines.length === 0 ? 0 : lines.filter((l) => l.includes(s)).length)
+  return candidates.reduce((best, s) => {
+    const a = occurrences(s)
+    const b = occurrences(best)
+    if (a !== b) return a < b ? s : best
+    return s.trim().length > best.trim().length ? s : best
+  })
+}
+
+/**
+ * The pin's decision, as a pure function so it can be unit-tested and mutated.
+ * Three independent guards, in order: a blocked derivation is never compared, a
+ * template the derivation could not fill is never compared against prose, and a
+ * line that states the claim without the derived numbers is drift. A claim is
+ * only PINNED when a real rendered row was actually found.
+ */
+export function classify(
+  blocked: string | undefined,
+  rendered: string,
+  published: number,
+  mismatched = 0,
+): ClaimResult["outcome"] {
   if (blocked) return "blocked"
   if (/\{\w+\}/.test(rendered)) return "blocked"
+  if (mismatched > 0) return "drifted"
   return published > 0 ? "pinned" : "drifted"
 }
 
@@ -220,18 +266,29 @@ export function pinClaims(registry: Registry, docs?: Record<string, string>): Cl
     const rendered = derived.blocked ? "" : render(claim.template, derived.values)
     const text = docs?.[claim.doc] ?? (existsSync(path.join(ROOT, claim.doc)) ? readFileSync(path.join(ROOT, claim.doc), "utf8") : null)
     if (text === null && !derived.blocked) {
-      return { id: claim.id, doc: claim.doc, rendered, published: 0, outcome: "blocked", reason: `doc missing: ${claim.doc}` }
+      return { id: claim.id, doc: claim.doc, rendered, published: 0, mismatched: 0, outcome: "blocked", reason: `doc missing: ${claim.doc}` }
     }
-    const published = text === null ? 0 : text.split("\n").filter((l) => l.includes(rendered)).length
-    const outcome = classify(derived.blocked, rendered, published)
+    const lines = text === null ? [] : text.split("\n")
+    const published = lines.filter((l) => l.includes(rendered)).length
+    const anchor = claimAnchor(
+      claim.template,
+      registry.claims.filter((c) => c.id !== claim.id).map((c) => c.template),
+      lines,
+    )
+    const mismatched = anchor
+      ? lines.filter((l) => l.includes(anchor) && !l.includes(rendered)).length
+      : 0
+    const outcome = classify(derived.blocked, rendered, published, mismatched)
     const reason =
       outcome === "blocked"
         ? derived.blocked ??
           `derivation supplied no value for ${[...rendered.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).join(", ")}`
         : outcome === "drifted"
-          ? `published row does not match the ledger: expected to find "${rendered}"`
+          ? mismatched > 0
+            ? `${mismatched} published row(s) state the claim ("${anchor}") without the ledger's numbers: expected "${rendered}"`
+            : `published row does not match the ledger: expected to find "${rendered}"`
           : undefined
-    return { id: claim.id, doc: claim.doc, rendered, published, outcome, reason }
+    return { id: claim.id, doc: claim.doc, rendered, published, mismatched, outcome, reason }
   })
 }
 

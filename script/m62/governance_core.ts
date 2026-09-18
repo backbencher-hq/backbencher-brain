@@ -10,6 +10,10 @@
 // are the only thing that differs).
 
 import type { CallSiteAddress } from "../src/intelligence/contracts.ts"
+// The can-fail proof shapes have ONE authority: M61's verifier lint. Importing
+// it keeps this core pure (the function is fs/process/clock-free) and stops the
+// lane rule from disagreeing with the lint about what counts as proof.
+import { canFailProofs } from "../m61/gate_lint.ts"
 
 /** M62's own gate set, in closure order. G1 first, X1 last. */
 export const EXPECTED_CODES = ["G1", "A1", "A2", "A3", "X1"]
@@ -270,21 +274,30 @@ export function generatedFindings(onDisk: string | null, fresh: string): string[
 
 /** X1's freshness rule: a lane record must be verified, carry a can-fail proof,
  *  and be FRESH by RELEVANCE (its pin is an ancestor of HEAD and no lane source
- *  changed since) — exactly the rule every lane closure applies. */
+ *  changed since) — exactly the rule every lane closure applies.
+ *
+ *  "Can-fail proof" is the HOUSE definition, read from its single authority
+ *  (`canFailProofs`, M61's lint): declared mutant counts, declared negative-case
+ *  counts, or per-check `M:` / "negative" verdict names. An earlier version
+ *  demanded a numeric `mutantsCaught`, which falsely reported four lane records
+ *  whose proof is DECLARED AS NEGATIVE CASES (m24/m26/m42/m44 closure records)
+ *  as proof-less — the exact class of hollow-rule lie this milestone exists to
+ *  kill (found by this audit's own M62 chain, in the fixpoint convergence). */
 export type FreshnessDeps = {
   isAncestor: (commit: string) => boolean
   laneChanged: (commit: string) => string[]
 }
 
 export function laneBarFindings(
-  rec: { status?: string; checks?: number; passed?: number; mutantsCaught?: number; currentCommit?: string } | undefined,
+  rec: { status?: string; checks?: number; passed?: number; currentCommit?: string } | undefined,
   deps: FreshnessDeps,
 ): string[] {
   const out: string[] = []
   if (!rec) return ["the lane record is missing"]
   if (rec.status !== "verified") out.push(`the record is ${rec.status}, not verified`)
   if (!(typeof rec.passed === "number" && rec.passed > 0)) out.push("the record carries no passed checks")
-  if (!(typeof rec.mutantsCaught === "number" && rec.mutantsCaught > 0)) out.push("the record carries no can-fail proof")
+  const proofs = canFailProofs(rec as Record<string, unknown>)
+  if (proofs.mutants <= 0 && proofs.negatives <= 0) out.push("the record carries no can-fail proof")
   const commit = String(rec.currentCommit ?? "")
   if (!/^[0-9a-f]{40}$/.test(commit)) out.push("the record carries no commit pin")
   else if (!deps.isAncestor(commit)) out.push(`the pin ${commit.slice(0, 8)} is not an ancestor of HEAD`)
