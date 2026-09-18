@@ -39,10 +39,10 @@ declared budget: `200` reverse-dependency nodes at traversal depth
 ## Per-pair cross-language reality (rule here, data in the record)
 
 Cross-language UI text comes from stored `brain_relationship` rows only
-(`is_cross_language = 1`). A pair with no stored rows is **declared
-absent**: no cross-language UI text, no claimed bridge, nothing filled
-in. Which pairs a real index actually stores is machine reality —
-it is recorded, not asserted here (see below).
+(`is_cross_language = 1`). A pair with no stored rows is **declared absent**:
+no cross-language UI text, no claimed bridge, nothing filled in. Which
+pairs a real index actually stores is machine reality — it is recorded,
+not asserted here (see below).
 
 Launch languages: java, groovy, kotlin, scala, typescript.
 
