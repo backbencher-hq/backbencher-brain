@@ -10,7 +10,7 @@
     "X1: v2 completion bar audited item-by-item — zero violations"
   ],
   "negativeCases": 3,
-  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
+  "currentCommit": "779b6d85e4795226bca4d95abd7d692110dec982",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [
     "bar2: per-pair absence not declared in the generated docs"
@@ -185,10 +185,10 @@
       }
     ]
   },
-  "generatedAt": "2026-09-18T19:55:05.414Z",
+  "generatedAt": "2026-09-18T20:14:36.432Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T19:55:05.415Z",
-    "contentSha256": "fb894054de63bf608c176be315ae79920cb9a6cb11b695c3e2045669a97d14ec"
+    "sealedAt": "2026-09-18T20:14:36.432Z",
+    "contentSha256": "1e5dad9636845bd398916558c1b64969c69767b0b9295008724fc2f1c7cc08b7"
   }
 }
