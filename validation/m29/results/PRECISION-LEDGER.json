@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "872dfa1a964938c36c8f00f0f5ec5e2fcee4cd1e",
+  "inputsHash": "98653aacb88f738229b9965a4bc16a05e1151a66",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -70,7 +70,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+          "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
           "status": "verified"
         }
       },
@@ -123,7 +123,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+          "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
           "status": "verified"
         }
       },
@@ -176,7 +176,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+          "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
           "status": "verified"
         }
       },
@@ -229,7 +229,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+          "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
           "status": "verified"
         }
       },
@@ -282,7 +282,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+          "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
           "status": "verified"
         }
       },
@@ -335,7 +335,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "b3e8cd1bb6ea5a63e0f870cc8f8f7a7c534ac9e0",
+          "commit": "5b7b5bc0ab9745cc3c9184df47c3afb90bc453e6",
           "status": "verified"
         }
       },
