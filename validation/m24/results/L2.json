@@ -2,11 +2,11 @@
   "issue": "491",
   "code": "L2",
   "status": "verified",
-  "currentCommit": "331a3ca00e5fcf4534fb245ba5e63ea0ea722916",
+  "currentCommit": "b0623c5d175cb137f75995eab4a89396bb0189aa",
   "sourceFingerprint": "29cac9a06d82b77da5ac9e5e59e67ca3b862970e73fbcbeb14ff79bb8a612b05",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-09-18T21:33:41.352Z",
+  "generatedAt": "2026-09-18T21:50:49.256Z",
   "passed": 21,
   "failed": 0,
   "failures": [],
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:33:41.353Z",
-    "contentSha256": "8b6e9fe77cae6d8ddbf6984611808411765d3aa33ab62c11a91b3fdc9ef1257f"
+    "sealedAt": "2026-09-18T21:50:49.256Z",
+    "contentSha256": "792c4af708d0c62596d405e1d8bd6823720ab4e938be93f8562ebae3eea1839d"
   }
 }

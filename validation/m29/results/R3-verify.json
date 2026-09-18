@@ -5,15 +5,15 @@
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "331a3ca00e5fcf4534fb245ba5e63ea0ea722916",
+  "currentCommit": "b0623c5d175cb137f75995eab4a89396bb0189aa",
   "relevantInputsHash": "5351bbd29279fefd7fec23c355752c1312a9eaf5",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-18T21:44:44.885Z",
+  "generatedAt": "2026-09-18T21:52:32.944Z",
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:44:44.886Z",
-    "contentSha256": "6b09fad4792803ce00e3dd2f25eaeb5395099d8ce7f6892a86fd9144e9ce7a0b"
+    "sealedAt": "2026-09-18T21:52:32.944Z",
+    "contentSha256": "b7dc99162e31fcc9200b9d81ef6ad1c35832f98f71fb4000f79ea2a5ca3dbc27"
   }
 }
