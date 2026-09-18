@@ -115,16 +115,41 @@ async function main(): Promise<void> {
     return chars.join("")
   }
 
+  const whyRejected: string[] = []
   const fails = (idx: number[]): boolean => {
     const text = idx.map((i) => orig[i]).join("\n")
     const root = parser.parse(text)?.rootNode
     if (!root?.hasError) return false
     // (2) the failure is localized
     const err = firstError(root)
-    if (!err) return false
+    if (!err) {
+      whyRejected.push("no ERROR/MISSING node")
+      return false
+    }
     const without = text.slice(0, err.startIndex) + text.slice(err.endIndex)
     const clean = parser.parse(without)?.rootNode
-    if (!clean || clean.hasError) return false
+    if (!clean || clean.hasError) {
+      whyRejected.push("deleting the failing node does not leave clean source (global-structure failure)")
+      return false
+    }
+    // (5) THE FAILING NODE MUST NOT BEGIN ON THE CANDIDATE'S FIRST LINE.
+    //
+    // Guards 1–4 do not establish locality when the failure is the recovery
+    // WRAPPER: tree-sitter wraps the unparseable remainder in one ERROR node, and
+    // deleting that node leaves text with nothing left to fail on — so guard (2)
+    // passes while the candidate carries no localizable trigger at all. Measured:
+    // reducing `grails-mail/.../MailMessageBuilder.groovy` (whose original failure
+    // is genuinely localized at row 45) produced a candidate of deleted-lines soup
+    // whose report was `ERROR row 1 col 1 :: "/*\n * Copyright …"` — a wrapper, i.e.
+    // the third generation of the manufactured repro this file's header documents.
+    // A failure that starts on the first line cannot be told apart from the
+    // wrapper by anything this tool measures, so it is REFUSED rather than emitted:
+    // the contract is a minimal LOCALIZED repro, and a trustworthy "cannot localize
+    // this file" is worth more than a candidate a reader will mistake for a trigger.
+    if ((err.startPosition?.row ?? 0) === 0) {
+      whyRejected.push("failing node begins on the candidate's first line (wrapper-shaped: not a localized trigger)")
+      return false
+    }
     // (3) no protected range is cut
     const kept = new Set(idx)
     for (const range of multiLine) {
@@ -140,9 +165,12 @@ async function main(): Promise<void> {
 
   const all = orig.map((_, i) => i)
   if (!fails(all)) {
-    console.log("the file does not fail under the reducer's property at this wasm — nothing to reduce")
+    const last = whyRejected[whyRejected.length - 1] ?? "unknown"
+    console.log(`the file does not fail under the reducer's property at this wasm — nothing to reduce`)
+    console.log(`  reason: ${last}`)
     return
   }
+  whyRejected.length = 0
   console.log(`original: ${orig.length} lines, fails (localized, integrity-checked)`)
 
   let best = all.slice()
