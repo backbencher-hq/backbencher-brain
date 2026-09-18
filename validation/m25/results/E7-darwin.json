@@ -6,13 +6,13 @@
   "status": "blocked",
   "blockedReason": "No macOS hardware or runner on this machine (process.platform is linux); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the macOS native leg on its GitHub-hosted runner and uploads the E7-darwin.json artifact for the owner to persist. Recorded blocked locally, never claimed.",
   "runnableInstead": "npx tsx script/m25/verify-cross-platform.ts (on the target OS runner)",
-  "currentCommit": "351cc8a3e5d3531814404be1d79f9abf1640a817",
+  "currentCommit": "144aed87f92621807a04518d34a7d1bb3f068b39",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-darwin.json",
-  "generatedAt": "2026-09-18T23:07:20.582Z",
+  "generatedAt": "2026-09-18T23:12:42.721Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T23:07:20.582Z",
-    "contentSha256": "acea497365e6b6f80dadbeaee020d977be506495ef1aaf3d21c40979ee4df730"
+    "sealedAt": "2026-09-18T23:12:42.722Z",
+    "contentSha256": "797d3ab3a22f34b2167cf5a804c13584bd01554ec6602611a42ded3aa297cf29"
   }
 }
