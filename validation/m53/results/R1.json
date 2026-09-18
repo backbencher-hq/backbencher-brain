@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "verified",
-  "passed": 41,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 37,
+  "failed": 4,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -63,7 +63,7 @@
       "name": "m26-cross-lang",
       "script": "script/m26/verify-cross-language-hover.ts",
       "rc": 0,
-      "verdict": "VERIFIED (17/17 passed, 5/5 mutants caught)",
+      "verdict": "VERIFIED (21/21 passed, 5/5 mutants caught)",
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "name": "m26-graph-docs",
       "script": "script/m26/verify-graph-docs.ts",
       "rc": 0,
-      "verdict": "VERIFIED (29/29 passed, 2/2 mutants)",
+      "verdict": "VERIFIED (34/34 passed, 3/3 mutants)",
       "ok": true
     },
     {
@@ -104,9 +104,9 @@
     {
       "name": "m26-closure",
       "script": "script/m26/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (50/50 passed, 3 negative)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (49/50 passed, 3 negative)",
+      "ok": false
     },
     {
       "name": "m27-nvim",
@@ -202,9 +202,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (29/32 passed, 3 negatives)",
+      "ok": false
     },
     {
       "name": "m42-enrichment",
@@ -251,9 +251,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (25/30 passed, 7 negatives)",
+      "ok": false
     },
     {
       "name": "m44-hub-tree",
@@ -280,7 +280,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 890ee8ae)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 1cb2e4e0)",
       "ok": true
     },
     {
@@ -300,17 +300,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 0,
-      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
-      "ok": true
+      "rc": 1,
+      "verdict": "KNOWN-GAP (43/48 passed, 7 negatives)",
+      "ok": false
     }
   ],
-  "currentCommit": "890ee8aee95530c67953cf7a3654f3ad8fbf17b6",
+  "currentCommit": "1cb2e4e0c771025c9e2bb7dd0c57cd0c7d10c32f",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-17T02:01:29.269Z",
+  "generatedAt": "2026-09-18T20:03:07.677Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T02:01:29.269Z",
-    "contentSha256": "f797a65d6b0fbf2888618b30c73ed331683526b562c8cd04195f8cc631c6f668"
+    "sealedAt": "2026-09-18T20:03:07.677Z",
+    "contentSha256": "4087d7285d6e1d743974670f6250e58e29a5dcf67a748e922e06c712f223f680"
   }
 }
