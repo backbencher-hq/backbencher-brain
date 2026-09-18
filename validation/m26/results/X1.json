@@ -2,19 +2,15 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 50,
-  "passed": 49,
-  "failed": 1,
-  "failures": [
-    "X1: v2 completion bar audited item-by-item — zero violations"
-  ],
+  "passed": 50,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 3,
-  "currentCommit": "fd4f4153bbab399bc4573ceaea355f146e2c1fc8",
+  "currentCommit": "d113299ab5c24a3cc3c3c9820411ae33f25337bb",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
-  "barViolations": [
-    "bar2: per-pair absence not declared in the generated docs"
-  ],
+  "barViolations": [],
   "perMutantRecords": {
     "W1": [
       {
@@ -185,10 +181,10 @@
       }
     ]
   },
-  "generatedAt": "2026-09-18T20:15:24.792Z",
+  "generatedAt": "2026-09-18T20:16:18.697Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T20:15:24.793Z",
-    "contentSha256": "f1eecc7413af77ce631995a0327c2c6237a6a657a3cfe5c8d7f3db7dcb6f338a"
+    "sealedAt": "2026-09-18T20:16:18.697Z",
+    "contentSha256": "3a56193fbc9d759928a0ae9da79ff949fda0258dcfbecb86d7d9ce1a1fb3165f"
   }
 }
