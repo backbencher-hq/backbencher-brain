@@ -12,11 +12,11 @@
     "total": 17,
     "caught": 17
   },
-  "currentCommit": "445040588150510cebc435abb695aa142f172d83",
+  "currentCommit": "0a613abadfafecb33045b6f66c41f49a29c45fd0",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-19T00:07:25.758Z",
+  "generatedAt": "2026-09-19T02:54:51.032Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
     "fixturePresent": true,
@@ -305,7 +305,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:07:25.758Z",
-    "contentSha256": "a6fc78a45a30de189e36fd08c4ec9ed82ddafe43f5fb8d6958c6df386e07db1a"
+    "sealedAt": "2026-09-19T02:54:51.032Z",
+    "contentSha256": "f897e9d1016d68f1dfc2d3bd43cc8c5642fa302f207d003c5528801bf42a466a"
   }
 }
