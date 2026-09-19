@@ -9,11 +9,11 @@
   "realFailed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "73515bc0614ea6411ae72d78dc45ed8880225d5c",
+  "currentCommit": "ee1a75e817031302be5b2fdeb56836974f73872a",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-09-17T00:50:52.397Z",
+  "generatedAt": "2026-09-19T00:06:56.504Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/validation/m55/fixtures/t2-workspace",
     "files": [
@@ -40,7 +40,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:50:52.398Z",
-    "contentSha256": "4e7d33931d41f9d555c41e04a8051983abaeefdf622b5c179bc09357e8d9932e"
+    "sealedAt": "2026-09-19T00:06:56.504Z",
+    "contentSha256": "31d0bae621fb702ce176550454b6f4da1e6dace31c0ba954b2623f39ff0e9dae"
   }
 }
