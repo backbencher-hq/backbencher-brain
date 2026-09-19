@@ -845,6 +845,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "live-argument")) }),
   },
   {
+    id: "clojure/drop-case-default-calls",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "W23 regression: re-imposes the constant-group parity skip on `case` defaults — calls inside a LIST-shaped default vanish (`(case k :a 1 (helper-default k))` loses calls->helper-default for both h and j); the case-constants fixture pins them (mirrored fix: analyzer + oracle)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "helper-default")) }),
+  },
+  {
     id: "clojure/drop-edge-lines",
     language: "clojure",
     defectClass: "payload-loss",

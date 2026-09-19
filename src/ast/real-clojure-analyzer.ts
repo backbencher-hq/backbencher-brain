@@ -1192,11 +1192,18 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       // (`calls a` was fabricated from it). Result positions and the expr
       // still walk; only list constants are skipped. Same positions in the
       // F5 oracle.
+      // W23 (review finding, measured): the optional trailing DEFAULT sits at
+      // index N-1 — an EVEN index whenever present — so a LIST-shaped default
+      // was skipped by the same parity rule and its calls silently vanished
+      // from BOTH sides (mirrored — no gate could see it). The default is
+      // always the last child (children = [case, expr, test…, expr…,
+      // default?]): never skip it.
       const isCaseForm = node.type === "list_lit" && formNameOf(node) === "case"
+      const caseDefaultIdx = isCaseForm && node.namedChildCount % 2 === 1 ? node.namedChildCount - 1 : -1
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (!child) continue
-        if (isCaseForm && i >= 2 && i % 2 === 0 && child.type === "list_lit") continue
+        if (isCaseForm && i >= 2 && i % 2 === 0 && child.type === "list_lit" && i !== caseDefaultIdx) continue
         walkStack.push({ node: child, isExit: false, previousActiveFunction: null as any, quoteDepth })
       }
     }
