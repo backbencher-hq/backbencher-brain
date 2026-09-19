@@ -49,7 +49,7 @@ const out: any = { mode: MODE, at: new Date().toISOString(), repos: {} }
 for (const [name, repo] of Object.entries(REPOS)) {
   const files = walk(repo).sort().slice(0, CAP)
   const m: any = {
-    files: files.length, ms: 0, symbols: 0, relationships: 0,
+    files: files.length, ms: 0, symbols: 0, relationships: 0, linedRels: 0,
     danglingAliasTargets: 0, danglingSamples: [] as string[],
     bareFnCallSources: 0, bareSamples: [] as string[],
     singleLetterTypePhantoms: 0, phantomSamples: [] as string[],
@@ -64,6 +64,7 @@ for (const [name, repo] of Object.entries(REPOS)) {
     } catch { continue }
     m.symbols += res.symbols.length
     m.relationships += res.relationships.length
+    for (const r of res.relationships) if (typeof r.line_number === "number") m.linedRels++
     const rel = f.replace(/^.*repositories\//, "")
     const names: string[] = res.symbols.map((s: any) => s.name)
     const nameSet = new Set(names)

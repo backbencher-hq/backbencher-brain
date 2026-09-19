@@ -169,14 +169,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (!this.isInAttribute(node) && !this.isDefHead(node)) {
                 const structArgs = this.findChild(node, (c) => c?.type === "arguments")
                 const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
-                if (first?.type === "alias") this.recordInstantiates(this.resolveAlias(first.text, ctx), ctx, currentScope)
+                if (first?.type === "alias") this.recordInstantiates(this.resolveAlias(first.text, ctx), ctx, currentScope, first.startPosition.row + 1)
                 else if (first?.type === "identifier" && first.text === "__MODULE__") {
                   let modScope: string | undefined
                   for (let i = scopeStack.length - 1; i >= 0; i--) {
                     const k = scopeStack[i].kind
                     if (k === ASTEngine.SymbolKind.Module || k === ASTEngine.SymbolKind.Interface) { modScope = scopeStack[i].name; break }
                   }
-                  if (modScope) this.recordInstantiates(modScope, ctx, currentScope)
+                  if (modScope) this.recordInstantiates(modScope, ctx, currentScope, first.startPosition.row + 1)
                 }
               }
             } else {
@@ -191,7 +191,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   let meta: any = {}
                   if (t === "send" || t === "send_after") meta = { isMessagePass: true, isSend: true }
                   else if (t === "spawn" || t === "spawn_link" || t === "spawn_monitor" || t === "Task.async" || t === "Task.start" || t === "Task.start_link" || t === "Agent.start" || t === "Agent.start_link") meta = { isProcessSpawn: true }
-                  this.recordCall(t, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), meta)
+                  // M59: the callee name-bearing node's line + the call's arity.
+                  const callArgs = this.findChild(node, (c) => c?.type === "arguments")
+                  this.recordCall(t, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), meta, targetNode ? targetNode.startPosition.row + 1 : node.startPosition.row + 1, callArgs ? callArgs.namedChildCount : 0)
                 }
             }
          }
@@ -202,7 +204,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         const structChild = this.findChild(node, (c) => c?.type === "struct")
         const aliasChild = structChild ? this.findChild(structChild, (c) => c?.type === "alias") : undefined
         if (aliasChild?.text && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node)) {
-          this.recordInstantiates(this.resolveAlias(aliasChild.text, ctx), ctx, currentScope)
+          this.recordInstantiates(this.resolveAlias(aliasChild.text, ctx), ctx, currentScope, aliasChild.startPosition.row + 1)
         } else if (!aliasChild && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node)) {
           // %__MODULE__{}: self-construction of the lexically enclosing
           // module (ELXD12). The struct head is an identifier, not an alias;
@@ -215,7 +217,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               const k = scopeStack[i].kind
               if (k === ASTEngine.SymbolKind.Module || k === ASTEngine.SymbolKind.Interface) { modScope = scopeStack[i].name; break }
             }
-            if (modScope) this.recordInstantiates(modScope, ctx, currentScope)
+            if (modScope) this.recordInstantiates(modScope, ctx, currentScope, selfChild.startPosition.row + 1)
           }
         }
       } else if (node.type === "unary_operator" && node.child(0)?.text === "@") {
@@ -258,21 +260,37 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const bhvRaw = first ? this.stripQuotes(first.text).trim() : ""
           const bhv = bhvRaw ? this.resolveAlias(bhvRaw, ctx) : ""
           if (bhv) {
-            this.pushRel(ctx, currentScope?.name || "Global", bhv, ASTEngine.RelationshipType.Implements, 0.9)
+            this.pushRel(ctx, currentScope?.name || "Global", bhv, ASTEngine.RelationshipType.Implements, 0.9, {}, first ? first.startPosition.row + 1 : node.startPosition.row + 1)
           }
         }
         if (attrName === "derive") {
-          // @derive JSON.Encoder / @derive {JSON.Encoder, only: [...]}: the
-          // enclosing struct derives the protocol (ELXD11). Bare form puts
-          // the alias directly under arguments; the options form wraps it
-          // in a tuple whose first element is the protocol.
+          // @derive JSON.Encoder / @derive {JSON.Encoder, only: [...]} /
+          // @derive [A, B] / @derive [{C, :ok}]: the enclosing struct derives
+          // every named protocol (EX-L4 — the list forms previously emitted
+          // nothing; 8 real corpus sites incl. protocol.ex:422).
           const argsNode = attrCall?.type === "call" ? this.findChild(attrCall, (c) => c?.type === "arguments") : undefined
           const first = argsNode && argsNode.namedChildCount > 0 ? argsNode.namedChild(0) : undefined
-          const protoRaw = first?.type === "alias" ? first.text
-            : first?.type === "tuple" ? this.findChild(first, (c) => c?.type === "alias")?.text ?? "" : ""
-          const proto = protoRaw ? this.resolveAlias(protoRaw, ctx) : ""
-          if (currentScope && proto) {
-            this.pushRel(ctx, currentScope.name, proto, ASTEngine.RelationshipType.Implements, 0.9)
+          const protoNodes: Node[] = []
+          if (first?.type === "alias") protoNodes.push(first)
+          else if (first?.type === "tuple") {
+            const a = this.findChild(first, (c) => c?.type === "alias")
+            if (a) protoNodes.push(a)
+          } else if (first?.type === "list") {
+            for (let i = 0; i < first.namedChildCount; i++) {
+              const el = first.namedChild(i)
+              if (!el) continue
+              if (el.type === "alias") protoNodes.push(el)
+              else if (el.type === "tuple") {
+                const a = this.findChild(el, (c) => c?.type === "alias")
+                if (a) protoNodes.push(a)
+              }
+            }
+          }
+          for (const pn of protoNodes) {
+            const proto = this.resolveAlias(pn.text, ctx)
+            if (currentScope && proto) {
+              this.pushRel(ctx, currentScope.name, proto, ASTEngine.RelationshipType.Implements, 0.9, {}, pn.startPosition.row + 1)
+            }
           }
         }
         if (attrName === "moduledoc") {
@@ -283,7 +301,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const text = first ? this.docContent(first) : ""
           if (text && currentScope) {
             const sym = ctx.symbolByName.get(currentScope.name)
-            if (sym) sym.comments = [text]
+            // EX-L9 (elixir half of the doc channel): the RULED doc channel
+            // is `docstring` (M60: comments has no store binding by design);
+            // mirror the chunk so the payload survives the store seam.
+            if (sym) { sym.comments = [text]; (sym as any).docstring = text }
           }
         }
         if (attrName === "doc") {
@@ -301,6 +322,26 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (text) ctx.pendingDoc = text
           }
         }
+      } else if (node.type === "unary_operator" && node.child(0)?.text === "&") {
+          // EX-L7: `&name/arity` captures a NAMED function — a real reference
+          // to it (previously emitted nothing). `&(&1 + 1)` has a non-`/`
+          // operator inside and stays silent.
+          const inner = node.child(1)
+          if (inner?.type === "binary_operator" && inner.child(1)?.text === "/" && !this.isInQuotedCode(node)) {
+            const fnNode = inner.child(0)
+            const arityNode = inner.child(2)
+            const arity = arityNode ? parseInt(arityNode.text, 10) : 0
+            let fnName = ""
+            if (fnNode?.type === "identifier") fnName = fnNode.text
+            else if (fnNode?.type === "call") {
+              const tgt = this.findChild(fnNode, (c) => c?.type === "identifier" || c?.type === "dot")
+              if (tgt && !this.findChild(fnNode, (c) => c?.type === "arguments")) fnName = tgt.text
+            }
+            const leaf = fnName.split(".").pop() ?? fnName
+            if (fnName && !this.shouldSkipCall(node, leaf)) {
+              this.recordCall(fnName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isCapture: true }, fnNode ? fnNode.startPosition.row + 1 : node.startPosition.row + 1, arity)
+            }
+          }
       } else if (node.type === "anonymous_function" || node.type === "stab_clause") {
         // fn x -> x + 1  or  &(&1 + 1) — closures are scoped declarations, not
         // module symbols. M11.11 closure/macro boundaries: mark pattern usage
@@ -334,7 +375,8 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                      targetName = right.text
                  }
                  if (targetName && !this.shouldSkipCall(right, targetName)) {
-                   this.recordCall(targetName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isPipe: true })
+                   const rightArgs = right.type === "call" ? this.findChild(right, (c) => c?.type === "arguments") : null
+                   this.recordCall(targetName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isPipe: true }, right.startPosition.row + 1, rightArgs ? rightArgs.namedChildCount : 0)
                  }
              }
           }
@@ -380,8 +422,12 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // fields, functions, macros; interface/class → their methods).
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || s.scope
-      if (_owner) {
-        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0)
+      // EX-L3: a symbol owned by ITSELF (a struct named like its module:
+      // name === ownerName) forged `X -[contains]-> X` structural no-ops —
+      // 11 of them on a 120-file corpus slice, and the M12 elixir ground
+      // truth had pinned one (registered there for its lane).
+      if (_owner && _owner !== s.name) {
+        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
       }
     }
 
@@ -488,14 +534,24 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Relationship emission helpers (dedupe by source|type|target identity).
   // ==========================================================================
-  private pushRel(ctx: ElixirContext, source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, metadata: Record<string, any> = {}) {
-    const key = `${source}|${type}|${target}`
+  private pushRel(ctx: ElixirContext, source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, metadata: Record<string, any> = {}, line?: number) {
+    // EX-L2 (ER-D2 parity): the call site joins the identity key — two call
+    // sites of one callee on different lines are TWO edges, so the store can
+    // report every site (previously `helper()` on two lines collapsed to one
+    // row: the site-collapse defect class ER1 fixed for Erlang).
+    const key = `${source}|${type}|${target}|${line ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
-    ctx.relationships.push({ source, target, type, confidence, metadata })
+    const rel: ASTEngine.UniversalRelationship = { source, target, type, confidence, metadata }
+    // M59 (#825): the NAME-BEARING node's 1-based line — the callee, the
+    // module named by use/import/alias, the behaviour/protocol atom, the
+    // struct alias. Never an enclosing declaration's line, never 0. NULL
+    // when underivable.
+    if (typeof line === "number" && line > 0) rel.line_number = line
+    ctx.relationships.push(rel)
   }
 
-  private recordCall(targetName: string, ctx: ElixirContext, currentScope: Scope | undefined, declaredScope: string | undefined, meta: any = {}) {
+  private recordCall(targetName: string, ctx: ElixirContext, currentScope: Scope | undefined, declaredScope: string | undefined, meta: any = {}, line?: number, arity?: number) {
       let finalTarget = targetName
       const parts = targetName.split(".")
       if (parts.length > 1) {
@@ -506,6 +562,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
       }
       if (!finalTarget) return
+      // EX-L2 (ER-D2 parity): call-site arity rides the edge — `pick/1` and
+      // `pick/2` are distinct callees and distinct edges.
+      if (arity && arity > 0) meta = { ...meta, callArity: arity }
       if (finalTarget.indexOf(".") !== -1) {
           // Qualified call: a capitalized root is a module/alias (real call);
           // a lowercase root is a variable receiver — dynamic dispatch with an
@@ -524,17 +583,17 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const callScope = currentScope && (currentScope.kind === ASTEngine.SymbolKind.Function || currentScope.kind === ASTEngine.SymbolKind.Macro || currentScope.kind === ASTEngine.SymbolKind.Method) ? currentScope.name : undefined
           meta = { ...meta, _declaredScope: declaredScope, _callScope: callScope }
       }
-      this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, ...meta })
+      this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, ...meta }, line)
   }
 
-  private recordInstantiates(structName: string, ctx: ElixirContext, currentScope: Scope | undefined) {
+  private recordInstantiates(structName: string, ctx: ElixirContext, currentScope: Scope | undefined, line?: number) {
       if (!structName) return
       // Self-construction (X instantiates X) is vacuous as a dependency
       // edge — %__MODULE__{} in X's own body (e.g. test blocks, which push
       // no function scope) would forge it (ELXD13). Structural self-loops
       // are never legitimate; the oracle holds the same guard.
       if (structName === currentScope?.name) return
-      this.pushRel(ctx, currentScope?.name || "Global", structName, ASTEngine.RelationshipType.Instantiates, 0.9, { elixirSpecific: true, isStruct: true })
+      this.pushRel(ctx, currentScope?.name || "Global", structName, ASTEngine.RelationshipType.Instantiates, 0.9, { elixirSpecific: true, isStruct: true }, line)
   }
 
   // ==========================================================================
@@ -732,6 +791,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     ctx.symbols.push(symbol)
     ctx.symbolByName.set(fullName, symbol)
+    // EX-L5: defining `defmodule A.B` makes `B` an alias for `A.B` in the
+    // enclosing scope (Elixir module-definition semantics) — `%NoRouteError{}`
+    // inside `defmodule Phoenix.Router.NoRouteError` must not dangle.
+    const implied = fullName.split(".").pop()
+    if (implied && !ctx.aliases[implied]) ctx.aliases[implied] = fullName
     // A new scope is a documentation boundary (ELXD14) — a staged @doc
     // never leaks past it.
     ctx.pendingDoc = undefined
@@ -748,6 +812,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const protocolSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocol: true } }
     ctx.symbols.push(protocolSym)
     ctx.symbolByName.set(fullName, protocolSym)
+    // EX-L5: same module-definition alias semantics for protocols.
+    const implied = fullName.split(".").pop()
+    if (implied && !ctx.aliases[implied]) ctx.aliases[implied] = fullName
     ctx.pendingDoc = undefined
     scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Interface, complexity: 0, symbol: protocolSym })
     return true
@@ -793,7 +860,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.symbols.push(implSym)
     ctx.symbolByName.set(fullName, implSym)
     // A degenerate for-less defimpl names nothing real — never a self-loop.
-    if (fullName !== protocol) this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {})
+    if (fullName !== protocol) this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, (aliases.length > 1 ? aliases[1] : aliases[0])?.startPosition.row + 1 ?? node.startPosition.row + 1)
     ctx.pendingDoc = undefined
     scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class, complexity: 0, symbol: implSym })
     return true
@@ -810,7 +877,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const structSym: ASTEngine.UniversalSymbol = { name: structName, kind: ASTEngine.SymbolKind.Struct, range: this.nodeToRange(node), scope: currentScope.name, ownerName: currentScope.name, ownerKind: currentScope.kind, visibility: "public", metadata: { elixirSpecific: true, isStruct: true } }
     ctx.symbols.push(structSym)
     // ELXD14: @doc before defstruct documents the struct itself.
-    if (ctx.pendingDoc) { structSym.comments = [ctx.pendingDoc]; ctx.pendingDoc = undefined }
+    if (ctx.pendingDoc) { structSym.comments = [ctx.pendingDoc]; (structSym as any).docstring = ctx.pendingDoc; ctx.pendingDoc = undefined }
     // Struct fields (defstruct bids: [], asks: []) → property symbols owned by
     // the enclosing module. M11.11: defstruct keyword pairs are the universal
     // property-equivalent of struct fields in C/Rust/Zig.
@@ -895,9 +962,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                    if (!argChild) continue
                    // Parameter name: the bare identifier when the argument is
                    // an identifier or a `name = default` binary_operator.
-                   let paramName = argChild.text
+                   let paramName = "_"
                    if (argChild.type === "identifier") paramName = argChild.text
                    else if (argChild.type === "binary_operator" && argChild.childCount > 0 && argChild.child(0)?.type === "identifier") paramName = argChild.child(0)!.text
+                   // EX-L6: a literal/pattern argument (`def multi(1)`) is an
+                   // UNNAMED parameter — its source text is not a name.
                    parameters.push({ name: paramName, type: "dynamic" })
                    if (argChild.text.indexOf(":") !== -1 || argChild.text.indexOf("%") !== -1 || argChild.text.indexOf("_") !== -1 || argChild.text.startsWith("[")) {
                        hasPattern = true
@@ -974,6 +1043,8 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const fnSym = ctx.functionHeads[fnId]!
     if (ctx.pendingDoc) {
         if (!fnSym.comments) fnSym.comments = [ctx.pendingDoc]
+        // EX-L9: mirror the staged chunk into the ruled docstring channel.
+        if (!(fnSym as any).docstring) (fnSym as any).docstring = ctx.pendingDoc
         ctx.pendingDoc = undefined
     }
 
@@ -1132,7 +1203,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (const dep of depModules) {
             if (!dep) continue
             ctx.imports.push({ module: dep, source: dep, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
-            if (dep !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep, ASTEngine.RelationshipType.References, 0.9)
+            if (dep !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep, ASTEngine.RelationshipType.References, 0.9, {}, argsNode.startPosition.row + 1)
           }
       }
   }
