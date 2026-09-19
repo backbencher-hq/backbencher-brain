@@ -10,12 +10,12 @@
     "caught": 3
   },
   "receipt": "docs/m53/INTEGRATION-RECEIPT.md",
-  "currentCommit": "8fe24850f8d2e9ca1fddc04451955b4aadc8e310",
+  "currentCommit": "3d0c3366afe54716c71f8b2c60d9cff9d15ab9a9",
   "verifierCommand": "npx tsx script/m53/verify-closure.ts",
-  "generatedAt": "2026-09-19T02:53:47.425Z",
+  "generatedAt": "2026-09-19T03:20:37.143Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:53:47.426Z",
-    "contentSha256": "3d781e1415d5e9a6de73cc25c4990409f112489f59c4f3340c146e2d2785722d"
+    "sealedAt": "2026-09-19T03:20:37.144Z",
+    "contentSha256": "34af29ce9fca397a40409a136b4b0d321e1ff66e902126ba755e6a65ce368b88"
   }
 }

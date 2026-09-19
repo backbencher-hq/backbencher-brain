@@ -5,11 +5,11 @@
     "docs/m29/PRECISION-LEDGER.md"
   ],
   "inputsHash": "8411aeb9b1f2e414e00ea1d93ce2bb87f90797b7",
-  "commit": "f52bba641d0d292bb547f82ae682fae855af72c4",
-  "generatedAt": "2026-09-19T02:47:04.201Z",
+  "commit": "3d0c3366afe54716c71f8b2c60d9cff9d15ab9a9",
+  "generatedAt": "2026-09-19T03:13:49.799Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:47:04.201Z",
-    "contentSha256": "8aa6a0e21da4c467fb169441d46e8d9101b6cfa846d8c0b34a87036001e6123e"
+    "sealedAt": "2026-09-19T03:13:49.800Z",
+    "contentSha256": "f5ab384d8584b59e593a9f4f6e1231dd7d5b72153c5766e7936952862ca88882"
   }
 }
