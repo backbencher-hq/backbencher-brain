@@ -13,7 +13,7 @@
   "currentCommit": "1a8226ee8bb4d7d7934ca1ee6bdabf53bb913c8c",
   "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-09-19T01:28:31.478Z",
+  "generatedAt": "2026-09-19T02:02:13.100Z",
   "deliverable": {
     "rowAnatomy": "name-first bb-hub-row-main (name + file:line meta) -> relchips (per-type counts + W4 tier) -> enrichment chip (presence-gated) -> chevron; all inside the row (the bridge's click target)",
     "affordance": "data-clickable=1 iff the bridge can navigate (file+line resolved); tabindex=0 + chevron on navigable rows; un-navigable rows declare data-clickable=0, no tab stop, no navigate chevron (SS13.3, visible without hover via left accent + chevron; hover/focus intensify)",
@@ -39,10 +39,10 @@
     "This record is a DERIVATION of the m26 webview harness run it names: it re-states that run's numbers and pin, and adds no proof of its own. The harness's record is the evidence; a red or missing harness run derives a RED U2 (law L2)."
   ],
   "derivationErrors": [],
-  "gateCommit": "1d68efd1151091beb5ec0f1166931c9bf9ddf825",
+  "gateCommit": "5f60e2a295ab3ce3cc063cafd8733d271f8bcbaf",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:28:31.478Z",
-    "contentSha256": "0ebf6b517c178bfbf4caf076b090b64f4687ce6657b96d421f2491bc728f59d0"
+    "sealedAt": "2026-09-19T02:02:13.100Z",
+    "contentSha256": "54dd62c926aaac9a68c2b61abee639c91f5a279bfb3787cab1ae75fc859757b1"
   }
 }
