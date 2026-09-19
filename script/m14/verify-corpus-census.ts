@@ -63,6 +63,12 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   // with the F5 primary corpus; the spec's classification is what the EX
   // probes verified behaviour against.
   elixir: { wasm: "tree-sitter-elixir.wasm", ext: [".ex", ".exs"], repo: "elixir" },
+  // CLJ1 wave: clojure was never enrolled either — the corpus census (34
+  // occurring types / 142 files / 0 parse errors) was run as a one-off probe
+  // during the deep review; this enrollment makes it a permanent gate. The
+  // spec classifies all 34 (15 analyzer-referenced + 19 traversal-transparent
+  // + 7 RULED design decisions).
+  clojure: { wasm: "tree-sitter-clojure.wasm", ext: [".clj", ".cljc", ".cljs"], repo: "clojure" },
 }
 
 interface LangResult {

@@ -542,12 +542,16 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const key = `${source}|${type}|${target}|${line ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
-    const rel: ASTEngine.UniversalRelationship = { source, target, type, confidence, metadata }
     // M59 (#825): the NAME-BEARING node's 1-based line — the callee, the
     // module named by use/import/alias, the behaviour/protocol atom, the
     // struct alias. Never an enclosing declaration's line, never 0. NULL
-    // when underivable.
-    if (typeof line === "number" && line > 0) rel.line_number = line
+    // when underivable. Carried at construction: M60.P1's emit surface
+    // reads `line_number:` from the analyzer source (the assignment form
+    // left the matrix cell dead — clojure's CLJ1 wave fixed both spellings).
+    const rel: ASTEngine.UniversalRelationship = {
+      source, target, type, confidence, metadata,
+      ...(typeof line === "number" && line > 0 ? { line_number: line } : {}),
+    }
     ctx.relationships.push(rel)
   }
 
@@ -860,7 +864,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.symbols.push(implSym)
     ctx.symbolByName.set(fullName, implSym)
     // A degenerate for-less defimpl names nothing real — never a self-loop.
-    if (fullName !== protocol) this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, (aliases.length > 1 ? aliases[1] : aliases[0])?.startPosition.row + 1 ?? node.startPosition.row + 1)
+    // (Line fallback made real: `(x)?.a.b + 1 ?? y` short-circuits to NaN,
+    // not y — tsc flagged the dead `??`; the intended node fallback now runs.)
+    const implLineNode = aliases.length > 1 ? aliases[1] : aliases[0]
+    if (fullName !== protocol) this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, implLineNode ? implLineNode.startPosition.row + 1 : node.startPosition.row + 1)
     ctx.pendingDoc = undefined
     scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class, complexity: 0, symbol: implSym })
     return true
