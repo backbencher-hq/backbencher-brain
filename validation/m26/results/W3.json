@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
+  "currentCommit": "25ce9ef4b73c45f3b70997bcdacfad052a721d58",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-19T00:15:23.249Z",
+  "generatedAt": "2026-09-19T01:00:32.856Z",
   "fixturePairs": [
     {
       "source": "kotlin",
@@ -32,7 +32,7 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 97,
+    "scanned": 105,
     "skipped": 3
   },
   "storedPairs": [
@@ -98,7 +98,7 @@
       "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
     }
   ],
-  "realDbsScanned": 97,
+  "realDbsScanned": 105,
   "limitations": [
     "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
     "Coverage scan reads real project dbs read-only; unreadable/absent dbs are skipped and counted in machineReality.",
@@ -106,7 +106,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:15:23.249Z",
-    "contentSha256": "9e847d500869bd4bd761c7ed4e9b9a6a944642c77cc28f5fbbfc6b3a32acb1c9"
+    "sealedAt": "2026-09-19T01:00:32.857Z",
+    "contentSha256": "05c91a1098217e5a1a48fe62cff9aa2399b419615f6e68cfee0db13e4e3edc38"
   }
 }
