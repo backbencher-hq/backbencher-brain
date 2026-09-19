@@ -54,174 +54,6 @@
   "language": "svelte",
   "session": [],
   "raw": {
-    "documentSymbol": [
-      {
-        "range": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        },
-        "kind": 5,
-        "data": {
-          "notIndexed": false,
-          "evidenceTier": "indexed",
-          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:main:1"
-        },
-        "detail": "main",
-        "name": "main",
-        "selectionRange": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        },
-        "children": [
-          {
-            "range": {
-              "start": {
-                "line": 1,
-                "character": 4
-              },
-              "end": {
-                "line": 1,
-                "character": 20
-              }
-            },
-            "kind": 13,
-            "data": {
-              "notIndexed": false,
-              "evidenceTier": "indexed",
-              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:prefix:2"
-            },
-            "detail": "prefix",
-            "name": "prefix",
-            "selectionRange": {
-              "start": {
-                "line": 1,
-                "character": 4
-              },
-              "end": {
-                "line": 1,
-                "character": 20
-              }
-            },
-            "children": []
-          },
-          {
-            "range": {
-              "start": {
-                "line": 3,
-                "character": 22
-              },
-              "end": {
-                "line": 4,
-                "character": 24
-              }
-            },
-            "kind": 12,
-            "data": {
-              "notIndexed": false,
-              "evidenceTier": "indexed",
-              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:greet:4"
-            },
-            "detail": "greet",
-            "name": "greet",
-            "selectionRange": {
-              "start": {
-                "line": 3,
-                "character": 22
-              },
-              "end": {
-                "line": 4,
-                "character": 24
-              }
-            },
-            "children": []
-          }
-        ]
-      },
-      {
-        "range": {
-          "start": {
-            "line": 5,
-            "character": 1
-          },
-          "end": {
-            "line": 7,
-            "character": 22
-          }
-        },
-        "kind": 2,
-        "data": {
-          "notIndexed": false,
-          "evidenceTier": "indexed",
-          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:message:8"
-        },
-        "detail": "message",
-        "name": "message",
-        "selectionRange": {
-          "start": {
-            "line": 5,
-            "character": 1
-          },
-          "end": {
-            "line": 7,
-            "character": 22
-          }
-        },
-        "children": []
-      }
-    ],
-    "references": [
-      {
-        "range": {
-          "start": {
-            "line": 0,
-            "character": 0
-          },
-          "end": {
-            "line": 11,
-            "character": 0
-          }
-        },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte"
-      },
-      {
-        "range": {
-          "start": {
-            "line": 5,
-            "character": 1
-          },
-          "end": {
-            "line": 7,
-            "character": 22
-          }
-        },
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte"
-      }
-    ],
-    "definition": {
-      "range": {
-        "start": {
-          "line": 5,
-          "character": 1
-        },
-        "end": {
-          "line": 7,
-          "character": 22
-        }
-      },
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte"
-    },
     "hover": {
       "range": {
         "start": {
@@ -239,19 +71,15 @@
       },
       "data": {
         "provenance": {
-          "stale": false,
           "evidenceClass": "usage_contextual",
-          "source": "bb_index",
           "engine": "bb_lsp hover@m24.l2",
           "limitations": [
             "index-sourced; no compiler-backed types (complement stance)"
-          ]
+          ],
+          "stale": false,
+          "source": "bb_index"
         },
         "symbol": {
-          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
-          "lineStart": 8,
-          "lineEnd": 8,
-          "name": "message",
           "stale": false,
           "qualifiedName": "message",
           "symbolType": "constant",
@@ -262,24 +90,196 @@
           ],
           "connectedSection": "",
           "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.svelte:1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A0%2C%22character%22%3A0%7D%5D)",
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)",
+          "crossLanguageSection": "",
+          "annotationSection": "",
+          "freshnessStatus": "fresh",
+          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+          "lineStart": 8,
+          "lineEnd": 8,
           "definition": {
             "line": 5,
             "character": 1
           },
-          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22message%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fsvelte%2Fmain.svelte%22%2C%22line%22%3A5%2C%22character%22%3A1%7D%5D)",
-          "crossLanguageSection": "",
-          "annotationSection": "",
-          "freshnessStatus": "fresh"
+          "name": "message"
         }
       }
     },
-    "workspaceAbsence": []
+    "workspaceAbsence": [],
+    "documentSymbol": [
+      {
+        "selectionRange": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 11,
+            "character": 0
+          }
+        },
+        "children": [
+          {
+            "selectionRange": {
+              "start": {
+                "line": 1,
+                "character": 4
+              },
+              "end": {
+                "line": 1,
+                "character": 20
+              }
+            },
+            "children": [],
+            "data": {
+              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:prefix:2",
+              "notIndexed": false,
+              "evidenceTier": "indexed"
+            },
+            "kind": 13,
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 4
+              },
+              "end": {
+                "line": 1,
+                "character": 20
+              }
+            },
+            "name": "prefix",
+            "detail": "prefix"
+          },
+          {
+            "selectionRange": {
+              "start": {
+                "line": 3,
+                "character": 22
+              },
+              "end": {
+                "line": 4,
+                "character": 24
+              }
+            },
+            "children": [],
+            "data": {
+              "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:greet:4",
+              "notIndexed": false,
+              "evidenceTier": "indexed"
+            },
+            "kind": 12,
+            "range": {
+              "start": {
+                "line": 3,
+                "character": 22
+              },
+              "end": {
+                "line": 4,
+                "character": 24
+              }
+            },
+            "name": "greet",
+            "detail": "greet"
+          }
+        ],
+        "data": {
+          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:main:1",
+          "notIndexed": false,
+          "evidenceTier": "indexed"
+        },
+        "kind": 5,
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 11,
+            "character": 0
+          }
+        },
+        "name": "main",
+        "detail": "main"
+      },
+      {
+        "selectionRange": {
+          "start": {
+            "line": 5,
+            "character": 1
+          },
+          "end": {
+            "line": 7,
+            "character": 22
+          }
+        },
+        "children": [],
+        "data": {
+          "id": "89f8a595bd46e7d48181fdbb84e16bff67be50b3:main.svelte:message:8",
+          "notIndexed": false,
+          "evidenceTier": "indexed"
+        },
+        "kind": 2,
+        "range": {
+          "start": {
+            "line": 5,
+            "character": 1
+          },
+          "end": {
+            "line": 7,
+            "character": 22
+          }
+        },
+        "name": "message",
+        "detail": "message"
+      }
+    ],
+    "references": [
+      {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+        "range": {
+          "start": {
+            "line": 0,
+            "character": 0
+          },
+          "end": {
+            "line": 11,
+            "character": 0
+          }
+        }
+      },
+      {
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+        "range": {
+          "start": {
+            "line": 5,
+            "character": 1
+          },
+          "end": {
+            "line": 7,
+            "character": 22
+          }
+        }
+      }
+    ],
+    "definition": {
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/svelte/main.svelte",
+      "range": {
+        "start": {
+          "line": 5,
+          "character": 1
+        },
+        "end": {
+          "line": 7,
+          "character": 22
+        }
+      }
+    }
   },
   "status": "verified",
-  "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
+  "commit": "8ce84a71c92e4fbc683dd5fa200b6047afe83307",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:16:03.712Z",
-    "contentSha256": "bfaf74226c1aecdd2eb2a86fdeebbb40c34f70cd2ad221c216d427ab8cea4ee5"
+    "sealedAt": "2026-09-19T01:19:42.804Z",
+    "contentSha256": "3e9dcf524cb092352e1ac42a6acb685c9f2072897ce5d72ff33a1c5bb17322cc"
   }
 }
