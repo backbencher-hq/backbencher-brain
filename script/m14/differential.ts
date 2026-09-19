@@ -7156,7 +7156,13 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
   const isQuoted = (n: any): boolean => {
     let cur = n.parent
     while (cur) {
-      if (cur.type === "call" && find(cur, (c) => c.type === "identifier")?.text === "quote") return true
+      if (cur.type === "call") {
+        const idText = find(cur, (c: any) => c.type === "identifier")?.text
+        if (idText === "quote") return true
+        // X7 mirror: unquote arguments execute at expansion time — the
+        // nearest boundary wins over the enclosing quote (see the analyzer).
+        if (idText === "unquote" || idText === "unquote_splicing") return false
+      }
       cur = cur.parent
     }
     return false
@@ -7251,6 +7257,43 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     if (!s) { s = new Set(); declaredByScope.set(scope, s) }
     s.add(name)
   }
+  // X3 mirror: the analyzer resolves every NAMED type/behaviour/protocol/
+  // module through its alias table; this oracle emitted raw `.text` on those
+  // paths, so `Phx.New.Project` vs `Project` agreed only because the lane
+  // comparison normalizes to the last segment (19 masked pairs measured).
+  const resolveAliasO = (name: string): string => {
+    if (!name) return name
+    const parts = name.split(".")
+    const root = parts[0] ?? ""
+    if (root && aliases.has(root)) {
+      parts[0] = aliases.get(root)!
+      return parts.join(".")
+    }
+    return name
+  }
+  // X2 mirror: pattern positions are never constructions — a stab_clause's
+  // pre-arrow part, or the left of `=`/`<-` (see the analyzer).
+  const isPattern = (n: any): boolean => {
+    let cur: any = n
+    while (cur && cur.parent) {
+      const p = cur.parent
+      if (p.type === "stab_clause") {
+        // The `->` arrow is an ANONYMOUS node — `find` searches named
+        // children only, so scan raw children (the named-only lookup made
+        // every clause pattern look like a body: 14 corpus instantiates
+        // diverged until this was measured).
+        let arrow: any = null
+        for (let i = 0; i < p.childCount; i++) { const c = p.child(i); if (c && c.type === "->") { arrow = c; break } }
+        return arrow ? n.startIndex < arrow.startIndex : false
+      }
+      if (p.type === "binary_operator" && (p.child(1)?.text === "=" || p.child(1)?.text === "<-")) {
+        const left = p.child(0)
+        return !!(left && n.startIndex >= left.startIndex && n.endIndex <= left.endIndex)
+      }
+      cur = p
+    }
+    return false
+  }
   const ownerOf = (stack: Scope[]): string => {
     for (let i = stack.length - 1; i >= 0; i--) {
       const k = stack[i].kind
@@ -7296,24 +7339,24 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             }
           }
         } else if (target === "defimpl" && !isHead(n) && !isAttr(n)) {
-          const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
+          const args = find(n, (c: any) => c.type !== "identifier" && c.type !== "do_block")
           if (args) {
-            const als = kids(args).filter((c) => c.type === "alias")
-            const protocol = als.length > 0 && als[0] ? als[0].text : "Unknown"
+            const als = kids(args).filter((c: any) => c.type === "alias")
+            const protocol = als.length > 0 && als[0] ? resolveAliasO(als[0].text) : "Unknown"
             let forType = "Unknown"
-            const kw = find(args, (c) => c.type === "keywords")
+            const kw = find(args, (c: any) => c.type === "keywords")
             if (kw) {
               for (let i = 0; i < kw.namedChildCount; i++) {
                 const pair = kw.namedChild(i)
                 if (!pair || pair.type !== "pair") continue
-                const kwn = find(pair, (c) => c.type === "keyword")
+                const kwn = find(pair, (c: any) => c.type === "keyword")
                 if (kwn && stripAfterColon(kwn.text) === "for" && pair.namedChildCount > 1) {
                   const v = pair.namedChild(1)
-                  if (v) forType = v.text
+                  if (v) forType = resolveAliasO(v.text)
                 }
               }
             }
-            const forAlias = als.length > 1 ? als[1].text : forType
+            const forAlias = als.length > 1 ? resolveAliasO(als[1].text) : forType
             // ELXD6/ELXD7 mirror: for-less nested defimpl targets the
             // enclosing scope; defmacro heads are not implementations.
             const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
@@ -7342,7 +7385,8 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
               if (!name.startsWith("__MODULE__") || !modScopeO) return name
               return modScopeO + name.slice("__MODULE__".length)
             }
-            const moduleName = resolveSelfO(rawModuleName)
+            // X3 mirror: aliases resolve on directive module names too.
+            const moduleName = resolveAliasO(resolveSelfO(rawModuleName))
             // Dependency targets: exactly one module, except multi-alias
             // (`alias Foo.{Bar, Baz}`) which expands per member (ELXD20).
             let depModules: string[] = [moduleName]
@@ -7351,9 +7395,9 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
               const tuple = multiDot ? find(multiDot, (c) => c.type === "tuple") : undefined
               if (tuple) {
                 depModules = []
-                const rawPrefix = find(multiDot, (c) => c.type === "alias")?.text
-                  ?? find(multiDot, (c) => c.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
-                const prefix = resolveSelfO(rawPrefix)
+                const rawPrefix = find(multiDot, (c: any) => c.type === "alias")?.text
+                  ?? find(multiDot, (c: any) => c.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
+                const prefix = resolveAliasO(resolveSelfO(rawPrefix))
                 for (let i = 0; i < tuple.namedChildCount; i++) {
                   const kid = tuple.namedChild(i)
                   if (!kid || (kid.type !== "alias" && kid.type !== "dot")) continue
@@ -7420,26 +7464,36 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             }
           }
         }
-      } else if (t === "unary_operator" && n.childCount > 0 && n.child(0)?.text === "@") {
-        // No quote guard here — mirror of the analyzer, whose attribute
-        // branch runs even inside quote blocks.
+      } else if (t === "unary_operator" && n.childCount > 0 && n.child(0)?.text === "@" && !isQuoted(n)) {
+        // X1 mirror: quoted attributes are data (the analyzer's guard —
+        // previously BOTH sides leaked `@behaviour`/`@type` out of quote
+        // blocks; the analyzer was fixed first, the oracle now follows).
         const attrCall = n.child(1)
         const attrTarget = attrCall?.type === "call" ? callTarget(attrCall) : ""
         if (attrTarget === "behaviour" || attrTarget === "behavior") {
-          const args = find(attrCall, (c) => c.type === "arguments")
+          const args = find(attrCall, (c: any) => c.type === "arguments")
           const first = args && args.namedChildCount > 0 ? args.namedChild(0) : undefined
-          const bhv = first ? stripQuotes(first.text).trim() : ""
+          const bhv = first ? resolveAliasO(stripQuotes(first.text).trim()) : ""
           if (bhv) push("implements", stack.length > 0 ? innerOf(stack) : "Global", bhv)
         }
         if (attrTarget === "derive") {
-          // ELXD11 mirror: bare alias directly under arguments, options
-          // form wrapped in a tuple. The analyzer requires an enclosing
-          // scope (top-level @derive emits nothing) — mirrored here.
-          const args = find(attrCall, (c) => c.type === "arguments")
+          // ELXD11 + X10 mirror: alias / tuple / list-of-(alias|tuple)
+          // forms; aliases resolve like the analyzer's, and the analyzer
+          // requires an enclosing scope (top-level @derive emits nothing).
+          const args = find(attrCall, (c: any) => c.type === "arguments")
           const first = args && args.namedChildCount > 0 ? args.namedChild(0) : undefined
-          const proto = first?.type === "alias" ? first.text
-            : first?.type === "tuple" ? find(first, (c) => c.type === "alias")?.text ?? "" : ""
-          if (proto && stack.length > 0) push("implements", innerOf(stack), proto)
+          const protos: string[] = []
+          if (first?.type === "alias") protos.push(first.text)
+          else if (first?.type === "tuple") { const a = find(first, (c: any) => c.type === "alias"); if (a) protos.push(a.text) }
+          else if (first?.type === "list") {
+            for (let li = 0; li < first.namedChildCount; li++) {
+              const el = first.namedChild(li)
+              if (!el) continue
+              if (el.type === "alias") protos.push(el.text)
+              else if (el.type === "tuple") { const a = find(el, (c: any) => c.type === "alias"); if (a) protos.push(a.text) }
+            }
+          }
+          for (const proto of protos) if (proto && stack.length > 0) push("implements", innerOf(stack), resolveAliasO(proto))
         }
       }
       if (pushed) work.push({ n, exit: true })
@@ -7467,7 +7521,31 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
   const emitCall = (node: any, rawTarget: string, stack: Scope[]) => {
     if (!rawTarget) return
     let finalTarget = rawTarget
-    const parts = rawTarget.split(".")
+    // X4 mirror: a chained receiver call (`Mix.shell().error`) names the
+    // METHOD leaf — never call syntax (see the analyzer).
+    if (finalTarget.indexOf("(") !== -1) {
+      const lastDot = finalTarget.lastIndexOf(".")
+      finalTarget = lastDot >= 0 ? finalTarget.slice(lastDot + 1) : finalTarget
+      const paren = finalTarget.indexOf("(")
+      if (paren !== -1) finalTarget = finalTarget.slice(0, paren)
+      if (finalTarget) push("calls", stack.length === 0 ? "Global" : innerOf(stack), finalTarget)
+      return
+    }
+    // X5 mirror: `__MODULE__.fun` resolves to the enclosing module scope.
+    if (finalTarget.startsWith("__MODULE__.")) {
+      let modScope = ""
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].kind === "module" || stack[i].kind === "interface") { modScope = stack[i].name; break }
+      }
+      if (!modScope) return
+      finalTarget = modScope + finalTarget.slice("__MODULE__".length)
+    }
+    // X9 mirror: qualified Kernel builtins are the same noise as bare ones.
+    if (finalTarget.startsWith("Kernel.")) {
+      const leaf = finalTarget.slice("Kernel.".length)
+      if (KERNEL.has(leaf) || SPECIAL.has(leaf)) return
+    }
+    const parts = finalTarget.split(".")
     if (parts.length > 1 && aliases.has(parts[0])) {
       parts[0] = aliases.get(parts[0])!
       finalTarget = parts.join(".")
@@ -7533,22 +7611,22 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
         } else if (target === "defimpl" && !isHead(n) && !isAttr(n)) {
           const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
           if (args) {
-            const als = kids(args).filter((c) => c.type === "alias")
-            const protocol = als.length > 0 && als[0] ? als[0].text : "Unknown"
+            const als = kids(args).filter((c: any) => c.type === "alias")
+            const protocol = als.length > 0 && als[0] ? resolveAliasO(als[0].text) : "Unknown"
             let forType = "Unknown"
-            const kw = find(args, (c) => c.type === "keywords")
+            const kw = find(args, (c: any) => c.type === "keywords")
             if (kw) {
               for (let i = 0; i < kw.namedChildCount; i++) {
                 const pair = kw.namedChild(i)
                 if (!pair || pair.type !== "pair") continue
-                const kwn = find(pair, (c) => c.type === "keyword")
+                const kwn = find(pair, (c: any) => c.type === "keyword")
                 if (kwn && stripAfterColon(kwn.text) === "for" && pair.namedChildCount > 1) {
                   const v = pair.namedChild(1)
-                  if (v) forType = v.text
+                  if (v) forType = resolveAliasO(v.text)
                 }
               }
             }
-            const forAlias = als.length > 1 ? als[1].text : forType
+            const forAlias = als.length > 1 ? resolveAliasO(als[1].text) : forType
             // ELXD6/ELXD7 mirror (scope naming must match pass 1 exactly —
             // resolution sets diverge otherwise).
             const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
@@ -7560,13 +7638,38 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           if (nm) {
             stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function" })
             pushed = true
+            if (target === "defdelegate") {
+              // X8 mirror: the delegation to `to:` (as: renames the target
+              // segment) is a real call from the declared function.
+              let toMod = ""
+              let asName = ""
+              const dscan: any[] = [n]
+              while (dscan.length > 0) {
+                const x = dscan.pop()!
+                if (x.type === "pair") {
+                  const k = find(x, (c: any) => c.type === "keyword")
+                  const kt = k ? stripAfterColon(k.text) : ""
+                  if (kt === "to" && x.namedChildCount > 1) {
+                    const v = x.namedChild(1)
+                    if (v?.type === "alias") toMod = v.text
+                  } else if (kt === "as" && x.namedChildCount > 1) {
+                    const v = x.namedChild(1)
+                    if (v?.type === "atom") asName = v.text.startsWith(":") ? v.text.slice(1) : v.text
+                  }
+                  continue
+                }
+                if (x !== n && (x.type === "do_block" || x.type === "anonymous_function")) continue
+                for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) dscan.push(c) }
+              }
+              if (toMod) push("calls", innerOf(stack), `${resolveAliasO(toMod)}.${asName || nm}`)
+            }
           }
         } else if ((target === "struct" || target === "struct!") && !isAttr(n) && !isHead(n)) {
           // ELXD19 mirror: struct(User, attrs) constructs the named type;
           // dynamic first args stay silent. (Quote already excluded above.)
-          const structArgs = find(n, (c) => c.type === "arguments")
+          const structArgs = find(n, (c: any) => c.type === "arguments")
           const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
-          if (first?.type === "alias") push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", first.text)
+          if (first?.type === "alias") push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(first.text))
           else if (first?.type === "identifier" && first.text === "__MODULE__") {
             let modScope = ""
             for (let i = stack.length - 1; i >= 0; i--) {
@@ -7593,12 +7696,16 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             if (tgt) fnName = tgt.text
           }
           const leaf = fnName.split(".").pop() ?? fnName
-          if (fnName && !skipCall(n, leaf)) emitCall(n, fnName, stack)
+          // Qualified captures are remote references with leaf collisions
+          // (`&String.length/1`) — only unqualified captures consult the
+          // Kernel set (analyzer mirror).
+          const skipName = fnName.includes(".") ? fnName : leaf
+          if (fnName && !skipCall(n, skipName)) emitCall(n, fnName, stack)
         }
-      } else if (t === "map" && !isQuoted(n) && !isAttr(n) && !isHead(n)) {
-        const st = find(n, (c) => c.type === "struct")
-        const al = st ? find(st, (c) => c.type === "alias") : undefined
-        if (al?.text) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", al.text)
+      } else if (t === "map" && !isQuoted(n) && !isAttr(n) && !isHead(n) && !isPattern(n)) {
+        const st = find(n, (c: any) => c.type === "struct")
+        const al = st ? find(st, (c: any) => c.type === "alias") : undefined
+        if (al?.text) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(al.text))
         else {
           // ELXD12 mirror: %__MODULE__{} resolves to the nearest
           // module/interface scope; with no such scope it stays silent.

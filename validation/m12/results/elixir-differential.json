@@ -64,12 +64,12 @@
         "bytes": 102001
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "024549e2b69906a8b0478956bafb2822c7ef4fa66431bb0387636178a604bc41",
-        "bytes": 70427
+        "sha256": "54ad89a6862385df9479b1c26b6c361e50baf81f63461b90ee3e105cca54dd7b",
+        "bytes": 78459
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "821fac02b2952f118c56f67584d0e11c6ca4ddc73afd3fdc9922629dc1b0c30e",
-        "bytes": 24853
+        "sha256": "e5fb95a9496d265379e4cc405f9f99d042b248419d1bae113e9dc994382d0ad3",
+        "bytes": 39841
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
@@ -252,7 +252,7 @@
         "bytes": 17738
       }
     },
-    "digest": "b9cd6507d69aa6b4dcd78b1b064d9ba7ead1a7ba94d1849aed6b50cdfc0a1958",
+    "digest": "1f1457f19d282f14ad4c3f0e899c9b6bc9bef62b6ee9beb18c9dc76e339a27a1",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
@@ -377,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 36.491198,
-      "userCpuMs": 65.626,
-      "systemCpuMs": 11.977,
-      "peakRssBytes": 256946176,
-      "rssDeltaBytes": 2453504,
+      "wallTimeMs": 17.352607,
+      "userCpuMs": 39.457,
+      "systemCpuMs": 3.328,
+      "peakRssBytes": 263946240,
+      "rssDeltaBytes": 2883584,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

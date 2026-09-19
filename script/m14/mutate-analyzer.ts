@@ -1139,6 +1139,104 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.kind === "property" && (s.name === "x" || s.name === "y"))) }),
   },
   {
+    id: "elixir/quote-attr-leak",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELX-ADV X1: quoted attributes leak — `@behaviour`/`@type` inside a `quote` block emit implements + a Type symbol (EX-D1 violation; measured on elixir's own Application/Protocol modules)",
+    transform: r => ({
+      ...r,
+      symbols: [...(r.symbols ?? []), { name: "t", kind: "type", scope: "EQ", ownerName: "EQ", visibility: "public", metadata: { elixirSpecific: true, isTypeSpec: true } }],
+      relationships: [...(r.relationships ?? []), { type: "implements", source: "EQ", target: "SomeB", confidence: 0.9, metadata: {} }],
+    }),
+  },
+  {
+    id: "elixir/pattern-struct-instantiate",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELX-ADV X2: struct literals in pattern positions emit instantiates (case/fn clause patterns, `=`/`<-` LHS) — 43+16 live corpus sites fabricated before the pattern guard",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "EP.run", target: "Ping", line_number: 7, confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } }] }),
+  },
+  {
+    id: "elixir/chained-target-kept",
+    language: "elixir",
+    defectClass: "identity-corruption",
+    description: "ELX-ADV X4: chained-receiver call targets keep call syntax (`Mix.shell().error`) — an identity matching no symbol (148+91 corpus edges)",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "calls" && x.source === "EC.run" && x.target === "error"))
+        .concat([{ type: "calls", source: "EC.run", target: "Mix.shell().error", confidence: 0.8, metadata: { elixirSpecific: true } }]),
+    }),
+  },
+  {
+    id: "elixir/kernel-qualified-call",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELX-ADV X9: `Kernel.`-qualified builtins emit calls (49 corpus sites) while bare Kernel names are excluded by EX-D2",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "EK.run", target: "Kernel.length", confidence: 0.8, metadata: { elixirSpecific: true } }] }),
+  },
+  {
+    id: "elixir/pipe-arity-raw",
+    language: "elixir",
+    defectClass: "metadata-integrity",
+    description: "ELX-ADV X6: pipe steps report the WRITTEN arity — `x |> f(1)` states f/1 while invoking f/2 (thread-adjusted arity is the fix)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (x.type === "calls" && x.source === "EPipe.run" && x.target === "f" ? { ...x, metadata: { ...(x.metadata ?? {}), callArity: 1 } } : x)) }),
+  },
+  {
+    id: "elixir/module-literal-target",
+    language: "elixir",
+    defectClass: "identity-corruption",
+    description: "ELX-ADV X5: `__MODULE__.fun` emitted literally (matches no symbol — 5+8 corpus sites)",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "calls" && x.source === "ESelf.run" && x.target === "ESelf.raise"))
+        .concat([{ type: "calls", source: "ESelf.run", target: "__MODULE__.raise", confidence: 0.8, metadata: { elixirSpecific: true } }]),
+    }),
+  },
+  {
+    id: "elixir/defdelegate-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELX-ADV X8: defdelegate emits no link to its delegated target (71+12 corpus definitions silent)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && (x.source === "ED.fetch" || x.source === "ED.get"))) }),
+  },
+  {
+    id: "elixir/unquote-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELX-ADV X7: unquote arguments treated as data — the expansion-time call is dropped (26+7 corpus sites)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "EU.m" && x.target === "compute")) }),
+  },
+  {
+    id: "elixir/derive-list-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELX-ADV X10: `@derive [A, B]` list forms emit nothing (the oracle mirror gap measured 3 UNEXPLAINED on the synthetic case)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "implements" && (x.source === "ED1" || x.source === "ED2"))) }),
+  },
+  {
+    id: "elixir/alias-member-line",
+    language: "elixir",
+    defectClass: "line-attribution",
+    description: "ELX-ADV X12: every member of a multi-line alias list pinned to the prefix line instead of its own",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (x.type === "references" && x.source === "EA" && x.target === "Foo.Beta" ? { ...x, line_number: 2 } : x)) }),
+  },
+  {
+    id: "elixir/same-line-arity-collapse",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELX-ADV X13: arity outside the dedupe key — `{f(1), f(2, 3)}` collapses to one edge, losing f/2 (the name+arity contract says both survive)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "ES.run" && x.target === "f" && x.metadata?.callArity === 2)) }),
+  },
+  {
+    id: "elixir/proto-complexity-inflated",
+    language: "elixir",
+    defectClass: "metric-corruption",
+    description: "ELX-ADV X11: plain-{} complexityNodes answers `[\"toString\"]` from Object.prototype — the call site inflates complexity (the Clojure F5-2 class on the elixir record)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => (s.name === "run" && s.ownerName === "EPC" ? { ...s, complexity: 2 } : s)) }),
+  },
+  {
     id: "elixir/drop-atom-struct-fields",
     language: "elixir",
     defectClass: "symbol-loss",
