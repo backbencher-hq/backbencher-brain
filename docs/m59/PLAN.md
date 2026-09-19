@@ -740,6 +740,27 @@ The harness check `nested-site-source-reaches-the-caller` had been pinned **RED 
 
 **Filed from it, not swept up: [#894](https://github.com/backbencher-hq/backbencher-brain/issues/894).** The new gate's "no invention" control caught a **pre-existing** defect: `topLevel` (a single-line top-level function at line 11) is owned by `Local`, a class at lines 4–6 inside a method body, which does **not** enclose it — produced by the pre-existing "nearest preceding container" step, whose own comment reserves it for the regex fallback. Scale on the fresh cats-effect index: **1,221 of 6,009 owned symbols (20%)** carry an owner whose span does not enclose them (`method<-class` 271, `method<-interface` 262, `function<-type` 147). That number **mixes two causes this measurement cannot separate** — an invented owner, and an analyzer emitting a too-short `end` line — so it is filed with the split as its first task rather than "fixed" here. The gate records it as a declared observation tied to #894, not as a pass.
 
+### 3q. Capability, stated as measured: 9 lanes carry a call-site line, 13 do not (2026-09-19, #819)
+
+#819's recorded baseline predated the analyzer lane landing line emission for the JVM and web families (`295f6fa0`), so it was re-measured rather than cited. The oracle is unchanged; the world moved. Fresh run at `3b01f48e` (`--files-per-lang=4`, 22 lanes, 88 files, real corpus, `skipped: []`):
+
+| | now | as recorded at filing |
+|---|---|---|
+| analyzer-emitted relationships | **13,240** | 11,058 |
+| carrying a line | **3,474 (26.2%)** | 7 (0.06%) |
+| consistent with source (Tier A) | **3,468** | — |
+| inconsistent | **0** | — |
+| not checkable (synthesised names) | 6 | — |
+| lanes emitting lines | **9 of 22** | 2 |
+
+**Lines emitted (9), all consistent:** java 1,704/1,704 · javascript 1,144/1,144 · vue 246/246 · groovy 124/124 · kotlin 77/77 · scala 66/66 · typescript 59/59 · xml 49/49 · svelte 5/5.
+
+**No lines emitted (13) — 9,766 relationships where the field is NULL and every consumer must say "unknown":** php 4,477 · objc 1,836 · dart 912 · zig 584 · python 498 · haskell 348 · c 233 · cpp 220 · ruby 196 · csharp 176 · go 143 · rust 79 · swift 64. That is the analyzer lane's remaining work (#825), and the tool side is already honest about it (#823) — an unknown is reported as unknown, never substituted.
+
+**Two cautions kept on the record rather than buried.** (a) The artifact sets `sampleDrift: true` against the previous run and prints *"do NOT read a delta across those two artifacts: they measured different files"* — the prior artifacts recorded **no sample pins at all** (an internal note in the oracle header calls it `M59.O1 defect #4`), so the drift is unmeasurable and the 21→22 lane-count difference makes the two totals different measurements. The table is **current state vs the filing note**, not a before/after delta. Runs now write per-lane pins, which is what makes the next before/after computable.
+
+(b) This section states **lane coverage**, not an address contract. The contract itself — one derivation, one formatter, three declared states — is M62.A1 (#875, IDE lane, open), and M59 deliberately does not build a second one beside it.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
