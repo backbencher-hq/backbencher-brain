@@ -3,7 +3,7 @@
   "milestone": "M62",
   "githubMilestone": 62,
   "title": "Address Truth — nothing shows a position it does not know",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m62/M62-MASTER-PLAN.md (Issues / Issue groups)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "prerequisite": "M55 and M61 completion bars met — re-audited by G1 on every run through the persisted closure records",
@@ -13,7 +13,7 @@
       "code": "G1",
       "githubIssue": 874,
       "tool": "m62-governance",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "the M62 ledger; the bar re-audit that re-executes A1/A2/A3/D1 on every run; the chain wiring audit; the lane's prerequisites (M55 + M61 bars)",
       "acceptanceCriteria": [
         "gate exits 0 only on a fully verified ledger; a hollow closure, a removed issue, a mis-ordered group, a lane escape, a tampered record, an unwired gate and a hand-edited count each FAIL (proven by in-memory negatives)",
@@ -31,14 +31,14 @@
         "validation/m62/results/manifest.json"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m62/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 9,
-        "failed": 2,
-        "realFailed": 2,
+        "passed": 10,
+        "failed": 0,
+        "realFailed": 0,
         "negativeCases": 8,
-        "recordCommit": "70fd2b57abb18a50abedff4fb66ed94662ca8512"
+        "recordCommit": "3ccd4f5de4bb480dc9b2dc6965045d0395e71d77"
       }
     },
     {
@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "383961b374c0a5e29a5ecfbf6b240b648ed1065d",
-        "recordSealedAt": "2026-09-19T03:59:57.837Z"
+        "recordCommit": "3ccd4f5de4bb480dc9b2dc6965045d0395e71d77",
+        "recordSealedAt": "2026-09-19T04:00:02.491Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "negativeCases": 6,
-        "recordCommit": "383961b374c0a5e29a5ecfbf6b240b648ed1065d",
-        "recordSealedAt": "2026-09-19T03:59:58.915Z"
+        "recordCommit": "3ccd4f5de4bb480dc9b2dc6965045d0395e71d77",
+        "recordSealedAt": "2026-09-19T04:00:03.566Z"
       }
     },
     {
@@ -142,8 +142,8 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "383961b374c0a5e29a5ecfbf6b240b648ed1065d",
-        "recordSealedAt": "2026-09-19T03:59:59.981Z"
+        "recordCommit": "3ccd4f5de4bb480dc9b2dc6965045d0395e71d77",
+        "recordSealedAt": "2026-09-19T04:00:04.684Z"
       }
     },
     {
