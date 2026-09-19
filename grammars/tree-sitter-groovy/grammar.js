@@ -327,6 +327,22 @@ module.exports = grammar(Java, {
   ],
 
   rules: {
+    // #841 round 20: Groovy's subscript takes a comma-separated index list
+    // (`employee.properties['firstName', 'lastName'] = params` —
+    // AdvancedDataBindingController:146; 3 corpus files). Java's inherited
+    // array_access is single-index, so the juxt machinery was reading the
+    // list as an ARRAY-LITERAL argument and the `=` was orphaned into an
+    // ERROR. The real-Groovy oracle ACCEPTS the form. Overriding with a
+    // commaSep index keeps the node name, fields and every other reading
+    // identical; single-index trees are unchanged (commaSep's first element
+    // IS the old shape), and the analyzer's array walk sees the same node.
+    array_access: $ => seq(
+      field('array', $.primary_expression),
+      '[',
+      field('index', commaSep1($.expression)),
+      ']',
+    ),
+
     program: $ => seq(
       optional($.shebang),
       repeat($._toplevel_statement),
