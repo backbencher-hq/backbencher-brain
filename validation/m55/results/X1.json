@@ -2,27 +2,27 @@
   "issue": "M55.X1",
   "code": "X1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 42,
-  "passed": 40,
-  "failed": 2,
-  "realFailed": 2,
+  "passed": 42,
+  "failed": 0,
+  "realFailed": 0,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "4956774e6355774b082570611aa7aaa6463cd536",
+  "currentCommit": "98d56bfe2a3c538affed49631ae911c6f6a048e4",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-19T00:41:57.502Z",
+  "generatedAt": "2026-09-19T02:54:52.907Z",
   "audit": {
-    "head": "4956774e6355774b082570611aa7aaa6463cd536",
+    "head": "98d56bfe2a3c538affed49631ae911c6f6a048e4",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
-      "pin": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
+      "pin": "f52bba641d0d292bb547f82ae682fae855af72c4",
       "green": 41,
       "total": 41,
       "milestones": {
@@ -359,10 +359,7 @@
     ],
     "handoffIssue": 816
   },
-  "failures": [
-    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=b3fe7faa371f green=41/41 lane-changed=1",
-    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 5515 vs 5668 bytes"
-  ],
+  "failures": [],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
     "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 41 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
@@ -370,7 +367,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:41:57.504Z",
-    "contentSha256": "609168de6ba4c0a3bf2ff9610f5bef8f7a3c3250d1d6b37e364994f71b8e4518"
+    "sealedAt": "2026-09-19T02:54:52.917Z",
+    "contentSha256": "b7c19ff66283ea96051f06704b1ec958c1576a54c3ff5e6daa1afbb20c478f14"
   }
 }
