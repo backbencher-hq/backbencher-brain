@@ -592,20 +592,40 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // reason (#825): the name's line, not the spanning expression's.
         const nameNode = node.childForFieldName("name")
         if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
-          const leafNode = nameNode.type === "field_access"
-            ? nameNode.childForFieldName("field") ?? nameNode
-            : nameNode
-          relationships.push({
-            source: parentContext?.name ?? "(script)",
-            target: leafNode.text,
-            type: ASTEngine.RelationshipType.Calls,
-            confidence: 0.7,
-            ...this.lineField(leafNode, node),
-            // The callee expression AS WRITTEN (the sibling method_invocation
-            // branch's payload) — kept so the dotted form is recoverable by a
-            // consumer even though the edge itself names the bare leaf.
-            metadata: { relationshipType: "juxt_call", groovyCallExpression: nameNode.text },
-          })
+          // #841 round 14: the typed-closure-parameter misparse reaches this
+          // branch. When a closure's bare-name parameter type cannot win its
+          // reading (measured: six grammar routes closed in
+          // reviews/m59-841-assert-comma-separator.md §7f–§7q), the parser folds
+          // `{ Test task -> … }` into `juxt_function_call(name: Test, args:
+          // (task))` + `lambda_expression` — so this branch used to emit a
+          // FABRICATED `calls -> Test` edge naming the parameter's TYPE as a
+          // callee (measured: up to 45 such edges in one corpus file). The
+          // discriminator is the misparse's exact shape, measured on the pinned
+          // grammar: type-cased juxt name, args made only of identifier tokens
+          // (bare param names or `Type name` fragments), and a lambda expression
+          // as the adjacent sibling. A real juxtaposed call with a type-cased
+          // callee name in that company does not occur in the corpus — and the
+          // A/B below counts every suppression to keep that true.
+          if (this.looksLikeTypedClosureMisparse(node, nameNode, content)) {
+            // The closure body itself still walks (its calls/uses extract from
+            // the lambda_expression sibling), so only the fabricated callee
+            // edge is dropped — nothing else about the shape changes.
+          } else {
+            const leafNode = nameNode.type === "field_access"
+              ? nameNode.childForFieldName("field") ?? nameNode
+              : nameNode
+            relationships.push({
+              source: parentContext?.name ?? "(script)",
+              target: leafNode.text,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.7,
+              ...this.lineField(leafNode, node),
+              // The callee expression AS WRITTEN (the sibling method_invocation
+              // branch's payload) — kept so the dotted form is recoverable by a
+              // consumer even though the edge itself names the bare leaf.
+              metadata: { relationshipType: "juxt_call", groovyCallExpression: nameNode.text },
+            })
+          }
         }
       } else if (type === "leading_dot_call") {
         // #841 round 3: Groovy 3 leading-dot chain continuation. When the
@@ -725,6 +745,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+
+    // #841 round 14: analyzer-side recovery of the ownership graph that
+    // tree-sitter's error recovery flattens into root-level fragments (see
+    // recoverDegradedClassShapes). Runs before override resolution and the
+    // primary-type rewrite so both consume the recovered class.
+    this.recoverDegradedClassShapes(rootNode, symbols, relationships, symbolMap, currentPackage)
 
     this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
 
@@ -1844,6 +1870,328 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return `${scopeStack[scopeStack.length - 1].fqn}.${name}`
     }
     return currentPackage ? `${currentPackage}.${name}` : name
+  }
+
+  /**
+   * #841 round 14: does this juxt_function_call carry the typed-closure-
+   * parameter misparse shape? Measured on the pinned grammar, not assumed:
+   *   `{ Test task -> … }`            → name=Test,      args="task"
+   *   `{ String key, Object value → }` → name=String,    args="key, Object"
+   *   `{ Map<String,File> m -> … }`    → name=Map,       args="<String,File> m"  (generic)
+   *
+   * The decisive evidence is the SOURCE, measured over the whole groovy corpus
+   * (962 such juxt nodes, every one verified): what follows the node is at most
+   * further parameter names (the multi-param node stops before the last name —
+   * `String key, Object` then ` value`), commas, dots, generics, brackets and
+   * whitespace, and then the closure arrow `->`. A REAL juxtaposed call is
+   * never followed by an arrow — the arrow can only make the preceding text a
+   * closure parameter list (Groovy has no other `->`). The tree compositions
+   * (lambda sibling, arrow sibling, first child of closure/block) are the
+   * fallback when no source text is supplied — the same 962 sites fall into
+   * exactly those three compositions, with 139 of them ending before the last
+   * parameter name (which is why a sibling-only test under-covers by ~5×: it
+   * suppressed 115 of the 608 fabricated edges; the source test covers the
+   * rest).
+   */
+  private looksLikeTypedClosureMisparse(juxtNode: Node, nameNode: Node, content?: string): boolean {
+    const nameText = nameNode.text.trim()
+    // Type-cased head (optionally dotted). Lowercase juxt callees (echo, sh)
+    // never enter here, so ordinary Jenkins-style juxtaposition is untouched.
+    if (!/^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*$/.test(nameText)) return false
+    const argsNode = juxtNode.childForFieldName("args")
+    if (!argsNode) return false
+    // Args must be made only of identifier tokens and separators — bare param
+    // names or `Type name` fragments. Anything else (strings, parens, operators)
+    // is a real argument list.
+    if (!/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*(\s*,\s*[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*)*$/.test(argsNode.text.trim())) return false
+
+    // Source check: parameter-list material then the closure arrow.
+    if (content != null) {
+      const tail = content.slice(juxtNode.endIndex, juxtNode.endIndex + 160)
+      const arrow = tail.indexOf("->")
+      if (arrow >= 0) {
+        const between = tail.slice(0, arrow)
+        // Only identifiers, dots, generics, arrays, commas, whitespace. A `)`,
+        // `(`, `{`, `}`, `;`, quote or operator means real code intervened.
+        if (/^[\s,.<>\[\]A-Za-z0-9_]*$/.test(between)) return true
+      }
+    }
+
+    // Tree-composition fallbacks (content absent, or no arrow in the tail).
+    const parent = juxtNode.parent
+    if (!parent) return false
+    if (juxtNode.nextSibling?.type === "->") return true
+    const siblings: Node[] = []
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c) siblings.push(c)
+    }
+    const idx = siblings.findIndex((s) => s.id === juxtNode.id)
+    if (idx === -1) return false
+    const next = siblings[idx + 1]
+    if (next != null && next.type === "lambda_expression") return true
+    if (idx === 0 && (parent.type === "closure" || parent.type === "block")) return true
+    return false
+  }
+
+  /**
+   * #841 round 14 (analyzer-side recovery): when a typed closure parameter
+   * list collides inside a chained call, tree-sitter's recovery emits the
+   * class as ROOT-LEVEL fragments — the `class` keyword token, the name
+   * `identifier`, the `super_interfaces` node, and the member declarations
+   * as siblings — instead of a class_declaration node. The walk therefore
+   * never pushes a class scope, and the file loses its class symbol, its
+   * implements edges, and every contains edge: methods extract but ride
+   * ownerless/"(script)" (measured: 0 classes and 0 contains edges on
+   * 160–470-line build-logic plugin files). The grammar fix for the
+   * underlying construct is closed off by measurement (§7f–§7q), so this
+   * pass reconstructs the ownership graph AFTER the walk:
+   *   1. the class symbol, from the root `class` token + name fragment;
+   *   2. implements edges + classHierarchy from the surviving
+   *      super_interfaces fragment;
+   *   3. ownerName/ownerKind on the surviving member symbols inside the
+   *      body region (the existing contains loop then emits class → member);
+   *   4. method symbols synthesized for degraded method headers (modifiers +
+   *      type + identifier + formal_parameters + `{` fragments) so the
+   *      methods whose wrapper was dropped rejoin the graph;
+   *   5. "(script)"-sourced calls/uses edges inside the region re-parented
+   *      to the class.
+   * Runs only on trees with a root-level ERROR and the class fragment
+   * shape, so clean trees cannot enter (the shapes exist only where the
+   * parser failed). Parse errors are NOT suppressed — the tree keeps its
+   * ERROR nodes; only the ownership graph is restored.
+   */
+  private recoverDegradedClassShapes(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
+    currentPackage: string,
+  ): void {
+    if (!rootNode.hasError) return
+    // The degraded shapes live in ALL children — the `class` keyword, `{` and
+    // `}` are anonymous tokens and are absent from namedChildren (measured:
+    // the named-children scan saw no `class` token at all). Only nodes of
+    // those token types are matched below, so noise never enters.
+    const allKids = rootNode.children
+    const kids: Node[] = []
+    for (const c of allKids) { if (c) kids.push(c) }
+    if (!kids.some((k) => k.type === "ERROR")) return
+
+    for (let i = 0; i < kids.length; i++) {
+      if (kids[i].type !== "class") continue
+      const nameNode = kids[i + 1]
+      if (!nameNode || nameNode.type !== "identifier") continue
+      const name = nameNode.text
+      const classToken = kids[i]
+      const startLine = classToken.startPosition.row + 1
+
+      // Header fragments between the name and the opening brace.
+      let j = i + 2
+      const headerFragments: Node[] = []
+      while (j < kids.length && kids[j].type !== "{") {
+        headerFragments.push(kids[j])
+        j++
+      }
+      if (j >= kids.length) continue
+      const openBrace = kids[j]
+
+      // Body region: to the LAST root-level `}` token (degraded trees nest
+      // unreliably, so a balanced scan is not trustworthy).
+      let closeIdx = -1
+      for (let k = kids.length - 1; k > j; k--) {
+        if (kids[k].type === "}") { closeIdx = k; break }
+      }
+      const endLine = closeIdx >= 0 ? kids[closeIdx].endPosition.row + 1 : rootNode.endPosition.row + 1
+      const bodyChildren = kids.slice(j + 1, closeIdx >= 0 ? closeIdx : kids.length)
+
+      // Dedupe: a proper class_declaration at this line already produced it.
+      if (symbols.some((s) => s.name === name && s.range?.startLine === startLine)) continue
+
+      const typeFragments = new Set(["generic_type", "type_identifier", "scoped_type_identifier", "void_type", "integral_type", "floating_point_type", "boolean_type", "array_type"])
+      const memberKinds = new Set([ASTEngine.SymbolKind.Method, ASTEngine.SymbolKind.Constructor, ASTEngine.SymbolKind.Property])
+      const members = symbols.filter((s) =>
+        !s.ownerName &&
+        !s.metadata?.isAnonymousClass &&
+        memberKinds.has(s.kind) &&
+        s.range?.startLine != null && s.range.startLine >= startLine && s.range.startLine <= endLine)
+      // Body must show member structure: symbols the walk extracted, a
+      // degraded method header, or a surviving field_declaration. Measured
+      // case GrailsJacocoPlugin.groovy had ZERO surviving method wrappers —
+      // the old members-only gate silently skipped the whole file.
+      const hasFieldDecl = bodyChildren.some((k) => k.type === "field_declaration")
+      let hasDegradedHeader = false
+      for (let b = 0; b < bodyChildren.length - 1 && !hasDegradedHeader; b++) {
+        let p = b
+        if (bodyChildren[b].type === "modifiers") p = b + 1
+        const typeFrag = bodyChildren[p]
+        if (!typeFrag || !typeFragments.has(typeFrag.type)) continue
+        const nameFrag = bodyChildren[p + 1]
+        if (!nameFrag || nameFrag.type !== "identifier") continue
+        const fp = bodyChildren[p + 2]
+        const brace = bodyChildren[p + 3]
+        if (fp && fp.type === "formal_parameters" && brace && brace.type === "{") hasDegradedHeader = true
+      }
+      if (members.length === 0 && !hasDegradedHeader && !hasFieldDecl) continue
+
+      // Visibility/annotations from an adjacent preceding `modifiers` fragment
+      // (e.g. `@CompileStatic` as its own root-level child).
+      let visibility: "public" | "private" | "protected" = "public"
+      let annotations: string[] = []
+      const before = kids[i - 1]
+      if (before && before.type === "modifiers") {
+        for (let m = 0; m < before.namedChildCount; m++) {
+          const mc = before.namedChild(m)
+          if (!mc) continue
+          const t = mc.text ?? ""
+          if (t === "private") visibility = "private"
+          else if (t === "protected") visibility = "protected"
+          if (mc.type === "annotation" || mc.type === "marker_annotation") {
+            const annName = this.findChild(mc, (n) => n.type === "identifier" || n.type === "scoped_identifier")
+            if (annName) {
+              const text = annName.text
+              const dot = text.lastIndexOf(".")
+              annotations.push(dot === -1 ? text : text.slice(dot + 1))
+            }
+          }
+        }
+      }
+
+      // implements edges from surviving super_interfaces header fragments —
+      // same emission contract as the class_declaration branch.
+      for (const frag of headerFragments) {
+        if (frag.type !== "super_interfaces") continue
+        for (const tid of this.collectTypeNodes(frag)) {
+          relationships.push({
+            source: name,
+            target: this.baseTypeName(tid),
+            type: ASTEngine.RelationshipType.Implements,
+            confidence: 1.0,
+            ...this.lineField(tid, frag),
+            metadata: { relationshipType: "implements" },
+          })
+        }
+      }
+
+      const fqn = currentPackage ? `${currentPackage}.${name}` : name
+      const sym: ASTEngine.UniversalSymbol = {
+        name,
+        kind: ASTEngine.SymbolKind.Class,
+        comments: [],
+        range: {
+          // The measured body extent: from the opening brace (start overridden
+          // to the class keyword's line, #825 rule) to the closing brace token
+          // when one was found — NOT the whole root node (fragments are
+          // root-level children, so the root's range is the entire file).
+          ...this.nodeToRange(closeIdx >= 0 ? kids[closeIdx] : (openBrace.parent ?? rootNode)),
+          startLine,
+          startColumn: classToken.startPosition.column + 1,
+        },
+        visibility,
+        decorators: annotations.length > 0 ? annotations : undefined,
+        metadata: { nodeType: "class_declaration_recovered", annotations },
+      }
+      symbols.push(sym)
+      symbolMap.set(fqn, sym)
+      symbolMap.set(name, sym)
+
+      // Adopt the surviving member symbols inside the body region: they were
+      // extracted with NO owner (the walk never pushed a class scope).
+      for (const s of members) {
+        s.ownerName = name
+        s.ownerKind = ASTEngine.SymbolKind.Class
+        if (!s.visibility) s.visibility = "public"
+      }
+
+      // Degraded method headers inside the region: the parser dropped the
+      // method_declaration wrapper, leaving modifiers + type + identifier +
+      // formal_parameters + `{` as root fragments. Synthesize the method
+      // symbol so the member joins its class. The TYPE token may sit in the
+      // node before the name (TestTaskShardingPlugin: `modifiers`,
+      // `generic_type List<Test>`, `identifier collectCandidateTasks`,
+      // `formal_parameters`, `{`).
+      for (let b = 0; b < bodyChildren.length - 1; b++) {
+        let p = b
+        const mods = bodyChildren[b].type === "modifiers" ? bodyChildren[b] : null
+        if (mods) p = b + 1
+        const typeFrag = bodyChildren[p]
+        if (!typeFrag || !typeFragments.has(typeFrag.type)) continue
+        const nameFrag = bodyChildren[p + 1]
+        if (!nameFrag || nameFrag.type !== "identifier") continue
+        const mName = nameFrag.text
+        const mLine = nameFrag.startPosition.row + 1
+        // Never duplicate: a symbol already extracted at this name+line
+        // (from a complete method_declaration in the same region) wins.
+        if (symbols.some((s) => s.name === mName && s.range?.startLine === mLine)) continue
+        let q = p + 2
+        let paramNode: Node | null = null
+        const fp = bodyChildren[q]
+        if (fp && fp.type === "formal_parameters") { paramNode = fp; q++ }
+        const bodyBrace = bodyChildren[q]
+        if (!bodyBrace || bodyBrace.type !== "{") continue
+
+        const parameters: ASTEngine.Parameter[] = []
+        if (paramNode) {
+          for (let pc = 0; pc < paramNode.namedChildCount; pc++) {
+            const par = paramNode.namedChild(pc)
+            if (!par || (par.type !== "formal_parameter" && par.type !== "spread_parameter")) continue
+            const isSpread = par.type === "spread_parameter"
+            let pName = this.findChild(par, (n) => n.type === "identifier")
+            if (isSpread) {
+              const decl = this.findChild(par, (n) => n.type === "variable_declarator")
+              pName = decl ? this.findChild(decl, (n) => n.type === "identifier") : null
+            }
+            const pType = this.findChild(par, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type" || n.type === "scoped_type_identifier")
+            parameters.push({
+              name: pName?.text ?? "anonymous",
+              type: pType ? this.baseTypeName(pType) + (isSpread ? "[]" : "") : undefined,
+            })
+          }
+        }
+        let mVisibility: "public" | "private" | "protected" = "public"
+        if (mods) {
+          for (let m2 = 0; m2 < mods.namedChildCount; m2++) {
+            const mc2 = mods.namedChild(m2)
+            const t2 = mc2?.text ?? ""
+            if (t2 === "private") mVisibility = "private"
+            else if (t2 === "protected") mVisibility = "protected"
+          }
+        }
+        symbols.push({
+          name: mName,
+          kind: ASTEngine.SymbolKind.Method,
+          comments: [],
+          parameters: parameters.length > 0 ? parameters : undefined,
+          returnType: typeFragments.has(typeFrag.type) ? this.baseTypeName(typeFrag) : undefined,
+          range: {
+            ...this.nodeToRange(typeFrag),
+            // The method is written on its NAME's line (#825 rule).
+            startLine: mLine,
+            startColumn: nameFrag.startPosition.column + 1,
+          },
+          visibility: mVisibility,
+          ownerName: name,
+          ownerKind: ASTEngine.SymbolKind.Class,
+          metadata: { nodeType: "method_declaration_recovered" },
+        })
+        b = q
+      }
+
+      // Re-parent the walk's "(script)"-sourced calls/uses inside the region:
+      // with no class scope pushed they all rode the script sentinel. Bounded
+      // on BOTH sides — code after the class's closing brace is genuinely
+      // script-level and must keep the sentinel.
+      for (const rel of relationships) {
+        if (rel.source !== "(script)") continue
+        if (rel.type !== ASTEngine.RelationshipType.Calls && rel.type !== ASTEngine.RelationshipType.Uses) continue
+        const line = rel.line_number
+        if (line == null || line < startLine || line > endLine) continue
+        rel.source = name
+      }
+      // One recovered class per pass (the primary); a second fragment class
+      // stays a recorded residual rather than a risk.
+      break
+    }
   }
 
   private findChild(node: Node, predicate: (n: Node) => boolean): Node | null {
