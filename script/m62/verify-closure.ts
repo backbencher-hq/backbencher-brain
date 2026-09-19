@@ -23,9 +23,12 @@
 //                     substitute, no unknown carrying a numeric line.
 //   R5 the packs:     SPOT-CHECK-PACK.md (and the known-gaps inventory) are
 //                     GENERATED; a hand edit fails byte-identical regeneration.
-//   N1–N7 negatives:  a stale lane pin, a lane source change, a missing record,
-//                     a hollow M62 entry, a hand-edited pack, a lane escape and
-//                     an invariant violation each FAIL the audit.
+//   N1–N10 negatives: a stale lane pin, a lane source change, the auditor's
+//                     own dir NOT invalidating a bar, a missing record, a
+//                     hollow M62 entry, a hand-edited pack, an unsealed
+//                     self-owned record, a lane escape and an invariant
+//                     violation each FAIL (or, for the declared exclusion,
+//                     correctly do not fail) the audit.
 //
 // Evidence: validation/m62/results/X1.json (machine-emitted, sealed).
 // Run: npx tsx script/m62/verify-closure.ts
@@ -79,10 +82,25 @@ const LANE_BARS: Array<[string, string]> = [
   ["m61 (Verifier Truth)", "validation/m61/results/X1.json"],
 ]
 
-/** Files whose change invalidates a lane record (relevance, not equality). */
-const LANE_SOURCES = ["src/lsp/", "src/intelligence/", "src/mcp/tool-handlers.ts", "script/m24/", "script/m26/", "script/m42/", "script/m44/", "script/m55/", "script/m62/"]
+/** Files whose change invalidates a lane record (relevance, not equality).
+ *
+ *  What belongs here: the surfaces a lane's closure record makes claims ABOUT
+ *  — the runtime sources the lane ships (`src/lsp/`, `src/intelligence/`, the
+ *  MCP handler) and the lane's OWN gate scripts.
+ *
+ *  What does not: this auditor's own directory. `script/m62/` is the READER of
+ *  those bars, not part of any lane's claim. Listing it made the rule
+ *  self-referential — every edit to `verify-closure.ts` invalidated all six
+ *  lane bars, so X1 could only ever be green at the exact commit its own pins
+ *  were earned at, and re-earning them required another X1 edit (found while
+ *  closing M62: six lane bars read red with `script/m62/verify-closure.ts
+ *  (uncommitted)` as their only reason). A record cannot be invalidated by its
+ *  reader. A real regression still fails: any change under `src/lsp/`,
+ *  `src/intelligence/` or `script/m24|26|42|44|55/` is still caught, and the
+ *  negative below pins that. */
+const LANE_SOURCES = ["src/lsp/", "src/intelligence/", "src/mcp/tool-handlers.ts", "script/m24/", "script/m26/", "script/m42/", "script/m44/", "script/m55/"]
 
-const NEGATIVES = 8
+const NEGATIVES = 10
 
 let checks = 0
 let passed = 0
@@ -366,6 +384,15 @@ async function main(): Promise<void> {
   console.log("\nnegatives (every rule must be able to fail)")
   negative("a stale lane pin FAILS the relevance rule", laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit: "0".repeat(40) }, { isAncestor: () => false, laneChanged: () => [] }).length > 0)
   negative("a lane source change since the pin FAILS the relevance rule", laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit: currentCommit }, { isAncestor: () => true, laneChanged: () => ["src/lsp/hover.ts"] }).length > 0)
+  // The auditor's own directory is excluded on purpose (see LANE_SOURCES):
+  // the rule must still fail on a real lane source while NOT failing on a
+  // change to this reader. Both halves are asserted, so neither can silently
+  // drift into the other.
+  negative(
+    "the auditor's own dir does NOT invalidate a lane bar (a record cannot be invalidated by its reader)",
+    laneBarFindings({ status: "verified", passed: 40, mutantsCaught: 5, currentCommit }, { isAncestor: () => true, laneChanged: () => [] }).length === 0 &&
+      LANE_SOURCES.every((s) => !s.startsWith("script/m62")),
+  )
   negative("a missing lane record FAILS", laneBarFindings(undefined, { isAncestor: () => true, laneChanged: () => [] }).length > 0)
   negative("a lane record with no proof of any shape FAILS", laneBarFindings({ status: "verified", passed: 40, currentCommit }, { isAncestor: () => true, laneChanged: () => [] }).some((f) => f.includes("no can-fail proof")))
   {
