@@ -11,20 +11,20 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 200,
-  "cleanFiles": 6364,
+  "errorFiles": 191,
+  "cleanFiles": 6373,
   "missingNodeFiles": 63,
-  "errorNodeFiles": 191,
+  "errorNodeFiles": 182,
   "errorRates": {
-    "any": 3,
+    "any": 2.9,
     "missing": 1,
-    "error": 2.9
+    "error": 2.8
   },
-  "grammarErrorFiles": 200,
+  "grammarErrorFiles": 191,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 110208,
+  "wallMs": 134189,
   "missingTokens": {
     ";": 120,
     "identifier": 31,
@@ -37,7 +37,6 @@
     "/": 1
   },
   "errorLineSignatures": {
-    "@ID(ID)": 51,
     "}": 48,
     "@ID": 33,
     "<%=ID ? ID : ID%>": 24,
@@ -76,13 +75,13 @@
     "ID ID ID ID, ID.ID(ID, (ID)ID)": 5,
     "ID ID ID ID(ID ID) {": 4,
     "ID ID ID ID(ID ID, ID ID, ID ID, ID ID) {": 4,
-    "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4
+    "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4,
+    "ID = ID.ID { ID * 2 } ID { ID + 6 }": 4
   },
   "firstErrorLineSignatures": {
     "}": 30,
     "/*": 17,
     "ID.ID.ID(ID)": 9,
-    "@ID(ID)": 9,
     "ID.ID.ID(ID.ID)": 5,
     "ID @ID.ID.ID@": 5,
     "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4,
@@ -91,8 +90,8 @@
     "ID ID ID ID {": 3,
     "@ID.ID@": 3,
     "ID.ID.ID(ID, ID)": 2,
+    "ID ID ID ID{ID ID} ID ID{ID ID = ID.ID} ID ID{ID.ID} = ID": 2,
     "ID * ID.ID() >> ID": 2,
-    "@ID(ID\"ID ID{ID ID}": 2,
     "}()": 2,
     ".ID == ID.ID": 2,
     "ID ID + ID, ID": 2,
@@ -118,7 +117,8 @@
     "ID ID = ID.ID ID, ID": 1,
     ".ID() == 1": 1,
     "ID.ID.ID(ID, [": 1,
-    "ID ID.ID() { ID ID -> ID.ID.ID(ID) }": 1
+    "ID ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
+    "ID ID = ID.ID() { ID ID -> ID.ID.ID(ID) }": 1
   },
   "errorFileList": [
     {
@@ -387,23 +387,13 @@
     },
     {
       "file": "grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/services/DataServiceSpec.groovy",
-      "nodes": 7,
+      "nodes": 1,
       "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 477,
+      "errorNodes": 1,
+      "firstRow": 456,
       "firstKind": "ERROR",
-      "firstLine": "@Query(\"select $p.name from ${Product p} where $p.type like $pattern\")",
-      "pipelineErrors": 14
-    },
-    {
-      "file": "grails-data-hibernate5/core/src/test/groovy/org/grails/orm/hibernate/connections/DataServiceMultiDataSourceSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [],
-      "errorNodes": 8,
-      "firstRow": 458,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"update ${Product p} set $p.amount = $newAmount where $p.name = $name\")",
-      "pipelineErrors": 16
+      "firstLine": "SELECT $p FROM ${Product p} JOIN ${Attribute attr = p.attributes} WHERE ${attr.name} = $name",
+      "pipelineErrors": 2
     },
     {
       "file": "grails-data-hibernate7/core/src/main/groovy/org/grails/orm/hibernate/cfg/domainbinding/hibernate/HibernateMappingFactory.groovy",
@@ -443,13 +433,13 @@
     },
     {
       "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/services/DataServiceSpec.groovy",
-      "nodes": 7,
+      "nodes": 1,
       "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 487,
+      "errorNodes": 1,
+      "firstRow": 466,
       "firstKind": "ERROR",
-      "firstLine": "@Query(\"select $p.name from ${Product p} where $p.type like $pattern\")",
-      "pipelineErrors": 14
+      "firstLine": "SELECT $p FROM ${Product p} JOIN ${Attribute attr = p.attributes} WHERE ${attr.name} = $name",
+      "pipelineErrors": 2
     },
     {
       "file": "grails-data-hibernate7/core/src/test/groovy/grails/orm/CriteriaMethodInvokerSpec.groovy",
@@ -518,16 +508,6 @@
       "pipelineErrors": 54
     },
     {
-      "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/connections/DataServiceMultiDataSourceSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [],
-      "errorNodes": 8,
-      "firstRow": 458,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"update ${Product p} set $p.amount = $newAmount where $p.name = $name\")",
-      "pipelineErrors": 16
-    },
-    {
       "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/query/HqlQueryMethodsSpec.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -576,26 +556,6 @@
       "firstKind": "ERROR",
       "firstLine": "/*",
       "pipelineErrors": 18
-    },
-    {
-      "file": "grails-data-neo4j/examples/grails3-neo4j/grails-app/services/functional/tests/PersonService.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 43,
-      "firstKind": "ERROR",
-      "firstLine": "@Cypher(\"\"\"MATCH ${Person p}",
-      "pipelineErrors": 6
-    },
-    {
-      "file": "grails-data-neo4j/examples/neo4j-standalone/src/main/groovy/example/PersonService.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 38,
-      "firstKind": "ERROR",
-      "firstLine": "@Cypher(\"\"\"MATCH ${Person p}",
-      "pipelineErrors": 6
     },
     {
       "file": "grails-data-neo4j/grails-datastore-gorm-neo4j/src/main/groovy/org/grails/datastore/gorm/neo4j/engine/Neo4jQuery.groovy",
@@ -662,16 +622,6 @@
       "firstKind": "ERROR",
       "firstLine": "def date = helper.convert '', \"yyMMdd\"",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-datamapping-core-test/src/test/groovy/grails/gorm/services/ServiceImplSpec.groovy",
-      "nodes": 5,
-      "missingTokens": [],
-      "errorNodes": 5,
-      "firstRow": 477,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"select $p.name from ${Product p} where $p.name like $pattern\")",
-      "pipelineErrors": 10
     },
     {
       "file": "grails-datamapping-core-test/src/test/groovy/grails/gorm/tests/MultipleDataSourceSpec.groovy",
@@ -1881,16 +1831,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-test-examples/gorm/grails-app/services/gorm/BookDataService.groovy",
-      "nodes": 7,
-      "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 106,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"select max(b.pageCount) from ${Book b}\")",
-      "pipelineErrors": 14
-    },
-    {
       "file": "grails-test-examples/graphql/grails-docs-app/grails-app/domain/demo/Author.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -1913,16 +1853,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-test-examples/hibernate5/grails-data-service-multi-datasource/grails-app/services/example/ProductService.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 56,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"update ${Product p} set $p.amount = $newAmount where $p.name = $name\")",
-      "pipelineErrors": 6
-    },
-    {
       "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/binding/AdvancedDataBindingController.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -1941,26 +1871,6 @@
       "firstKind": "ERROR",
       "firstLine": "int sum = sumService.sum 1, 2",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/gorm/grails-app/services/gorm/BookDataService.groovy",
-      "nodes": 7,
-      "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 106,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"select max(b.pageCount) from ${Book b}\")",
-      "pipelineErrors": 14
-    },
-    {
-      "file": "grails-test-examples/hibernate7/grails-data-service-multi-datasource/grails-app/services/example/ProductService.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 56,
-      "firstKind": "ERROR",
-      "firstLine": "@Query(\"update ${Product p} set $p.amount = $newAmount where $p.name = $name\")",
-      "pipelineErrors": 6
     },
     {
       "file": "grails-test-examples/spring-security/acl/functional-test-app/grails-app/domain/com/testacl/Report.groovy",
