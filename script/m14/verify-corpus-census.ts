@@ -58,6 +58,11 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   python: { wasm: "tree-sitter-python.wasm", ext: [".py"], repo: "cython" },
   haskell: { wasm: "tree-sitter-haskell.wasm", ext: [".hs"], repo: "cabal" },
   erlang: { wasm: "tree-sitter-erlang.wasm", ext: [".erl"], repo: "rebar3" },
+  // EX waves: elixir was never enrolled in the census gate — the haskell
+  // blind-spot instrument has been blind to the whole elixir lane. Enrolled
+  // with the F5 primary corpus; the spec's classification is what the EX
+  // probes verified behaviour against.
+  elixir: { wasm: "tree-sitter-elixir.wasm", ext: [".ex", ".exs"], repo: "elixir" },
 }
 
 interface LangResult {
