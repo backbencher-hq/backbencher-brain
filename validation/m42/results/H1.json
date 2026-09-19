@@ -40,17 +40,17 @@
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "88ba1af744cd155bfb5925551bb2a5ce453666d9",
+  "currentCommit": "39bf440b5080fb9aad8523d4812b6d3a19c6f07f",
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-19T03:39:10.138Z",
+  "generatedAt": "2026-09-19T03:52:03.293Z",
   "limitations": [
     "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T03:39:10.138Z",
-    "contentSha256": "932cbb9e56e8c84780f66e1fe589606306dc3196910cfd1fda23427070114593"
+    "sealedAt": "2026-09-19T03:52:03.294Z",
+    "contentSha256": "9baa86fb433854ed14a843c8cc5f4d2183e0212cf47b95b6809bb872f21d1407"
   }
 }

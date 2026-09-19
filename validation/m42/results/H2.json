@@ -61,10 +61,10 @@
   "budgets": {
     "hoverP95Ms": 50
   },
-  "currentCommit": "88ba1af744cd155bfb5925551bb2a5ce453666d9",
+  "currentCommit": "39bf440b5080fb9aad8523d4812b6d3a19c6f07f",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-09-19T03:39:12.452Z",
+  "generatedAt": "2026-09-19T03:52:05.586Z",
   "limitations": [
     "Header usage count keeps the M24 semantics (raw relationship-row count); the usages section lists deduplicated L3 locations — when several rows point at one site the numbers differ, honestly.",
     "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to).",
@@ -73,7 +73,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T03:39:12.453Z",
-    "contentSha256": "29624f198dcf8c07654656891a94830792a02d170d2ca55525dca7829b7ce719"
+    "sealedAt": "2026-09-19T03:52:05.586Z",
+    "contentSha256": "6c1d35eb610285ca94f79eb602641f4a7b41a273ddffc42abd15710d65aee460"
   }
 }

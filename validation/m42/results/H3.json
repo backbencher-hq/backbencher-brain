@@ -24,10 +24,10 @@
     "enrichmentReadOverheadP95Ms": 5,
     "hoverP95Ms": 55
   },
-  "currentCommit": "88ba1af744cd155bfb5925551bb2a5ce453666d9",
+  "currentCommit": "39bf440b5080fb9aad8523d4812b6d3a19c6f07f",
   "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
   "evidenceFile": "H3.json",
-  "generatedAt": "2026-09-19T03:39:14.152Z",
+  "generatedAt": "2026-09-19T03:52:07.298Z",
   "limitations": [
     "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
     "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges.",
@@ -35,7 +35,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T03:39:14.153Z",
-    "contentSha256": "5def68653f23abc8e6e68fa422bd1edf5cc91260eafddfdd25b18cacb30fc8ca"
+    "sealedAt": "2026-09-19T03:52:07.298Z",
+    "contentSha256": "de0e254a82f7e77e4bc0bfa7b67196b49f839106a3e4d5f0ca1098007d35e594"
   }
 }
