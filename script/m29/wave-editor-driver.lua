@@ -67,7 +67,12 @@ while uv.now() < deadline do
   vim.wait(100)
 end
 local client = vim.lsp.get_client_by_id(client_id)
-record("S6: client initialized", client ~= nil and client.initialized == true, tostring(client))
+-- detail must be a REPRODUCIBLE fact: `tostring(client)` is a raw Lua table
+-- address (table: 0x...) that differs every run, and this file is a hashed
+-- input of the R4 precision ledger, so an address here made that ledger's
+-- byte-identical drift gate un-passable after any re-run. Record the declared
+-- identity instead (id + the initialized flag the check asserts).
+record("S6: client initialized", client ~= nil and client.initialized == true, "client_id=" .. tostring(client_id) .. " initialized=" .. tostring(client ~= nil and client.initialized == true))
 if not client then
   local f = io.open(out_path, "w")
   f:write(vim.json.encode(results))
