@@ -2,11 +2,14 @@
   "issue": "694",
   "code": "X1",
   "milestone": "M44",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 48,
-  "passed": 48,
-  "failed": 0,
-  "failures": [],
+  "passed": 46,
+  "failed": 2,
+  "failures": [
+    "X1: M29 ladder run green at HEAD: exit=1",
+    "X1: closure preconditions audited — zero violations: pre2:ladder leg M29 failed (exit=1)"
+  ],
   "negativeCases": 7,
   "suiteExits": {
     "E5": 0,
@@ -16,7 +19,7 @@
     "M26": 0,
     "M27": 0,
     "M28": 0,
-    "M29": 0,
+    "M29": 1,
     "M42-H1": 0,
     "M42-H2": 0,
     "M42-H3": 0,
@@ -33,7 +36,7 @@
     "e5": "validation/m25/results/E5.json (re-run at this HEAD — full suite incl. the M44 hub legs)",
     "e6": "validation/m25/results/F-CURSOR.json + F-ANTIGRAVITY.json (re-run at this HEAD, terminal gate 26→88); F-WINDSURF blocked-with-reason"
   },
-  "currentCommit": "0cc23533af11029eaf412d7fe936e14aa50e7c08",
+  "currentCommit": "74accb704a559c1da6dccb8872aa3516c12d1842",
   "verifierCommand": "npx tsx script/m44/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -47,7 +50,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-19T00:37:49.877Z",
+  "generatedAt": "2026-09-19T01:32:04.389Z",
   "limitations": [
     "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
@@ -56,7 +59,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:37:49.877Z",
-    "contentSha256": "5e547eae74a0661387479d7c8687e06e916139ceafe94b6cdf15fa1fb2368e56"
+    "sealedAt": "2026-09-19T01:32:04.389Z",
+    "contentSha256": "506e31a09b6a74886dab3852a245adada2a0efe171ec00a1e57655946b406d1a"
   }
 }
