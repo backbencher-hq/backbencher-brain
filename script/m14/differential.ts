@@ -8387,9 +8387,13 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       if (pushedFrame) work.push({ n, exit: true, qd })
       const cs = kids(n)
       // F7 mirror: case constant-position LISTs are data groups — never walked.
+      // W23 mirror: the trailing DEFAULT (last child whenever present — odd
+      // child count) is an EXPRESSION, never a constant group; the parity
+      // rule must not swallow it.
       const isCase = form === "case"
+      const caseDefaultIdxO = isCase && cs.length % 2 === 1 ? cs.length - 1 : -1
       for (let i = cs.length - 1; i >= 0; i--) {
-        if (isCase && i >= 2 && i % 2 === 0 && cs[i].type === "list_lit") continue
+        if (isCase && i >= 2 && i % 2 === 0 && cs[i].type === "list_lit" && i !== caseDefaultIdxO) continue
         work.push({ n: cs[i], qd })
       }
       continue
