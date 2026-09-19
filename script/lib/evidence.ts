@@ -75,6 +75,33 @@ export function canFailFromChecks(checks: string[]): { mutants: number; negative
   return { mutants, negatives }
 }
 
+/**
+ * Canonical key order for a record VALUE: object keys are sorted recursively,
+ * arrays keep their order (arrays carry meaning; object key order does not).
+ *
+ * Why this is not cosmetic: an evidence file's BYTES are inputs of drift gates
+ * (the M29 precision ledger hashes its inputs' semantic content), and one of
+ * our producers hands us data that passed through a Lua table
+ * (script/m29/wave-editor-driver.lua → vim.json.encode), whose key order is
+ * arbitrary per run. A record whose bytes differ every run for no semantic
+ * reason makes every artifact that hashes it un-drift-gatable — found at HEAD
+ * e596a107, where the S6 evidence's shuffled `raw` payloads were the only thing
+ * keeping the M29 ledger from reaching a byte-identical fixpoint. Fixed at the
+ * producer (the S6 record is canonicalized before it is sealed), with the
+ * helper owned here so every producer shares one rule.
+ */
+export function canonicalizeKeys<T>(value: T): T {
+  if (Array.isArray(value)) return value.map((v) => canonicalizeKeys(v)) as unknown as T
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {}
+    for (const k of Object.keys(value as Record<string, unknown>).sort()) {
+      out[k] = canonicalizeKeys((value as Record<string, unknown>)[k])
+    }
+    return out as unknown as T
+  }
+  return value
+}
+
 export function sealedContent(record: Record<string, unknown>): string {
   const { [SEAL_KEY]: _omit, ...rest } = record
   return JSON.stringify(rest)
