@@ -2,16 +2,16 @@
   "issue": "M44.G1",
   "code": "G1",
   "milestone": "M44",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 26,
-  "passed": 25,
-  "failed": 1,
+  "passed": 26,
+  "failed": 0,
   "negativeCases": 9,
-  "currentCommit": "54f3f4ff389b9f4510caf2d89869a84941d3066d",
+  "currentCommit": "4f7fcecb0037206a2a106b795d9ceb03d39c1692",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-19T02:02:39.790Z",
+  "generatedAt": "2026-09-19T03:44:52.011Z",
   "ledger": "validation/m44/results/manifest.json",
   "m42Bar": {
     "gateExit": 0
@@ -22,7 +22,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:02:39.795Z",
-    "contentSha256": "c09ad0ae1eaab70898e72b00d18ecbe5eb29168c420ab2bdb5a7442fa675f80b"
+    "sealedAt": "2026-09-19T03:44:52.013Z",
+    "contentSha256": "f76e1d67d7beb2415b9ad18289e5ddf5e41d081e680c9cc27b5b34f359689542"
   }
 }
