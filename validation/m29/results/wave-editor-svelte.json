@@ -51,7 +51,7 @@
       "ok": true
     }
   ],
-  "commit": "48770e9fa50bc97dba4f2df2602ab62c8763144d",
+  "commit": "33120eabc7f500fd52dc48ee2e6d8acce6faae0d",
   "language": "svelte",
   "raw": {
     "definition": {
@@ -279,7 +279,7 @@
   "status": "verified",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:49:59.668Z",
-    "contentSha256": "419f667e367fbe6e05a9b50ec212e3ef10d6aaf85984ed539990408dcc048117"
+    "sealedAt": "2026-09-19T01:53:39.314Z",
+    "contentSha256": "b593c2623529ebd2663744d6d1ff1adfa3a60b72e261b8f557740e31f4a85299"
   }
 }
