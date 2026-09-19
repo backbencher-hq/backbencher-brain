@@ -4,7 +4,10 @@
 //
 //   R1 the chain:     the M62 gate chain (A1/A2/A3/D1) is RE-EXECUTED here —
 //                     nothing is trusted from a previous run.
-//   R2 the ledger:    every record is sealed and verified, every entry is the
+//   R2 the ledger:    every record is sealed; a gate-made record (A1/A2/A3) is
+//                     verified, and the two SELF-OWNED records (G1, X1) are
+//                     read for shape only — a gate cannot bootstrap its own
+//                     verdict (see the note in main()). Every entry is the
 //                     projection of its record, and the ledger (with THIS run's
 //                     own measured entry substituted) passes every structural
 //                     rule. The ledger may read `closed` only when every issue
@@ -79,7 +82,7 @@ const LANE_BARS: Array<[string, string]> = [
 /** Files whose change invalidates a lane record (relevance, not equality). */
 const LANE_SOURCES = ["src/lsp/", "src/intelligence/", "src/mcp/tool-handlers.ts", "script/m24/", "script/m26/", "script/m42/", "script/m44/", "script/m55/", "script/m62/"]
 
-const NEGATIVES = 7
+const NEGATIVES = 8
 
 let checks = 0
 let passed = 0
@@ -265,7 +268,24 @@ async function main(): Promise<void> {
     const file = issue.evidence?.evidenceFile ?? `${issue.code}.json`
     const read = readEvidence<Record<string, unknown>>(path.join(RESULTS, file))
     if (issue.code === "G1" || issue.code === "X1") {
-      check(`R2: ${issue.code}'s record is sealed and verified (self-owned; read, not judged)`, read.ok && (read.record as { status?: string }).status === "verified", read.ok ? `status=${(read.record as { status?: string }).status}` : read.reason)
+      // Self-owned: READ, not judged — the label is now true of the rule.
+      //
+      // Why the status is not asserted here: a gate cannot bootstrap its own
+      // verdict. X1's record is WRITTEN by this very gate, so requiring
+      // `status === "verified"` made closure unreachable — the run read the
+      // previous run's known-gap record, failed, and wrote known-gap again
+      // (found while closing M62). The verdict that matters is THIS run's own
+      // measured result, applied at the ledger rule below (the ledger may read
+      // `closed` only when every issue is verified and this audit is green),
+      // and G1's own gate (verify-governance.ts) judges G1 independently.
+      // What this reads is the shape: the record is SEALED (a tampered or
+      // hand-edited record fails its seal) and declares a legal state.
+      const selfStatus = read.ok ? (read.record as { status?: string }).status : undefined
+      check(
+        `R2: ${issue.code}'s record is sealed and well-formed (self-owned; read, not judged)`,
+        read.ok && ["verified", "known-gap", "blocked"].includes(String(selfStatus)),
+        read.ok ? `status=${selfStatus}` : read.reason,
+      )
       continue
     }
     check(`R2: ${issue.code}'s record is sealed and verified`, read.ok && (read.record as { status?: string }).status === "verified", read.ok ? `status=${(read.record as { status?: string }).status}` : read.reason)
@@ -355,6 +375,16 @@ async function main(): Promise<void> {
     negative("a hollow M62 entry FAILS the ledger rules", validateLedger(hollow, planText, SELF_OWNED_CODES).some((e) => e.startsWith("hollow-")))
   }
   negative("a hand-edited pack FAILS byte-identical regeneration", generatedFindings(`${freshPack}\n<!-- hand edit -->\n`, freshPack).length > 0)
+  {
+    // The self-owned read's can-fail leg (added with the bootstrap fix):
+    // an UNSEALED record is refused by the house read, so the rule above
+    // cannot be passed by a hand-written JSON blob.
+    const tmp = path.join(tmpdir(), `m62-self-record-${process.pid}.json`)
+    writeFileSync(tmp, `${JSON.stringify({ status: "verified" })}\n`)
+    const unsealed = readEvidence(tmp)
+    rmSync(tmp, { force: true })
+    negative("an unsealed self-owned record FAILS the read (the read leg can fail)", unsealed.ok === false, String(unsealed.reason ?? ""))
+  }
   negative("a lane escape FAILS the lane rules", laneViolations({ issues: [{ ...(ledger.issues[0] as any), artifacts: ["script/m59/x.ts"] }] }).length > 0)
   negative("an invariant violation FAILS (a call-site without a positive line)", addressInvariants([{ kind: "call-site", file: "a.ts", line: 0 } as any]).length > 0)
 
