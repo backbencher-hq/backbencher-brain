@@ -11,14 +11,14 @@
     "mutantsTotal": 4,
     "ok": true
   },
-  "currentCommit": "8ce84a71c92e4fbc683dd5fa200b6047afe83307",
+  "currentCommit": "6ceba9c810ddf4d182787856665afda4b5085b26",
   "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
   "evidenceFile": "R5-verify.json",
-  "generatedAt": "2026-09-19T01:19:48.275Z",
+  "generatedAt": "2026-09-19T01:23:43.772Z",
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:19:48.275Z",
-    "contentSha256": "f64e68e5045a083ffc07bc0736a2bb35c9859f679e21522d391f08348f4da76e"
+    "sealedAt": "2026-09-19T01:23:43.772Z",
+    "contentSha256": "cdc1d318364ed0d58e91527fe31c829c8f07a91badfb1287dc6b8b92da2ce423"
   }
 }
