@@ -47,10 +47,10 @@
     "ok: M: unpinned-blind",
     "ok: R: this verifier's own evidence is a sealed record"
   ],
-  "currentCommit": "88ba1af744cd155bfb5925551bb2a5ce453666d9",
+  "currentCommit": "b4b3913c9c223ed505df57498ee96c64d6a211ec",
   "verifierCommand": "npx tsx script/m61/verify-claims.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-09-19T03:32:23.434Z",
+  "generatedAt": "2026-09-19T03:39:51.125Z",
   "claims": [
     {
       "id": "m25-issues",
@@ -194,7 +194,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T03:32:23.434Z",
-    "contentSha256": "197d098329a5ba028c713d9740b20b0cf2a9fc53e848b06e75f2572a62a00f1f"
+    "sealedAt": "2026-09-19T03:39:51.125Z",
+    "contentSha256": "c47318c7bc63f45d316e9bd7ae1d03e1d8ede73c9bd2c9cf69b39fecae17b0b3"
   }
 }
