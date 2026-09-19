@@ -64,6 +64,8 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   ruby:       { wasm: "tree-sitter-ruby.wasm",       ext: [".rb"],     analyzer: "real-ruby-analyzer.ts" },
   python:     { wasm: "tree-sitter-python.wasm",     ext: [".py"],     analyzer: "real-python-analyzer.ts" },
   haskell:    { wasm: "tree-sitter-haskell.wasm",    ext: [".hs"],     analyzer: "real-haskell-analyzer.ts" },
+  clojure:    { wasm: "tree-sitter-clojure.wasm",    ext: [".clj", ".cljc", ".cljs"], analyzer: "real-clojure-analyzer.ts" },
+  elixir:     { wasm: "tree-sitter-elixir.wasm",     ext: [".ex", ".exs"], analyzer: "real-elixir-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types
@@ -464,26 +466,39 @@ async function main() {
   }
 
   // --- evidence ---
-  const { emitEvidence } = await import("./evidence-harness")
-  const checks = results.map((r) => ({
-    id: `fixture-coverage-${r.language}`,
-    description: `every handled_verified type exercised by a fixture; no dead analyzer literals (${r.specHandled} spec types, ${r.fixtureTypes} fixture types)`,
-    status: r.pass ? "pass" : "fail",
-    uncovered: r.uncovered,
-    deadLiterals: r.deadLiterals,
-  }))
-  emitEvidence({
-    issueId: "M14.0.F6",
-    title: "Fixture-coverage gate: spec-handled node types must be exercised by fixtures; no dead analyzer literals",
-    claimLevel: "L1",
-    layers: ["fixtures"],
-    checks,
-    limitations: [
-      {
-        description: "Coverage checked against single-file fixtures; per-language multi-file construct families (e.g. cross-file extends) rely on the differential gate instead",
-      },
-    ],
-  })
+  // Scoped-run guard (the M14 W16 / #886 class, found live on the F7 sibling:
+  // a --lang run once replaced the canonical artifact with a one-language
+  // file). A scoped run is for inspecting a lane — it prints here and writes
+  // NO evidence and may not touch the baseline; the canonical artifact is
+  // only ever produced by a full run.
+  if (langArg) {
+    if (updateBaseline) {
+      console.error("refusing --update-baseline on a scoped run (would drop every language it did not touch)")
+      process.exit(2)
+    }
+    console.log(`\nSCOPED run (${langs.length} of ${Object.keys(GATED_LANGS).length} lanes): results printed above, NO evidence written — run without --lang for the canonical artifact`)
+  } else {
+    const { emitEvidence } = await import("./evidence-harness")
+    const checks = results.map((r) => ({
+      id: `fixture-coverage-${r.language}`,
+      description: `every handled_verified type exercised by a fixture; no dead analyzer literals (${r.specHandled} spec types, ${r.fixtureTypes} fixture types)`,
+      status: r.pass ? "pass" : "fail",
+      uncovered: r.uncovered,
+      deadLiterals: r.deadLiterals,
+    }))
+    emitEvidence({
+      issueId: "M14.0.F6",
+      title: "Fixture-coverage gate: spec-handled node types must be exercised by fixtures; no dead analyzer literals",
+      claimLevel: "L1",
+      layers: ["fixtures"],
+      checks,
+      limitations: [
+        {
+          description: "Coverage checked against single-file fixtures; per-language multi-file construct families (e.g. cross-file extends) rely on the differential gate instead",
+        },
+      ],
+    })
+  }
 
   if (failures.length > 0) {
     console.log(`\nfixture-coverage gate: ${failures.length} failure(s) — release blocked`)

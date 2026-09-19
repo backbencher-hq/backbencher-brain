@@ -996,7 +996,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // its body's calls. defprotocol signatures are already symbolized by
         // the defprotocol branch — listed here so they are still excluded
         // from call handling.
-        else if (node.parent?.type === "list_lit" && METHOD_IMPL_PARENT_FORMS[formNameOf(node.parent)] && executionHead(node.parent) !== node) {
+        else if (node.parent?.type === "list_lit" && METHOD_IMPL_PARENT_FORMS[formNameOf(node.parent)] && executionHead(node.parent)?.startIndex !== node.startIndex) {
           const parentForm = formNameOf(node.parent)
           if (parentForm !== "defprotocol" && parentForm !== "definterface") {
             const mName = symName(node.namedChild(0))
