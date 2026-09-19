@@ -1,6 +1,272 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:java",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "d3359e4b857f1a4bd21b410a2141394e99a444fb570c3ca66040ff9e937e8f28",
+        "bytes": 73144
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "c04f986e25fcafc51b3e6e0a23a9df18974b3dd0adddb4ac16dc8dbb4c10be9d",
+        "bytes": 40095
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "0813b36368eda40195bc61a146ab8a081438e81eb2293dfd18d7ff9fd78daf58",
+        "bytes": 4948
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "8795b053d9d2b9199221263170cbb64bb6b598b645a29e269f9ca029cbfc4aeb",
+        "bytes": 4363
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "c2ad88731ea82e93432d6a31fb410e3a5840dcf1f23bbae8b1fafc03f7c6564c",
+        "bytes": 105651
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
+        "bytes": 22600
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "d7bf400fe3a93fccd5ea3337876de60dc2ef5927a8d381afb35a3ec94519f398",
+        "bytes": 38682
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
+        "bytes": 90257
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "85fe678e96f8228539e846c04a42c5c3734b7ea04dd70636a063ab5d20fa242a",
+        "bytes": 113391
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "390e9838a6914840e0c00a514ef538caa206b0e779120e3f78e0df2281caaaad",
+        "bytes": 102001
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "ecd18b4ce8e8854fe1d6400e6b5b31f3366fb417c393a42d52d35a335b0b03f8",
+        "bytes": 55059
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "2ff9c890a1e9efec272499c3e17c89adfa98424253c26c0ec0c7d37d1a950ad1",
+        "bytes": 23003
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "f6a242fad3ae91b51567b6ec64ac1aadc1efb1c6cd411e8034c225303eed7498",
+        "bytes": 147431
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "c05db602f5994fa62ed45e3fe0d23f8257f0016f0854cc7b26895cf5fc845d59",
+        "bytes": 91954
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "5b0499af96353c18c69f420cd314ce8ad88d213fcba0d926a43fb71934e79a69",
+        "bytes": 55039
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "236f39021f277976135df7b6788519ca5874598181a12f379654b1b063e0813d",
+        "bytes": 133991
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "f664650d6fa4152cf1227b5237e71e4bc25438cca5d69f4482feab6dd8d7d1f0",
+        "bytes": 110870
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "2cf3348934d5e4c950542e6d2cfe0e8c014befd1f45884299ff3c6649fd2b29a",
+        "bytes": 61621
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "684339cfc5e53d4cee9aae44feee0f9225e0b0e3445ce1d0cf900eb64fad6b8b",
+        "bytes": 83171
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "27a4891170a5d90c07d13bbb6e96ed46ceef8130872d3c014433b529d8f8989a",
+        "bytes": 49950
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "64a3209636df0cfedd61d155f46ef91466ed405c09d7e0431ef24e2e93c0d506",
+        "bytes": 74260
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "08ad117ce4008609bbdfbf64a9eca45a2b99ea906c5655b197f9a8f92b359370",
+        "bytes": 87903
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "15ba603d58804adba5e7ea95b504192ead24a0150b680c74e7d2e1a35ee64e41",
+        "bytes": 122047
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "221d2e2e67794dec25be68e32f289473904f05c512eb422163fe2af94c1f2dc6",
+        "bytes": 65513
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
+        "bytes": 82717
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "16830a7e246a36d9f63d4fc282ec58af5d4220a9f43148c3c27303ed533786de",
+        "bytes": 58656
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "5766309f5f290a8a40b12f9f0df57ec5d0f37d0a82b99f009aa1fb47c33c69c2",
+        "bytes": 57037
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
+        "bytes": 18297
+      },
+      "src/brain/database.ts": {
+        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
+        "bytes": 17626
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
+        "bytes": 28163
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
+      },
+      "validation/m12/fixtures/java/AdvancedFeatures.java": {
+        "sha256": "b879259bbb8329ee8d5a2aaf552964a04014023510158edaea013200985e767f",
+        "bytes": 1345
+      },
+      "validation/m12/fixtures/java/BaseService.java": {
+        "sha256": "423410cbc88706c57095f7d1aeef474619d0c38ef48f163175d87c5047b58e53",
+        "bytes": 508
+      },
+      "validation/m12/fixtures/java/Repository.java": {
+        "sha256": "fd33ea2afb50cfa47cc51ac4ad9d70a167c6b082771a857b30cc7658c9cccb0a",
+        "bytes": 223
+      },
+      "validation/m12/fixtures/java/UserService.java": {
+        "sha256": "6d7da4aa1267c35217f334dc605355706dd51731604b7f0dfb0d0c89c0661afc",
+        "bytes": 1101
+      },
+      "validation/m12/ground-truth/java.json": {
+        "sha256": "bc04811e5a6971b07d2b75155b8e82ad414f6cd03644cf6203b8055415de0186",
+        "bytes": 48370
+      }
+    },
+    "digest": "814a325dffab44bb941be2a0fe400211c84a67651d86b49ad3b02e104c9d1996",
+    "parser": {
+      "path": "/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm",
+      "sha256": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f",
+      "bytes": 430239
+    }
+  },
   "truthSource": "manual_audit",
   "truthReference": "validation/m12/fixtures/java (BaseService.java, Repository.java, UserService.java) hand-audited from source; symbol truth cross-checked against M11 validation/m11/ground-truth/jvm-symbols.json",
   "fixtureDir": "validation/m12/fixtures/java",
@@ -12,42 +278,42 @@
   ],
   "perFile": {
     "AdvancedFeatures.java": {
-      "symbols": 18,
-      "relationships": 34
+      "symbols": 20,
+      "relationships": 56
     },
     "BaseService.java": {
       "symbols": 8,
-      "relationships": 11
+      "relationships": 22
     },
     "Repository.java": {
       "symbols": 3,
-      "relationships": 4
+      "relationships": 9
     },
     "UserService.java": {
       "symbols": 11,
-      "relationships": 29
+      "relationships": 43
     }
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": true,
+    "passed": false,
     "metrics": {
       "expected": 116,
-      "observedResolved": 116,
-      "truePositive": 116,
-      "falsePositive": 0,
-      "falseNegative": 0,
+      "observedResolved": 157,
+      "truePositive": 99,
+      "falsePositive": 58,
+      "falseNegative": 17,
       "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 1,
-      "recall": 1,
-      "falsePositiveRate": 0,
-      "falseNegativeRate": 0,
+      "precision": 0.6305732484076433,
+      "recall": 0.853448275862069,
+      "falsePositiveRate": 0.36942675159235666,
+      "falseNegativeRate": 0.14655172413793102,
       "unknownRate": 0
     },
-    "earliestFailingLayer": null,
+    "earliestFailingLayer": "ast_extraction",
     "truePositiveIds": [
       "rel:AdvancedFeatures.java:calls:genericBound:intValue",
       "rel:AdvancedFeatures.java:calls:mapFirst:apply",
@@ -62,7 +328,6 @@
       "rel:AdvancedFeatures.java:contains:AdvancedFeatures:Mapper",
       "rel:AdvancedFeatures.java:contains:AdvancedFeatures:Point",
       "rel:AdvancedFeatures.java:contains:AdvancedFeatures:Status",
-      "rel:AdvancedFeatures.java:contains:AdvancedFeatures:constructor",
       "rel:AdvancedFeatures.java:contains:AdvancedFeatures:genericBound",
       "rel:AdvancedFeatures.java:contains:AdvancedFeatures:getStatus",
       "rel:AdvancedFeatures.java:contains:AdvancedFeatures:mapFirst",
@@ -79,8 +344,6 @@
       "rel:AdvancedFeatures.java:references:AdvancedFeatures:java.util.List",
       "rel:AdvancedFeatures.java:references:AdvancedFeatures:java.util.function.Function",
       "rel:AdvancedFeatures.java:references:AdvancedFeatures:java.util.stream.Collectors",
-      "rel:AdvancedFeatures.java:uses:Status:ACTIVE",
-      "rel:AdvancedFeatures.java:uses:Status:PENDING",
       "rel:BaseService.java:calls:findAll:findByFilter",
       "rel:BaseService.java:contains:BaseService:Entity",
       "rel:BaseService.java:contains:BaseService:findAll",
@@ -100,13 +363,11 @@
       "rel:UserService.java:calls:save:completedFuture",
       "rel:UserService.java:calls:save:getId",
       "rel:UserService.java:calls:save:put",
-      "rel:UserService.java:contains:User:constructor",
       "rel:UserService.java:contains:User:getId",
       "rel:UserService.java:contains:User:getName",
       "rel:UserService.java:contains:User:id",
       "rel:UserService.java:contains:User:name",
       "rel:UserService.java:contains:UserService:User",
-      "rel:UserService.java:contains:UserService:constructor",
       "rel:UserService.java:contains:UserService:format",
       "rel:UserService.java:contains:UserService:save",
       "rel:UserService.java:contains:UserService:store",
@@ -123,19 +384,14 @@
       "rel:UserService.java:references:UserService:java.util.HashMap",
       "rel:UserService.java:references:UserService:java.util.Map",
       "rel:UserService.java:references:UserService:java.util.concurrent.CompletableFuture",
-      "rel:UserService.java:uses:User:id",
-      "rel:UserService.java:uses:User:name",
-      "symbol:AdvancedFeatures.java:10:class:AdvancedFeatures",
       "symbol:AdvancedFeatures.java:13:class:Point",
       "symbol:AdvancedFeatures.java:14:method:distance",
       "symbol:AdvancedFeatures.java:19:enum:Status",
       "symbol:AdvancedFeatures.java:19:enum_member:ACTIVE",
       "symbol:AdvancedFeatures.java:19:enum_member:INACTIVE",
       "symbol:AdvancedFeatures.java:19:enum_member:PENDING",
-      "symbol:AdvancedFeatures.java:21:interface:Mapper",
       "symbol:AdvancedFeatures.java:23:method:map",
       "symbol:AdvancedFeatures.java:26:property:points",
-      "symbol:AdvancedFeatures.java:28:constructor:constructor",
       "symbol:AdvancedFeatures.java:31:method:getStatus",
       "symbol:AdvancedFeatures.java:35:method:overload",
       "symbol:AdvancedFeatures.java:39:method:overload",
@@ -155,32 +411,134 @@
       "symbol:Repository.java:7:method:save",
       "symbol:Repository.java:8:method:findAll",
       "symbol:UserService.java:11:property:store",
-      "symbol:UserService.java:13:constructor:constructor",
-      "symbol:UserService.java:16:method:format",
-      "symbol:UserService.java:21:method:save",
       "symbol:UserService.java:27:class:User",
       "symbol:UserService.java:28:property:id",
-      "symbol:UserService.java:29:property:name",
-      "symbol:UserService.java:31:constructor:constructor",
-      "symbol:UserService.java:36:method:getId",
-      "symbol:UserService.java:39:method:getName",
-      "symbol:UserService.java:9:class:UserService"
+      "symbol:UserService.java:29:property:name"
     ],
-    "falsePositiveIds": [],
-    "falseNegativeIds": [],
+    "falsePositiveIds": [
+      "rel:AdvancedFeatures.java:calls:totalDistance:distance",
+      "rel:AdvancedFeatures.java:contains:AdvancedFeatures:AdvancedFeatures",
+      "rel:AdvancedFeatures.java:contains:Point:x",
+      "rel:AdvancedFeatures.java:contains:Point:y",
+      "rel:AdvancedFeatures.java:references:AdvancedFeatures:Integer",
+      "rel:AdvancedFeatures.java:references:AdvancedFeatures:List",
+      "rel:AdvancedFeatures.java:references:AdvancedFeatures:Point",
+      "rel:AdvancedFeatures.java:references:AdvancedFeatures:R",
+      "rel:AdvancedFeatures.java:references:AdvancedFeatures:Status",
+      "rel:AdvancedFeatures.java:references:AdvancedFeatures:String",
+      "rel:AdvancedFeatures.java:references:Mapper:B",
+      "rel:AdvancedFeatures.java:references:genericBound:T",
+      "rel:AdvancedFeatures.java:references:getStatus:String",
+      "rel:AdvancedFeatures.java:references:map:A",
+      "rel:AdvancedFeatures.java:references:mapFirst:Function",
+      "rel:AdvancedFeatures.java:references:mapFirst:Point",
+      "rel:AdvancedFeatures.java:references:mapFirst:R",
+      "rel:AdvancedFeatures.java:references:overload:String",
+      "rel:AdvancedFeatures.java:references:totalDistance:Point",
+      "rel:AdvancedFeatures.java:uses:distance:x",
+      "rel:AdvancedFeatures.java:uses:distance:y",
+      "rel:AdvancedFeatures.java:uses:getStatus:ACTIVE",
+      "rel:AdvancedFeatures.java:uses:getStatus:PENDING",
+      "rel:AdvancedFeatures.java:uses:totalDistance:Point",
+      "rel:BaseService.java:overrides:BaseService.findAll:Repository.findAll",
+      "rel:BaseService.java:references:BaseService:List",
+      "rel:BaseService.java:references:BaseService:String",
+      "rel:BaseService.java:references:BaseService:T",
+      "rel:BaseService.java:references:Entity:String",
+      "rel:BaseService.java:references:findByFilter:String",
+      "rel:BaseService.java:references:format:String",
+      "rel:Repository.java:references:Repository:CompletableFuture",
+      "rel:Repository.java:references:Repository:List",
+      "rel:Repository.java:references:Repository:T",
+      "rel:Repository.java:references:save:T",
+      "rel:UserService.java:contains:User:User",
+      "rel:UserService.java:contains:UserService:UserService",
+      "rel:UserService.java:references:User:String",
+      "rel:UserService.java:references:UserService:CompletableFuture",
+      "rel:UserService.java:references:UserService:Map",
+      "rel:UserService.java:references:UserService:String",
+      "rel:UserService.java:references:UserService:User",
+      "rel:UserService.java:references:format:String",
+      "rel:UserService.java:references:save:User",
+      "rel:UserService.java:uses:getId:id",
+      "rel:UserService.java:uses:getName:name",
+      "symbol:AdvancedFeatures.java:11:class:AdvancedFeatures",
+      "symbol:AdvancedFeatures.java:13:property:x",
+      "symbol:AdvancedFeatures.java:13:property:y",
+      "symbol:AdvancedFeatures.java:22:interface:Mapper",
+      "symbol:AdvancedFeatures.java:28:constructor:AdvancedFeatures",
+      "symbol:UserService.java:10:class:UserService",
+      "symbol:UserService.java:13:constructor:UserService",
+      "symbol:UserService.java:17:method:format",
+      "symbol:UserService.java:22:method:save",
+      "symbol:UserService.java:31:constructor:User",
+      "symbol:UserService.java:37:method:getId",
+      "symbol:UserService.java:40:method:getName"
+    ],
+    "falseNegativeIds": [
+      "rel:AdvancedFeatures.java:contains:AdvancedFeatures:constructor",
+      "rel:AdvancedFeatures.java:uses:Status:ACTIVE",
+      "rel:AdvancedFeatures.java:uses:Status:PENDING",
+      "rel:UserService.java:contains:User:constructor",
+      "rel:UserService.java:contains:UserService:constructor",
+      "rel:UserService.java:uses:User:id",
+      "rel:UserService.java:uses:User:name",
+      "sym:AdvancedFeatures.java:10:class:AdvancedFeatures",
+      "sym:AdvancedFeatures.java:21:interface:Mapper",
+      "sym:AdvancedFeatures.java:28:constructor:constructor",
+      "sym:UserService.java:13:constructor:constructor",
+      "sym:UserService.java:16:method:format",
+      "sym:UserService.java:21:method:save",
+      "sym:UserService.java:31:constructor:constructor",
+      "sym:UserService.java:36:method:getId",
+      "sym:UserService.java:39:method:getName",
+      "sym:UserService.java:9:class:UserService"
+    ],
     "unknownIds": [],
     "unsupportedIds": [],
-    "minimizedFailure": null
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "sym:UserService.java:9:class:UserService",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "UserService.java",
+          "line": 9,
+          "attributes": {
+            "name": "UserService",
+            "symbolKind": "class"
+          },
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "public class UserService extends BaseService<UserService.User> implements Repository<UserService.User>"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "symbol:AdvancedFeatures.java:11:class:AdvancedFeatures",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "AdvancedFeatures.java",
+          "line": 11,
+          "attributes": {
+            "name": "AdvancedFeatures",
+            "symbolKind": "class"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:java",
-      "wallTimeMs": 18.580614,
-      "userCpuMs": 60.84,
-      "systemCpuMs": 10.39,
-      "peakRssBytes": 227897344,
-      "rssDeltaBytes": 11706368,
+      "wallTimeMs": 98.564486,
+      "userCpuMs": 141.916,
+      "systemCpuMs": 16.847,
+      "peakRssBytes": 236978176,
+      "rssDeltaBytes": 12320768,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

@@ -790,17 +790,18 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                if (n === "Column" || n === "OneToMany" || n === "ManyToOne" || n === "OneToOne" || n === "ManyToMany") { dbMapping = n; break; }
             }
             if (dbMapping) {
-              let target = fieldName
               const explicit = this.getAnnotationValue(node, dbMapping, "name")
-              if (explicit) target = explicit
-              
+              const target = explicit ?? fieldName
+
               relationships.push({
                 source: localOwnerPrefix,
                 target,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
-                // M59 (#825): the column is named inside its mapping annotation.
-                ...(this.annotationLine(node, dbMapping) ? { line_number: this.annotationLine(node, dbMapping)! } : {}),
+                // M59 (#825): the column name is written inside its mapping annotation when explicit; the field line when implicit.
+                ...(explicit
+                  ? { line_number: this.annotationLine(node, dbMapping, explicit) }
+                  : { line_number: nameNode.startPosition.row + 1 }),
                 metadata: { isDatabase: true, relationshipType: "mapped_column" },
               })
             }
@@ -1854,7 +1855,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * line. Returns undefined when the annotation is absent, and callers omit the
    * field rather than writing 0 (#821).
    */
-  private annotationLine(node: Node, name: string): number | undefined {
+  private annotationLine(node: Node, name: string, targetName?: string): number | undefined {
     const mods = this.findChildByType(node, "modifiers") ?? node
     for (let i = 0; i < mods.namedChildCount; i++) {
       const c = mods.namedChild(i)
@@ -1865,9 +1866,28 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.findChildByType(c, "identifier") ??
         this.findChildByType(c, "scoped_identifier")
       const leaf = id ? String(id.text).split(".").pop() : ""
-      if (leaf === name) return c.startPosition.row + 1
+      if (leaf === name) {
+        if (targetName) {
+          const quoted = `"${targetName}"`
+          const found = this.findStringToken(c, quoted)
+          if (found) return found.startPosition.row + 1
+        }
+        return c.startPosition.row + 1
+      }
     }
     return undefined
+  }
+
+  /** First descendant whose text is exactly the quoted token (the string literal that carries an annotation target name). */
+  private findStringToken(node: Node, quoted: string): Node | null {
+    if (node.text === quoted) return node
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      const hit = this.findStringToken(c, quoted)
+      if (hit) return hit
+    }
+    return null
   }
 
   /** The range of a SYMBOL (not of an import or an error): annotations skipped. */

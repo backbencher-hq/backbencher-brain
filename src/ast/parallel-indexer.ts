@@ -1996,7 +1996,10 @@ export async function storeResults(
          // reject (anonymous_*/block_N/lambda_N/object_N) can be attributed to
          // the innermost real enclosing symbol instead of losing attribution.
          // Filled in the symbol loop below (needs the storeableName replica).
-         const storeableSpans: { id: string; start: number; end: number }[] = []
+         // `kind` was added for #879: the OWNER fallback below needs to know
+         // whether an enclosing span is a container. The #855 edge path reads
+         // only id/start/end, so the extra field changes nothing for it.
+         const storeableSpans: { id: string; start: number; end: number; kind: string }[] = []
          // Hoisted out of the relationship loop: it closes over storeableSpans
          // only, so defining it per relationship would allocate a closure per
          // edge for no reason.
@@ -2008,6 +2011,25 @@ export async function storeResults(
              const sp = storeableSpans[i]
              if (sp.start > line) continue
              if (sp.end >= line) return sp.id
+           }
+           return null
+         }
+         // M59 #879: the innermost storeable NON-container symbol enclosing a
+         // span — the lexical owner a nested declaration executes under (a method
+         // whose body holds the declaration). Scanned backwards over
+         // storeableSpans (sorted by start ascending), so the first hit is the
+         // innermost. `sp.start < start` is strict, which excludes the symbol
+         // itself and any span sharing its start line, and makes an owner cycle
+         // arithmetically impossible.
+         const enclosingNonContainerSpanId = (start: number, end: number, selfId: string): string | null => {
+           if (start < 1) return null
+           for (let i = storeableSpans.length - 1; i >= 0; i--) {
+             const sp = storeableSpans[i]
+             if (sp.id === selfId) continue
+             if (sp.start >= start) continue
+             if (sp.end < end) continue
+             if (CONTAINER_TYPES_LOOKUP.has(sp.kind)) continue
+             return sp.id
            }
            return null
          }
@@ -2031,6 +2053,17 @@ export async function storeResults(
              : isIndexArtifactName(nm))
          }
  
+         // M59/#879: hoisted to the FUNCTION scope. The owner fallback helper is
+         // defined ABOVE this block and calls it, and a block-scoped name used
+         // inside a nested function compiles clean but throws on the call
+         // ("CONTAINER_TYPES_LOOKUP is not defined") — the same silent-failure
+         // shape this milestone keeps finding in its own instruments. Function
+         // scope removes the ordering trap and the three call sites share one list.
+         const CONTAINER_TYPES_LOOKUP = new Set([
+           "class", "interface", "struct", "trait", "enum", "object", "actor",
+           "module", "namespace", "package", "impl", "type",
+         ])
+
          if (result.symbols) {
            const insertedSymbolIds = new Set<string>()
            // Names that should NEVER become standalone symbols — language keywords,
@@ -2053,10 +2086,6 @@ export async function storeResults(
            // nameToSymbol: first symbol with each name (mirrors Array.find semantics).
            // containersByStart: container symbols sorted by startLine ascending for
            // line-containment lookups (replaces two full-array scans per symbol).
-           const CONTAINER_TYPES_LOOKUP = new Set([
-             "class", "interface", "struct", "trait", "enum", "object", "actor",
-             "module", "namespace", "package", "impl", "type",
-           ])
            for (const s of result.symbols) {
              const nm = s.name || ""
              if (nm && !nameToSymbol.has(nm)) nameToSymbol.set(nm, s)
@@ -2077,7 +2106,12 @@ export async function storeResults(
              const sEnd = s.endLine ?? s.range?.endLine ?? sStart
              if (sStart < 1) continue
              if (!storeableName(s.name, sStart)) continue
-             storeableSpans.push({ id: `${fileId}:${s.name}:${sStart}`, start: sStart, end: Math.max(sEnd, sStart) })
+             storeableSpans.push({
+               id: `${fileId}:${s.name}:${sStart}`,
+               start: sStart,
+               end: Math.max(sEnd, sStart),
+               kind: String(s.type || s.kind || "unknown"),
+             })
            }
            storeableSpans.sort((a, b) => a.start - b.start)
            // First container-kind symbol in sorted order (used for this/self resolution)
@@ -2197,6 +2231,26 @@ export async function storeResults(
                }
              }
  
+             // M59 #879: a symbol every derivation above left OWNERLESS, whose
+             // span sits inside a storeable NON-container symbol, gains that
+             // symbol as its owner. #866 made an anonymous body's `val` member a
+             // real symbol and attributed the initialiser's call to it, but the
+             // member was stored with `owner_symbol_id = NULL` — so bb_graph's
+             // answer named `a` and no owner chain connected it to the method the
+             // agent asked about (the M59 "unrecognisable subject" defect).
+             //
+             // STRICTLY ADDITIVE, by construction: it runs only when ownerSymbolId
+             // is still null, so NO existing owner can change — and it prefers the
+             // innermost container-free holder over the container, so a member of a
+             // body is owned by the body's enclosing method, not by an outer class.
+             // Additions measured on the 150-file corpus slices before landing:
+             // scala 514, java 128, kotlin 32, typescript 11, groovy 0 — dominated
+             // by nested methods (388) and constants inside a method body (101).
+             if (!ownerSymbolId && !CONTAINER_TYPES_LOOKUP.has(symbol.type || symbol.kind || "unknown")) {
+               const enclosingNonContainer = enclosingNonContainerSpanId(symbolStartLine, symbolEndLine, symbolId)
+               if (enclosingNonContainer) ownerSymbolId = enclosingNonContainer
+             }
+
              // Verified analyzer output gets the narrow (hard-artifact) name
              // filter only — soft rules (quotes, parentheses, whitespace,
              // numeric prefixes, punctuation) are legitimate symbol contracts

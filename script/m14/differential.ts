@@ -263,6 +263,8 @@ const LANG_REPOS: Record<string, string> = {
   ruby: "rake",
   python: "cython",
   haskell: "cabal",
+  elixir: "elixir",
+  erlang: "rebar3",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -294,6 +296,12 @@ const SECOND_CORPUS: Record<string, string> = {
   ruby: "rack",
   python: "requests",
   haskell: "hledger",
+  elixir: "phoenix",
+  // ER wave (M14 #275 obligation 2): OTP is the second Erlang corpus — the
+  // elixir repo's 45 .erl files (compiler front-end only) were ruled
+  // insufficient as a second opinion. Shallow clone at a pinned commit under
+  // CORPUS_ROOT; pin recorded in corpusPins at lane time.
+  erlang: "otp",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -346,6 +354,8 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   python: { wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py" },
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
+  elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex,exs" },
+  erlang: { wasm: "tree-sitter-erlang.wasm", analyzerFile: "real-erlang-analyzer", className: "RealErlangAnalyzer", ext: "erl" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -7089,6 +7099,607 @@ function isPatternPos(node: any): boolean {
   return false
 }
 
+
+// Elixir calls/instantiates/implements/references oracle (#274 F5).
+// Independently derived from the pinned grammar + the analyzer's declared
+// contract (script/m14/spec/elixir-completeness.json EX-D1..D6): the same
+// rulings, a separate implementation, so disagreements surface as
+// missing/unexplained rather than being copied. The lane comparison is
+// site-agnostic (label + last-segment target), so `from` is attribution only.
+// Two passes like the analyzer: pass 1 collects per-module declaration sets
+// (forward references resolve), aliases, and the scope-free edges
+// (references/implements); pass 2 emits calls/instantiates with the same
+// resolution rule (unqualified calls keep only when declared in the enclosing
+// module — or unconditionally at top level, where there is no scope).
+export function deriveElixirEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    if (label !== "calls" && from === target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  // Language facts: call-shaped syntax that is never a runtime invocation
+  // (Elixir special forms), and the always-available Kernel builtins whose
+  // call edges would be pure graph noise (FP-family precedent). The Kernel
+  // set is the full call-shaped auto-import surface (ELXD16 mirror — must
+  // stay identical to the analyzer's KERNEL_FUNCTIONS or top-level phantoms
+  // like `calls Global->match?` surface as MISSING).
+  const SPECIAL = new Set(["if", "unless", "case", "cond", "receive", "for", "with", "try", "rescue", "catch", "after", "else", "quote", "unquote", "super", "raise", "throw", "exit", "fn", "do", "match"])
+  const KERNEL = new Set(["length", "hd", "tl", "elem", "put_elem", "map_size", "tuple_size", "byte_size", "bit_size", "div", "rem", "abs", "round", "trunc", "ceil", "floor", "min", "max", "is_atom", "is_binary", "is_bitstring", "is_boolean", "is_float", "is_function", "is_integer", "is_list", "is_map", "is_map_key", "is_number", "is_pid", "is_port", "is_reference", "is_tuple", "is_nil", "is_struct", "is_exception", "map_get", "to_string", "inspect", "apply", "self", "send", "send_after", "spawn", "spawn_link", "spawn_monitor", "make_ref", "node", "put_in", "get_in", "update_in", "get_and_update_in", "pop_in", "struct", "struct!", "binary_part", "binding", "tap", "then", "dbg", "tuple_to_list", "list_to_tuple", "atom_to_binary", "binary_to_atom", "term_to_binary", "binary_to_term", "process_flag", "sleep", "yield", "match?", "function_exported?", "macro_exported?", "reraise"])
+  const DEFS = new Set(["def", "defp", "defmacro", "defmacrop", "defdelegate", "defguard", "defguardp"])
+  const DIRECTIVES = new Set(["use", "import", "alias", "require"])
+  const DECL_KW = new Set(["defmodule", "defprotocol", "defimpl", "defstruct", "defexception", "case", "cond", "receive", "match"])
+
+  const kids = (n: any): any[] => {
+    const r: any[] = []
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c) r.push(c) }
+    return r
+  }
+  const find = (n: any, pred: (c: any) => boolean): any => {
+    for (const c of kids(n)) if (pred(c)) return c
+    return undefined
+  }
+  const callTarget = (call: any): string => find(call, (c) => c.type === "identifier" || c.type === "dot")?.text ?? ""
+  const isQuoted = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (cur.type === "call" && find(cur, (c) => c.type === "identifier")?.text === "quote") return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const isAttr = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (cur.type === "unary_operator" && cur.childCount > 0 && cur.child(0)?.text === "@") return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const isHead = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (cur.type === "do_block") return false
+      if (cur.type === "pair") {
+        const kwt = find(cur, (c) => c.type === "keyword")?.text ?? ""
+        if (kwt === "do" || kwt.startsWith("do:")) return false
+      }
+      if (cur.type === "call" && DEFS.has(find(cur, (c) => c.type === "identifier")?.text ?? "")) return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const stripQuotes = (s: string): string => {
+    let out = ""
+    for (let i = 0; i < s.length; i++) { const ch = s[i]; if (ch === "\"" || ch === "'") continue; out += ch }
+    return out
+  }
+  const stripAfterColon = (s: string): string => {
+    const c = s.indexOf(":")
+    return (c >= 0 ? s.slice(0, c) : s).trim()
+  }
+  // Analyzer extractName mirror: alias text, else the first alias/identifier/
+  // dot child, else the paren-stripped source text.
+  const modName = (args: any): string => {
+    const a = find(args, (c) => c.type === "alias")
+    if (a) return a.text
+    if (args.namedChildCount > 0) {
+      const f = args.namedChild(0)
+      if (f?.type === "alias" || f?.type === "identifier" || f?.type === "dot") return f.text
+    }
+    let out = ""
+    for (const ch of args.text) { if (ch === "(" || ch === ")") continue; out += ch }
+    return out.trim()
+  }
+  // Analyzer processFunction name mirror: arguments unwrap, when-guard left
+  // side, inner identifier of a signature call, bare identifier, or the
+  // operator of a binary_operator head.
+  const declName = (defCall: any): string => {
+    const sigs = kids(defCall).filter((c) => c.type !== "identifier" && c.type !== "do_block")
+    if (sigs.length === 0) return ""
+    let sig: any = sigs[0]
+    if (sig && sig.type === "arguments" && sig.namedChildCount > 0) sig = sig.namedChild(0)
+    if (!sig) return ""
+    let actual: any = sig
+    if (sig.type === "binary_operator" && sig.childCount > 1 && sig.child(1)?.text === "when") {
+      actual = sig.childCount > 0 ? sig.child(0) : undefined
+    }
+    if (!actual) return ""
+    if (actual.type === "call") return find(actual, (c) => c.type === "identifier")?.text ?? ""
+    if (actual.type === "identifier") return actual.text
+    if (actual.type === "binary_operator") return actual.childCount > 1 ? actual.child(1)?.text ?? "" : ""
+    if (actual.type === "unary_operator") {
+      // ELXD24 mirror: the name is the anonymous operator token.
+      for (let i = 0; i < actual.childCount; i++) {
+        const c = actual.child(i)
+        if (c && !c.isNamed) return c.text
+      }
+      return ""
+    }
+    return ""
+  }
+  interface Scope { node: any; name: string; kind: string }
+  const declaredByScope = new Map<string, Set<string>>()
+  const aliases = new Map<string, string>()
+  // ELXD17 mirror: ordered :only-constrained imports per scope.
+  // (Keyword-colon stripping reuses the module-level stripAfterColon.)
+  const importList: { module: string; only?: Set<string>; scope: string }[] = []
+  const decl = (scope: string, name: string) => {
+    if (!name) return
+    let s = declaredByScope.get(scope)
+    if (!s) { s = new Set(); declaredByScope.set(scope, s) }
+    s.add(name)
+  }
+  const ownerOf = (stack: Scope[]): string => {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const k = stack[i].kind
+      if (k !== "function" && k !== "macro" && k !== "method") return stack[i].name
+    }
+    return ""
+  }
+  const innerOf = (stack: Scope[]): string => stack.length > 0 ? stack[stack.length - 1].name : "Global"
+
+  // ---- Pass 1: declarations, aliases, references, implements ----
+  {
+    const stack: Scope[] = []
+    const work: { n: any; exit?: boolean }[] = [{ n: root }]
+    while (work.length > 0) {
+      const { n, exit } = work.pop()!
+      if (exit) { if (stack.length > 0 && stack[stack.length - 1].node === n) stack.pop(); continue }
+      const t = n.type
+      let pushed = false
+      if (t === "call" && !isQuoted(n)) {
+        const target = callTarget(n)
+        if ((target === "defmodule" || target === "defprotocol") && !isHead(n) && !isAttr(n)) {
+          const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
+          if (args) {
+            const nm = modName(args)
+            if (nm) {
+              const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
+              stack.push({ node: n, name: full, kind: target === "defmodule" ? "module" : "interface" })
+              pushed = true
+            }
+          }
+        } else if (target === "defimpl" && !isHead(n) && !isAttr(n)) {
+          const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
+          if (args) {
+            const als = kids(args).filter((c) => c.type === "alias")
+            const protocol = als.length > 0 && als[0] ? als[0].text : "Unknown"
+            let forType = "Unknown"
+            const kw = find(args, (c) => c.type === "keywords")
+            if (kw) {
+              for (let i = 0; i < kw.namedChildCount; i++) {
+                const pair = kw.namedChild(i)
+                if (!pair || pair.type !== "pair") continue
+                const kwn = find(pair, (c) => c.type === "keyword")
+                if (kwn && stripAfterColon(kwn.text) === "for" && pair.namedChildCount > 1) {
+                  const v = pair.namedChild(1)
+                  if (v) forType = v.text
+                }
+              }
+            }
+            const forAlias = als.length > 1 ? als[1].text : forType
+            // ELXD6/ELXD7 mirror: for-less nested defimpl targets the
+            // enclosing scope; defmacro heads are not implementations.
+            const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
+            if (implName !== protocol) push("implements", implName, protocol)
+            stack.push({ node: n, name: implName, kind: "class" })
+            pushed = true
+          }
+        } else if (DEFS.has(target) && !isHead(n) && !isAttr(n)) {
+          const nm = declName(n)
+          if (nm) {
+            decl(ownerOf(stack), nm)
+            stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function" })
+            pushed = true
+          }
+        } else if (DIRECTIVES.has(target)) {
+          const args = find(n, (c) => c.type !== "identifier")
+          if (args) {
+            const rawModuleName = modName(args)
+            // ELXD21 mirror: __MODULE__ resolves against the enclosing
+            // module scope (never a function scope).
+            let modScopeO = ""
+            for (let i = stack.length - 1; i >= 0; i--) {
+              if (stack[i].kind === "module" || stack[i].kind === "interface") { modScopeO = stack[i].name; break }
+            }
+            const resolveSelfO = (name: string): string => {
+              if (!name.startsWith("__MODULE__") || !modScopeO) return name
+              return modScopeO + name.slice("__MODULE__".length)
+            }
+            const moduleName = resolveSelfO(rawModuleName)
+            // Dependency targets: exactly one module, except multi-alias
+            // (`alias Foo.{Bar, Baz}`) which expands per member (ELXD20).
+            let depModules: string[] = [moduleName]
+            if (target === "alias") {
+              const multiDot = find(args, (c) => c.type === "dot" && !!find(c, (d) => d.type === "tuple"))
+              const tuple = multiDot ? find(multiDot, (c) => c.type === "tuple") : undefined
+              if (tuple) {
+                depModules = []
+                const rawPrefix = find(multiDot, (c) => c.type === "alias")?.text
+                  ?? find(multiDot, (c) => c.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
+                const prefix = resolveSelfO(rawPrefix)
+                for (let i = 0; i < tuple.namedChildCount; i++) {
+                  const kid = tuple.namedChild(i)
+                  if (!kid || (kid.type !== "alias" && kid.type !== "dot")) continue
+                  const full = prefix ? `${prefix}.${kid.text}` : kid.text
+                  const key = kid.text.split(".").pop()
+                  if (key && full) {
+                    aliases.set(key, full)
+                    depModules.push(full)
+                  }
+                }
+              } else {
+                let asName: string | null = null
+                const kwn = find(args, (c) => c.type === "keywords")
+                if (kwn) {
+                  for (let i = 0; i < kwn.namedChildCount; i++) {
+                    const pair = kwn.namedChild(i)
+                    if (!pair || pair.type !== "pair") continue
+                    const kk = find(pair, (c) => c.type === "keyword")
+                    if (kk && stripAfterColon(kk.text) === "as" && pair.namedChildCount > 1) {
+                      const v = pair.namedChild(1)
+                      if (v) asName = v.text
+                    }
+                  }
+                }
+                const parts = moduleName.split(".")
+                const key = asName ?? parts[parts.length - 1]
+                if (key) aliases.set(key, moduleName)
+              }
+            }
+            if (target === "import" && moduleName) {
+              // ELXD17 mirror: :only name sets for call resolution.
+              let only: Set<string> | undefined
+              const kwn = find(args, (c) => c.type === "keywords")
+              if (kwn) {
+                for (let i = 0; i < kwn.namedChildCount; i++) {
+                  const pair = kwn.namedChild(i)
+                  if (!pair || pair.type !== "pair") continue
+                  const kk = find(pair, (c) => c.type === "keyword")
+                  if (!kk || stripAfterColon(kk.text) !== "only" || pair.namedChildCount < 2) continue
+                  const val = pair.namedChild(1)
+                  if (val?.type !== "list") continue
+                  const names = new Set<string>()
+                  for (let a = 0; a < val.namedChildCount; a++) {
+                    const grp = val.namedChild(a)
+                    if (!grp || grp.type !== "keywords") continue
+                    for (let j = 0; j < grp.namedChildCount; j++) {
+                      const fp = grp.namedChild(j)
+                      if (!fp || fp.type !== "pair") continue
+                      const fk = find(fp, (c) => c.type === "keyword")
+                      if (fk?.text) names.add(stripAfterColon(fk.text))
+                    }
+                  }
+                  if (names.size > 0) only = names
+                }
+              }
+              importList.push({ module: moduleName, only, scope: stack.length > 0 ? stack[stack.length - 1].name : "" })
+            }
+            for (const dep of depModules) {
+              if (!dep) continue
+              // ELXD8 mirror: self-directives are lexical no-ops as
+              // dependencies — never a self-loop edge (alias map stands).
+              const owner = stack.length > 0 ? stack[stack.length - 1].name : ""
+              if (dep !== owner) push("references", owner || "Global", dep)
+            }
+          }
+        }
+      } else if (t === "unary_operator" && n.childCount > 0 && n.child(0)?.text === "@") {
+        // No quote guard here — mirror of the analyzer, whose attribute
+        // branch runs even inside quote blocks.
+        const attrCall = n.child(1)
+        const attrTarget = attrCall?.type === "call" ? callTarget(attrCall) : ""
+        if (attrTarget === "behaviour" || attrTarget === "behavior") {
+          const args = find(attrCall, (c) => c.type === "arguments")
+          const first = args && args.namedChildCount > 0 ? args.namedChild(0) : undefined
+          const bhv = first ? stripQuotes(first.text).trim() : ""
+          if (bhv) push("implements", stack.length > 0 ? innerOf(stack) : "Global", bhv)
+        }
+        if (attrTarget === "derive") {
+          // ELXD11 mirror: bare alias directly under arguments, options
+          // form wrapped in a tuple. The analyzer requires an enclosing
+          // scope (top-level @derive emits nothing) — mirrored here.
+          const args = find(attrCall, (c) => c.type === "arguments")
+          const first = args && args.namedChildCount > 0 ? args.namedChild(0) : undefined
+          const proto = first?.type === "alias" ? first.text
+            : first?.type === "tuple" ? find(first, (c) => c.type === "alias")?.text ?? "" : ""
+          if (proto && stack.length > 0) push("implements", innerOf(stack), proto)
+        }
+      }
+      if (pushed) work.push({ n, exit: true })
+      for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) work.push({ n: c }) }
+    }
+  }
+
+  // ---- Pass 2: calls + instantiates ----
+  const skipCall = (node: any, target: string): boolean => {
+    if (SPECIAL.has(target)) return true
+    if (KERNEL.has(target)) return true
+    if (isQuoted(node)) return true
+    if (isAttr(node)) return true
+    if (isHead(node)) return true
+    // ELXD18 mirror: only a lowercase-rooted dot without arguments is a
+    // field read / dynamic dispatch — capitalized (or atom/sigil) roots
+    // name real remote references and emit.
+    const tgt = find(node, (c) => c.type === "identifier" || c.type === "dot")
+    if (tgt?.type === "dot" && !find(node, (c) => c.type === "arguments")) {
+      const r = (tgt.text.split(".")[0] ?? "")
+      if (r.length > 0 && r[0] >= "a" && r[0] <= "z") return true
+    }
+    return false
+  }
+  const emitCall = (node: any, rawTarget: string, stack: Scope[]) => {
+    if (!rawTarget) return
+    let finalTarget = rawTarget
+    const parts = rawTarget.split(".")
+    if (parts.length > 1 && aliases.has(parts[0])) {
+      parts[0] = aliases.get(parts[0])!
+      finalTarget = parts.join(".")
+    }
+    if (!finalTarget) return
+    if (finalTarget.indexOf(".") !== -1) {
+      const r = finalTarget.split(".")[0]
+      if (!r || r[0] !== r[0].toUpperCase()) return
+    } else {
+      const enclosing = ownerOf(stack)
+      if (enclosing && !(declaredByScope.get(enclosing)?.has(finalTarget))) {
+        // ELXD17 mirror: :only-import fallback, last import wins. Bare and
+        // :except imports cannot confirm a target — those stay dropped.
+        let resolved: string | undefined
+        for (let i = importList.length - 1; i >= 0; i--) {
+          const imp = importList[i]
+          if (imp.scope !== enclosing) continue
+          if (imp.only && imp.only.has(finalTarget)) { resolved = `${imp.module}.${finalTarget}`; break }
+        }
+        if (!resolved) return
+        finalTarget = resolved
+      }
+    }
+    push("calls", innerOf(stack) === "Global" && stack.length === 0 ? "Global" : innerOf(stack), finalTarget)
+  }
+  {
+    const stack: Scope[] = []
+    const work: { n: any; exit?: boolean }[] = [{ n: root }]
+    while (work.length > 0) {
+      const { n, exit } = work.pop()!
+      if (exit) { if (stack.length > 0 && stack[stack.length - 1].node === n) stack.pop(); continue }
+      const t = n.type
+      let pushed = false
+      if (t === "call" && !isQuoted(n)) {
+        const target = callTarget(n)
+        if ((target === "defmodule" || target === "defprotocol") && !isHead(n) && !isAttr(n)) {
+          const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
+          const nm = args ? modName(args) : ""
+          if (nm) {
+            const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
+            stack.push({ node: n, name: full, kind: target === "defmodule" ? "module" : "interface" })
+            pushed = true
+          }
+        } else if (target === "defimpl" && !isHead(n) && !isAttr(n)) {
+          const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
+          if (args) {
+            const als = kids(args).filter((c) => c.type === "alias")
+            const protocol = als.length > 0 && als[0] ? als[0].text : "Unknown"
+            let forType = "Unknown"
+            const kw = find(args, (c) => c.type === "keywords")
+            if (kw) {
+              for (let i = 0; i < kw.namedChildCount; i++) {
+                const pair = kw.namedChild(i)
+                if (!pair || pair.type !== "pair") continue
+                const kwn = find(pair, (c) => c.type === "keyword")
+                if (kwn && stripAfterColon(kwn.text) === "for" && pair.namedChildCount > 1) {
+                  const v = pair.namedChild(1)
+                  if (v) forType = v.text
+                }
+              }
+            }
+            const forAlias = als.length > 1 ? als[1].text : forType
+            // ELXD6/ELXD7 mirror (scope naming must match pass 1 exactly —
+            // resolution sets diverge otherwise).
+            const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
+            stack.push({ node: n, name: implName, kind: "class" })
+            pushed = true
+          }
+        } else if (DEFS.has(target) && !isHead(n) && !isAttr(n)) {
+          const nm = declName(n)
+          if (nm) {
+            stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function" })
+            pushed = true
+          }
+        } else if ((target === "struct" || target === "struct!") && !isAttr(n) && !isHead(n)) {
+          // ELXD19 mirror: struct(User, attrs) constructs the named type;
+          // dynamic first args stay silent. (Quote already excluded above.)
+          const structArgs = find(n, (c) => c.type === "arguments")
+          const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
+          if (first?.type === "alias") push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", first.text)
+          else if (first?.type === "identifier" && first.text === "__MODULE__") {
+            let modScope = ""
+            for (let i = stack.length - 1; i >= 0; i--) {
+              if (stack[i].kind === "module" || stack[i].kind === "interface") { modScope = stack[i].name; break }
+            }
+            if (modScope) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", modScope)
+          }
+        } else if (target && !DECL_KW.has(target) && !DIRECTIVES.has(target) && !DEFS.has(target)) {
+          if (!skipCall(n, target)) emitCall(n, target, stack)
+        }
+      } else if (t === "map" && !isQuoted(n) && !isAttr(n) && !isHead(n)) {
+        const st = find(n, (c) => c.type === "struct")
+        const al = st ? find(st, (c) => c.type === "alias") : undefined
+        if (al?.text) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", al.text)
+        else {
+          // ELXD12 mirror: %__MODULE__{} resolves to the nearest
+          // module/interface scope; with no such scope it stays silent.
+          const self = st ? find(st, (c) => c.type === "identifier" && c.text === "__MODULE__") : undefined
+          if (self) {
+            let modScope = ""
+            for (let i = stack.length - 1; i >= 0; i--) {
+              if (stack[i].kind === "module" || stack[i].kind === "interface") { modScope = stack[i].name; break }
+            }
+            if (modScope) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", modScope)
+          }
+        }
+      } else if (t === "binary_operator" && n.childCount > 1 && n.child(1)?.text === "|>") {
+        const right = n.childCount > 2 ? n.child(2) : undefined
+        if (right) {
+          let pipeTarget = ""
+          if (right.type === "call") pipeTarget = callTarget(right)
+          else if (right.type === "identifier" || right.type === "dot") pipeTarget = right.text
+          if (pipeTarget && !skipCall(right, pipeTarget)) emitCall(right, pipeTarget, stack)
+        }
+      }
+      if (pushed) work.push({ n, exit: true })
+      for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) work.push({ n: c }) }
+    }
+  }
+  return edges
+}
+
+// Erlang oracle (ER wave, M14 #275 F5 + #880 obligation 4): mirrors
+// real-erlang-analyzer.ts edge-for-edge on the compared kinds — calls,
+// implements, instantiates. Mirrored decisions, not approximations:
+//   - a local call fires only when the callee is DECLARED in the file (the
+//     analyzer's forward-reference prepass) AND the file carries -module
+//     (the analyzer's ctx.currentModule gate; a module-less file emits no
+//     local calls on either side);
+//   - remote call targets keep their module qualification `mod:fun` (ER-D1:
+//     the separator is semantic — a bare leaf would conflate every module's
+//     reply; pinned by mutant erlang/remote-target-unqualified);
+//   - -behaviour(b) emits implements -> b, never a symbol;
+//   - record construction (record_expr outside a clause head) emits
+//     instantiates -> record name; head-position record_expr is a pattern;
+//   - spawn/spawn_link/spawn_monitor are BIFs — pattern flags, never edges
+//     (and a file that declares its own spawn/1 emits calls on both sides).
+// Call-site arity (ER-D2) is metadata on the analyzer side and rides the
+// (label, target) comparison identically — f/1 and f/2 sites collapse to one
+// compared edge per side, so the lane stays apples-to-apples.
+export function deriveErlangEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+
+  const kids = (n: any): any[] => {
+    const r: any[] = []
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) r.push(c) }
+    return r
+  }
+  const childByType = (n: any, t: string): any => {
+    for (const c of kids(n)) if (c.type === t) return c
+    return undefined
+  }
+  // namedChild(0) mirror (the analyzer's callee read): unnamed nodes are not
+  // candidates on either side.
+  const firstNamed = (n: any): any => {
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) return c }
+    return undefined
+  }
+  const collectAtoms = (n: any, out: string[]) => {
+    if (n.type === "atom" && n.isNamed && n.text) out.push(n.text)
+    for (let i = 0; i < n.childCount; i++) collectAtoms(n.child(i), out)
+  }
+
+  // Prepass mirror (collectDeclaredFunctions): every declared function name,
+  // stopping at fun_decl (no descent into its body for more declarations).
+  const declared = new Set<string>()
+  const collectDecls = (n: any): void => {
+    if (n.type === "fun_decl") {
+      for (const c of kids(n)) {
+        if (c.type !== "function_clause") continue
+        const nameNode = childByType(c, "atom") || childByType(c, "var")
+        if (nameNode?.text) declared.add(nameNode.text)
+      }
+      return
+    }
+    for (const c of kids(n)) collectDecls(c)
+  }
+  collectDecls(root)
+
+  // Module name (-module attribute). Absent => the analyzer suppresses local
+  // calls entirely — mirrored by the `modName` gate below.
+  let modName = ""
+  const findModule = (n: any): void => {
+    if (modName) return
+    if (n.type === "module_attribute") {
+      const a = childByType(n, "atom")
+      if (a?.text) modName = a.text
+      return
+    }
+    for (const c of kids(n)) { if (modName) return; findModule(c) }
+  }
+  findModule(root)
+
+  // isInFunHead mirror: a record_expr is construction only outside a
+  // function head (clause_body boundary before function_clause/fun_clause).
+  const inFunHead = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (cur.type === "clause_body") return false
+      if (cur.type === "function_clause" || cur.type === "fun_clause") return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const stripLeadingHash = (t: string) => (t.startsWith("#") ? t.slice(1) : t)
+
+  // Main walk mirror: currentFunction is set on entering a fun_decl and
+  // cleared on leaving it (record_expr attribution follows it); calls are
+  // extracted per function_clause subtree.
+  const walk = (n: any, fn: string): void => {
+    const t = n.type
+    if (t === "behaviour_attribute") {
+      const b = childByType(n, "atom")
+      if (b?.text) push("implements", modName, b.text)
+    } else if (t === "record_expr") {
+      if (!inFunHead(n)) {
+        const nameNode = childByType(n, "record_name") || childByType(n, "atom")
+        const rec = nameNode ? stripLeadingHash(nameNode.text) : ""
+        if (rec) push("instantiates", fn || modName || "Global", rec)
+      }
+    } else if (t === "fun_decl") {
+      let funcName = ""
+      for (const c of kids(n)) {
+        if (c.type !== "function_clause") continue
+        const nameNode = childByType(c, "atom") || childByType(c, "var")
+        if (nameNode?.text) funcName = nameNode.text
+        // extractCallsFromFunction mirror: every call node in the clause.
+        const cs: any[] = [c]
+        while (cs.length > 0) {
+          const node = cs.pop()
+          if (node.type === "call") {
+            const callee = firstNamed(node)
+            const remoteNode = childByType(node, "remote")
+            if (remoteNode) {
+              const atoms: string[] = []
+              collectAtoms(remoteNode, atoms)
+              if (atoms.length >= 2) push("calls", funcName, `${atoms[0]}:${atoms[1]}`)
+            } else if (callee?.type === "atom" && callee.text && modName) {
+              if (declared.has(callee.text)) push("calls", funcName, callee.text)
+            }
+          }
+          for (let i = node.childCount - 1; i >= 0; i--) { const ch = node.child(i); if (ch) cs.push(ch) }
+        }
+      }
+      for (const c of kids(n)) walk(c, funcName)
+      return
+    }
+    for (const c of kids(n)) walk(c, fn)
+  }
+  walk(root, "")
+  return edges
+}
+
+
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -9290,6 +9901,24 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "elixir") {
+        // #274 F5: dedicated elixir calls/instantiates/implements/references
+        // oracle (the generic tree walker audits no elixir surface — Elixir
+        // has no class/interface heritage declarations).
+        for (const e of deriveElixirEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "erlang") {
+        // ER wave (M14 #275 F5): dedicated erlang
+        // calls/implements/instantiates oracle mirroring
+        // real-erlang-analyzer.ts — local calls gated on the file's declared
+        // functions, remote targets keep module qualification (ER-D1),
+        // record construction outside clause heads instantiates.
+        for (const e of deriveErlangEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
         // opaque raw_text - re-parse them and derive the SAME structural
@@ -9382,7 +10011,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" ? ["references"] : [])].includes(r.label))
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
