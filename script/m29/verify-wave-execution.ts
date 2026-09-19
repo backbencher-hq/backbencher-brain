@@ -27,7 +27,7 @@ import { realpathSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
-import { writeSealed } from "../lib/evidence.ts"
+import { writeSealed, canonicalizeKeys } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 /** Every owner-approved wave record (wave-1, wave-2, …): the union is the
@@ -212,7 +212,12 @@ if (existsSync(NVIM) && approval) {
     // Final evidence: driver session + verifier-computed status, written by
     // this script to the path the R1 protocol runner reads.
     const outPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
-    writeSealed(outPath, { ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() })
+    // Canonical key order: the driver's `raw` payloads come through a Lua table
+    // (vim.json.encode), so their key order is arbitrary per run. Their BYTES
+    // are an input of the M29 precision ledger's semantic hash, so a shuffled
+    // payload made that ledger change on every re-run for no semantic reason.
+    // Values are untouched — only key order is normalized (canonicalizeKeys).
+    writeSealed(outPath, canonicalizeKeys({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }))
     for (const c of result.checks) {
       check(`R3/${lang}: ${c.name}`, c.ok, c.detail)
     }
