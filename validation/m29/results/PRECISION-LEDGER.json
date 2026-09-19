@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "c5bec05536da8c980648f0fbe1ba866aea43b7f4",
+  "inputsHash": "5aba3433f4a7f18ed2d8951d69246789e596e6ff",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -64,13 +64,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-java.json",
-          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
-          "generatedAt": "2026-09-16T22:31:52.834Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "6ceba9c810ddf4d182787856665afda4b5085b26",
           "status": "verified"
         }
       },
@@ -117,13 +114,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-python.json",
-          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
-          "generatedAt": "2026-09-16T22:31:58.301Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "6ceba9c810ddf4d182787856665afda4b5085b26",
           "status": "verified"
         }
       },
@@ -170,13 +164,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-typescript.json",
-          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
-          "generatedAt": "2026-09-16T22:32:03.140Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "6ceba9c810ddf4d182787856665afda4b5085b26",
           "status": "verified"
         }
       },
@@ -223,13 +214,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-javascript.json",
-          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
-          "generatedAt": "2026-09-16T22:32:08.109Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "6ceba9c810ddf4d182787856665afda4b5085b26",
           "status": "verified"
         }
       },
@@ -276,13 +264,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-kotlin.json",
-          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
-          "generatedAt": "2026-09-16T22:32:12.989Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "6ceba9c810ddf4d182787856665afda4b5085b26",
           "status": "verified"
         }
       },
@@ -329,13 +314,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-scala.json",
-          "commit": "8ca8e7882dbba857606fce4d02c08b845627ae75",
-          "generatedAt": "2026-09-16T22:32:18.028Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "6ceba9c810ddf4d182787856665afda4b5085b26",
           "status": "verified"
         }
       },
