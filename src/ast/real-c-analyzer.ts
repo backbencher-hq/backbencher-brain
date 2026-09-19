@@ -1171,6 +1171,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private getIncludePath(node: Node): string | null {
     let pathNode = node.childForFieldName("path")
+    // M49 W22 (measured sqlite3-wasm.c L262): tree-sitter-c parses a
+    // macro-COMPOSED include argument (`#include INC__STRINGIFY(SQLITE_C)`)
+    // as a call_expression under the same `path` field a literal path uses.
+    // A composed path is not a statically resolvable header name (C-D2: the
+    // preprocessor is textual; the expansion needs the build's -D set), so
+    // it must not be emitted as an include_dependency target — mirrors the
+    // oracle's CGD16 literal-only mirror. Literal forms (string_literal /
+    // system_lib_string) keep every existing behavior.
+    if (pathNode && pathNode.type !== "string_literal" && pathNode.type !== "system_lib_string") pathNode = null
     if (!pathNode) {
       pathNode = this.findChild(node, (c) => c?.type === "string_literal" || c?.type === "system_lib_string") || null
     }
@@ -1179,6 +1188,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractInclude(node: Node, imports: ASTEngine.ImportInfo[], onPath: (path: string) => void) {
     let pathNode = node.childForFieldName("path")
+    // M49 W22: same literal-only contract as getIncludePath — a
+    // macro-composed include argument parses as a call_expression under the
+    // `path` field and is not a resolvable module name.
+    if (pathNode && pathNode.type !== "string_literal" && pathNode.type !== "system_lib_string") pathNode = null
     if (!pathNode) {
       pathNode = this.findChild(node, (c) => c?.type === "string_literal" || c?.type === "system_lib_string") || null
     }

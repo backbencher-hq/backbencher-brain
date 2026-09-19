@@ -2233,6 +2233,29 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
     }
     return false
   }
+  // M49 W22 (measured loadext.c): the SQLITE_WSD struct declaration
+  // (`static SQLITE_WSD struct sqlite3AutoExtList {...} sqlite3Autoext =
+  // { 0, 0 };`) parse-glues into a phantom compound_statement that swallows
+  // the file's OWN later function DEFINITIONS — sqlite3_auto_extension and
+  // siblings sit under compound_statement@L789, so isFunctionLocal denied
+  // their names, the function-pointer table entries referencing them had no
+  // declared name to resolve, and three real `uses` truth edges vanished
+  // (sqlite rotation sample: 3 unexplained). The analyzer's symbol path is
+  // immune (it creates real Function symbols for these defs, CGD36); the
+  // syntax walk must be equally precise: a function's defining name is
+  // file-scope whenever the walk from its function_declarator meets
+  // function_definition BEFORE any compound_statement/parameter_list —
+  // exactly the analyzer's isFnDefName discriminator.
+  const isFnDefName = (n: any): boolean => {
+    let mid: any = n.parent
+    if (!mid || mid.type !== "function_declarator") return false
+    while (mid) {
+      if (mid.type === "compound_statement" || mid.type === "parameter_list") return false
+      if (mid.type === "function_definition") return true
+      mid = mid.parent
+    }
+    return false
+  }
   // CGD25 (M37 #601, measured os_win.c/jimsh0.c): a BARE function_declarator
   // glued as a direct ERROR child (tokenize.c sqlite3RunParser, os_win.c
   // winRead/winWrite headers) has no declaration wrapper — its name node's
@@ -2481,7 +2504,7 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
             && n.parent?.parent?.parent?.type === "enum_specifier"
             && !isFunctionLocal(n)
           const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
-          if (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || (!isFunctionLocal(n) && !varDeclSuppressed))) {
+          if (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed))) {
             declaredNames.add(n.text)
           }
         }
@@ -2648,12 +2671,22 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
         const locs = enc ? fnLocals.get(enc.startIndex) : undefined
         // CGD28: cast-to-typedef positions are type references, not value
         // uses — the analyzer re-routes them to `references` via
-        // isTypePositionIdentifier(cast_expression); skip as use-truth when
-        // the alias is a declared TYPE (declaredTypes), else no truth.
+        // isTypePositionIdentifier(cast_expression) when the name IS a
+        // declared type; M49 W22 (measured jimsh0.c L12183 `sizeof(jim_wide)`):
+        // a type-position name that is NOT a declared type but IS a declared
+        // VALUE/macro keeps its normal read path — exactly the analyzer's
+        // CGD12 contract ("a value-only name keeps its normal path"):
+        // jim_wide expands to a type via #define, so the mention is a
+        // genuine macro USE and the analyzer emits it. Type-only names keep
+        // the references leg; names with no declaration anywhere stay silent
+        // (CGD33).
         if (isCastTypePosition(n)) {
           if (name && declaredTypes.has(name) && !seen.has("ref:" + name)) {
             seen.add("ref:" + name)
             edges.push({ label: "references", from: "(expr)", target: name })
+          } else if (name && declaredNames.has(name) && !(locs && locs.has(name)) && !seen.has("use:" + name)) {
+            seen.add("use:" + name)
+            edges.push({ label: "uses", from: "(expr)", target: name })
           }
         } else if (name && declaredNames.has(name) && !(locs && locs.has(name)) && !seen.has("use:" + name)) {
           seen.add("use:" + name)
