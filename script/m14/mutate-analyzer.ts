@@ -988,8 +988,8 @@ const MUTANTS: Mutant[] = [
     id: "elixir/emit-member-access-call",
     language: "elixir",
     defectClass: "relationship-fabrication",
-    description: "ELXD18: a variable field read emits a call edge as if it were an invocation (order.side)",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "read", target: "order.side", confidence: 0.8, metadata: {} }] }),
+    description: "ELXD18: a variable field read emits a call edge as if it were an invocation (order.side). EX2 note: the fabrication now carries the module-qualified source (RefForms.read) — bare sources no longer exist on any edge, and the fixture's forbidRelationships targets the qualified form; the pre-EX2 bare-source spelling survived the suite undetected until the EX2 mutant run.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "RefForms.read", target: "order.side", confidence: 0.8, metadata: {} }] }),
   },
   {
     id: "elixir/drop-struct-fn-instantiates",
@@ -6420,6 +6420,166 @@ const MUTANTS: Mutant[] = [
       const m = { ...x.metadata }
       delete m.callArity
       return { ...x, metadata: m }
+    }) }),
+  },
+  {
+    id: "erlang/lines-dropped",
+    language: "erlang",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression, ER1 wave: drops line_number from every erlang relationship (callsite-lines-825 pins the name-bearing node's line on calls/implements/instantiates/references/contains — erlang emitted NO line on any relationship before the ER1 round)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      if (typeof x.line_number !== "number") return x
+      const y = { ...x }
+      delete y.line_number
+      return y
+    }) }),
+  },
+  {
+    id: "erlang/line-zero-based",
+    language: "erlang",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression, ER1 wave: the off-by-one — emits 0-based lines (callsite-lines-825 pins exact 1-based values; line 22 becomes 21 and every pinned expectation misses)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x) }),
+  },
+  {
+    id: "erlang/site-collapsed",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "M59 (#825) regression, ER1 wave: restores set-semantics call dedup — one edge per (source,target,arity) instead of per site (callsite-lines-825 pins FOUR target() sites at lines 22/23/24/25; a collapse deletes three of them and the tool can no longer report every site)",
+    transform: r => {
+      const seen = new Set<string>()
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type ?? x.relationshipType) !== "calls") return true
+        const k = `${x.source}|${x.target}|${(x.metadata ?? {}).callArity ?? ""}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      }) }
+    },
+  },
+  {
+    id: "elixir/lines-dropped",
+    language: "elixir",
+    defectClass: "line-attribution",
+    description: "EX3 regression: drops line_number from every elixir relationship (ex3-callsite-lines pins exact 1-based call-site lines 3/4/5/6; before EX3 elixir emitted NO line on any relationship)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      if (typeof x.line_number !== "number") return x
+      const y = { ...x }
+      delete y.line_number
+      return y
+    }) }),
+  },
+  {
+    id: "elixir/line-zero-based",
+    language: "elixir",
+    defectClass: "line-attribution",
+    description: "EX3 regression: the off-by-one — emits 0-based lines (ex3-callsite-lines pins exact 1-based values; line 3 becomes 2 and every pinned expectation misses)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x) }),
+  },
+  {
+    id: "elixir/site-collapsed",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX3 regression: restores per-callee call dedup ignoring the site line (ex3-callsite-lines pins TWO helper() sites at lines 3 and 4; a collapse deletes one of them)",
+    transform: r => {
+      const seen = new Set<string>()
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type ?? x.relationshipType) !== "calls") return true
+        const k = `${x.source}|${x.target}|${(x.metadata ?? {}).callArity ?? ""}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      }) }
+    },
+  },
+  {
+    id: "elixir/arity-collapsed",
+    language: "elixir",
+    defectClass: "relationship-identity",
+    description: "EX3 regression (ER-D2 parity): dedups calls by source|target only — pick/1 and pick/2 merge (ex3-callsite-lines pins callArity 1 AND 2 on pick)",
+    transform: r => {
+      const seen = new Set<string>()
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type ?? x.relationshipType) !== "calls") return true
+        const k = `${x.source}|${x.target}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      }) }
+    },
+  },
+  {
+    id: "elixir/alias-unresolved",
+    language: "elixir",
+    defectClass: "relationship-target",
+    description: "EX2 regression: strips alias resolution from instantiates/implements targets — the raw short names dangle again (ex2-alias-resolution forbids OrderBook/Audit/Encodable and expects MyApp.*)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      const t = String(x.type ?? x.relationshipType)
+      if ((t === "instantiates" || t === "implements") && typeof x.target === "string" && x.target.indexOf(".") !== -1) {
+        return { ...x, target: x.target.split(".").pop() }
+      }
+      return x
+    }) }),
+  },
+  {
+    id: "elixir/otp-substring-restored",
+    language: "elixir",
+    defectClass: "pattern-fabrication",
+    description: "EX2 regression: restores substring OTP detection — `use MyApp.SupervisorTree` fabricates Supervision Trees and `MyApp.GenServerPool` fabricates Actor Model (ex2-otp-fake's forbidPatterns catches both)",
+    transform: r => {
+      const targets = new Set((r.relationships ?? []).map((x: any) => String(x.target ?? "")))
+      const additions: string[] = []
+      for (const t of targets) if (t.includes("Supervisor")) additions.push("Supervision Trees")
+      for (const t of targets) if (t.includes("GenServer")) additions.push("Actor Model (OTP)")
+      return { ...r, metadata: { ...(r.metadata ?? {}), patterns: [...((r.metadata ?? {}).patterns ?? []), ...additions] } }
+    },
+  },
+  {
+    id: "elixir/default-arg-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX2 regression: default-argument expressions stop executing — Builder.build_opts and local build_opts calls vanish (ex2-signature-defaults pins both)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && (x.target === "Builder.build_opts" || x.target === "build_opts"))) }),
+  },
+  {
+    id: "elixir/import-scope-mismatch",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX2 regression: a function-scoped `import only:` becomes unresolvable again — the in-def Enum.map call is dropped (ex2-import-scope pins ImpFun.run -> Enum.map)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.source === "ImpFun.run" && x.target === "Enum.map")) }),
+  },
+  {
+    id: "elixir/capture-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX3 regression: &fn/arity captures emit nothing again (ex3-captures pins double and Caps.double at callArity 1)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).isCapture === true)) }),
+  },
+  {
+    id: "elixir/contains-self-loop",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "EX3 regression: struct self-ownership forges X -> X contains edges again (ex3-no-self-and-implied forbidRelationships catches both modules)",
+    transform: r => {
+      const loops = (r.symbols ?? []).filter((s: any) => s.kind === "struct" && typeof s.name === "string")
+        .map((s: any) => ({ type: "contains", source: s.name, target: s.name, confidence: 1, metadata: {} }))
+      return { ...r, relationships: [...(r.relationships ?? []), ...loops] }
+    },
+  },
+  {
+    id: "elixir/sigil-doc-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX2 regression: sigil doc chunks are lost again (ex2-sigil-docs expectComments pins DocSig/f; stripping the comment text removes the match)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => {
+      const cs: string[] = Array.isArray(s.comments) ? s.comments : []
+      if (cs.some((c) => String(c).toLowerCase().includes("sigil"))) {
+        const y = { ...s }
+        delete y.comments
+        delete y.docstring
+        return y
+      }
+      return s
     }) }),
   },
 ]
