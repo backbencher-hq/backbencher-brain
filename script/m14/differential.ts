@@ -1265,7 +1265,47 @@ const TS_GLOBAL_CTORS = new Set([
   "FocusEvent", "InputEvent", "PointerEvent", "TouchEvent", "DragEvent", "ErrorEvent", "UIEvent", "StorageEvent", "PromiseRejectionEvent", "HashChangeEvent", "PageTransitionEvent", "PopStateEvent", "ProgressEvent", "SpeechSynthesisEvent", "AnimationEvent", "TransitionEvent", "ClipboardEvent", "WheelEvent", "CompositionEvent", "BeforeUnloadEvent",
 ])
 
-export function deriveGroovyEdges(root: any): { label: string; from: string; target: string }[] {
+// #841-round-14 mirror (M49 W22, measured: 7 MISSING `calls` across grails-core
+// and geb rotation samples): the typed-closure-parameter misparse. When a
+// closure's bare-name parameter type cannot win its reading, the parser folds
+// `{ Method widgetMethod -> … }` into juxt_function_call(name: Method,
+// args: (widgetMethod)) — the juxt name is the parameter's TYPE, not a callee,
+// so any `calls` truth derived from it is a fabrication. The analyzer's
+// looksLikeTypedClosureMisparse suppresses it (962 corpus juxt nodes verified,
+// every one a real parameter list); truth must mirror with the same
+// discriminator: type-cased head, identifier-only args, and the SOURCE tail
+// (param-list material then the closure arrow) with the measured tree
+// compositions as fallback.
+function groovyTypedClosureMisparse(juxtNode: any, nameNode: any, sourceText?: string): boolean {
+  const nameText = String(nameNode.text).trim()
+  if (!/^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*$/.test(nameText)) return false
+  const argsNode = juxtNode.childForFieldName?.("args")
+  if (!argsNode) return false
+  if (!/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*(\s*,\s*[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*)*$/.test(String(argsNode.text).trim())) return false
+  if (sourceText != null) {
+    const tail = sourceText.slice(juxtNode.endIndex, juxtNode.endIndex + 160)
+    const arrow = tail.indexOf("->")
+    if (arrow >= 0) {
+      const between = tail.slice(0, arrow)
+      if (/^[\s,.<>\[\]A-Za-z0-9_]*$/.test(between)) return true
+    }
+  }
+  const parent = juxtNode.parent
+  if (!parent) return false
+  if (juxtNode.nextSibling?.type === "->") return true
+  const siblings: any[] = []
+  for (let i = 0; i < parent.namedChildCount; i++) {
+    const c = parent.namedChild(i)
+    if (c) siblings.push(c)
+  }
+  const idx = siblings.findIndex((s: any) => s.id === juxtNode.id)
+  if (idx === -1) return false
+  const next = siblings[idx + 1]
+  if (next != null && next.type === "lambda_expression") return true
+  if (idx === 0 && (parent.type === "closure" || parent.type === "block")) return true
+  return false
+}
+export function deriveGroovyEdges(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const push = (label: string, target: string) => {
@@ -1487,7 +1527,11 @@ export function deriveGroovyEdges(root: any): { label: string; from: string; tar
         const leaf = nameNode.type === "field_access"
           ? nameNode.childForFieldName?.("field") ?? nameNode
           : nameNode
-        push("calls", leaf.text)
+        // M49 W22 (#841-round-14 mirror): the typed-closure-parameter misparse
+        // (`{ Method widgetMethod -> … }` → juxt(name: Method, args: …)) names
+        // the parameter's TYPE — no callee truth (see the helper for the
+        // measured discriminator and counts).
+        if (!groovyTypedClosureMisparse(n, nameNode, sourceText)) push("calls", leaf.text)
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
@@ -10451,7 +10495,10 @@ async function main() {
       }
       if (lang === "groovy") {
         // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
-        for (const e of deriveGroovyEdges(root)) {
+        // M49 W22: carries the source text — the typed-closure-parameter
+        // discriminator measures the text after the juxt node (the analyzer's
+        // same source rule; tree compositions are the fallback).
+        for (const e of deriveGroovyEdges(root, content)) {
           ;(truth as any[]).push(e)
         }
       }
