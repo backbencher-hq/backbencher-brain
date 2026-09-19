@@ -8,7 +8,11 @@
 //                      and a fresh build (a hand edit to JSON or MD, or any
 //                      upstream evidence change, fails until regenerated)
 //   G2 staleness hash: the recorded inputsHash equals a fresh hash over the
-//                      declared input set (the staleness policy, enforced)
+//                      declared input set (the staleness policy, enforced),
+//                      over the evidence's SEMANTIC content — declared volatile
+//                      run metadata is excluded, proved in both directions —
+//                      and the published body itself carries no run metadata
+//                      (the artifact is a fixpoint across upstream re-runs)
 //   G3 claim honesty:  every recorded claim equals computeCap replayed over
 //                      the recorded evidence steps — and a synthetic row whose
 //                      S5 fails computes I0 (claims cannot be edited up)
@@ -102,6 +106,27 @@ check(
   "G2: a semantic-field change DOES change the normalized evidence (the exclusion cannot widen silently)",
   JSON.stringify(normalizeEvidence(semanticEdit)) !== JSON.stringify(normalizeEvidence(sampleEvidence)),
   "checks[0].ok flipped",
+)
+// The artifact itself must be a FIXPOINT: its byte identity is the drift gate,
+// so the published body may not embed any other run's metadata. Without this
+// invariant an upstream re-run rewrites the ledger, which makes the R4/D1
+// records that pin it permanently stale at the same HEAD.
+const volatileInBody: string[] = []
+const scanBody = (value: unknown, where: string): void => {
+  if (Array.isArray(value)) return value.forEach((v, i) => scanBody(v, `${where}[${i}]`))
+  if (value !== null && typeof value === "object") {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (["commit", "currentCommit", "generatedAt", "bbSeal", "workingTreeRelevantChanges"].includes(k)) volatileInBody.push(`${where}.${k}`)
+      scanBody(v, `${where}.${k}`)
+    }
+  }
+}
+scanBody(recorded?.languages, "languages")
+scanBody(recorded?.giantScale, "giantScale")
+check(
+  "G2: the published ledger body carries no per-run metadata (the artifact is a fixpoint across upstream re-runs)",
+  volatileInBody.length === 0,
+  volatileInBody.slice(0, 4).join(", "),
 )
 
 // ---------------------------------------------------------------------------
