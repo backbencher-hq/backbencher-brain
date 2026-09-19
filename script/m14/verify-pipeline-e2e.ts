@@ -77,12 +77,16 @@ handle_call(_Req, _From, State) ->
   // elixir (M14 #384 BEAM seam): defmodule + arity-distinct defs + alias
   // reference + qualified call.
   fs.writeFileSync(path.join(TMP, "src", "seam.ex"), `defmodule Seam do
+  @moduledoc "Seam module docs."
+
   alias Seam.Helper
 
   def pick(x), do: x
   def pick(x, y), do: {x, y}
 
+  @doc "Calls the helper twice."
   def go do
+    Helper.call(pick(1), pick(1, 2))
     Helper.call(pick(1), pick(1, 2))
   end
 end
@@ -146,6 +150,32 @@ async function main() {
   const erlImports = count(`SELECT COUNT(*) c FROM brain_import bi JOIN brain_file bf ON bf.id = bi.file_id WHERE bf.path LIKE '%.erl'`)
   expect(erlImports >= 1, `erlang -include persisted (got ${erlImports})`)
   expect(edgesFromLang(".ex", "calls") >= 1, `elixir calls persisted (got ${edgesFromLang(".ex", "calls")})`)
+  // EX waves (M60 round-trip): the docstring channel and the M59 call-site
+  // lines must survive emit → worker → store through the REAL CLI — the two
+  // payloads the EX2/EX3 waves revived for elixir (docstring was NULL for
+  // every symbol index-wide; line_number was absent on every relationship).
+  const exDocs = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.ex' AND docstring IS NOT NULL`)
+  expect(exDocs >= 2, `elixir docstrings persisted (got ${exDocs}, want >=2: @moduledoc + @doc)`)
+  const exLinedCalls = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.ex' AND r.relationship_type = 'calls' AND r.line_number IS NOT NULL`)
+  expect(exLinedCalls >= 2, `elixir calls carry call-site lines (got ${exLinedCalls}, want >=2: two Helper.call sites)`)
+  const exSiteLines = count(`SELECT COUNT(DISTINCT r.line_number) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.ex' AND r.relationship_type = 'calls'`)
+  expect(exSiteLines >= 2, `elixir per-site lines distinct (got ${exSiteLines}, want >=2: the twice-called Helper.call sites are separate rows)`)
+  const exNullLines = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.ex' AND r.relationship_type = 'calls' AND r.line_number IS NULL`)
+  expect(exNullLines === 0, `no fabricated/missing elixir lines (got ${exNullLines} NULL)`)
+  const exLineZero = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.ex' AND r.relationship_type = 'calls' AND r.line_number = 0`)
+  expect(exLineZero === 0, `no zero-based elixir lines (got ${exLineZero})`)
 
   // cross-language edge flagged with bridge
   const xlang = db.prepare(`
