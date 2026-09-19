@@ -1506,6 +1506,13 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "uses" && x.target === "later_defined")) }),
   },
   {
+    id: "c/macro-include-fabrication",
+    language: "c",
+    defectClass: "relationship-fabrication",
+    description: "W22 regression: re-fabricates an include_dependency edge for a MACRO-COMPOSED include argument (#include INC__STRINGIFY(SQLITE_C), sqlite3-wasm.c shape) — not a statically resolvable header name (C-D2); the macro-composed-include fixture forbids it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "global", target: "INC__STRINGIFY(SQLITE_C)", confidence: 1, metadata: { relationshipType: "include_dependency", isSystem: false, isImport: true } }] }),
+  },
+  {
     id: "c/cgd38-phantom-function-symbol",
     language: "c",
     defectClass: "symbol-fabrication",
