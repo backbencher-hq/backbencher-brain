@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 3,
   "mutantsTotal": 3,
-  "currentCommit": "42f5566523301fb7848e2588924b243b1f30f484",
+  "currentCommit": "beea95d474d013fc547753327c57efa4cf2abb83",
   "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
   "evidenceFile": "W6.json",
-  "generatedAt": "2026-09-18T23:41:04.601Z",
+  "generatedAt": "2026-09-18T23:58:35.538Z",
   "adversarialFixtures": [
     "script tag in symbol name",
     "event handler attribute breakout",
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T23:41:04.602Z",
-    "contentSha256": "b6955ecff268d172dcebbc29999f87798912bd99f48d392fc2c73d18b1581fb9"
+    "sealedAt": "2026-09-18T23:58:35.539Z",
+    "contentSha256": "beb00f82e3c1b91df3534bc5f5d3a1fda3a8a576c1ae9e61809966f81fbd42bb"
   }
 }
