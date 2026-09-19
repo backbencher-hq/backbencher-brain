@@ -1,0 +1,157 @@
+{
+  "probe": "M59.PREDICATE-LOOP",
+  "at": "2026-09-19T02:19:01.298Z",
+  "command": "$HOME/.nvm/versions/node/v22.22.1/bin/node $HOME/mcp/backbencher-brain/script/m59/probe-predicate-loop.ts --files=150",
+  "corpus": "$HOME/fixtures/repositories/Exposed",
+  "sliceFiles": 150,
+  "scannedLines": 14274,
+  "tokenChecks": 6238,
+  "spinTriggerHits": 84,
+  "samples": [
+    {
+      "file": "spring7-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring7/transaction/SpringTransactionManager.kt",
+      "line": 283,
+      "token": "isMarkedRollback",
+      "text": "internal fun JdbcTransaction.isMarkedRollback(): Boolean = isRollback",
+      "proof": "head=\"internal fun JdbcTransaction.\" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt",
+      "line": 284,
+      "token": "isMarkedRollback",
+      "text": "internal fun JdbcTransaction.isMarkedRollback(): Boolean = isRollback",
+      "proof": "head=\"internal fun JdbcTransaction.\" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "samples/springboot3-exposed-r2dbc/src/main/kotlin/com/example/Application.kt",
+      "line": 18,
+      "token": "main",
+      "text": "internal suspend fun main(args: Array<String>): Unit = coroutineScope {",
+      "proof": "head=\"internal suspend fun \" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "samples/springboot3-exposed-r2dbc/src/main/kotlin/com/example/service/impl/UserServiceImpl.kt",
+      "line": 11,
+      "token": "constructor",
+      "text": "internal final class UserServiceImpl internal constructor(",
+      "proof": "head=\"internal final class UserServiceImpl internal \" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "samples/springboot3-exposed-r2dbc/src/main/kotlin/com/example/entity/UserEntity.kt",
+      "line": 6,
+      "token": "IntIdTable",
+      "text": "internal object UserEntity : IntIdTable(name = \"t_user\") {",
+      "proof": "head=\"internal object UserEntity : \" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "samples/springboot3-exposed-r2dbc/src/main/kotlin/com/example/dao/impl/UserDaoImpl.kt",
+      "line": 21,
+      "token": "constructor",
+      "text": "internal class UserDaoImpl internal constructor() : UserDao {",
+      "proof": "head=\"internal class UserDaoImpl internal \" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "samples/springboot3-exposed-r2dbc/src/main/kotlin/com/example/controller/HelloController.kt",
+      "line": 28,
+      "token": "HelloController",
+      "text": "internal final class HelloController(",
+      "proof": "head=\"internal final class \" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "file": "samples/springboot3-exposed-r2dbc/src/main/kotlin/com/example/controller/UserController.kt",
+      "line": 20,
+      "token": "constructor",
+      "text": "internal final class UserController private constructor(",
+      "proof": "head=\"internal final class UserController private \" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    }
+  ],
+  "declarationLinesCountedAsCalls": 68,
+  "declarationAsCallSamples": [
+    {
+      "file": "spring7-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring7/transaction/SpringTransactionManager.kt",
+      "line": 274,
+      "token": "Connection",
+      "text": "override fun getConnection(): Connection {"
+    },
+    {
+      "file": "spring7-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring7/transaction/SpringTransactionManager.kt",
+      "line": 283,
+      "token": "isMarkedRollback",
+      "text": "internal fun JdbcTransaction.isMarkedRollback(): Boolean = isRollback"
+    },
+    {
+      "file": "spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt",
+      "line": 275,
+      "token": "Connection",
+      "text": "override fun getConnection(): Connection {"
+    },
+    {
+      "file": "spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt",
+      "line": 284,
+      "token": "isMarkedRollback",
+      "text": "internal fun JdbcTransaction.isMarkedRollback(): Boolean = isRollback"
+    },
+    {
+      "file": "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/user/UserService.kt",
+      "line": 8,
+      "token": "User",
+      "text": "suspend fun createUser(user: User): User {"
+    },
+    {
+      "file": "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/user/UsersTable.kt",
+      "line": 21,
+      "token": "User",
+      "text": "fun rowToUser(result: ResultRow): User = User("
+    },
+    {
+      "file": "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/project/ProjectService.kt",
+      "line": 8,
+      "token": "Project",
+      "text": "suspend fun createProject(project: Project): Project {"
+    },
+    {
+      "file": "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/project/ProjectsTable.kt",
+      "line": 21,
+      "token": "Project",
+      "text": "fun rowToProject(result: ResultRow): Project = Project("
+    }
+  ],
+  "checks": [
+    {
+      "id": "A-clamping-at-negative-position",
+      "pass": true,
+      "detail": "lastIndexOf(\"int\")=0, lastIndexOf(\"int\", -1)=0 (clamped to 0), head[3]=\"e\" is a word char so the boundary check refuses the match"
+    },
+    {
+      "id": "B-old-shape-hits-fixpoint",
+      "pass": true,
+      "detail": "both trigger shapes spin — e.g. head=\"internal fun JdbcTransaction.\" kw=\"int\" at=0: lastIndexOf(kw, -1) returned 0 — identical state, deterministic, never terminates"
+    },
+    {
+      "id": "C-fixed-shape-terminates-on-call",
+      "pass": true,
+      "detail": "fixed verdict: spun=false declared=false; occurrences=1 → the line counts as a CALL (a declaration would have been suppressed)"
+    },
+    {
+      "id": "C-fixed-shape-still-detects-declarations",
+      "pass": true,
+      "detail": "\"fun foo(): Int = 1\" → declared=true (must stay true), occurrences=1"
+    },
+    {
+      "id": "O-extension-declaration-verdict(documented, not asserted)",
+      "pass": true,
+      "detail": "\"internal fun JdbcTransaction.isMarkedRollback(): Boolean = isRollback\" → declared=false — recorded as a separate finding, not a failure of this fix"
+    },
+    {
+      "id": "D-corpus-contains-spin-triggers",
+      "pass": true,
+      "detail": "84 (line, token) pair(s) in 150 files would have spun (6238 single-occurrence token checks over 14274 lines)"
+    },
+    {
+      "id": "O-declaration-lines-counted-as-calls(documented, not asserted)",
+      "pass": true,
+      "detail": "68 declaration-shaped line(s) with a single occurrence of the token are counted as call sites (of 6238 token checks: notDeclared=5421, looksLikeDeclaration=68; e.g. spring7-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring7/transaction/SpringTransactionManager.kt:274, spring7-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring7/transaction/SpringTransactionManager.kt:283) — a separate finding for `missed` accuracy, unchanged by this fix"
+    }
+  ],
+  "verdict": "CONFIRMED"
+}

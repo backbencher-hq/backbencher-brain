@@ -1,0 +1,559 @@
+{
+  "probe": "M59.MTX",
+  "at": "2026-09-19T02:29:17.489Z",
+  "command": "$HOME/.nvm/versions/node/v22.22.1/bin/node $HOME/mcp/backbencher-brain/script/m59/matrix-tool-language.ts --langs=vue,svelte,xml --files=150 --out=validation/m59/results/matrix-tool-language.web2.json",
+  "commit": "e024766d02ad8c10e2552f3147e189dde5402520",
+  "scope": "bb_graph driven through the REAL MCP handler, on 150-file slices of real corpus repos; bb_analyze cells recorded as output-shape notes; predicate is a NECESSARY condition (lower bound), so \"consistent\" is never proof of correctness",
+  "predicateSelfTest": {
+    "declarationNotCounted": true,
+    "kotlinDeclarationNotCounted": true,
+    "callCounted": true,
+    "qualifiedCallCounted": true,
+    "subwordNotCounted": true,
+    "commentNotCounted": true,
+    "blockCommentNotCounted": true,
+    "mentionCountedByRawSearchButNotAsCall": true,
+    "scalaBraceCallCounted": true,
+    "kotlinBraceCallCounted": true,
+    "optionalCallCounted": true,
+    "keywordSubstringIsNotDeclaration": true,
+    "keywordPrefixedHeadDoesNotSpin": true,
+    "interfaceSubstringIsNotDeclaration": true,
+    "declarationWithCallOnSameLineIsACall": true,
+    "callInsideStringIsNotACall": true,
+    "scalaTypeAppliedBraceCallCounted": true,
+    "scalaTypeAppliedParenCallCounted": true,
+    "genericParenCallCounted": true,
+    "comparisonIsNotATypeArgument": true,
+    "lessThanWithoutSpaceIsNotACall": true,
+    "unterminatedLookingCommentInStringDoesNotSwallowTheFile": true,
+    "templateInterpolationCallCounted": true,
+    "gstringInterpolationCallCounted": true,
+    "commandFormRecognizedForClassification": true
+  },
+  "dataRoot": "/tmp/m59-mtx-data-7Il3jD",
+  "languages": [
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "sliceFingerprint": "5485824a6a3a4ff4da20e8a87d191cf217176013",
+      "filesIndexed": 131,
+      "indexSeconds": 12,
+      "relationships": {
+        "total": 4204,
+        "zero": 0,
+        "nul": 0,
+        "real": 4204
+      },
+      "relationshipTypes": [
+        {
+          "t": "uses",
+          "n": 1946
+        },
+        {
+          "t": "contains",
+          "n": 826
+        },
+        {
+          "t": "calls",
+          "n": 772
+        },
+        {
+          "t": "instantiates",
+          "n": 342
+        },
+        {
+          "t": "imports",
+          "n": 197
+        },
+        {
+          "t": "exports",
+          "n": 121
+        }
+      ],
+      "mutation": {
+        "ran": true,
+        "callee": "preventDefault",
+        "calleeMultiplicity": 1,
+        "rowId": "1f6425b369ce58ee0d15d6c06f7e3c65402dc1c4:rel:1f6425b369ce58ee0d15d6c06f7e3c65402dc1c4:src/components/UploadExcel/index.vue:handleDrop:36:preventDefault:calls:38",
+        "file": "src/components/UploadExcel/index.vue",
+        "originalLine": 38,
+        "consistentBefore": 8,
+        "consistentDuring": 7,
+        "consistentAfter": 8,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true,
+        "verdict": "caught"
+      },
+      "topCallees": 8
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "sliceFingerprint": "420b409318f74e382a3be4db35d3a2db0c964f3a",
+      "filesIndexed": 150,
+      "indexSeconds": 17,
+      "relationships": {
+        "total": 3172,
+        "zero": 0,
+        "nul": 0,
+        "real": 3172
+      },
+      "relationshipTypes": [
+        {
+          "t": "instantiates",
+          "n": 1011
+        },
+        {
+          "t": "imports",
+          "n": 1009
+        },
+        {
+          "t": "contains",
+          "n": 486
+        },
+        {
+          "t": "uses",
+          "n": 301
+        },
+        {
+          "t": "calls",
+          "n": 194
+        },
+        {
+          "t": "references",
+          "n": 170
+        }
+      ],
+      "mutation": {
+        "ran": true,
+        "callee": "getMenuColorValue",
+        "calleeMultiplicity": 1,
+        "rowId": "c59e860779eff158516c0a73a25a9c1f9c7d7852:rel:c59e860779eff158516c0a73a25a9c1f9c7d7852:docs/src/routes/(app)/(layout)/(create)/components/menu-color-picker.svelte:setColor:69:getMenuColorValue:calls:70",
+        "file": "docs/src/routes/(app)/(layout)/(create)/components/menu-color-picker.svelte",
+        "originalLine": 70,
+        "consistentBefore": 2,
+        "consistentDuring": 1,
+        "consistentAfter": 2,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true,
+        "verdict": "caught"
+      },
+      "topCallees": 8
+    },
+    {
+      "lang": "xml",
+      "repo": "phpunit",
+      "filesIndexed": 150,
+      "indexSeconds": 10,
+      "relationships": {
+        "total": 1814,
+        "zero": 0,
+        "nul": 0,
+        "real": 1814
+      },
+      "relationshipTypes": [
+        {
+          "t": "contains",
+          "n": 1814
+        }
+      ],
+      "topCallees": 0,
+      "mutation": {
+        "ran": false
+      },
+      "notMeasurable": "no calls/call relationships in this slice — a call-site audit is not applicable",
+      "sliceFingerprint": "5d3bbdde8a893be9201bb961469728ee641fc53e"
+    }
+  ],
+  "cells": [
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "init",
+      "tool": "bb_graph",
+      "sites": 8,
+      "consistent": 8,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 5,
+      "grepMentions": 14,
+      "grepRealCalls": 13,
+      "grepOnlyNoise": 1,
+      "detail": "bb_analyze: nodes=16 callSite fields=15",
+      "missedSamples": [
+        "src/components/Tinymce/index.vue:91 — this.init()",
+        "src/components/Tinymce/index.vue:105 — init() {",
+        "src/components/Tinymce/index.vue:117 — window.tinymce.init({"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "preventDefault",
+      "tool": "bb_graph",
+      "sites": 8,
+      "consistent": 8,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 1,
+      "missedUpperBound": 1,
+      "grepMentions": 19,
+      "grepRealCalls": 9,
+      "grepOnlyNoise": 10,
+      "detail": "bb_analyze: nodes=7 callSite fields=8",
+      "missedSamples": [
+        "src/components/ImageCropper/index.vue:430 — preventDefault(e) {"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "initChart",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 7,
+      "missed": null,
+      "missedUpperBound": 13,
+      "grepMentions": 14,
+      "grepRealCalls": 14,
+      "grepOnlyNoise": 0,
+      "detail": "bb_analyze: nodes=2 callSite fields=1",
+      "missedSamples": [
+        "src/views/dashboard/admin/components/BarChart.vue:35 — this.initChart()",
+        "src/views/dashboard/admin/components/BarChart.vue:46 — initChart() {",
+        "src/views/dashboard/admin/components/LineChart.vue:49 — this.initChart()"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "getValue",
+      "tool": "bb_graph",
+      "sites": 4,
+      "consistent": 4,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 5,
+      "grepMentions": 9,
+      "grepRealCalls": 9,
+      "grepOnlyNoise": 0,
+      "detail": "bb_analyze: nodes=3 callSite fields=4",
+      "missedSamples": [
+        "src/components/MarkdownEditor/index.vue:65 — if (newValue !== preValue && newValue !== this.editor.getValue()) {",
+        "src/components/MarkdownEditor/index.vue:96 — this.$emit('input', this.editor.getValue())",
+        "src/components/MarkdownEditor/index.vue:107 — getValue() {"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "fetchData",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 7,
+      "missed": null,
+      "missedUpperBound": 13,
+      "grepMentions": 14,
+      "grepRealCalls": 14,
+      "grepOnlyNoise": 0,
+      "detail": "bb_analyze: nodes=2 callSite fields=1",
+      "missedSamples": [
+        "src/views/zip/index.vue:52 — this.fetchData()",
+        "src/views/zip/index.vue:55 — async fetchData() {",
+        "src/views/pdf/download.vue:25 — this.fetchData()"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "setLocalStorage",
+      "tool": "bb_graph",
+      "sites": 6,
+      "consistent": 6,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 1,
+      "missedUpperBound": 1,
+      "grepMentions": 7,
+      "grepRealCalls": 7,
+      "grepOnlyNoise": 0,
+      "detail": "bb_analyze: nodes=7 callSite fields=6",
+      "missedSamples": [
+        "src/views/dashboard/admin/components/TodoList/index.vue:85 — setLocalStorage() {"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "getList",
+      "tool": "bb_graph",
+      "sites": 2,
+      "consistent": 2,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 5,
+      "missed": null,
+      "missedUpperBound": 9,
+      "grepMentions": 13,
+      "grepRealCalls": 11,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=5 callSite fields=4",
+      "missedSamples": [
+        "src/views/table/complex-table.vue:233 — getList() {",
+        "src/views/table/drag-table.vue:95 — this.getList()",
+        "src/views/table/drag-table.vue:98 — async getList() {"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "vue",
+      "repo": "vue-element-admin",
+      "callee": "generateRoutes",
+      "tool": "bb_graph",
+      "sites": 3,
+      "consistent": 3,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 5,
+      "grepMentions": 8,
+      "grepRealCalls": 8,
+      "grepOnlyNoise": 0,
+      "detail": "bb_analyze: nodes=3 callSite fields=3",
+      "missedSamples": [
+        "src/views/permission/role.vue:103 — this.routes = this.generateRoutes(res.data)",
+        "src/views/permission/role.vue:111 — generateRoutes(routes, basePath = '/') {",
+        "src/views/permission/role.vue:132 — data.children = this.generateRoutes(route.children, data.path)"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "children",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 28,
+      "missed": null,
+      "missedUpperBound": 27,
+      "grepMentions": 59,
+      "grepRealCalls": 28,
+      "grepOnlyNoise": 31,
+      "detail": "bb_analyze: nodes=2 callSite fields=2",
+      "missedSamples": [
+        "sv-addons/registry/template/src/lib/registry/ui/stepper/stepper.svelte:13 — {@render children?.()}",
+        "sv-addons/registry/template/src/lib/registry/ui/card/card-action.svelte:13 — {@render children?.()}",
+        "sv-addons/registry/template/src/lib/registry/ui/card/card-content.svelte:9 — {@render children?.()}"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "rowSelection",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 3,
+      "grepMentions": 6,
+      "grepRealCalls": 4,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=2 callSite fields=4",
+      "missedSamples": [
+        "docs/src/routes/(app)/(layout)/examples/tasks/components/data-table.svelte:133 — get rowSelection() {",
+        "docs/src/routes/(app)/(layout)/examples/tasks/components/data-table.svelte:134 — return rowSelection();",
+        "docs/src/routes/(app)/(layout)/examples/dashboard/components/data-table.svelte:116 — get rowSelection() {"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "getMenuColorValue",
+      "tool": "bb_graph",
+      "sites": 2,
+      "consistent": 2,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 0,
+      "missedUpperBound": 0,
+      "grepMentions": 3,
+      "grepRealCalls": 2,
+      "grepOnlyNoise": 1,
+      "detail": "bb_analyze: nodes=3 callSite fields=2",
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "columns",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 1,
+      "grepMentions": 8,
+      "grepRealCalls": 2,
+      "grepOnlyNoise": 6,
+      "detail": "bb_analyze: nodes=2 callSite fields=4",
+      "missedSamples": [
+        "docs/src/routes/(app)/(layout)/examples/tasks/components/data-table.svelte:34 — const columns = columnHelper.columns(["
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "onPeek",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 0,
+      "missedUpperBound": 0,
+      "grepMentions": 4,
+      "grepRealCalls": 1,
+      "grepOnlyNoise": 3,
+      "detail": "bb_analyze: nodes=2 callSite fields=1",
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "loadExampleComponent",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 0,
+      "missedUpperBound": 0,
+      "grepMentions": 3,
+      "grepRealCalls": 1,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=2 callSite fields=2",
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "isTranslucentMenuColor",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 0,
+      "missedUpperBound": 0,
+      "grepMentions": 2,
+      "grepRealCalls": 1,
+      "grepOnlyNoise": 1,
+      "detail": "bb_analyze: nodes=2 callSite fields=1",
+      "truncated": false
+    },
+    {
+      "lang": "svelte",
+      "repo": "shadcn-svelte",
+      "callee": "isBaseColor",
+      "tool": "bb_graph",
+      "sites": 1,
+      "consistent": 1,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 0,
+      "missedUpperBound": 0,
+      "grepMentions": 2,
+      "grepRealCalls": 1,
+      "grepOnlyNoise": 1,
+      "detail": "bb_analyze: nodes=2 callSite fields=1",
+      "truncated": false
+    }
+  ],
+  "aggregate": {
+    "cells": 16,
+    "wrongLine": 0,
+    "missed": 2,
+    "missedUpperBound": 83,
+    "ambiguousCells": 9,
+    "consistent": 42,
+    "unknownLine": 0,
+    "grepMentions": 185,
+    "grepRealCalls": 125,
+    "grepOnlyNoise": 60,
+    "unmodelled": 0,
+    "graphTimeouts": 0,
+    "languagesWithoutCallSurface": 1
+  }
+}
