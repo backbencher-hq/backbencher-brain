@@ -7827,7 +7827,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     return ""
   }
   // CLJ-D6: forms whose direct list children are METHOD DEFINITIONS.
-  const IMPL_PARENTS = new Set(["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol"])
+  const IMPL_PARENTS = new Set(["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol", "definterface"])
   // CLJ-D7: the direct list children of a libspec site are DATA.
   const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
   let nsName = "user"
@@ -7837,14 +7837,40 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   // `(comment …)` forms are ordinary calls and must be walked.
   let mayShadowComment = false
   {
+    // F4 mirror: only DEFINITION evidence flips the flag (a def-family NAME
+    // or a binding-vector position) — a DATA-position `comment` symbol does
+    // not shadow the macro (see the analyzer; adversarial review F4).
+    const DEF_NAME_HEADS = new Set(["def", "defn", "defn-", "defmacro", "defonce", "defmulti"])
+    const BINDING_VEC_HEADS = new Set(["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"])
+    const FN_PARAM_HEADS = new Set(["fn", "defn", "defn-", "defmacro", "defmethod", "deftest"])
+    const isShadowingComment = (c: any): boolean => {
+      const p = c.parent
+      if (!p) return false
+      if (p.type === "list_lit") {
+        const head = formNameOf(p)
+        return !!(DEF_NAME_HEADS.has(head) && p.namedChild(1)?.startIndex === c.startIndex)
+      }
+      if (p.type === "vec_lit") {
+        const gp = p.parent
+        if (!gp || gp.type !== "list_lit") return false
+        const head = formNameOf(gp)
+        if (FN_PARAM_HEADS.has(head)) {
+          for (let i = 0; i < gp.namedChildCount; i++) {
+            const cc = gp.namedChild(i)
+            if (cc?.type === "vec_lit") return cc.startIndex === p.startIndex
+          }
+          return false
+        }
+        if (BINDING_VEC_HEADS.has(head)) return gp.namedChild(1)?.startIndex === p.startIndex
+        return false
+      }
+      return false
+    }
     const scan: any[] = [root]
     while (scan.length > 0) {
       const c = scan.pop()!
       if (c.type === "dis_expr" || c.type === "quoting_lit") continue
-      if (c.type === "sym_lit" && symName(c) === "comment") {
-        const p = c.parent
-        if (p?.type !== "list_lit" || p.namedChild(0)?.startIndex !== c.startIndex) { mayShadowComment = true; break }
-      }
+      if (c.type === "sym_lit" && symName(c) === "comment" && isShadowingComment(c)) { mayShadowComment = true; break }
       for (const k of kids(c)) scan.push(k)
     }
   }
@@ -7858,17 +7884,30 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   }
   const handleLib = (raw: any) => {
     const spec = raw.type === "quoting_lit" ? (raw.namedChild(0) ?? raw) : raw
+    if (spec.type === "read_cond_lit" || spec.type === "splicing_read_cond_lit") {
+      // F12 mirror: read-cond transparency for libspecs (union of platforms).
+      for (let i = 0; i < spec.namedChildCount; i++) {
+        const c = spec.namedChild(i)
+        if (!c) continue
+        if (c.type === "vec_lit" || c.type === "list_lit" || c.type === "sym_lit" || c.type === "quoting_lit" || c.type === "read_cond_lit" || c.type === "splicing_read_cond_lit") handleLib(c)
+      }
+      return
+    }
     if (spec.type === "vec_lit") {
       const libName = symName(spec.namedChild(0))
       if (!libName) return
+      let hasAsAlias = false
       for (let k = 1; k < spec.namedChildCount; k++) {
         const part = spec.namedChild(k)
         if (!part) continue
         if (part.type === "kwd_lit") {
           const kw = part.childForFieldName?.("name")?.text || ""
-          if (kw === "as" && k + 1 < spec.namedChildCount) {
+          if ((kw === "as" || kw === "as-alias") && k + 1 < spec.namedChildCount) {
             const a = symName(spec.namedChild(k + 1))
             if (a) aliases.set(a, libName)
+            // F12 mirror: `:as-alias` registers the alias but the lib is not
+            // loaded — no references edge for the alias-only form.
+            if (kw === "as-alias") hasAsAlias = true
           }
         } else if (part.type === "vec_lit") {
           // PREFIX-LIST spec mirror: `[prefix [sub :as a] …]` — alias a -> prefix.sub.
@@ -7889,10 +7928,30 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           push("references", nsName, full)
         }
       }
-      push("references", nsName, libName)
+      if (!hasAsAlias) push("references", nsName, libName)
     } else if (spec.type === "list_lit") {
       const pkg = symName(spec.namedChild(0))
-      if (pkg) push("references", nsName, pkg)
+      if (!pkg) return
+      push("references", nsName, pkg)
+      for (let k = 1; k < spec.namedChildCount; k++) {
+        const cls = spec.namedChild(k)
+        if (!cls) continue
+        if (cls.type === "list_lit") {
+          // F15 mirror: paren prefix-list `(adv.prefix (sub :as sp))`.
+          const subName = symName(cls.namedChild(0))
+          if (!subName) continue
+          const full = `${pkg}.${subName}`
+          for (let q = 1; q < cls.namedChildCount; q++) {
+            const pp = cls.namedChild(q)
+            if (pp && pp.type === "kwd_lit" && (pp.childForFieldName?.("name")?.text || "") === "as") {
+              const av = cls.namedChild(q + 1)
+              const subAlias = av ? symName(av) : ""
+              if (subAlias) aliases.set(subAlias, full)
+            }
+          }
+          push("references", nsName, full)
+        }
+      }
     } else if (spec.type === "sym_lit") {
       const libName = symName(spec)
       if (libName) push("references", nsName, libName)
@@ -7907,6 +7966,8 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     if (exit) { frames.pop(); continue }
     if (!n) continue
     if (n.type === "dis_expr") continue
+    // F5 mirror: metadata is compile-time DATA — the subtree is never walked.
+    if (n.type === "meta_lit") continue
     if (n.type === "syn_quoting_lit" || n.type === "unquoting_lit" || n.type === "unquote_splicing_lit" || qd > 0) {
       let childDepth = qd
       if (n.type === "syn_quoting_lit") childDepth++
@@ -7931,7 +7992,23 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       continue
     }
     if (n.type === "anon_fn_lit") {
-      frames.push({ name: `lambda_${n.startPosition.row}_${n.startPosition.column}`, isFn: true })
+      const lname = `lambda_${n.startPosition.row}_${n.startPosition.column}`
+      frames.push({ name: lname, isFn: true })
+      // F1 mirror: `#(f …)` — the first named child is the callee.
+      const anonHead = n.namedChild(0)
+      if (anonHead && anonHead.type === "sym_lit") {
+        const hName = symName(anonHead)
+        if (hName && !/^%(\d+|&)?$/.test(hName) && !CORE[hName]) {
+          if (hName.includes("/")) {
+            const [a, f] = hName.split("/")
+            const resolvedNs = aliases.get(a) || a
+            push("calls", lname, `${resolvedNs}/${f}`)
+            push("references", nsName, resolvedNs)
+          } else {
+            push("calls", lname, hName)
+          }
+        }
+      }
       work.push({ n, exit: true, qd })
       const cs = kids(n)
       for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
@@ -7939,14 +8016,16 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     }
     if (n.type === "list_lit") {
       const form = formNameOf(n)
-      if (form === "quote" || form === "clojure.core/comment" || (form === "comment" && !mayShadowComment)) continue
+      // F10 mirror: spelling-independent data-form skip.
+      const canon = resolveQualified(form)
+      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !mayShadowComment)) continue
       if (n.parent?.type === "list_lit" && LIBSITE_FORMS.has(clauseNameOf(n.parent) || formNameOf(n.parent))) continue
       if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent) !== n) {
-        // CLJ-D6: method definition, not a call (defprotocol sigs are
-        // symbols-only in the analyzer — nothing to derive for them).
+        // CLJ-D6: method definition, not a call (defprotocol/definterface sigs
+        // are symbols-only in the analyzer — nothing to derive for them).
         const parentForm = formNameOf(n.parent)
         const mName = symName(n.namedChild(0))
-        if (parentForm !== "defprotocol" && mName && !CORE[mName]) {
+        if (parentForm !== "defprotocol" && parentForm !== "definterface" && mName && !CORE[mName]) {
           frames.push({ name: mName, isFn: true })
           work.push({ n, exit: true, qd })
         }
@@ -7958,17 +8037,29 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       if (form === "ns") {
         const nm = symName(n.namedChild(1))
         if (nm) nsName = nm
+        // F2/F12 mirror: refer-clojure is data (never a libspec); read-cond
+        // clauses unwrap; require-macros is a require sibling.
+        const clauses: any[] = []
         for (let i = 1; i < n.namedChildCount; i++) {
           const clause = n.namedChild(i)
-          if (!clause || clause.type !== "list_lit") continue
+          if (!clause) continue
+          if (clause.type === "list_lit") clauses.push(clause)
+          else if (clause.type === "read_cond_lit" || clause.type === "splicing_read_cond_lit") {
+            for (let c = 0; c < clause.namedChildCount; c++) {
+              const inner = clause.namedChild(c)
+              if (inner && inner.type === "list_lit") clauses.push(inner)
+            }
+          }
+        }
+        for (const clause of clauses) {
           const ct = clauseNameOf(clause)
-          if (ct !== "require" && ct !== "use" && ct !== "import" && ct !== "refer-clojure") continue
+          if (ct !== "require" && ct !== "use" && ct !== "import" && ct !== "require-macros") continue
           for (let j = 1; j < clause.namedChildCount; j++) {
             const libNode = clause.namedChild(j)
             if (libNode) handleLib(libNode)
           }
         }
-      } else if ((form === "require" || form === "use" || form === "import" || form === "refer") && execHead(n)?.type === "sym_lit") {
+      } else if ((form === "require" || form === "use" || form === "import" || form === "refer" || form === "require-macros") && execHead(n)?.type === "sym_lit") {
         // CLJ-D7: top-level directive forms after the ns (the kwd-headed ns
         // clauses were consumed by the ns branch above).
         for (let j = 1; j < n.namedChildCount; j++) {
@@ -7987,6 +8078,14 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       } else if (form === "fn") {
         frames.push({ name: `lambda_${n.startPosition.row}_${n.startPosition.column}`, isFn: true })
         pushedFrame = true
+      } else if (n.parent?.type === "vec_lit" && n.parent.parent?.type === "list_lit" && formNameOf(n.parent.parent) === "letfn") {
+        // F8 mirror: a letfn binding-vector list is a DEFINITION (a frame),
+        // never a call.
+        const fName = symName(n.namedChild(0))
+        if (fName && !CORE[fName]) {
+          frames.push({ name: fName, isFn: true })
+          pushedFrame = true
+        }
       } else if (form === "defrecord" || form === "deftype") {
         const rn = symName(n.namedChild(1))
         for (let pi = 3; pi < n.namedChildCount; pi++) {
@@ -8037,12 +8136,41 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       } else if (form === "s/def" || form === "s/fdef" || form === "clojure.spec.alpha/def" || form === "clojure.spec.alpha/fdef") {
         // spec declaration forms are symbols-only in the analyzer — consumed,
         // no edges (a generic-call fallthrough would fabricate one).
-      } else if (form.startsWith("->") && form.length > 2) {
+      } else if (form.startsWith("->") && form.length > 2 && form !== "->>") {
+        // F14 mirror: final-segment uppercase (aligns with CLJ-D1), alias-resolved.
+        // `->>` falls through to the threading branch below.
         const cls = form.slice(2)
-        const c0 = cls.charCodeAt(0)
-        if (c0 >= 65 && c0 <= 90) push("instantiates", currentName(), cls)
+        const namePart = cls.includes("/") ? cls.slice(cls.indexOf("/") + 1) : cls
+        const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
+        const c0 = lastSeg.charCodeAt(0)
+        if (c0 >= 65 && c0 <= 90) push("instantiates", currentName(), resolveQualified(cls))
+      } else if (form === "new") {
+        // F14 mirror: `(new Class args…)` instantiates the named class.
+        const clsName = symName(n.namedChild(1))
+        if (clsName) push("instantiates", currentName(), resolveQualified(clsName))
       } else if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) {
-        push("instantiates", currentName(), form.slice(0, -1))
+        push("instantiates", currentName(), resolveQualified(form.slice(0, -1)))
+      } else if (form === "->" || form === "->>" || form === "some->" || form === "some->>" || form === "cond->" || form === "cond->>" || form === "doto") {
+        // F13 mirror (CLJ-D10): threading steps are calls; bare symbol steps
+        // emit; builtin/dotted steps follow the site policy.
+        const isCond = form === "cond->" || form === "cond->>"
+        for (let i = 2; i < n.namedChildCount; i++) {
+          if (isCond && i % 2 === 0) continue
+          const step = n.namedChild(i)
+          if (!step) continue
+          const head = step.type === "list_lit" ? execHead(step) : step
+          if (!head || head.type !== "sym_lit") continue
+          const hName = symName(head)
+          if (!hName || CORE[hName] || hName.startsWith(".") || hName.startsWith("->") || hName.endsWith(".")) continue
+          if (hName.includes("/")) {
+            const [a, f] = hName.split("/")
+            const resolvedNs = aliases.get(a) || a
+            push("calls", currentName(), `${resolvedNs}/${f}`)
+            push("references", nsName, resolvedNs)
+          } else {
+            push("calls", currentName(), hName)
+          }
+        }
       } else if (form.startsWith(".")) {
         // Java member/field access — the `uses` family; this oracle derives
         // no uses truth for clojure (label not compared for the lane).
@@ -8058,7 +8186,12 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       }
       if (pushedFrame) work.push({ n, exit: true, qd })
       const cs = kids(n)
-      for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
+      // F7 mirror: case constant-position LISTs are data groups — never walked.
+      const isCase = form === "case"
+      for (let i = cs.length - 1; i >= 0; i--) {
+        if (isCase && i >= 2 && i % 2 === 0 && cs[i].type === "list_lit") continue
+        work.push({ n: cs[i], qd })
+      }
       continue
     }
     const cs = kids(n)
