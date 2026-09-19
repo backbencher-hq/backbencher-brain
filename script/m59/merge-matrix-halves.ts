@@ -53,10 +53,17 @@ const agg = {
   consistent: sum((c) => c.consistent ?? 0),
   unknownLine: sum((c) => c.unknownLine ?? 0),
   notCheckable: sum((c) => c.notCheckable ?? 0),
+  unmodelled: sum((c) => c.unmodelled ?? 0),
   grepMentions: sum((c) => c.grepMentions ?? 0),
   grepRealCalls: sum((c) => c.grepRealCalls ?? 0),
   grepOnlyNoise: sum((c) => c.grepOnlyNoise ?? 0),
-  mutationsCaught: languages.filter((l) => l.mutation?.caught).length,
+  // A cell whose tool call exceeded its bound has NO verdict. Counted here so a
+  // merged payload cannot read as "every cell measured" when some did not answer.
+  graphTimeouts: cells.filter((c) => c.notMeasurable).length,
+  // Only a caught mutation on an UNAMBIGUOUS callee counts as red-ability proof.
+  mutationsCaught: languages.filter((l) => l.mutation?.caught && (l.mutation?.calleeMultiplicity ?? 1) === 1).length,
+  mutationsInconclusive: languages.filter((l) => l.mutation?.ran && !l.mutation?.caught).length,
+  languagesWithoutCallSurface: languages.filter((l) => l.notMeasurable).length,
   languagesMeasured: languages.length,
 }
 
@@ -69,7 +76,12 @@ const payload = {
     "bb_graph driven through the REAL MCP handler on file slices of real corpus repos; " +
     "predicate is a NECESSARY condition (lower bound), so \"consistent\" is never proof of correctness; " +
     "\"missed\" is only reported when the callee name maps to exactly one symbol (ambiguous names print AMBIG(k)); " +
-    "every language reports whether its in-run mutation actually turned the audit red",
+    "every language reports whether its in-run mutation actually turned the audit red; " +
+    "a mutation whose callee name maps to several symbols is labelled inconclusive, because the corrupted row can belong to a different same-named symbol; " +
+    "sites whose call shape the source predicate cannot model (Groovy command syntax) are reported as `unmodelled`, never as WRONG; " +
+    "a lane with no calls/call relationships is reported NOT-MEASURABLE rather than as an empty-but-clean result; " +
+    "SUPERSEDED: the pre-#887 halves (matrix-tool-language.java.json, matrix-tool-language.scala.json) are deliberately NOT merged — " +
+    "they came from an instrument whose predicate could hang and could not see calls inside interpolated strings. See docs/m59/PLAN.md.",
   languages,
   cells,
   aggregate: agg,
@@ -81,6 +93,6 @@ writeFileSync(OUT, JSON.stringify(payload, null, 2))
 console.log(`merged ${runs.length} run(s) → ${path.relative(ROOT, OUT)}`)
 for (const r of runs) console.log(`  ${r.file}: ${r.languages.join(",")} cells=${r.cells} at=${r.at}`)
 console.log(
-  `languages=${agg.languagesMeasured} cells=${agg.cells} consistent=${agg.consistent} WRONG=${agg.wrongLine} unknown=${agg.unknownLine} notCheckable=${agg.notCheckable} mutationsCaught=${agg.mutationsCaught}/${agg.languagesMeasured}`,
+  `languages=${agg.languagesMeasured} cells=${agg.cells} consistent=${agg.consistent} WRONG=${agg.wrongLine} unknown=${agg.unknownLine} notCheckable=${agg.notCheckable} unmodelled=${agg.unmodelled} withoutCallSurface=${agg.languagesWithoutCallSurface} notMeasurable=${agg.graphTimeouts} mutationsCaught=${agg.mutationsCaught}/${agg.languagesMeasured}`,
 )
 if (agg.wrongLine > 0) process.exitCode = 1
