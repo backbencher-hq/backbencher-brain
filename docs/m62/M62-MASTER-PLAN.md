@@ -95,7 +95,7 @@ always for an `unusable` store, which must never be quietly degraded into a
 ## Lane findings (closure audit, 2026-09-18)
 
 X1 requires every lane bar verified **and fresh by relevance**. Re-earning them
-at one HEAD exposed four defects in the lane that no single milestone's own gate
+at one HEAD exposed eight defects in the lane that no single milestone's own gate
 could see. Each is fixed at its owner; none is a documentation note.
 
 1. **A byte-gated document asserted machine reality** (M26 `D1`/`W3`).
@@ -132,6 +132,44 @@ could see. Each is fixed at its owner; none is a documentation note.
    `npx tsx script/m29/giant-repo-budget.ts --reuse --index-only`, then re-run
    the gate. Recorded here because it is the one lane bar that cannot be re-earned
    from the repository alone.
+5. **A byte-gated document embedded a moving commit** (M55 `C3`).
+   `docs/m55/VERDICT-PACK.md` is drift-gated against a fresh generation, but its
+   generator wrote the audit HEAD into the pack. Since the pack's own gate pins
+   the HEAD it runs at, the identity check was unsatisfiable after any commit —
+   a run either changed the file it was about to compare or compared the same
+   commit to itself. Fixed:   the C3 identity check normalizes exactly **two declared mutable lines** (the
+   audit HEAD and the owner's verdict, which §8.5 makes the owner's to write) and proves in-suite that every other line still
+   fails on a hand edit. The rule is now *declared mutable surface + a proof the
+   rest is immutable*, instead of an assertion that could never hold.
+6. **Evidence whose key order was arbitrary per run** (M29 `R1`/`R4`). The
+   headless-editor driver's `raw` payload crossed the Lua boundary as a table,
+   so the JSON key order of `S6.json` was whatever the interpreter emitted that
+   run. Every artifact that hashed it — the M29 precision ledger among them —
+   could therefore never reach a fixpoint, and no amount of re-running helped.
+   Fixed at the PRODUCER: `canonicalizeKeys` in `script/lib/evidence.ts` sorts
+   keys before sealing, so byte-stability is a property of the record, not a
+   hope held by each consumer. The same leg also caught a real on-disk
+   corruption on one run — the generated `docs/m29/WAVE-PROTOCOL.md` truncated
+   to 0 bytes — and reported it as a failure rather than passing a corrupt
+   artifact; its mutant-restore path rewrote the honest doc.
+7. **A drift gate compared volatile fields** (M29 `R4`). The precision ledger's
+   identity check included the run commit and generation time, so it could only
+   ever be green on the exact run that produced it. The ledger's drift comparison
+   now covers its stable content only; the volatile fields are recorded, not
+   compared.
+8. **Two self-references in M62's own auditor** (found closing this milestone,
+   and the reason the ledger could not close). (a) `X1`'s check asserted its own
+   previous record said `verified`, but that record is written by the very run
+   that reads it: the run read the last run's `known-gap`, failed, and wrote
+   `known-gap` again — closure was unreachable by construction. The labelled
+   rule (`read, not judged`) now does what its name says: the self-owned records
+   are read for **shape** (sealed, a legal state), while the verdict that closes
+   the ledger stays THIS run's own measured result. (b) `script/m62/` was listed
+   in the lane-relevance surface, so every edit to the auditor invalidated all
+   six lane bars — a record invalidated by its reader. The list now covers what
+   a lane record makes claims about (`src/lsp/`, `src/intelligence/`, the MCP
+   handler, each lane's own gate scripts); a real regression is still caught.
+   Both halves are pinned by negatives, so neither can drift into the other.
 
 ## Not in scope (declared)
 
