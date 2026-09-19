@@ -50,7 +50,20 @@ const GATED_ANALYZERS: Record<string, string> = {
   python: "real-python-analyzer.ts",
   haskell: "real-haskell-analyzer.ts",
   erlang: "real-erlang-analyzer.ts",
+  clojure: "real-clojure-analyzer.ts",
+  elixir: "real-elixir-analyzer.ts",
 }
+
+// A ternary's `?` is never the tail of a nullish-coalescing operator. Without
+// this guard both rules below read `x ?? null` as a ternary question mark and
+// then run `\s*` (which matches newlines) across to the ternary's own
+// `: arm`, inventing a no-op that is not in the source. Measured: the ruby
+// analyzer's `cond ? (n.parent as any)?.childForFieldName?.("name") ?? null : null` — a
+// meaningful expression — was reported as `? null : null` and release-blocked
+// M14.0.F7 (M49 W13). The guard is on the operator, not on the whitespace,
+// because whitespace between a ternary's `?` and its arms may legitimately
+// wrap; the shape that must not match is specifically the `??`/`??=` pair.
+const TERNARY_Q = /(?<!\?)\?(?!\?)/.source
 
 interface Finding {
   lang: string
@@ -60,16 +73,6 @@ interface Finding {
   note: string
 }
 
-// A ternary's `?` is never the tail of a nullish-coalescing operator. Without
-// this guard both rules below read `x ?? null` as a ternary question mark and
-// then run `\s*` (which matches newlines) across to the ternary's own `: arm`,
-// inventing a no-op that is not in the source. Measured: the ruby analyzer's
-// `cond ? (n.parent as any)?.childForFieldName?.("name") ?? null : null` — a
-// meaningful expression — was reported as `? null : null` and release-blocked
-// M14.0.F7 (M49 W13). The guard is on the operator, not on the whitespace,
-// because whitespace between a ternary's `?` and its arms may legitimately
-// wrap; the shape that must not match is specifically the `??`/`??=` pair.
-const TERNARY_Q = /(?<!\?)\?(?!\?)/.source
 
 export function findNoopTernaries(src: string, lang: string, findings: Finding[]) {
   // `cond ? X : X` where both arms are token-identical. The regex anchors on
@@ -305,18 +308,28 @@ export function main() {
     status: (perLang.get(lang) || 0) === 0 ? "pass" : "fail",
     findings: perLang.get(lang) || 0,
   }))
-  emitEvidence({
-    issueId: "M14.0.F7",
-    title: "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)",
-    claimLevel: "L1",
-    layers: ["hygiene"],
-    checks,
-    limitations: [
-      {
-        description: "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)",
-      },
-    ],
-  })
+  // Scoped-run guard (M14 W16 / #886 class): a --lang run is for inspecting
+  // one analyzer — it prints here and writes NO evidence. This gate HAD no
+  // guard: the canonical artifact was last written by an erlang-scoped run
+  // and every other language's row vanished from it (found 2026-09-19 when
+  // the F6/F7 ceremony wired clojure/elixir in). The canonical artifact is
+  // only ever produced by a full run.
+  if (only) {
+    console.log(`\nSCOPED run (1 of ${Object.keys(GATED_ANALYZERS).length} analyzers): result printed above, NO evidence written — run without --lang for the canonical artifact`)
+  } else {
+    emitEvidence({
+      issueId: "M14.0.F7",
+      title: "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)",
+      claimLevel: "L1",
+      layers: ["hygiene"],
+      checks,
+      limitations: [
+        {
+          description: "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)",
+        },
+      ],
+    })
+  }
 
   if (allFindings.length > 0) {
     console.log(`\nanalyzer-hygiene gate: ${allFindings.length} finding(s) — release blocked`)
