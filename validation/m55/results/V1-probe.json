@@ -1310,10 +1310,10 @@
       "error": "bb/graph: symbol 'nonexistent_symbol_xyz' not found — no graph exists (declared error; run `bb index` or check the name)"
     }
   },
-  "generatedAt": "2026-09-19T00:07:08.162Z",
+  "generatedAt": "2026-09-19T02:54:17.214Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:07:10.566Z",
-    "contentSha256": "ceeed782227a57d94fe9af585a2e06c4666b4ae3c04998fb9bb95d341f4e4461"
+    "sealedAt": "2026-09-19T02:54:20.325Z",
+    "contentSha256": "e16278723fb98ba547dbb61ccb42038dbd10ac71ed9d6ff5ba6dbb87b436aaed"
   }
 }
