@@ -49,6 +49,7 @@ const GATED_ANALYZERS: Record<string, string> = {
   ruby: "real-ruby-analyzer.ts",
   python: "real-python-analyzer.ts",
   haskell: "real-haskell-analyzer.ts",
+  erlang: "real-erlang-analyzer.ts",
 }
 
 interface Finding {

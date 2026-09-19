@@ -179,6 +179,10 @@ module.exports = grammar(Java, {
     // #841 round 3: `f(List<String>)` — the type reading vs a comparison
     // chain `f(List < String) > (...)`; the comparison dies at `> (`.
     [$.expression, $._unannotated_type],
+    // #841 round 5: `Foo<User>.bar` — the generic type prefix is shared
+    // between a scoped type reference and an expression field access, now that
+    // generic_type is a value-position operand; GLR decides.
+    [$.expression, $._unannotated_type, $.scoped_type_identifier],
     // #841 round 3: `Map<String, T> m` / `foo(Map < String …)` — the type
     // prefix is shared between generic_type, a bare type operand, and a
     // primary expression (the established juxt ambiguity, now with the
@@ -240,7 +244,18 @@ module.exports = grammar(Java, {
     // `)` only exists in `map_item`. Declared here as the narrowest available
     // ruling — raising `map_item`'s precedence instead would change every other
     // map and command-argument parse in the grammar.
+    // #841 round 5: same consequence for the command-argument form `f(Byte[])`
+    // (`_juxt_function_name '(' array_type • ')'`) now that array_type is a
+    // value operand.
+    [$.expression, $.map_item],
     [$.map_item, $._unannotated_type],
+    // #841 round 5: consequence of admitting array_type as a value operand.
+    // The `[(Byte[]): x]` map key above was deliberately kept to `$.array_type`
+    // alone to dodge exactly this conflict; once the same form is legal as an
+    // EXPRESSION, `[ '(' array_type • ')'` has three readings (map key, array
+    // type, expression) and the ambiguity must be declared for GLR to settle
+    // rather than avoided by omission. Verified by the corpus A/B, not assumed.
+    [$.expression, $._unannotated_type, $.map_item],
     // #841 round 3: closure-body starts (`{ x …`) share the declarator/expr
     // prefix — the established quartet with closure added.
     [$.primary_expression, $._variable_declarator_id, $._unannotated_type, $.closure],
@@ -250,6 +265,14 @@ module.exports = grammar(Java, {
 
   extras: $ => [
     /\s/,
+    // #841 round 11: Groovy's BACKSLASH LINE CONTINUATION. The real compiler
+    // accepts a trailing `\` before a newline, and even a LONE `\` on its own
+    // line (`MongoClientOptionsBuilder.groovy:89`, verified against Groovy
+    // 3.0.24 by the parse oracle), treating it as if the newline were not
+    // there. `extras` is the right home for it: extras are skipped BETWEEN
+    // tokens exactly like whitespace, so no rule has to know about it and the
+    // change cannot alter any production.
+    $.line_continuation,
     $.line_comment,
     $.block_comment,
   ],
@@ -288,7 +311,11 @@ module.exports = grammar(Java, {
       $.trait_declaration,
     ),
 
+
     shebang: $ => token(seq('#!', /.*/)),
+
+    // #841 round 11: a backslash followed by optional blanks and a newline.
+    line_continuation: _ => token(seq('\\', /[ \t]*\r?\n/)),
 
     expression_statement: $ => seq($.expression, DELIMITER),
 
@@ -305,6 +332,22 @@ module.exports = grammar(Java, {
       $.integral_type,
       $.floating_point_type,
       $.void_type,
+      // #841 round 5: the two value-position forms that were still missing.
+      // `reviews/m59-841-assert-comma-separator.md` §7b measured EIGHT
+      // constructs across five positions — annotation argument, assignment
+      // RHS, call argument, map value, comparison operand — that all fail on
+      // this one absent production: `@Scaffold(Foo<User>)`,
+      // `@Scaffold(List<String>)`, `@Scaffold(value = Foo<User>)`,
+      // `Class c = Foo<User>`, `Class c = String[]`, `register(Foo<User>)`,
+      // `[k: Foo<User>]`, `Foo<User> == null`. Every one ACCEPTED by the real
+      // Groovy 3.0.24 compiler.
+      //
+      // Narrow on purpose, exactly like the `as` type operand above and the
+      // `[(Byte[]): x]` map key below: `$.generic_type` and `$.array_type`,
+      // NEVER the broad `$._unannotated_type`, whose earlier use as a
+      // type-expression node regressed dotted chains and was reverted.
+      $.generic_type,
+      $.array_type,
     ),
 
     lambda_expression: $ => seq(
@@ -317,11 +360,31 @@ module.exports = grammar(Java, {
       field('body', choice($.expression, $.block)),
     ),
 
-    local_variable_declaration: $ => seq(
-      optional($.modifiers),
-      optional(choice(field('type', $._unannotated_type), 'def')),
-      $._variable_declarator_list,
-      DELIMITER,
+    local_variable_declaration: $ => choice(
+      seq(
+        optional($.modifiers),
+        optional(choice(field('type', $._unannotated_type), 'def')),
+        $._variable_declarator_list,
+        DELIMITER,
+      ),
+      // #841 round 10: Groovy's MULTIPLE-ASSIGNMENT declaration —
+      // `def (mapping, refDomainClass) = mockEntity(hasCompositeId)`. Every
+      // corpus file carrying the form uses `def` with it, and one declares
+      // TYPES inside the parentheses: `def (int max, int offset) = maxAndOffset()`
+      // (AbstractS2UiDomainController.groovy), which is why the declarator here
+      // is `optional(type) name` and not a bare identifier. The bare
+      // `(a, b) = …` tuple-assignment form is a DIFFERENT construct with no
+      // corpus instance, so it is deliberately not added.
+      seq(
+        optional($.modifiers),
+        'def',
+        '(',
+        commaSep1(seq(optional(field('type', $._unannotated_type)), field('name', $.identifier))),
+        ')',
+        '=',
+        field('value', $.expression),
+        DELIMITER,
+      ),
     ),
 
     import_declaration: $ => seq(
@@ -434,6 +497,15 @@ module.exports = grammar(Java, {
         ['in', PREC.REL],
         // #742: the spaceship operator (Groovy's Comparable compareTo).
         ['<=>', PREC.REL],
+        // #841 round 7: Groovy 3's IDENTITY operators `a === b` / `a !== b`.
+        // Legality is not assumed: both of the corpus files that use them
+        // (`ColumnConfigSpec.groovy`, `HibernateConnectionSourceSettingsSpec`)
+        // are in the oracle's ACCEPTED set, i.e. real Groovy 3.0.24 parses them
+        // while our grammar does not. Same precedence as `==`/`!=`, which is
+        // the level Java gives equality; longest-match lexing keeps `!==` from
+        // splitting into `!=` + `=`.
+        ['===', PREC.EQUALITY],
+        ['!==', PREC.EQUALITY],
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
           field('left', $.expression),
@@ -572,10 +644,20 @@ module.exports = grammar(Java, {
     ))),
 
     // Groovy asserts are newline-terminated.
+    //
+    // #841: the message separator is `:` OR `,`. The upstream rule accepted only
+    // the colon form, so every file carrying `assert cond, 'message'` failed to
+    // parse — and the recovery does not stop at the statement: it swallows the
+    // enclosing class, which is why MailMessageBuilder.groovy reported its first
+    // error on the `class` line rather than the assert. Verified against a REAL
+    // Groovy 3.0.24 toolchain (script/m14/tmp/assert-comma-validity.groovy): both
+    // separators parse and run, and the comma form raises
+    // `AssertionError: <message>`. Measured on grails-core: 34 of the 322 residual
+    // files contain the comma form (10.6%).
     assert_statement: ($, original) => seq(
       'assert',
       $.expression,
-      optional(seq(':', $.expression)),
+      optional(seq(choice(':', ','), $.expression)),
       DELIMITER,
     ),
 
@@ -878,6 +960,21 @@ module.exports = grammar(Java, {
         // whole enclosing `dependencies { … }` block into ERROR recovery, which
         // is why the census's largest first-error signature was a bare `ID {`.
         $._reserved_identifier,
+        // #841 round 9: the TYPE keywords (`boolean:`, `int:`, `long:`, `short:`,
+        // `byte:`, `char:`, `float:`, `double:`, `void:`) and the four remaining
+        // Java keywords (`new:`, `switch:`, `this:`, `super:`). Measured, not
+        // guessed: of 64 keywords probed as `g.f(KW: v)`, exactly these 13 are
+        // refused by us, and real Groovy 3.0.24 ACCEPTS all 13 — while the
+        // contextual ones (`class`, `default`, `module`, `record`, `sealed`,
+        // `var`, …) already work through `_reserved_identifier` above.
+        $.boolean_type,
+        $.integral_type,
+        $.floating_point_type,
+        $.void_type,
+        $.this,
+        $.super,
+        'new',
+        'switch',
         $._literal,
         // A parenthesised key may be an EXPRESSION (`(x)`, `(x.y)`, `(1+2)`) or
         // an ARRAY TYPE. The array arm was missing, so
@@ -1106,9 +1203,34 @@ module.exports = grammar(Java, {
       '/',
     )),
 
+    // #841 round 8: Groovy's INTEGER suffixes. Java's `decimal_integer_literal`
+    // stops at `l`/`L`, so every other suffix Groovy allows fell into ERROR
+    // (`5_000_000G` — the DetachedCriteriaJoinSpec literal; census MISSING
+    // `decimal_integer_literal` x15).
+    //
+    // The suffix set is MEASURED, not guessed: each suffix was compiled by real
+    // Groovy 3.0.24 via script/m14/tmp/groovy-parse-oracle.groovy, and all ten
+    // are accepted on an integer — l L g G i I d D f F — while on a DECIMAL
+    // only g G d D f F are (l L i I are rejected). Because `G` on a dotless
+    // number is legal as an integer, adding it to the no-dot arm of
+    // `decimal_floating_point_literal` below would make the two rules overlap
+    // on the same text, so that rule is left alone: the measured corpus need is
+    // the integer form.
+    decimal_integer_literal: _ => token(seq(
+      DIGITS,
+      optional(/[lLgGiIdDfF]/),
+    )),
+
+    // #841 round 8b: the dot-bearing arms also take Groovy's `g`/`G`
+    // (BigDecimal) suffix — `1.25G`. Measured, not assumed: real Groovy 3.0.24
+    // accepts `1.25g`/`1.25G` on a decimal. `g`/`G` canNOT go on the DOTLESS
+    // arms (3 and 4) because `5G` is a legal INTEGER there, so the two rules
+    // would overlap on identical text; the corpus need is the dot form.
+    // The rejected decimal suffixes are also measured: `1.25l` and `1.25i` are
+    // refused by the language itself, so they stay refused here.
     decimal_floating_point_literal: _ => token(choice(
-      seq(DECIMAL_DIGITS, '.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
-      seq('.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
+      seq(DECIMAL_DIGITS, '.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdDgG]/)),
+      seq('.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdDgG]/)),
       seq(DIGITS, /[eEpP]/, optional(choice('-', '+')), DECIMAL_DIGITS, optional(/[fFdD]/)),
       seq(DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), (/[fFdD]/)),
     )),

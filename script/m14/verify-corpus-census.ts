@@ -57,6 +57,7 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   ruby: { wasm: "tree-sitter-ruby.wasm", ext: [".rb"], repo: "rake" },
   python: { wasm: "tree-sitter-python.wasm", ext: [".py"], repo: "cython" },
   haskell: { wasm: "tree-sitter-haskell.wasm", ext: [".hs"], repo: "cabal" },
+  erlang: { wasm: "tree-sitter-erlang.wasm", ext: [".erl"], repo: "rebar3" },
 }
 
 interface LangResult {

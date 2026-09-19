@@ -51,6 +51,42 @@ class GroovyChild extends BaseService {
     }
 }
 `)
+  // erlang (M14 #384 BEAM seam): module + behaviour contract + record decl +
+  // arity-distinct local calls + remote call + record construction + include.
+  // Every construct asserted below is one the erlang analyzer emits through
+  // the fixture battery — this seam proves the rows survive the REAL CLI.
+  fs.writeFileSync(path.join(TMP, "src", "seam_srv.erl"), `-module(seam_srv).
+-behaviour(gen_server).
+-include("seam.hrl").
+-export([start/0, pick/1, pick/2, handle_call/3]).
+
+-record(state, {count, name}).
+
+start() ->
+    gen_server:start_link({local, ?MODULE}, seam_srv, [], []),
+    pick(1),
+    pick(1, 2),
+    io:format("seam ~p~n", [#state{count = 1, name = a}]).
+
+pick(X) -> X.
+pick(X, Y) -> {X, Y}.
+
+handle_call(_Req, _From, State) ->
+    {reply, ok, State}.
+`)
+  // elixir (M14 #384 BEAM seam): defmodule + arity-distinct defs + alias
+  // reference + qualified call.
+  fs.writeFileSync(path.join(TMP, "src", "seam.ex"), `defmodule Seam do
+  alias Seam.Helper
+
+  def pick(x), do: x
+  def pick(x, y), do: {x, y}
+
+  def go do
+    Helper.call(pick(1), pick(1, 2))
+  end
+end
+`)
 }
 
 async function main() {
@@ -90,6 +126,26 @@ async function main() {
   const groovyImports = count(`SELECT COUNT(*) c FROM brain_import bi JOIN brain_file bf ON bf.id = bi.file_id WHERE bf.path LIKE '%.groovy'`)
   expect(javaImports >= 1, `java imports persisted (got ${javaImports})`)
   expect(groovyImports >= 1, `groovy imports persisted (got ${groovyImports})`)
+
+  // BEAM seam (M14 #384): erlang and elixir rows survive the real CLI too —
+  // symbols, calls (arity-distinct), the behaviour implements edge, record
+  // construction, and the -include import. Asserted via the SOURCE symbol's
+  // file so target resolution (symbol id vs external string) is not guessed.
+  const edgesFromLang = (ext: string, kind: string) =>
+    count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%${ext}' AND r.relationship_type = ?`, kind)
+  const erlSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.erl'`)
+  const exSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.ex'`)
+  expect(erlSymbols >= 6, `erlang symbols persisted (got ${erlSymbols}, want >=6: module + 4 functions + record)`)
+  expect(exSymbols >= 2, `elixir symbols persisted (got ${exSymbols}, want >=2)`)
+  expect(edgesFromLang(".erl", "calls") >= 3, `erlang calls persisted (got ${edgesFromLang(".erl", "calls")}, want >=3: pick/1, pick/2, gen_server:start_link, io:format)`)
+  expect(edgesFromLang(".erl", "implements") >= 1, `erlang behaviour implements persisted (got ${edgesFromLang(".erl", "implements")})`)
+  expect(edgesFromLang(".erl", "instantiates") >= 1, `erlang record construction persisted (got ${edgesFromLang(".erl", "instantiates")})`)
+  const erlImports = count(`SELECT COUNT(*) c FROM brain_import bi JOIN brain_file bf ON bf.id = bi.file_id WHERE bf.path LIKE '%.erl'`)
+  expect(erlImports >= 1, `erlang -include persisted (got ${erlImports})`)
+  expect(edgesFromLang(".ex", "calls") >= 1, `elixir calls persisted (got ${edgesFromLang(".ex", "calls")})`)
 
   // cross-language edge flagged with bridge
   const xlang = db.prepare(`

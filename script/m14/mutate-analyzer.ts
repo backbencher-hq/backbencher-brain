@@ -803,6 +803,48 @@ function reattributeAnonBodyCall(outerName: string) {
 
 const MUTANTS: Mutant[] = [
   {
+    id: "clojure/emit-quote-forms",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "#881 regression: removes the execution-boundary guard — quote/discarded/commented forms fabricate calls and phantom definitions (pre-fix behavior)",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { type: "calls", source: "caller", target: "quoted-ghost", confidence: 1, metadata: { clojureSpecific: true, isGeneralCall: true } }],
+      symbols: [...(r.symbols ?? []), { name: "quoted-definition", kind: "function" }],
+    }),
+  },
+  {
+    id: "clojure/discard-head-occupies-form-position",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "#881 regression: a leading `#_discard` is treated as the list head, so `(#_ignored quote (trivia-ghost))` is walked as live code instead of a quote form and fabricates calls[caller->trivia-ghost] — the exact shape formNameOf's executionHead rule prevents",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { type: "calls", source: "caller", target: "trivia-ghost", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } }],
+    }),
+  },
+  {
+    id: "clojure/meta-head-takes-no-call",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "#881 head-position regression: metadata is treated as occupying head position, so `(^:probe meta-called)` stops being an ordinary call and meta-head loses calls->meta-called (the widening executionHead introduces at the fixture head-position-881)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "meta-head" && x.target === "meta-called")) }),
+  },
+  {
+    id: "clojure/drop-live-unquote",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "#881 regression: syntax-quote prunes live unquote execution — templates loses calls to live-unquote (verified HEAD counterexample)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "live-unquote")) }),
+  },
+  {
+    id: "clojure/drop-shadowed-comment-call",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "#881 regression: shadowed comment macro treated as core form — parameter-shadow loses calls to live-argument (verified HEAD counterexample)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "live-argument")) }),
+  },
+  {
     id: "elixir/drop-atom-struct-fields",
     language: "elixir",
     defectClass: "symbol-loss",
@@ -843,6 +885,153 @@ const MUTANTS: Mutant[] = [
     defectClass: "symbol-identity-corruption",
     description: "ELXD1: merges a delegate with a distinct same-arity function named like its remote target",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => s.name === "trim_trailing" && s.ownerName === "DelegateCollision" ? { ...s, metadata: { ...s.metadata, heads: 2 } } : s) }),
+  },
+  {
+    id: "elixir/drop-quoted-struct-fields",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "EX-G1: quoted-key struct fields disappear while keyword fields remain",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.metadata?.isStructField && ["alpha", "gamma"].includes(s.name))) }),
+  },
+  {
+    id: "elixir/defimpl-single-arg-self-target",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "ELXD6: single-argument defimpl methods mis-owned by the protocol instead of the enclosing module",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.name === "to_string" && s.ownerName === "SingleArgImpl")), relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "implements" && x.target === "String.Chars")) }),
+  },
+  {
+    id: "elixir/emit-defimpl-macro-head",
+    language: "elixir",
+    defectClass: "symbol-fabrication",
+    description: "ELXD7: a defimpl-shaped declaration head emits a phantom implementation (defmacro defimpl head)",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "Unknown", kind: "class", scope: "", visibility: "public" }], relationships: [...(r.relationships ?? []), { type: "implements", source: "Unknown", target: "Unknown", confidence: 1, metadata: {} }] }),
+  },
+  {
+    id: "elixir/emit-self-reference",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELXD8: a self-directive emits a vacuous self-loop dependency (alias SelfAlias inside defmodule SelfAlias)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "SelfAlias", target: "SelfAlias", confidence: 0.9, metadata: {} }] }),
+  },
+  {
+    id: "elixir/drop-framework-detection",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "ELXD9 regression: empties detectedFrameworks (framework truth is differential-invisible — deriveElixirEdges derives no framework truth, so ONLY the fixture can catch it; go wave GOD7 learned this exact lesson) — framework-forms expectFrameworks [Plug, Phoenix, Ecto] pin catches it",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [] } }),
+  },
+  {
+    id: "elixir/drop-defexception-struct",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "ELXD10: defexception struct and fields disappear while defstruct forms remain",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.ownerName === "TaskError" && (s.kind === "struct" || s.metadata?.isStructField))) }),
+  },
+  {
+    id: "elixir/drop-derive-implements",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD11: @derive protocol edges disappear while @behaviour/defimpl edges remain",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "implements" && x.target === "JSON.Encoder")) }),
+  },
+  {
+    id: "elixir/drop-self-struct-instantiates",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD12: %__MODULE__{} self-construction edges disappear while alias-backed instantiations remain",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "instantiates" && (x.target === "SelfStruct" || String(x.target).endsWith(".Inner")))) }),
+  },
+  {
+    id: "elixir/emit-self-instantiates",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELXD13: module-body self-construction emits a vacuous self-loop edge (%__MODULE__{} in SelfTestScope's own body)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "SelfTestScope", target: "SelfTestScope", confidence: 0.9, metadata: {} }] }),
+  },
+  {
+    id: "elixir/drop-doc-comments",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "ELXD14 regression: strips documentation chunks from all symbols (comments payload is differential-invisible, so ONLY the fixture can catch it) — doc-forms expectComments pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, comments: undefined })) }),
+  },
+  {
+    id: "elixir/drop-symbol-complexity",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "ELXD15 regression: clears per-symbol complexity (differential-invisible payload — ONLY the fixture can catch it) — complexity-forms expectComplexity pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => ({ ...s, complexity: undefined })) }),
+  },
+  {
+    id: "elixir/emit-kernel-builtin-call",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELXD16: an always-available Kernel builtin emits a call edge as if it were a local invocation (match?/tap class)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "check", target: "match?", confidence: 0.8, metadata: {} }] }),
+  },
+  {
+    id: "elixir/drop-import-only-resolution",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD17: :only-imported calls lose their module qualification (last-wins order included)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "calls" && (x.target === "Enum.map" || x.target === "Beta.go"))) }),
+  },
+  {
+    id: "elixir/drop-remote-ref-calls",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD18: bare remote references (&Mod.fun/2, Mod.fun) disappear while member access stays silent",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "calls" && (x.target === "Enum.map" || x.target === "Enum.reverse"))) }),
+  },
+  {
+    id: "elixir/emit-member-access-call",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "ELXD18: a variable field read emits a call edge as if it were an invocation (order.side)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "read", target: "order.side", confidence: 0.8, metadata: {} }] }),
+  },
+  {
+    id: "elixir/drop-struct-fn-instantiates",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD19: struct/2 first-argument construction edges disappear while %Struct{} literals remain",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.type) === "instantiates" && (x.target === "User" || x.target === "StructFn"))) }),
+  },
+  {
+    id: "elixir/drop-multi-alias-expansion",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD20: multi-alias members collapse back to the bare prefix (references + resolved calls lost)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !((String(x.type) === "references" || String(x.type) === "calls") && String(x.target).startsWith("Foo.Bar"))) }),
+  },
+  {
+    id: "elixir/emit-nested-head-def",
+    language: "elixir",
+    defectClass: "symbol-fabrication",
+    description: "ELXD23: an inner def-construct signature emits a phantom definition (defmacro def head fabricates function sig)",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "sig", kind: "function", scope: "HeadNest", ownerName: "HeadNest", visibility: "public" }] }),
+  },
+  {
+    id: "elixir/drop-operator-defs",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "ELXD24: operator definitions disappear (binary +++ and unary + forms)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.kind === "function" && (s.name === "+++" || s.name === "+"))) }),
+  },
+  {
+    id: "elixir/emit-quoted-def",
+    language: "elixir",
+    defectClass: "symbol-fabrication",
+    description: "quote-as-data regression: a def inside quote do...end fabricates a module symbol (the M12.23 contract — macro AST is data, never executable code)",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "injected", kind: "function", scope: "QuotedData", ownerName: "QuotedData", visibility: "public" }] }),
+  },
+  {
+    id: "elixir/drop-self-alias-resolution",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "ELXD21: __MODULE__-prefixed aliases lose scope resolution (references + resolved calls revert to literals)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(String(x.target).startsWith("SelfAliasMod."))) }),
   },
   {
     id: "c/drop-field-access-uses",
@@ -1814,6 +2003,16 @@ const MUTANTS: Mutant[] = [
         { type: "uses", source: "control", target: "templateField", confidence: 0.9, line_number: 32, metadata: { isInterpolationRead: true } },
         { type: "uses", source: "control", target: "style", confidence: 0.9, line_number: 32, metadata: { isInterpolationRead: true } },
       ],
+    }),
+  },
+  {
+    id: "groovy/assert-comma-calls-dropped",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "#841 regression: the assert statement's message expression goes unwalked, so the calls written inside `assert cond, 'msg'` disappear — groovy/assert-comma-841 loses check -> size and check -> isEmpty. The pre-fix failure was worse than a lost call (recovery swallowed the whole class) but the fixture pins the extraction consequence, which is what the analyzer can observe.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "check" && (x.target === "size" || x.target === "isEmpty"))),
     }),
   },
   {
@@ -6038,6 +6237,20 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "run" && x.target === "base_name")) }),
   },
   {
+    id: "haskell/drop-tuple-superclass",
+    language: "haskell",
+    defectClass: "relationship-loss",
+    description: "regresses #872: drops tuple-context superclass extends edges (Mergeable2->Show/Eq) — the pre-fix analyzer saw only direct applies; fixture pins Mergeable2 extends",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "extends" && (x.metadata ?? {}).isSuperclass && x.source === "Mergeable2")) }),
+  },
+  {
+    id: "haskell/apply-head-as-argument",
+    language: "haskell",
+    defectClass: "relationship-fabrication",
+    description: "#872 companion: an applied superclass head (Eq (f a) => Applied f a) is re-attributed to its ARGUMENT leaf (f a) — the pre-fix left-spine miss class; the fixture pins extends Applied->Eq",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "extends" && (x.metadata ?? {}).isSuperclass && x.source === "Applied" && x.target === "Eq" ? { ...x, target: "f a" } : x)) }),
+  },
+  {
     id: "haskell/drop-derived-implements",
     language: "haskell",
     defectClass: "relationship-loss",
@@ -6153,6 +6366,62 @@ const MUTANTS: Mutant[] = [
     description: "M49 W4 (T3) regression: restores the pre-fix early return on computed-callee calls - the argument subtree is skipped entirely, so real calls nested inside the arguments vanish (subscript-callee-nested-calls pins exactly 2 calls->text; the svelte corpus surfaced it as MISSING on runtime-browser/test.ts)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.target === "text")) }),
   },
+  {
+    id: "erlang/collapse-arity-group",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "M14 #275/#880 regression: restores the pre-fix module:name registration that collapsed pick/0 and pick/1 into one symbol (arity-exports pins exactly 2 pick functions, clauseCount 1 and 2)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.name === "pick" && s.metadata?.arity === 1)) }),
+  },
+  {
+    id: "erlang/drop-local-calls",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "M14 #275: drops local calls including forward references (call-resolution pins run->step_one and step_one->step_two as local function calls)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "local function call")) }),
+  },
+  {
+    id: "erlang/pattern-record-instantiates",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "M14 #275 regression: restores fabrication of instantiates from pattern-position record literals (negative-noise forbids ANY instantiates; worker's head-pattern #unused{} must stay silent)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "worker", target: "unused", confidence: 1, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
+  },
+  {
+    id: "erlang/remote-target-unqualified",
+    language: "erlang",
+    defectClass: "relationship-target",
+    description: "M14 #275 regression: strips module qualification from remote call targets (behaviour-otp pins gen_server:reply as the calls target; bare reply would conflate every module's reply)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.metadata ?? {}).context === "remote function call" && typeof x.target === "string" && x.target.includes(":") ? { ...x, target: x.target.split(":")[1] } : x) }),
+  },
+  {
+    id: "erlang/call-arity-collapsed",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "M14 #880 obligation 4 regression: restores the 3-field (source|type|target) dedup that merged pick/1 and pick/2 call sites into one edge (arity-distinct-calls pins go->pick at callArity 1 AND 2, and go->io:format at 1 AND 2 — a collapse deletes the second edge of each pair)",
+    transform: r => {
+      const seen = new Set<string>()
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type ?? x.relationshipType) !== "calls") return true
+        const k = `${x.source}|${x.target}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      }) }
+    },
+  },
+  {
+    id: "erlang/remote-call-arity-lost",
+    language: "erlang",
+    defectClass: "relationship-identity",
+    description: "M14 #880 obligation 4 regression: strips callArity from remote call edges only (arity-distinct-calls pins io:format/1 and io:format/2 as distinct remote edges — losing the arity merges two remote callees into one)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      if ((x.metadata ?? {}).context !== "remote function call" || x.metadata?.callArity === undefined) return x
+      const m = { ...x.metadata }
+      delete m.callArity
+      return { ...x, metadata: m }
+    }) }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
@@ -6180,6 +6449,14 @@ async function main() {
     if (!mutantFilter) return true
     return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
   })
+  // M61 #886: an unmatched selector must fail loudly instead of "passing" on
+  // zero mutants, and a filtered run is dev-scoped: it prints results but
+  // writes NO canonical evidence (canonical F4 is only ever a full run).
+  const scoped = !!mutantFilter
+  if (scoped && selected.length === 0) {
+    console.error(`BB_MUTANT_ONLY="${mutantFilter}" matched 0 of ${MUTANTS.length} mutants - nothing was verified`)
+    process.exit(3)
+  }
   for (const m of selected) {
     const base = await clean(m.language)
     const real = await realAnalyzer(m.language)
@@ -6206,7 +6483,9 @@ async function main() {
   }
 
   const { emitEvidence } = await import("./evidence-harness")
-  emitEvidence({
+  // M61 #886: a filtered run's result is dev-scoped — print only, never write
+  // canonical M14.0.F4 (a 4-mutant slice once replaced the 21-language artifact).
+  if (!scoped) emitEvidence({
     issueId: "M14.0.F4",
     title: "Mutation-testing harness",
     claimLevel: "L1",

@@ -569,12 +569,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             // names (TS parity, probe-verified). Pre-fix they emitted
             // nothing. Locals/params/lambda params stay non-symbols.
             const isConst = this.isConstDeclarator(node)
-            const names = this.collectPatternNames(nameNode)
-            for (const bound of names) {
+            const pairs = this.collectPatternPairs(nameNode)
+            for (const bound of pairs) {
               symbols.push({
-                name: bound,
+                name: bound.name,
                 kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
-                range: this.nodeToRange(node),
+                // M59 (#825): each binding ranges at its own NAME, not the
+                // whole declarator (a wrapped binding list stamped `const {`
+                // for every member — measured on element-plus drawer.vue).
+                range: this.nodeToRange(bound.node),
                 scope: scopeString(scopeStack),
                 visibility: "public",
                 metadata: { isConst, isDestructured: true },
@@ -1509,13 +1512,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * into nested patterns.
    */
   private collectPatternNames(pattern: Node): string[] {
-    const out: string[] = []
+    return this.collectPatternPairs(pattern).map((p) => p.name)
+  }
+
+  /**
+   * M59 (#825) follow-up: the same walk as collectPatternNames, but carrying
+   * the binding node so each destructured symbol ranges at its own NAME
+   * instead of the whole declarator (`const {` for a wrapped binding list).
+   * Names and nodes stay in lockstep by construction (single walk).
+   */
+  private collectPatternPairs(pattern: Node): Array<{ name: string; node: Node }> {
+    const out: Array<{ name: string; node: Node }> = []
     const walk = (n: Node): void => {
       switch (n.type) {
         case "shorthand_property_identifier":
         case "shorthand_property_identifier_pattern":
         case "identifier":
-          out.push(n.text)
+          out.push({ name: n.text, node: n })
           break
         case "pair_pattern": {
           // { key: value } — the VALUE side binds (key is the property read)

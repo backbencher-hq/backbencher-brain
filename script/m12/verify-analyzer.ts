@@ -26,6 +26,7 @@ function factKeyForObserved(fact: ObservedFact): string {
 }
 import { parseFile } from "../../src/ast/pool-worker"
 import { mergeSymbolsIntoOverrideCompanion, mergeTypeKindsIntoCompanion, type TypeKindCompanion } from "../../src/ast/override-context"
+import { computeInputs } from "./differential-provenance"
 
 const ROOT = process.cwd()
 const lang = process.argv[2]
@@ -170,9 +171,20 @@ async function main() {
 
   const result = compareFacts(expected, observed)
 
+  // #893 acceptance item 3: record WHAT this measurement was taken on, so the
+  // artifact can be checked against the tree instead of outliving it. Read
+  // `script/m12/differential-provenance.ts` for which inputs are hard and why
+  // the parser wasm is recorded but not enforced. Computed at write time, from
+  // the tree as it is at write time — the only moment the claim is known true.
+  const inputs = computeInputs(ROOT, lang)
+  if (inputs.unresolved) {
+    console.error(`WARN: no inputs recorded for ${lang}: ${inputs.unresolved}`)
+  }
+
   const document = {
     schemaVersion: 1,
     kind: `per_analyzer_differential:${lang}`,
+    inputs,
     truthSource: truthDoc.truthSource,
     truthReference: truthDoc.source,
     fixtureDir: `validation/m12/fixtures/${lang}`,
@@ -184,6 +196,7 @@ async function main() {
     note: `M12 per-analyzer differential for ${lang}. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.`,
   }
   writeFileSync(OUT_FILE, JSON.stringify(document, null, 2) + "\n")
+  console.log(`inputs: ${Object.keys(inputs.files).length} file(s), digest ${inputs.digest.slice(0, 12)}${inputs.unresolved ? " (UNRESOLVED)" : ""}`)
 
   const m = result.metrics
   console.log(`=== ${lang} (${fixtureFiles.length} fixtures) ===`)
