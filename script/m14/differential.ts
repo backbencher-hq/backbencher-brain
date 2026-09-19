@@ -1966,7 +1966,21 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
       scopeStack.push(cur)
       stack.push({ n, ctx: cur, exit: true })
     } else if (t === "function_definition") {
-      const decl = (n.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+      // CP1-partial-gap fix (M49 W22, measured fmt test/std-test.cc):
+      // `const char* my_exception::what() const noexcept { return
+      // msg.c_str(); }` — a pointer/reference return type nests the
+      // function_declarator under pointer_declarator/reference_declarator,
+      // so the direct-only lookup here found no declarator: `what`'s scope
+      // lost its class (fnCls stayed null), the bare member read `msg`
+      // found no enclosing-class resolution, and the analyzer's `uses msg`
+      // surfaced as the single fmt unexplained. The pre-pass already
+      // carries this one-level fallback for the DEFINED NAME (CP1) — this
+      // branch uses the same rule, for both the params walk and fnCls.
+      let decl = (n.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+      if (!decl) {
+        const ptr = (n.namedChildren ?? []).find((c: any) => c.type === "pointer_declarator" || c.type === "reference_declarator")
+        if (ptr) decl = (ptr.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
+      }
       const locals = new Set<string>()
       const pw: any[] = decl ? [decl] : []
       while (pw.length > 0) {
@@ -1983,8 +1997,7 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
       // pre-pass flush above — the analyzer keys classMembers identically).
       let fnCls: string | null = null
       {
-        const d2 = (n.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
-        const q2 = d2?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
+        const q2 = decl?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
         if (q2) {
           // CP7 mirror: descend to the innermost qualifier (same rule as
           // the pre-pass flush and the analyzer's getFunctionDetails).
