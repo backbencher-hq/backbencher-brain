@@ -1,12 +1,12 @@
 {
   "gate": "M59.O4",
   "issue": "#823",
-  "at": "2026-09-18T01:15:18.971Z",
-  "atCommit": "f9d21d1adb92d3010b83d1033c4db7548b88ac90",
-  "treeModifiedInputs": 51,
+  "at": "2026-09-19T03:11:14.146Z",
+  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
+  "treeModifiedInputs": 52,
   "command": "npx tsx script/m59/verify-honest-callsite.ts",
   "status": "pass",
-  "fixture": "/tmp/m59-honest-GJmBuI/fixture",
+  "fixture": "/tmp/m59-honest-noo5B2/fixture",
   "checks": [
     {
       "name": "null-stays-null",

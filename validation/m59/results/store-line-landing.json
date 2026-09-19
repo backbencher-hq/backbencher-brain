@@ -1,585 +1,82 @@
 {
   "probe": "M59.O3",
-  "at": "2026-09-16T21:14:20.591Z",
-  "atCommit": "bf6fd1ad72e23c81cb52b4c72bbfebeba4697203",
-  "treeModifiedInputs": 14,
-  "repo": "$HOME/fixtures/repositories/grails-core",
-  "tempDataDir": "/tmp/m59-data-lxqOTG",
+  "at": "2026-09-19T03:14:36.081Z",
+  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
+  "treeModifiedInputs": 52,
+  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "tempDataDir": "/tmp/m59-data-0y5qqw",
   "indexStats": {
-    "files": 7783,
-    "symbols": 86739,
-    "relationships": 378122,
-    "imports": 37076,
+    "files": 404,
+    "symbols": 7675,
+    "relationships": 33929,
+    "imports": 1369,
     "errorFiles": 0
   },
   "db": {
-    "total": 378122,
-    "withLine": 360010,
+    "total": 33929,
+    "withLine": 32645,
     "zero": 0,
-    "null": 18112
+    "null": 1284
   },
   "byType": [
     {
       "rt": "references",
-      "n": 129395
+      "n": 13589
     },
     {
       "rt": "calls",
-      "n": 117835
+      "n": 7861
     },
     {
       "rt": "contains",
-      "n": 57535
-    },
-    {
-      "rt": "uses",
-      "n": 27361
+      "n": 6635
     },
     {
       "rt": "instantiates",
-      "n": 14532
+      "n": 1680
+    },
+    {
+      "rt": "uses",
+      "n": 1229
     },
     {
       "rt": "overrides",
-      "n": 7960
+      "n": 959
     },
     {
       "rt": "extends",
-      "n": 2775
+      "n": 638
     },
     {
       "rt": "implements",
-      "n": 2605
-    },
-    {
-      "rt": "imports",
-      "n": 8
-    },
-    {
-      "rt": "exports",
-      "n": 4
+      "n": 54
     }
   ],
   "byLanguage": [
     {
-      "lang": "groovy",
-      "n": 174798
+      "lang": "scala",
+      "n": 32352
     },
     {
       "lang": "java",
-      "n": 165739
-    },
-    {
-      "lang": "xml",
-      "n": 3976
-    },
-    {
-      "lang": "yaml",
-      "n": 1230
-    },
-    {
-      "lang": "javascript",
-      "n": 440
+      "n": 242
     },
     {
       "lang": "markdown",
-      "n": 49
+      "n": 35
     },
     {
-      "lang": "css",
-      "n": 6
-    },
-    {
-      "lang": "html",
-      "n": 1
-    },
-    {
-      "lang": "sql",
-      "n": 1
+      "lang": "yaml",
+      "n": 12
     }
   ],
   "sourceCheck": {
-    "checked": 346240,
-    "consistent": 342037,
-    "inconsistent": 79,
-    "notCheckable": 4124,
+    "checked": 32641,
+    "consistent": 31730,
+    "inconsistent": 0,
+    "notCheckable": 911,
     "targetUnresolved": 0,
-    "failures": [
-      {
-        "path": "grails-forge/config/checkstyle/checkstyle.xml",
-        "line": 22,
-        "target": "http://checkstyle.sourceforge.net/dtds/configuration_1_3.dtd",
-        "sourceLine": "<!DOCTYPE module PUBLIC"
-      },
-      {
-        "path": "grails-forge/config/checkstyle/checkstyle-suppressions.xml",
-        "line": 22,
-        "target": "http://checkstyle.sourceforge.net/dtds/suppressions_1_1.dtd",
-        "sourceLine": "<!DOCTYPE suppressions PUBLIC"
-      },
-      {
-        "path": "grails-test-examples/exploded/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/app3/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/namespaces/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/app1/grails-app/views/index.gsp",
-        "line": 92,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-data-neo4j/examples/grails3-neo4j/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/app2/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hyphenated/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/views-functional-tests/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-data-neo4j/examples/grails3-neo4j-hibernate/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-scaffolding/src/main/templates/scaffolding/ServiceSpec.groovy",
-        "line": 62,
-        "target": "unknown",
-        "sourceLine": "${propertyName}Service.count() == 4"
-      },
-      {
-        "path": "grails-scaffolding/src/main/templates/scaffolding/AsyncSpec.groovy",
-        "line": 7,
-        "target": "unknown",
-        "sourceLine": "class ${className}ControllerSpec extends Specification implements ControllerUnitTest<${cla"
-      },
-      {
-        "path": "grails-test-examples/hibernate5/grails-partitioned-multi-tenancy/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate5/grails-schema-per-tenant/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-scaffolding/src/main/templates/scaffolding/Spec.groovy",
-        "line": 8,
-        "target": "unknown",
-        "sourceLine": "class ${className}ControllerSpec extends Specification implements ControllerUnitTest<${cla"
-      },
-      {
-        "path": "grails-test-examples/hibernate5/grails-database-per-tenant/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/mongodb/hibernate5/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/mongodb/database-per-tenant/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/mongodb/base/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/mongodb/gson-templates/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/plugins/loadfirst/grails-app/views/index.gsp",
-        "line": 92,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/plugins/loadsecond/grails-app/views/index.gsp",
-        "line": 92,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate7/grails-schema-per-tenant/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate7/grails-hibernate/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate7/grails-database-per-tenant/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate7/views-functional-tests/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate7/grails-partitioned-multi-tenancy/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate7/app1/grails-app/views/index.gsp",
-        "line": 92,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-test-examples/hibernate5/grails-hibernate/grails-app/views/index.gsp",
-        "line": 88,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "grails-forge/grails-forge-core/src/main/resources/pom.xml",
-        "line": 22,
-        "target": "default",
-        "sourceLine": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSc"
-      },
-      {
-        "path": "grails-profiles/rest-api/templates/artifacts/scaffolding/ServiceSpec.groovy",
-        "line": 67,
-        "target": "unknown",
-        "sourceLine": "${propertyName}Service.count() == 4"
-      },
-      {
-        "path": "grails-profiles/rest-api/templates/artifacts/scaffolding/Spec.groovy",
-        "line": 14,
-        "target": "unknown",
-        "sourceLine": "class ${className}ControllerSpec extends Specification implements ControllerUnitTest<${cla"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/resources/META-INF/persistence.xml",
-        "line": 1,
-        "target": "default",
-        "sourceLine": "<persistence xmlns=\"http://java.sun.com/xml/ns/persistence\""
-      },
-      {
-        "path": "grails-test-examples/spring-security/acl/functional-test-app/grails-app/views/index.gsp",
-        "line": 86,
-        "target": "em",
-        "sourceLine": "margin: 0 1em 1em;"
-      },
-      {
-        "path": "build-logic/plugins/src/main/resources/META-INF/org.apache.grails.buildsrc.grails-code-analysis/pmd/pmd.xml",
-        "line": 21,
-        "target": "default",
-        "sourceLine": "xmlns=\"http://pmd.sourceforge.net/ruleset/2.0.0\""
-      },
-      {
-        "path": "grails-data-mongodb/core/src/main/groovy/grails/mongodb/geo/Sphere.groovy",
-        "line": 39,
-        "target": "Sphere",
-        "sourceLine": "final Distance distance"
-      },
-      {
-        "path": "grails-data-mongodb/core/src/main/groovy/grails/mongodb/geo/Distance.groovy",
-        "line": 35,
-        "target": "Distance",
-        "sourceLine": "final Metric metric"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/resources/com/example/pojo/Hibernate.cfg.xml",
-        "line": 2,
-        "target": "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd",
-        "sourceLine": "<!DOCTYPE hibernate-configuration PUBLIC"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/timezone/Item.java",
-        "line": 42,
-        "target": "timestamp1",
-        "sourceLine": "@Column"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/timezone/Item.java",
-        "line": 45,
-        "target": "timestamp2",
-        "sourceLine": "@Column"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/timezone/Item.java",
-        "line": 48,
-        "target": "timestamp3",
-        "sourceLine": "@Column(columnDefinition = \"timestamp\")"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/timezone/Item.java",
-        "line": 51,
-        "target": "timestamp4",
-        "sourceLine": "@Column(columnDefinition = \"TIMESTAMP WITH TIME ZONE\")"
-      },
-      {
-        "path": "grails-core/src/main/groovy/org/grails/spring/context/annotation/grails-context.xsd",
-        "line": 19,
-        "target": "default",
-        "sourceLine": "<xsd:schema xmlns=\"http://www.grails.org/schema/context\" xmlns:xsd=\"http://www.w3.org/2001"
-      },
-      {
-        "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_4_0.xsd",
-        "line": 2,
-        "target": "default",
-        "sourceLine": "<xsd:schema xmlns=\"http://www.w3.org/2001/XMLSchema\""
-      },
-      {
-        "path": "grails-interceptors/src/main/groovy/org/grails/plugins/web/interceptors/InterceptorsGrailsPlugin.groovy",
-        "line": 44,
-        "target": "unknown",
-        "sourceLine": "def final version = GrailsUtil.getGrailsVersion()"
-      },
-      {
-        "path": "grails-interceptors/src/main/groovy/org/grails/plugins/web/interceptors/InterceptorsGrailsPlugin.groovy",
-        "line": 45,
-        "target": "unknown",
-        "sourceLine": "def final dependsOn = [controllers: version, urlMappings: version]"
-      },
-      {
-        "path": "grails-interceptors/src/main/groovy/org/grails/plugins/web/interceptors/InterceptorsGrailsPlugin.groovy",
-        "line": 46,
-        "target": "unknown",
-        "sourceLine": "def final watchedResources = 'file:./grails-app/controllers/**/*Interceptor.groovy'"
-      },
-      {
-        "path": "grails-interceptors/src/main/groovy/org/grails/plugins/web/interceptors/InterceptorsGrailsPlugin.groovy",
-        "line": 47,
-        "target": "unknown",
-        "sourceLine": "def final loadAfter = ['domainClass', 'hibernate']"
-      },
-      {
-        "path": "grails-shell-cli/src/main/groovy/org/grails/cli/interactive/completers/ClassNameCompleter.groovy",
-        "line": 42,
-        "target": "ClassNameCompleter",
-        "sourceLine": "private File[] baseDirs"
-      },
-      {
-        "path": "grails-shell-cli/src/main/groovy/org/grails/cli/profile/repository/StaticJarProfileRepository.groovy",
-        "line": 36,
-        "target": "StaticJarProfileRepository",
-        "sourceLine": "final URL[] urls"
-      },
-      {
-        "path": "grails-shell-cli/src/main/groovy/org/grails/cli/profile/repository/GrailsRepositoryConfiguration.groovy",
-        "line": 38,
-        "target": "GrailsRepositoryConfiguration",
-        "sourceLine": "final String password"
-      },
-      {
-        "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_5.xsd",
-        "line": 18,
-        "target": "default",
-        "sourceLine": "<xsd:schema xmlns=\"http://www.w3.org/2001/XMLSchema\""
-      },
-      {
-        "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_4.xsd",
-        "line": 18,
-        "target": "default",
-        "sourceLine": "<xsd:schema xmlns=\"http://www.w3.org/2001/XMLSchema\""
-      },
-      {
-        "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_5_0.xsd",
-        "line": 2,
-        "target": "default",
-        "sourceLine": "<xsd:schema xmlns=\"http://www.w3.org/2001/XMLSchema\""
-      },
-      {
-        "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_6_0.xsd",
-        "line": 2,
-        "target": "default",
-        "sourceLine": "<xsd:schema xmlns=\"http://www.w3.org/2001/XMLSchema\""
-      },
-      {
-        "path": "grails-mimetypes/src/main/groovy/org/grails/plugins/web/mime/MimeTypesHolder.groovy",
-        "line": 26,
-        "target": "MimeTypesHolder",
-        "sourceLine": "final MimeType[] mimeTypes"
-      },
-      {
-        "path": "grails-web-url-mappings/src/main/groovy/org/grails/web/mapping/mvc/UrlMappingsHandlerMapping.groovy",
-        "line": 65,
-        "target": "UrlMappingsHandlerMapping",
-        "sourceLine": "protected HandlerInterceptor[] webRequestHandlerInterceptors"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/resources/com/example/pojo/auction/Bid.hbm.xml",
-        "line": 2,
-        "target": "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd",
-        "sourceLine": "<!DOCTYPE hibernate-mapping PUBLIC"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/resources/com/example/pojo/auction/AuctionItem.hbm.xml",
-        "line": 2,
-        "target": "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd",
-        "sourceLine": "<!DOCTYPE hibernate-mapping PUBLIC"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/resources/com/example/pojo/auction/User.hbm.xml",
-        "line": 2,
-        "target": "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd",
-        "sourceLine": "<!DOCTYPE hibernate-mapping PUBLIC"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/Watcher.java",
-        "line": 21,
-        "target": "auctionItem",
-        "sourceLine": "@ManyToOne"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuctionItem.java",
-        "line": 19,
-        "target": "description",
-        "sourceLine": "@Column(length = 1000)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuctionItem.java",
-        "line": 21,
-        "target": "shortDescription",
-        "sourceLine": "@Column(length = 200)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuctionItem.java",
-        "line": 23,
-        "target": "bids",
-        "sourceLine": "@OneToMany(mappedBy = \"item\", cascade = CascadeType.ALL)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuctionItem.java",
-        "line": 25,
-        "target": "successfulBid",
-        "sourceLine": "@ManyToOne"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuctionItem.java",
-        "line": 27,
-        "target": "seller",
-        "sourceLine": "@ManyToOne"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuditedItem.java",
-        "line": 24,
-        "target": "name",
-        "sourceLine": "@Column(unique = true)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/AuctionInfo.java",
-        "line": 18,
-        "target": "description",
-        "sourceLine": "@Column(length = 1000)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/Item.java",
-        "line": 22,
-        "target": "name",
-        "sourceLine": "@Column(unique = true)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/User.java",
-        "line": 20,
-        "target": "bids",
-        "sourceLine": "@OneToMany(mappedBy = \"bidder\", cascade = CascadeType.ALL)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/User.java",
-        "line": 22,
-        "target": "auctions",
-        "sourceLine": "@OneToMany(mappedBy = \"seller\", cascade = CascadeType.ALL)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/Bid.java",
-        "line": 25,
-        "target": "item",
-        "sourceLine": "@ManyToOne"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/Bid.java",
-        "line": 30,
-        "target": "bidder",
-        "sourceLine": "@ManyToOne(optional = false)"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/ejb3/auction/SecondTable.java",
-        "line": 12,
-        "target": "secondName",
-        "sourceLine": "@Column(table = \"second_table\")"
-      },
-      {
-        "path": "grails-data-hibernate7/dbmigration-core/src/testFixtures/java/com/example/pojo/auction/Watcher.java",
-        "line": 16,
-        "target": "auctionItem",
-        "sourceLine": "@ManyToOne"
-      },
-      {
-        "path": "grails-testing-support-dbcleanup-core/src/main/groovy/org/apache/grails/testing/cleanup/core/DatabaseCleanupInterceptor.groovy",
-        "line": 49,
-        "target": "DatabaseCleanupInterceptor",
-        "sourceLine": "private final ApplicationContextResolver resolver"
-      },
-      {
-        "path": "grails-spring-security/acl/plugin/src/main/groovy/grails/plugin/springsecurity/acl/model/StubAclParent.groovy",
-        "line": 40,
-        "target": "StubAclParent",
-        "sourceLine": "final Long id"
-      },
-      {
-        "path": "grails-spring-security/plugin/src/main/groovy/grails/plugin/springsecurity/web/access/expression/WebExpressionConfigAttribute.groovy",
-        "line": 38,
-        "target": "WebExpressionConfigAttribute",
-        "sourceLine": "final Expression authorizeExpression"
-      }
-    ],
+    "failures": [],
     "boundarySelfTest": {
       "interpolationMatches": true,
       "interpolationAfterWordCharMatches": true,

@@ -1,9 +1,9 @@
 {
   "probe": "M59.P3",
   "issue": "#822",
-  "at": "2026-09-18T01:15:17.011Z",
-  "atCommit": "f9d21d1adb92d3010b83d1033c4db7548b88ac90",
-  "treeModifiedInputs": 51,
+  "at": "2026-09-19T03:11:38.967Z",
+  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
+  "treeModifiedInputs": 52,
   "command": "npx tsx script/m59/verify-rel-multiplicity.ts",
   "question": "4 call sites on 4 lines — does the INDEX keep 4?",
   "trueCallSites": {
@@ -13,28 +13,28 @@
   "java": {
     "rows": [
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/Multi.java:caller:3:target:calls:4",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/Multi.java:caller:3:target:calls:4",
         "rt": "calls",
         "line": 4,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/Multi.java:caller:3:target:calls:5",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/Multi.java:caller:3:target:calls:5",
         "rt": "calls",
         "line": 5,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/Multi.java:caller:3:target:calls:6",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/Multi.java:caller:3:target:calls:6",
         "rt": "calls",
         "line": 6,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/Multi.java:caller:3:target:calls:7",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/Multi.java:caller:3:target:calls:7",
         "rt": "calls",
         "line": 7,
         "te": "target",
@@ -51,35 +51,35 @@
   "typescript": {
     "rows": [
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/multi.ts:caller:2:target:calls:3",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/multi.ts:caller:2:target:calls:3",
         "rt": "calls",
         "line": 3,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/multi.ts:caller:2:target:calls:4",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/multi.ts:caller:2:target:calls:4",
         "rt": "calls",
         "line": 4,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/multi.ts:caller:2:target:calls:5",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/multi.ts:caller:2:target:calls:5",
         "rt": "calls",
         "line": 5,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/multi.ts:caller:2:target:calls:6",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/multi.ts:caller:2:target:calls:6",
         "rt": "calls",
         "line": 6,
         "te": "target",
         "tname": "target"
       },
       {
-        "id": "d4cec913f303679dfb5db1d80f2b1e681986dff4:rel:d4cec913f303679dfb5db1d80f2b1e681986dff4:src/multi.ts:caller:2:target:references:3",
+        "id": "3759e22173f43cc5b1f1e16b655b330167cb59d6:rel:3759e22173f43cc5b1f1e16b655b330167cb59d6:src/multi.ts:caller:2:target:references:3",
         "rt": "references",
         "line": 3,
         "te": "target",
