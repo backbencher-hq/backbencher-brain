@@ -3,22 +3,22 @@
   "code": "X1",
   "milestone": "M55",
   "status": "known-gap",
-  "checks": 41,
+  "checks": 42,
   "passed": 40,
-  "failed": 1,
-  "realFailed": 1,
+  "failed": 2,
+  "realFailed": 2,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "0cc23533af11029eaf412d7fe936e14aa50e7c08",
+  "currentCommit": "4956774e6355774b082570611aa7aaa6463cd536",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-19T00:37:50.552Z",
+  "generatedAt": "2026-09-19T00:41:57.502Z",
   "audit": {
-    "head": "0cc23533af11029eaf412d7fe936e14aa50e7c08",
+    "head": "4956774e6355774b082570611aa7aaa6463cd536",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
@@ -360,16 +360,17 @@
     "handoffIssue": 816
   },
   "failures": [
-    "C3: the pack is byte-identical to the fresh generation (no hand edits survive): 5515 vs 5515 bytes"
+    "C2: the ladder is green and fresh (no lane source changed since it ran): pin=b3fe7faa371f green=41/41 lane-changed=1",
+    "C3: the pack is byte-identical to the fresh generation (no hand edits survive; the audit-HEAD line and the owner's verdict line are the two declared mutable lines): 5515 vs 5668 bytes"
   ],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
     "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 41 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
-    "The verdict pack has no timestamp by design: a generated doc that changes on every run cannot be drift-gated byte-for-byte."
+    "The verdict pack has no timestamp by design: a generated doc that changes on every run cannot be drift-gated byte-for-byte. It does embed the audit HEAD, which moves on every committed run, so the C3 identity check normalizes exactly two lines (the audit HEAD line and the owner's verdict line) and proves in-suite that every other line still fails on a hand edit."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:37:50.554Z",
-    "contentSha256": "3149b09d1d13369c496e3ca578ae6ec3f77b794e8920d73e256209ee44d81e1f"
+    "sealedAt": "2026-09-19T00:41:57.504Z",
+    "contentSha256": "609168de6ba4c0a3bf2ff9610f5bef8f7a3c3250d1d6b37e364994f71b8e4518"
   }
 }
