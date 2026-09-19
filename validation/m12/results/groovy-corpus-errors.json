@@ -11,39 +11,39 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 184,
-  "cleanFiles": 6380,
+  "errorFiles": 179,
+  "cleanFiles": 6385,
   "missingNodeFiles": 63,
-  "errorNodeFiles": 175,
+  "errorNodeFiles": 170,
   "errorRates": {
-    "any": 2.8,
+    "any": 2.7,
     "missing": 1,
-    "error": 2.7
+    "error": 2.6
   },
-  "grammarErrorFiles": 184,
+  "grammarErrorFiles": 179,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 136156,
+  "wallMs": 265514,
   "missingTokens": {
     ";": 112,
     "identifier": 30,
+    "}": 15,
     "decimal_integer_literal": 14,
-    "}": 13,
     ")": 4,
-    "]": 3,
+    "]": 2,
     ">": 2,
     "type_identifier": 1,
     "/": 1
   },
   "errorLineSignatures": {
-    "}": 48,
-    "@ID": 33,
+    "}": 49,
+    "@ID": 35,
     "<%=ID ? ID : ID%>": 24,
     "ID.ID.ID(ID)": 21,
     "ID * ID.ID() >> ID": 20,
     "ID.ID{ID}ID = ID(ID{ID}ID) {": 18,
-    "/*": 17,
+    "/*": 16,
     ".ID() == ID": 16,
     "ID ID(ID ID) {": 15,
     "(ID.ID): { ID.ID ID, ID ID, ID ID = ID, ID ID = ID ->": 14,
@@ -80,7 +80,7 @@
   },
   "firstErrorLineSignatures": {
     "}": 29,
-    "/*": 17,
+    "/*": 16,
     "ID.ID.ID(ID)": 9,
     "ID.ID.ID(ID.ID)": 5,
     "ID @ID.ID.ID@": 5,
@@ -95,7 +95,6 @@
     "ID ID + ID, ID": 2,
     "ID ID(ID<ID, ID> ID) {": 2,
     "ID ID ID ID ID ID {": 2,
-    "ID.ID[ID, ID] = ID": 2,
     "ID ID = ID.ID 1, 2": 2,
     "ID.ID.ID.ID(ID.ID + ID + ID.ID)": 1,
     "}.ID { ID ID -> ID.ID.ID.ID }": 1,
@@ -118,7 +117,8 @@
     "ID ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
     "ID ID = ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
     "ID (!ID.ID() { ID ID ->": 1,
-    ".ID() == ID": 1
+    ".ID() == ID": 1,
+    "ID ID {": 1
   },
   "errorFileList": [
     {
@@ -297,13 +297,15 @@
     },
     {
       "file": "grails-data-graphql/core/src/test/groovy/org/grails/gorm/graphql/entity/property/manager/DefaultGraphQLDomainPropertyManagerSpec.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 8
+      "nodes": 8,
+      "missingTokens": [
+        "}"
+      ],
+      "errorNodes": 6,
+      "firstRow": 227,
+      "firstKind": "MISSING }",
+      "firstLine": "}",
+      "pipelineErrors": 14
     },
     {
       "file": "grails-data-hibernate5/core/src/main/groovy/org/grails/orm/hibernate/AbstractHibernateGormValidationApi.groovy",
@@ -479,13 +481,13 @@
     },
     {
       "file": "grails-data-mongodb/core/src/test/groovy/org/apache/grails/data/mongo/core/GrailsDataMongoTckManager.groovy",
-      "nodes": 9,
+      "nodes": 19,
       "missingTokens": [],
-      "errorNodes": 9,
+      "errorNodes": 19,
       "firstRow": 1,
       "firstKind": "ERROR",
       "firstLine": "/*",
-      "pipelineErrors": 18
+      "pipelineErrors": 38
     },
     {
       "file": "grails-data-neo4j/grails-datastore-gorm-neo4j/src/main/groovy/org/grails/datastore/gorm/neo4j/engine/Neo4jQuery.groovy",
@@ -1741,16 +1743,6 @@
       "pipelineErrors": 64
     },
     {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/binding/AdvancedDataBindingController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 146,
-      "firstKind": "ERROR",
-      "firstLine": "employee.properties['firstName', 'lastName'] = params",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-examples/async-events-pubsub-demo/grails-app/controllers/pubsub/demo/SumController.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -1780,16 +1772,6 @@
       "firstRow": 64,
       "firstKind": "ERROR",
       "firstLine": "SpringApplication.run(Application)",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/binding/AdvancedDataBindingController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 146,
-      "firstKind": "ERROR",
-      "firstLine": "employee.properties['firstName', 'lastName'] = params",
       "pipelineErrors": 2
     },
     {
@@ -1875,16 +1857,6 @@
       "pipelineErrors": 10
     },
     {
-      "file": "grails-test-suite-persistence/src/test/groovy/org/grails/domain/compiler/DomainPropertiesAccessorSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 47,
-      "firstKind": "ERROR",
-      "firstLine": "test.properties['age', 'name'] = [age: 10]",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-suite-uber/src/test/groovy/grails/spring/BeanBuilderTests.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -1965,26 +1937,6 @@
       "firstKind": "ERROR",
       "firstLine": "JSONObject json = grails.converters.JSON.parse(input)",
       "pipelineErrors": 6
-    },
-    {
-      "file": "grails-test-suite-web/src/test/groovy/org/grails/web/binding/DataBindingLazyMetaPropertyMapTests.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 30,
-      "firstKind": "ERROR",
-      "firstLine": "map['name', 'age'] = [name:\"Homer\", age:\"45\", other:\"changed\"]",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-web/src/test/groovy/org/grails/web/binding/DataBindingTests.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 307,
-      "firstKind": "ERROR",
-      "firstLine": "\"Maine\" == b.author.placeOfBirth.name",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-testing-support-mongodb/src/main/groovy/org/apache/grails/testing/mongo/StartMongoGrailsUnitExtension.groovy",
@@ -2108,15 +2060,13 @@
     },
     {
       "file": "grails-web-common/src/test/groovy/grails/web/servlet/mvc/GrailsParameterMapTests.groovy",
-      "nodes": 15,
-      "missingTokens": [
-        "]"
-      ],
-      "errorNodes": 14,
+      "nodes": 13,
+      "missingTokens": [],
+      "errorNodes": 13,
       "firstRow": 220,
       "firstKind": "ERROR",
       "firstLine": "assertEquals 'z' as char, map.char('z', 'A' as Character)",
-      "pipelineErrors": 29
+      "pipelineErrors": 26
     },
     {
       "file": "grails-wrapper/src/test/groovy/grails/init/GrailsVersionSpec.groovy",
