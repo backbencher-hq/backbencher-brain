@@ -973,11 +973,64 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "clj.fixture.importlist", target: "java.util", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true, isTopLevel: true } }] }),
   },
   {
+    id: "clojure/kwd-ns-corruption",
+    language: "clojure",
+    defectClass: "identity-corruption",
+    description: "F5-cert (junit.clj): a keyword-headed data form (`(:ns (meta var))`) fires the ns branch — phantom module symbol + alias-table reset, so later aliased calls go unresolved — kwd-headed-data pins catch both halves",
+    transform: r => ({
+      ...r,
+      symbols: [...(r.symbols ?? []), { name: "(meta var)", kind: "module", scope: "", visibility: "public", metadata: { clojureSpecific: true } }],
+      relationships: (r.relationships ?? []).map(x => (x.type === "calls" && x.source === "still-resolves" && x.target === "clojure.string/join" ? { ...x, target: "s/join" } : x)),
+    }),
+  },
+  {
+    id: "clojure/object-proto-guard",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert (clj-kondo rewrite-clj): a plain-object guard answers `[\"toString\"]` from Object.prototype — every Java-class toString override misfires the method-impl rule, losing the method symbol and consuming its body's calls — tostring-impl pins catch it",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter(s => s.name !== "toString"),
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "toString" && x.target === "helper")),
+    }),
+  },
+  {
+    id: "clojure/self-reference-edge",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "F5-cert (clj-kondo node.clj / order.clj): a self-require or self-qualified call emits a self-loop references edge (ELXD8 violation) — self-reference forbid catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "clj.fixture.selfref", target: "clj.fixture.selfref", confidence: 0.9, metadata: { clojureSpecific: true, isLibraryDep: true } }] }),
+  },
+  {
+    id: "clojure/prefix-require-flat",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert (clj-kondo meta.clj): prefix-list require `[prefix [sub :as a]]` handled as a flat spec — nested sub references dropped and `a/one` left unresolved as `a/one` — prefix-require pins catch both halves",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "references" && x.target === "clj.fixture.prefix.alpha"))
+        .map(x => (x.type === "calls" && x.source === "go" && x.target === "clj.fixture.prefix.alpha/one" ? { ...x, target: "a/one" } : x)),
+    }),
+  },
+  {
     id: "elixir/drop-atom-struct-fields",
     language: "elixir",
     defectClass: "symbol-loss",
     description: "ELXD2: atom-list struct fields disappear while keyword fields remain",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => !(s.metadata?.isStructField && ["id", "name", "email", "file"].includes(s.name))) }),
+  },
+  {
+    id: "elixir/implied-alias-entry-time",
+    language: "elixir",
+    defectClass: "identity-corruption",
+    description: "EX-L5 regression (found by the F5 elixir lane as the MISSING edge `Registry.Supervisor -> Supervisor`): the defmodule-implied last-segment alias registers at ENTRY — inside-body `use Supervisor` self-resolves and the self-directive guard drops the edge, and inside-body `%Inner{}` self-resolves",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "references" && x.source === "Collide.Supervisor" && x.target === "Supervisor"))
+        .map(x => (x.type === "instantiates" && x.source === "Collide.Inner.make" && x.target === "Inner") ? { ...x, target: "Collide.Inner" } : x),
+    }),
   },
   {
     id: "elixir/export-owned-struct",

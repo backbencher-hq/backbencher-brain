@@ -1,20 +1,30 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
-const CLOJURE_CORE_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = [
+// CLJ1-session: exported so the F5 differential's independent clojure oracle
+// shares the LANGUAGE FACT (which symbols are core builtins) by import — the
+// php/ruby/python import precedent in differential.ts. Rule drift between the
+// two sides is what the differential exists to catch; a 450-entry name list
+// is a transcription hazard, not a rule.
+export const CLOJURE_CORE_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = [
   "if", "let", "def", "defn", "defn-", "fn", "loop", "recur", "quote", "var", "do", "try", "catch", "finally", "throw", "monitor-enter", "monitor-exit", "new", ".", "set!", "+", "-", "*", "/", "=", "not=", "<", "<=", ">", ">=", "and", "or", "not", "println", "print", "str", "concat", "map", "reduce", "filter", "remove", "into", "assoc", "dissoc", "get", "update", "merge", "keys", "vals", "first", "rest", "next", "last", "cons", "conj", "apply", "comp", "partial", "inc", "dec", "zero?", "empty?", "nil?", "when", "when-not", "when-let", "if-let", "if-not", "cond", "case", "for", "doseq", "dotimes", "->", "->>", "as->", "cond->", "cond->>", "some->", "some->>", "swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off", "future", "promise", "deliver", "defrecord", "defprotocol", "defmulti", "defmethod", "ns", "require", "import", "use", "refer", "comment", "deftest", "is", "testing", "list", "vector", "hash-map", "set", "vec", "seq", "count", "nth", "assoc-in", "update-in", "get-in", "select-keys", "merge-with", "zipmap", "sort", "sort-by", "reverse", "group-by", "frequencies", "distinct", "take", "drop", "take-while", "drop-while", "split-at", "partition", "interleave", "interpose", "flatten", "keep", "mapv", "filterv", "reduce-kv", "into-array", "to-array", "bean", "array-map", "sorted-map", "sorted-set", "subvec", "peek", "pop", "disj", "contains?", "find", "keys", "rseq", "range", "iterate", "repeat", "repeatedly", "cycle", "sequence", "every?", "some", "not-any?", "not-every?", "identity", "constantly", "juxt", "fnil", "memoize", "trampoline", "lazy-seq", "lazy-cat", "defonce", "defmacro", "defstruct", "declare", "binding", "with-bindings", "with-open", "with-local-vars", "time", "assert", "identical?", "instance?", "extends?", "satisfies?", "reify", "proxy", "gen-class", "gen-interface", "extend", "extend-type", "extend-protocol", "proxy-super", "doto", "..", ".", "..", "->", "->>", "amap", "areduce", "aset", "aget", "alength", "aclone", "int-array", "long-array", "double-array", "object-array", "make-array", "char", "int", "long", "double", "float", "boolean", "short", "byte", "bigint", "bigdec", "num", "string?", "keyword?", "symbol?", "number?", "seq?", "vector?", "map?", "set?", "fn?", "ifn?", "coll?", "sequential?", "associative?", "counted?", "indexed?", "reversible?", "sorted?", "namespace", "name", "keyword", "symbol", "str", "subs", "char-array", "upper-case", "lower-case", "trim", "triml", "trimr", "trim-newline", "split", "join", "replace", "re-seq", "re-find", "re-matches", "re-pattern", "re-groups", "format", "printf", "pr", "prn", "pr-str", "prn-str", "print-str", "println-str", "newline", "flush", "read", "read-line", "read-string", "slurp", "spit", "load-string", "load-file", "require", "use", "import", "refer-clojure", "in-ns", "alias", "ns-unmap", "ns-resolve", "resolve", "find-var", "var-get", "var-set", "bound?", "thread-bound?", "alter-var-root", "with-redefs", "with-redefs-fn", "future-call", "future-cancel", "future-cancelled?", "future-done?", "future?", "pmap", "pcalls", "pvalues", "delay", "force", "realized?", "when-first", "when-some", "if-some", "some->", "some->>", "condp", "while", "doseq", "dotimes", "binding", "sync", "io!", "vswap!", "swap-vals!", "reset-vals!", "compare-and-set!", "add-watch", "remove-watch", "set-validator!", "get-validator", "send-via", "await", "await-for", "shutdown-agents", "release-pending-sends", "ensure", "ref-set", "alter", "commute", "dosync", "io!", "min-key", "max-key", "compare", "equiv", "hash", "hash-combine", "sort-by", "comparator", "rand", "rand-int", "rand-nth", "random-sample", "boolean?", "true?", "false?", "nil?", "not", "not=", "identical?", "class", "type", "instance?", "isa?", "parents", "ancestors", "descendants", "derive", "underive", "make-hierarchy", "global-hierarchy", "rationalize", "numerator", "denominator", "int?", "integer?", "even?", "odd?", "pos?", "neg?", "zero?", "nat-int?", "int?", "float?", "double?", "ratio?", "decimal?", "byte?", "short?", "char?", "string?", "keyword?", "symbol?", "uuid?", "uri?", "regexp?", "fn?", "ifn?", "var?", "delayed?", "atom?", "ref?", "agent?", "future?", "promise?", "seqable?", "sequential?", "vector?", "map?", "set?", "list?", "seq?", "coll?", "counted?", "indexed?", "associative?", "reversible?", "sorted?", "unchecked-add", "unchecked-subtract", "unchecked-multiply", "unchecked-divide", "unchecked-inc", "unchecked-dec", "unchecked-negate", "unchecked-remainder", "unchecked-add-int", "unchecked-subtract-int", "unchecked-multiply-int", "unchecked-divide-int", "unchecked-inc-int", "unchecked-dec-int", "unchecked-negate-int", "unchecked-remainder-int", "bit-and", "bit-or", "bit-xor", "bit-not", "bit-shift-left", "bit-shift-right", "bit-and-not", "bit-clear", "bit-set", "bit-flip", "bit-test", "shift-left", "shift-right", "unsigned-bit-shift-right", "bit-count", "Integer/parseInt", "Long/parseLong", "Double/parseDouble", "Math/abs", "Math/max", "Math/min", "Math/round", "Math/floor", "Math/ceil", "Math/sqrt", "Math/pow", "Math/random", "String/valueOf", "String/format", "String/join", "String/split", "System/currentTimeMillis", "System/nanoTime", "System/getProperty", "System/exit", "System/gc", "Thread/sleep", "Thread/currentThread", "UUID/randomUUID", "java.util.Date", "char", "code-char", "symbol", "keyword", "gensym", "unquote", "unquote-splicing", "syntax-quote", "deliver", "promise", "not-empty", "empty", "list*", "cons", "concat", "lazy-seq", "when-let", "if-let", "when-some", "if-some", "when-first", "while", "loop", "recur", "letfn", "defn-", "defmacro", "defmulti", "defmethod", "defprotocol", "defrecord", "deftype", "defstruct", "ns", "in-ns", "require", "use", "import", "refer", "alias", "comment", "declare", "def", "defonce", "binding", "with-bindings", "with-open", "with-local-vars", "time", "assert", "identical?", "instance?", "extends?", "satisfies?", "reify", "proxy", "gen-class", "gen-interface", "extend", "extend-type", "extend-protocol", "proxy-super", "doto", "..", ".", "amap", "areduce", "aset", "aget", "alength", "aclone", "int-array", "long-array", "double-array", "object-array", "make-array"
 ]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
-const HOF_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["apply", "map", "reduce", "filter", "comp", "partial"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
-const STM_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
-const COMPLEXITY_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["if", "cond", "when", "case", "for", "loop", "when-let", "if-let"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
-const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["println", "print", "def", "alter-var-root", "with-redefs", "set!", "swap!", "reset!", "alter"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+const HOF_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["apply", "map", "reduce", "filter", "comp", "partial"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+const STM_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+const COMPLEXITY_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["if", "cond", "when", "case", "for", "loop", "when-let", "if-let"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["println", "print", "def", "alter-var-root", "with-redefs", "set!", "swap!", "reset!", "alter"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
 // C9: forms whose DIRECT list_lit children are METHOD DEFINITIONS, not calls —
 // `(px [_] 3)` inside reify/extend-type/extend-protocol/proxy/defrecord/deftype
 // (defprotocol signatures are listed too: they are already symbolized by the
 // defprotocol branch, but they must still be excluded from call handling).
-const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> = {}; const arr = ["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+// Object.create(null): a PLAIN `{}` record answers `["toString"]` (and
+// valueOf/constructor/hasOwnProperty) from Object.prototype — the truthy
+// lookup made every Java-class `(toString [this] …)` override misfire the
+// impl rule and consume its body's calls as "method definitions" (found by
+// the F5 clj-kondo lane: 12 MISSING edges across rewrite-clj node files).
+const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -71,16 +81,30 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // rule and is used here rather than a second copy of it.
     // For `(:require ...)` / `(:import ...)` clauses the head is a kwd_lit
     // (e.g. ":require"); we return its keyword name so clause dispatch works.
+    // Read the form-name of a list_lit: the first EXECUTABLE value child.
+    // SYM-HEADS ONLY — declarations are symbol-headed; a kwd-headed list
+    // (`(:ns (meta var))` in junit.clj) is DATA or an ns clause and must
+    // NEVER dispatch a declaration branch (it fired the ns branch, reset the
+    // alias table mid-file, and corrupted the namespace for every following
+    // form — found by the F5 clojure lane). Kwd names are read by
+    // clauseNameOf for the ns-clause sites that legitimately need them.
+    // For `(:require ...)` / `(:import ...)` clauses the head is a kwd_lit.
     const formNameOf = (listNode: Node): string => {
       const first = executionHead(listNode)
       if (!first) return ""
-      if (first.type === "kwd_lit") {
-        return first.childForFieldName("name")?.text || ""
-      }
       // Only sym_lit heads are forms. A vec_lit head is a multi-arity
       // clause `([a b] body)` — never a call, never a form name.
       if (first.type !== "sym_lit") return ""
       return symName(first)
+    }
+
+    // Clause dispatch name: the keyword name of a kwd-headed list
+    // (`(:require …)` -> "require"). Used ONLY by the ns branch and the
+    // libspec-child guard — never by declaration dispatch.
+    const clauseNameOf = (listNode: Node): string => {
+      const first = executionHead(listNode)
+      if (first && first.type === "kwd_lit") return first.childForFieldName("name")?.text || ""
+      return ""
     }
 
     // Params (C10/C11): the parameter vector is THE FIRST direct vec_lit
@@ -323,12 +347,37 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             // (:import [java.util Date UUID]) — symbols after the package are
             // imported class names, not part of the lib name.
             subNames.push(symName(part))
+          } else if (part.type === "vec_lit") {
+            // PREFIX-LIST spec: `[prefix [sub :as a] [sub2 :as b]]` — each
+            // nested vector requires prefix.sub with its own alias (F5-cert:
+            // clj-kondo's vendored rewrite-clj uses this form; real Clojure
+            // resolves `a/fn` to prefix.sub/fn). A nested vector DIRECTLY
+            // AFTER a keyword is a name list (`:refer [foo bar]`), not a
+            // sub-libspec — skip those (M12 caught the misread as an FP).
+            const prev = spec.namedChild(k - 1)
+            if (prev && prev.type === "kwd_lit") continue
+            const sub = symName(part.namedChild(0))
+            if (!sub) continue
+            const full = `${libName}.${sub}`
+            let subAlias = ""
+            for (let q = 1; q < part.namedChildCount; q++) {
+              const pp = part.namedChild(q)
+              if (pp && pp.type === "kwd_lit" && (pp.childForFieldName("name")?.text || "") === "as") {
+                const av = part.namedChild(q + 1)
+                if (av) subAlias = symName(av)
+              }
+            }
+            if (subAlias) namespaceAliases[subAlias] = full
+            if (full !== currentNamespace) pushRel(currentNamespace, full, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, part.startPosition.row + 1)
           }
         }
         if (alias) namespaceAliases[alias] = libName
         const items = referNames.length > 0 ? referNames : subNames.length > 0 && !sawKwd ? subNames : alias ? [alias] : ["*"]
         imports.push({ module: libName, items: [...items], type: "named", isExternal: true, line: (libNameNode ?? spec).startPosition.row + 1 })
-        pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, (libNameNode ?? spec).startPosition.row + 1)
+        // ELXD8 mirror: a self-require/self-import is a lexical no-op — never
+        // a self-loop references edge (F5-cert: corpus/invalid_arity/order.clj
+        // and clj-kondo node.clj both carry self-qualified require sites).
+        if (libName !== currentNamespace) pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, (libNameNode ?? spec).startPosition.row + 1)
         for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
           if (libName.startsWith(needle)) frameworks[fw] = true
         }
@@ -341,7 +390,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const pkgNode = spec.namedChild(0)
         const pkg = symName(pkgNode)
         if (!pkg) return
-        pushRel(currentNamespace, pkg, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true, isImport: true }, (pkgNode ?? spec).startPosition.row + 1)
+        if (pkg !== currentNamespace) pushRel(currentNamespace, pkg, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true, isImport: true }, (pkgNode ?? spec).startPosition.row + 1)
         for (let k = 1; k < spec.namedChildCount; k++) {
           const cls = spec.namedChild(k)
           if (cls && cls.type === "sym_lit") {
@@ -353,7 +402,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const libName = symName(spec)
         if (libName) {
           imports.push({ module: libName, items: ["*"], type: "named", isExternal: true, line: spec.startPosition.row + 1 })
-          pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, spec.startPosition.row + 1)
+          if (libName !== currentNamespace) pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, spec.startPosition.row + 1)
           for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
             if (libName.startsWith(needle)) frameworks[fw] = true
           }
@@ -459,8 +508,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // classes, it is never a call. The ns-clause and top-level directive
         // branches consume the spec through handleLibNode; without this guard
         // the C8 top-level attribution fabricates `ns -[calls]-> java.util`
-        // (caught by the M12 differential as a false positive).
-        const pf = formNameOf(node.parent)
+        // (caught by the M12 differential as a false positive). Clause
+        // parents are kwd-headed (`(:require …)`) — clauseNameOf; directive
+        // parents are sym-headed — formNameOf.
+        const pf = clauseNameOf(node.parent) || formNameOf(node.parent)
         if (pf === "require" || pf === "use" || pf === "import" || pf === "refer" || pf === "refer-clojure") continue
       }
       if (node.type === "list_lit") {
@@ -520,7 +571,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 1; i < node.namedChildCount; i++) {
             const clause = node.namedChild(i)
             if (!clause || clause.type !== "list_lit") continue
-            const clauseType = formNameOf(clause)
+            const clauseType = clauseNameOf(clause)
             if (clauseType !== "require" && clauseType !== "use" && clauseType !== "import" && clauseType !== "refer-clojure") continue
 
             for (let j = 1; j < clause.namedChildCount; j++) {
@@ -822,7 +873,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             const [alias, func] = formName.split("/")
             const resolvedNs = namespaceAliases[alias] || alias
             pushRel(src, `${resolvedNs}/${func}`, ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, ...topMeta }, line, arity)
-            pushRel(currentNamespace, resolvedNs, ASTEngine.RelationshipType.References, 0.8, { clojureSpecific: true, isLibraryDep: true }, line)
+            // ELXD8 mirror: a self-qualified call (`corpus.invalid-arity.order/def`
+            // inside that very namespace) is a lexical no-op as a dependency —
+            // never a self-loop references edge (F5-cert).
+            if (resolvedNs !== currentNamespace) pushRel(currentNamespace, resolvedNs, ASTEngine.RelationshipType.References, 0.8, { clojureSpecific: true, isLibraryDep: true }, line)
             if (func.endsWith("!") && activeFunction) activeFunction.metadata!.isPure = false
           } else {
             pushRel(src, formName, ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, ...topMeta }, line, arity)
