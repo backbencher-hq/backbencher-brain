@@ -220,6 +220,10 @@
       "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
     },
     {
+      "record": "validation/m29/results/wave-editor-java.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
       "record": "validation/m29/results/wave-editor-javascript.json",
       "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
     },
