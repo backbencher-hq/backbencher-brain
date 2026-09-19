@@ -1281,7 +1281,48 @@ module.exports = grammar(Java, {
     // `${obj.prop}` reach the call and field walks exactly as the same
     // expression would outside a string — the family contract that the same
     // expression emits the same edges.
-    string_interpolation: $ => seq('${', $.expression, '}'),
+    // #841 round 18: the interpolation body admits more than a bare
+    // expression — oracle-verified (Groovy 3.0.24): command chains
+    // ("x ${C.foo p} y"), local declarations ("${def q = p}" and the GORM
+    // SELECT template family "${Product p}" / "${Attribute attr = p.attr}" —
+    // DataServiceSpec:456, 7+ @Query/@Cypher corpus files) and assignments
+    // ("${q = p}") all ACCEPT inside ${…}. The admitted set is deliberately
+    // NOT $.statement: a full statement body creates a systematic
+    // expression/expression_statement ambiguity that measurably broke four
+    // otherwise-clean files (ternary branches carrying GStrings, binary
+    // chains, spread postfix, template_expression names). Declarations get
+    // +1 (the semantic reading of "${Product p}"), the command chain is
+    // last-resort so parenthesized calls keep their method_invocation
+    // reading from r17.
+    string_interpolation: $ => seq(
+      '${',
+      // Body = expression + command chain, NO declarations. Measured, not
+      // assumed: the corpus family splits into plain method invocations
+      // ("${e.formatId(X)}", "${Integer.valueOf(p.toString())}" — expression
+      // readings) and command chains ("${Product p}", "${C.foo p}" — juxt
+      // readings, oracle-verified). Adding local_variable_declaration as a
+      // third alternative put a type-vs-expression fork in every
+      // interpolation state and collapsed ${Capitalized.call(x.toString())}
+      // shapes (Neo4jGormStaticApi:308) — removed. If a future corpus file
+      // proves a real "${Type t = …}" declaration reading, re-add it and
+      // re-run this round's battery.
+      // Body = ONE item: an expression or the r17 command-value shape. The
+      // repeat1(choice(...)) first tried here FRAGMENTED bodies into
+      // consecutive expression items — "${registry.lookup(\"G7\")}" parsed as
+      // field_access + a separate parenthesized_expression, erasing the
+      // method_invocation (no `calls` edge, leaked `uses` —
+      // interpolation-reads-g7 caught it). A single item cannot fragment.
+      // Measured rejections recorded below: full juxt_function_call (its
+      // _juxt_argument_list admits parenthesized lists, flipping ordinary
+      // calls to juxt) and local_variable_declaration (a type-vs-expression
+      // fork in every interpolation state; collapsed
+      // ${Capitalized.call(x.toString())} — Neo4jGormStaticApi:308).
+      choice(
+        prec.dynamic(1, $.expression),
+        prec.dynamic(-1, $._command_call_value),
+      ),
+      '}',
+    ),
 
     // A `$` that begins neither form — `"cost: $5"`, `"100$"`, `"a$$b"` — is
     // literal text and needs its OWN alternative here. It cannot be folded into
