@@ -182,7 +182,7 @@
       "name": "m29-precision-ledger",
       "script": "script/m29/verify-precision-ledger.ts",
       "rc": 0,
-      "verdict": "VERIFIED (16/16 passed, 5 negatives)",
+      "verdict": "VERIFIED (19/19 passed, 5 negatives)",
       "ok": true
     },
     {
@@ -280,7 +280,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ b3fe7faa)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ fa6f63d7)",
       "ok": true
     },
     {
@@ -305,12 +305,12 @@
       "ok": true
     }
   ],
-  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
+  "currentCommit": "fa6f63d73db8502852858e1cf31589337c20f125",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-19T00:23:02.684Z",
+  "generatedAt": "2026-09-19T02:29:56.529Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:23:02.684Z",
-    "contentSha256": "d1cc90aaaf275c52e510d18f7eb671d61fa622502afb4ff2760b33d26a3d4481"
+    "sealedAt": "2026-09-19T02:29:56.530Z",
+    "contentSha256": "db8b65aafb1b5a4f4dba7ee7ccb36ef7ca7e2428b12e6463b00276b27f0c0b81"
   }
 }
