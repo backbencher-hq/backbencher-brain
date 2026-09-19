@@ -7,7 +7,7 @@ import { ASTEngine } from "./engine"
 // two sides is what the differential exists to catch; a 450-entry name list
 // is a transcription hazard, not a rule.
 export const CLOJURE_CORE_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = [
-  "if", "let", "def", "defn", "defn-", "fn", "loop", "recur", "quote", "var", "do", "try", "catch", "finally", "throw", "monitor-enter", "monitor-exit", "new", ".", "set!", "+", "-", "*", "/", "=", "not=", "<", "<=", ">", ">=", "and", "or", "not", "println", "print", "str", "concat", "map", "reduce", "filter", "remove", "into", "assoc", "dissoc", "get", "update", "merge", "keys", "vals", "first", "rest", "next", "last", "cons", "conj", "apply", "comp", "partial", "inc", "dec", "zero?", "empty?", "nil?", "when", "when-not", "when-let", "if-let", "if-not", "cond", "case", "for", "doseq", "dotimes", "->", "->>", "as->", "cond->", "cond->>", "some->", "some->>", "swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off", "future", "promise", "deliver", "defrecord", "defprotocol", "defmulti", "defmethod", "ns", "require", "import", "use", "refer", "comment", "deftest", "is", "testing", "list", "vector", "hash-map", "set", "vec", "seq", "count", "nth", "assoc-in", "update-in", "get-in", "select-keys", "merge-with", "zipmap", "sort", "sort-by", "reverse", "group-by", "frequencies", "distinct", "take", "drop", "take-while", "drop-while", "split-at", "partition", "interleave", "interpose", "flatten", "keep", "mapv", "filterv", "reduce-kv", "into-array", "to-array", "bean", "array-map", "sorted-map", "sorted-set", "subvec", "peek", "pop", "disj", "contains?", "find", "keys", "rseq", "range", "iterate", "repeat", "repeatedly", "cycle", "sequence", "every?", "some", "not-any?", "not-every?", "identity", "constantly", "juxt", "fnil", "memoize", "trampoline", "lazy-seq", "lazy-cat", "defonce", "defmacro", "defstruct", "declare", "binding", "with-bindings", "with-open", "with-local-vars", "time", "assert", "identical?", "instance?", "extends?", "satisfies?", "reify", "proxy", "gen-class", "gen-interface", "extend", "extend-type", "extend-protocol", "proxy-super", "doto", "..", ".", "..", "->", "->>", "amap", "areduce", "aset", "aget", "alength", "aclone", "int-array", "long-array", "double-array", "object-array", "make-array", "char", "int", "long", "double", "float", "boolean", "short", "byte", "bigint", "bigdec", "num", "string?", "keyword?", "symbol?", "number?", "seq?", "vector?", "map?", "set?", "fn?", "ifn?", "coll?", "sequential?", "associative?", "counted?", "indexed?", "reversible?", "sorted?", "namespace", "name", "keyword", "symbol", "str", "subs", "char-array", "upper-case", "lower-case", "trim", "triml", "trimr", "trim-newline", "split", "join", "replace", "re-seq", "re-find", "re-matches", "re-pattern", "re-groups", "format", "printf", "pr", "prn", "pr-str", "prn-str", "print-str", "println-str", "newline", "flush", "read", "read-line", "read-string", "slurp", "spit", "load-string", "load-file", "require", "use", "import", "refer-clojure", "in-ns", "alias", "ns-unmap", "ns-resolve", "resolve", "find-var", "var-get", "var-set", "bound?", "thread-bound?", "alter-var-root", "with-redefs", "with-redefs-fn", "future-call", "future-cancel", "future-cancelled?", "future-done?", "future?", "pmap", "pcalls", "pvalues", "delay", "force", "realized?", "when-first", "when-some", "if-some", "some->", "some->>", "condp", "while", "doseq", "dotimes", "binding", "sync", "io!", "vswap!", "swap-vals!", "reset-vals!", "compare-and-set!", "add-watch", "remove-watch", "set-validator!", "get-validator", "send-via", "await", "await-for", "shutdown-agents", "release-pending-sends", "ensure", "ref-set", "alter", "commute", "dosync", "io!", "min-key", "max-key", "compare", "equiv", "hash", "hash-combine", "sort-by", "comparator", "rand", "rand-int", "rand-nth", "random-sample", "boolean?", "true?", "false?", "nil?", "not", "not=", "identical?", "class", "type", "instance?", "isa?", "parents", "ancestors", "descendants", "derive", "underive", "make-hierarchy", "global-hierarchy", "rationalize", "numerator", "denominator", "int?", "integer?", "even?", "odd?", "pos?", "neg?", "zero?", "nat-int?", "int?", "float?", "double?", "ratio?", "decimal?", "byte?", "short?", "char?", "string?", "keyword?", "symbol?", "uuid?", "uri?", "regexp?", "fn?", "ifn?", "var?", "delayed?", "atom?", "ref?", "agent?", "future?", "promise?", "seqable?", "sequential?", "vector?", "map?", "set?", "list?", "seq?", "coll?", "counted?", "indexed?", "associative?", "reversible?", "sorted?", "unchecked-add", "unchecked-subtract", "unchecked-multiply", "unchecked-divide", "unchecked-inc", "unchecked-dec", "unchecked-negate", "unchecked-remainder", "unchecked-add-int", "unchecked-subtract-int", "unchecked-multiply-int", "unchecked-divide-int", "unchecked-inc-int", "unchecked-dec-int", "unchecked-negate-int", "unchecked-remainder-int", "bit-and", "bit-or", "bit-xor", "bit-not", "bit-shift-left", "bit-shift-right", "bit-and-not", "bit-clear", "bit-set", "bit-flip", "bit-test", "shift-left", "shift-right", "unsigned-bit-shift-right", "bit-count", "Integer/parseInt", "Long/parseLong", "Double/parseDouble", "Math/abs", "Math/max", "Math/min", "Math/round", "Math/floor", "Math/ceil", "Math/sqrt", "Math/pow", "Math/random", "String/valueOf", "String/format", "String/join", "String/split", "System/currentTimeMillis", "System/nanoTime", "System/getProperty", "System/exit", "System/gc", "Thread/sleep", "Thread/currentThread", "UUID/randomUUID", "java.util.Date", "char", "code-char", "symbol", "keyword", "gensym", "unquote", "unquote-splicing", "syntax-quote", "deliver", "promise", "not-empty", "empty", "list*", "cons", "concat", "lazy-seq", "when-let", "if-let", "when-some", "if-some", "when-first", "while", "loop", "recur", "letfn", "defn-", "defmacro", "defmulti", "defmethod", "defprotocol", "defrecord", "deftype", "defstruct", "ns", "in-ns", "require", "use", "import", "refer", "alias", "comment", "declare", "def", "defonce", "binding", "with-bindings", "with-open", "with-local-vars", "time", "assert", "identical?", "instance?", "extends?", "satisfies?", "reify", "proxy", "gen-class", "gen-interface", "extend", "extend-type", "extend-protocol", "proxy-super", "doto", "..", ".", "amap", "areduce", "aset", "aget", "alength", "aclone", "int-array", "long-array", "double-array", "object-array", "make-array"
+  "if", "let", "def", "defn", "defn-", "fn", "loop", "recur", "quote", "var", "do", "try", "catch", "finally", "throw", "monitor-enter", "monitor-exit", "new", ".", "set!", "+", "-", "*", "/", "=", "not=", "<", "<=", ">", ">=", "and", "or", "not", "println", "print", "str", "concat", "map", "reduce", "filter", "remove", "into", "assoc", "dissoc", "get", "update", "merge", "keys", "vals", "first", "rest", "next", "last", "cons", "conj", "apply", "comp", "partial", "inc", "dec", "zero?", "empty?", "nil?", "when", "when-not", "when-let", "if-let", "if-not", "cond", "case", "for", "doseq", "dotimes", "->", "->>", "as->", "cond->", "cond->>", "some->", "some->>", "swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off", "future", "promise", "deliver", "defrecord", "defprotocol", "definterface", "defmulti", "defmethod", "ns", "require", "import", "use", "refer", "comment", "deftest", "is", "testing", "list", "vector", "hash-map", "set", "vec", "seq", "count", "nth", "assoc-in", "update-in", "get-in", "select-keys", "merge-with", "zipmap", "sort", "sort-by", "reverse", "group-by", "frequencies", "distinct", "take", "drop", "take-while", "drop-while", "split-at", "partition", "interleave", "interpose", "flatten", "keep", "mapv", "filterv", "reduce-kv", "into-array", "to-array", "bean", "array-map", "sorted-map", "sorted-set", "subvec", "peek", "pop", "disj", "contains?", "find", "keys", "rseq", "range", "iterate", "repeat", "repeatedly", "cycle", "sequence", "every?", "some", "not-any?", "not-every?", "identity", "constantly", "juxt", "fnil", "memoize", "trampoline", "lazy-seq", "lazy-cat", "defonce", "defmacro", "defstruct", "declare", "binding", "with-bindings", "with-open", "with-local-vars", "time", "assert", "identical?", "instance?", "extends?", "satisfies?", "reify", "proxy", "gen-class", "gen-interface", "extend", "extend-type", "extend-protocol", "proxy-super", "doto", "..", ".", "..", "->", "->>", "amap", "areduce", "aset", "aget", "alength", "aclone", "int-array", "long-array", "double-array", "object-array", "make-array", "char", "int", "long", "double", "float", "boolean", "short", "byte", "bigint", "bigdec", "num", "string?", "keyword?", "symbol?", "number?", "seq?", "vector?", "map?", "set?", "fn?", "ifn?", "coll?", "sequential?", "associative?", "counted?", "indexed?", "reversible?", "sorted?", "namespace", "name", "keyword", "symbol", "str", "subs", "char-array", "upper-case", "lower-case", "trim", "triml", "trimr", "trim-newline", "split", "join", "replace", "re-seq", "re-find", "re-matches", "re-pattern", "re-groups", "format", "printf", "pr", "prn", "pr-str", "prn-str", "print-str", "println-str", "newline", "flush", "read", "read-line", "read-string", "slurp", "spit", "load-string", "load-file", "require", "use", "import", "refer-clojure", "in-ns", "alias", "ns-unmap", "ns-resolve", "resolve", "find-var", "var-get", "var-set", "bound?", "thread-bound?", "alter-var-root", "with-redefs", "with-redefs-fn", "future-call", "future-cancel", "future-cancelled?", "future-done?", "future?", "pmap", "pcalls", "pvalues", "delay", "force", "realized?", "when-first", "when-some", "if-some", "some->", "some->>", "condp", "while", "doseq", "dotimes", "binding", "sync", "io!", "vswap!", "swap-vals!", "reset-vals!", "compare-and-set!", "add-watch", "remove-watch", "set-validator!", "get-validator", "send-via", "await", "await-for", "shutdown-agents", "release-pending-sends", "ensure", "ref-set", "alter", "commute", "dosync", "io!", "min-key", "max-key", "compare", "equiv", "hash", "hash-combine", "sort-by", "comparator", "rand", "rand-int", "rand-nth", "random-sample", "boolean?", "true?", "false?", "nil?", "not", "not=", "identical?", "class", "type", "instance?", "isa?", "parents", "ancestors", "descendants", "derive", "underive", "make-hierarchy", "global-hierarchy", "rationalize", "numerator", "denominator", "int?", "integer?", "even?", "odd?", "pos?", "neg?", "zero?", "nat-int?", "int?", "float?", "double?", "ratio?", "decimal?", "byte?", "short?", "char?", "string?", "keyword?", "symbol?", "uuid?", "uri?", "regexp?", "fn?", "ifn?", "var?", "delayed?", "atom?", "ref?", "agent?", "future?", "promise?", "seqable?", "sequential?", "vector?", "map?", "set?", "list?", "seq?", "coll?", "counted?", "indexed?", "associative?", "reversible?", "sorted?", "unchecked-add", "unchecked-subtract", "unchecked-multiply", "unchecked-divide", "unchecked-inc", "unchecked-dec", "unchecked-negate", "unchecked-remainder", "unchecked-add-int", "unchecked-subtract-int", "unchecked-multiply-int", "unchecked-divide-int", "unchecked-inc-int", "unchecked-dec-int", "unchecked-negate-int", "unchecked-remainder-int", "bit-and", "bit-or", "bit-xor", "bit-not", "bit-shift-left", "bit-shift-right", "bit-and-not", "bit-clear", "bit-set", "bit-flip", "bit-test", "shift-left", "shift-right", "unsigned-bit-shift-right", "bit-count", "Integer/parseInt", "Long/parseLong", "Double/parseDouble", "Math/abs", "Math/max", "Math/min", "Math/round", "Math/floor", "Math/ceil", "Math/sqrt", "Math/pow", "Math/random", "String/valueOf", "String/format", "String/join", "String/split", "System/currentTimeMillis", "System/nanoTime", "System/getProperty", "System/exit", "System/gc", "Thread/sleep", "Thread/currentThread", "UUID/randomUUID", "java.util.Date", "char", "code-char", "symbol", "keyword", "gensym", "unquote", "unquote-splicing", "syntax-quote", "deliver", "promise", "not-empty", "empty", "list*", "cons", "concat", "lazy-seq", "when-let", "if-let", "when-some", "if-some", "when-first", "while", "loop", "recur", "letfn", "defn-", "defmacro", "defmulti", "defmethod", "defprotocol", "defrecord", "deftype", "defstruct", "ns", "in-ns", "require", "use", "import", "refer", "alias", "comment", "declare", "def", "defonce", "binding", "with-bindings", "with-open", "with-local-vars", "time", "assert", "identical?", "instance?", "extends?", "satisfies?", "reify", "proxy", "gen-class", "gen-interface", "extend", "extend-type", "extend-protocol", "proxy-super", "doto", "..", ".", "amap", "areduce", "aset", "aget", "alength", "aclone", "int-array", "long-array", "double-array", "object-array", "make-array"
 ]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
 const HOF_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["apply", "map", "reduce", "filter", "comp", "partial"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
@@ -24,7 +24,7 @@ const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = Object.c
 // lookup made every Java-class `(toString [this] …)` override misfire the
 // impl rule and consume its body's calls as "method definitions" (found by
 // the F5 clj-kondo lane: 12 MISSING edges across rewrite-clj node files).
-const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol", "definterface"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -38,7 +38,13 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     const patterns: Record<string, boolean> = {}
 
     let currentNamespace = "user"
-    let namespaceAliases: Record<string, string> = {}
+    // F3 (adversarial review): Object.create(null) — the SAME prototype-
+    // pollution class as F5-2, missed on this record: a plain `{}` alias
+    // table answered `["toString"]` with the inherited function, so
+    // `(toString/f …)` under `[x :as toString]` emitted the garbage target
+    // `"function toString() { [native code] }/f"` (and the oracle's Map
+    // emitted the honest `toString/f` — a latent MISSING/unexplained pair).
+    let namespaceAliases: Record<string, string> = Object.create(null)
     let activeFunction: ASTEngine.UniversalSymbol | null = null
 
     let totalCyclomaticComplexity = 0
@@ -263,10 +269,27 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const leadingCommentTexts = (n: Node): string[] => {
       const out: string[] = []
+      // F11 (adversarial): only a CONTIGUOUS block of `;;` comments directly
+      // above the form is its doc. A trailing comment on the previous form's
+      // line, a blank-line-separated header, and single-`;` notes used to be
+      // attached — moving docstring text onto the wrong symbols.
       let prev = n.previousNamedSibling
+      let anchorRow = n.startPosition.row
       while (prev && prev.type === "comment") {
+        // NOTE: a comment node's text INCLUDES its trailing newline, so its
+        // endPosition.row is one past the visible line — every row comparison
+        // below works on VISIBLE rows.
+        if (prev.startPosition.row !== anchorRow - 1) break     // blank line above
+        if (!prev.text.startsWith(";;")) break                 // single-`;` note
+        const before = prev.previousNamedSibling
+        if (before) {
+          const beforeEndRow = before.type === "comment" ? before.endPosition.row - 1 : before.endPosition.row
+          if (before.startPosition.row === prev.startPosition.row) break // shares the previous form's line
+          if (beforeEndRow === prev.startPosition.row) break             // previous form ENDS on this comment's line
+        }
         const t = stripCommentText(prev.text)
         if (t.length > 0) out.unshift(t)
+        anchorRow = prev.startPosition.row
         prev = prev.previousNamedSibling
       }
       return out
@@ -317,6 +340,18 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (`'[x :as y]`, `'(pkg Cls)`), so a quoting_lit is unwrapped first.
     const handleLibNode = (rawNode: Node) => {
       const spec = rawNode.type === "quoting_lit" ? (rawNode.namedChild(0) ?? rawNode) : rawNode
+      if (spec.type === "read_cond_lit" || spec.type === "splicing_read_cond_lit") {
+        // F12 (adversarial): `(:require #?(:clj [x :as y] :cljs [x :as z]))`
+        // — the union of both platforms' libspecs is the analysis contract
+        // (the read-cond transparency of CLJ-D2). Previously the payload was
+        // never unwrapped, so cljc requires left every aliased call dangling.
+        for (let i = 0; i < spec.namedChildCount; i++) {
+          const c = spec.namedChild(i)
+          if (!c) continue
+          if (c.type === "vec_lit" || c.type === "list_lit" || c.type === "sym_lit" || c.type === "quoting_lit" || c.type === "read_cond_lit" || c.type === "splicing_read_cond_lit") handleLibNode(c)
+        }
+        return
+      }
       if (spec.type === "vec_lit") {
         // [lib :as alias] | [lib :refer [a b]] | [lib] | (:import [pkg Cls1 Cls2])
         const libNameNode = spec.namedChild(0)
@@ -326,14 +361,20 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         let referNames: string[] = []
         const subNames: string[] = []
         let sawKwd = false
+        // F12 (adversarial): `:as-alias` registers the alias for QUALIFIED
+        // NAME RESOLUTION but the lib is not loaded — no references edge and
+        // no import row (the alias-only form appears in real cljc: `[x
+        // :as-alias y]`).
+        let hasAsAlias = false
         for (let k = 1; k < spec.namedChildCount; k++) {
           const part = spec.namedChild(k)
           if (!part) continue
           if (part.type === "kwd_lit") {
             sawKwd = true
             const kw = part.childForFieldName("name")?.text || ""
-            if (kw === "as" && k + 1 < spec.namedChildCount) {
+            if ((kw === "as" || kw === "as-alias") && k + 1 < spec.namedChildCount) {
               alias = symName(spec.namedChild(k + 1))
+              if (kw === "as-alias") hasAsAlias = true
             } else if (kw === "refer" && k + 1 < spec.namedChildCount) {
               const refVec = spec.namedChild(k + 1)
               if (refVec && refVec.type === "vec_lit") {
@@ -373,13 +414,15 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         if (alias) namespaceAliases[alias] = libName
         const items = referNames.length > 0 ? referNames : subNames.length > 0 && !sawKwd ? subNames : alias ? [alias] : ["*"]
-        imports.push({ module: libName, items: [...items], type: "named", isExternal: true, line: (libNameNode ?? spec).startPosition.row + 1 })
-        // ELXD8 mirror: a self-require/self-import is a lexical no-op — never
-        // a self-loop references edge (F5-cert: corpus/invalid_arity/order.clj
-        // and clj-kondo node.clj both carry self-qualified require sites).
-        if (libName !== currentNamespace) pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, (libNameNode ?? spec).startPosition.row + 1)
-        for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
-          if (libName.startsWith(needle)) frameworks[fw] = true
+        if (!hasAsAlias) {
+          imports.push({ module: libName, items: [...items], type: "named", isExternal: true, line: (libNameNode ?? spec).startPosition.row + 1 })
+          // ELXD8 mirror: a self-require/self-import is a lexical no-op — never
+          // a self-loop references edge (F5-cert: corpus/invalid_arity/order.clj
+          // and clj-kondo node.clj both carry self-qualified require sites).
+          if (libName !== currentNamespace) pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, (libNameNode ?? spec).startPosition.row + 1)
+          for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
+            if (libName.startsWith(needle)) frameworks[fw] = true
+          }
         }
         if (subNames.length > 0 && !sawKwd) patterns["Java Interoperability"] = true
       } else if (spec.type === "list_lit") {
@@ -393,7 +436,25 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (pkg !== currentNamespace) pushRel(currentNamespace, pkg, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true, isImport: true }, (pkgNode ?? spec).startPosition.row + 1)
         for (let k = 1; k < spec.namedChildCount; k++) {
           const cls = spec.namedChild(k)
-          if (cls && cls.type === "sym_lit") {
+          if (!cls) continue
+          if (cls.type === "list_lit") {
+            // F15 (adversarial): paren prefix-list `(adv.prefix (sub :as
+            // sp))` — the list twin of the vec prefix form. Register the
+            // nested alias and reference `adv.prefix.sub`; both sides
+            // emitted raw `sp/one` + `references -> sp` garbage before.
+            const subName = symName(cls.namedChild(0))
+            if (!subName) continue
+            const full = `${pkg}.${subName}`
+            for (let q = 1; q < cls.namedChildCount; q++) {
+              const pp = cls.namedChild(q)
+              if (pp && pp.type === "kwd_lit" && (pp.childForFieldName("name")?.text || "") === "as") {
+                const av = cls.namedChild(q + 1)
+                const subAlias = av ? symName(av) : ""
+                if (subAlias) namespaceAliases[subAlias] = full
+              }
+            }
+            if (full !== currentNamespace) pushRel(currentNamespace, full, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, cls.startPosition.row + 1)
+          } else if (cls.type === "sym_lit") {
             imports.push({ module: pkg, items: [symName(cls)], type: "named", isExternal: true, line: cls.startPosition.row + 1 })
             patterns["Java Interoperability"] = true
           }
@@ -437,22 +498,60 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     let mayShadowComment = false
+    // #881 widened (adversarial F4): a DATA-position `comment` symbol
+    // (`{comment 1}` map key, a `case` leg, a plain vector element) does NOT
+    // shadow the macro — the original "any non-head occurrence" scan flipped
+    // file-globally on those, and EVERY `(comment …)` body in the file was
+    // then walked as code (measured on clj-kondo analyzer.clj: a fabricated
+    // `calls parse-string` from a scratch comment block). Only DEFINITION
+    // evidence flips the flag now: `comment` as a def-family NAME, or as a
+    // binding in a binding vector (fn/defn params, let/loop/for/…) — the
+    // #881 fixture's two live shadows are exactly those two shapes.
+    const DEF_NAME_HEADS: Record<string, boolean> = Object.create(null)
+    for (const h of ["def", "defn", "defn-", "defmacro", "defonce", "defmulti"]) DEF_NAME_HEADS[h] = true
+    const BINDING_VEC_HEADS: Record<string, boolean> = Object.create(null)
+    for (const h of ["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"]) BINDING_VEC_HEADS[h] = true
+    const FN_PARAM_HEADS: Record<string, boolean> = Object.create(null)
+    for (const h of ["fn", "defn", "defn-", "defmacro", "defmethod", "deftest"]) FN_PARAM_HEADS[h] = true
+    const isShadowingComment = (candidate: Node): boolean => {
+      const parent = candidate.parent
+      if (!parent) return false
+      if (parent.type === "list_lit") {
+        const head = formNameOf(parent)
+        return !!(DEF_NAME_HEADS[head] && parent.namedChild(1)?.startIndex === candidate.startIndex)
+      }
+      if (parent.type === "vec_lit") {
+        const gp = parent.parent
+        if (!gp || gp.type !== "list_lit") return false
+        const head = formNameOf(gp)
+        if (FN_PARAM_HEADS[head]) {
+          for (let i = 0; i < gp.namedChildCount; i++) {
+            const c = gp.namedChild(i)
+            if (c?.type === "vec_lit") return c.startIndex === parent.startIndex
+          }
+          return false
+        }
+        if (BINDING_VEC_HEADS[head]) return gp.namedChild(1)?.startIndex === parent.startIndex
+        return false
+      }
+      return false
+    }
     const bindingStack: Node[] = [rootNode]
     while (bindingStack.length > 0) {
       const candidate = bindingStack.pop()!
       if (candidate.type === "dis_expr" || candidate.type === "quoting_lit") continue
-      if (candidate.type === "sym_lit" && symName(candidate) === "comment") {
-        const parent = candidate.parent
-        if (parent?.type !== "list_lit" || parent.namedChild(0)?.startIndex !== candidate.startIndex) {
-          mayShadowComment = true
-          break
-        }
+      if (candidate.type === "sym_lit" && symName(candidate) === "comment" && isShadowingComment(candidate)) {
+        mayShadowComment = true
+        break
       }
       for (let i = 0; i < candidate.namedChildCount; i++) {
         const child = candidate.namedChild(i)
         if (child) bindingStack.push(child)
       }
     }
+    // F13: threading step lists already emitted their thread-adjusted call
+    // at the macro site — their own walk must not re-emit the written arity.
+    const threadedSteps = new Set<number>()
 
     // ── Walk ──────────────────────────────────────────────────────────────
     const walkStack: Array<{ node: Node; isExit: boolean; previousActiveFunction: any; quoteDepth: number }> = [{ node: rootNode, isExit: false, previousActiveFunction: activeFunction, quoteDepth: 0 }]
@@ -467,6 +566,11 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.type === "dis_expr") continue
+      // CLJ-D5 (adversarial F5): metadata is compile-time DATA — never walked.
+      // `^{:doc (meta-fn)}` fabricated `calls meta-fn` before this; metadata
+      // occupies no execution position (the #881 head rule) and its values are
+      // reader data, so the whole subtree is skipped.
+      if (node.type === "meta_lit") continue
       if (node.type === "syn_quoting_lit" || quoteDepth > 0) {
         let childDepth = quoteDepth
         if (node.type === "syn_quoting_lit") childDepth++
@@ -516,7 +620,11 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (node.type === "list_lit") {
         const form = formNameOf(node)
-        if (form === "quote" || form === "clojure.core/comment" || (form === "comment" && !mayShadowComment)) continue
+        // F10 (adversarial): the data-form skip is SPELLING-independent —
+        // `clojure.core/quote` and an aliased `c/comment` (`[clojure.core :as
+        // c]`) walked their bodies as code before this canonicalisation.
+        const canon = resolveQualified(form)
+        if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !mayShadowComment)) continue
       }
 
       const previousActiveFunction = activeFunction
@@ -534,6 +642,29 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(lambdaSymbol)
         activeFunction = lambdaSymbol
+        // F1 (adversarial): `#(f a b)` is a bare call form with NO list
+        // wrapper — its first named child IS the callee, and the generic
+        // child walk only ever saw argument positions, so the head call
+        // never emitted (`(defn f [] (#(helper %) 1))` produced only
+        // `contains f` — 168 non-builtin heads across 61 corpus files, e.g.
+        // main.clj `#(core-class? …)`). `%`, `%N`, `%&` heads are parameter
+        // references, never callees; builtin heads follow the builtin policy.
+        const anonHead = node.namedChild(0)
+        if (anonHead && anonHead.type === "sym_lit") {
+          const hName = symName(anonHead)
+          if (hName && !/^%(\d+|&)?$/.test(hName) && !CLOJURE_CORE_BUILTINS[hName]) {
+            const line = anonHead.startPosition.row + 1
+            const arity = Math.max(0, node.namedChildCount - 1)
+            if (hName.includes("/")) {
+              const [alias, func] = hName.split("/")
+              const resolvedNs = namespaceAliases[alias] || alias
+              pushRel(name, `${resolvedNs}/${func}`, ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, isAnonShorthand: true }, line, arity)
+              if (resolvedNs !== currentNamespace) pushRel(currentNamespace, resolvedNs, ASTEngine.RelationshipType.References, 0.8, { clojureSpecific: true, isLibraryDep: true }, line)
+            } else {
+              pushRel(name, hName, ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, isAnonShorthand: true }, line, arity)
+            }
+          }
+        }
       } else if (node.type === "list_lit") {
         const formName = formNameOf(node)
 
@@ -554,7 +685,8 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         else if (formName === "ns") {
           const nsName = symName(node.namedChild(1))
           if (nsName) currentNamespace = nsName
-          namespaceAliases = {}
+          // F3: null-prototype reset (see the declaration).
+          namespaceAliases = Object.create(null)
           const modSym: ASTEngine.UniversalSymbol = {
             name: currentNamespace,
             kind: ASTEngine.SymbolKind.Module,
@@ -567,12 +699,32 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           attachDocs(modSym, node, "always")
           exports.push({ name: currentNamespace, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), visibility: "public" })
 
-          // require / use / import / refer-clojure clauses
+          // require / use / import / require-macros clauses. `refer-clojure`
+          // is NOT fed through the libspec handler (adversarial F2): its
+          // `:exclude [my-map]` / `:only` name-lists are VAR names — the
+          // handler treated `[my-map]` as a libspec and fabricated
+          // `references -> my-map` plus an import of package "my-map"
+          // (measured: 43 files, e.g. string.clj `:exclude [replace
+          // reverse]` → `references -> replace` + imported class items). The
+          // clause is consumed as data — nothing in it is a dependency.
+          // Reader-conditional clauses `#?(:clj (:require …) …)` unwrap to
+          // their list children (adversarial F12 — real cljc files carried
+          // alias-less requires, leaving every aliased call dangling).
+          const clauses: Node[] = []
           for (let i = 1; i < node.namedChildCount; i++) {
             const clause = node.namedChild(i)
-            if (!clause || clause.type !== "list_lit") continue
+            if (!clause) continue
+            if (clause.type === "list_lit") clauses.push(clause)
+            else if (clause.type === "read_cond_lit" || clause.type === "splicing_read_cond_lit") {
+              for (let c = 0; c < clause.namedChildCount; c++) {
+                const inner = clause.namedChild(c)
+                if (inner && inner.type === "list_lit") clauses.push(inner)
+              }
+            }
+          }
+          for (const clause of clauses) {
             const clauseType = clauseNameOf(clause)
-            if (clauseType !== "require" && clauseType !== "use" && clauseType !== "import" && clauseType !== "refer-clojure") continue
+            if (clauseType !== "require" && clauseType !== "use" && clauseType !== "import" && clauseType !== "require-macros") continue
 
             for (let j = 1; j < clause.namedChildCount; j++) {
               const libNode = clause.namedChild(j)
@@ -587,7 +739,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `s/join`-style call dangling. The kwd-headed ns clauses
         // (`(:require …)`) are consumed by the ns branch above; this branch
         // fires only for sym-headed top-level forms.
-        else if ((formName === "require" || formName === "use" || formName === "import" || formName === "refer") && executionHead(node)?.type === "sym_lit") {
+        else if ((formName === "require" || formName === "use" || formName === "import" || formName === "refer" || formName === "require-macros") && executionHead(node)?.type === "sym_lit") {
           for (let j = 1; j < node.namedChildCount; j++) {
             const libNode = node.namedChild(j)
             if (libNode) handleLibNode(libNode)
@@ -653,6 +805,36 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
+        // ── definterface (adversarial F9) ───────────────────────────────
+        // Mirror of defprotocol: the interface name is a symbol and each
+        // signature list `(size [])` is a method definition — it used to
+        // fall to the generic-call branch (`calls definterface`, `calls
+        // size`, `calls run`) with no interface symbol at all (33 corpus
+        // lines). Signature lists are excluded from call handling by the
+        // impl-context branch (definterface added to METHOD_IMPL_PARENT_FORMS).
+        else if (formName === "definterface") {
+          const name = symName(node.namedChild(1)) || "unknown"
+          const ifaceSym: ASTEngine.UniversalSymbol = {
+            name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node),
+            scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
+            metadata: { clojureSpecific: true, isInterface: true }
+          }
+          symbols.push(ifaceSym)
+          attachDocs(ifaceSym, node, "always")
+          exports.push({ name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), visibility: "public" })
+          for (let i = 2; i < node.namedChildCount; i++) {
+            const m = node.namedChild(i)
+            if (!m || m.type !== "list_lit") continue
+            const mName = symName(m.namedChild(0))
+            if (!mName || CLOJURE_CORE_BUILTINS[mName]) continue
+            symbols.push({
+              name: mName, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(m),
+              scope: `${currentNamespace}.${name}`, ownerName: name, visibility: "public",
+              parameters: extractParams(m),
+              metadata: { clojureSpecific: true, isInterfaceMethod: true }
+            })
+          }
+        }
         // ── defrecord / deftype ──────────────────────────────────────────
         else if (formName === "defrecord" || formName === "deftype") {
           const name = symName(node.namedChild(1)) || "unknown"
@@ -665,9 +847,15 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           attachDocs(classSym, node, "always")
           exports.push({ name, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), visibility: "public" })
 
-          // fields vector
-          const fieldsVec = node.namedChild(2)
-          if (fieldsVec && fieldsVec.type === "vec_lit") {
+          // fields vector — the first direct vec_lit child (a docstring may
+          // sit at index 2; adversarial F16: `(defrecord Foo "doc" [x y] …)`
+          // lost the x/y property symbols)
+          let fieldsVec: Node | null = null
+          for (let i = 2; i < node.namedChildCount; i++) {
+            const c = node.namedChild(i)
+            if (c && c.type === "vec_lit") { fieldsVec = c; break }
+          }
+          if (fieldsVec) {
             for (let i = 0; i < fieldsVec.namedChildCount; i++) {
               const field = fieldsVec.namedChild(i)
               if (field && field.type === "sym_lit") {
@@ -810,7 +998,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // from call handling.
         else if (node.parent?.type === "list_lit" && METHOD_IMPL_PARENT_FORMS[formNameOf(node.parent)] && executionHead(node.parent) !== node) {
           const parentForm = formNameOf(node.parent)
-          if (parentForm !== "defprotocol") {
+          if (parentForm !== "defprotocol" && parentForm !== "definterface") {
             const mName = symName(node.namedChild(0))
             if (mName && !CLOJURE_CORE_BUILTINS[mName]) {
               const owner = methodImplOwner(node, parentForm)
@@ -829,33 +1017,121 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
-        // ── constructor idioms: (->ClassName ...) and (ClassName.) ───────
-        else if (formName.startsWith("->") && formName.length > 2) {
+        // ── letfn local functions (adversarial F8) ───────────────────────
+        // `(letfn [(f [x] …) (g-inner [y] …)] …)` — each binding-vector list
+        // is a DEFINITION: it used to emit `calls outer -> f arity 2` (the
+        // definition misread as an invocation, the C9 class one form further)
+        // and body calls attributed to the enclosing fn. The definition list
+        // mints a local fn symbol and becomes the walking context for its own
+        // body; no contains edge (locals, like `fn`).
+        else if (node.parent?.type === "vec_lit" && node.parent.parent?.type === "list_lit" && formNameOf(node.parent.parent) === "letfn") {
+          const fName = symName(node.namedChild(0))
+          if (fName && !CLOJURE_CORE_BUILTINS[fName]) {
+            const fnSym: ASTEngine.UniversalSymbol = {
+              name: fName, kind: ASTEngine.SymbolKind.Function,
+              range: this.nodeToRange(node), scope: currentNamespace, ownerName: "",
+              visibility: "local",
+              parameters: extractParams(node),
+              metadata: { clojureSpecific: true, isLocalFn: true, isPure: true, complexity: 1 }
+            }
+            symbols.push(fnSym)
+            activeFunction = fnSym
+          }
+        }
+        // ── constructor idioms ──────────────────────────────────────────
+        // `(->ClassName …)` / `(ClassName. …)` / `(new ClassName …)` — the
+        // capitalisation rule is FINAL-SEGMENT uppercase (aligned with the
+        // tagged-literal branch of CLJ-D1; the old first-char test rejected
+        // `->probe.recs.Rec` and `->p/Rec` — adversarial F14) and every
+        // target resolves through aliases like other type names. `->>` is
+        // NOT a ctor idiom — it must fall through to the threading branch
+        // (it starts with `->` and the length test alone would eat it).
+        else if (formName.startsWith("->") && formName.length > 2 && formName !== "->>") {
           const cls = formName.slice(2)
-          const c0 = cls.charCodeAt(0)
+          const namePart = cls.includes("/") ? cls.slice(cls.indexOf("/") + 1) : cls
+          const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
+          const c0 = lastSeg.charCodeAt(0)
           if (c0 >= 65 && c0 <= 90) {
             const src = activeFunction ? activeFunction.name : currentNamespace
             const headNode = executionHead(node)
-            pushRel(src, cls, ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isConstructor: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
+            pushRel(src, resolveQualified(cls), ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isConstructor: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
+          }
+        } else if (formName === "new") {
+          // `(new ClassName args…)` (F14): an invocation of the class ctor —
+          // arity = argument forms after the class name; target line = the
+          // class name itself. `new` is a special form, so it never reaches
+          // the generic-call branch.
+          const clsNode = node.namedChild(1)
+          const clsName = symName(clsNode)
+          if (clsName) {
+            const src = activeFunction ? activeFunction.name : currentNamespace
+            pushRel(src, resolveQualified(clsName), ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isJavaInterop: true, ...(activeFunction ? {} : { isTopLevel: true }) }, clsNode ? clsNode.startPosition.row + 1 : undefined, Math.max(0, node.namedChildCount - 2))
+            patterns["Java Interoperability"] = true
+            if (activeFunction?.metadata) activeFunction.metadata.isPure = false
           }
         } else if (formName.endsWith(".") && formName.length > 1 && !formName.startsWith(".")) {
-          const cls = formName.slice(0, -1)
+          const cls = resolveQualified(formName.slice(0, -1))
           const src = activeFunction ? activeFunction.name : currentNamespace
           const headNode = executionHead(node)
           pushRel(src, cls, ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isJavaInterop: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
           patterns["Java Interoperability"] = true
         }
         // ── Java member/field access: (.method obj) / (.-field obj) ──────
-        else if (formName.startsWith(".")) {
+        // F6: `..` is NOT a member name — the old slice made `(.. x (m1))`
+        // emit `uses -> "."` (garbage identity; the `uses` label has no
+        // oracle truth for clojure, so no gate could see it). `..` falls
+        // through to the builtin branch (it is a core form).
+        else if (formName.startsWith(".") && formName !== "..") {
           const target = formName.startsWith(".-") ? formName.slice(2) : formName.slice(1)
           const src = activeFunction ? activeFunction.name : currentNamespace
           const headNode = executionHead(node)
           if (target) pushRel(src, target, ASTEngine.RelationshipType.Uses, 0.7, { clojureSpecific: true, isFieldAccess: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
           patterns["Java Interoperability"] = true
         }
-        // ── threading macros → uses chain ────────────────────────────────
-        else if (formName === "->" || formName === "->>" || formName === "some->" || formName === "as->" || formName === "cond->" || formName === "cond->>") {
+        // ── threading macros (CLJ-D10, adversarial F13) ─────────────────
+        // Steps are INVOCATIONS: `(-> x foo bar)` emitted nothing and
+        // `(-> x (f 1))` reported arity 1 while f is invoked with 2 (the
+        // thread injects the value). Each step emits a calls edge with
+        // THREAD-ADJUSTED arity (written args + 1); bare symbol steps emit
+        // arity 1; builtin-headed steps follow the builtin policy (no call
+        // edge, like every other builtin site — builtin tracking still runs
+        // on them via the fall-through below). The step list is flagged so
+        // its own walk does not re-emit the written arity; `as->` binds
+        // explicitly ($ appears at each use site) and stays as-written.
+        // `cond->`/`cond->>` children alternate test/step — tests are
+        // ordinary expressions and walk normally.
+        else if (formName === "->" || formName === "->>" || formName === "some->" || formName === "some->>" || formName === "cond->" || formName === "cond->>" || formName === "doto") {
           if (activeFunction) patterns["Threading Macros"] = true
+          const isCond = formName === "cond->" || formName === "cond->>"
+          const tSrc = activeFunction ? activeFunction.name : currentNamespace
+          const tTop: Record<string, any> = activeFunction ? {} : { isTopLevel: true }
+          for (let i = 2; i < node.namedChildCount; i++) {
+            if (isCond && i % 2 === 0) continue // test position: walked normally
+            const step = node.namedChild(i)
+            if (!step) continue
+            const emitStep = (hName: string, line: number, arity: number, bare: boolean) => {
+              if (!hName || CLOJURE_CORE_BUILTINS[hName] || hName.startsWith(".") || hName.startsWith("->") || hName.endsWith(".")) return
+              pushRel(tSrc, resolveQualified(hName), ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, isThreadedStep: true, ...(bare ? { isBareStep: true } : {}), ...tTop }, line, arity)
+              if (hName.includes("/")) {
+                const [alias] = hName.split("/")
+                const resolvedNs = namespaceAliases[alias] || alias
+                if (resolvedNs !== currentNamespace) pushRel(currentNamespace, resolvedNs, ASTEngine.RelationshipType.References, 0.8, { clojureSpecific: true, isLibraryDep: true }, line)
+              }
+            }
+            if (step.type === "list_lit") {
+              const h = executionHead(step)
+              if (!h || h.type !== "sym_lit") continue
+              emitStep(symName(h), h.startPosition.row + 1, callArityOf(step) + 1, false)
+              threadedSteps.add(step.startIndex)
+            } else if (step.type === "sym_lit") {
+              emitStep(symName(step), step.startPosition.row + 1, 1, true)
+            }
+          }
+        }
+        // F13: a threading step already emitted its thread-adjusted call at
+        // the macro site — skip its own head emission (builtin-headed steps
+        // fall through to the builtin tracking below).
+        else if (threadedSteps.has(node.startIndex) && formName && !CLOJURE_CORE_BUILTINS[formName]) {
         }
         // ── generic function calls (non-builtin form symbols) ────────────
         // C8: calls OUTSIDE any function (def/defonce initializers, top-level
@@ -911,9 +1187,17 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // F7 (adversarial): `(case e (a b) :r …)` — a LIST in a constant
+      // position is a GROUP of unevaluated constants, not an invocation
+      // (`calls a` was fabricated from it). Result positions and the expr
+      // still walk; only list constants are skipped. Same positions in the
+      // F5 oracle.
+      const isCaseForm = node.type === "list_lit" && formNameOf(node) === "case"
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) walkStack.push({ node: child, isExit: false, previousActiveFunction: null as any, quoteDepth })
+        if (!child) continue
+        if (isCaseForm && i >= 2 && i % 2 === 0 && child.type === "list_lit") continue
+        walkStack.push({ node: child, isExit: false, previousActiveFunction: null as any, quoteDepth })
       }
     }
 

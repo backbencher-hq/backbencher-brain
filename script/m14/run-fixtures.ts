@@ -23,7 +23,7 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
-  clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj" },
+  clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj,cljc,cljs" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
@@ -176,11 +176,12 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     analyzer = new mod[cfg.className]()
   }
 
-  const sources = fs.readdirSync(dir).filter(f => f.endsWith("." + cfg.ext))
+  const exts = cfg.ext.split(",")
+  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)))
   let pass = 0, fail = 0
   const details: any[] = []
   for (const src of sources.sort()) {
-    const base = src.slice(0, -(cfg.ext.length + 1))
+    const base = src.slice(0, src.lastIndexOf("."))
     const expPath = path.join(dir, `${base}.expectation.json`)
     if (!fs.existsSync(expPath)) { fail++; details.push({ fixture: `${runLangLang}/${base}`, ok: false, reason: "missing expectation file" }); continue }
     const exp = JSON.parse(fs.readFileSync(expPath, "utf8"))
