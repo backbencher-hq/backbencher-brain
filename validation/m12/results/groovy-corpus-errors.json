@@ -11,25 +11,25 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 191,
-  "cleanFiles": 6373,
+  "errorFiles": 184,
+  "cleanFiles": 6380,
   "missingNodeFiles": 63,
-  "errorNodeFiles": 182,
+  "errorNodeFiles": 175,
   "errorRates": {
-    "any": 2.9,
+    "any": 2.8,
     "missing": 1,
-    "error": 2.8
+    "error": 2.7
   },
-  "grammarErrorFiles": 191,
+  "grammarErrorFiles": 184,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 134189,
+  "wallMs": 136156,
   "missingTokens": {
-    ";": 120,
-    "identifier": 31,
+    ";": 112,
+    "identifier": 30,
     "decimal_integer_literal": 14,
-    "}": 12,
+    "}": 13,
     ")": 4,
     "]": 3,
     ">": 2,
@@ -75,18 +75,16 @@
     "ID ID ID ID, ID.ID(ID, (ID)ID)": 5,
     "ID ID ID ID(ID ID) {": 4,
     "ID ID ID ID(ID ID, ID ID, ID ID, ID ID) {": 4,
-    "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4,
-    "ID = ID.ID { ID * 2 } ID { ID + 6 }": 4
+    "ID:": 4,
+    "ID ID ID(ID ID, ID ID) {": 4
   },
   "firstErrorLineSignatures": {
-    "}": 30,
+    "}": 29,
     "/*": 17,
     "ID.ID.ID(ID)": 9,
     "ID.ID.ID(ID.ID)": 5,
     "ID @ID.ID.ID@": 5,
-    "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4,
     "@ID": 4,
-    "ID = ID.ID { ID * 2 } ID { ID ID ID(ID)} ID { ID + 6 }": 3,
     "ID ID ID ID {": 3,
     "@ID.ID@": 3,
     "ID.ID.ID(ID, ID)": 2,
@@ -118,7 +116,9 @@
     ".ID() == 1": 1,
     "ID.ID.ID(ID, [": 1,
     "ID ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
-    "ID ID = ID.ID() { ID ID -> ID.ID.ID(ID) }": 1
+    "ID ID = ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
+    "ID (!ID.ID() { ID ID ->": 1,
+    ".ID() == ID": 1
   },
   "errorFileList": [
     {
@@ -224,76 +224,6 @@
       "firstKind": "ERROR",
       "firstLine": "/*",
       "pipelineErrors": 12
-    },
-    {
-      "file": "grails-async/core/src/test/groovy/grails/async/FutureTaskPromiseFactorySpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 140,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad') } then { it + 6 }",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-async/core/src/test/groovy/grails/async/PromiseSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 163,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad') } then { it + 6 }",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-async/core/src/test/groovy/grails/async/SynchronousPromiseFactorySpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 134,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException(\"bad\") } then { it + 6 }",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-async/gpars/src/test/groovy/grails/async/GparsPromiseSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 149,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad') } then { it + 6 }",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-async/rxjava/src/test/groovy/org/grails/async/factory/rxjava/RxJavaPromiseSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 147,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad')} then { it + 6 }",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-async/rxjava2/src/test/groovy/org/grails/async/factory/rxjava2/RxPromiseSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 161,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad')} then { it + 6 }",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-async/rxjava3/src/test/groovy/org/grails/async/factory/rxjava3/RxPromiseSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 158,
-      "firstKind": "ERROR",
-      "firstLine": "promise = promise.then { it * 2 } then { throw new RuntimeException('bad')} then { it + 6 }",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-bootstrap/src/main/groovy/grails/io/ResourceUtils.groovy",
@@ -421,15 +351,15 @@
     },
     {
       "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/hibernatequery/HibernateQuerySpec.groovy",
-      "nodes": 8,
+      "nodes": 6,
       "missingTokens": [
         ")"
       ],
-      "errorNodes": 6,
-      "firstRow": 883,
+      "errorNodes": 4,
+      "firstRow": 882,
       "firstKind": "MISSING )",
-      "firstLine": "bobs[0].firstName == \"Fred\"",
-      "pipelineErrors": 14
+      "firstLine": "bobs.size() == 1",
+      "pipelineErrors": 10
     },
     {
       "file": "grails-data-hibernate7/core/src/test/groovy/grails/gorm/tests/services/DataServiceSpec.groovy",
@@ -1567,17 +1497,18 @@
     },
     {
       "file": "grails-scaffolding/src/main/templates/scaffolding/AsyncSpec.groovy",
-      "nodes": 30,
+      "nodes": 24,
       "missingTokens": [
         ";",
+        "}",
         "identifier",
         "decimal_integer_literal"
       ],
-      "errorNodes": 12,
+      "errorNodes": 11,
       "firstRow": 149,
       "firstKind": "ERROR",
       "firstLine": "}",
-      "pipelineErrors": 41
+      "pipelineErrors": 35
     },
     {
       "file": "grails-scaffolding/src/main/templates/scaffolding/Controller.groovy",
@@ -1642,20 +1573,19 @@
       "file": "grails-scaffolding/src/main/templates/scaffolding/ServiceSpec.groovy",
       "nodes": 18,
       "missingTokens": [
-        "identifier",
-        "}",
         ";",
+        "identifier",
         "decimal_integer_literal"
       ],
       "errorNodes": 10,
-      "firstRow": 74,
+      "firstRow": 68,
       "firstKind": "ERROR",
-      "firstLine": "}",
+      "firstLine": "${className} ${propertyName} = new ${className}()",
       "pipelineErrors": 28
     },
     {
       "file": "grails-scaffolding/src/main/templates/scaffolding/Spec.groovy",
-      "nodes": 43,
+      "nodes": 40,
       "missingTokens": [
         ";",
         "}",
@@ -1666,7 +1596,7 @@
       "firstRow": 221,
       "firstKind": "ERROR",
       "firstLine": "}",
-      "pipelineErrors": 72
+      "pipelineErrors": 69
     },
     {
       "file": "grails-shell-cli/src/main/groovy/org/grails/cli/gradle/commands/ReadGradleTasks.groovy",
