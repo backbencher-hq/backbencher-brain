@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "70fd2b57abb18a50abedff4fb66ed94662ca8512",
-        "recordSealedAt": "2026-09-19T03:40:08.624Z"
+        "recordCommit": "c352b6e4d0fecb9d935547a6111d4b9e9844b39a",
+        "recordSealedAt": "2026-09-19T03:59:53.068Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "negativeCases": 6,
-        "recordCommit": "70fd2b57abb18a50abedff4fb66ed94662ca8512",
-        "recordSealedAt": "2026-09-19T03:40:09.815Z"
+        "recordCommit": "c352b6e4d0fecb9d935547a6111d4b9e9844b39a",
+        "recordSealedAt": "2026-09-19T03:59:54.273Z"
       }
     },
     {
@@ -142,8 +142,8 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "70fd2b57abb18a50abedff4fb66ed94662ca8512",
-        "recordSealedAt": "2026-09-19T03:40:11.284Z"
+        "recordCommit": "c352b6e4d0fecb9d935547a6111d4b9e9844b39a",
+        "recordSealedAt": "2026-09-19T03:59:55.319Z"
       }
     },
     {
@@ -170,11 +170,11 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m62/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 26,
-        "failed": 4,
-        "realFailed": 4,
+        "passed": 27,
+        "failed": 3,
+        "realFailed": 3,
         "negativeCases": 7,
-        "recordCommit": "afaf410114ef7e16f1518a08f7e71a599ebaea5e"
+        "recordCommit": "c352b6e4d0fecb9d935547a6111d4b9e9844b39a"
       }
     }
   ]
