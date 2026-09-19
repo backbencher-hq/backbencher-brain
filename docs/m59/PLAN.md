@@ -633,7 +633,9 @@ Three product findings, all filed, none papered over:
   queried in the process that just finished indexing.** The kotlin sweep indexed 150 files in 7 s, printed 2 of
   8 cells, then made no progress: `real 8m20s, user 1.0s` — blocked, not computing. The *same* calls on the
   *same* index in a fresh process answer in **≤67 ms** (`probe-name-latency.ts`). This is why the sweep is
-  currently 2 of 9 languages: kotlin is blocked by #887, not skipped.
+  currently 2 of 9 languages: kotlin is blocked by #887, not skipped. **Root-caused and fixed — see §3o: the
+  "block" was this sweep's own predicate spinning in a CPU loop no timeout could observe, and the 9-lane
+  matrix has since been regenerated with the fixed instrument (62 cells, WRONG=0).**
 
 **Declared honestly:** the matrix is not a certification. Its predicate is a *necessary* condition (a lower
 bound on call lines), `missed` is reported only for names that map to exactly one symbol (ambiguous names
@@ -670,6 +672,53 @@ The user's uncommitted `declaresSelf` change was verified with a controlled reve
 
 **Declared, not swept up:** the first run of the acceptance harness in this round died with `write EPIPE` inside the indexer's worker pool (`parallel-indexer.ts:1391`); the immediately following identical run was clean (14/15). Not filed as a defect because it was **not reproduced**, and a one-off crash of a heavy parallel path under load is exactly the kind of thing that must not be filed as fact. It is recorded here so the next round can decide if it recurs. Two defects in this gate's own first version are recorded above too (a module-level fixture that produced no call edges at all, and a mutation that deleted exactly the limit so it proved nothing).
 
+### 3o. #887 root-caused: the sweep's own predicate spun, and no timeout could see it (2026-09-19, #887)
+
+The issue said "tool calls block for minutes when queried in the same process that just finished indexing". The freeze reproduced deterministically (kotlin-only **and** scala+kotlin, `--files=150`: `exit 124`, two of eight cells printed), while every tool-level reproduction on the same slice answered in 7–57 ms (`probe-inproc-block.ts`, 16 calls, 0 blocked). The contradiction belonged to the instrument.
+
+**What was actually happening.** The sweep was in an infinite CPU loop inside its own source predicate. `declaredHere` walked backwards for a declaration keyword with `at = head.lastIndexOf(kw, at - 1)`, and `String.prototype.lastIndexOf` **clamps a negative position to 0**: on the iteration where `at` reached 0 it returned 0 again — same input, same result, forever. It needs the line prefix before the callee name to START with a declaration keyword whose next character is a word character, which corpus code is full of: `internal fun JdbcTransaction.isMarkedRollback(…)` puts `int` at index 0 followed by `e`.
+
+Three things had to be un-learned first, and each is now measured:
+
+1. The process being read as "0% CPU, blocked" was the **npm/tsx wrapper** — `tsx` runs the script in a child process. Reading the child: **12,934 ticks = 129.3 s of user CPU in a 149 s run**. A spin, not a block; and `time` under-reports it because the child outlives the pipeline that `time` is measuring.
+2. A CPU-bound spin **starves a timer-based watchdog**. The stall watchdog added earlier in this same session could not fire — which is why the only bound that catches this class is a progress guarantee inside the loop, not a timeout.
+3. Twelve "wrong line" accusations from the previous round were also the instrument, in two blind spots: **calls inside `${…}` interpolations** were stripped as string text (`localRepoPath()` at `resources/prettier-examples.ts:316`, groovy `toString()` at `Browser.groovy:1092` — both CORRECT sites), and **Groovy command syntax** (`navigatorFor xs.findAll { … }`, a call written without parentheses) is not modelled at all (12 correct sites in `DefaultNavigator.groovy`).
+
+**Fix.** `at = at > 0 ? head.lastIndexOf(kw, at - 1) : -1`; `stripStrings` keeps `${…}` visible inside double-quoted and backtick strings; and a new **`unmodelled`** verdict — a reported site whose call shape the predicate cannot model is neither a pass nor a defect. It is counted and sampled (`unmodelled=12`, groovy) and is never used for `consistent` or `missed`, so it cannot turn a wrong line green.
+
+**Proof** — `script/m59/probe-predicate-loop.ts` → `validation/m59/results/predicate-loop.json`:
+
+| check | result |
+|---|---|
+| A — the semantics | `lastIndexOf("int")` = 0 and `lastIndexOf("int", -1)` = 0: the position is clamped, so the index cannot decrease |
+| B — the old shape | both real trigger shapes (a `int…` call at column 0, and the Exposed declaration that hung) reach a **fixpoint**: identical state → identical result → never terminates |
+| C — the fixed shape | the trigger line still counts as a CALL, and a recognised declaration still returns `declared` — the fix changes no verdict, only termination |
+| D — the corpus | **84 (line, token) pairs in the 150-file Exposed slice would have spun** (6,238 single-occurrence token checks over 14,274 lines). The hang was not hypothetical |
+| E — the shipped file | `matrix-tool-language.ts` carries the guarded form, so reverting the fix fails this probe instead of costing another nine minutes |
+
+**Acceptance:** the exact configuration that froze twice (`--langs=scala,kotlin --files=150`) now completes in **1 m 34 s — 16/16 cells, WRONG=0, both mutations caught, no stall** — and kotlin's `bb_graph` audit exists for the first time. Before this, the sweep could only measure 2 of 9 languages; kotlin was not skipped, it was blocked.
+
+**The instrument, made unable to hang silently.** Every tool call is now bounded (`bb_graph` 30 s, `bb_analyze` 20 s) and records `notMeasurable` instead of 0 sites on timeout; a stall watchdog writes `validation/m59/results/matrix-stall.json` naming the step / language / callee / file it died on and exits 3; and a mutation on an ambiguous name is labelled `inconclusive-name-multiplicity(n)` rather than left as a `caught:false` that reads like proof. The watchdog detects an *idle* loop, not a spinning one — the loop's own progress guarantee is what covers the spinning case, and that is now a self-test entry.
+
+**The 9-lane matrix, regenerated with the fixed predicate** (three halves, merged by `merge-matrix-halves.ts`; the pre-fix halves are deliberately NOT merged and the canonical file says so):
+
+| lane | repo | files | cells | consistent | WRONG | unmodelled | missed | mutation |
+|---|---|---|---|---|---|---|---|---|
+| scala | cats-effect | 150 | 8 | 609 | 0 | 0 | 1 | caught |
+| kotlin | Exposed | 150 | 8 | 270 | 0 | 0 | 9 | caught |
+| java | clojure | 150 | 8 | 1,579 | 0 | 0 | 0 | caught (on a 2-symbol name) |
+| groovy | geb | 150 | 8 | 222 | 0 | **12** | 0 | inconclusive-name-multiplicity(34) |
+| typescript | graphql-js | 46 | 8 | 84 | 0 | 0 | 54 | caught |
+| javascript | proxicall | 150 | 6 | 4 | 0 | 0 | 6 | caught |
+| vue | vue-element-admin | 131 | 8 | 33 | 0 | 0 | 2 | caught |
+| svelte | shadcn-svelte | 150 | 8 | 9 | 0 | 0 | 0 | caught |
+| xml | phpunit | 150 | **0** | 0 | 0 | 0 | 0 | — |
+| **total** | | | **62** | **2,810** | **0** | **12** | **72** | **6/9 unambiguous proofs** |
+
+Two lanes are not what a bare total would suggest, and both are now stated by the evidence rather than by prose: **xml produced no `calls`/`call` relationships at all** on its slice (config XML), so it is recorded `NOT-MEASURABLE` — "the call-site audit does not apply to this lane" — instead of appearing as an empty-but-clean row; and **groovy's mutation is inconclusive** because the name `find` maps to 34 symbols, so the corrupted row can belong to a different same-named symbol than the one the tool resolves.
+
+**Honest classification of the 72 `missed` — it is an upper bound, and most of it is the instrument.** Every missed sample was adjudicated against the source, and the causes are: (i) the predicate counting **declarations** as call sites — scala `liftF`'s own declaration, vue `preventDefault(e) {`, typescript `revParse(…): string {` (68 such lines measured on the Exposed slice); (ii) **receiver calls in a chain** — the analyzer records the chain's LEAF by design, so `npm().diff(…)` and `git().log(…)` are calls to `diff`/`log`, while the predicate also credits `npm(`/`git(` (`resources/release-prepare.ts:39`, `release-metadata.ts:37`); (iii) **ownerless module-scope sites** — `testOnNodeProject('ts')` and the `diff-npm-package.ts` script calls are top-level statements with no enclosing symbol, which is the already-filed **#879** class and not a new defect. No issue is filed on this basis, `missed` keeps its `missedUpperBound` in the aggregate, and the samples stay in the evidence so the next round can adjudicate rather than inherit.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
@@ -693,6 +742,7 @@ asking a different question.
 | #825 analyzer lane emission — **web family** | **web family done** — typescript · javascript · vue · svelte carried **0 lines on all 5,293 relationships** of the pinned 40-file sample (measured at HEAD in a worktree with the same instrument and the same sample pins, so the baseline is a real baseline). Now **5,292/5,293** carry one with **0 INCONSISTENT** (typescript 2,074/2,074 · javascript 2,057/2,057 · vue 1,051/1,051 · svelte 110/111; the one absent line is the honest unknown, never `0`). Three defect classes beyond the silence: the **SFC seam** (a delegated relationship kept the js/ts analyzer's SCRIPT-relative line — 562 of 585 line-bearing vue edges and 19 of 58 svelte ones INCONSISTENT once the delegate began emitting lines; the wrapper now shifts and **records** the offset it applied), the **name-vs-construct** rule (chain callee leaf, import specifier, base name, `new` class name), and **vue's props** (every prop/emit symbol stamped with the `props: { … }` pair's line — `Account.vue:17` for a key written on 18). Pinned by four new fixtures (`typescript/callsite-lines-825`, `javascript/callsite-lines-825`, `vue/template-lines-825`, `svelte/template-lines-825` — the vue/svelte `forbid` values MEASURED by running the same fixture at HEAD) and **eight mutants, all CAUGHT** (per-lane drop, seam-not-shifted for vue and svelte, props-pair, and `typescript/line-zero-based` — the off-by-one that proves the fixtures pin the arithmetic). Two instrument defects had to be fixed first: the callee token for a TS/JS import target was the whole `module:item` (22 of 24 typescript INCONSISTENT verdicts were that, every one on a CORRECT line) and the `default` export sentinel was checked as a written name. Fixtures **440/440** across 22 languages, mutants **591/591**, typecheck clean. Registered as `reviews/m59-web-lines-round` |
 | #888 silent 200-row cap | **fixed and verified** — declared limit + true total + `edgeLimit` on the wire + deterministic order; gate 20/20 mutation-proven, four real scala symbols match an independent SQL count, 12 regression gates re-run |
 | #890 `bb_edit` stale-file refusal | **fixed and verified** — refresh-one-file instead of refusing; fixture gate 18/18 · real-repo slice measured · four edit gates re-run unchanged · docs regenerated (`npm run docs:generate`, TOOL DOCS: PASS) |
+| #887 same-process stall | **fixed and verified** — root cause was the sweep's **own source predicate spinning** (`lastIndexOf` clamps a negative position to 0, so the keyword search re-found index 0 forever), not a tool call: progress guarantee + `unmodelled` verdict + interpolation-aware string stripping + per-call bounds + a stall watchdog, pinned by `probe-predicate-loop.ts` (84 real corpus spin triggers, guard on the shipped file). Acceptance: the twice-frozen `scala,kotlin --files=150` run completes in 1 m 34 s with 16/16 cells, WRONG=0 and both mutations caught. The 9-lane `bb_graph x language` matrix was then regenerated with the fixed instrument (§3o) |
 | #826 closure gate | **open** |
 
 **Tracking gap, stated:** this table's `closed` rows (#821–#824) are closed *in substance* — each was delivered, measured and pinned — but their GitHub issues were never transitioned, so the milestone still reports 10 open / 1 closed. Closing them is bookkeeping, not work, and it is the last honest step before #826 X1 can run.
@@ -718,6 +768,11 @@ asking a different question.
   wire, the stale refusal reproduced, the rename-outside refusal, and the declared `allowStaleIndex` gap
 - `validation/m59/results/probe-edit-refresh-cost.json` — #890: the same path on a real repo slice,
   with the refresh cost and the no-refresh cost separated
+- `validation/m59/results/predicate-loop.json` — #887: the non-progressing keyword search, its fixpoint
+  proof, the fixed verdicts, and the 84 real corpus lines that would have spun
+- `validation/m59/results/matrix-tool-language.{jvm,web1,web2}.json` — the 9-lane `bb_graph x language`
+  matrix, one file per half so each keeps its own command, commit and slice fingerprint; merged into the
+  canonical `matrix-tool-language.json` (the pre-#887 halves are superseded and deliberately not merged)
 
 ## Reproduce
 
@@ -743,4 +798,16 @@ bun run script/verify-graph.ts
 npx tsx script/m44/verify-usages-groups.ts   # U1 20/20
 npx tsx script/m44/verify-hub-tree.ts        # U3 27/27
 npx tsx script/m44/verify-legend.ts          # U4 25/25
+```
+
+```bash
+# #887 — the predicate spin, its fix, and the corpus proof (all checks must PASS)
+npx tsx script/m59/probe-predicate-loop.ts --files=150
+# the tool-level leg: same handlers, same slice, in the process that just indexed
+npx tsx script/m59/probe-inproc-block.ts --langs=scala,kotlin --files=150 --bound-ms=60000
+# the 9-lane tool x language matrix — three halves, then one merge
+npx tsx script/m59/matrix-tool-language.ts --langs=java,scala,kotlin --files=150 --out=validation/m59/results/matrix-tool-language.jvm.json
+npx tsx script/m59/matrix-tool-language.ts --langs=groovy,typescript,javascript --files=150 --out=validation/m59/results/matrix-tool-language.web1.json
+npx tsx script/m59/matrix-tool-language.ts --langs=vue,svelte,xml --files=150 --out=validation/m59/results/matrix-tool-language.web2.json
+npx tsx script/m59/merge-matrix-halves.ts validation/m59/results/matrix-tool-language.jvm.json validation/m59/results/matrix-tool-language.web1.json validation/m59/results/matrix-tool-language.web2.json
 ```
