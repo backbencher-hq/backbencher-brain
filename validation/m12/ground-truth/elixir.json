@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "validation/m12/fixtures/elixir/ (Service.ex, Negative.ex) — hand-audited against Elixir semantics: defmodule→module (nested names qualified), defprotocol→interface, defimpl→class named by for-type + implements edge, defstruct→struct + field properties, def/defp→function, defmacro→macro, protocol/impl members→method, @type→type; relationships: contains (module owns types/struct/fields/functions/macros, interface+class own methods, parent module owns nested module), implements (defimpl→protocol, @behaviour→behaviour), calls (function sources; alias-resolved qualified module calls; Kernel builtins + special forms + def heads + attributes + member access excluded), instantiates (%Struct{} literals in body position), references (module → used/aliased/imported/required deps).",
+  "source": "validation/m12/fixtures/elixir/ (Service.ex, Negative.ex) \u2014 hand-audited against Elixir semantics: defmodule\u2192module (nested names qualified), defprotocol\u2192interface, defimpl\u2192class named by for-type + implements edge, defstruct\u2192struct + field properties, def/defp\u2192function, defmacro\u2192macro, protocol/impl members\u2192method, @type\u2192type; relationships: contains (module owns types/struct/fields/functions/macros, interface+class own methods, parent module owns nested module), implements (defimpl\u2192protocol, @behaviour\u2192behaviour), calls (function sources; alias-resolved qualified module calls; Kernel builtins + special forms + def heads + attributes + member access excluded), instantiates (%Struct{} literals in body position), references (module \u2192 used/aliased/imported/required deps).",
   "facts": [
     {
       "layer": "ast_extraction",
@@ -282,7 +282,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "new",
+      "sourceId": "MyApp.User.new",
       "targetId": "MyApp.User",
       "attributes": {
         "type": "instantiates"
@@ -293,7 +293,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "update",
+      "sourceId": "MyApp.User.update",
       "targetId": "validate",
       "attributes": {
         "type": "calls"
@@ -304,7 +304,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "update",
+      "sourceId": "MyApp.User.update",
       "targetId": "Map.merge",
       "attributes": {
         "type": "calls"
@@ -315,7 +315,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "count_down",
+      "sourceId": "MyApp.User.count_down",
       "targetId": "count_down",
       "attributes": {
         "type": "calls"
@@ -381,7 +381,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "find",
+      "sourceId": "MyApp.UserStore.find",
       "targetId": "Logger.info",
       "attributes": {
         "type": "calls"
@@ -392,7 +392,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "find",
+      "sourceId": "MyApp.UserStore.find",
       "targetId": "serialize",
       "attributes": {
         "type": "calls"
@@ -403,7 +403,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "find",
+      "sourceId": "MyApp.UserStore.find",
       "targetId": "MyApp.User.new",
       "attributes": {
         "type": "calls"
@@ -414,7 +414,7 @@
       "layer": "relationships",
       "kind": "relationship",
       "file": "Service.ex",
-      "sourceId": "handle_call",
+      "sourceId": "MyApp.UserStore.handle_call",
       "targetId": "find",
       "attributes": {
         "type": "calls"
@@ -449,17 +449,6 @@
       "file": "Service.ex",
       "sourceId": "MyApp.User",
       "targetId": "email",
-      "attributes": {
-        "type": "contains"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.ex",
-      "sourceId": "MyApp.User",
-      "targetId": "MyApp.User",
       "attributes": {
         "type": "contains"
       },
