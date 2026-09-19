@@ -11,10 +11,10 @@
     "mutantsTotal": 6,
     "ok": true
   },
-  "currentCommit": "426080575e67be92edfb731f07b647799b865b4e",
+  "currentCommit": "f1d2d86806426caa7573ba0770503174e06720c4",
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "evidenceFile": "R4-verify.json",
-  "generatedAt": "2026-09-19T01:06:07.644Z",
+  "generatedAt": "2026-09-19T01:06:59.613Z",
   "details": [
     "G1: PRECISION-LEDGER.json regenerates byte-identically: on-disk JSON differs from a fresh build — regenerate with --write",
     "G1: PRECISION-LEDGER.md regenerates byte-identically: on-disk MD differs from a fresh build — regenerate with --write",
@@ -22,7 +22,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:06:07.644Z",
-    "contentSha256": "aecedd2f8e909987cb00ff2b85a5c6778bada9039e85123f3c2810fa7037af81"
+    "sealedAt": "2026-09-19T01:06:59.613Z",
+    "contentSha256": "aa670b39f47b570892d1fe19c4f87e77d0ae72e7f73eaece784cf37b2ec541d4"
   }
 }
