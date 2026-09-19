@@ -9,11 +9,11 @@
   "negativeCases": 2,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "3d0c3366afe54716c71f8b2c60d9cff9d15ab9a9",
+  "currentCommit": "15915ebd016aa50ab2e67181f8fb124221638de2",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-09-19T03:20:29.758Z",
+  "generatedAt": "2026-09-19T03:31:51.246Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/.tools/m44-u6-fixture",
     "files": [
@@ -31,7 +31,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T03:20:29.760Z",
-    "contentSha256": "2cbf20f8b0371bba99e82b985686e98f33cee419974dfbb2ca3fb2387dfda3a0"
+    "sealedAt": "2026-09-19T03:31:51.247Z",
+    "contentSha256": "299c3cebd4121400cd6ff7471cc588a09e6395251f90dcf0ed04d248aa92d820"
   }
 }
