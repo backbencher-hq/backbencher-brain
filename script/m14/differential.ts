@@ -8127,9 +8127,12 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       const canon = resolveQualified(form)
       if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !mayShadowComment)) continue
       if (n.parent?.type === "list_lit" && LIBSITE_FORMS.has(clauseNameOf(n.parent) || formNameOf(n.parent))) continue
-      if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent) !== n) {
+      if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent)?.startIndex !== n.startIndex) {
         // CLJ-D6: method definition, not a call (defprotocol/definterface sigs
         // are symbols-only in the analyzer — nothing to derive for them).
+        // (Span compare, not object identity: web-tree-sitter hands out fresh
+        // wrappers per access — the F7 scan flagged the analyzer's twin of
+        // this idiom; both sides now compare startIndex.)
         const parentForm = formNameOf(n.parent)
         const mName = symName(n.namedChild(0))
         if (parentForm !== "defprotocol" && parentForm !== "definterface" && mName && !CORE[mName]) {
