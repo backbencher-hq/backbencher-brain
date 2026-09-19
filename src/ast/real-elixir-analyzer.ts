@@ -42,19 +42,11 @@ interface Scope {
 // call targets — they parse as *_block node types and are counted separately
 // in the walk (see the rescue_block/catch_block/after_block/else_block and
 // stab_clause branches).
-const complexityNodes: Record<string, boolean> = {
-  "if": true,
-  "unless": true,
-  "case": true,
-  "cond": true,
-  "receive": true,
-  "with": true,
-  "for": true,
-  "def": true,
-  "defp": true,
-  "defmacro": true,
-  "defmacrop": true,
-}
+// Object.create(null) (adversarial X11): a plain `{}` here answered
+// `["toString"]`/`["valueOf"]`/`["constructor"]` from Object.prototype — a
+// function named `toString` inflated cyclomatic complexity on every call
+// (measured A/B, Clojure F5-2 class).
+const complexityNodes: Record<string, boolean> = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["if", "unless", "case", "cond", "receive", "with", "for", "def", "defp", "defmacro", "defmacrop"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
 // Function-definition constructs. The signature call nested in their
 // `arguments` is the declaration head — never a runtime call. defdelegate
@@ -205,7 +197,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ctx.patterns["Actor Model (OTP)"] = true
                   ctx.patterns["Process Spawning"] = true
                 }
-                if (!this.shouldSkipCall(node, t)) {
+                if (!this.shouldSkipCall(node, t) && !this.isPipeStep(node) && !this.isCaptureHead(node)) {
                   let meta: any = {}
                   if (t === "send" || t === "send_after") meta = { isMessagePass: true, isSend: true }
                   else if (t === "spawn" || t === "spawn_link" || t === "spawn_monitor" || t === "Task.async" || t === "Task.start" || t === "Task.start_link" || t === "Agent.start" || t === "Agent.start_link") meta = { isProcessSpawn: true }
@@ -221,9 +213,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         // and only in executable position (never a def signature or attribute).
         const structChild = this.findChild(node, (c) => c?.type === "struct")
         const aliasChild = structChild ? this.findChild(structChild, (c) => c?.type === "alias") : undefined
-        if (aliasChild?.text && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node)) {
+        if (aliasChild?.text && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node) && !this.isPatternPosition(node)) {
           this.recordInstantiates(this.resolveAlias(aliasChild.text, ctx), ctx, currentScope, aliasChild.startPosition.row + 1)
-        } else if (!aliasChild && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node)) {
+        } else if (!aliasChild && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node) && !this.isPatternPosition(node)) {
           // %__MODULE__{}: self-construction of the lexically enclosing
           // module (ELXD12). The struct head is an identifier, not an alias;
           // resolve to the nearest module/interface scope (a function scope
@@ -238,7 +230,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (modScope) this.recordInstantiates(modScope, ctx, currentScope, selfChild.startPosition.row + 1)
           }
         }
-      } else if (node.type === "unary_operator" && node.child(0)?.text === "@") {
+      } else if (node.type === "unary_operator" && node.child(0)?.text === "@" && !this.isInQuotedCode(node)) {
         // Module attribute: @name value. The attribute itself is never a call.
         const attrCall = node.child(1)
         const attrCallId = attrCall?.type === "call" ? this.findChild(attrCall, (c) => c?.type === "identifier") : undefined
@@ -284,8 +276,12 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (attrName === "derive") {
           // @derive JSON.Encoder / @derive {JSON.Encoder, only: [...]} /
           // @derive [A, B] / @derive [{C, :ok}]: the enclosing struct derives
-          // every named protocol (EX-L4 — the list forms previously emitted
-          // nothing; 8 real corpus sites incl. protocol.ex:422).
+          // every named protocol (EX-L4). CORRECTION (adversarial X10): the
+          // original note claimed "8 real corpus sites incl. protocol.ex:422"
+          // — that block is @moduledoc heredoc TEXT, not code, and the real
+          // list-form incidence on both corpora is 0; the branch is
+          // synthetic-pinned only, which is why the oracle mirror went
+          // unnoticed (3 UNEXPLAINED the moment a list form exists).
           const argsNode = attrCall?.type === "call" ? this.findChild(attrCall, (c) => c?.type === "arguments") : undefined
           const first = argsNode && argsNode.namedChildCount > 0 ? argsNode.namedChild(0) : undefined
           const protoNodes: Node[] = []
@@ -356,7 +352,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (tgt && !this.findChild(fnNode, (c) => c?.type === "arguments")) fnName = tgt.text
             }
             const leaf = fnName.split(".").pop() ?? fnName
-            if (fnName && !this.shouldSkipCall(node, leaf)) {
+            // The Kernel-name filter is for UNQUALIFIED captures (`&length/1`
+            // names the local/Kernel length); a QUALIFIED capture is a remote
+            // reference whose leaf merely collides (`&String.length/1`,
+            // `&IO.inspect/1` — measured: leaf-filtering dropped real
+            // String.length/IO.inspect/List.to_string captures once the
+            // generic re-emission of the capture head was suppressed).
+            const skipName = fnName.includes(".") ? fnName : leaf
+            if (fnName && !this.shouldSkipCall(node, skipName)) {
               this.recordCall(fnName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isCapture: true }, fnNode ? fnNode.startPosition.row + 1 : node.startPosition.row + 1, arity)
             }
           }
@@ -394,7 +397,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                  }
                  if (targetName && !this.shouldSkipCall(right, targetName)) {
                    const rightArgs = right.type === "call" ? this.findChild(right, (c) => c?.type === "arguments") : null
-                   this.recordCall(targetName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isPipe: true }, right.startPosition.row + 1, rightArgs ? rightArgs.namedChildCount : 0)
+                   // X6 (adversarial): the piped value is an ARGUMENT — the
+                   // step invokes the callee with written args + 1 (`x |> f(1)`
+                   // is f/2; a bare `x |> g` is g/1); the raw undercount was
+                   // measured on both A/B probes and 15 corpus-visible shapes.
+                   this.recordCall(targetName, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), { isPipe: true }, right.startPosition.row + 1, (rightArgs ? rightArgs.namedChildCount : 0) + 1)
                  }
              }
           }
@@ -553,11 +560,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Relationship emission helpers (dedupe by source|type|target identity).
   // ==========================================================================
   private pushRel(ctx: ElixirContext, source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, metadata: Record<string, any> = {}, line?: number) {
-    // EX-L2 (ER-D2 parity): the call site joins the identity key — two call
-    // sites of one callee on different lines are TWO edges, so the store can
-    // report every site (previously `helper()` on two lines collapsed to one
-    // row: the site-collapse defect class ER1 fixed for Erlang).
-    const key = `${source}|${type}|${target}|${line ?? ""}`
+    // EX-L2 (ER-D2 parity + adversarial X13): the call-site ARITY joins the
+    // identity too — same-line sites of arity-distinct clauses (`{f(1),
+    // f(2, 3)}`) collapsed to one edge, contradicting the name+arity contract
+    // (f/1 and f/2 are distinct callees).
+    const key = `${source}|${type}|${target}|${line ?? ""}|${(metadata as any).callArity ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
     // M59 (#825): the NAME-BEARING node's 1-based line — the callee, the
@@ -575,7 +582,30 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private recordCall(targetName: string, ctx: ElixirContext, currentScope: Scope | undefined, declaredScope: string | undefined, meta: any = {}, line?: number, arity?: number) {
       let finalTarget = targetName
-      const parts = targetName.split(".")
+      // X4 (adversarial): a chained-receiver target (`Mix.shell().error`)
+      // carried its call syntax verbatim — an identity matching no symbol
+      // (148+91 corpus edges). The receiver is a value, so the callee is the
+      // final METHOD leaf; it skips declared-set resolution (nothing local
+      // can be named by a method on a result).
+      if (finalTarget.indexOf("(") !== -1) {
+          const lastDot = finalTarget.lastIndexOf(".")
+          finalTarget = lastDot >= 0 ? finalTarget.slice(lastDot + 1) : finalTarget
+          const paren = finalTarget.indexOf("(")
+          if (paren !== -1) finalTarget = finalTarget.slice(0, paren)
+          if (finalTarget) {
+            if (arity && arity > 0) meta = { ...meta, callArity: arity }
+            this.pushRel(ctx, currentScope?.name || "Global", finalTarget, ASTEngine.RelationshipType.Calls, 0.8, { elixirSpecific: true, ...meta }, line)
+          }
+          return
+      }
+      // X5 (adversarial): `__MODULE__.fun` names the enclosing module
+      // (ELXD21 parity — the literal prefix matched no symbol; 5+8 sites).
+      // With no enclosing module the literal names nothing: drop.
+      if (finalTarget.startsWith("__MODULE__.")) {
+          if (!declaredScope) return
+          finalTarget = declaredScope + finalTarget.slice("__MODULE__".length)
+      }
+      const parts = finalTarget.split(".")
       if (parts.length > 1) {
           const root = parts[0]
           if (ctx.aliases[root]) {
@@ -584,6 +614,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
       }
       if (!finalTarget) return
+      // X9 (adversarial): qualified Kernel builtins are the same call-graph
+      // noise as bare ones (EX-D2) — `Kernel.length`/`Kernel.raise` emitted
+      // calls while `length`/`raise` did not (49 corpus sites).
+      if (finalTarget.startsWith("Kernel.")) {
+          const leaf = finalTarget.slice("Kernel.".length)
+          if (KERNEL_FUNCTIONS.has(leaf) || SPECIAL_FORMS.has(leaf)) return
+      }
       // EX-L2 (ER-D2 parity): call-site arity rides the edge — `pick/1` and
       // `pick/2` are distinct callees and distinct edges.
       if (arity && arity > 0) meta = { ...meta, callArity: arity }
@@ -630,6 +667,11 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (cur.type === "call") {
           const id = this.findChild(cur, (c) => c?.type === "identifier")
           if (id?.text === "quote") return true
+          // X7 (adversarial): `unquote`/`unquote_splicing` ARGUMENTS execute
+          // at expansion time — the nearest boundary wins over the enclosing
+          // quote (first match while walking upward), so unquoted code emits
+          // its calls while the rest of the quote stays data.
+          if (id?.text === "unquote" || id?.text === "unquote_splicing") return false
         }
         cur = cur.parent
       }
@@ -694,6 +736,30 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       return this.isInAttribute(node) || this.isDefHead(node)
   }
 
+  // X2 (adversarial): PATTERN positions are never constructions. A struct
+  // literal in a case/fn/receive clause pattern, or on the left of `=` or
+  // `<-`, is a destructure — 43+16 live corpus sites each emitted a false
+  // instantiates (e.g. `fn %Mix.Dep{app: app} = dep ->`). The arrow token in
+  // a stab_clause separates pattern from body; the operators separate the
+  // match subject from the built value. (A `cond` clause test evaluates —
+  // structs there are nonsense code and are treated as patterns uniformly.)
+  private isPatternPosition(node: Node): boolean {
+      let cur: Node | null = node
+      while (cur && cur.parent) {
+        const p: Node = cur.parent
+        if (p.type === "stab_clause") {
+          const arrow = this.findChild(p, (c) => c?.type === "->")
+          return arrow ? node.startIndex < arrow.startIndex : false
+        }
+        if (p.type === "binary_operator" && (p.child(1)?.text === "=" || p.child(1)?.text === "<-")) {
+          const left = p.child(0)
+          return !!(left && node.startIndex >= left.startIndex && node.endIndex <= left.endIndex)
+        }
+        cur = p
+      }
+      return false
+  }
+
   // Member/property access: `order.side` is a call whose target is a `dot`
   // node with no arguments — a field read, not an invocation. Module calls
   // like `Map.put(...)` carry arguments and are real invocations. A bare
@@ -706,6 +772,24 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.findChild(node, (c) => c?.type === "arguments")) return false
       const root = target.text.split(".")[0] ?? ""
       return root.length > 0 && root[0] >= "a" && root[0] <= "z"
+  }
+
+  // X6 companion: the right-hand side of `|>` is consumed by the pipe
+  // branch (thread-adjusted arity) — its own walk must not re-emit the
+  // written arity as a second edge once arity joins the dedupe key.
+  // Same for the function head of a `&fun/arity` capture (the capture
+  // branch emits it with the declared arity; the bare head is not a
+  // zero-arity invocation).
+  private isPipeStep(node: Node): boolean {
+      const p = node.parent
+      return !!(p && p.type === "binary_operator" && p.child(1)?.text === "|>" && p.child(2) && p.child(2)!.startIndex === node.startIndex)
+  }
+
+  private isCaptureHead(node: Node): boolean {
+      const p = node.parent
+      if (!p || p.type !== "binary_operator" || p.child(1)?.text !== "/") return false
+      const g = p.parent
+      return !!(g && g.type === "unary_operator" && g.child(0)?.text === "&")
   }
 
   private shouldSkipCall(node: Node, t: string): boolean {
@@ -1070,6 +1154,39 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         ctx.pendingDoc = undefined
     }
 
+    // X8 (adversarial): defdelegate DEFINES the local function and delegates
+    // to `to:` (optionally renamed via `as:`) — the delegation is a real
+    // call; 71+12 corpus definitions previously carried zero dependency
+    // signal. The `to:` value's line is the name-bearing line.
+    if (defType === "defdelegate" && name !== "Unknown") {
+      let toMod = ""
+      let asName = ""
+      let toLine = node.startPosition.row + 1
+      const dscan: Node[] = [node]
+      while (dscan.length > 0) {
+        const x = dscan.pop()!
+        if (x.type === "pair") {
+          const kw = this.findChild(x, (c) => c?.type === "keyword")
+          const kt = kw ? this.stripAfterColon(kw.text) : ""
+          if (kt === "to" && x.namedChildCount > 1) {
+            const v = x.namedChild(1)
+            if (v?.type === "alias") { toMod = v.text; toLine = v.startPosition.row + 1 }
+          } else if (kt === "as" && x.namedChildCount > 1) {
+            const v = x.namedChild(1)
+            if (v?.type === "atom") asName = v.text.startsWith(":") ? v.text.slice(1) : v.text
+          }
+          continue
+        }
+        if (x !== node && (x.type === "do_block" || x.type === "anonymous_function")) continue
+        for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) dscan.push(c) }
+      }
+      if (toMod) {
+        const resolved = this.resolveAlias(toMod, ctx)
+        const delScope = currentScope ? `${currentScope.name}.${name}` : name
+        this.pushRel(ctx, delScope, `${resolved}.${asName || name}`, ASTEngine.RelationshipType.Calls, 0.9, { elixirSpecific: true, isDelegate: true }, toLine)
+      }
+    }
+
     // Push a function scope for the body so calls/instantiations inside this
     // function attribute to the function (not the module). EX2-U2: the scope
     // NAME is module-qualified (`MyMod.run`) — bare function names collided
@@ -1107,14 +1224,21 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Dependency targets: exactly one module, except multi-alias
       // (`alias Foo.{Bar, Baz}`) which expands to one dependency per member
       // (ELXD20) — the bare prefix alone is not a module and emits nothing.
-      let depModules: string[] = [moduleName]
+      // Dependency targets: exactly one module, except multi-alias
+      // (`alias Foo.{Bar, Baz}`) which expands to one dependency per member
+      // (ELXD20) — the bare prefix alone is not a module and emits nothing.
+      // X12 (adversarial): each dep carries ITS OWN name-bearing line — the
+      // multi-line member list previously pinned every member to the prefix
+      // line. The ANALYZER-side line is per-node; the dedupe key still holds
+      // the resolved name.
+      let deps: { name: string; line: number }[] = [{ name: moduleName, line: argsNode.startPosition.row + 1 }]
       if (target === "alias") {
           // alias Foo.Bar          → aliases["Bar"] = "Foo.Bar"
           // alias Foo.Bar, as: Baz → aliases["Baz"] = "Foo.Bar"
           const multiDot = this.findChild(argsNode, (c) => c?.type === "dot" && !!this.findChild(c, (d) => d?.type === "tuple"))
           const tuple = multiDot ? this.findChild(multiDot, (c) => c?.type === "tuple") : undefined
           if (tuple) {
-            depModules = []
+            deps = []
             const rawPrefix = this.findChild(multiDot!, (c) => c?.type === "alias")?.text
               ?? this.findChild(multiDot!, (c) => c?.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
             const prefix = this.resolveAlias(resolveSelf(rawPrefix), ctx)
@@ -1123,7 +1247,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               const key = kid.text.split(".").pop()
               if (key && full) {
                 ctx.aliases[key] = full
-                depModules.push(full)
+                deps.push({ name: full, line: kid.startPosition.row + 1 })
               }
             }
           } else {
@@ -1222,10 +1346,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       // no-op as a dependency — never a self-loop edge (ELXD8). The alias
       // registration above still stands (call resolution needs it).
       if (target === "use" || target === "import" || target === "alias" || target === "require") {
-          for (const dep of depModules) {
-            if (!dep) continue
-            ctx.imports.push({ module: dep, source: dep, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
-            if (dep !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep, ASTEngine.RelationshipType.References, 0.9, {}, argsNode.startPosition.row + 1)
+          for (const dep of deps) {
+            if (!dep.name) continue
+            ctx.imports.push({ module: dep.name, source: dep.name, imported: ["*"], isTypeOnly: false, range: this.nodeToRange(node) })
+            if (dep.name !== currentScope?.name) this.pushRel(ctx, currentScope?.name || "Global", dep.name, ASTEngine.RelationshipType.References, 0.9, {}, dep.line)
           }
       }
   }
