@@ -57,7 +57,7 @@
     ]
   },
   "gap": {
-    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5 — no open gaps.",
+    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5. The original 'no open gaps' claim was falsified at EX-F5 certification (2026-09-19): the F5 corpus differential found the Registry.Supervisor implied-alias non-edge — EX-L5 registered the last-segment alias at module ENTRY, so `use Supervisor` inside Registry.Supervisor self-resolved and was dropped; the fix moves registration to module EXIT (fixture implied-alias-scope + mutant elixir/implied-alias-entry-time) and both corpora re-measure 100%/0/0. The gap list resumes empty WITH that falsification on record; the census classification (2026-09-18) predates EX2/EX3/EX-F5 — re-classification is registered, not silent.",
     "gaps": []
   },
   "design_decision": {
@@ -125,6 +125,13 @@
         "status": "RULED",
         "question": "Dynamically-named definitions (`def unquote(name)()`, `defmacro ^var`, `defguard(\"literal is bad\")` in error tests) cannot be named statically — placeholder or drop?",
         "resolution": "RULED: they keep a visible `Unknown` placeholder symbol (25 sites across both corpora, every one verified unquote/pin/degenerate-string headed — never a missed static name after ELXD23/ELXD24). No call site can name them, so they never match resolution; dropping them would lose the definition's existence."
+      },
+      {
+        "id": "EX-D10",
+        "node_type": "call (complexity counting)",
+        "status": "RULED",
+        "question": "EXL-5: the `case` construct (+1) AND each clause (+1) both count, one higher than kotlin/java/TS per-entry granularity (switch_case/when_entry only, +1 each). Align or declare?",
+        "resolution": "RULED (2026-09-19): keep and DECLARE. The lane counts the conditional construct itself for every conditional macro (`if`/`unless`/`case`/`cond`/`receive`/`with`) so construct-only forms (`cond`, `with` — no separate clause nodes) are not undercounted against their `if`-chain equivalents; `case` additionally counts its `stab_clause` branches. Net divergence: +1 per `case` construct vs the JVM/TS per-entry convention — recorded here, pinned by the `complexity-forms` module=3 fixture, and registered for the CC1 cross-language-consistency audit rather than changed unilaterally (defs-as-decision is likewise fixture-pinned)."
       }
     ]
   }

@@ -112,6 +112,24 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sc = scopeStack.pop()!
           // ELXD15: per-symbol complexity write-out (max across merged heads).
           if (sc.symbol) sc.symbol.complexity = Math.max(sc.symbol.complexity ?? 1, sc.complexity + 1)
+          // EX-L5 (CLJ1-session correction; F5 falsifier: the elixir lane's
+          // MISSING edge `Registry.Supervisor -> Supervisor`): the automatic
+          // last-segment alias (`defmodule A.B` means `B` names A.B) goes
+          // live in the ENCLOSING scope when the definition CLOSES — never
+          // inside the module's own body. Kernel.defmodule docs: the alias
+          // allows access "in the same lexical scope where it's defined (the
+          // Foo module)"; stdlib proof: `Task.Supervisor` and
+          // `Registry.Supervisor` bodies do `use Supervisor` and MUST
+          // resolve the external Supervisor (self-resolution would be
+          // circular; the stdlib compiles). Entry-time registration
+          // resolved the body's own references to the module itself, and the
+          // ELXD8 self-directive guard then silently dropped `use
+          // Supervisor` — the F5 differential caught it as the lane's only
+          // MISSING edge.
+          if ((sc.kind === ASTEngine.SymbolKind.Module || sc.kind === ASTEngine.SymbolKind.Interface) && sc.name) {
+            const implied = sc.name.split(".").pop()
+            if (implied && !ctx.aliases[implied]) ctx.aliases[implied] = sc.name
+          }
         }
         continue
       }
@@ -795,11 +813,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     ctx.symbols.push(symbol)
     ctx.symbolByName.set(fullName, symbol)
-    // EX-L5: defining `defmodule A.B` makes `B` an alias for `A.B` in the
-    // enclosing scope (Elixir module-definition semantics) — `%NoRouteError{}`
-    // inside `defmodule Phoenix.Router.NoRouteError` must not dangle.
-    const implied = fullName.split(".").pop()
-    if (implied && !ctx.aliases[implied]) ctx.aliases[implied] = fullName
+    // EX-L5 (corrected): the last-segment alias registers on scope EXIT (see
+    // the isExit branch) — inside the body, `B` still names the EXTERNAL B,
+    // so `use Supervisor` in Registry.Supervisor is the stdlib Supervisor.
     // A new scope is a documentation boundary (ELXD14) — a staged @doc
     // never leaks past it.
     ctx.pendingDoc = undefined
@@ -816,9 +832,8 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const protocolSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocol: true } }
     ctx.symbols.push(protocolSym)
     ctx.symbolByName.set(fullName, protocolSym)
-    // EX-L5: same module-definition alias semantics for protocols.
-    const implied = fullName.split(".").pop()
-    if (implied && !ctx.aliases[implied]) ctx.aliases[implied] = fullName
+    // EX-L5 (corrected): same exit-time registration for protocols — the
+    // alias belongs to the enclosing scope, not the defining body.
     ctx.pendingDoc = undefined
     scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Interface, complexity: 0, symbol: protocolSym })
     return true

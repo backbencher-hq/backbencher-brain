@@ -26,6 +26,7 @@ import { execSync, spawnSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
+import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew } from "../../src/ast/real-csharp-analyzer"
 
 function loadAvg1(): number {
@@ -265,6 +266,9 @@ const LANG_REPOS: Record<string, string> = {
   haskell: "cabal",
   elixir: "elixir",
   erlang: "rebar3",
+  // F5-cert wave (CLJ): the clojure/clojure checkout (pin 2cea6925) was
+  // already present as java's second corpus; it becomes clojure's primary.
+  clojure: "clojure",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -302,6 +306,10 @@ const SECOND_CORPUS: Record<string, string> = {
   // insufficient as a second opinion. Shallow clone at a pinned commit under
   // CORPUS_ROOT; pin recorded in corpusPins at lane time.
   erlang: "otp",
+  // F5-cert wave (CLJ): userland second corpus — clj-kondo (445 clj/cljc/
+  // cljs files, shallow clone @703a44cc) exercises dialect the core repo
+  // does not (transducer-heavy, cljs interop, tooling macros).
+  clojure: "clj-kondo",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -356,6 +364,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex,exs" },
   erlang: { wasm: "tree-sitter-erlang.wasm", analyzerFile: "real-erlang-analyzer", className: "RealErlangAnalyzer", ext: "erl" },
+  clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj,cljc,cljs" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -7168,6 +7177,14 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
         const kwt = find(cur, (c) => c.type === "keyword")?.text ?? ""
         if (kwt === "do" || kwt.startsWith("do:")) return false
       }
+      // EX2-U6 mirror (CLJ1 session): a default-value expression
+      // (`x \\ g()`) EXECUTES at call time — the head walk stops at the
+      // right-hand side of a `\\` operator so the call inside it is never
+      // swallowed as a declaration head (the analyzer's isDefHead escape).
+      if (cur.type === "binary_operator" && cur.childCount > 2 && cur.child(1)?.text === "\\\\") {
+        const rhs = cur.child(2)
+        if (rhs && n.startIndex >= rhs.startIndex) return false
+      }
       if (cur.type === "call" && DEFS.has(find(cur, (c) => c.type === "identifier")?.text ?? "")) return true
       cur = cur.parent
     }
@@ -7249,7 +7266,21 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     const work: { n: any; exit?: boolean }[] = [{ n: root }]
     while (work.length > 0) {
       const { n, exit } = work.pop()!
-      if (exit) { if (stack.length > 0 && stack[stack.length - 1].node === n) stack.pop(); continue }
+      if (exit) {
+        if (stack.length > 0 && stack[stack.length - 1].node === n) {
+          const sc: any = stack.pop()!
+          // EX-L5 mirror (CLJ1-session correction): the implied last-segment
+          // alias goes live in the ENCLOSING scope when the definition
+          // CLOSES — never inside the module's own body (`use Supervisor`
+          // in Task.Supervisor/Registry.Supervisor is the external one; the
+          // analyzer was corrected to the same timing).
+          if ((sc.kind === "module" || sc.kind === "interface") && sc.name) {
+            const implied = String(sc.name).split(".").pop()
+            if (implied && !aliases.has(implied)) aliases.set(implied, sc.name)
+          }
+        }
+        continue
+      }
       const t = n.type
       let pushed = false
       if (t === "call" && !isQuoted(n)) {
@@ -7467,7 +7498,16 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     const work: { n: any; exit?: boolean }[] = [{ n: root }]
     while (work.length > 0) {
       const { n, exit } = work.pop()!
-      if (exit) { if (stack.length > 0 && stack[stack.length - 1].node === n) stack.pop(); continue }
+      if (exit) {
+        if (stack.length > 0 && stack[stack.length - 1].node === n) {
+          const sc: any = stack.pop()!
+          // EX-L5 mirror: restore the implied alias hidden at module entry —
+          // pass 2 walks in source order, so the alias exists only in the
+          // ENCLOSING scope AFTER the definition (analyzer timing).
+          if (sc.hiddenImplied) aliases.set(sc.hiddenImplied, sc.name)
+        }
+        continue
+      }
       const t = n.type
       let pushed = false
       if (t === "call" && !isQuoted(n)) {
@@ -7477,7 +7517,17 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           const nm = args ? modName(args) : ""
           if (nm) {
             const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
-            stack.push({ node: n, name: full, kind: target === "defmodule" ? "module" : "interface" })
+            // EX-L5 mirror (CLJ1 session): pass 1 registered every implied
+            // alias at scope EXIT; pass 2 must HIDE this module's own alias
+            // while walking its body and restore it at close, or body-time
+            // references resolve to the module itself (the pre-fix analyzer
+            // bug; `use Supervisor` inside Registry.Supervisor).
+            const impliedKey = String(full).split(".").pop() ?? ""
+            const hideImplied = !!impliedKey && aliases.get(impliedKey) === full
+            if (hideImplied) aliases.delete(impliedKey)
+            const frame: any = { node: n, name: full, kind: target === "defmodule" ? "module" : "interface" }
+            if (hideImplied) frame.hiddenImplied = impliedKey
+            stack.push(frame)
             pushed = true
           }
         } else if (target === "defimpl" && !isHead(n) && !isAttr(n)) {
@@ -7526,6 +7576,24 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           }
         } else if (target && !DECL_KW.has(target) && !DIRECTIVES.has(target) && !DEFS.has(target)) {
           if (!skipCall(n, target)) emitCall(n, target, stack)
+        }
+      } else if (t === "unary_operator" && n.childCount > 0 && n.child(0)?.text === "&") {
+        // EX-L7 mirror (CLJ1 session): `&name/arity` captures a NAMED
+        // function — a real reference (previously the oracle derived no
+        // capture edges; 7 corpus sites surfaced as UNEXPLAINED on the
+        // elixir lane). `&(&1 + 1)` has a non-`/` operator inside and stays
+        // silent; skipCall mirrors the analyzer's full guard set.
+        const inner = n.child(1)
+        if (inner?.type === "binary_operator" && inner.childCount > 2 && inner.child(1)?.text === "/") {
+          const fnNode = inner.child(0)
+          let fnName = ""
+          if (fnNode?.type === "identifier") fnName = fnNode.text
+          else if (fnNode?.type === "call" && !find(fnNode, (c: any) => c.type === "arguments")) {
+            const tgt = find(fnNode, (c: any) => c.type === "identifier" || c.type === "dot")
+            if (tgt) fnName = tgt.text
+          }
+          const leaf = fnName.split(".").pop() ?? fnName
+          if (fnName && !skipCall(n, leaf)) emitCall(n, fnName, stack)
         }
       } else if (t === "map" && !isQuoted(n) && !isAttr(n) && !isHead(n)) {
         const st = find(n, (c) => c.type === "struct")
@@ -7699,6 +7767,305 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
 }
 
 
+
+// ---------------------------------------------------------------------------
+// M14 F5-cert wave (CLJ): dedicated clojure oracle — calls / references /
+// implements / instantiates, written from the pinned grammar's tree shapes
+// (@yogthos/tree-sitter-clojure 0.0.14) and the RULED CLJ1 contract
+// (script/m14/spec/clojure-completeness.json CLJ-D1..D7), not by importing
+// the analyzer's walk. The core-builtin exclusion set is a LANGUAGE FACT
+// shared by import (the php/ruby/python precedent above). Independent rules,
+// shared name list — list drift is a transcription hazard, rule drift is
+// what the differential exists to catch.
+export function deriveClojureEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    if (label !== "calls" && from === target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  const CORE = CLOJURE_CORE_BUILTINS
+  const kids = (n: any): any[] => {
+    const r: any[] = []
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c) r.push(c) }
+    return r
+  }
+  const symName = (nd: any): string => {
+    if (!nd) return ""
+    if (nd.type === "sym_lit") {
+      const nm = nd.childForFieldName ? nd.childForFieldName("name") : null
+      const ns = nd.childForFieldName ? nd.childForFieldName("namespace") : null
+      if (nm && ns) return `${ns.text}/${nm.text}`
+      if (nm) return nm.text
+      return nd.text ?? ""
+    }
+    return nd.text ?? ""
+  }
+  const execHead = (list: any): any => {
+    for (let i = 0; i < list.namedChildCount; i++) {
+      const c = list.namedChild(i)
+      if (c && c.type !== "comment" && c.type !== "dis_expr" && c.type !== "meta_lit") return c
+    }
+    return null
+  }
+  const formNameOf = (list: any): string => {
+    const first = execHead(list)
+    if (!first) return ""
+    if (first.type !== "sym_lit") return ""
+    return symName(first)
+  }
+  // Clause dispatch name (kwd-headed lists) — ns branch + libspec guard only;
+  // declaration dispatch is SYM-headed only (F5-cert: `(:ns (meta var))` data
+  // fired the analyzer's ns branch and reset its alias table mid-file).
+  const clauseNameOf = (list: any): string => {
+    const first = execHead(list)
+    if (first && first.type === "kwd_lit") return first.childForFieldName?.("name")?.text || ""
+    return ""
+  }
+  // CLJ-D6: forms whose direct list children are METHOD DEFINITIONS.
+  const IMPL_PARENTS = new Set(["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol"])
+  // CLJ-D7: the direct list children of a libspec site are DATA.
+  const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
+  let nsName = "user"
+  const aliases = new Map<string, string>()
+  // #881 mirror: the comment macro can be shadowed by a local definition —
+  // a bare `comment` sym outside head position anywhere in the file means
+  // `(comment …)` forms are ordinary calls and must be walked.
+  let mayShadowComment = false
+  {
+    const scan: any[] = [root]
+    while (scan.length > 0) {
+      const c = scan.pop()!
+      if (c.type === "dis_expr" || c.type === "quoting_lit") continue
+      if (c.type === "sym_lit" && symName(c) === "comment") {
+        const p = c.parent
+        if (p?.type !== "list_lit" || p.namedChild(0)?.startIndex !== c.startIndex) { mayShadowComment = true; break }
+      }
+      for (const k of kids(c)) scan.push(k)
+    }
+  }
+  const resolveQualified = (name: string): string => {
+    const slash = name.indexOf("/")
+    if (slash <= 0) return name
+    const a = name.slice(0, slash)
+    const rest = name.slice(slash + 1)
+    const r = aliases.get(a)
+    return r ? `${r}/${rest}` : name
+  }
+  const handleLib = (raw: any) => {
+    const spec = raw.type === "quoting_lit" ? (raw.namedChild(0) ?? raw) : raw
+    if (spec.type === "vec_lit") {
+      const libName = symName(spec.namedChild(0))
+      if (!libName) return
+      for (let k = 1; k < spec.namedChildCount; k++) {
+        const part = spec.namedChild(k)
+        if (!part) continue
+        if (part.type === "kwd_lit") {
+          const kw = part.childForFieldName?.("name")?.text || ""
+          if (kw === "as" && k + 1 < spec.namedChildCount) {
+            const a = symName(spec.namedChild(k + 1))
+            if (a) aliases.set(a, libName)
+          }
+        } else if (part.type === "vec_lit") {
+          // PREFIX-LIST spec mirror: `[prefix [sub :as a] …]` — alias a -> prefix.sub.
+          // A vec directly after a keyword is a name list (`:refer [foo bar]`) — skip.
+          const prev = spec.namedChild(k - 1)
+          if (prev && prev.type === "kwd_lit") continue
+          const sub = symName(part.namedChild(0))
+          if (!sub) continue
+          const full = `${libName}.${sub}`
+          for (let q = 1; q < part.namedChildCount; q++) {
+            const pp = part.namedChild(q)
+            if (pp && pp.type === "kwd_lit" && (pp.childForFieldName?.("name")?.text || "") === "as") {
+              const av = part.namedChild(q + 1)
+              const subAlias = av ? symName(av) : ""
+              if (subAlias) aliases.set(subAlias, full)
+            }
+          }
+          push("references", nsName, full)
+        }
+      }
+      push("references", nsName, libName)
+    } else if (spec.type === "list_lit") {
+      const pkg = symName(spec.namedChild(0))
+      if (pkg) push("references", nsName, pkg)
+    } else if (spec.type === "sym_lit") {
+      const libName = symName(spec)
+      if (libName) push("references", nsName, libName)
+    }
+  }
+  const frames: { name: string; isFn: boolean }[] = []
+  const currentName = (): string => (frames.length > 0 ? frames[frames.length - 1].name : nsName)
+  const isFnContext = (): boolean => frames.length > 0 && frames[frames.length - 1].isFn
+  const work: { n: any; exit?: boolean; qd: number }[] = [{ n: root, qd: 0 }]
+  while (work.length > 0) {
+    const { n, exit, qd } = work.pop()!
+    if (exit) { frames.pop(); continue }
+    if (!n) continue
+    if (n.type === "dis_expr") continue
+    if (n.type === "syn_quoting_lit" || n.type === "unquoting_lit" || n.type === "unquote_splicing_lit" || qd > 0) {
+      let childDepth = qd
+      if (n.type === "syn_quoting_lit") childDepth++
+      else if (n.type === "unquoting_lit" || n.type === "unquote_splicing_lit") childDepth--
+      const cs = kids(n)
+      for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd: childDepth })
+      continue
+    }
+    if (n.type === "quoting_lit") continue
+    if (n.type === "tagged_or_ctor_lit") {
+      // CLJ-D1: vec/map payload + final UPPERCASE segment => constructor
+      // (instantiates); anything else is reader data, never walked.
+      const tagNode = n.namedChild(0)
+      const payload = n.namedChild(1)
+      const tag = symName(tagNode)
+      if (tag && payload && (payload.type === "vec_lit" || payload.type === "map_lit")) {
+        const namePart = tag.includes("/") ? tag.slice(tag.indexOf("/") + 1) : tag
+        const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
+        const c0 = lastSeg.charCodeAt(0)
+        if (c0 >= 65 && c0 <= 90) push("instantiates", currentName(), resolveQualified(tag))
+      }
+      continue
+    }
+    if (n.type === "anon_fn_lit") {
+      frames.push({ name: `lambda_${n.startPosition.row}_${n.startPosition.column}`, isFn: true })
+      work.push({ n, exit: true, qd })
+      const cs = kids(n)
+      for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
+      continue
+    }
+    if (n.type === "list_lit") {
+      const form = formNameOf(n)
+      if (form === "quote" || form === "clojure.core/comment" || (form === "comment" && !mayShadowComment)) continue
+      if (n.parent?.type === "list_lit" && LIBSITE_FORMS.has(clauseNameOf(n.parent) || formNameOf(n.parent))) continue
+      if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent) !== n) {
+        // CLJ-D6: method definition, not a call (defprotocol sigs are
+        // symbols-only in the analyzer — nothing to derive for them).
+        const parentForm = formNameOf(n.parent)
+        const mName = symName(n.namedChild(0))
+        if (parentForm !== "defprotocol" && mName && !CORE[mName]) {
+          frames.push({ name: mName, isFn: true })
+          work.push({ n, exit: true, qd })
+        }
+        const cs = kids(n)
+        for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
+        continue
+      }
+      let pushedFrame = false
+      if (form === "ns") {
+        const nm = symName(n.namedChild(1))
+        if (nm) nsName = nm
+        for (let i = 1; i < n.namedChildCount; i++) {
+          const clause = n.namedChild(i)
+          if (!clause || clause.type !== "list_lit") continue
+          const ct = clauseNameOf(clause)
+          if (ct !== "require" && ct !== "use" && ct !== "import" && ct !== "refer-clojure") continue
+          for (let j = 1; j < clause.namedChildCount; j++) {
+            const libNode = clause.namedChild(j)
+            if (libNode) handleLib(libNode)
+          }
+        }
+      } else if ((form === "require" || form === "use" || form === "import" || form === "refer") && execHead(n)?.type === "sym_lit") {
+        // CLJ-D7: top-level directive forms after the ns (the kwd-headed ns
+        // clauses were consumed by the ns branch above).
+        for (let j = 1; j < n.namedChildCount; j++) {
+          const libNode = n.namedChild(j)
+          if (libNode) handleLib(libNode)
+        }
+      } else if (form === "defn" || form === "defn-" || form === "defmacro" || form === "s/defn" || form === "mu/defn") {
+        frames.push({ name: symName(n.namedChild(1)) || "unknown", isFn: true })
+        pushedFrame = true
+      } else if (form === "deftest") {
+        frames.push({ name: symName(n.namedChild(1)) || `test_${n.startPosition.row}`, isFn: true })
+        pushedFrame = true
+      } else if (form === "defmethod") {
+        frames.push({ name: symName(n.namedChild(1)) || "unknown", isFn: true })
+        pushedFrame = true
+      } else if (form === "fn") {
+        frames.push({ name: `lambda_${n.startPosition.row}_${n.startPosition.column}`, isFn: true })
+        pushedFrame = true
+      } else if (form === "defrecord" || form === "deftype") {
+        const rn = symName(n.namedChild(1))
+        for (let pi = 3; pi < n.namedChildCount; pi++) {
+          const protoNode = n.namedChild(pi)
+          if (protoNode && protoNode.type === "sym_lit" && rn) {
+            const p = resolveQualified(symName(protoNode))
+            if (p) push("implements", rn, p)
+          }
+        }
+      } else if (form === "reify" || form === "extend-type" || form === "extend-protocol" || form === "proxy") {
+        if (form === "reify") {
+          for (let i = 1; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "sym_lit") {
+              const p = resolveQualified(symName(c))
+              if (p) push("implements", currentName(), p)
+            }
+          }
+        } else if (form === "extend-protocol") {
+          const proto = resolveQualified(symName(n.namedChild(1)))
+          for (let i = 2; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "sym_lit" && proto) push("implements", symName(c), proto)
+          }
+        } else if (form === "extend-type") {
+          const typeName = symName(n.namedChild(1))
+          for (let i = 2; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "sym_lit") {
+              const p = resolveQualified(symName(c))
+              if (p && typeName) push("implements", typeName, p)
+            }
+          }
+        } else {
+          const ifaces = n.namedChild(1)
+          if (ifaces && ifaces.type === "vec_lit") {
+            for (let i = 0; i < ifaces.namedChildCount; i++) {
+              const c = ifaces.namedChild(i)
+              if (c && c.type === "sym_lit") {
+                const f = resolveQualified(symName(c))
+                if (f) push(i === 0 ? "extends" : "implements", currentName(), f)
+              }
+            }
+          }
+        }
+      } else if (form === "recur") {
+        if (isFnContext()) push("calls", currentName(), currentName())
+      } else if (form === "s/def" || form === "s/fdef" || form === "clojure.spec.alpha/def" || form === "clojure.spec.alpha/fdef") {
+        // spec declaration forms are symbols-only in the analyzer — consumed,
+        // no edges (a generic-call fallthrough would fabricate one).
+      } else if (form.startsWith("->") && form.length > 2) {
+        const cls = form.slice(2)
+        const c0 = cls.charCodeAt(0)
+        if (c0 >= 65 && c0 <= 90) push("instantiates", currentName(), cls)
+      } else if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) {
+        push("instantiates", currentName(), form.slice(0, -1))
+      } else if (form.startsWith(".")) {
+        // Java member/field access — the `uses` family; this oracle derives
+        // no uses truth for clojure (label not compared for the lane).
+      } else if (form && !CORE[form]) {
+        if (form.includes("/")) {
+          const [a, f] = form.split("/")
+          const resolvedNs = aliases.get(a) || a
+          push("calls", currentName(), `${resolvedNs}/${f}`)
+          push("references", nsName, resolvedNs)
+        } else {
+          push("calls", currentName(), form)
+        }
+      }
+      if (pushedFrame) work.push({ n, exit: true, qd })
+      const cs = kids(n)
+      for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
+      continue
+    }
+    const cs = kids(n)
+    for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
+  }
+  return edges
+}
 
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
@@ -9919,6 +10286,17 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "clojure") {
+        // F5-cert wave (CLJ): dedicated clojure
+        // calls/references/implements/instantiates oracle written from the
+        // pinned grammar's tree shapes and the RULED CLJ1 contract
+        // (script/m14/spec/clojure-completeness.json CLJ-D1..D7) — quote-as-
+        // data, builtin exclusion, libspec-child guard, method-impl
+        // definitions, top-level attribution, tagged/ctor literals.
+        for (const e of deriveClojureEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
         // opaque raw_text - re-parse them and derive the SAME structural
@@ -9991,6 +10369,10 @@ async function main() {
       const rels = (result.relationships ?? []).map((r: any) => ({
         label: String(r.type ?? r.relationshipType ?? ""),
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
+        // CLJ1/F5-certification wave: carry the SOURCE so diff samples can
+        // name the analyzer edge (previously dropped — an UNEXPLAINED sample
+        // printed a target with no caller, and triage had to re-derive).
+        from: String(r.source ?? r.from ?? r.fromSymbol ?? ""),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
       // c, rust and go compare CALL edges too (their independently derivable
@@ -10011,7 +10393,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" ? ["references"] : [])].includes(r.label))
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
@@ -10109,6 +10491,16 @@ async function main() {
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
     console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
+    // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
+    // were captured for exactly this purpose and then had no output path —
+    // triage of a MISSING/UNEXPLAINED diff required re-deriving the lane by
+    // hand. BB_F5_SHOW_SAMPLES=1 prints them for lane probes.
+    if (process.env.BB_F5_SHOW_SAMPLES && row.samples.length > 0) {
+      for (const s of row.samples.slice(0, 40)) {
+        console.log(`    ${s.dir} ${s.file} :: ${s.label} ${s.from ?? "?"} -> ${s.target}${s.line ? ` (line ${s.line})` : ""}`)
+      }
+      if (row.samples.length > 40) console.log(`    … +${row.samples.length - 40} more diff sample(s)`)
+    }
 
     // M37.21 #610 operational lesson (web-tree-sitter WASM heap aborts kill
     // the sweep mid-run — twice during the JVM wave): persist each completed
