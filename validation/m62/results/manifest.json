@@ -3,7 +3,7 @@
   "milestone": "M62",
   "githubMilestone": 62,
   "title": "Address Truth — nothing shows a position it does not know",
-  "status": "open",
+  "status": "closed",
   "authority": "docs/m62/M62-MASTER-PLAN.md (Issues / Issue groups)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "prerequisite": "M55 and M61 completion bars met — re-audited by G1 on every run through the persisted closure records",
@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "bd26ab41536f562b159fbd631bed3ad6274ac86f",
-        "recordSealedAt": "2026-09-19T23:47:30.880Z"
+        "recordCommit": "12a760421307f5bc91ebb971f4c8774f39e35d67",
+        "recordSealedAt": "2026-09-19T23:49:25.801Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "negativeCases": 6,
-        "recordCommit": "bd26ab41536f562b159fbd631bed3ad6274ac86f",
-        "recordSealedAt": "2026-09-19T23:47:33.124Z"
+        "recordCommit": "12a760421307f5bc91ebb971f4c8774f39e35d67",
+        "recordSealedAt": "2026-09-19T23:49:28.117Z"
       }
     },
     {
@@ -142,8 +142,8 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "bd26ab41536f562b159fbd631bed3ad6274ac86f",
-        "recordSealedAt": "2026-09-19T23:47:35.378Z"
+        "recordCommit": "12a760421307f5bc91ebb971f4c8774f39e35d67",
+        "recordSealedAt": "2026-09-19T23:49:30.408Z"
       }
     },
     {
@@ -170,11 +170,11 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m62/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 24,
-        "failed": 7,
-        "realFailed": 7,
-        "negativeCases": 8,
-        "recordCommit": "bd26ab41536f562b159fbd631bed3ad6274ac86f"
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10,
+        "recordCommit": "12a760421307f5bc91ebb971f4c8774f39e35d67"
       }
     }
   ]
