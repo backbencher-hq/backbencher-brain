@@ -280,7 +280,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ beea95d4)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ b3fe7faa)",
       "ok": true
     },
     {
@@ -305,12 +305,12 @@
       "ok": true
     }
   ],
-  "currentCommit": "beea95d474d013fc547753327c57efa4cf2abb83",
+  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-19T00:06:47.053Z",
+  "generatedAt": "2026-09-19T00:23:02.684Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:06:47.054Z",
-    "contentSha256": "230414b6f4b5b7fb489765e9cbcf3f17aa28d8890de8affd753632e30c4c43a4"
+    "sealedAt": "2026-09-19T00:23:02.684Z",
+    "contentSha256": "d1cc90aaaf275c52e510d18f7eb671d61fa622502afb4ff2760b33d26a3d4481"
   }
 }

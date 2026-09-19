@@ -8,11 +8,11 @@
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 8,
-  "currentCommit": "331a3ca00e5fcf4534fb245ba5e63ea0ea722916",
+  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-18T21:49:05.010Z",
+  "generatedAt": "2026-09-19T00:23:05.067Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -58,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T21:49:05.010Z",
-    "contentSha256": "6028463a168c88c61b80a9b089e7e36889152ec3f03742104799ccfc43af4519"
+    "sealedAt": "2026-09-19T00:23:05.068Z",
+    "contentSha256": "c664392f6d0767a26d2ab294df54126a66e1a051ed4bda8f8d14a587463cdc3c"
   }
 }

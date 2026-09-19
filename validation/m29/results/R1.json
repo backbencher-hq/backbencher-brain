@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 7,
   "mutantsTotal": 7,
-  "currentCommit": "beea95d474d013fc547753327c57efa4cf2abb83",
+  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
   "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
   "evidenceFile": "R1.json",
-  "generatedAt": "2026-09-19T00:04:09.418Z",
+  "generatedAt": "2026-09-19T00:20:32.625Z",
   "limitations": [
     "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
     "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
@@ -19,7 +19,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:04:09.419Z",
-    "contentSha256": "4805827e6b77a73d9950b95214431b8167a15c06923f94a4be398073a41d8c3c"
+    "sealedAt": "2026-09-19T00:20:32.625Z",
+    "contentSha256": "2c2bac64091bb07404998b506ab19c0247107dab029b4a51612c20d316a6a43c"
   }
 }
