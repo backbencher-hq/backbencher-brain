@@ -24,7 +24,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { createHash } from "node:crypto"
-import { buildLedger } from "./generate-precision-ledger.ts"
+import { buildLedger, normalizeEvidence } from "./generate-precision-ledger.ts"
 import { computeCap, type SpecLedger, type Step } from "./wave-protocol.ts"
 import { writeSealed } from "../lib/evidence.ts"
 
@@ -86,6 +86,23 @@ try {
 } catch {}
 check("G2: recorded inputsHash equals a fresh hash over the declared inputs", recorded?.inputsHash === fresh.inputsHash, `recorded=${recorded?.inputsHash} fresh=${fresh.inputsHash}`)
 check("G2: inputs list is non-trivial (>= 12 declared inputs)", Array.isArray(recorded?.inputs) && recorded.inputs.length >= 12, String(recorded?.inputs?.length))
+// The declared volatile-field exclusion, proved in BOTH directions over a real
+// evidence record: a re-run's metadata must not fake a stale hash, and a
+// semantic change must never be able to hide behind the exclusion.
+const sampleEvidence = JSON.parse(readFileSync(path.join(ROOT, "validation/m29/results/wave-editor-java.json"), "utf8")) as Record<string, unknown>
+const bumpedMetadata = { ...sampleEvidence, commit: "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", generatedAt: "2099-01-01T00:00:00.000Z", bbSeal: { sealed: false } }
+check(
+  "G2: a volatile-field change alone does not change the normalized evidence (an upstream re-run cannot report a false stale)",
+  JSON.stringify(normalizeEvidence(bumpedMetadata)) === JSON.stringify(normalizeEvidence(sampleEvidence)),
+  "commit/generatedAt/bbSeal excluded",
+)
+const semanticEdit = JSON.parse(JSON.stringify(sampleEvidence)) as { checks: Array<{ ok: boolean }> }
+if (semanticEdit.checks.length > 0) semanticEdit.checks[0].ok = !semanticEdit.checks[0].ok
+check(
+  "G2: a semantic-field change DOES change the normalized evidence (the exclusion cannot widen silently)",
+  JSON.stringify(normalizeEvidence(semanticEdit)) !== JSON.stringify(normalizeEvidence(sampleEvidence)),
+  "checks[0].ok flipped",
+)
 
 // ---------------------------------------------------------------------------
 // G3: claim honesty — every claim equals computeCap over recorded evidence
