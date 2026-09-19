@@ -91,6 +91,27 @@ handle_call(_Req, _From, State) ->
   end
 end
 `)
+  // clojure (CLJ1 seam): defn + leading comment doc channel + per-site calls
+  // + extend-protocol implements + def-initializer top-level call — every row
+  // the CLJ1 wave revived must survive emit → worker → store through the
+  // REAL CLI (same contract the EX2/EX3 seam holds for elixir).
+  fs.writeFileSync(path.join(TMP, "src", "seam.clj"), `(ns seam.core)
+
+;; Seam function docs.
+(defn pick [x] x)
+
+(defprotocol P (px [this]))
+
+(extend-protocol P
+  String
+  (px [_] "s"))
+
+(def state (make-state))
+
+(defn go []
+  (pick 1)
+  (pick 2))
+`)
 }
 
 async function main() {
@@ -176,6 +197,42 @@ async function main() {
            JOIN brain_file f ON f.id = s.file_id
            WHERE f.path LIKE '%.ex' AND r.relationship_type = 'calls' AND r.line_number = 0`)
   expect(exLineZero === 0, `no zero-based elixir lines (got ${exLineZero})`)
+
+  // CLJ1 seam: the revived clojure payloads — the doc channel, per-site call
+  // lines (the 0/8381-lined defect), the top-level def-initializer call and
+  // the extend-protocol implements edge — must survive the same store path.
+  const cljSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.clj'`)
+  expect(cljSymbols >= 4, `clojure symbols persisted (got ${cljSymbols}, want >=4: pick + P + px + state + go)`)
+  const cljDocs = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.clj' AND docstring IS NOT NULL`)
+  expect(cljDocs >= 1, `clojure docstrings persisted (got ${cljDocs}, want >=1: the leading comment block on pick)`)
+  const cljLinedCalls = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.clj' AND r.relationship_type = 'calls' AND r.line_number IS NOT NULL`)
+  expect(cljLinedCalls >= 3, `clojure calls carry call-site lines (got ${cljLinedCalls}, want >=3: make-state + two pick sites)`)
+  const cljSiteLines = count(`SELECT COUNT(DISTINCT r.line_number) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.clj' AND r.relationship_type = 'calls'`)
+  expect(cljSiteLines >= 3, `clojure per-site lines distinct (got ${cljSiteLines}, want >=3: the two pick sites are separate rows)`)
+  const cljNullLines = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.clj' AND r.relationship_type = 'calls' AND r.line_number IS NULL`)
+  expect(cljNullLines === 0, `no fabricated/missing clojure lines (got ${cljNullLines} NULL)`)
+  const cljLineZero = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.clj' AND r.relationship_type = 'calls' AND r.line_number = 0`)
+  expect(cljLineZero === 0, `no zero-based clojure lines (got ${cljLineZero})`)
+  // The extend-protocol edge's source (`String`) is a JAVA class — no local
+  // symbol id exists for it, and the store persists the row honestly with
+  // source_external + the line intact (verified by direct query: src=null,
+  // se="String", te="P", ln=9). The symbol JOIN above cannot see such rows,
+  // so this pin addresses the row by its external shape.
+  const cljImpl = count(`SELECT COUNT(*) c FROM brain_relationship WHERE relationship_type = 'implements' AND source_external = 'String' AND target_external = 'P' AND line_number = 9`)
+  expect(cljImpl >= 1, `clojure extend-protocol implements persisted with its line (got ${cljImpl}, want >=1: String → P at line 9, external source)`)
+
 
   // cross-language edge flagged with bridge
   const xlang = db.prepare(`

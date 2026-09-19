@@ -845,6 +845,134 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "live-argument")) }),
   },
   {
+    id: "clojure/drop-edge-lines",
+    language: "clojure",
+    defectClass: "payload-loss",
+    description: "M59 (#825) regression: every edge loses its line_number (the measured pre-fix state: 0/8381 corpus clojure edges lined) — callsite-lines-825's null-line forbid pins the unlined collapse that no expect entry can express absent",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => { const { line_number, ...rest } = x; return rest }) }),
+  },
+  {
+    id: "clojure/line-zero-based",
+    language: "clojure",
+    defectClass: "payload-corruption",
+    description: "M59 (#825): the line is emitted 0-based (every site off by one; line 1 becomes the stored 0 the M59 healing pass exists for) — per-site line pins catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x)) }),
+  },
+  {
+    id: "clojure/arity-dropped",
+    language: "clojure",
+    defectClass: "payload-loss",
+    description: "ER-D2 parity: call edges lose meta.callArity — `pick/0` and `pick/1` sites become indistinguishable in the payload (the multi-arity merge defect class)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => x.type === "calls" && x.metadata ? { ...x, metadata: Object.fromEntries(Object.entries(x.metadata).filter(([k]) => k !== "callArity")) } : x) }),
+  },
+  {
+    id: "clojure/site-collapsed",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "the per-site collapse: edges deduped without the line component, so one callee call site survives per (source,target) — callsite-lines-825 loses its line-9/10 rows",
+    transform: r => {
+      const seen = new Set<string>()
+      const rels = (r.relationships ?? []).filter((x: any) => {
+        const k = `${x.source}|${x.type}|${x.target}`
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "clojure/docstring-dropped",
+    language: "clojure",
+    defectClass: "payload-loss",
+    description: "C4 regression: strips comments AND docstring from all symbols (the doc channel is differential-invisible — only the fixture can catch it) — docstrings expectComments pins catch it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => { const { comments, docstring, ...rest } = s; return rest }) }),
+  },
+  {
+    id: "clojure/implements-alias-unresolved",
+    language: "clojure",
+    defectClass: "identity-corruption",
+    description: "C5 regression: aliased protocol targets revert to the raw alias (`p/Proto`) — implements-alias expect AND forbid both fail",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (typeof x.target === "string" && x.target.endsWith("/Proto") && x.target !== "p/Proto" ? { ...x, target: "p/Proto" } : x)) }),
+  },
+  {
+    id: "clojure/param-amp-kept",
+    language: "clojure",
+    defectClass: "payload-corruption",
+    description: "C11 regression: the rest marker leaks into parameters (`[& args]` → [\"&\",\"args\"]) — params forbidParameters names [&] catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => (s.name === "rest-args" ? { ...s, parameters: [{ name: "&", type: "Any" }, { name: "args", type: "Any" }] } : s)) }),
+  },
+  {
+    id: "clojure/param-body-leak",
+    language: "clojure",
+    defectClass: "payload-corruption",
+    description: "C10 regression: body vectors leak back into parameters (`(defn leaky [x] [y z])` → [x, y, z]) — params forbidParameters names [y, z] catches it",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map(s => (s.name === "leaky" ? { ...s, parameters: [{ name: "x", type: "Any" }, { name: "y", type: "Any" }, { name: "z", type: "Any" }] } : s)) }),
+  },
+  {
+    id: "clojure/reify-false-call",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "C9 regression: a reify/extend method impl fabricates a call edge (the measured `use-reify -[calls]-> px` class — here `build -[calls]-> ex`) — extend-reify's calls→ex forbid catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "build", target: "ex", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } }] }),
+  },
+  {
+    id: "clojure/reify-no-implements",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "C9 regression: protocol-extending forms emit no implements edges (reify/extend-protocol silently absent) — extend-reify expects catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "implements" && typeof x.target === "string" && x.target.endsWith("/Ext"))) }),
+  },
+  {
+    id: "clojure/tag-payload-call",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "C13 regression: a tagged-literal payload is walked as code (`#my/tag (call-x)` emits calls→call-x) — tagged-ctors forbid catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "clj.fixture.tags", target: "call-x", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } }] }),
+  },
+  {
+    id: "clojure/tag-lowercase-ctor",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "C12 regression: a lowercase tagged literal is misread as a constructor (`#my/tag [1 2]` → instantiates my/tag) — tagged-ctors forbid catches it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "clj.fixture.tags", target: "my/tag", confidence: 0.8, metadata: { clojureSpecific: true, isCtorLiteral: true } }] }),
+  },
+  {
+    id: "clojure/directive-ignored",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "C7 regression: the top-level require is ignored — its import/references vanish AND the aliased call target reverts to the raw `s/join` (the measured pre-fix state) — toplevel-forms expect+forbid catch both halves",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).filter((i: any) => !(i.module === "clojure.string" && i.line === 5)),
+      relationships: [
+        ...(r.relationships ?? []).filter((x: any) => !(typeof x.target === "string" && x.target === "clojure.string" && x.line_number === 5)),
+        ...(r.relationships ?? []).filter((x: any) => x.type === "calls" && x.target === "clojure.string/join").map((x: any) => ({ ...x, target: "s/join" })),
+      ],
+    }),
+  },
+  {
+    id: "clojure/toplevel-call-dropped",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "C8 regression: calls outside functions are dropped again (def/defonce initializers, deftest bodies) — toplevel-calls expects catch it",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.metadata ?? {}).isTopLevel) }),
+  },
+  {
+    id: "clojure/complexity-symbols-length",
+    language: "clojure",
+    defectClass: "payload-fabrication",
+    description: "C6 regression: the file complexity fallback reverts to the fabricated `symbols.length` (vars/protocols/modules counted as complexity) — callsite-lines-825's expectMetadata pin catches it (differential-invisible)",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: (r.symbols ?? []).length } }),
+  },
+  {
+    id: "clojure/libspec-children-walked",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "C14 regression: the C7/C8 libspec guard is dropped — `(java.util Date)` inside `(:import …)` is walked as a call and fabricates `ns -[calls]-> java.util` (found by the M12 differential as a false positive during CLJ1; import-list forbid catches it)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "clj.fixture.importlist", target: "java.util", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true, isTopLevel: true } }] }),
+  },
+  {
     id: "elixir/drop-atom-struct-fields",
     language: "elixir",
     defectClass: "symbol-loss",

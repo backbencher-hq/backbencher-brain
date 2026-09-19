@@ -1,0 +1,131 @@
+{
+  "grammar": "tree-sitter-elixir.wasm",
+  "language": "elixir",
+  "handled_verified": {
+    "_description": "Analyzer-referenced node types; behavior probe-verified 2026-09-18 against the pinned wasm via real-elixir-analyzer.ts. Every type below was observed in a hasError=false live parse and its emission path confirmed (symbols/relationships/complexity) through the analyzer. quoted_keyword closed fixture-first the same day (ELXD5: defstruct [\"a\": 1] now emits the field; fixture quoted-struct-fields + mutant elixir/drop-quoted-struct-fields).",
+    "types": [
+      "after_block",
+      "alias",
+      "anonymous_function",
+      "arguments",
+      "atom",
+      "binary_operator",
+      "call",
+      "catch_block",
+      "do_block",
+      "dot",
+      "else_block",
+      "identifier",
+      "keyword",
+      "keywords",
+      "list",
+      "map",
+      "pair",
+      "quoted_keyword",
+      "rescue_block",
+      "stab_clause",
+      "struct",
+      "unary_operator"
+    ]
+  },
+  "internal_silent": {
+    "_description": "Grammar-internal containers, literals, comments, and structural wrappers that correctly emit nothing (no relationship semantics in the analyzer's contract). Each verified with a hasError=false live parse 2026-09-18 showing the wrapper contributes no symbol, edge, or complexity delta (e.g. parenblock vs plainarith identical; strlit/strinterp/stresc/sigilplain/sigilmod/charlit/charlistlit/bitstring/tuplelit/boollit/nillit/quotedatom/commentonly/floata/access probes).",
+    "types": [
+      "access_call",
+      "bitstring",
+      "block",
+      "body",
+      "boolean",
+      "char",
+      "charlist",
+      "comment",
+      "escape_sequence",
+      "float",
+      "integer",
+      "interpolation",
+      "map_content",
+      "nil",
+      "operator_identifier",
+      "quoted_atom",
+      "quoted_content",
+      "sigil",
+      "sigil_modifiers",
+      "sigil_name",
+      "source",
+      "string",
+      "tuple"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5 — no open gaps.",
+    "gaps": []
+  },
+  "design_decision": {
+    "description": "Elixir analyzer contract (ELXD waves, probe-verified 2026-09-18): quote-as-data, Kernel-builtin exclusion, member-access exclusion, def-head/attribute exclusion, struct-literal gating, pipe/unqualified-call resolution.",
+    "decisions": [
+      {
+        "id": "EX-D1",
+        "node_type": "call",
+        "status": "RULED",
+        "question": "Code inside `quote do ... end` is macro AST data, not executable module code.",
+        "resolution": "RULED: everything under a quote-headed call is skipped — no symbols, no call edges, no directives (isInQuotedCode, real-elixir-analyzer.ts:367; quotedblock probe emits nothing inside quote)."
+      },
+      {
+        "id": "EX-D2",
+        "node_type": "call,identifier",
+        "status": "RULED",
+        "question": "Kernel builtins (length, hd, is_atom, inspect, self, spawn, send, struct, ...) are available in every module — do they produce calls edges?",
+        "resolution": "RULED: following the FP-family precedent (Clojure core builtins), KERNEL_FUNCTIONS are excluded from calls edges — they add pure noise to the call graph (real-elixir-analyzer.ts:66). spawn/send still mark Actor Model patterns."
+      },
+      {
+        "id": "EX-D3",
+        "node_type": "call,dot",
+        "status": "RULED",
+        "question": "Member/property access `order.side` parses as a call with a dot target and no arguments — invocation or field read?",
+        "resolution": "RULED: argument-less dot-target calls are field reads and emit no edge; module calls like Map.put(...) carry arguments and are real invocations (isMemberAccess, verified memberaccess vs dotcall probes 2026-09-18)."
+      },
+      {
+        "id": "EX-D4",
+        "node_type": "call,unary_operator",
+        "status": "RULED",
+        "question": "Declaration-head calls (def signatures, defstruct macro heads, @attribute inner calls) look like invocations.",
+        "resolution": "RULED: signature calls nested in def arguments, calls inside @attributes, and defmacro defstruct heads never emit — they are declarations, not call sites (isDefHead/isInAttribute; ELXD4 kernel.ex:5624 phantom fix; attrtype/attrbeh probes emit Type/implements, never calls)."
+      },
+      {
+        "id": "EX-D5",
+        "node_type": "map,struct",
+        "status": "RULED",
+        "question": "Which %{} literals are struct instantiations?",
+        "resolution": "RULED: only alias-backed struct literals (%StructName{...}, not %{} or %__MODULE__{}) in executable position (never a def signature, attribute, or quoted block) emit instantiates (structlit probe emits instantiates f->Foo; isInDefHeadOrAttribute)."
+      },
+      {
+        "id": "EX-D6",
+        "node_type": "binary_operator,identifier",
+        "status": "RULED",
+        "question": "Pipe chains and unqualified local calls: what resolves to an edge?",
+        "resolution": "RULED: `|>` RHS emits a calls edge with isPipe metadata (pipe probe); unqualified calls inside a module resolve post-walk against the enclosing module's declared set so forward references work, and names matching nothing declared resolve through :only-constrained imports (last import wins — ELXD17) or are dropped, never fabricated (bare/:except imports cannot confirm a target); Kernel auto-imports (full surface per ELXD16) never emit; at top level (script files, no enclosing module) unqualified calls are KEPT — there is no scope to resolve against, so dropping would lose real edges (test/describe/setup DSL included). Erlang `:mod.fun()` calls emit with source-faithful atom-root targets. (declaredByScope filter + resolveImport, real-elixir-analyzer.ts:270)."
+      },
+      {
+        "id": "EX-D7",
+        "node_type": "call,arguments",
+        "status": "RULED",
+        "question": "Elixir dispatches on name+arity (foo/1 and foo/2 are different functions) — do call edges carry arity?",
+        "resolution": "RULED arity-blind, family-wide standard: calls resolve and emit by name only (heads/arity stay on the symbol metadata). Arity-qualifying every edge would rebuild the family's call model for one language; the loss is disambiguation between same-name arities, never missing edges."
+      },
+      {
+        "id": "EX-D8",
+        "node_type": "call",
+        "status": "RULED",
+        "question": "`use` macros inject definitions (`__using__`/`__before_compile__` — e.g. GenServer's child_spec/1) that never appear as syntax — are injected functions modeled?",
+        "resolution": "RULED macro-expansion boundary (C-D2 class): only syntactically present declarations become symbols; injected definitions are invisible, so qualified calls to them stay dropped as undeclared. Modeling them would require expanding every macro — statically unbounded. `use` still emits its references edge and OTP behavior marking."
+      },
+      {
+        "id": "EX-D9",
+        "node_type": "call,identifier",
+        "status": "RULED",
+        "question": "Dynamically-named definitions (`def unquote(name)()`, `defmacro ^var`, `defguard(\"literal is bad\")` in error tests) cannot be named statically — placeholder or drop?",
+        "resolution": "RULED: they keep a visible `Unknown` placeholder symbol (25 sites across both corpora, every one verified unquote/pin/degenerate-string headed — never a missed static name after ELXD23/ELXD24). No call site can name them, so they never match resolution; dropping them would lose the definition's existence."
+      }
+    ]
+  }
+}
