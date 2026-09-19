@@ -56,11 +56,17 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       return node.text
     }
 
-    // Read the form-name of a list_lit: the first value child. For
-    // `(:require ...)` / `(:import ...)` clauses the first child is a kwd_lit
+    // Read the form-name of a list_lit: the first EXECUTABLE value child.
+    // The head of a list is decided after discard/trivia, not before it:
+    // `(#_ignored quote (trivia-ghost))` is a `quote` form, so its body is data
+    // and must never be read as a call (#881). The same holds for a leading
+    // `(comment ...)`-style trivia node and a `meta_lit`, which occupy no
+    // execution position — `executionHead` is the single definition of that
+    // rule and is used here rather than a second copy of it.
+    // For `(:require ...)` / `(:import ...)` clauses the head is a kwd_lit
     // (e.g. ":require"); we return its keyword name so clause dispatch works.
     const formNameOf = (listNode: Node): string => {
-      const first = listNode.namedChild(0)
+      const first = executionHead(listNode)
       if (!first) return ""
       if (first.type === "kwd_lit") {
         return first.childForFieldName("name")?.text || ""
@@ -117,11 +123,37 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       pushRel({ source: owner, target, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
     }
 
+    const executionHead = (list: Node): Node | null => {
+      for (let i = 0; i < list.namedChildCount; i++) {
+        const child = list.namedChild(i)
+        if (child && child.type !== "comment" && child.type !== "dis_expr" && child.type !== "meta_lit") return child
+      }
+      return null
+    }
+
+    let mayShadowComment = false
+    const bindingStack: Node[] = [rootNode]
+    while (bindingStack.length > 0) {
+      const candidate = bindingStack.pop()!
+      if (candidate.type === "dis_expr" || candidate.type === "quoting_lit") continue
+      if (candidate.type === "sym_lit" && symName(candidate) === "comment") {
+        const parent = candidate.parent
+        if (parent?.type !== "list_lit" || parent.namedChild(0)?.startIndex !== candidate.startIndex) {
+          mayShadowComment = true
+          break
+        }
+      }
+      for (let i = 0; i < candidate.namedChildCount; i++) {
+        const child = candidate.namedChild(i)
+        if (child) bindingStack.push(child)
+      }
+    }
+
     // ── Walk ──────────────────────────────────────────────────────────────
-    const walkStack: Array<{ node: Node; isExit: boolean; previousActiveFunction: any }> = [{ node: rootNode, isExit: false, previousActiveFunction: activeFunction }]
+    const walkStack: Array<{ node: Node; isExit: boolean; previousActiveFunction: any; quoteDepth: number }> = [{ node: rootNode, isExit: false, previousActiveFunction: activeFunction, quoteDepth: 0 }]
 
     while (walkStack.length > 0) {
-      const { node, isExit, previousActiveFunction: savedActiveFunction } = walkStack.pop()!
+      const { node, isExit, previousActiveFunction: savedActiveFunction, quoteDepth } = walkStack.pop()!
       if (!node) continue
 
       if (isExit) {
@@ -129,8 +161,25 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
 
+      if (node.type === "dis_expr") continue
+      if (node.type === "syn_quoting_lit" || quoteDepth > 0) {
+        let childDepth = quoteDepth
+        if (node.type === "syn_quoting_lit") childDepth++
+        else if (node.type === "unquoting_lit" || node.type === "unquote_splicing_lit") childDepth--
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) walkStack.push({ node: child, isExit: false, previousActiveFunction: null, quoteDepth: childDepth })
+        }
+        continue
+      }
+      if (node.type === "quoting_lit") continue
+      if (node.type === "list_lit") {
+        const form = formNameOf(node)
+        if (form === "quote" || form === "clojure.core/comment" || (form === "comment" && !mayShadowComment)) continue
+      }
+
       const previousActiveFunction = activeFunction
-      walkStack.push({ node, isExit: true, previousActiveFunction })
+      walkStack.push({ node, isExit: true, previousActiveFunction, quoteDepth })
 
       // ── anonymous fn shorthand: #(...) ──────────────────────────────────
       if (node.type === "anon_fn_lit") {
@@ -441,7 +490,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) walkStack.push({ node: child, isExit: false, previousActiveFunction: null as any })
+        if (child) walkStack.push({ node: child, isExit: false, previousActiveFunction: null as any, quoteDepth })
       }
     }
 
