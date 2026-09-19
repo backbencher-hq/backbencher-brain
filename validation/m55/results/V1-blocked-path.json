@@ -8,7 +8,7 @@
   },
   "editor": {
     "binary": "/usr/bin/code",
-    "version": "1.137.0",
+    "version": "1.138.0",
     "pinnedDeclared": "1.85.0 (.vscode-test)",
     "pinHonored": false
   },
@@ -25,11 +25,11 @@
     "indexedProjectDir": null
   },
   "flows": [],
-  "generatedAt": "2026-09-17T00:51:38.111Z",
+  "generatedAt": "2026-09-19T00:07:25.617Z",
   "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T00:51:38.289Z",
-    "contentSha256": "4c72ab3dfc1e62c0ac3cd00a2775e4a89f6b52f1671225535c47abdf7b9981e8"
+    "sealedAt": "2026-09-19T00:07:25.716Z",
+    "contentSha256": "0977e4829e402011b14eb0f93300a7bab52b00ff27ec10a61425027fb491aa8c"
   }
 }
