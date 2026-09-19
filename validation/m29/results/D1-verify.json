@@ -11,10 +11,10 @@
     "mutantsTotal": 3,
     "ok": true
   },
-  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
+  "currentCommit": "26f21ffc0532b7a70c44680ee4658daf2c3fd289",
   "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
   "evidenceFile": "D1-verify.json",
-  "generatedAt": "2026-09-19T00:20:33.245Z",
+  "generatedAt": "2026-09-19T00:28:34.120Z",
   "limitations": [
     "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
     "Vocabulary lint is pattern-based; novel overclaim phrasings are caught by review and the owner spot-check, not by this lint.",
@@ -23,7 +23,7 @@
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:20:33.246Z",
-    "contentSha256": "8c28fc9720402eec113da125719ce60d9878065d313b2c0d4d0e5b04be2d5c07"
+    "sealedAt": "2026-09-19T00:28:34.121Z",
+    "contentSha256": "d61b6465b933762ca620d525b5859dffd2ee46f580ffd289d9263e45d59043dd"
   }
 }
