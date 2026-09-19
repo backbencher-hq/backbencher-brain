@@ -197,6 +197,17 @@ async function main() {
     }
   }
 
+  // #886-class guard (EX wave, 2026-09-19): a FILTERED run (`--lang` /
+  // `--files`) covers a subset of the gated languages and must NEVER
+  // overwrite the canonical M14.0.F8.json — doing so silently shrinks the
+  // milestone's claim to whichever languages happened to be selected. That
+  // exact defect had already left the canonical artifact holding a single
+  // erlang check; this guard is the census runner's counterpart of the F4
+  // runner's "filtered runs write nothing" fix.
+  const isFilteredRun = !!langArg || process.argv.includes("--files")
+  if (isFilteredRun) {
+    console.log(`\nSCOPED run (${langArg ?? `${CENSUS_FILES}-file sample`}) — results printed above, NO evidence written; run without --lang/--files to emit the canonical M14.0.F8.json`)
+  } else {
   const { emitEvidence } = await import("./evidence-harness")
   const checks = results.map((r) => ({
     id: `corpus-census-${r.language}`,
@@ -217,6 +228,7 @@ async function main() {
       },
     ],
   })
+  }
 
   const failed = results.filter((r) => !r.pass)
   if (failed.length > 0) {
