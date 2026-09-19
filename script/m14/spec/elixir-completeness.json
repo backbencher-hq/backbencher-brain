@@ -57,7 +57,7 @@
     ]
   },
   "gap": {
-    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5. The original 'no open gaps' claim was falsified at EX-F5 certification (2026-09-19): the F5 corpus differential found the Registry.Supervisor implied-alias non-edge — EX-L5 registered the last-segment alias at module ENTRY, so `use Supervisor` inside Registry.Supervisor self-resolved and was dropped; the fix moves registration to module EXIT (fixture implied-alias-scope + mutant elixir/implied-alias-entry-time) and both corpora re-measure 100%/0/0. The gap list resumes empty WITH that falsification on record; the census classification (2026-09-18) predates EX2/EX3/EX-F5 — re-classification is registered, not silent.",
+    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5. The original 'no open gaps' claim was falsified at EX-F5 certification (2026-09-19): the F5 corpus differential found the Registry.Supervisor implied-alias non-edge — EX-L5 registered the last-segment alias at module ENTRY, so `use Supervisor` inside Registry.Supervisor self-resolved and was dropped; the fix moves registration to module EXIT (fixture implied-alias-scope + mutant elixir/implied-alias-entry-time) and both corpora re-measure 100%/0/0. The claim was falsified AGAIN by the independent adversarial review (EX-ADV, 2026-09-19): 13 defect classes, every one on the gate's blind side (mirrored rules, last-segment masking, gate-invisible labels) — fixed and pinned; full record in reviews/elixir/adversarial-2026-09-19.md. The gap list resumes empty WITH both falsifications on record; the census classification (2026-09-18) predates EX2/EX3/EX-F5/EX-ADV — re-classification is registered, not silent.",
     "gaps": []
   },
   "design_decision": {
@@ -68,14 +68,14 @@
         "node_type": "call",
         "status": "RULED",
         "question": "Code inside `quote do ... end` is macro AST data, not executable module code.",
-        "resolution": "RULED: everything under a quote-headed call is skipped — no symbols, no call edges, no directives (isInQuotedCode, real-elixir-analyzer.ts:367; quotedblock probe emits nothing inside quote)."
+        "resolution": "RULED: everything under a quote-headed call is skipped — no symbols, no call edges, no directives (isInQuotedCode; quotedblock probe emits nothing inside quote). AMENDED (adversarial X1, 2026-09-19): the `@`-attribute branch had run UNGUARDED inside quote blocks — `@behaviour`/`@type` in quoted code emitted implements edges (including garbage `unquote(behaviour)` targets) and Type symbols; live instances existed in elixir's own Application.__using__ and Protocol.__impl__/__derive__. The guard now covers it. AMENDED AGAIN (X7): `unquote`/`unquote_splicing` ARGUMENTS execute at expansion time — the nearest unquote boundary wins over the enclosing quote and their calls walk (26+7 corpus sites)."
       },
       {
         "id": "EX-D2",
         "node_type": "call,identifier",
         "status": "RULED",
         "question": "Kernel builtins (length, hd, is_atom, inspect, self, spawn, send, struct, ...) are available in every module — do they produce calls edges?",
-        "resolution": "RULED: following the FP-family precedent (Clojure core builtins), KERNEL_FUNCTIONS are excluded from calls edges — they add pure noise to the call graph (real-elixir-analyzer.ts:66). spawn/send still mark Actor Model patterns."
+        "resolution": "RULED: following the FP-family precedent (Clojure core builtins), KERNEL_FUNCTIONS are excluded from calls edges — they add pure noise to the call graph (real-elixir-analyzer.ts:66). spawn/send still mark Actor Model patterns. AMENDED (adversarial X9): the exclusion extends to `Kernel.`-QUALIFIED spellings — 49 corpus sites emitted `Kernel.length`/`Kernel.raise` while bare ones were silent. AMENDED (capture companion): only UNQUALIFIED captures consult the Kernel set — `&String.length/1` is a remote reference whose leaf merely collides; the leaf-keyed check silently dropped String.length/IO.inspect/List.to_string captures once the generic re-emission of the capture head was suppressed."
       },
       {
         "id": "EX-D3",
@@ -96,7 +96,7 @@
         "node_type": "map,struct",
         "status": "RULED",
         "question": "Which %{} literals are struct instantiations?",
-        "resolution": "RULED: only alias-backed struct literals (%StructName{...}, not %{} or %__MODULE__{}) in executable position (never a def signature, attribute, or quoted block) emit instantiates (structlit probe emits instantiates f->Foo; isInDefHeadOrAttribute)."
+        "resolution": "RULED: only alias-backed struct literals (%StructName{...}, not %{} or %__MODULE__{}) in executable position (never a def signature, attribute, or quoted block) emit instantiates (structlit probe emits instantiates f->Foo; isInDefHeadOrAttribute). AMENDED (adversarial X2): PATTERN positions are never constructions either — case/fn/receive clause patterns (stab_clause before the anonymous `->` token) and the left of `=`/`<-` are destructures; 43+16 live corpus sites fabricated an instantiates each."
       },
       {
         "id": "EX-D6",
@@ -132,6 +132,41 @@
         "status": "RULED",
         "question": "EXL-5: the `case` construct (+1) AND each clause (+1) both count, one higher than kotlin/java/TS per-entry granularity (switch_case/when_entry only, +1 each). Align or declare?",
         "resolution": "RULED (2026-09-19): keep and DECLARE. The lane counts the conditional construct itself for every conditional macro (`if`/`unless`/`case`/`cond`/`receive`/`with`) so construct-only forms (`cond`, `with` — no separate clause nodes) are not undercounted against their `if`-chain equivalents; `case` additionally counts its `stab_clause` branches. Net divergence: +1 per `case` construct vs the JVM/TS per-entry convention — recorded here, pinned by the `complexity-forms` module=3 fixture, and registered for the CC1 cross-language-consistency audit rather than changed unilaterally (defs-as-decision is likewise fixture-pinned)."
+      },
+      {
+        "id": "EX-D11",
+        "node_type": "call (unquote/unquote_splicing)",
+        "status": "RULED",
+        "question": "X7: `unquote`/`unquote_splicing` arguments are they data (inside the quote skip) or code?",
+        "resolution": "RULED (adversarial X7): CODE — they execute during macro expansion. The nearest unquote boundary wins over the enclosing quote; the rest of the quote block stays data. Unquoted calls then obey the normal call rules (including the declared ELXD17 resolution policy for unqualified names). Fixture unquote-code + mutant elixir/unquote-dropped."
+      },
+      {
+        "id": "EX-D12",
+        "node_type": "binary_operator (|>)",
+        "status": "RULED",
+        "question": "X6: what arity do pipe steps carry?",
+        "resolution": "RULED (adversarial X6): THREAD-ADJUSTED — the piped value is an argument: written args + 1 (`x |> f(1)` is f/2); a bare `x |> g` carries arity 1; the step's own walk never re-emits the written arity. Fixture pipe-arity + mutant elixir/pipe-arity-raw."
+      },
+      {
+        "id": "EX-D13",
+        "node_type": "call (defdelegate)",
+        "status": "RULED",
+        "question": "X8: does defdelegate emit a link to its delegated target?",
+        "resolution": "RULED (adversarial X8): YES — a calls edge from the delegate to `<to:>.<name>` (to: alias-resolved; `as:` renames the segment), line = the to: value; 71+12 corpus definitions carried zero dependency signal. Fixture defdelegate + mutant elixir/defdelegate-dropped."
+      },
+      {
+        "id": "EX-D14",
+        "node_type": "call (dot chains)",
+        "status": "RULED",
+        "question": "X4/X5: chained-receiver targets and `__MODULE__.fun` — what identity do they carry?",
+        "resolution": "RULED (adversarial X4/X5): a call whose receiver is a call result (`Mix.shell().error`) targets the METHOD LEAF (`error`) and skips declared-set resolution — never call syntax in an identity (148+91 corpus edges). `__MODULE__.fun` resolves to the nearest module scope (ELXD21 parity; 5+8 sites), dropped when no module encloses. Fixtures chained-calls/module-self-call + mutants elixir/chained-target-kept, elixir/module-literal-target."
+      },
+      {
+        "id": "EX-D15",
+        "node_type": "relationships (identity + lines)",
+        "status": "RULED",
+        "question": "X13/X12: do arity-distinct same-line sites both survive, and which line do multi-line alias members carry?",
+        "resolution": "RULED (adversarial): callArity joins the dedupe identity key — `{f(1), f(2, 3)}` keeps both edges (EX-L2's name+arity contract, completed); and each member of a multi-line alias list carries its OWN name-bearing line. Fixtures same-line-arity/alias-members-lines + mutants elixir/same-line-arity-collapse, elixir/alias-member-line."
       }
     ]
   }
