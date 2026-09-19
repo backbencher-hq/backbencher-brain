@@ -2,16 +2,16 @@
   "issue": "M29.R1",
   "code": "R1",
   "milestone": "M29",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 36,
-  "passed": 35,
-  "failed": 1,
+  "passed": 36,
+  "failed": 0,
   "mutantsCaught": 7,
   "mutantsTotal": 7,
-  "currentCommit": "609c26e3eaf372881ca6580fb3c769490bb7fea3",
+  "currentCommit": "8900585331905a615e69b913cf73aa425ce32239",
   "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
   "evidenceFile": "R1.json",
-  "generatedAt": "2026-09-19T01:15:20.764Z",
+  "generatedAt": "2026-09-19T01:17:57.057Z",
   "limitations": [
     "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
     "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
@@ -19,7 +19,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:15:20.765Z",
-    "contentSha256": "6be823ac1b2fe215636b79354ea74fb45f2030ae75c1ee88a8f99f322d5f8b1a"
+    "sealedAt": "2026-09-19T01:17:57.058Z",
+    "contentSha256": "ea73c0e33eec950745b1ef44f141bb011deffc531e93123040de6f6c743a3ba6"
   }
 }
