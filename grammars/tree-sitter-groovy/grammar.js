@@ -430,7 +430,17 @@ module.exports = grammar(Java, {
     if_statement: $ => prec.right(seq(
       'if',
       field('condition', $.parenthesized_expression),
-      field('consequence', choice($.statement, $.expression)),
+      // #841 round 16: the bare-expression consequence is Groovy's one-liner
+      // form (`if (x) y` before `}`/EOF), but it competes with the full
+      // statement reading wherever a delimiter exists. Measured: once the
+      // primitive-name family cleared the file's only ERROR, the tie flipped
+      // and `if (attrs.id == null) attrs.remove('id')` split MID-LINE into
+      // `attrs.remove` + `('id')` (GrailsParameterMapTests/FormTagLib span
+      // proof, round-16 record §7t) — both readings error-free, so the choice
+      // was decided by precedence, not by grammar. The ruling: the statement
+      // reading wins ties; the bare form remains reachable exactly where no
+      // delimiter can close a statement.
+      field('consequence', choice($.statement, prec.dynamic(-1, $.expression))),
       optional(seq('else', field('alternative', $.statement))),
     )),
 
@@ -687,7 +697,12 @@ module.exports = grammar(Java, {
       // first-class closure values in Groovy (method pointers). Lexically the
       // '.&' token is longest-match over '.' + '&', so `a & b.c` is untouched.
       choice('.', '?.', '*.', '.@', '.&'),
-      field('field', choice($.identifier, $._reserved_identifier, $.this, $.string_literal, $.character_literal)),
+      // #841 round 16: primitive type names are legal member names in Groovy —
+      // `params.int('max')`, `attrs.boolean('omitNext')`, `foo.long` — but the
+      // Java base lexes the words as fixed tokens. Admitted in the member
+      // position only (the call-name position below), where a type cannot
+      // stand.
+      field('field', choice($.identifier, $._reserved_identifier, $.this, $.string_literal, $.character_literal, $.integral_type, $.floating_point_type, $.boolean_type)),
     ),
 
     function_definition: $ => seq(
@@ -724,7 +739,11 @@ module.exports = grammar(Java, {
             '.',
           )),
           field('type_arguments', optional($.type_arguments)),
-          field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.character_literal, $.template_expression, $.slashy_string)),
+          // #841 round 16: the dotted call-name position accepts the primitive
+          // type names (`params.int('max')`, `attrs.boolean('omitNext')` — the
+          // largest single residual family, ~20 corpus files). Bare `int('x')`
+          // stays an error, matching real Groovy 3.0.24.
+          field('name', choice($.identifier, $._reserved_identifier, $.string_literal, $.character_literal, $.template_expression, $.slashy_string, $.integral_type, $.floating_point_type, $.boolean_type)),
         ),
       ),
       choice(
@@ -930,12 +949,25 @@ module.exports = grammar(Java, {
         optional(DELIMITER),
         repeat($.leading_dot_call),
       ),
-      seq(
+      // #841 round 16: the TYPELESS (modifier-only) field reading is the
+      // corrupt half of the field+constructor split — `@Override\n    def
+      // index(Integer max) { … }` parsed as a field named `def` (the lexeme
+      // lexes as an identifier wherever the `def` keyword token is not valid)
+      // followed by a `constructor_declaration` once the primitive-name family
+      // cleared the method body's ERROR and made both readings error-free
+      // (span proof in the round-16 record). `def` is never a legal variable
+      // name in Groovy, and a one-line class still needs the bare end (the
+      // DELIMITER tax was measured and reverted — it regressed 9 one-line
+      // class files), so the narrow ruling is dynamic precedence on THIS
+      // branch only: a typeless field loses ties against a method reading,
+      // while typed fields (the M59 absorb shape) keep their baseline
+      // behaviour untouched.
+      prec.dynamic(-1, seq(
         $.modifiers,
         $._variable_declarator_list,
         optional(DELIMITER),
         repeat($.leading_dot_call),
-      ),
+      )),
     ),
 
     constant_declaration: $ => seq(

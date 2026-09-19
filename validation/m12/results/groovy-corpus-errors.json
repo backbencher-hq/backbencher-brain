@@ -11,26 +11,26 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 260,
-  "cleanFiles": 6304,
-  "missingNodeFiles": 71,
-  "errorNodeFiles": 250,
+  "errorFiles": 225,
+  "cleanFiles": 6339,
+  "missingNodeFiles": 69,
+  "errorNodeFiles": 215,
   "errorRates": {
-    "any": 4,
+    "any": 3.4,
     "missing": 1.1,
-    "error": 3.8
+    "error": 3.3
   },
-  "grammarErrorFiles": 260,
+  "grammarErrorFiles": 225,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 247861,
+  "wallMs": 110363,
   "missingTokens": {
     ";": 142,
     "identifier": 32,
     "decimal_integer_literal": 14,
     "}": 12,
-    ")": 6,
+    ")": 4,
     "]": 3,
     ">": 2,
     "/": 2,
@@ -59,57 +59,52 @@
     "ID * ID.ID(ID) >> ID": 11,
     "(ID.ID): { ID, ID ID, ID.ID ID, ID ID = { ID } ->": 11,
     "ID ID = ID.ID ID": 11,
-    "ID ID {": 11,
     "}()": 11,
     "ID @ID.ID@ID {": 10,
     "ID @ID.ID@ID ID ID ID ID<@ID.ID@ID> {": 10,
     "ID (ID.ID.ID) {": 10,
-    "ID.ID()": 9,
     "ID @ID.ID.ID@": 9,
     "ID ID.ID.ID": 9,
-    "ID ID.ID(ID, ID)": 8,
-    "ID ID.ID(ID)": 8,
     "ID.ID.ID(ID) {": 7,
+    "ID.ID()": 7,
     "ID.ID.ID(ID, ID)": 7,
-    "ID ID ID ID {": 7,
     "ID ID.ID.*": 7,
     "ID ID{ID}ID {": 7,
     "ID.ID.ID.ID(ID)": 6,
     "ID.ID.ID(ID.ID)": 6,
-    "ID (ID.ID.ID { ID ID -> ID.ID.ID == ID }) ID": 6
+    "ID (ID.ID.ID { ID ID -> ID.ID.ID == ID }) ID": 6,
+    "ID ID(ID<ID, ID> ID) {": 6,
+    "1 * ID(2) >> ID ID{ID}()": 6,
+    "<% ID (ID) { %>@ID(ID{ID}<ID{ID}>)<% } ID ID (ID) { %>@ID(ID<ID{ID}>)<": 6,
+    "ID: ID": 6
   },
   "firstErrorLineSignatures": {
     "}": 30,
     "/*": 21,
-    "ID ID {": 11,
     "ID.ID.ID(ID)": 9,
     "@ID(ID)": 9,
-    "ID ID ID ID {": 7,
     "ID ID = ID.ID ID": 7,
     "ID.ID.ID(ID.ID)": 5,
     "ID @ID.ID.ID@": 5,
     "ID = ID.ID { ID * 2 } ID { ID ID ID(ID) } ID { ID + 6 }": 4,
     "@ID": 4,
     "ID = ID.ID { ID * 2 } ID { ID ID ID(ID)} ID { ID + 6 }": 3,
+    "ID ID ID ID {": 3,
     "@ID.ID@": 3,
-    "ID ID = ID.ID(ID)": 3,
-    "ID.ID = ID.ID(ID.ID ? ID.ID(ID) : 10, 100)": 3,
     "ID.ID.ID(ID, ID)": 2,
     "ID * ID.ID() >> ID": 2,
     "@ID(ID\"ID ID{ID ID}": 2,
     "ID ID = ID.ID ID, ID": 2,
+    "ID ID {": 2,
     "}()": 2,
     ".ID == ID.ID": 2,
+    "ID ID + ID, ID": 2,
     "ID ID(ID<ID, ID> ID) {": 2,
     "ID ID ID ID ID ID {": 2,
     "ID.ID[ID, ID] = ID": 2,
-    "ID ID = ID.ID(ID) ?: 0.75": 2,
-    "ID ID = ID.ID(ID) ?: 100": 2,
-    "ID ID = ID.ID(ID) ?: 3600": 2,
     "ID ID = ID.ID 1, 2": 2,
     "ID = ID ID": 2,
     "ID(10) { ID.ID.ID() > 0 }": 2,
-    "ID : ID.ID(ID) ?: 0,": 2,
     "ID.ID.ID.ID(ID.ID + ID + ID.ID)": 1,
     "}.ID { ID ID -> ID.ID.ID.ID }": 1,
     "ID ID = ID?.ID() { ID ID -> ID.ID.ID(ID) }": 1,
@@ -118,7 +113,12 @@
     "ID = ID.ID ID\"": 1,
     "ID[ID]()": 1,
     "ID ID(ID ID)": 1,
-    "1 * ID.ID(ID.ID.ID(), ID, ID, ID, ID, ID) >> ID": 1
+    "1 * ID.ID(ID.ID.ID(), ID, ID, ID, ID, ID) >> ID": 1,
+    "0 * ID.ID(ID.ID.ID(), ID)": 1,
+    ".ID() != ID": 1,
+    "ID * ID.ID(ID) >> ID": 1,
+    "ID * ID.ID() >> [ID, ID]": 1,
+    "(ID.ID): { ID.ID ID, ID ID, ID ID = ID, ID ID = ID ->": 1
   },
   "errorFileList": [
     {
@@ -1030,26 +1030,6 @@
       "pipelineErrors": 5
     },
     {
-      "file": "grails-gsp/grails-layout/src/main/groovy/org/grails/plugins/web/taglib/RenderGrailsLayoutTagLib.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 144,
-      "firstKind": "ERROR",
-      "firstLine": "if (!((TypeConvertingMap) attrs).boolean('parse') && gspGrailsLayoutPage != null && gspGrailsLayoutPage.used) {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-gsp/grails-sitemesh3/src/main/groovy/org/grails/plugins/web/taglib/RenderSitemeshTagLib.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 178,
-      "firstKind": "ERROR",
-      "firstLine": "boolean forceParse = externalContent || ((TypeConvertingMap) attrs).boolean('parse')",
-      "pipelineErrors": 4
-    },
-    {
       "file": "grails-gsp/grails-sitemesh3/src/test/groovy/org/grails/plugins/sitemesh3/Sitemesh3ViewResolverDefinitionPostProcessorSpec.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -1078,26 +1058,6 @@
       "firstKind": "ERROR",
       "firstLine": "Object output = TagOutput.captureTagOutput(gspTagLibraryLookup, currentNamespace, name, attrs, body, OutputContextLookup",
       "pipelineErrors": 6
-    },
-    {
-      "file": "grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 458,
-      "firstKind": "ERROR",
-      "firstLine": "useToken = attrs.boolean('useToken')",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/UrlMappingTagLib.groovy",
-      "nodes": 14,
-      "missingTokens": [],
-      "errorNodes": 14,
-      "firstRow": 247,
-      "firstKind": "ERROR",
-      "firstLine": "if (currentstep < laststep && !attrs.boolean('omitNext')) {",
-      "pipelineErrors": 28
     },
     {
       "file": "grails-gsp/plugin/src/test/groovy/org/grails/web/pages/AliasedTagPropertySpec.groovy",
@@ -1944,23 +1904,13 @@
     },
     {
       "file": "grails-spring-security/ui/plugin/grails-app/controllers/grails/plugin/springsecurity/ui/AbstractS2UiDomainController.groovy",
-      "nodes": 7,
+      "nodes": 3,
       "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 329,
+      "errorNodes": 3,
+      "firstRow": 242,
       "firstKind": "ERROR",
-      "firstLine": "Long version = params.long('version')",
-      "pipelineErrors": 14
-    },
-    {
-      "file": "grails-spring-security/ui/plugin/grails-app/controllers/grails/plugin/springsecurity/ui/AclEntryController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 68,
-      "firstKind": "ERROR",
-      "firstLine": "Long classId = params.long('aclClass.id')",
-      "pipelineErrors": 2
+      "firstLine": "eqLong paramName + '.id', delegate",
+      "pipelineErrors": 6
     },
     {
       "file": "grails-spring-security/ui/plugin/grails-app/controllers/grails/plugin/springsecurity/ui/RegisterController.groovy",
@@ -1983,26 +1933,6 @@
       "pipelineErrors": 64
     },
     {
-      "file": "grails-spring-security/ui/plugin/grails-app/taglib/grails/plugin/springsecurity/ui/SecurityUiTagLib.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 462,
-      "firstKind": "ERROR",
-      "firstLine": "int offset = params.int('offset')",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/async/AsyncTestController.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 34,
-      "firstKind": "ERROR",
-      "firstLine": "class AsyncTestController {",
-      "pipelineErrors": 6
-    },
-    {
       "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/binding/AdvancedDataBindingController.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -2011,58 +1941,6 @@
       "firstKind": "ERROR",
       "firstLine": "employee.properties['firstName', 'lastName'] = params",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/caching/CacheTestController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 28,
-      "firstKind": "ERROR",
-      "firstLine": "class CacheTestController {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/i18n/I18nTestController.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 115,
-      "firstKind": "ERROR",
-      "firstLine": "def value = params.double('value') ?: 0.75",
-      "pipelineErrors": 6
-    },
-    {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/interceptors/InterceptorTestController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 153,
-      "firstKind": "ERROR",
-      "firstLine": "def delay = params.int('delay') ?: 100",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/requestresponse/RequestResponseTestController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 107,
-      "firstKind": "ERROR",
-      "firstLine": "def maxAge = params.int('maxAge') ?: 3600",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/app1/grails-app/controllers/functionaltests/springevents/SpringEventController.groovy",
-      "nodes": 7,
-      "missingTokens": [
-        ")"
-      ],
-      "errorNodes": 6,
-      "firstRow": 28,
-      "firstKind": "ERROR",
-      "firstLine": "class SpringEventController {",
-      "pipelineErrors": 13
     },
     {
       "file": "grails-test-examples/async-events-pubsub-demo/grails-app/controllers/pubsub/demo/SumController.groovy",
@@ -2085,16 +1963,6 @@
       "firstKind": "MISSING ;",
       "firstLine": "def e = thrown IllegalArgumentException",
       "pipelineErrors": 1
-    },
-    {
-      "file": "grails-test-examples/demo33/grails-app/taglib/demo/SampleTagLib.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 25,
-      "firstKind": "ERROR",
-      "firstLine": "class SampleTagLib {",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-test-examples/geb/src/integration-test/groovy/org/demo/spock/ContainerFileDetectorAnnotationSpec.groovy",
@@ -2174,16 +2042,6 @@
       "pipelineErrors": 6
     },
     {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/async/AsyncTestController.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 34,
-      "firstKind": "ERROR",
-      "firstLine": "class AsyncTestController {",
-      "pipelineErrors": 6
-    },
-    {
       "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/binding/AdvancedDataBindingController.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -2192,58 +2050,6 @@
       "firstKind": "ERROR",
       "firstLine": "employee.properties['firstName', 'lastName'] = params",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/caching/CacheTestController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 28,
-      "firstKind": "ERROR",
-      "firstLine": "class CacheTestController {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/i18n/I18nTestController.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 115,
-      "firstKind": "ERROR",
-      "firstLine": "def value = params.double('value') ?: 0.75",
-      "pipelineErrors": 6
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/interceptors/InterceptorTestController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 153,
-      "firstKind": "ERROR",
-      "firstLine": "def delay = params.int('delay') ?: 100",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/requestresponse/RequestResponseTestController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 107,
-      "firstKind": "ERROR",
-      "firstLine": "def maxAge = params.int('maxAge') ?: 3600",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/hibernate7/app1/grails-app/controllers/functionaltests/springevents/SpringEventController.groovy",
-      "nodes": 7,
-      "missingTokens": [
-        ")"
-      ],
-      "errorNodes": 6,
-      "firstRow": 28,
-      "firstKind": "ERROR",
-      "firstLine": "class SpringEventController {",
-      "pipelineErrors": 13
     },
     {
       "file": "grails-test-examples/hibernate7/async-events-pubsub-demo/grails-app/controllers/pubsub/demo/SumController.groovy",
@@ -2266,16 +2072,6 @@
       "firstKind": "MISSING ;",
       "firstLine": "def e = thrown IllegalArgumentException",
       "pipelineErrors": 1
-    },
-    {
-      "file": "grails-test-examples/hibernate7/demo33/grails-app/taglib/demo/SampleTagLib.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 25,
-      "firstKind": "ERROR",
-      "firstLine": "class SampleTagLib {",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-test-examples/hibernate7/gorm/grails-app/services/gorm/BookDataService.groovy",
@@ -2341,16 +2137,6 @@
       "pipelineErrors": 62
     },
     {
-      "file": "grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 44,
-      "firstKind": "ERROR",
-      "firstLine": "offset      : params.int(\"offset\") ?: 0,",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-examples/scaffolding-fields/src/integration-test/groovy/scaffoldingfields/CustomTemplatesSpec.groovy",
       "nodes": 12,
       "missingTokens": [],
@@ -2369,16 +2155,6 @@
       "firstKind": "ERROR",
       "firstLine": "waitFor(10) { page.tableRows.size() > 0 }",
       "pipelineErrors": 62
-    },
-    {
-      "file": "grails-test-examples/spring-security/acl/functional-test-app/grails-app/controllers/com/testacl/ReportController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 40,
-      "firstKind": "ERROR",
-      "firstLine": "params.max = Math.min(params.max ? params.int('max') : 1000, 1000)",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-test-examples/spring-security/acl/functional-test-app/grails-app/domain/com/testacl/Report.groovy",
@@ -2423,26 +2199,6 @@
       "pipelineErrors": 3
     },
     {
-      "file": "grails-test-examples/spring-security/core/functional-test-app/grails-app/controllers/com/testapp/TestRequestmapController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 35,
-      "firstKind": "ERROR",
-      "firstLine": "params.max = Math.min(params.max ? params.int('max') : 10, 100)",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/spring-security/core/functional-test-app/grails-app/controllers/com/testapp/TestRoleController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 34,
-      "firstKind": "ERROR",
-      "firstLine": "params.max = Math.min(params.max ? params.int('max') : 10, 100)",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-examples/spring-security/core/integration-test-app/src/integration-test/groovy/grails/plugin/springsecurity/GormPersistentTokenRepositorySpec.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -2450,16 +2206,6 @@
       "firstRow": 34,
       "firstKind": "ERROR",
       "firstLine": "class GormPersistentTokenRepositorySpec extends AbstractIntegrationSpec {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/spring-security/ui/extended/grails-app/controllers/test/ProfileController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 42,
-      "firstKind": "ERROR",
-      "firstLine": "params.offset = Math.max(params.offset ? params.int('offset') : 0, 0)",
       "pipelineErrors": 2
     },
     {
@@ -2481,16 +2227,6 @@
       "firstKind": "ERROR",
       "firstLine": "@Transactional",
       "pipelineErrors": 10
-    },
-    {
-      "file": "grails-test-examples/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 44,
-      "firstKind": "ERROR",
-      "firstLine": "offset      : params.int(\"offset\") ?: 0,",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-test-suite-persistence/src/test/groovy/org/grails/domain/compiler/DomainPropertiesAccessorSpec.groovy",
@@ -2520,16 +2256,6 @@
       "firstRow": 46,
       "firstKind": "ERROR",
       "firstLine": "GroovySystem.metaClassRegistry.setMetaClass(clazz, metaClass)",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/grails/test/mixin/DomainClassControllerUnitTestMixinTests.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 313,
-      "firstKind": "ERROR",
-      "firstLine": "params.max = Math.min(params.max ? params.int('max') : 10, 100)",
       "pipelineErrors": 2
     },
     {
@@ -2709,36 +2435,6 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-views-core/src/main/groovy/grails/views/mvc/http/DelegatingParameters.groovy",
-      "nodes": 16,
-      "missingTokens": [],
-      "errorNodes": 16,
-      "firstRow": 144,
-      "firstKind": "ERROR",
-      "firstLine": "return parameterMap.boolean(name, defaultValue)",
-      "pipelineErrors": 32
-    },
-    {
-      "file": "grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultHalViewHelper.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 267,
-      "firstKind": "ERROR",
-      "firstLine": "max = max ?: httpParams.int(PAGINATION_MAX, 10)",
-      "pipelineErrors": 8
-    },
-    {
-      "file": "grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultJsonViewHelper.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 165,
-      "firstKind": "ERROR",
-      "firstLine": "int max = params.int(PAGINATION_MAX, 10)",
-      "pipelineErrors": 8
-    },
-    {
       "file": "grails-views-gson/src/main/groovy/grails/plugin/json/view/internal/JsonViewsTransform.groovy",
       "nodes": 1,
       "missingTokens": [],
@@ -2785,65 +2481,15 @@
     },
     {
       "file": "grails-web-common/src/test/groovy/grails/web/servlet/mvc/GrailsParameterMapTests.groovy",
-      "nodes": 7,
+      "nodes": 15,
       "missingTokens": [
         "]"
       ],
-      "errorNodes": 6,
-      "firstRow": 36,
+      "errorNodes": 14,
+      "firstRow": 220,
       "firstKind": "ERROR",
-      "firstLine": "class GrailsParameterMapTests {",
-      "pipelineErrors": 13
-    },
-    {
-      "file": "grails-web-core/src/test/groovy/org/grails/web/servlet/FlashScopeExtensionSpec.groovy",
-      "nodes": 5,
-      "missingTokens": [],
-      "errorNodes": 5,
-      "firstRow": 27,
-      "firstKind": "ERROR",
-      "firstLine": "class FlashScopeExtensionSpec extends Specification {",
-      "pipelineErrors": 10
-    },
-    {
-      "file": "grails-web-core/src/test/groovy/org/grails/web/servlet/HttpServletRequestExtensionSpec.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 31,
-      "firstKind": "ERROR",
-      "firstLine": "class HttpServletRequestExtensionSpec extends Specification {",
-      "pipelineErrors": 8
-    },
-    {
-      "file": "grails-web-core/src/test/groovy/org/grails/web/servlet/HttpSessionExtensionSpec.groovy",
-      "nodes": 6,
-      "missingTokens": [],
-      "errorNodes": 6,
-      "firstRow": 29,
-      "firstKind": "ERROR",
-      "firstLine": "class HttpSessionExtensionSpec extends Specification {",
-      "pipelineErrors": 12
-    },
-    {
-      "file": "grails-web-core/src/test/groovy/org/grails/web/servlet/ServletContextExtensionSpec.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 29,
-      "firstKind": "ERROR",
-      "firstLine": "class ServletContextExtensionSpec extends Specification {",
-      "pipelineErrors": 6
-    },
-    {
-      "file": "grails-web-url-mappings/src/main/groovy/grails/web/mapping/cors/GrailsCorsConfiguration.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 65,
-      "firstKind": "ERROR",
-      "firstLine": "corsConfiguration.allowCredentials = config.boolean('allowCredentials')",
-      "pipelineErrors": 4
+      "firstLine": "assertEquals 'z' as char, map.char('z', 'A' as Character)",
+      "pipelineErrors": 29
     },
     {
       "file": "grails-web-url-mappings/src/test-cli/groovy/org/grails/web/mapping/reporting/AnsiConsoleUrlMappingsRendererSpec.groovy",
