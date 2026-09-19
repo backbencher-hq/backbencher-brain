@@ -143,6 +143,45 @@ module.exports = grammar(Java, {
     // the field at the same token — a genuine ambiguity, resolved by the
     // same dynamic precedence machinery as the rest of the file.
     [$._variable_declarator_id],
+    // #841 round 17: after `= identifier`, the next token cannot tell
+    // command-value from expression continuation (`y = foo / bar` division
+    // vs `y = foo /bar/` slashy-string argument — real Groovy splits these
+    // by spacing, the grammar cannot). GLR defers; the -1 last-resort bias
+    // on _command_call_value keeps the expression reading wherever it is
+    // live and falls back to the command call only when it is not
+    // (`foo /bar/` — the trailing `/` kills the division reading).
+    [$.primary_expression, $._command_call_value],
+    // Same family, `[` lookahead: `y = foo [0]` — array access on the RHS
+    // head vs the command-value reading (with the type-dimension reading
+    // riding along). Resolved the same way.
+    [$.primary_expression, $._unannotated_type, $._command_call_value],
+    // Same family, `(` lookahead: `y = foo(x)` — a parenthesized argument
+    // list after the RHS head (a method invocation reading, possibly after
+    // a lambda). Resolved the same way.
+    [$.primary_expression, $.method_invocation, $._command_call_value],
+    // Same family inside `= { … }` initializers: a space-separated id +
+    // literal could be a juxt, a command value, or an expression. GLR
+    // defers; statement-side rules and last-resort bias decide.
+    [$.primary_expression, $._command_call_value, $._juxt_function_name],
+    // Same state, `(` lookahead: the id can also head a method invocation.
+    [$.primary_expression, $.method_invocation, $._command_call_value, $._juxt_function_name],
+    // Same state, `[` lookahead: the id can also be a declarator id (array
+    // dimensions) or a type. GLR defers; the enclosing initializer decides.
+    [$.primary_expression, $._variable_declarator_id, $._unannotated_type, $._command_call_value, $._juxt_function_name],
+    // Same family, remaining keyword/bracket lookaheads inside `= { … }`
+    // (`yield`, …) — the initializer content is genuinely multi-parseable,
+    // and every set here is a subset of the same five-rule family. GLR
+    // defers; statement-side rules and last-resort bias decide.
+    [$.primary_expression, $._unannotated_type, $._command_call_value, $._juxt_function_name],
+    // Same family, ':' lookahead: a named-arg map_item as the command
+    // value's argument vs (inside `assert x = f y: …`) the assert message
+    // separator — grammar cannot see spacing; zero corpus files carry the
+    // assert shape. GLR defers; context decides.
+    [$._command_call_value_args, $.map_item],
+    // Same ':' state one level deeper: `assert x = f (1): msg` — the paren
+    // group can be an argument_list element or a named-arg's parenthesized
+    // value. GLR defers; context decides.
+    [$.argument_list, $.map_item],
     // #841: `class C { List<String> xs }` — the field type can look like a
     // generic_type or the declarator can absorb the token; GLR decides.
     [$._variable_declarator_id, $.generic_type],
@@ -638,6 +677,81 @@ module.exports = grammar(Java, {
       // node instead of ERROR-recovering the whole region.
       $.operator_continuation,
     ),
+
+    // #841 round 17: command-call values — real Groovy accepts a command
+    // chain as the RHS of a declarator or an assignment (`def allMappings =
+    // evaluator.evaluateMappings mappings`, `generator.urlMappingsHolder =
+    // getUrlMappingsHolder mappings`, ~16 corpus files). Oracle boundary,
+    // verified: ACCEPTS in declarator/assignment RHS (bare callee, dotted
+    // callee, and as a field initializer), REJECTS as `return foo bar`.
+    // Admission is therefore restricted to exactly these two RHS slots —
+    // NOT `$.expression` — so the refuted supersets (return operands,
+    // bare statement operands) stay rejected. The node is the existing
+    // `juxt_function_call`, so the analyzer's statement-level handling
+    // applies unchanged. Known inherited limitation: whitespace-separated
+    // multi-arg chains (`foo bar baz`) remain unparsed (documented at
+    // _juxt_argument_list).
+    _variable_initializer: ($, original) => choice(
+      original,
+      // Last-resort admission (see _command_call_value for the shape and
+      // the corpus/oracle contract).
+      prec.dynamic(-1, $._command_call_value),
+    ),
+
+    // #841 round 17: command-call values — real Groovy accepts a command
+    // chain as the RHS of a declarator or an assignment (`def allMappings =
+    // evaluator.evaluateMappings mappings`, `generator.urlMappingsHolder =
+    // getUrlMappingsHolder mappings`, ~16 corpus files). Oracle boundary,
+    // verified: ACCEPTS in declarator/assignment RHS (bare callee, dotted
+    // callee, and as a field initializer), REJECTS as `return foo bar` —
+    // so admission is restricted to exactly these two RHS slots, NOT
+    // `$.expression`. Unlike the statement-side juxt, the name set excludes
+    // parenthesized heads and the argument list is restricted to simple
+    // items (identifier, literal, named-arg map_item) — every corpus
+    // command-value qualifies, and the restriction keeps the RHS state
+    // space from re-entering every expression continuation (the broad
+    // `_juxt_argument_list` re-opened cast-expression, `*`/`[`/`@`/`(`
+    // continuations and cost 3 clean files their parses when measured).
+    // The node is aliased to `juxt_function_call`, so the tree — and the
+    // analyzer's statement-level handling — is identical to the statement
+    // form. Last-resort via prec.dynamic(-1): wherever an ordinary
+    // expression reading completes, it wins.
+    _command_call_value: $ => alias(
+      seq(
+        field('name', choice($.identifier, $.field_access, $.array_access)),
+        // Single-argument: a named-arg map_item (RestOauthService:68
+        // `link controller: 'restOauth', …` — 3 corpus files) or one simple
+        // item (every other corpus command value). No comma repeat: a comma
+        // after the first arg would need a GLR declaration on the arg-list
+        // state, and measuring that declaration showed it deregulates the
+        // statement-side juxt chain (LegacyCommandRegistryLoadingSpec
+        // collapses 1→14 error nodes). Multi-arg command values stay
+        // unparsed — they were error files before this round too, so the
+        // residual does not regress; documented at the oracle note below.
+        field('args', alias($._command_call_value_args, $.argument_list)),
+      ),
+      $.juxt_function_call,
+    ),
+
+    _command_call_value_args: $ => choice(
+      $.map_item,
+      $.identifier,
+      $._literal,
+    ),
+
+    // Same restriction in the assignment slot — last-resort so every
+    // ordinary-expression reading wins and the command call is admitted
+    // only where no other reading completes.
+    assignment_expression: ($, original) => prec.right(PREC.ASSIGN, seq(
+      field('left', choice(
+        $.identifier,
+        $._reserved_identifier,
+        $.field_access,
+        $.array_access,
+      )),
+      field('operator', choice('=', '+=', '-=', '*=', '/=', '&=', '|=', '^=', '%=', '<<=', '>>=', '>>>=')),
+      field('right', choice($.expression, prec.dynamic(-1, $._command_call_value))),
+    )),
 
     operator_continuation: $ => prec.dynamic(-2, prec.right(choice(
       seq(field('operator', choice('&&', '||')), field('operand', $.expression)),
