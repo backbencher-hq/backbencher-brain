@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "991158ccd165e4794ef31085ed4581b655afb037",
+  "inputsHash": "1e3cd7a11a2bdabdc58003c5aa19e0fea7fd4d23",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -70,7 +70,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "d58eb0091d6dac1884961aa422520b68f306e4f1",
+          "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
           "status": "verified"
         }
       },
@@ -123,7 +123,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "d58eb0091d6dac1884961aa422520b68f306e4f1",
+          "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
           "status": "verified"
         }
       },
@@ -176,7 +176,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "d58eb0091d6dac1884961aa422520b68f306e4f1",
+          "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
           "status": "verified"
         }
       },
@@ -229,7 +229,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "d58eb0091d6dac1884961aa422520b68f306e4f1",
+          "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
           "status": "verified"
         }
       },
@@ -282,7 +282,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "d58eb0091d6dac1884961aa422520b68f306e4f1",
+          "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
           "status": "verified"
         }
       },
@@ -335,7 +335,7 @@
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "d58eb0091d6dac1884961aa422520b68f306e4f1",
+          "commit": "5c2a8ddbbdb70517b7e00d414baa97576a2cf1ae",
           "status": "verified"
         }
       },
@@ -360,7 +360,7 @@
     },
     "evidence": "validation/m29/results/R3.json"
   },
-  "stalenessPolicy": "This ledger is machine-regenerated. Any change to the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
+  "stalenessPolicy": "This ledger is machine-regenerated. Any change to the SEMANTIC content of the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Declared volatile run metadata is excluded from the hash (commit, currentCommit, generatedAt, bbSeal, workingTreeRelevantChanges) because it changes on every re-run while the evidence itself does not — including it would make byte-identical regeneration un-passable. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
   "limitations": [
     "Differential floors are M14's committed baselines (named repo per language), not the full ecosystem — the numbers are floors, not upper bounds.",
     "Per-language warm p95 is measured over the wave fixture pack (real index, real server), not over giant-scale workspaces; the scale row (R3) covers the giant regime separately.",
