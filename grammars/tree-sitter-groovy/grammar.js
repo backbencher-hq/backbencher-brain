@@ -182,6 +182,16 @@ module.exports = grammar(Java, {
     // group can be an argument_list element or a named-arg's parenthesized
     // value. GLR defers; context decides.
     [$.argument_list, $.map_item],
+    // #841 round 19: after an RHS method-invocation head, the next identifier
+    // either continues the ordinary expression chain (primary_expression) or
+    // starts a spaced chain segment (_command_chain_value, then-chains).
+    // GLR defers; the -1 last-resort bias on the chain decides wherever the
+    // expression reading survives.
+    [$.primary_expression, $._command_chain_value],
+    // …and the chain's own self-continuation: consecutive segments
+    // (`then { } then { } then { }`) — GLR defers; the repeat machinery and
+    // the -1 bias decide.
+    [$._command_chain_value],
     // #841: `class C { List<String> xs }` — the field type can look like a
     // generic_type or the declarator can absorb the token; GLR decides.
     [$._variable_declarator_id, $.generic_type],
@@ -693,9 +703,10 @@ module.exports = grammar(Java, {
     // _juxt_argument_list).
     _variable_initializer: ($, original) => choice(
       original,
-      // Last-resort admission (see _command_call_value for the shape and
-      // the corpus/oracle contract).
+      // Last-resort admissions (see _command_call_value and
+      // _command_chain_value for the shapes and the corpus/oracle contract).
       prec.dynamic(-1, $._command_call_value),
+      prec.dynamic(-1, $._command_chain_value),
     ),
 
     // #841 round 17: command-call values — real Groovy accepts a command
@@ -733,6 +744,27 @@ module.exports = grammar(Java, {
       $.juxt_function_call,
     ),
 
+    // #841 round 19: the spaced then-chain — `promise = promise.then { it * 2 }
+    // then { it + 6 }` (7 corpus files, oracle-ACCEPTED in all three spellings:
+    // decl RHS, statement, with-throw). After the head `promise.then { … }`
+    // completes, the trailing `then { … }` had NO legal continuation — the
+    // parser ERROR-recovered over the first segment. The continuation segments
+    // (`name closure`) are aliased to method_invocation so the analyzer sees
+    // exactly the dotted-chain node it already emits `calls` edges for — the
+    // round-18 lesson: alias to the REAL production, never invent a shape the
+    // call walk must be taught. RHS-only, like _command_call_value; -1
+    // last-resort so every ordinary reading wins wherever it completes.
+    _command_chain_value: $ => prec.dynamic(-1, seq(
+      field('receiver', $.method_invocation),
+      repeat1(alias(
+        seq(
+          field('name', $.identifier),
+          field('args', $.closure),
+        ),
+        $.method_invocation,
+      )),
+    )),
+
     _command_call_value_args: $ => choice(
       $.map_item,
       $.identifier,
@@ -750,7 +782,7 @@ module.exports = grammar(Java, {
         $.array_access,
       )),
       field('operator', choice('=', '+=', '-=', '*=', '/=', '&=', '|=', '^=', '%=', '<<=', '>>=', '>>>=')),
-      field('right', choice($.expression, prec.dynamic(-1, $._command_call_value))),
+      field('right', choice($.expression, prec.dynamic(-1, $._command_call_value), prec.dynamic(-1, $._command_chain_value))),
     )),
 
     operator_continuation: $ => prec.dynamic(-2, prec.right(choice(
