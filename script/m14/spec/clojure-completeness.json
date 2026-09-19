@@ -2,7 +2,7 @@
   "grammar": "tree-sitter-clojure.wasm",
   "language": "clojure",
   "handled_verified": {
-    "_description": "Analyzer-referenced node types (`grep`-measured 15 type literals, F1 PASS refs=15 unknown=0); behavior probe-verified 2026-09-19 against the pinned wasm (@yogthos 0.0.14, the wasm-packaged sogaiu lineage) via real-clojure-analyzer.ts and the CLJ1 fixture battery (11 fixtures, 20 mutants caught). sym_lit carries the name/namespace FIELDS (sym_name/sym_ns children) so those children are read through the field API, not type-matched.",
+    "_description": "Analyzer-referenced node types (`grep`-measured 15 type literals, F1 PASS refs=15 unknown=0); behavior probe-verified 2026-09-19 against the pinned wasm (@yogthos 0.0.14, the wasm-packaged sogaiu lineage) via real-clojure-analyzer.ts and the CLJ1 + CLJ-F5 fixture batteries (16 fixtures, 25 mutants caught). sym_lit carries the name/namespace FIELDS (sym_name/sym_ns children) so those children are read through the field API, not type-matched.",
     "types": [
       "anon_fn_lit",
       "comment",
@@ -46,7 +46,7 @@
     ]
   },
   "gap": {
-    "_description": "CLJ1 (2026-09-19) closed C1-C13: call-site lines (0/8381 → 16103/16103 corpus edges lined), callArity identity, per-site rows, the doc channel (0 → 629 symbols), implements alias resolution, top-level require/import directives, def-initializer/deftest attribution, reify/extend method impls, body-vector parameter leakage, & rest marker, tagged/ctor literals, complexity fallback. No open gaps.",
+    "_description": "CLJ1 (2026-09-19) closed C1-C13: call-site lines (0/8381 → 16103/16103 corpus edges lined), callArity identity, per-site rows, the doc channel (0 → 629 symbols), implements alias resolution, top-level require/import directives, def-initializer/deftest attribution, reify/extend method impls, body-vector parameter leakage, & rest marker, tagged/ctor literals, complexity fallback. The 'no open gaps' claim was then falsified at CLJ-F5 certification (2026-09-19) on this very surface: the clj-kondo SECOND corpus found three further defect classes the CLJ1 battery could not see — kwd-headed data-form ns corruption (junit.clj: `(:ns (meta var))` reset the alias table mid-file), `toString` prototype pollution in six plain-object lookup records (12 MISSING edges across rewrite-clj node files), and self-require/self-qualified self-loop references edges. All three fixed, fixture+mutant pinned, both corpora 100%/0/0. The claim stands only as 'no open gaps at the date of writing'; the corpus differential is the gate that keeps it honest.",
     "gaps": []
   },
   "design_decision": {
@@ -100,6 +100,13 @@
         "status": "RULED",
         "question": "Top-level directive forms and def-initializer calls after the ns?",
         "resolution": "RULED: top-level `(require …)`/`(import …)`/`(use …)`/`(refer …)` parse through the same libspec handler as ns clauses (quoting_lit unwrapped; aliases registered, imports recorded, references edged at the libspec line); calls outside any function attribute to the NAMESPACE (meta.isTopLevel) — def/defonce initializers and deftest bodies included (deftest is a function symbol). Fixtures toplevel-forms/toplevel-calls + mutants directive-ignored/toplevel-call-dropped."
+      },
+      {
+        "id": "CLJ-D8",
+        "node_type": "vec_lit,list_lit,sym_lit,quoting_lit (libspec positions)",
+        "status": "RULED",
+        "question": "Which libspec shapes resolve, and which nested vectors are data? Prefix lists `[prefix [sub :as a]]`, refer lists `:refer [foo bar]`, imports `(java.util Date)`.",
+        "resolution": "RULED (CLJ-F5): three shapes, one rule each — (a) a nested vec DIRECTLY AFTER a keyword is a NAME LIST (`:refer [foo bar]`, `:only`, `:rename`), data, skipped (M12 caught the first prefix-list implementation fabricating `ns -[references]-> prefix.foo` from `:refer` — the FP is the pin); (b) a nested vec in any other position is a PREFIX SUB-LIBSPEC: sub = first child, `:as` alias registered as `alias → prefix.sub`, and `prefix.sub` is a references target (real Clojure semantics; clj-kondo's vendored rewrite-clj uses the form, +367 truth edges on that corpus); (c) vector imports `(java.util Date UUID)` record the CLASS items as imports, never walked as calls (C14 class). Fixture prefix-require + mutant prefix-require-flat."
       }
     ]
   }
