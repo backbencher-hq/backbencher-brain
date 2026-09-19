@@ -2548,45 +2548,64 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
     isConst: boolean,
   ): void {
-    const extractNames = (node: Node): string[] => {
-      const names: string[] = []
-
+    // M59 (#825) follow-up, measured on element-plus drawer.vue: every binding
+    // gets the range of the node that BINDS it — the old code collected bare
+    // names and stamped the whole declarator (`const {` for all of
+    // afterEnter/afterLeave/... on lines 155-168). Two latent defects fixed
+    // with the same rewrite: `{ renamed: local }` named the KEY (or nothing —
+    // a property_identifier is neither identifier branch) instead of the bound
+    // VALUE, and `{ withDefault = 5 }` (object_assignment_pattern) was dropped
+    // entirely. The line belongs to the name (family contract).
+    const extractPairs = (node: Node, out: Array<{ name: string; node: Node }>): void => {
       for (let i = 0; i < node.namedChildCount; i++) {
         const child = node.namedChild(i)
         if (!child) continue
 
-        if (child.type === "identifier" || child.type === "shorthand_property_identifier") {
-          names.push(child.text)
-        } else if (child.type === "object_pattern" || child.type === "array_pattern") {
-          names.push(...extractNames(child))
+        if (child.type === "identifier" || child.type === "shorthand_property_identifier" || child.type === "shorthand_property_identifier_pattern") {
+          out.push({ name: child.text, node: child })
+        } else if (child.type === "pair_pattern") {
+          // { key: value } — the VALUE side binds (key is the property read).
+          const value = child.childForFieldName("value")
+          if (value) {
+            if (value.type === "identifier" || value.type === "shorthand_property_identifier" || value.type === "shorthand_property_identifier_pattern") {
+              out.push({ name: value.text, node: value })
+            } else {
+              extractPairs(value, out)
+            }
+          }
         } else if (child.type === "rest_pattern") {
           const inner = child.namedChild(0)
-          if (inner?.type === "identifier") {
-            names.push(inner.text)
+          if (inner) {
+            if (inner.type === "identifier") {
+              out.push({ name: inner.text, node: inner })
+            } else {
+              extractPairs(inner, out)
+            }
           }
-        } else if (child.type === "pair_pattern" || child.type === "assignment_pattern") {
-          const left = child.namedChild(0)
-          if (left?.type === "identifier") {
-            names.push(left.text)
-          } else if (left?.type === "shorthand_property_identifier_pattern") {
-            names.push(left.text)
+        } else if (child.type === "assignment_pattern") {
+          const left = child.childForFieldName("left") ?? child.namedChild(0)
+          if (left) {
+            if (left.type === "identifier" || left.type === "shorthand_property_identifier" || left.type === "shorthand_property_identifier_pattern") {
+              out.push({ name: left.text, node: left })
+            } else {
+              extractPairs(left, out)
+            }
           }
-        } else if (child.type === "shorthand_property_identifier_pattern") {
-          names.push(child.text)
+        } else if (child.type === "object_assignment_pattern" || child.type === "object_pattern" || child.type === "array_pattern") {
+          extractPairs(child, out)
         }
       }
-
-      return names
     }
 
-    const names = extractNames(pattern)
+    const pairs: Array<{ name: string; node: Node }> = []
+    extractPairs(pattern, pairs)
     const exportStatus = isNodeExported(declarator)
 
-    for (const name of names) {
+    for (const { name, node: nameNode } of pairs) {
       symbols.push({
         name,
         kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
-        range: this.nodeRange(declarator),
+        range: this.nodeRange(nameNode, false),
         scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
         visibility: exportStatus.isExported ? "public" : "private",
         ...this.scopeManager.getOwnerInfo(),
@@ -2759,6 +2778,22 @@ class TypeScriptAnalysisRunner {
     // Modifier words must come from the parameter's actual keywords — substring
     // matching on default-value text fabricated phantom properties from string
     // defaults like t: string = "private".
+    //
+    // M59 (#825) follow-up, measured on element-plus cascader-panel/node.ts:
+    // each property's range starts at its own PARAMETER's name line, not the
+    // constructor's. The old nodeRange(node) stamped `constructor(` for every
+    // member of a wrapped header (`readonly data/config/parent/root` all
+    // claimed line 58, written on 59-62) — the line belongs to the name.
+    const paramNameNodes = new Map<string, Node>()
+    const formalParams = node.childForFieldName("parameters")
+    if (formalParams) {
+      for (let i = 0; i < formalParams.namedChildCount; i++) {
+        const p = formalParams.namedChild(i)
+        if (!p) continue
+        const pat = p.childForFieldName("pattern") ?? p.childForFieldName("name")
+        if (pat) paramNameNodes.set(pat.text.replace(/^\.\.\./, ""), pat)
+      }
+    }
     for (const param of params) {
       const mods: string[] = (param as any).modifiers ?? []
       const hasVis = mods.includes("public") || mods.includes("private") || mods.includes("protected")
@@ -2772,10 +2807,12 @@ class TypeScriptAnalysisRunner {
           : "public"
 
       const name = param.name.startsWith("...") ? param.name.slice(3) : param.name
+      const nameNode = paramNameNodes.get(name)
+      const propRange = nameNode ? this.nodeRange(nameNode, false) : this.nodeRange(node)
       symbols.push({
         name,
         kind: ASTEngine.SymbolKind.Property,
-        range: this.nodeRange(node),
+        range: propRange,
         scope: ownerInfo?.ownerName,
         visibility: vis,
         returnType: param.type,

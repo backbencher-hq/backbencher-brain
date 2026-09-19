@@ -23,6 +23,7 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+  clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
@@ -50,6 +51,11 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // the M59 coverage probe). Nothing pinned its line contract, so nothing could
   // have caught a regression in it — added with the xml/lines-825 fixture.
   xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml" },
+  // M14 #275/#880: erlang joins the fixture lane. The export invariant below is
+  // arity-aware for exactly this reason: `-export([pick/0, pick/1]).` is a legal
+  // export list (arity is function identity in Erlang), and the name-only
+  // duplicate check would have rejected correct output.
+  erlang: { wasm: "tree-sitter-erlang.wasm", analyzerFile: "real-erlang-analyzer", className: "RealErlangAnalyzer", ext: "erl" },
 }
 
 interface Entry { [k: string]: any }
@@ -557,7 +563,12 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // This kills the exports fork (and its next occurrence) at gate time
     // instead of audit time.
     const exportNames = (result.exports ?? []).map((e: any) => e.name)
-    const dupExports = exportNames.filter((n: string, i: number) => exportNames.indexOf(n) !== i)
+    // Erlang #880: arity is function identity — `-export([pick/0, pick/1]).`
+    // is a legal export list. Dedup by name+arity where the export carries an
+    // arity, by bare name otherwise (all other languages).
+    const exportKey = (e: any) => (e.arity !== undefined && e.arity !== null ? `${e.name}/${e.arity}` : e.name)
+    const exportKeys = (result.exports ?? []).map(exportKey)
+    const dupExports = exportKeys.filter((n: string, i: number) => exportKeys.indexOf(n) !== i)
     if (dupExports.length) {
       problems.push(`export invariant violated: duplicate export name(s) ${JSON.stringify([...new Set(dupExports)])}`)
     }

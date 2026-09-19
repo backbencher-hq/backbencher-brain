@@ -178,7 +178,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.7,
                 // M59 (#825): the constructed type is named by the callee leaf.
-                ...this.lineField(this.calleeLeafNode(n), n),
+                ...this.lineField(this.calleeLeafNode(n, leaf), n),
                 metadata: { kotlinSpecific: true, isInstantiation: true },
               })
             } else {
@@ -188,7 +188,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.7,
                 // M59 (#825): the call is written at the callee leaf.
-                ...this.lineField(this.calleeLeafNode(n), n),
+                ...this.lineField(this.calleeLeafNode(n, leaf), n),
                 metadata: { kotlinSpecific: true },
               })
             }
@@ -1565,19 +1565,47 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The last identifier inside the navigation expression is the callee leaf,
    * which is where the call is written.
    */
-  private calleeLeafNode(callNode: Node): Node | null {
+  private calleeLeafNode(callNode: Node, leafText?: string): Node | null {
     const nav = callNode.namedChild(0)
     if (!nav) return null
     let last: Node | null = null
-    const visit = (n: Node): void => {
-      if (n.type === "simple_identifier" || n.type === "type_identifier") last = n
+    let legacyLast: Node | null = null
+    let leafHit: Node | null = null
+    const visit = (n: Node, recordLeaf: boolean): void => {
+      if (n.type === "simple_identifier" || n.type === "type_identifier") {
+        last = n
+        if (recordLeaf && leafText !== undefined && n.text === leafText) leafHit = n
+      }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) visit(c)
+        if (c) visit(c, recordLeaf)
       }
     }
-    visit(nav)
-    return last ?? nav
+    // Legacy domain first: the callee head. A last-match here is the true
+    // callee for every well-formed shape, and restricting the leaf search to
+    // the head means a same-named argument on a later line can never steal
+    // the line (`foo(\n  foo\n)` keeps the head's line).
+    visit(nav, true)
+    legacyLast = last
+    // Layer 2, measured on Exposed Table.kt: the when-entry monster
+    // call@51-53 takes its target from TEXT salvage (no nav child at all —
+    // the nav lives in the body lambda), so the head domain misses while the
+    // true callee (`unrolled.addAll`, line 52) sits in a later sibling
+    // subtree. Whole-node search, last-match: later same-named arguments
+    // could shadow in theory; the Tier A gate below is the arbiter.
+    if (!leafHit && leafText !== undefined) visit(callNode, true)
+    if (!leafHit && leafText !== undefined) {
+      const navChild = this.findChildByType(callNode, ["navigation_expression"])
+      if (navChild && navChild.id !== nav.id) visit(navChild, true)
+    }
+    // M59 (#825) follow-up, measured on Exposed Table.kt: braceless
+    // when-entries glue into one monster call_expression, so the LAST
+    // identifier (the next entry's condition) is not the callee — but the
+    // target leaf still is. The line must belong to the node that produced
+    // the edge's TARGET, never to the construct's tail. Falls back to the
+    // legacy last-identifier exactly where the leaf is absent, so
+    // well-formed calls keep their lines bit-for-bit.
+    return leafHit ?? legacyLast ?? last ?? nav
   }
 
   /**
@@ -1826,11 +1854,20 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Exposed SpringTransactionManager.kt: `private data class SuspendedObject(`
     // on 93, `val transaction: JdbcTransaction,` on 94, and the constructor
     // symbol (named after the class, family convention) claimed 94 where the
-    // name it carries is not written. A secondary constructor keeps its own
-    // line, which IS where it is written.
-    const ctorDeclNode = isPrimaryConstructor
-      ? (node.parent && (node.parent.type === "class_declaration" || node.parent.type === "object_declaration") ? node.parent : node)
-      : node
+    // name it carries is not written. A SECONDARY constructor keeps the same
+    // routing for the same reason: its node starts at the `constructor`
+    // keyword, which carries no name — the name it carries (the class name,
+    // K11 above) is written on the class declaration, never on the keyword
+    // line. Falsified the old "keeps its own line" rule on Exposed
+    // ResultRow.kt/Table.kt/ColumnType.kt (9 rows: target ResultRow/Join/
+    // PrimaryKey/... on a bare `constructor(` line). The contains edge
+    // follows the range, so both move together. Note the climb: a member's
+    // parent is the class_body wrapper, not the class_declaration itself —
+    // routing on the direct parent silently kept the keyword line.
+    let ctorDeclNode: Node = node
+    let ancestor = node.parent
+    while (ancestor && ancestor.type === "class_body") ancestor = ancestor.parent
+    if (ancestor && (ancestor.type === "class_declaration" || ancestor.type === "object_declaration")) ctorDeclNode = ancestor
     const symbol: ASTEngine.UniversalSymbol = {
       name: constructorName,
       kind: ASTEngine.SymbolKind.Constructor,
@@ -3218,7 +3255,7 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
                 // M59 (#825): the dispatcher is named at the call itself.
-                ...this.lineField(this.calleeLeafNode(n), n),
+                ...this.lineField(this.calleeLeafNode(n, callName), n),
                 metadata: {
                   relationshipType: "coroutine_dispatch",
                   isAsync: true,

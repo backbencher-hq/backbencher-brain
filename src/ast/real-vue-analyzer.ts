@@ -425,22 +425,30 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
               // runtime argument — the contract lives in the type_arguments
               // node. Extract it when the runtime form is absent (the standard
               // Vue 3.3+ shape).
-              let names = this.propNames(firstArg ?? undefined)
-              if (names.length === 0) {
-                names = this.genericMacroNames(n, fn.text === "defineProps" ? "props" : "emits")
+              // M59 (#825) follow-up, measured on element-plus split-bar.vue:
+              // each prop/event symbol ranges at its own KEY's line, not the
+              // `defineProps({` line — the old nodeToRange(call) stamped the
+              // call for all of index/layout/resizable/... on lines 18-30.
+              // propEntries already carries key nodes; the generic type-literal
+              // form gets the same treatment (property identifiers / string
+              // literals). Offset to SFC coordinates like every other script
+              // artifact. The contains pass follows the range, so both move.
+              let entries = this.propEntries(firstArg ?? undefined)
+              if (entries.length === 0) {
+                entries = this.genericMacroEntries(n, fn.text === "defineProps" ? "props" : "emits")
               }
               const kind = fn.text === "defineProps"
                 ? ASTEngine.SymbolKind.Property
                 : ASTEngine.SymbolKind.Event
               const meta = fn.text === "defineProps" ? "isProp" : "isEmit"
-              for (const pn of names) {
+              for (const { name: pn, node: pnNode } of entries) {
                 const dedupe = `${meta}:${pn}`
                 if (seenMacroNames.has(dedupe)) continue
                 seenMacroNames.add(dedupe)
                 symbols.push({
                   name: pn,
                   kind,
-                  range: this.offsetRange(this.nodeToRange(n), lineOffset, colOffset, scriptStartIndex),
+                  range: this.offsetRange(this.nodeToRange(pnNode), lineOffset, colOffset, scriptStartIndex),
                   scope: moduleName,
                   ownerName: moduleName,
                   ownerKind: ASTEngine.SymbolKind.Class,
@@ -879,7 +887,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * parameters.
    */
   private genericMacroNames(callNode: Node, which: "props" | "emits"): string[] {
-    const out: string[] = []
+    return this.genericMacroEntries(callNode, which).map((e) => e.name)
+  }
+
+  /**
+   * M59 (#825) follow-up: genericMacroNames carrying the name node, so macro
+   * symbols range at their own key lines (same contract as the runtime form).
+   */
+  private genericMacroEntries(callNode: Node, which: "props" | "emits"): Array<{ name: string; node: Node }> {
+    const out: Array<{ name: string; node: Node }> = []
     const typeArgs = this.findChildByType(callNode, "type_arguments")
     if (!typeArgs) return out
     const objectType = this.findChildByType(typeArgs, "object_type")
@@ -890,7 +906,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (which === "props") {
         if (member.type === "property_signature") {
           const pid = this.findChildByType(member, "property_identifier")
-          if (pid?.text) out.push(pid.text)
+          if (pid?.text) out.push({ name: pid.text, node: pid })
         }
       } else {
         // emits: each call_signature is one event overload; the event names
@@ -904,13 +920,32 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let j = 0; j < fp.namedChildCount; j++) {
             const p = fp.namedChild(j)
             if (!p) continue
-            this.collectUnionStrings(p, seen)
+            this.collectUnionStringNodes(p, seen, out)
           }
-          out.push(...seen)
         }
       }
     }
     return out
+  }
+
+  /** collectUnionStrings carrying the literal node (generic-emits key lines). */
+  private collectUnionStringNodes(root: Node, seen: Set<string>, out: Array<{ name: string; node: Node }>): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "string") {
+        const v = unquote(n.text)
+        if (v && !seen.has(v)) {
+          seen.add(v)
+          out.push({ name: v, node: n })
+        }
+        continue // a string's children are fragments, not more events
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
   }
 
   private findDescendantType(root: Node, type: string): Node | null {

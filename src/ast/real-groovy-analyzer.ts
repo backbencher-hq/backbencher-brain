@@ -423,8 +423,15 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
             complexity: this.calculateGroovyMethodComplexity(node),
             // M59 (#825): annotations skipped — `@Override` is not where the
-            // overriding method is written.
-            range: this.symbolRange(node),
+            // overriding method is written — and the range starts at the NAME.
+            // tree-sitter-groovy absorbs a preceding field's type into a
+            // constructor's node (`final Distance distance` + `Sphere(...)`
+            // parse as one method_declaration starting at the field), so the
+            // node start is the field's line while the name is written 7 lines
+            // lower (measured: grails-core Sphere.groovy). The line belongs to
+            // the name, never to the construct that contains it (java/scala
+            // contract); the contains edge follows the range, so both move.
+            range: this.symbolRange(node, node.childForFieldName("name") ?? nameNode),
             visibility,
             genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
             parameters,
@@ -478,6 +485,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // legitimately carries the SQUEEZED METHOD's calls, which attribute
           // to the enclosing class context below.
           if (idNode.text === "def") continue
+          // M59 (#825) follow-up, measured on grails-core Sphere.groovy:
+          // `static Sphere valueOf(...)` parses as BOTH a
+          // constructor_declaration (the real method) AND a phantom
+          // field_declaration covering the header prefix (`static Sphere`);
+          // `final Distance distance` + ctor similarly split the field's
+          // TYPE into the field node and its NAME into the method node.
+          // Same defect family as the `def`-squeeze guard above: a grammar-
+          // manufactured field naming a member the class does not have.
+          // Proof of duplicate parse, not heuristic: two distinct same-line
+          // declarations must be `;`-separated, so a sibling method starting
+          // after the field with only whitespace between them (no `;`) is
+          // the same declaration parsed twice — the full-span method wins.
+          // Real shapes stay: `x; void foo()` has `;` in the gap, untyped
+          // `private test` has no same-line method, typed fields never match
+          // a trivia-only gap to a method consuming their own tokens.
+          if (this.isDuplicateParseField(node, content)) continue
           symbols.push({
             name: idNode.text,
             kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
@@ -1877,6 +1900,21 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `declarationLineNode` and scala's `declarationLineNode` — one rule for the
    * whole JVM family rather than three dialects of it.
    */
+  /** True when the field node is the same declaration as a sibling method, parsed twice (M59 #825 follow-up: `static Sphere valueOf` + the `final Distance distance`/ctor split). Proof, not heuristic: two distinct same-line declarations must be `;`-separated, so a sibling method starting after the field with only whitespace between them is the same tokens parsed twice — the full-span method wins. */
+  private isDuplicateParseField(node: Node, content: string): boolean {
+    const parent = node.parent
+    if (!parent) return false
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const s = parent.namedChild(i)
+      if (!s || s.id === node.id) continue
+      if (s.type !== "method_declaration" && s.type !== "constructor_declaration" && s.type !== "function_definition") continue
+      if (s.startPosition.row !== node.startPosition.row) continue
+      if (s.startIndex <= node.endIndex) continue
+      if (/^[\s]*$/.test(content.slice(node.endIndex, s.startIndex))) return true
+    }
+    return false
+  }
+
   private declarationLineNode(node: Node): Node {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
@@ -1891,8 +1929,8 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** The range of a SYMBOL (not of an import, an error or a raw node): annotations skipped. */
-  private symbolRange(node: Node) {
-    const decl = this.declarationLineNode(node)
+  private symbolRange(node: Node, nameNode?: Node | null) {
+    const decl = nameNode ?? this.declarationLineNode(node)
     const base = this.nodeToRange(node)
     return {
       ...base,
