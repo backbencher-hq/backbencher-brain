@@ -147,9 +147,18 @@ function languageRow(lang: string, spec: SpecLedger): Record<string, unknown> {
       evidenceTiersPinned: tierCount === null ? null : Number(tierCount),
       source: "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)",
     },
+    // Path + status only: the input's OWN run metadata (commit, generatedAt)
+    // stays in that input's record. Publishing it here would make this artifact
+    // change on every upstream re-run while nothing semantic changed, and the
+    // R4/D1 records that pin this file could then never be fresh at the same
+    // HEAD (found at HEAD e596a107: each closure re-run rewrote the S6 leg
+    // evidence, whose commit is published here, so byte-identical regeneration
+    // — the drift gate — was impossible to hold). A generated artifact whose
+    // byte identity IS the gate carries no other run's metadata; the R4 gate
+    // asserts this invariant structurally.
     evidence: {
-      s5: { path: s5Path, commit: s5.commit, generatedAt: s5.generatedAt, status: s5.status },
-      s6: s6 ? { path: s6Path, commit: s6.commit, status: s6.status } : { path: s6Path, present: false },
+      s5: { path: s5Path, status: s5.status },
+      s6: s6 ? { path: s6Path, status: s6.status } : { path: s6Path, present: false },
     },
     limitations: s5.budgetViolations.length > 0 ? [`budget violations recorded: ${s5.budgetViolations.join("; ")}`] : [],
   }
