@@ -6,13 +6,13 @@
   "status": "blocked",
   "blockedReason": "No Windows hardware or runner on this machine (process.platform is linux); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the Windows native leg on its GitHub-hosted runner and uploads the E7-win32.json artifact for the owner to persist. Recorded blocked locally, never claimed.",
   "runnableInstead": "npx tsx script/m25/verify-cross-platform.ts (on the target OS runner)",
-  "currentCommit": "a0a540f3cad287ecc025a37005568f8adb907b56",
+  "currentCommit": "a91b910a00ca23202fd2d335333f4a461d65fc1b",
   "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
   "evidenceFile": "E7-windows.json",
-  "generatedAt": "2026-09-19T01:28:20.644Z",
+  "generatedAt": "2026-09-19T01:47:50.150Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:28:20.644Z",
-    "contentSha256": "55de1a63ff2aa1d809c4b1506de17b5262e675d96ee60318accd09befb021c56"
+    "sealedAt": "2026-09-19T01:47:50.150Z",
+    "contentSha256": "28b4ecfc7ff074b73f037896430daa28e2b38f86b0cde9308a8091fec20d8736"
   }
 }
