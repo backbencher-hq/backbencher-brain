@@ -719,6 +719,27 @@ Two lanes are not what a bare total would suggest, and both are now stated by th
 
 **Honest classification of the 72 `missed` — it is an upper bound, and most of it is the instrument.** Every missed sample was adjudicated against the source, and the causes are: (i) the predicate counting **declarations** as call sites — scala `liftF`'s own declaration, vue `preventDefault(e) {`, typescript `revParse(…): string {` (68 such lines measured on the Exposed slice); (ii) **receiver calls in a chain** — the analyzer records the chain's LEAF by design, so `npm().diff(…)` and `git().log(…)` are calls to `diff`/`log`, while the predicate also credits `npm(`/`git(` (`resources/release-prepare.ts:39`, `release-metadata.ts:37`); (iii) **ownerless module-scope sites** — `testOnNodeProject('ts')` and the `diff-npm-package.ts` script calls are top-level statements with no enclosing symbol, which is the already-filed **#879** class and not a new defect. No issue is filed on this basis, `missed` keeps its `missedUpperBound` in the aggregate, and the samples stay in the evidence so the next round can adjudicate rather than inherit.
 
+### 3p. #879 — a nested site's answer was uninterpretable; the store now gives it the enclosing method (2026-09-19, #879)
+
+The harness check `nested-site-source-reaches-the-caller` had been pinned **RED on purpose** since #866: after that fix, a call from an anonymous body's `val` initialiser is attributed to the body's field member (`a`), which was stored with `owner_symbol_id = NULL`. So `bb_graph` answered with a symbol named `a` and **no owner chain connected it to the method the agent asked about** — the "unrecognisable subject" shape that made the opencode agent stop trusting the tool. Nothing was fabricated, nothing was lost, the lines were right; the *link* was missing.
+
+**The layer.** Reproduced three ways (`probe-anon-init-regression.ts`): analyzer emits 2 call edges at lines 6 and 8; the store persists both with the member as source and `owner = NULL`; the tool answers 2 callers whose `from` is `…:Fanon.scala:a:5`. The missing owner is a store-side fact — `enclosingStoreableId()` already existed for exactly this kind of attribution under #855.
+
+**The rule, chosen after measuring the alternatives.** The obvious fix — make the owner the innermost *enclosing storeable symbol* for everything — was measured first and **rejected**: on the 150-file scala slice it would re-own **1,393 of 3,468 symbols (40%)**, including 460 methods whose owner would move from one method to another. Instead the fallback is **strictly additive**: it runs only when every existing derivation left the owner NULL, it prefers the innermost **container-free** holder, and it skips symbols that are containers themselves. It therefore cannot change an owner that already exists, and the additions it does make were measured on the same slices before landing: scala 514, java 128, kotlin 32, typescript 11, groovy 0 — dominated by nested methods (388) and **constants inside a method body (101)**, which is this defect.
+
+**A scope trap found on the way, worth recording because it is the same family as everything else in this milestone:** the first version of the new helper referenced `CONTAINER_TYPES_LOOKUP` from a *narrower* block. TypeScript compiles that clean (a block-scoped name used inside a nested function is not an error), and it threw at runtime — every batch rolled back with `CONTAINER_TYPES_LOOKUP is not defined`, and the index came out empty. The declaration is now function-scoped, which removes the ordering trap and gives the three call sites one list.
+
+**Verification:**
+
+| check | result |
+|---|---|
+| `script/m59/verify-nested-owner-attribution.ts` (new, fixture) | **6/6 checks + 1 declared observation** — the member's owner is the enclosing **method** (not the outer object that also encloses it); the owner chain `a → callerScalaAnon` reaches the caller; a **mutation** nulling the owner turns A and B red and the restore turns them green; the **additive law** is a check (a class member keeps its class owner); and no owner is invented when nothing encloses |
+| `script/m59/acceptance-tool-callsites.ts` (the gate this issue was pinned to) | **15/15, all checks passed** (was 14/15) — `nested-site-source-reaches-the-caller`: *2 nested-source sites; 2 reach the caller by owner chain, **0 dead-end at a NULL owner***; corpus leg clean (404 files, 33,910 relationships, of 1,079 sites 0 fabricated / 0 wrong line / 0 missing) |
+| regression | `m51/verify-a1-owner-integrity` **10/10** (zero orphan owners, mutation proven), m59 legacy-zero-heal · rel-multiplicity · line-key-idempotency · honest-callsite all PASS, store-line-landing **0 INCONSISTENT of 31,730**, M44 U3 hub tree **27/27** + 5/5 mutants, U1 18/20 (the pre-existing #891 gap), `bun run script/verify-graph.ts` **PASS**, typecheck clean |
+| tool layer unchanged — measured, not assumed | the kotlin lane re-run gives the same stable cells to the digit (`assertEquals` 40, `current` 68, `forEach` 43, `execute` 32, `getString` 29, `connection` 8) across four builds including a pre-fix one. The lane total moves (270 → 264/267/269) because the **top-8 callee names differ between builds** and `copy` itself varies 30 → 33 between two runs of *identical* code — the #885 binding non-determinism, not this change. The fix alters answer *readability*, not site counts, and that is what the numbers say |
+
+**Filed from it, not swept up: [#894](https://github.com/backbencher-hq/backbencher-brain/issues/894).** The new gate's "no invention" control caught a **pre-existing** defect: `topLevel` (a single-line top-level function at line 11) is owned by `Local`, a class at lines 4–6 inside a method body, which does **not** enclose it — produced by the pre-existing "nearest preceding container" step, whose own comment reserves it for the regex fallback. Scale on the fresh cats-effect index: **1,221 of 6,009 owned symbols (20%)** carry an owner whose span does not enclose them (`method<-class` 271, `method<-interface` 262, `function<-type` 147). That number **mixes two causes this measurement cannot separate** — an invented owner, and an analyzer emitting a too-short `end` line — so it is filed with the split as its first task rather than "fixed" here. The gate records it as a declared observation tied to #894, not as a pass.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
@@ -743,6 +764,8 @@ asking a different question.
 | #888 silent 200-row cap | **fixed and verified** — declared limit + true total + `edgeLimit` on the wire + deterministic order; gate 20/20 mutation-proven, four real scala symbols match an independent SQL count, 12 regression gates re-run |
 | #890 `bb_edit` stale-file refusal | **fixed and verified** — refresh-one-file instead of refusing; fixture gate 18/18 · real-repo slice measured · four edit gates re-run unchanged · docs regenerated (`npm run docs:generate`, TOOL DOCS: PASS) |
 | #887 same-process stall | **fixed and verified** — root cause was the sweep's **own source predicate spinning** (`lastIndexOf` clamps a negative position to 0, so the keyword search re-found index 0 forever), not a tool call: progress guarantee + `unmodelled` verdict + interpolation-aware string stripping + per-call bounds + a stall watchdog, pinned by `probe-predicate-loop.ts` (84 real corpus spin triggers, guard on the shipped file). Acceptance: the twice-frozen `scala,kotlin --files=150` run completes in 1 m 34 s with 16/16 cells, WRONG=0 and both mutations caught. The 9-lane `bb_graph x language` matrix was then regenerated with the fixed instrument (§3o) |
+| #879 nested-site source ownerless | **fixed and verified** — the store now owns a symbolless-chain member by the innermost container-free enclosing symbol (strictly additive; the 40%-churn alternative was measured and rejected). Harness 14/15 → **15/15** with the pinned-red owner-chain check green, new fixture gate 6/6 with a mutation, m51 A1 10/10, tool layer numerically unchanged (and the residual variation attributed to #885). Filed the pre-existing 20%-non-enclosing-owner defect it uncovered as **#894** |
+| #894 owners that do not enclose their child | **filed** — 1,221 of 6,009 owned symbols on cats-effect; the invented-owner vs short-end-line split is deliberately left as the issue's first task |
 | #826 closure gate | **open** |
 
 **Tracking gap, stated:** this table's `closed` rows (#821–#824) are closed *in substance* — each was delivered, measured and pinned — but their GitHub issues were never transitioned, so the milestone still reports 10 open / 1 closed. Closing them is bookkeeping, not work, and it is the last honest step before #826 X1 can run.
@@ -773,6 +796,8 @@ asking a different question.
 - `validation/m59/results/matrix-tool-language.{jvm,web1,web2}.json` — the 9-lane `bb_graph x language`
   matrix, one file per half so each keeps its own command, commit and slice fingerprint; merged into the
   canonical `matrix-tool-language.json` (the pre-#887 halves are superseded and deliberately not merged)
+- `validation/m59/results/matrix-tool-language.scala-kotlin.json` — the #887 acceptance run: the exact
+  twice-frozen `scala,kotlin --files=150` configuration, completed with 16/16 cells and WRONG=0
 
 ## Reproduce
 
@@ -810,4 +835,9 @@ npx tsx script/m59/matrix-tool-language.ts --langs=java,scala,kotlin --files=150
 npx tsx script/m59/matrix-tool-language.ts --langs=groovy,typescript,javascript --files=150 --out=validation/m59/results/matrix-tool-language.web1.json
 npx tsx script/m59/matrix-tool-language.ts --langs=vue,svelte,xml --files=150 --out=validation/m59/results/matrix-tool-language.web2.json
 npx tsx script/m59/merge-matrix-halves.ts validation/m59/results/matrix-tool-language.jvm.json validation/m59/results/matrix-tool-language.web1.json validation/m59/results/matrix-tool-language.web2.json
+# #879 — the nested-site owner: the fix, the additive law, and a mutation that nulls the owner
+npx tsx script/m59/verify-nested-owner-attribution.ts
+npx tsx script/m59/probe-anon-init-regression.ts      # the same defect at all three layers, before/after
+# the gate it was pinned to (fixtures + the real corpus, ~3 min fresh)
+M59_ACCEPT_DATA=/tmp/m59-acc npx tsx script/m59/acceptance-tool-callsites.ts
 ```

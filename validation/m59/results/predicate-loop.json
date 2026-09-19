@@ -1,6 +1,6 @@
 {
   "probe": "M59.PREDICATE-LOOP",
-  "at": "2026-09-19T02:19:01.298Z",
+  "at": "2026-09-19T02:37:20.217Z",
   "command": "$HOME/.nvm/versions/node/v22.22.1/bin/node $HOME/mcp/backbencher-brain/script/m59/probe-predicate-loop.ts --files=150",
   "corpus": "$HOME/fixtures/repositories/Exposed",
   "sliceFiles": 150,
