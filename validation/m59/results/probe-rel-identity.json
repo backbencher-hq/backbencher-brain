@@ -1,0 +1,301 @@
+{
+  "probe": "M59.A8",
+  "issue": 854,
+  "at": "2026-09-19T03:40:29.944Z",
+  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "dataDir": "/tmp/m59-relident-data-Yz93L7",
+  "totals": {
+    "rows": 33929,
+    "pkCollisions": 0
+  },
+  "duplicateGroups": {
+    "groups": 116,
+    "extraRows": 223,
+    "groupsWithLine": 28,
+    "extraRowsWithLine": 28,
+    "fromDifferentSpellings": 116,
+    "fromSameSpelling": 0,
+    "byType": [
+      {
+        "rt": "contains",
+        "groups": 87,
+        "extra": 193
+      },
+      {
+        "rt": "references",
+        "groups": 27,
+        "extra": 27
+      },
+      {
+        "rt": "uses",
+        "groups": 1,
+        "extra": 2
+      },
+      {
+        "rt": "extends",
+        "groups": 1,
+        "extra": 1
+      }
+    ]
+  },
+  "containsGroups": {
+    "groups": 259,
+    "sample": [
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/dependabot.yml:dependabot:1",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/dependabot.yml:updates:2",
+        "n": 2,
+        "spellings": 2,
+        "exts": "updates,dependabot.updates"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/dependabot.yml:dependabot:1",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/dependabot.yml:version:1",
+        "n": 2,
+        "spellings": 2,
+        "exts": "version,dependabot.version"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/release.yml:release:1",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/release.yml:changelog:1",
+        "n": 2,
+        "spellings": 2,
+        "exts": "changelog,release.changelog"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:ci:8",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:concurrency:21",
+        "n": 2,
+        "spellings": 2,
+        "exts": "concurrency,ci.concurrency"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:ci:8",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:env:17",
+        "n": 2,
+        "spellings": 2,
+        "exts": "env,ci.env"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:ci:8",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:jobs:25",
+        "n": 2,
+        "spellings": 2,
+        "exts": "jobs,ci.jobs"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:ci:8",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:on:10",
+        "n": 2,
+        "spellings": 2,
+        "exts": "on,ci.on"
+      },
+      {
+        "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:env:17",
+        "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:PGP_PASSPHRASE:563",
+        "n": 2,
+        "spellings": 2,
+        "exts": "ci.jobs.publish.steps[35].env.PGP_PASSPHRASE,ci.jobs.publish.steps[36].env.PGP_PASSPHRASE"
+      }
+    ]
+  },
+  "sampleSpellingDuplicates": [
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:with:190",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:cache:203",
+      "rt": "contains",
+      "ln": null,
+      "n": 15,
+      "spellings": 15,
+      "exts": "ci.jobs.build.steps[3].with.cache,ci.jobs.build.steps[5].with.cache,ci.jobs.build.steps[7].with.cache,ci.jobs.build.steps[9].with.cache,ci.jobs.build.steps[11].with.cache,ci.jobs.publish.steps[3].with.cache,ci.jobs.publish.steps[5].with.cache,ci.jobs.publish.steps[7].with.cache,ci.jobs.publish.steps[9].with.cache,ci.jobs.publish.steps[11].with.cache,ci.jobs.dependency-submission.steps[3].with.cache,ci.jobs.dependency-submission.steps[5].with.cache,ci.jobs.dependency-submission.steps[7].with.cache,ci.jobs.dependency-submission.steps[9].with.cache,ci.jobs.dependency-submission.steps[11].with.cache"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:with:190",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:distribution:201",
+      "rt": "contains",
+      "ln": null,
+      "n": 15,
+      "spellings": 15,
+      "exts": "ci.jobs.build.steps[3].with.distribution,ci.jobs.build.steps[5].with.distribution,ci.jobs.build.steps[7].with.distribution,ci.jobs.build.steps[9].with.distribution,ci.jobs.build.steps[11].with.distribution,ci.jobs.publish.steps[3].with.distribution,ci.jobs.publish.steps[5].with.distribution,ci.jobs.publish.steps[7].with.distribution,ci.jobs.publish.steps[9].with.distribution,ci.jobs.publish.steps[11].with.distribution,ci.jobs.dependency-submission.steps[3].with.distribution,ci.jobs.dependency-submission.steps[5].with.distribution,ci.jobs.dependency-submission.steps[7].with.distribution,ci.jobs.dependency-submission.steps[9].with.distribution,ci.jobs.dependency-submission.steps[11].with.distribution"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:with:190",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:java-version:202",
+      "rt": "contains",
+      "ln": null,
+      "n": 15,
+      "spellings": 15,
+      "exts": "ci.jobs.build.steps[3].with.java-version,ci.jobs.build.steps[5].with.java-version,ci.jobs.build.steps[7].with.java-version,ci.jobs.build.steps[9].with.java-version,ci.jobs.build.steps[11].with.java-version,ci.jobs.publish.steps[3].with.java-version,ci.jobs.publish.steps[5].with.java-version,ci.jobs.publish.steps[7].with.java-version,ci.jobs.publish.steps[9].with.java-version,ci.jobs.publish.steps[11].with.java-version,ci.jobs.dependency-submission.steps[3].with.java-version,ci.jobs.dependency-submission.steps[5].with.java-version,ci.jobs.dependency-submission.steps[7].with.java-version,ci.jobs.dependency-submission.steps[9].with.java-version,ci.jobs.dependency-submission.steps[11].with.java-version"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:with:190",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:name:183",
+      "rt": "contains",
+      "ln": null,
+      "n": 12,
+      "spellings": 12,
+      "exts": "ci.jobs.build.steps[30].with.name,ci.jobs.publish.steps[13].with.name,ci.jobs.publish.steps[15].with.name,ci.jobs.publish.steps[17].with.name,ci.jobs.publish.steps[19].with.name,ci.jobs.publish.steps[21].with.name,ci.jobs.publish.steps[23].with.name,ci.jobs.publish.steps[25].with.name,ci.jobs.publish.steps[27].with.name,ci.jobs.publish.steps[29].with.name,ci.jobs.publish.steps[31].with.name,ci.jobs.publish.steps[33].with.name"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_0:183",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:if:184",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[0].if,ci.jobs.publish.steps[0].if,ci.jobs.dependency-submission.steps[0].if"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_0:183",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:name:183",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[0].name,ci.jobs.publish.steps[0].name,ci.jobs.dependency-submission.steps[0].name"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_0:183",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:run:186",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[0].run,ci.jobs.publish.steps[0].run,ci.jobs.dependency-submission.steps[0].run"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_10:247",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:if:184",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[10].if,ci.jobs.publish.steps[10].if,ci.jobs.dependency-submission.steps[10].if"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_10:247",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:name:183",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[10].name,ci.jobs.publish.steps[10].name,ci.jobs.dependency-submission.steps[10].name"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_10:247",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:run:186",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[10].run,ci.jobs.publish.steps[10].run,ci.jobs.dependency-submission.steps[10].run"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_11:252",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:id:197",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[11].id,ci.jobs.publish.steps[11].id,ci.jobs.dependency-submission.steps[11].id"
+    },
+    {
+      "src": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:item_11:252",
+      "tgt": "4c65eb4ef5cd56af4e1bdac068c31054a5bfeb51:.github/workflows/ci.yml:if:184",
+      "rt": "contains",
+      "ln": null,
+      "n": 3,
+      "spellings": 3,
+      "exts": "ci.jobs.build.steps[11].if,ci.jobs.publish.steps[11].if,ci.jobs.dependency-submission.steps[11].if"
+    }
+  ],
+  "sampleSameSpellingDuplicates": [],
+  "toolLeg": [
+    {
+      "callee": "name",
+      "duplicateGroups": 29,
+      "reportedCallers": 0,
+      "distinctFromAtLine": 0,
+      "reportedMoreThanSites": 0,
+      "distinctRowIds": 0,
+      "sameRowRepeated": 0,
+      "repeatedFromLineTypeKeys": 0,
+      "maxRepeat": 0,
+      "repeatedRowIds": [],
+      "note": "<none> rowIds mean the payload carries no rowId — the mapping is then unprovable here"
+    },
+    {
+      "callee": "run",
+      "duplicateGroups": 14,
+      "reportedCallers": 72,
+      "distinctFromAtLine": 31,
+      "reportedMoreThanSites": 41,
+      "distinctRowIds": 31,
+      "sameRowRepeated": 41,
+      "repeatedFromLineTypeKeys": 22,
+      "maxRepeat": 3,
+      "repeatedRowIds": [
+        {
+          "id": "ffect/unsafe/SleepSystem.scala:poll:37:park:calls:39",
+          "n": 3,
+          "depths": [
+            0,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "fe/WorkerThread.scala:lookForWork:360:park:calls:420",
+          "n": 3,
+          "depths": [
+            0,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "fe/WorkerThread.scala:lookForWork:360:park:calls:475",
+          "n": 3,
+          "depths": [
+            0,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "fe/WorkerThread.scala:lookForWork:360:park:calls:579",
+          "n": 3,
+          "depths": [
+            0,
+            2,
+            3
+          ]
+        },
+        {
+          "id": "nsafe/WorkerThread.scala:park:591:parkLoop:calls:596",
+          "n": 3,
+          "depths": [
+            0,
+            2,
+            4
+          ]
+        }
+      ],
+      "note": "<none> rowIds mean the payload carries no rowId — the mapping is then unprovable here"
+    },
+    {
+      "callee": "if",
+      "duplicateGroups": 11,
+      "reportedCallers": 0,
+      "distinctFromAtLine": 0,
+      "reportedMoreThanSites": 0,
+      "distinctRowIds": 0,
+      "sameRowRepeated": 0,
+      "repeatedFromLineTypeKeys": 0,
+      "maxRepeat": 0,
+      "repeatedRowIds": [],
+      "note": "<none> rowIds mean the payload carries no rowId — the mapping is then unprovable here"
+    }
+  ],
+  "verdict": "DEFECT-PRESENT"
+}

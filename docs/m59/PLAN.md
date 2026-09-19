@@ -761,6 +761,38 @@ The harness check `nested-site-source-reaches-the-caller` had been pinned **RED 
 
 (b) This section states **lane coverage**, not an address contract. The contract itself — one derivation, one formatter, three declared states — is M62.A1 (#875, IDE lane, open), and M59 deliberately does not build a second one beside it.
 
+### 3r. #854 re-measured — and the duplicate turned out to be TWO defects, only one of them #854's (2026-09-19)
+
+#854's recorded numbers (116 groups / 223 rows / 28 with a line) predate #822, #879 and the analyzer lane's line work, so they were re-measured with a new probe rather than cited: `script/m59/probe-rel-identity.ts` → `validation/m59/results/probe-rel-identity.json`, fresh cats-effect index at `feb2fd3f`, 33,929 relationship rows.
+
+**The store defect reproduces exactly, and the mechanism is confirmed rather than assumed:**
+
+| | measured |
+|---|---|
+| duplicate groups (source, resolved target, type, line) | **116** |
+| extra rows they account for | **223** |
+| of those groups, ones carrying a line | **28** |
+| caused by **different spellings** | **116** |
+| same spelling stored twice (a different mechanism) | **0** |
+| PK collisions (must be 0 — the safety control) | **0** |
+| by type | `contains` 87/193 · `references` 27/27 · `uses` 1/2 · `extends` 1/1 |
+| `contains` groups with >1 row (whole class) | 259 |
+
+The example is unambiguous — one import of one symbol, stored twice at one line:
+
+```
+target=Async      type=references  line=51  n=2  spellings: Async, cekernel.Async
+target=Reference  type=references  line=20  n=2  spellings: Reference, java.lang.ref.Reference
+```
+
+**What the probe did NOT show, and it matters: the tool-layer over-count I found is not this defect.** Ranking callees by duplicate groups and asking the real tool, `bb_graph('run')` returned **72 entries built from 31 distinct rows** — but `distinctRowIds` equalled `distinct(from,line)`, so no store row was duplicated; the tool emitted the *same* rowId at depths `[0,2,3]`. That is a **separate defect**, filed as **#895** with its mechanism (`cascadeBounds` derives the owner cascade as a string range from the id's last colon and includes the traced symbol itself; `callers.push` has no dedupe, and `visitedCallers` is keyed on `symbolId`, not `rowId`).
+
+**#854's blast radius, stated honestly instead of implied.** `bb_graph`'s default relationship types are `calls, instantiates, extends, implements` (`graph-engine.ts:9`) — `references` and `contains`, which are 114 of the 116 groups, are **not** in it. So the default caller/callee list is barely touched (one `extends` group, one extra row). The surfaces that genuinely read the affected types are the ones that consume `references`/`contains` directly. Claiming "bb_graph over-counts by 41 because of #854" would have been false; it happened to be the *other* defect wearing the same symptom, and both are now on record rather than merged into one story.
+
+**Also measured here and filed where it belongs:** the ownership misattribution behind #895 — in `WorkerThread.scala`, `run` (121-121, owned by `noop` 119-122) owns `lookForWork` (360-585), `park` (591-627) and `parkLoop` (664-710), all of which live inside the *other* `run` (312-950). A same-named, different-scope owner is worse than the non-enclosing owner #894 already tracks, and the prefix-based cascade is a second consumer of it. Evidence posted to #894; the fix is not #854's to make.
+
+#854 itself stays open for its own decision (what a relationship's identity *is* when a spelling resolves later), now with a current measurement and two sibling defects separated out of it.
+
 ## Why every previous gate passed while this was true
 
 Because the two instruments that could have contradicted it were not measuring: one certified the file
