@@ -8,17 +8,17 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "b3fe7faa371f3644dcd72f4baf54e17c20252810",
+  "currentCommit": "4fbe2121d5017ceddc9caecd2eb662389c265b69",
   "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
   "evidenceFile": "W4.json",
-  "generatedAt": "2026-09-19T00:15:24.455Z",
+  "generatedAt": "2026-09-19T01:00:34.269Z",
   "limitations": [
     "Badge styling (colors/shape) is per-editor CSS; the verified honesty surface is the class + data-attribute contract.",
     "Legend meanings are English UI terms; localization is not declared."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T00:15:24.455Z",
-    "contentSha256": "eb82cb868e739d6910f3bedbb6638ceb67fcc69f25c5ec54897f3571a2e2f9dc"
+    "sealedAt": "2026-09-19T01:00:34.270Z",
+    "contentSha256": "841bbe83903e99606013165e0fe7b1f060166429acb43414cbbb84ce12194ae9"
   }
 }
