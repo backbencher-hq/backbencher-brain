@@ -1,14 +1,27 @@
 {
   "raw": {
-    "hover": {
+    "definition": {
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/groovy/main.groovy",
       "range": {
-        "start": {
-          "line": 11,
-          "character": 2
-        },
         "end": {
           "line": 13,
           "character": 3
+        },
+        "start": {
+          "line": 11,
+          "character": 2
+        }
+      }
+    },
+    "hover": {
+      "range": {
+        "end": {
+          "line": 13,
+          "character": 3
+        },
+        "start": {
+          "line": 11,
+          "character": 2
         }
       },
       "contents": {
@@ -17,15 +30,18 @@
       },
       "data": {
         "provenance": {
+          "stale": false,
+          "evidenceClass": "structural",
           "engine": "bb_lsp hover@m24.l2",
           "source": "bb_index",
           "limitations": [
             "index-sourced; no compiler-backed types (complement stance)"
-          ],
-          "stale": false,
-          "evidenceClass": "structural"
+          ]
         },
         "symbol": {
+          "connectedSection": "**connected**: called by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A14%2C%22character%22%3A1%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [run — main.groovy:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A14%2C%22character%22%3A1%7D%5D)",
+          "name": "greet",
           "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A11%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A11%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A11%2C%22character%22%3A2%7D%5D)",
           "crossLanguageSection": "",
           "annotationSection": "",
@@ -33,50 +49,48 @@
           "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/groovy/main.groovy",
           "lineStart": 12,
           "lineEnd": 14,
-          "name": "greet",
-          "stale": false,
+          "parameters": [],
+          "definition": {
+            "line": 11,
+            "character": 2
+          },
           "qualifiedName": "greet",
           "symbolType": "method",
           "signature": "public method greet()",
+          "stale": false,
           "usageCount": 1,
           "evidenceTiers": [
             "structural",
             "usage_contextual"
-          ],
-          "connectedSection": "**connected**: called by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A14%2C%22character%22%3A1%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
-          "parameters": [],
-          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [run — main.groovy:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fgroovy%2Fmain.groovy%22%2C%22line%22%3A14%2C%22character%22%3A1%7D%5D)",
-          "definition": {
-            "line": 11,
-            "character": 2
-          }
+          ]
         }
       }
     },
+    "workspaceAbsence": [],
     "references": [
       {
         "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/groovy/main.groovy",
         "range": {
-          "start": {
-            "line": 14,
-            "character": 1
-          },
           "end": {
             "line": 19,
             "character": 27
+          },
+          "start": {
+            "line": 14,
+            "character": 1
           }
         }
       },
       {
         "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/groovy/main.groovy",
         "range": {
-          "start": {
-            "line": 11,
-            "character": 2
-          },
           "end": {
             "line": 13,
             "character": 3
+          },
+          "start": {
+            "line": 11,
+            "character": 2
           }
         }
       }
@@ -84,235 +98,221 @@
     "documentSymbol": [
       {
         "kind": 5,
-        "name": "Greeter",
         "children": [
           {
             "kind": 10,
+            "children": [],
+            "range": {
+              "end": {
+                "line": 5,
+                "character": 34
+              },
+              "start": {
+                "line": 5,
+                "character": 29
+              }
+            },
             "name": "items",
-            "children": [],
-            "detail": "items",
-            "range": {
-              "start": {
-                "line": 5,
-                "character": 29
-              },
-              "end": {
-                "line": 5,
-                "character": 34
-              }
-            },
             "selectionRange": {
-              "start": {
-                "line": 5,
-                "character": 29
-              },
               "end": {
                 "line": 5,
                 "character": 34
+              },
+              "start": {
+                "line": 5,
+                "character": 29
               }
             },
             "data": {
+              "evidenceTier": "indexed",
               "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:items:6",
-              "evidenceTier": "indexed",
               "notIndexed": false
-            }
+            },
+            "detail": "items"
           },
           {
             "kind": 6,
+            "children": [],
+            "range": {
+              "end": {
+                "line": 13,
+                "character": 3
+              },
+              "start": {
+                "line": 11,
+                "character": 2
+              }
+            },
             "name": "greet",
-            "children": [],
-            "detail": "greet",
-            "range": {
-              "start": {
-                "line": 11,
-                "character": 2
-              },
-              "end": {
-                "line": 13,
-                "character": 3
-              }
-            },
             "selectionRange": {
-              "start": {
-                "line": 11,
-                "character": 2
-              },
               "end": {
                 "line": 13,
                 "character": 3
+              },
+              "start": {
+                "line": 11,
+                "character": 2
               }
             },
             "data": {
-              "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:greet:12",
               "evidenceTier": "indexed",
+              "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:greet:12",
               "notIndexed": false
-            }
+            },
+            "detail": "greet"
           },
           {
             "kind": 6,
-            "name": "run",
             "children": [],
-            "detail": "run",
             "range": {
-              "start": {
-                "line": 14,
-                "character": 1
-              },
               "end": {
                 "line": 19,
                 "character": 27
+              },
+              "start": {
+                "line": 14,
+                "character": 1
               }
             },
+            "name": "run",
             "selectionRange": {
-              "start": {
-                "line": 14,
-                "character": 1
-              },
               "end": {
                 "line": 19,
                 "character": 27
+              },
+              "start": {
+                "line": 14,
+                "character": 1
               }
             },
             "data": {
-              "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:run:17",
               "evidenceTier": "indexed",
+              "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:run:17",
               "notIndexed": false
-            }
+            },
+            "detail": "run"
           }
         ],
-        "detail": "Greeter",
         "range": {
-          "start": {
-            "line": 2,
-            "character": 72
-          },
           "end": {
             "line": 13,
             "character": 5
+          },
+          "start": {
+            "line": 2,
+            "character": 72
           }
         },
+        "name": "Greeter",
         "selectionRange": {
-          "start": {
-            "line": 2,
-            "character": 72
-          },
           "end": {
             "line": 13,
             "character": 5
+          },
+          "start": {
+            "line": 2,
+            "character": 72
           }
         },
         "data": {
-          "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:Greeter:5",
           "evidenceTier": "indexed",
+          "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:Greeter:5",
           "notIndexed": false
-        }
+        },
+        "detail": "Greeter"
       },
       {
         "kind": 9,
-        "name": "Greeter",
         "children": [],
-        "detail": "Greeter",
         "range": {
-          "start": {
-            "line": 7,
-            "character": 2
-          },
           "end": {
             "line": 9,
             "character": 3
+          },
+          "start": {
+            "line": 7,
+            "character": 2
           }
         },
+        "name": "Greeter",
         "selectionRange": {
-          "start": {
-            "line": 7,
-            "character": 2
-          },
           "end": {
             "line": 9,
             "character": 3
+          },
+          "start": {
+            "line": 7,
+            "character": 2
           }
         },
         "data": {
-          "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:Greeter:8",
           "evidenceTier": "indexed",
+          "id": "21a1241b3a82aa53c3ee8c86c02ec37ee9d4df6d:main.groovy:Greeter:8",
           "notIndexed": false
-        }
-      }
-    ],
-    "workspaceAbsence": [],
-    "definition": {
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/groovy/main.groovy",
-      "range": {
-        "start": {
-          "line": 11,
-          "character": 2
         },
-        "end": {
-          "line": 13,
-          "character": 3
-        }
+        "detail": "Greeter"
       }
-    }
+    ]
   },
   "checks": [
     {
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
       "ok": true
     },
     {
-      "detail": "1",
       "name": "S6: vim.lsp.start launched bb_lsp",
+      "detail": "1",
       "ok": true
     },
     {
-      "detail": "client_id=1 initialized=true",
       "name": "S6: client initialized",
+      "detail": "client_id=1 initialized=true",
       "ok": true
     },
     {
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
       "name": "S6: capabilities advertised",
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
       "ok": true
     },
     {
-      "detail": "```\npublic method greet()\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevi",
       "name": "S6: hover renders the symbol",
-      "ok": true
-    },
-    {
       "detail": "```\npublic method greet()\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevi",
+      "ok": true
+    },
+    {
       "name": "S6: hover carries evidence tier (contract §2)",
+      "detail": "```\npublic method greet()\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevi",
       "ok": true
     },
     {
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 3,\n      line = 13\n    },\n    start = {\n      character = 2,\n      line = 11\n    }\n  },\n  uri = \"file://$HOME",
       "name": "S6: definition resolves",
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 3,\n      line = 13\n    },\n    start = {\n      character = 2,\n      line = 11\n    }\n  },\n  uri = \"file://$HOME",
       "ok": true
     },
     {
-      "detail": "2",
       "name": "S6: references returns locations",
+      "detail": "2",
       "ok": true
     },
     {
-      "detail": "{ \"Greeter\", \"Greeter\" }",
       "name": "S6: documentSymbols include the class",
+      "detail": "{ \"Greeter\", \"Greeter\" }",
       "ok": true
     },
     {
-      "detail": "{}",
       "name": "S6: declared absence is honored (no fabricated symbols)",
+      "detail": "{}",
       "ok": true
     }
   ],
   "language": "groovy",
   "session": [],
   "status": "verified",
-  "commit": "f7695aadfd5d19c6671b1cd85d405c89957c318c",
+  "commit": "65da5bcc857e25e4cc4e3626aaeac8b23ece7308",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T01:40:08.655Z",
-    "contentSha256": "1174ad164a57efd3cbf8ab3445de59fb4dfc22c3b257e0e1dc5a53e4fa386162"
+    "sealedAt": "2026-09-19T01:43:52.805Z",
+    "contentSha256": "f554a14e5e76760ed6a5d65ad27865b561ef99375c1ae894660f5da7a06adfeb"
   }
 }
