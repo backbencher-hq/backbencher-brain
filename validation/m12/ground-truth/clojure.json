@@ -29,6 +29,7 @@
     { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "com.example.clojure.service", "targetId": "clojure.string", "attributes": { "type": "references" }, "state": "resolved" },
     { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "com.example.clojure.service", "targetId": "clojure.set", "attributes": { "type": "references" }, "state": "resolved" },
     { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "com.example.clojure.service", "targetId": "io.other", "attributes": { "type": "references" }, "state": "resolved" },
+    { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "com.example.clojure.service", "targetId": "java.util", "attributes": { "type": "references" }, "state": "resolved" },
     { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "ClojureService", "targetId": "Formatter", "attributes": { "type": "implements" }, "state": "resolved" },
     { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "create-service", "targetId": "ClojureService", "attributes": { "type": "instantiates" }, "state": "resolved" },
     { "layer": "relationships", "kind": "relationship", "file": "Service.clj", "sourceId": "uses-lib", "targetId": "clojure.string/join", "attributes": { "type": "calls" }, "state": "resolved" },

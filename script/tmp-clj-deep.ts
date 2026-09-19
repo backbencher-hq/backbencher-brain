@@ -75,6 +75,55 @@ const r4 = run("d4.clj", D4)
 console.log("\n### D4 params")
 for (const s of r4.symbols) console.log(`  ${s.name}: params=${JSON.stringify((s.parameters ?? []).map((p: any) => p.name))}`)
 
+// D5: docs — docstring strings + leading comment blocks
+const D5 = `(ns probe.docs)
+
+;; Attaches to the next definition.
+;; Second line.
+(defn commented [x] x)
+
+(defn documented "Doc string wins." [x] x)
+(def documented-var "Doc v." 1)
+`
+const r5 = run("d5.clj", D5)
+console.log("\n### D5 docs")
+for (const s of r5.symbols) {
+  const c = (s as any).comments
+  if (c) console.log(`  ${s.name}: comments=${JSON.stringify(c)} docstring=${JSON.stringify((s as any).docstring)}`)
+}
+
+// D6: tagged literals / ctor literals
+const D6 = `(ns probe.tags)
+#inst "2020-01-01"
+#Foo[1 2]
+#probe.recs.Rec{:x 1}
+#my/tag (call-x)
+#my/tag [1 2]
+(defn t [] #Foo[3 4])
+`
+const r6 = run("d6.clj", D6)
+console.log("\n### D6 tagged literals")
+for (const r of rels(r6)) console.log("  " + r)
+
+// D7: impl owner identity for extend-protocol
+const D7 = `(ns probe.owner)
+(defprotocol P (px [this]))
+(extend-protocol P
+  String
+  (px [_] 1))
+`
+const r7 = run("d7.clj", D7)
+console.log("\n### D7 impl owners")
+for (const s of r7.symbols) console.log(`  ${s.name}: owner=${s.ownerName} scope=${s.scope} impls=${(s.metadata ?? {}).isProtocolMethodImpl ?? false}`)
+
+// D8: (:import [java.util Date UUID]) items
+const D8 = `(ns probe.imp
+  (:import [java.util Date UUID]))
+`
+const r8 = run("d8.clj", D8)
+console.log("\n### D8 import vec items")
+console.log(JSON.stringify(r8.imports.map((i: any) => ({ module: i.module, items: i.items }))))
+
 // ── Corpus census ───────────────────────────────────────────────────────────
 function walk(dir: string, acc: string[] = []): string[] {
   let entries: fs.Dirent[] = []

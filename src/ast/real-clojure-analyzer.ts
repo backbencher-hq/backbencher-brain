@@ -10,6 +10,12 @@ const STM_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const a
 const COMPLEXITY_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["if", "cond", "when", "case", "for", "loop", "when-let", "if-let"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = {}; const arr = ["println", "print", "def", "alter-var-root", "with-redefs", "set!", "swap!", "reset!", "alter"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
+// C9: forms whose DIRECT list_lit children are METHOD DEFINITIONS, not calls —
+// `(px [_] 3)` inside reify/extend-type/extend-protocol/proxy/defrecord/deftype
+// (defprotocol signatures are listed too: they are already symbolized by the
+// defprotocol branch, but they must still be excluded from call handling).
+const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> = {}; const arr = ["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -77,31 +83,69 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       return symName(first)
     }
 
-    // Params: collect symbol names from every parameter vector of the form.
-    // Single-arity defn has one direct vec_lit; multi-arity defn has one
-    // list_lit (arity clause) per arity whose first child is the params vec.
+    // Params (C10/C11): the parameter vector is THE FIRST direct vec_lit
+    // child of the form — never "every vec_lit child" (a body vector like the
+    // `[y z]` in `(defn w [x] [y z])` leaked into parameters: `(defn g
+    // [{:keys [a b]} c] [a b c])` reported ["c","a","b"]). Only when NO direct
+    // vec exists do list children get read as multi-arity clauses — `(defn h
+    // ([] 1) ([x] x))` — and only clauses that OPEN with a vec_lit (a body
+    // list never does). Bindings resolve through destructuring the way the
+    // reader binds them: `&` never becomes a parameter name, vector nesting
+    // recurses, and map destructuring contributes :keys/:strs/:syms names,
+    // :as aliases, and explicit {local :key} symbols — `:or` default values
+    // are expressions, not bindings, and are skipped wholesale.
     const extractParams = (fnNode: Node | null): ASTEngine.Parameter[] => {
       const params: ASTEngine.Parameter[] = []
       if (!fnNode) return params
       const seen = new Set<string>()
-      const collectVec = (vec: Node) => {
-        for (let i = 0; i < vec.namedChildCount; i++) {
-          const child = vec.namedChild(i)
-          if (!child || child.type !== "sym_lit") continue
-          const name = symName(child)
-          if (!name || seen.has(name)) continue
+      const collectBinding = (binding: Node) => {
+        if (binding.type === "sym_lit") {
+          const name = symName(binding)
+          if (!name || name === "&" || seen.has(name)) return
           seen.add(name)
           params.push({ name, type: "Any" })
+          return
         }
+        if (binding.type === "vec_lit") {
+          for (let i = 0; i < binding.namedChildCount; i++) {
+            const c = binding.namedChild(i)
+            if (c) collectBinding(c)
+          }
+          return
+        }
+        if (binding.type === "map_lit") {
+          for (let i = 0; i < binding.namedChildCount; i++) {
+            const k = binding.namedChild(i)
+            if (!k) continue
+            if (k.type === "kwd_lit") {
+              const kw = k.childForFieldName("name")?.text || ""
+              if (kw === "keys" || kw === "strs" || kw === "syms") {
+                const v = binding.namedChild(i + 1)
+                if (v && (v.type === "vec_lit" || v.type === "sym_lit")) { collectBinding(v); i++ }
+              } else if (kw === "as") {
+                const v = binding.namedChild(i + 1)
+                if (v) { collectBinding(v); i++ }
+              } else if (kw === "or") {
+                i++ // default-value map: values are expressions, never bindings
+              }
+            } else if (k.type === "sym_lit") {
+              collectBinding(k) // {local :key} — the symbol is the binding
+            }
+          }
+          return
+        }
+        // Any other node shape carries no bindings.
       }
-      const isArityClause = (n: Node): boolean =>
-        n.type === "list_lit" && n.namedChild(0)?.type === "vec_lit"
+      let directVec: Node | null = null
+      const arityVecs: Node[] = []
       for (let i = 0; i < fnNode.namedChildCount; i++) {
         const c = fnNode.namedChild(i)
         if (!c) continue
-        if (c.type === "vec_lit") collectVec(c)
-        else if (isArityClause(c)) collectVec(c.namedChild(0)!)
+        if (c.type === "vec_lit") { if (!directVec) directVec = c }
+        else if (c.type === "list_lit" && c.namedChild(0)?.type === "vec_lit") arityVecs.push(c.namedChild(0)!)
       }
+      if (directVec) collectBinding(directVec)
+      else for (const v of arityVecs) collectBinding(v)
       return params
     }
 
@@ -115,12 +159,224 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     ]
 
     // ── Symbol/relationship helpers ───────────────────────────────────────
-    const pushRel = (rel: ASTEngine.UniversalRelationship) => {
+    // Relationship emission (dedupe by source|type|target|callArity|line
+    // identity — the ER-D2/EX-L2 row-identity contract). Two call SITES of one
+    // callee on different lines are TWO edges (the store row id is
+    // `source:type:target:line:m40`, so a NULL line collapsed every site of a
+    // callee into one row — the measured pre-fix state: 0/8381 clojure edges
+    // carried a line). Sites sharing a line still collapse — one row per site
+    // line. The LINE is always the NAME-BEARING node's 1-based line (the
+    // callee, the libspec, the protocol/type name, the symbol's own
+    // declaration) — never 0, and absent only where no name-bearing node
+    // exists.
+    const seenRelKeys = new Set<string>()
+    const pushRel = (
+      source: string,
+      target: string,
+      type: ASTEngine.RelationshipType,
+      confidence: number,
+      metadata: Record<string, any> = {},
+      line?: number,
+      callArity?: number,
+    ) => {
+      const key = `${source}|${type}|${target}|${callArity ?? ""}|${line ?? ""}`
+      if (seenRelKeys.has(key)) return
+      seenRelKeys.add(key)
+      // M59 (#825): the line joins the edge at construction (M60.P1's
+      // emit surface reads `line_number:` from the analyzer source) — the
+      // name-bearing node's 1-based line, never 0, absent when underivable.
+      const rel: ASTEngine.UniversalRelationship = {
+        source, target, type, confidence,
+        metadata: callArity === undefined ? metadata : { ...metadata, callArity },
+        ...(typeof line === "number" && line > 0 ? { line_number: line } : {}),
+      }
       relationships.push(rel)
     }
 
-    const containsOf = (owner: string) => (target: string) => {
-      pushRel({ source: owner, target, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
+    // C5: `alias/Name` resolves through the ns aliases (ns clauses AND
+    // top-level require forms register into the same map) — `p/Proto` must
+    // outlive the raw alias exactly like call targets do, or implements edges
+    // dangle on `p` while calls resolve.
+    const resolveQualified = (name: string): string => {
+      const slash = name.indexOf("/")
+      if (slash <= 0) return name
+      const alias = name.slice(0, slash)
+      const rest = name.slice(slash + 1)
+      const resolved = namespaceAliases[alias]
+      return resolved ? `${resolved}/${rest}` : name
+    }
+
+    // Call-site arity (C3): the count of argument FORMS after the executable
+    // head — comments/discards occupy no argument position. Together with the
+    // line it joins the edge identity, so `(pick)` and `(pick x)` on one line
+    // are two distinct edges, exactly like erlang's `pick/0` vs `pick/1`.
+    const callArityOf = (list: Node): number => {
+      const head = executionHead(list)
+      if (!head) return 0
+      let n = 0
+      for (let i = 0; i < list.namedChildCount; i++) {
+        const c = list.namedChild(i)
+        if (!c || c.type === "comment" || c.type === "dis_expr") continue
+        if (c.startIndex > head.startIndex) n++
+      }
+      return n
+    }
+
+    // ── Doc channel (C4, EX-L9/M60 parity) ────────────────────────────────
+    // comments mirrors the text (the payload survives even though comments
+    // has no store binding by design); docstring is the channel the store
+    // seam reads. Two sources: the leading `;;` comment block immediately
+    // above the form, and the form's own docstring string.
+    const stripCommentText = (text: string): string => {
+      let i = 0
+      while (i < text.length && text[i] === ";") i++
+      return text.slice(i).trim()
+    }
+    const stripDocstringText = (text: string): string => {
+      const t = text.trim()
+      if (t.length >= 2 && t.startsWith("\"") && t.endsWith("\"")) return t.slice(1, -1)
+      return t
+    }
+    const leadingCommentTexts = (n: Node): string[] => {
+      const out: string[] = []
+      let prev = n.previousNamedSibling
+      while (prev && prev.type === "comment") {
+        const t = stripCommentText(prev.text)
+        if (t.length > 0) out.unshift(t)
+        prev = prev.previousNamedSibling
+      }
+      return out
+    }
+    const docstringOf = (formNode: Node, style: "fn" | "def" | "always"): string => {
+      if (style === "always") {
+        const c2 = formNode.namedChild(2)
+        return c2 && c2.type === "str_lit" ? stripDocstringText(c2.text) : ""
+      }
+      if (style === "def") {
+        // `(def x "literal")` — a lone string is the VALUE; a docstring needs
+        // an initializer after it: `(def x "doc" init)`.
+        const c2 = formNode.namedChild(2)
+        const c3 = formNode.namedChild(3)
+        return c2 && c2.type === "str_lit" && c3 ? stripDocstringText(c2.text) : ""
+      }
+      // fn family: the string must sit directly before the params vec (single
+      // arity) or before an arity clause (multi-arity) — a string anywhere
+      // else is a body expression.
+      for (let i = 2; i < formNode.namedChildCount; i++) {
+        const c = formNode.namedChild(i)
+        if (!c) continue
+        if (c.type === "str_lit") {
+          const next = formNode.namedChild(i + 1)
+          const beforeParams = next !== null && (next.type === "vec_lit" || (next.type === "list_lit" && next.namedChild(0)?.type === "vec_lit"))
+          return beforeParams ? stripDocstringText(c.text) : ""
+        }
+        if (c.type === "vec_lit" || c.type === "list_lit") return ""
+      }
+      return ""
+    }
+    const attachDocs = (sym: ASTEngine.UniversalSymbol, formNode: Node, style: "fn" | "def" | "always") => {
+      const doc = docstringOf(formNode, style)
+      const comments = leadingCommentTexts(formNode)
+      if (doc) {
+        sym.comments = comments.length > 0 ? [...comments, doc] : [doc]
+        ;(sym as any).docstring = doc
+      } else if (comments.length > 0) {
+        sym.comments = comments
+        ;(sym as any).docstring = comments.join(" ")
+      }
+    }
+
+    // C7: one lib-spec handler for BOTH sites — ns clauses (`(:require …)`)
+    // and the top-level directive forms (`(require '[x :as y])` after the ns)
+    // that previously vanished (aliases unregistered, imports unrecorded, and
+    // every `s/join` call left dangling). Top-level forms quote their specs
+    // (`'[x :as y]`, `'(pkg Cls)`), so a quoting_lit is unwrapped first.
+    const handleLibNode = (rawNode: Node) => {
+      const spec = rawNode.type === "quoting_lit" ? (rawNode.namedChild(0) ?? rawNode) : rawNode
+      if (spec.type === "vec_lit") {
+        // [lib :as alias] | [lib :refer [a b]] | [lib] | (:import [pkg Cls1 Cls2])
+        const libNameNode = spec.namedChild(0)
+        const libName = symName(libNameNode)
+        if (!libName) return
+        let alias = ""
+        let referNames: string[] = []
+        const subNames: string[] = []
+        let sawKwd = false
+        for (let k = 1; k < spec.namedChildCount; k++) {
+          const part = spec.namedChild(k)
+          if (!part) continue
+          if (part.type === "kwd_lit") {
+            sawKwd = true
+            const kw = part.childForFieldName("name")?.text || ""
+            if (kw === "as" && k + 1 < spec.namedChildCount) {
+              alias = symName(spec.namedChild(k + 1))
+            } else if (kw === "refer" && k + 1 < spec.namedChildCount) {
+              const refVec = spec.namedChild(k + 1)
+              if (refVec && refVec.type === "vec_lit") {
+                for (let r = 0; r < refVec.namedChildCount; r++) {
+                  const rn = refVec.namedChild(r)
+                  if (rn && rn.type === "sym_lit") referNames.push(symName(rn))
+                }
+              }
+            }
+          } else if (part.type === "sym_lit") {
+            // (:import [java.util Date UUID]) — symbols after the package are
+            // imported class names, not part of the lib name.
+            subNames.push(symName(part))
+          }
+        }
+        if (alias) namespaceAliases[alias] = libName
+        const items = referNames.length > 0 ? referNames : subNames.length > 0 && !sawKwd ? subNames : alias ? [alias] : ["*"]
+        imports.push({ module: libName, items: [...items], type: "named", isExternal: true, line: (libNameNode ?? spec).startPosition.row + 1 })
+        pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, (libNameNode ?? spec).startPosition.row + 1)
+        for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
+          if (libName.startsWith(needle)) frameworks[fw] = true
+        }
+        if (subNames.length > 0 && !sawKwd) patterns["Java Interoperability"] = true
+      } else if (spec.type === "list_lit") {
+        // (:import (java.util Date UUID)) — package + class list. The
+        // references edge mirrors the vec-import site (`[java.util Date]`)
+        // so the two syntactic twins behave identically (#CLJ1 fixture
+        // toplevel-forms); it targets the package, line = the package name.
+        const pkgNode = spec.namedChild(0)
+        const pkg = symName(pkgNode)
+        if (!pkg) return
+        pushRel(currentNamespace, pkg, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true, isImport: true }, (pkgNode ?? spec).startPosition.row + 1)
+        for (let k = 1; k < spec.namedChildCount; k++) {
+          const cls = spec.namedChild(k)
+          if (cls && cls.type === "sym_lit") {
+            imports.push({ module: pkg, items: [symName(cls)], type: "named", isExternal: true, line: cls.startPosition.row + 1 })
+            patterns["Java Interoperability"] = true
+          }
+        }
+      } else if (spec.type === "sym_lit") {
+        const libName = symName(spec)
+        if (libName) {
+          imports.push({ module: libName, items: ["*"], type: "named", isExternal: true, line: spec.startPosition.row + 1 })
+          pushRel(currentNamespace, libName, ASTEngine.RelationshipType.References, 0.9, { clojureSpecific: true, isLibraryDep: true }, spec.startPosition.row + 1)
+          for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
+            if (libName.startsWith(needle)) frameworks[fw] = true
+          }
+        }
+      }
+    }
+
+    // C9: the owner of a method implementation — the record/type name for
+    // defrecord/deftype, the nearest preceding symbol for extend-protocol
+    // (the TYPE before the impl group; the protocol is child 1), the named
+    // type for extend-type, and the enclosing context for reify/proxy
+    // (anonymous types have no name of their own).
+    const methodImplOwner = (implNode: Node, parentForm: string): string => {
+      const parent = implNode.parent
+      if ((parentForm === "defrecord" || parentForm === "deftype" || parentForm === "extend-type") && parent) {
+        return symName(parent.namedChild(1))
+      }
+      if (parentForm === "extend-protocol") {
+        let prev = implNode.previousNamedSibling
+        while (prev && prev.type !== "sym_lit") prev = prev.previousNamedSibling
+        return prev ? symName(prev) : ""
+      }
+      return activeFunction ? activeFunction.name : currentNamespace
     }
 
     const executionHead = (list: Node): Node | null => {
@@ -173,6 +429,40 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (node.type === "quoting_lit") continue
+      // ── C12/C13: tagged / constructor literals ───────────────────────
+      // `#Foo[1 2]` / `#probe.recs.Rec{:x 1}` (Clojure 1.12 record/class
+      // literals) name a TYPE: emit an instantiates edge from the enclosing
+      // context. The reader decides ctor-vs-tag by class resolution, which an
+      // AST-only pass cannot do — the shape rule is the same one the ctor
+      // idioms already use: a constructor name ENDS IN AN UPPERCASE SEGMENT
+      // (Foo, probe.recs.Rec, p/Rec); lowercase tags (`#my/tag [1 2]`) are
+      // reader DATA. Payloads are data either way — `#my/tag (call-x)` must
+      // never emit a call to call-x (the measured C13 defect).
+      if (node.type === "tagged_or_ctor_lit") {
+        const tagNode = node.namedChild(0)
+        const payload = node.namedChild(1)
+        const tag = symName(tagNode)
+        if (tag && payload && (payload.type === "vec_lit" || payload.type === "map_lit")) {
+          const namePart = tag.includes("/") ? tag.slice(tag.indexOf("/") + 1) : tag
+          const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
+          const c0 = lastSeg.charCodeAt(0)
+          if (c0 >= 65 && c0 <= 90) {
+            const src = activeFunction ? activeFunction.name : currentNamespace
+            pushRel(src, resolveQualified(tag), ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isCtorLiteral: true, ...(activeFunction ? {} : { isTopLevel: true }) }, tagNode ? tagNode.startPosition.row + 1 : undefined, payload.type === "vec_lit" ? payload.namedChildCount : undefined)
+          }
+        }
+        continue
+      }
+      if (node.type === "list_lit" && node.parent?.type === "list_lit") {
+        // C7/C8 seam guard: the direct list children of a LIBSPEC site are
+        // DATA — `(java.util Date)` in `(:import …)` names a package plus
+        // classes, it is never a call. The ns-clause and top-level directive
+        // branches consume the spec through handleLibNode; without this guard
+        // the C8 top-level attribution fabricates `ns -[calls]-> java.util`
+        // (caught by the M12 differential as a false positive).
+        const pf = formNameOf(node.parent)
+        if (pf === "require" || pf === "use" || pf === "import" || pf === "refer" || pf === "refer-clojure") continue
+      }
       if (node.type === "list_lit") {
         const form = formNameOf(node)
         if (form === "quote" || form === "clojure.core/comment" || (form === "comment" && !mayShadowComment)) continue
@@ -214,14 +504,16 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nsName = symName(node.namedChild(1))
           if (nsName) currentNamespace = nsName
           namespaceAliases = {}
-          symbols.push({
+          const modSym: ASTEngine.UniversalSymbol = {
             name: currentNamespace,
             kind: ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
             scope: "",
             visibility: "public",
             metadata: { clojureSpecific: true }
-          })
+          }
+          symbols.push(modSym)
+          attachDocs(modSym, node, "always")
           exports.push({ name: currentNamespace, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), visibility: "public" })
 
           // require / use / import / refer-clojure clauses
@@ -233,62 +525,21 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
 
             for (let j = 1; j < clause.namedChildCount; j++) {
               const libNode = clause.namedChild(j)
-              if (!libNode) continue
-
-              if (libNode.type === "vec_lit") {
-                // [lib :as alias] | [lib :refer [a b]] | [lib]
-                const libName = symName(libNode.namedChild(0))
-                if (!libName) continue
-                let alias = ""
-                let referNames: string[] = []
-                for (let k = 1; k < libNode.namedChildCount; k++) {
-                  const part = libNode.namedChild(k)
-                  if (!part || part.type !== "kwd_lit") continue
-                  const kw = part.childForFieldName("name")?.text || ""
-                  if (kw === "as" && k + 1 < libNode.namedChildCount) {
-                    alias = symName(libNode.namedChild(k + 1))
-                  } else if (kw === "refer" && k + 1 < libNode.namedChildCount) {
-                    const refVec = libNode.namedChild(k + 1)
-                    if (refVec && refVec.type === "vec_lit") {
-                      for (let r = 0; r < refVec.namedChildCount; r++) {
-                        const rn = refVec.namedChild(r)
-                        if (rn && rn.type === "sym_lit") referNames.push(symName(rn))
-                      }
-                    }
-                  }
-                }
-                if (alias) namespaceAliases[alias] = libName
-                if (referNames.length > 0) {
-                  imports.push({ module: libName, items: referNames, type: "named", isExternal: true, line: libNode.startPosition.row + 1 })
-                } else {
-                  imports.push({ module: libName, items: alias ? [alias] : ["*"], type: "named", isExternal: true, line: libNode.startPosition.row + 1 })
-                }
-                pushRel({ source: currentNamespace, target: libName, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { clojureSpecific: true, isLibraryDep: true } })
-                for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
-                  if (libName.startsWith(needle)) frameworks[fw] = true
-                }
-              } else if (libNode.type === "list_lit") {
-                // (:import (java.util Date UUID)) — package + class list
-                const pkg = symName(libNode.namedChild(0))
-                if (!pkg) continue
-                for (let k = 1; k < libNode.namedChildCount; k++) {
-                  const cls = libNode.namedChild(k)
-                  if (cls && cls.type === "sym_lit") {
-                    imports.push({ module: pkg, items: [symName(cls)], type: "named", isExternal: true, line: cls.startPosition.row + 1 })
-                    patterns["Java Interoperability"] = true
-                  }
-                }
-              } else if (libNode.type === "sym_lit") {
-                const libName = symName(libNode)
-                if (libName) {
-                  imports.push({ module: libName, items: ["*"], type: "named", isExternal: true, line: libNode.startPosition.row + 1 })
-                  pushRel({ source: currentNamespace, target: libName, type: ASTEngine.RelationshipType.References, confidence: 0.9, metadata: { clojureSpecific: true, isLibraryDep: true } })
-                  for (const [needle, fw] of REQUIRED_LIB_PATTERNS) {
-                    if (libName.startsWith(needle)) frameworks[fw] = true
-                  }
-                }
-              }
+              if (libNode) handleLibNode(libNode)
             }
+          }
+        }
+        // ── C7: top-level directive forms after the ns ────────────────────
+        // `(require '[clojure.string :as s])`, `(import '(java.util Date))`,
+        // `(use 'foo)`, `(refer 'foo)` — previously ignored entirely (only ns
+        // clauses were parsed), leaving aliases unregistered and every
+        // `s/join`-style call dangling. The kwd-headed ns clauses
+        // (`(:require …)`) are consumed by the ns branch above; this branch
+        // fires only for sym-headed top-level forms.
+        else if ((formName === "require" || formName === "use" || formName === "import" || formName === "refer") && executionHead(node)?.type === "sym_lit") {
+          for (let j = 1; j < node.namedChildCount; j++) {
+            const libNode = node.namedChild(j)
+            if (libNode) handleLibNode(libNode)
           }
         }
         // ── defn / defn- / defmacro ──────────────────────────────────────
@@ -305,17 +556,36 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           symbols.push(funcSymbol)
           activeFunction = funcSymbol
+          attachDocs(funcSymbol, node, "fn")
           if (isMacro) patterns["Metaprogramming"] = true
           exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: isPrivate ? "private" : "public" })
+        }
+        // ── deftest (clojure.test) ───────────────────────────────────────
+        // The test body is a function: calls inside it were dropped entirely
+        // (no symbol, no activeFunction) and, with top-level attribution
+        // arriving in the same wave, the deftest name is the honest caller.
+        else if (formName === "deftest") {
+          const name = symName(node.namedChild(1)) || `test_${node.startPosition.row}`
+          const testSym: ASTEngine.UniversalSymbol = {
+            name, kind: ASTEngine.SymbolKind.Function,
+            range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
+            visibility: "public", parameters: [],
+            metadata: { clojureSpecific: true, isTest: true, isPure: true, complexity: 1 }
+          }
+          symbols.push(testSym)
+          activeFunction = testSym
+          attachDocs(testSym, node, "fn")
         }
         // ── defprotocol ──────────────────────────────────────────────────
         else if (formName === "defprotocol") {
           const name = symName(node.namedChild(1)) || "unknown"
-          symbols.push({
+          const protoSym: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node),
             scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
             metadata: { clojureSpecific: true, isProtocol: true }
-          })
+          }
+          symbols.push(protoSym)
+          attachDocs(protoSym, node, "always")
           patterns["Protocol-based Polymorphism"] = true
           exports.push({ name, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), visibility: "public" })
           // protocol method signatures: (method-name [this arg ...])
@@ -335,11 +605,13 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ── defrecord / deftype ──────────────────────────────────────────
         else if (formName === "defrecord" || formName === "deftype") {
           const name = symName(node.namedChild(1)) || "unknown"
-          symbols.push({
+          const classSym: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node),
             scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
             metadata: { clojureSpecific: true, isRecord: formName === "defrecord", isType: formName === "deftype" }
-          })
+          }
+          symbols.push(classSym)
+          attachDocs(classSym, node, "always")
           exports.push({ name, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), visibility: "public" })
 
           // fields vector
@@ -356,36 +628,83 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
           }
-          // implements: protocol symbols after the fields vector
+          // implements: protocol symbols after the fields vector — aliases
+          // resolve (C5) and the edge carries the protocol name's line. The
+          // method implementations `(px [_] …)` in the body are method
+          // DEFINITIONS, handled structurally by the impl-context branch on
+          // the child lists (C9) — never here, and never as calls.
           for (let pi = 3; pi < node.namedChildCount; pi++) {
             const protoNode = node.namedChild(pi)
-            if (!protoNode) continue
-            if (protoNode.type === "sym_lit") {
-              const protoName = symName(protoNode)
-              if (protoName) {
-                pushRel({ source: name, target: protoName, type: ASTEngine.RelationshipType.Implements, confidence: 0.85, metadata: { clojureSpecific: true, isRecord: formName === "defrecord" } })
-              }
-            } else if (protoNode.type === "list_lit") {
-              // protocol method implementations inside the record body
-              const mName = symName(protoNode.namedChild(0))
-              if (!mName || CLOJURE_CORE_BUILTINS[mName]) continue
-              symbols.push({
-                name: mName, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(protoNode),
-                scope: `${currentNamespace}.${name}`, ownerName: name, visibility: "public",
-                parameters: extractParams(protoNode),
-                metadata: { clojureSpecific: true, isRecordMethod: true }
-              })
+            if (!protoNode || protoNode.type !== "sym_lit") continue
+            const protoName = resolveQualified(symName(protoNode))
+            if (protoName) {
+              pushRel(name, protoName, ASTEngine.RelationshipType.Implements, 0.85, { clojureSpecific: true, isRecord: formName === "defrecord" }, protoNode.startPosition.row + 1)
             }
+          }
+        }
+        // ── C9: protocol-extending forms — implements edges ───────────────
+        // `(reify P …)`, `(extend-type Type P …)`, `(extend-protocol P Type
+        // …)`, `(proxy [Super Ifaces] …)`. The method bodies are handled by
+        // the impl-context branch on the child lists; HERE the type edges are
+        // emitted: reify/proxy attach to the enclosing context, extend-*
+        // attach the named TYPE (source = the type, like defrecord).
+        else if (formName === "reify" || formName === "extend-type" || formName === "extend-protocol" || formName === "proxy") {
+          const ctxName = activeFunction ? activeFunction.name : currentNamespace
+          const topMeta = activeFunction ? {} : { isTopLevel: true }
+          if (formName === "reify") {
+            for (let i = 1; i < node.namedChildCount; i++) {
+              const c = node.namedChild(i)
+              if (c && c.type === "sym_lit") {
+                const proto = resolveQualified(symName(c))
+                if (proto) pushRel(ctxName, proto, ASTEngine.RelationshipType.Implements, 0.85, { clojureSpecific: true, isReify: true, ...topMeta }, c.startPosition.row + 1)
+              }
+            }
+            patterns["Protocol-based Polymorphism"] = true
+          } else if (formName === "extend-protocol") {
+            const proto = resolveQualified(symName(node.namedChild(1)))
+            for (let i = 2; i < node.namedChildCount; i++) {
+              const c = node.namedChild(i)
+              if (c && c.type === "sym_lit" && proto) {
+                pushRel(symName(c), proto, ASTEngine.RelationshipType.Implements, 0.85, { clojureSpecific: true, isExtendProtocol: true }, c.startPosition.row + 1)
+              }
+            }
+            patterns["Protocol-based Polymorphism"] = true
+          } else if (formName === "extend-type") {
+            const typeName = symName(node.namedChild(1))
+            for (let i = 2; i < node.namedChildCount; i++) {
+              const c = node.namedChild(i)
+              if (c && c.type === "sym_lit") {
+                const proto = resolveQualified(symName(c))
+                if (proto && typeName) pushRel(typeName, proto, ASTEngine.RelationshipType.Implements, 0.85, { clojureSpecific: true, isExtendType: true }, c.startPosition.row + 1)
+              }
+            }
+            patterns["Protocol-based Polymorphism"] = true
+          } else {
+            // proxy: [SuperClass Iface…] — the first symbol is extended, the
+            // rest implemented.
+            const ifaces = node.namedChild(1)
+            if (ifaces && ifaces.type === "vec_lit") {
+              for (let i = 0; i < ifaces.namedChildCount; i++) {
+                const c = ifaces.namedChild(i)
+                if (c && c.type === "sym_lit") {
+                  const iface = resolveQualified(symName(c))
+                  if (iface) pushRel(ctxName, iface, i === 0 ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements, 0.8, { clojureSpecific: true, isProxy: true, ...topMeta }, c.startPosition.row + 1)
+                }
+              }
+            }
+            patterns["Java Interoperability"] = true
           }
         }
         // ── defmulti / defmethod ─────────────────────────────────────────
         else if (formName === "defmulti") {
           const name = symName(node.namedChild(1)) || "unknown"
-          symbols.push({
+          const multiSym: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node),
             scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
             metadata: { clojureSpecific: true, isMultimethod: true }
-          })
+          }
+          symbols.push(multiSym)
+          attachDocs(multiSym, node, "always")
           patterns["Multimethods"] = true
           exports.push({ name, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node), visibility: "public" })
         } else if (formName === "defmethod") {
@@ -394,13 +713,17 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           // defmethod adds a dispatch method to the defmulti var, it does not
           // create a new var). Emit a line-distinct impl symbol; the Overrides
           // family is inapplicable intra-namespace because source and target
-          // share the same identity (documented in the analyzer doc).
-          symbols.push({
+          // share the same identity (documented in the analyzer doc). The
+          // impl becomes the walking context so body calls attribute to it
+          // instead of being dropped (C8 class).
+          const methodSym: ASTEngine.UniversalSymbol = {
             name: multiName, kind: ASTEngine.SymbolKind.Function, range: this.nodeToRange(node),
             scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
             parameters: extractParams(node),
             metadata: { clojureSpecific: true, isMethodImpl: true }
-          })
+          }
+          symbols.push(methodSym)
+          activeFunction = methodSym
           patterns["Multimethods"] = true
         }
         // ── def / defonce ────────────────────────────────────────────────
@@ -408,11 +731,13 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nameNode = node.namedChild(1)
           if (nameNode && nameNode.type === "sym_lit") {
             const name = symName(nameNode)
-            symbols.push({
+            const varSym: ASTEngine.UniversalSymbol = {
               name, kind: ASTEngine.SymbolKind.Variable, range: this.nodeToRange(node),
               scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
               metadata: { clojureSpecific: true }
-            })
+            }
+            symbols.push(varSym)
+            attachDocs(varSym, node, "def")
             exports.push({ name, kind: ASTEngine.SymbolKind.Variable, range: this.nodeToRange(node), visibility: "public" })
           }
         }
@@ -425,22 +750,56 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isSpec: true, clojureSpecific: true },
           })
         }
+        // ── C9: method implementations inside protocol-extending forms ────
+        // A DIRECT list child of reify/extend-type/extend-protocol/proxy/
+        // defrecord/deftype is a METHOD DEFINITION, never a call: `(px [_] 3)`
+        // used to fabricate `use-reify -[calls]-> px`. The method symbol owns
+        // its body's calls. defprotocol signatures are already symbolized by
+        // the defprotocol branch — listed here so they are still excluded
+        // from call handling.
+        else if (node.parent?.type === "list_lit" && METHOD_IMPL_PARENT_FORMS[formNameOf(node.parent)] && executionHead(node.parent) !== node) {
+          const parentForm = formNameOf(node.parent)
+          if (parentForm !== "defprotocol") {
+            const mName = symName(node.namedChild(0))
+            if (mName && !CLOJURE_CORE_BUILTINS[mName]) {
+              const owner = methodImplOwner(node, parentForm)
+              const isRecord = parentForm === "defrecord" || parentForm === "deftype"
+              const methodSym: ASTEngine.UniversalSymbol = {
+                name: mName, kind: ASTEngine.SymbolKind.Function,
+                range: this.nodeToRange(node),
+                scope: owner ? `${currentNamespace}.${owner}` : currentNamespace,
+                ownerName: owner || currentNamespace,
+                visibility: "public",
+                parameters: extractParams(node),
+                metadata: { clojureSpecific: true, isProtocolMethodImpl: true, ...(isRecord ? { isRecordMethod: true } : {}) }
+              }
+              symbols.push(methodSym)
+              activeFunction = methodSym
+            }
+          }
+        }
         // ── constructor idioms: (->ClassName ...) and (ClassName.) ───────
-        else if (formName.startsWith("->") && formName.length > 2 && activeFunction) {
+        else if (formName.startsWith("->") && formName.length > 2) {
           const cls = formName.slice(2)
           const c0 = cls.charCodeAt(0)
           if (c0 >= 65 && c0 <= 90) {
-            pushRel({ source: activeFunction.name, target: cls, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.8, metadata: { clojureSpecific: true, isConstructor: true } })
+            const src = activeFunction ? activeFunction.name : currentNamespace
+            const headNode = executionHead(node)
+            pushRel(src, cls, ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isConstructor: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
           }
-        } else if (formName.endsWith(".") && formName.length > 1 && activeFunction && !formName.startsWith(".")) {
+        } else if (formName.endsWith(".") && formName.length > 1 && !formName.startsWith(".")) {
           const cls = formName.slice(0, -1)
-          pushRel({ source: activeFunction.name, target: cls, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.8, metadata: { clojureSpecific: true, isJavaInterop: true } })
+          const src = activeFunction ? activeFunction.name : currentNamespace
+          const headNode = executionHead(node)
+          pushRel(src, cls, ASTEngine.RelationshipType.Instantiates, 0.8, { clojureSpecific: true, isJavaInterop: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
           patterns["Java Interoperability"] = true
         }
         // ── Java member/field access: (.method obj) / (.-field obj) ──────
-        else if (formName.startsWith(".") && activeFunction) {
+        else if (formName.startsWith(".")) {
           const target = formName.startsWith(".-") ? formName.slice(2) : formName.slice(1)
-          if (target) pushRel({ source: activeFunction.name, target, type: ASTEngine.RelationshipType.Uses, confidence: 0.7, metadata: { clojureSpecific: true, isFieldAccess: true } })
+          const src = activeFunction ? activeFunction.name : currentNamespace
+          const headNode = executionHead(node)
+          if (target) pushRel(src, target, ASTEngine.RelationshipType.Uses, 0.7, { clojureSpecific: true, isFieldAccess: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
           patterns["Java Interoperability"] = true
         }
         // ── threading macros → uses chain ────────────────────────────────
@@ -448,17 +807,26 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (activeFunction) patterns["Threading Macros"] = true
         }
         // ── generic function calls (non-builtin form symbols) ────────────
-        else if (formName && !CLOJURE_CORE_BUILTINS[formName] && activeFunction) {
+        // C8: calls OUTSIDE any function (def/defonce initializers, top-level
+        // side effects) attribute to the namespace — the load-time context
+        // that actually invokes them — instead of being dropped. The edge
+        // carries isTopLevel so consumers can tell the contexts apart.
+        else if (formName && !CLOJURE_CORE_BUILTINS[formName]) {
+          const src = activeFunction ? activeFunction.name : currentNamespace
+          const topMeta: Record<string, any> = activeFunction ? {} : { isTopLevel: true }
+          const headNode = executionHead(node)
+          const line = headNode ? headNode.startPosition.row + 1 : undefined
+          const arity = callArityOf(node)
           const qualified = formName.includes("/")
           if (qualified) {
             const [alias, func] = formName.split("/")
             const resolvedNs = namespaceAliases[alias] || alias
-            pushRel({ source: activeFunction.name, target: `${resolvedNs}/${func}`, type: ASTEngine.RelationshipType.Calls, confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } })
-            pushRel({ source: currentNamespace, target: resolvedNs, type: ASTEngine.RelationshipType.References, confidence: 0.8, metadata: { clojureSpecific: true, isLibraryDep: true } })
-            if (func.endsWith("!")) activeFunction.metadata!.isPure = false
+            pushRel(src, `${resolvedNs}/${func}`, ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, ...topMeta }, line, arity)
+            pushRel(currentNamespace, resolvedNs, ASTEngine.RelationshipType.References, 0.8, { clojureSpecific: true, isLibraryDep: true }, line)
+            if (func.endsWith("!") && activeFunction) activeFunction.metadata!.isPure = false
           } else {
-            pushRel({ source: activeFunction.name, target: formName, type: ASTEngine.RelationshipType.Calls, confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } })
-            if (formName.endsWith("!")) activeFunction.metadata!.isPure = false
+            pushRel(src, formName, ASTEngine.RelationshipType.Calls, 0.9, { clojureSpecific: true, isGeneralCall: true, ...topMeta }, line, arity)
+            if (formName.endsWith("!") && activeFunction) activeFunction.metadata!.isPure = false
           }
         }
         // ── builtin/special forms: complexity + impurity tracking ────────
@@ -479,7 +847,8 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             activeFunction.metadata.isPure = false
           }
           if (formName === "recur") {
-            pushRel({ source: activeFunction.name, target: activeFunction.name, type: ASTEngine.RelationshipType.Calls, confidence: 1.0, metadata: { clojureSpecific: true, isRecursion: true } })
+            const recurHead = executionHead(node)
+            pushRel(activeFunction.name, activeFunction.name, ASTEngine.RelationshipType.Calls, 1.0, { clojureSpecific: true, isRecursion: true }, recurHead ? recurHead.startPosition.row + 1 : undefined, callArityOf(node))
             activeFunction.metadata.isRecursive = true
           } else if (formName === activeFunction.name) {
             activeFunction.metadata.isRecursive = true
@@ -507,7 +876,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const key = `${_owner}->${s.name}`
         if (seenContains.has(key)) continue
         seenContains.add(key)
-        containsOf(_owner)(s.name)
+        // M59 (#825): the contains edge carries the owned symbol's own
+        // declaration line (erlang parity) — never 0.
+        pushRel(_owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
       }
     }
 
@@ -558,7 +929,12 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!!patterns["Software Transactional Memory"]) score += 5
     if (!!patterns["Immutable Data Structures"]) score += 5
 
-    if (symbols.length > 0 && totalCyclomaticComplexity === 0) totalCyclomaticComplexity = symbols.length
+    // C6: the pre-fix fallback claimed complexity equal to the SYMBOL count
+    // (vars, protocols, records included — fabricated payload). The honest
+    // convention: a file with no decision points reports the function
+    // baseline — one per function — never a number invented from unrelated
+    // symbols; a file with neither functions nor decisions reports 1 below.
+    if (totalCyclomaticComplexity === 0) totalCyclomaticComplexity = funcCount
 
     return {
       language: "clojure",

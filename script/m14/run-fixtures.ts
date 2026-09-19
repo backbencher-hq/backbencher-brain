@@ -336,6 +336,25 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
+    for (const want of exp.forbidParameters ?? []) {
+      // Negative twin of expectParameters (family contract: every expect
+      // channel has a forbid counterpart). Pins "this parameter must NOT
+      // exist on that symbol" — the CLJ1 wave needs it for two defect
+      // classes that expect-only matchers cannot express: the rest marker
+      // leaking as a parameter name (`[& args]` → ["&","args"]) and body
+      // vectors leaking into parameters (`(defn leaky [x] [y z])` →
+      // [x, y, z]). Owner-name aware like expectParameters.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) continue // absent symbol is expectSymbols' contract, not this one's
+      const actual: Entry[] = sym?.parameters ?? []
+      for (const wp of want.names ?? []) {
+        if (actual.some((p: any) => p.name === wp)) {
+          problems.push(`forbidden ${want.symbol} parameter ${JSON.stringify(wp)} present; got: ${JSON.stringify(actual.map((p: any) => p.name))}`)
+        }
+      }
+    }
     for (const want of exp.expectVisibility ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       if (!sym) { problems.push(`expectVisibility: symbol ${want.symbol} not found`); continue }
@@ -432,6 +451,21 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.expectPrimaryFramework ?? []) {
       const actual = (result.metadata as any)?.framework ?? null
       if (actual !== want) problems.push(`expected primary framework ${JSON.stringify(want)}; got ${JSON.stringify(actual)} (detected=${JSON.stringify((result.metadata as any)?.detectedFrameworks)})`)
+    }
+    for (const want of exp.expectMetadata ?? []) {
+      // Partial file-metadata assertion (family contract: a fixture may pin
+      // any analyzable payload, not only symbols/edges). Added by the CLJ1
+      // wave to make the complexity convention pinnable: the pre-fix clojure
+      // fallback fabricated `cyclomaticComplexity = symbols.length` (vars and
+      // modules counted as decisions) — differential-invisible, so ONLY a
+      // metadata pin can hold the correct baseline (function count).
+      for (const [k, v] of Object.entries(want)) {
+        if (k === "comment") continue
+        const actual = (result.metadata as any)?.[k]
+        if (JSON.stringify(actual) !== JSON.stringify(v)) {
+          problems.push(`expected metadata.${k} = ${JSON.stringify(v)}; got ${JSON.stringify(actual)}`)
+        }
+      }
     }
     for (const want of exp.expectComplexity ?? []) {
       // ownerName-aware lookup (mirrors expectSymbols): overloaded / repeated
