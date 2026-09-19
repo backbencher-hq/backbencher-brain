@@ -44,8 +44,8 @@
         "bytes": 22600
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "57ac80d5ba296e3c4e00a113fbaab03311262a36c59c8ee2fc08c62d81d526c0",
-        "bytes": 63803
+        "sha256": "c394a6e20b81cb4a1da5e309dc94e78fc9899f02961803c491a62e2d6c301789",
+        "bytes": 82612
       },
       "src/ast/real-cpp-analyzer.ts": {
         "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
@@ -252,7 +252,7 @@
         "bytes": 17738
       }
     },
-    "digest": "cbe02a3a84b4eb9c8b986d9eb5b47e808995ed8cbfd8a7031a517e3d171c66ca",
+    "digest": "b9cd6507d69aa6b4dcd78b1b064d9ba7ead1a7ba94d1849aed6b50cdfc0a1958",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
@@ -377,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 58.952138,
-      "userCpuMs": 106.206,
-      "systemCpuMs": 7.485,
-      "peakRssBytes": 250183680,
-      "rssDeltaBytes": 4079616,
+      "wallTimeMs": 36.491198,
+      "userCpuMs": 65.626,
+      "systemCpuMs": 11.977,
+      "peakRssBytes": 256946176,
+      "rssDeltaBytes": 2453504,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
