@@ -26,10 +26,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "42f5566523301fb7848e2588924b243b1f30f484",
+  "currentCommit": "beea95d474d013fc547753327c57efa4cf2abb83",
   "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
   "evidenceFile": "J1.json",
-  "generatedAt": "2026-09-18T23:41:58.778Z",
+  "generatedAt": "2026-09-18T23:59:24.526Z",
   "claimLevel": "I2 — template verified against the real server's wire capabilities; runIde leg blocked-with-reason (D-7)",
   "blockedLegs": [
     {
@@ -43,7 +43,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-18T23:41:58.779Z",
-    "contentSha256": "5e4dc265c7e138a844feccef03796ee8d9150933c34cfaab54ce3adf6e4ca5e7"
+    "sealedAt": "2026-09-18T23:59:24.527Z",
+    "contentSha256": "bf0090a805755f938fa486cf38cc363c3254864d0584acf3eb7165618b182b5d"
   }
 }
