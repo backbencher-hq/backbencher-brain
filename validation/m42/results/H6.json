@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "6638953206c1eac77df4167db4b0e79f5a6280ef",
+  "currentCommit": "14fe8dbbba014939fe2c96f641ec7e447a9386b0",
   "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
   "evidenceFile": "H6.json",
-  "generatedAt": "2026-09-20T01:35:55.264Z",
+  "generatedAt": "2026-09-20T01:36:31.136Z",
   "docDriftGate": "docs/m42/HUB-PROTOCOL.md byte-identical to a fresh generation from src/lsp/hub_protocol.ts",
   "limitations": [
     "The full webview round trip (real acquireVsCodeApi postMessage in a live webview) is exercised in the E5 editor leg; this suite drives the SAME handler code headless with a stub editor.",
@@ -19,7 +19,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:35:55.264Z",
-    "contentSha256": "90fea3cb8a3a724592f7d2c1d747b784d4c503b6e24bc1fbf32561963ed22ff3"
+    "sealedAt": "2026-09-20T01:36:31.136Z",
+    "contentSha256": "a9e0cefbbcb41498c1d23ad5fa08c36941d42275844aef64db4e9251ad06fbec"
   }
 }
