@@ -116,7 +116,7 @@
     "recall": 1,
     "corpusSymbols": 2953,
     "corpusRelationships": 14053,
-    "grammarErrorFiles": 1643,
+    "grammarErrorFiles": 133,
     "grammarErrorFilesMeasuredOver": 6564,
     "grammarErrorRatePct": 25.0,
     "grammarErrorBreakdown": {
@@ -124,7 +124,7 @@
      "missingNodeFiles": 208
     },
     "grammarErrorEvidence": "validation/m12/results/groovy-corpus-errors.json",
-    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free. CORRECTED 2026-09-14 (M49 W17): the previous claim here was \"0/400 grammar errors and 0 missing tokens\", and it does not reproduce \u2014 not on the 400-file sample and not on the corpus. Measured through the production parseFile pipeline over all 6,564 tracked *.groovy files: 3,874 error files (59.0%), 3,172 with a true ERROR node (48.3%) and 2,014 with a MISSING token (30.7%). The same 400 files the old claim named measure 250/400 (62.5%). The claim had no executable evidence: script/m12/ carried a *-corpus-errors.ts for 35 languages and none for java, kotlin, scala or groovy, and the prose number drifted unmeasured from M12 until now. The missing script now exists (script/m12/groovy-corpus-errors.ts, failure classes derived from the parse tree, cross-checked against the pipeline), and the patched grammar genuinely does cover the constructs it claims EXCEPT as- casts, newline-terminated field declarations, unbraced bodies followed by another statement, and enum constructor arguments \u2014 see issue #742. REBUILT 2026-09-15 (M49 W18): the W17 remedy on #742 said the fix was blocked on a wasm rebuild needing emscripten; that was WRONG \u2014 the grammar is vendored in-repo (grammars/tree-sitter-groovy) and the local tree-sitter CLI builds wasm with its bundled WASI toolchain. The rebuilt grammar fixes ALL FOUR cells above plus as-coercion on complex left-hand sides, =~/==~ regex operators, closure parameter lists (typed and untyped), untyped modifier fields (static mapWith = ...), newline-terminated throw / super(...) / annotation members, spread call arguments, and the empty single-quoted string (Java inherits repeat1 in character_literal, so the very common prefix = '' could not lex \u2014 the largest first-error signature in the corpus). Measured on the identical corpus through the production parseFile pipeline: 3,874 error files (59.0%) -> 1,643 (25.0%); the recorded 400-file sample 250/400 (62.5%) -> 115/400 (28.7%); corpus-wide MISSING ; nodes 2,698 -> 340; construct matrix 11/15 -> 15/15. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast marker and was re-keyed to the structural cast_type relationshipType). Residual class \u2014 slashy strings /.../, spread-map f(*:map), GString nested quoting \u2014 registered as #841; see reviews/m49-w18-groovy-grammar-rebuild.md.",
+    "note": "corpus upgraded from the dirty intellij_community to grails-core (clean, 6,564 committed .groovy files, pinned a83f8748); grammar patched in-repo (grammars/tree-sitter-groovy) to parse untyped params, safe-nav ?., spread *., elvis ?:, trait, Spock names, [:] maps, newline terminators, command chains \u2014 upstream amaanq v0.1.2 and murtaza v0.0.1 both fail these; analyzer rewritten pure-AST (no synthetic getters/setters, no phantom it), differential 130/130 (1.000/1.000), fully regex-free. CORRECTED 2026-09-14 (M49 W17): the previous claim here was \"0/400 grammar errors and 0 missing tokens\", and it does not reproduce \u2014 not on the 400-file sample and not on the corpus. Measured through the production parseFile pipeline over all 6,564 tracked *.groovy files: 3,874 error files (59.0%), 3,172 with a true ERROR node (48.3%) and 2,014 with a MISSING token (30.7%). The same 400 files the old claim named measure 250/400 (62.5%). The claim had no executable evidence: script/m12/ carried a *-corpus-errors.ts for 35 languages and none for java, kotlin, scala or groovy, and the prose number drifted unmeasured from M12 until now. The missing script now exists (script/m12/groovy-corpus-errors.ts, failure classes derived from the parse tree, cross-checked against the pipeline), and the patched grammar genuinely does cover the constructs it claims EXCEPT as- casts, newline-terminated field declarations, unbraced bodies followed by another statement, and enum constructor arguments \u2014 see issue #742. REBUILT 2026-09-15 (M49 W18): the W17 remedy on #742 said the fix was blocked on a wasm rebuild needing emscripten; that was WRONG \u2014 the grammar is vendored in-repo (grammars/tree-sitter-groovy) and the local tree-sitter CLI builds wasm with its bundled WASI toolchain. The rebuilt grammar fixes ALL FOUR cells above plus as-coercion on complex left-hand sides, =~/==~ regex operators, closure parameter lists (typed and untyped), untyped modifier fields (static mapWith = ...), newline-terminated throw / super(...) / annotation members, spread call arguments, and the empty single-quoted string (Java inherits repeat1 in character_literal, so the very common prefix = '' could not lex \u2014 the largest first-error signature in the corpus). Measured on the identical corpus through the production parseFile pipeline: 3,874 error files (59.0%) -> 1,643 (25.0%); the recorded 400-file sample 250/400 (62.5%) -> 115/400 (28.7%); corpus-wide MISSING ; nodes 2,698 -> 340; construct matrix 11/15 -> 15/15. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast marker and was re-keyed to the structural cast_type relationshipType). Residual class \u2014 slashy strings /.../, spread-map f(*:map), GString nested quoting \u2014 registered as #841; see reviews/m49-w18-groovy-grammar-rebuild.md. [corrected 2026-09-20: grammarErrorFiles now matches the measured artifact validation/m12/results/groovy-corpus-errors.json \u2014 enforced by script/m12/verify-corpus-claims.ts (#834)]",
     "measuredAt": "2026-09-15T01:20:00.000Z",
     "grammarErrorFilesBeforeRebuild": 3874,
     "grammarErrorRatePctBeforeRebuild": 59.0,
@@ -155,8 +155,8 @@
     "recall": 1,
     "corpusSymbols": 4451,
     "corpusRelationships": 17563,
-    "grammarErrorFiles": 0,
-    "note": "grammar upgraded to tree-sitter-c-sharp v0.23.5 (wasm/ + ~/.bb/wasm) \u2014 the wired grammar failed on primary constructors (C# 12); v0.23.5 parses all 30 constructs in the matrix and 0/400 roslyn sample files error (0 missing tokens). Analyzer rewritten pure-AST: no locals/params/accessor scopes/bare-identifier reference noise, no synthetic members; base-list kind resolution via the shared type-kind companion (C# has no extends/implements keyword \u2014 first base may be a class OR an interface); overrides via the shared companion (interface-over-superclass); target-typed new() resolves from the enclosing variable declarator; indexers named this, operators named operator, records -> class, record params -> property. Differential 166/166 (1.000/1.000); analyzer fully regex-free.",
+    "grammarErrorFiles": 10,
+    "note": "grammar upgraded to tree-sitter-c-sharp v0.23.5 (wasm/ + ~/.bb/wasm) \u2014 the wired grammar failed on primary constructors (C# 12); v0.23.5 parses all 30 constructs in the matrix and 0/400 roslyn sample files error (0 missing tokens). Analyzer rewritten pure-AST: no locals/params/accessor scopes/bare-identifier reference noise, no synthetic members; base-list kind resolution via the shared type-kind companion (C# has no extends/implements keyword \u2014 first base may be a class OR an interface); overrides via the shared companion (interface-over-superclass); target-typed new() resolves from the enclosing variable declarator; indexers named this, operators named operator, records -> class, record params -> property. Differential 166/166 (1.000/1.000); analyzer fully regex-free. [corrected 2026-09-20: grammarErrorFiles now matches the measured artifact validation/m12/results/csharp-corpus-errors.json \u2014 enforced by script/m12/verify-corpus-claims.ts (#834)]",
     "measuredAt": "2026-08-14T05:01:22.568Z"
    }
   },
@@ -729,13 +729,13 @@
     "cleanCorpusFiles": 59,
     "cleanCorpusSymbols": 185,
     "cleanCorpusRelationships": 315,
-    "grammarErrorFiles": 148,
+    "grammarErrorFiles": 146,
     "grammarErrorNodes": 2576,
     "crashFiles": 0,
     "wallMs": 6869.968737,
     "filesPerSecond": 30.131141483242533,
     "measuredAt": "2026-08-20T01:34:56.000Z",
-    "note": "SQL analyzer rewritten pure-AST against @derekstride/tree-sitter-sql 0.3.11; engine SQL illusion preprocessing removed. The clean 59-file tracked subset is the acceptance corpus with 0 errors/0 crashes. The remaining 148 tracked files contain real PL/pgSQL/vendor/template dialect syntax outside the grammar and are retained as explicit grammar-error evidence, not hidden."
+    "note": "SQL analyzer rewritten pure-AST against @derekstride/tree-sitter-sql 0.3.11; engine SQL illusion preprocessing removed. The clean 59-file tracked subset is the acceptance corpus with 0 errors/0 crashes. The remaining 148 tracked files contain real PL/pgSQL/vendor/template dialect syntax outside the grammar and are retained as explicit grammar-error evidence, not hidden. [corrected 2026-09-20: grammarErrorFiles now matches the measured artifact validation/m12/results/sql-corpus-errors.json \u2014 enforced by script/m12/verify-corpus-claims.ts (#834)]"
    }
   },
   {
@@ -757,7 +757,7 @@
     "recall": 1,
     "corpusSymbols": 69512,
     "corpusRelationships": 70074,
-    "grammarErrorFiles": 0,
+    "grammarErrorFiles": 3,
     "grammarErrorNodes": 0,
     "crashFiles": 0,
     "wallMs": 35540.418626,
@@ -765,7 +765,7 @@
     "symbolsPerSecond": 1955.857659739,
     "relationshipsPerSecond": 1971.670641739,
     "measuredAt": "2026-08-20T02:24:15.000Z",
-    "note": "JSON analyzer rewritten pure-AST. The strict acceptance subset has 0 errors/0 crashes. Fourteen tracked paths are JSONC, contain registration/template syntax, or use a UTF-8 BOM; they are retained as explicit exclusions, and the three parser-error files are reported in json-corpus-errors.json rather than relabeled clean."
+    "note": "JSON analyzer rewritten pure-AST. The strict acceptance subset has 0 errors/0 crashes. Fourteen tracked paths are JSONC, contain registration/template syntax, or use a UTF-8 BOM; they are retained as explicit exclusions, and the three parser-error files are reported in json-corpus-errors.json rather than relabeled clean. [corrected 2026-09-20: grammarErrorFiles now matches the measured artifact validation/m12/results/json-corpus-errors.json \u2014 enforced by script/m12/verify-corpus-claims.ts (#834)]"
    }
   },
   {
@@ -948,7 +948,7 @@
     "corpusRelationships": 590,
     "testSuiteFiles": 503,
     "testSuiteErrorFiles": 166,
-    "grammarErrorFiles": 16,
+    "grammarErrorFiles": 182,
     "strictAcceptanceFiles": 34,
     "trackedFiles": 553,
     "unexpectedGrammarErrorFiles": 0,
@@ -958,7 +958,7 @@
     "symbolsPerSecond": 461.1770770113224,
     "relationshipsPerSecond": 591.5097292101744,
     "measuredAt": "2026-08-20T17:48:18.000Z",
-    "note": "PowerShell analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 10 \u2192 0), a constant-time owner stack, O(1) Map-backed symbol dedupe, and Set-backed relationship dedupe \u2014 O(nodes + emitted facts). The vendored grammar (an older tree-sitter-powershell snapshot) does not model valid modern-PowerShell constructs: ?? null-coalescing, ?. null-conditional, ?: ternary, nested [Type+Type] and generic [[string],[PkgVer[]]] type literals, --flag=\"$var\" native-flag tokens, comma-separated bare-arg lists, $var\\ and $var/ path continuations, and ${env:...} interpolation. 166 test/ files deliberately embed invalid syntax as parser-error test data; 16 production files hit the grammar gaps \u2014 all named explicitly by powershell-corpus-errors.ts, never hidden. Strict acceptance (34 clean production files) measured at 460 symbols / 590 relationships with 0 errors and 0 crashes."
+    "note": "PowerShell analyzer rewritten as a pure iterative Tree-sitter DFS with zero regexes (census 10 \u2192 0), a constant-time owner stack, O(1) Map-backed symbol dedupe, and Set-backed relationship dedupe \u2014 O(nodes + emitted facts). The vendored grammar (an older tree-sitter-powershell snapshot) does not model valid modern-PowerShell constructs: ?? null-coalescing, ?. null-conditional, ?: ternary, nested [Type+Type] and generic [[string],[PkgVer[]]] type literals, --flag=\"$var\" native-flag tokens, comma-separated bare-arg lists, $var\\ and $var/ path continuations, and ${env:...} interpolation. 166 test/ files deliberately embed invalid syntax as parser-error test data; 16 production files hit the grammar gaps \u2014 all named explicitly by powershell-corpus-errors.ts, never hidden. Strict acceptance (34 clean production files) measured at 460 symbols / 590 relationships with 0 errors and 0 crashes. [corrected 2026-09-20: grammarErrorFiles now matches the measured artifact validation/m12/results/powershell-corpus-errors.json \u2014 enforced by script/m12/verify-corpus-claims.ts (#834)]"
    }
   },
   {
