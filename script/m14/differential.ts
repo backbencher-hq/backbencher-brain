@@ -9958,6 +9958,10 @@ export interface DifferentialEvaluation {
    * strict count comparison (it is the only claim available) but the gap is
    * reported so it can only shrink. */
   unpinnedLanes: string[]
+  /** #871: lanes whose perf could NOT be scored because the baseline row
+   * records no load context. Refusing beats mislabelling a busy machine as a
+   * regression; disclosed so the list can only shrink. */
+  perfUnscored: string[]
   checks: { id: string; description: string; status: "pass" | "fail"; detail: string }[]
 }
 
@@ -9988,6 +9992,8 @@ export function evaluateDifferential(
   //                the gap is visible and can only shrink.
   const resampled = new Set<string>()
   const unpinnedLanes: string[] = []
+  // #871: perf rows we refused to score (baseline carries no load context).
+  const perfUnscored: string[] = []
   for (const l of Object.keys(current)) {
     const cur = current[l]?.sampleHash
     const base = baselineHashes[l]
@@ -10001,9 +10007,16 @@ export function evaluateDifferential(
   if (comparable) {
     for (const l of Object.keys(current)) {
       if (resampled.has(l)) continue
-      const bAvg = baseline[l]?.perf?.avgMsPerFile
+      const bPerf = baseline[l]?.perf
+      const bAvg = bPerf?.avgMsPerFile
       const cAvg = current[l]?.perf?.avgMsPerFile
-      if (bAvg && cAvg && cAvg > Math.max(3 * bAvg, bAvg + 50)) {
+      if (!bAvg || !cAvg) continue
+      // #871 §1: a baseline row recorded before load context existed cannot be
+      // told apart from a busy-machine measurement. REFUSE to score it
+      // (disclosed via perfUnscored) rather than mislabel; re-pin with
+      // --update-baseline at a stable tree to restore scoring for the lane.
+      if (typeof bPerf?.loadAvg1 !== "number") { perfUnscored.push(`${l}: baseline row records no load context (pin with --update-baseline)`); continue }
+      if (cAvg > Math.max(3 * bAvg, bAvg + 50)) {
         perfRegressions.push(`${l}: avg ${bAvg}ms -> ${cAvg}ms per file`)
       }
     }
@@ -10101,7 +10114,7 @@ export function evaluateDifferential(
         : `${r.filesSampled} files; NOT COMPARABLE: baseline sampled ${baselineSample ?? "unknown"}/lang, run ${samplePerLang}/lang`,
     }
   })
-  return { comparable, regressions, perfRegressions, resampled: [...resampled], unpinnedLanes, checks }
+  return { comparable, regressions, perfRegressions, resampled: [...resampled], unpinnedLanes, perfUnscored, checks }
 }
 
 async function main() {
@@ -10109,6 +10122,10 @@ async function main() {
   const ParserClass = wts.Parser ?? wts.default ?? wts
   const Language = wts.Language ?? wts.default?.Language
   await ParserClass.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  // #871 §1: the load context of the whole sweep, recorded in evidence and
+  // pinned into the baseline so a future breach can be told apart from a busy
+  // machine.
+  const runLoadAvgStart = loadAvg1()
 
   // Two-corpus gate: active repos = primary set ∪ second-corpus set.
   const activeRepos = REPO ? [REPO] : [...new Set([...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)])]
@@ -10943,6 +10960,10 @@ async function main() {
         maxMsPerFile: durations.length ? +Math.max(...durations).toFixed(1) : null,
         samplesTimed: durations.length,
         loadAvgRetried: retryDurations !== null,
+        // #871: the load this measurement ran under. A perf budget cannot be
+        // scored against a baseline that records none, so the evaluator
+        // refuses instead of mislabelling a busy machine as a regression.
+        loadAvg1: loadAvg1(),
       },
       // M49 G5: identity of the drawn file set, so the baseline gate can tell
       // "same sample, counts grew" (regression) from "different sample"
@@ -11122,12 +11143,17 @@ async function main() {
       { description: "coverage/fabrication baselines recorded; wave M14.1 must reduce missing/unexplained counts" },
       { description: "a lane whose corpus checkout was not at its pin is measured in a detached worktree of the pin (see data.pinDrift); the measurement is of committed content, so an in-flight working-tree edit in a corpus repo is deliberately excluded from the differential" },
       { description: "the measured code is this checkout's working tree, so `differential-code-inputs` fails — and the run exits 6 — when any analyzer, oracle or spec input differs from `regeneratedAtCommit`; a dirty tree can measure lanes but cannot claim them" },
+      { description: "#871 §1: the heuristic metric matches (label, normalized target) only — source re-attribution is invisible to it; fixture source/line pins are the coverage for attribution moves, and 'no regressions' here must not be read as 'attribution did not change'" },
+      { description: "#871 §1-2: perf rows record per-lane loadAvg1 and the run records loadAvgStart/End + slice count; a baseline row without load context is NOT scored (perfUnscoredLanes) rather than mislabelled as a regression" },
     ],
     data: {
       corpusPins: repoPins,
       // M49 W16: the code the rows describe. `clean: false` means the numbers
       // above belong to uncommitted code and name no commit.
       codeInputs,
+      // #871 §1: the sweep's own load context (per-lane loadAvg1 rides each
+      // report row's perf). Read it before judging a perf breach.
+      loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
       // M49 W16: pins whose live checkout did not match, and what was measured
       // instead. Empty means every lane read exactly its pin.
       pinDrift,
@@ -11146,6 +11172,9 @@ async function main() {
         totalBaselineLanes: Object.keys(baselineCounts).length,
         resampledLanes: [...evaluation.resampled, ...evaluationSecond.resampled],
         unpinnedLanes: [...evaluation.unpinnedLanes, ...evaluationSecond.unpinnedLanes],
+        // #871 §1: perf rows REFUSED because the baseline carries no load
+        // context — disclosed so the list can only shrink.
+        perfUnscoredLanes: [...evaluation.perfUnscored, ...evaluationSecond.perfUnscored],
       },
     },
   })
@@ -11175,7 +11204,18 @@ async function main() {
     // Merge BOTH lanes (primary + second) into the repo:lang baseline file.
     const clean: Record<string, any> = {}
     const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
+    const pinSkipped: string[] = []
     for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
+      // #871 §2: pin ONLY lanes whose own parity is clean. Pinning a lane that
+      // carries its own missing/unexplained would bake a real anomaly into the
+      // allowance (cpp's uses@0 is the one such lane today — #870). Heuristic
+      // counts do NOT block pinning: they are declared low-confidence edges,
+      // and heuristic drift on an UNPINNED lane is exactly the false-positive
+      // this pin removes.
+      if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
+        pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
+        continue
+      }
       clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
       // M49 G5: pin WHICH files produced this row. Without it a later rotation
       // is scored against a different sample and mislabelled a regression.
@@ -11183,11 +11223,15 @@ async function main() {
     }
     const merged = {
       samplePerLang: SAMPLE_PER_LANG,
+      // #871 §1: the load context the pinned rows were measured under — a
+      // later breach can now be told apart from a busy machine.
+      loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
       counts: { ...(previous.counts ?? previous), ...clean },
       hashes,
     }
     fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
     console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s); drawn file sets pinned: ${Object.keys(hashes).length}`)
+    if (pinSkipped.length > 0) console.log(`differential baseline: NOT PINNED — ${pinSkipped.join(", ")} — a lane carrying its own missing/unexplained is never pinned (pinning would bury the anomaly; see #870)`)
   } else if (!evaluation.comparable) {
     console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsedBaseline.samplePerLang ?? "unknown"}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
   } else {
@@ -11201,6 +11245,7 @@ async function main() {
     }
     for (const r of [...evaluation.regressions, ...evaluationSecond.regressions]) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(baselineCounts[r])} -> ${JSON.stringify(current[r] ?? currentSecond[r])}`)
     for (const r of [...evaluation.perfRegressions, ...evaluationSecond.perfRegressions]) console.error(`PERF BUDGET EXCEEDED ${r}`)
+    for (const r of [...evaluation.perfUnscored, ...evaluationSecond.perfUnscored]) console.log(`PERF NOT SCORED ${r}`)
     if (evaluation.regressions.length || evaluation.perfRegressions.length || evaluationSecond.regressions.length || evaluationSecond.perfRegressions.length) process.exit(5)
     console.log(`differential baseline gate: no regressions on a pinned file set (primary + second corpus); perf budgets respected${resampledLanes.length ? `; ${resampledLanes.length} lane(s) resampled (triage)` : ""}`)
   }
