@@ -791,7 +791,30 @@ target=Reference  type=references  line=20  n=2  spellings: Reference, java.lang
 
 **Also measured here and filed where it belongs:** the ownership misattribution behind #895 — in `WorkerThread.scala`, `run` (121-121, owned by `noop` 119-122) owns `lookForWork` (360-585), `park` (591-627) and `parkLoop` (664-710), all of which live inside the *other* `run` (312-950). A same-named, different-scope owner is worse than the non-enclosing owner #894 already tracks, and the prefix-based cascade is a second consumer of it. Evidence posted to #894; the fix is not #854's to make.
 
-#854 itself stays open for its own decision (what a relationship's identity *is* when a spelling resolves later), now with a current measurement and two sibling defects separated out of it.
+### 3s. #895 fixed, #854 resolved by decision — the consumer-side identity model, delivered and measured (2026-09-20)
+
+#854's open question was what a relationship's identity *is* when one spelling resolves later. The decision taken: **the store keeps every spelling (path fidelity — YAML keypaths and qualified names are real data, not noise); the TOOL layer collapses rows that name the same call site and the same resolved target, and declares the collapse.** No store migration, no compatibility break with the analyzer lane's in-flight emission work, and the agent-visible defect (inflated counts) is fixed where the agent looks.
+
+**What landed in `graph-engine.ts` (one place, every consumer of `traverseGraph` inherits it — bb_graph, bb_analyze trace/impact, test-intel, suggestions, LSP call-hierarchy):**
+
+| fix | mechanism | declared |
+|---|---|---|
+| **#895** | rowId dedupe in both traces: the owner-cascade re-fetched one row per enclosing symbol (measured depths `[0,2,3]`); the first traversal depth to reach a row emits it, `depth` stays truthful | `summary.dedupedAtToolLayer.cascadeRepeatsCollapsed` |
+| **#854** | site-key dedupe on `(type, source symbol, resolved target, file, line)`: same site + same resolved target stored under different spellings (`Async` vs `cekernel.Async`) emits one edge, first spelling wins. **Line-guarded**: a NULL line never proves two rows name one site (measured: the YAML `contains` groups are 15 distinct keypaths, not copies of one fact — they pass through untouched) | `summary.dedupedAtToolLayer.spellingVariantsCollapsed` |
+
+**Measured, not asserted:**
+
+| evidence | result |
+|---|---|
+| `probe-rel-identity.ts` on real cats-effect (fresh index, 33,929 rows) — BEFORE | `bb_graph('run')` reported **72** callers built from **31** rows; the identical rowId emitted at depths `[0,2,3]`; `over=41` |
+| same probe, AFTER the fix | `run`: **reported=31, distinctRowIds=31, over=0, sameRowRepeated=0** on every ranked callee; the tool layer no longer repeats or inflates |
+| probe verdict semantics | updated to the chosen model: `CLEAN-UNDER-M59-MODEL` unless a PK collides, a same-spelling double appears (a real double-store), or the tool layer over-reports — spelling groups at the store are by design, with the model note recorded in the evidence JSON |
+| fixture gate `verify-call-site-dedupe.ts` | **6/6** — incl. a real row-insertion mutation (same site, different spelling → still ONE edge, declared `spellingVariantsCollapsed=1`), the NULL-line exemption proof (NULL-line row → 2 edges, not collapsed), the cleanup law (rows deleted → counters return to 0, no caching lie), and a source guard so reverting either fix fails the gate |
+| regression battery | typecheck clean · m48 P3 agreement **28/0** · m48 P1 impact unity **28/0** · m48 P2 honesty **13/0** · m51 A1 owner integrity **10/10** · `acceptance-tool-callsites` **16/16** on real cats-effect (1,077 sites, 0 fabricated / 0 wrong / 0 missing) · m44 U3 hub tree **25/27 KNOWN-GAP** — the two failures are the R3 real-server leg's `workspace is not indexed`, **proven pre-existing at HEAD via stash-bisect** (identical 25/27 with the fix stashed), not this change |
+
+**Deliberately not done here:** the store-side re-key (making `(source, resolved target, type, line)` the PK) would delete the YAML keypath/path fidelity and needs a migration coordinated with the analyzer lane's emission work. The consumer-side model makes it unnecessary for correctness; if the analyzer lane later wants it, the declared-collapse contract already gives the tool layer a stable surface to build on. #895's upstream data defect (`run` at 121 owning symbols inside `run` at 312) remains filed under **#894** — the cascade collapse stops the double-count, but the wrong-scope owner still deserves its own fix.
+
+#854 and #895 close on this evidence.
 
 ## Why every previous gate passed while this was true
 
@@ -819,6 +842,8 @@ asking a different question.
 | #887 same-process stall | **fixed and verified** — root cause was the sweep's **own source predicate spinning** (`lastIndexOf` clamps a negative position to 0, so the keyword search re-found index 0 forever), not a tool call: progress guarantee + `unmodelled` verdict + interpolation-aware string stripping + per-call bounds + a stall watchdog, pinned by `probe-predicate-loop.ts` (84 real corpus spin triggers, guard on the shipped file). Acceptance: the twice-frozen `scala,kotlin --files=150` run completes in 1 m 34 s with 16/16 cells, WRONG=0 and both mutations caught. The 9-lane `bb_graph x language` matrix was then regenerated with the fixed instrument (§3o) |
 | #879 nested-site source ownerless | **fixed and verified** — the store now owns a symbolless-chain member by the innermost container-free enclosing symbol (strictly additive; the 40%-churn alternative was measured and rejected). Harness 14/15 → **15/15** with the pinned-red owner-chain check green, new fixture gate 6/6 with a mutation, m51 A1 10/10, tool layer numerically unchanged (and the residual variation attributed to #885). Filed the pre-existing 20%-non-enclosing-owner defect it uncovered as **#894** |
 | #894 owners that do not enclose their child | **filed** — 1,221 of 6,009 owned symbols on cats-effect; the invented-owner vs short-end-line split is deliberately left as the issue's first task |
+| #895 cascade re-emits one row per depth | **closed** — rowId dedupe in both traces, declared `cascadeRepeatsCollapsed`; measured on cats-effect: 72 callers from 31 rows → 31/31, over=0, sameRowRepeated=0; fixture gate 6/6 with real-insert mutation |
+| #854 target-spelling duplicate rows | **closed (consumer-side model)** — store keeps spellings (path fidelity), tool collapses same-site + same-resolved-target rows per (source,line,type), declared `spellingVariantsCollapsed`, NULL-line-exempt (measured YAML guard); probe verdict aligned to the model (`CLEAN-UNDER-M59-MODEL`); store re-key explicitly left to the analyzer lane if ever wanted |
 | #826 closure gate | **open** |
 
 **Tracking gap, stated:** this table's `closed` rows (#821–#824) are closed *in substance* — each was delivered, measured and pinned — but their GitHub issues were never transitioned, so the milestone still reports 10 open / 1 closed. Closing them is bookkeeping, not work, and it is the last honest step before #826 X1 can run.

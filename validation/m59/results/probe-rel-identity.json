@@ -1,19 +1,19 @@
 {
   "probe": "M59.A8",
   "issue": 854,
-  "at": "2026-09-19T03:40:29.944Z",
+  "at": "2026-09-20T17:39:36.556Z",
   "repo": "$HOME/fixtures/repositories/cats-effect",
-  "dataDir": "/tmp/m59-relident-data-Yz93L7",
+  "dataDir": "/tmp/m59-relident-data-aBHI0Z",
   "totals": {
     "rows": 33929,
     "pkCollisions": 0
   },
   "duplicateGroups": {
-    "groups": 116,
-    "extraRows": 223,
+    "groups": 115,
+    "extraRows": 221,
     "groupsWithLine": 28,
     "extraRowsWithLine": 28,
-    "fromDifferentSpellings": 116,
+    "fromDifferentSpellings": 115,
     "fromSameSpelling": 0,
     "byType": [
       {
@@ -25,11 +25,6 @@
         "rt": "references",
         "groups": 27,
         "extra": 27
-      },
-      {
-        "rt": "uses",
-        "groups": 1,
-        "extra": 2
       },
       {
         "rt": "extends",
@@ -227,60 +222,14 @@
     {
       "callee": "run",
       "duplicateGroups": 14,
-      "reportedCallers": 72,
+      "reportedCallers": 31,
       "distinctFromAtLine": 31,
-      "reportedMoreThanSites": 41,
+      "reportedMoreThanSites": 0,
       "distinctRowIds": 31,
-      "sameRowRepeated": 41,
-      "repeatedFromLineTypeKeys": 22,
-      "maxRepeat": 3,
-      "repeatedRowIds": [
-        {
-          "id": "ffect/unsafe/SleepSystem.scala:poll:37:park:calls:39",
-          "n": 3,
-          "depths": [
-            0,
-            2,
-            3
-          ]
-        },
-        {
-          "id": "fe/WorkerThread.scala:lookForWork:360:park:calls:420",
-          "n": 3,
-          "depths": [
-            0,
-            2,
-            3
-          ]
-        },
-        {
-          "id": "fe/WorkerThread.scala:lookForWork:360:park:calls:475",
-          "n": 3,
-          "depths": [
-            0,
-            2,
-            3
-          ]
-        },
-        {
-          "id": "fe/WorkerThread.scala:lookForWork:360:park:calls:579",
-          "n": 3,
-          "depths": [
-            0,
-            2,
-            3
-          ]
-        },
-        {
-          "id": "nsafe/WorkerThread.scala:park:591:parkLoop:calls:596",
-          "n": 3,
-          "depths": [
-            0,
-            2,
-            4
-          ]
-        }
-      ],
+      "sameRowRepeated": 0,
+      "repeatedFromLineTypeKeys": 0,
+      "maxRepeat": 0,
+      "repeatedRowIds": [],
       "note": "<none> rowIds mean the payload carries no rowId — the mapping is then unprovable here"
     },
     {
@@ -297,5 +246,6 @@
       "note": "<none> rowIds mean the payload carries no rowId — the mapping is then unprovable here"
     }
   ],
-  "verdict": "DEFECT-PRESENT"
+  "verdict": "CLEAN-UNDER-M59-MODEL",
+  "verdictNote": "#854 model: store keeps spelling/path fidelity; consumer dedupes per (source,line,type) and declares it (summary.dedupedAtToolLayer). Spelling groups at the store are by design under this model; only PK collisions, same-spelling doubles, or tool over-report are defects."
 }

@@ -235,7 +235,23 @@ async function main() {
     sampleSpellingDuplicates: spellingClass.slice(0, 12),
     sampleSameSpellingDuplicates: sameSpellingClass.slice(0, 8),
     toolLeg,
-    verdict: dupGroups.length === 0 ? "CLEAN" : "DEFECT-PRESENT",
+    // M59 (#854 closure): the identity model chose the CONSUMER-SIDE option —
+    // the store keeps every spelling (path fidelity), the tool layer collapses
+    // same-site rows per (source, line, type) and declares the collapse. So the
+    // store's spelling groups are BY DESIGN: they are only a defect if a
+    // same-spelling duplicate exists (two identical spellings of one fact — a
+    // real double-store) or if PK ids collide, or if the tool layer still
+    // over-reports or repeats rows.
+    verdict:
+      pkCollisions.length > 0
+        ? "DEFECT-PRESENT (PK collision)"
+        : sameSpellingClass.length > 0
+          ? "DEFECT-PRESENT (same spelling stored twice)"
+          : toolLeg.some((c) => Number(c.over ?? 0) > 0 || Number(c.sameRowRepeated ?? 0) > 0)
+            ? "DEFECT-PRESENT (tool over-report)"
+            : "CLEAN-UNDER-M59-MODEL",
+    verdictNote:
+      "#854 model: store keeps spelling/path fidelity; consumer dedupes per (source,line,type) and declares it (summary.dedupedAtToolLayer). Spelling groups at the store are by design under this model; only PK collisions, same-spelling doubles, or tool over-report are defects.",
   }
 
   mkdirSync(path.join(ROOT, "validation/m59/results"), { recursive: true })
