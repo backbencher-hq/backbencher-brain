@@ -1,0 +1,1703 @@
+{
+  "analyzer": "cpp",
+  "corpus": "$HOME/fixtures/repositories/zig",
+  "corpusRepo": "zig",
+  "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+  "extensions": [
+    "*.cpp",
+    "*.cppm",
+    "*.hpp",
+    "*.cc",
+    "*.hh"
+  ],
+  "mode": "full-corpus",
+  "trackedFilesInCorpus": 218,
+  "measuredFiles": 218,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 133,
+  "cleanFiles": 85,
+  "missingNodeFiles": 99,
+  "errorNodeFiles": 113,
+  "errorRates": {
+    "any": 61,
+    "missing": 45.4,
+    "error": 51.8
+  },
+  "grammarErrorFiles": 133,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 17812,
+  "missingTokens": {
+    ";": 283,
+    "::": 153,
+    "identifier": 20,
+    "type_identifier": 12,
+    "}": 9,
+    "#endif": 7,
+    ")": 2,
+    "\"": 1,
+    ">": 1
+  },
+  "errorLineSignatures": {
+    "ID ID(ID ID *ID, ID ID, ID ID) {": 40,
+    "ID ID *ID ID(ID) = ID;": 33,
+    "ID(ID ID ID ID<ID>;)": 30,
+    "ID ID": 18,
+    "#ID ID(<ID/ID.ID>)": 18,
+    "ID(ID, ID ID ID, (ID)ID);": 17,
+    "# ID": 16,
+    "ID(ID ID *ID);": 16,
+    "ID ID ID ID<ID>;": 15,
+    "#ID ID(<ID.ID>)": 12,
+    "ID ID(ID *ID, ID ID, ID ID, ID *ID) {": 12,
+    "ID ID(ID *ID, ID ID) {": 10,
+    "#ID ID(ID) && ID(<ID.ID>)": 9,
+    "ID ID ID": 9,
+    "ID ID() {": 9,
+    "ID ID ID ID(ID) = ID;": 9,
+    "ID(ID ID ID ID<ID, ID>;)": 8,
+    "# ID ID": 8,
+    "ID ID(ID ID *ID, ID *ID, ID ID,": 8,
+    "}": 7,
+    "ID": 7,
+    "ID ID ID : ID ID {": 7,
+    "ID ID ID ID(ID ID, ID ID) {": 7,
+    "ID(ID, ID);": 7,
+    "ID(ID, ID, (ID)ID);": 7,
+    "ID(ID ID ID,": 7,
+    "ID(ID ID ID": 7,
+    "# ID ID(<ID/ID.ID>) && ID(<ID/ID.ID>)": 6,
+    "ID ID;": 6,
+    "ID ID ID(ID *ID) {": 6,
+    "ID ID ID(ID *ID,": 6,
+    "ID(ID, ID, ID ID *ID);": 6,
+    "ID(ID, ID, ID ID *ID, ID *ID);": 6,
+    "ID ID ID(ID **ID, ID ID *ID, ID ID,": 6,
+    "ID ID, ID ID) {": 6,
+    "ID ID = ^(ID ID) {": 6,
+    "# ID ID(ID) && ID(<ID/ID.ID>)": 6,
+    "};": 5,
+    "ID ID<ID>::ID() ID ID {": 5,
+    "ID ID() ID {": 5
+  },
+  "firstErrorLineSignatures": {
+    "ID ID": 3,
+    "# ID": 3,
+    "} // ID ID": 3,
+    "ID ID() {": 3,
+    "ID ID ID ID[](ID* ID, ID, ID::ID ID) ID {": 2,
+    "ID ID ID": 2,
+    "ID ID ID ID *": 2,
+    "#ID ID(<ID/ID.ID>)": 2,
+    "ID(ID, ID, ID (*ID)(ID *ID), ID *ID, ID ID, ID *ID);": 2,
+    "ID ID *ID() {": 2,
+    "};": 2,
+    "//===-----------------------------------------------------------------": 1,
+    "#ID ID(ID) && ID(<ID.ID>)": 1,
+    "ID ID ID(ID *ID) {": 1,
+    "ID ID ID(ID ID, ID* ID, ID* ID) ID() {": 1,
+    "ID ID[ID] ID((ID));": 1,
+    "ID ID() ID {": 1,
+    "ID ID(ID (*ID)(ID ID *,": 1,
+    "ID ID ID() {}": 1,
+    "ID ID ID ID = 0;": 1,
+    "ID ID *ID(ID *ID, ID ID,": 1,
+    "//===-- ID.ID -----------------------------------------------===//": 1,
+    "ID ID, ID ID &ID,": 1,
+    "#ID ID": 1,
+    "# ID ID (32 * 8 /*ID*/ + 4 /*ID*/)": 1,
+    "ID = ID;": 1,
+    "ID ID(ID *ID, ID *ID,": 1,
+    "ID ID(ID (*ID)(ID)) {": 1,
+    "ID ID *ID(ID ID *ID);": 1,
+    "ID(ID(ID)) ID (*ID)() = ID;": 1,
+    "ID ID(ID ID, ID *ID, ID ID, ID *ID,": 1,
+    "ID ID(ID *ID, ID *ID, ID *ID) {": 1,
+    "ID ID ID(": 1,
+    "ID ID(ID *ID, ID ID *ID) {": 1,
+    "ID ID(ID *ID, ID ID, ID ID,": 1,
+    "ID += ID;": 1,
+    "ID ID ID = ID->ID.ID(ID->ID(), ID, ID);": 1,
+    "ID::ID ID) ID {": 1,
+    "ID ID ID ID(ID* ID, ID ID) {": 1,
+    "ID ID ID(ID* ID, ID ID, ID ID,": 1
+  },
+  "errorFileList": [
+    {
+      "file": "lib/libcxx/src/algorithm.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 3,
+      "firstRow": 50,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxx/src/any.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 28,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_LFTS",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/atomic.cpp",
+      "nodes": 10,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 6,
+      "firstRow": 210,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 13
+    },
+    {
+      "file": "lib/libcxx/src/barrier.cpp",
+      "nodes": 8,
+      "missingTokens": [
+        ";",
+        "::",
+        "identifier"
+      ],
+      "errorNodes": 5,
+      "firstRow": 71,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "lib/libcxx/src/bind.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 28,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/call_once.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 71,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/charconv.cpp",
+      "nodes": 10,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 8,
+      "firstRow": 89,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 13
+    },
+    {
+      "file": "lib/libcxx/src/chrono.cpp",
+      "nodes": 16,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 10,
+      "firstRow": 265,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 19
+    },
+    {
+      "file": "lib/libcxx/src/condition_variable.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 77,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_POP_MACROS",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxx/src/condition_variable_destructor.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";",
+        "identifier"
+      ],
+      "errorNodes": 1,
+      "firstRow": 40,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "lib/libcxx/src/error_category.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 37,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/expected.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 13,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/experimental/chrono_exception.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 22,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxx/src/experimental/log_hardening_failure.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 31,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/experimental/time_zone.cpp",
+      "nodes": 8,
+      "missingTokens": [
+        ";",
+        "::",
+        "type_identifier"
+      ],
+      "errorNodes": 2,
+      "firstRow": 1064,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "lib/libcxx/src/experimental/tzdb.cpp",
+      "nodes": 7,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 4,
+      "firstRow": 825,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "lib/libcxx/src/experimental/tzdb_list.cpp",
+      "nodes": 8,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 1,
+      "firstRow": 43,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 9
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/directory_entry.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 73,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_FILESYSTEM",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/directory_iterator.cpp",
+      "nodes": 5,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 4,
+      "firstRow": 323,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_FILESYSTEM",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/filesystem_clock.cpp",
+      "nodes": 10,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 6,
+      "firstRow": 79,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_FILESYSTEM",
+      "pipelineErrors": 13
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/filesystem_error.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 40,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_FILESYSTEM",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/int128_builtins.cpp",
+      "nodes": 1,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 21,
+      "firstKind": "MISSING ::",
+      "firstLine": "extern \"C\" __attribute__((no_sanitize(\"undefined\"))) _LIBCPP_EXPORTED_FROM_ABI __int128_t",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/operations.cpp",
+      "nodes": 8,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 7,
+      "firstRow": 1087,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_FILESYSTEM",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "lib/libcxx/src/filesystem/path.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 445,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_FILESYSTEM",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxx/src/fstream.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 37,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxx/src/functional.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 21,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/future.cpp",
+      "nodes": 5,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 197,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxx/src/hash.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 449,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/ios.cpp",
+      "nodes": 5,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 3,
+      "firstRow": 387,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_POP_MACROS",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "lib/libcxx/src/ios.instantiations.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 48,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "lib/libcxx/src/iostream.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 3,
+      "firstRow": 138,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxx/src/locale.cpp",
+      "nodes": 110,
+      "missingTokens": [
+        "}",
+        ";",
+        "::",
+        "#endif",
+        "identifier"
+      ],
+      "errorNodes": 80,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "//===----------------------------------------------------------------------===//",
+      "pipelineErrors": 53
+    },
+    {
+      "file": "lib/libcxx/src/memory.cpp",
+      "nodes": 1,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 150,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "lib/libcxx/src/memory_resource.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 3,
+      "firstRow": 500,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxx/src/mutex.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 146,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_POP_MACROS",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxx/src/mutex_destructor.cpp",
+      "nodes": 5,
+      "missingTokens": [
+        ";",
+        "identifier"
+      ],
+      "errorNodes": 2,
+      "firstRow": 42,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxx/src/new.cpp",
+      "nodes": 28,
+      "missingTokens": [
+        "::",
+        "type_identifier"
+      ],
+      "errorNodes": 22,
+      "firstRow": 214,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCPP_WEAK void operator delete[](void* ptr, size_t, std::align_val_t alignment) noexcept {",
+      "pipelineErrors": 31
+    },
+    {
+      "file": "lib/libcxx/src/optional.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 3,
+      "firstRow": 36,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_EXPERIMENTAL",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxx/src/ostream.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 41,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/print.cpp",
+      "nodes": 11,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 9,
+      "firstRow": 64,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 14
+    },
+    {
+      "file": "lib/libcxx/src/pstl/libdispatch.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 32,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/random.cpp",
+      "nodes": 8,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 6,
+      "firstRow": 182,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "lib/libcxx/src/random_shuffle.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 51,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/regex.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 399,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/ryu/d2fixed.cpp",
+      "nodes": 10,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 3,
+      "firstRow": 670,
+      "firstKind": "MISSING ;",
+      "firstLine": "// clang-format on",
+      "pipelineErrors": 13
+    },
+    {
+      "file": "lib/libcxx/src/ryu/d2s.cpp",
+      "nodes": 9,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 2,
+      "firstRow": 784,
+      "firstKind": "MISSING ;",
+      "firstLine": "// clang-format on",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "lib/libcxx/src/ryu/f2s.cpp",
+      "nodes": 11,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 3,
+      "firstRow": 718,
+      "firstKind": "MISSING ;",
+      "firstLine": "// clang-format on",
+      "pipelineErrors": 14
+    },
+    {
+      "file": "lib/libcxx/src/shared_mutex.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 99,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxx/src/stdexcept.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 30,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxx/src/string.cpp",
+      "nodes": 11,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 7,
+      "firstRow": 385,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 14
+    },
+    {
+      "file": "lib/libcxx/src/strstream.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 258,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_POP_MACROS",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "lib/libcxx/src/support/win32/locale_win32.cpp",
+      "nodes": 6,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 185,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxx/src/support/win32/thread_win32.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 1,
+      "firstRow": 214,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxx/src/system_error.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 369,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxx/src/thread.cpp",
+      "nodes": 9,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 6,
+      "firstRow": 175,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 12
+    },
+    {
+      "file": "lib/libcxx/src/valarray.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 49,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libcxx/src/vector.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 30,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxx/src/verbose_abort.cpp",
+      "nodes": 10,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 9,
+      "firstRow": 65,
+      "firstKind": "MISSING ;",
+      "firstLine": "_LIBCPP_END_NAMESPACE_STD",
+      "pipelineErrors": 13
+    },
+    {
+      "file": "lib/libcxxabi/src/abort_message.cpp",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 19,
+      "firstKind": "ERROR",
+      "firstLine": "#if defined(__APPLE__) && __has_include(<CrashReporterClient.h>)",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_aux_runtime.cpp",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 35,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCXXABI_FUNC_VIS _LIBCXXABI_NORETURN void",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_default_handlers.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 112,
+      "firstKind": "MISSING ::",
+      "firstLine": "constinit std::new_handler __cxa_new_handler = nullptr;",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_demangle.cpp",
+      "nodes": 2,
+      "missingTokens": [
+        "type_identifier"
+      ],
+      "errorNodes": 1,
+      "firstRow": 380,
+      "firstKind": "ERROR",
+      "firstLine": "extern \"C\" _LIBCXXABI_FUNC_VIS char *",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_exception.cpp",
+      "nodes": 22,
+      "missingTokens": [
+        "}",
+        "#endif",
+        ";",
+        ")"
+      ],
+      "errorNodes": 11,
+      "firstRow": 797,
+      "firstKind": "MISSING }",
+      "firstLine": "}  // abi",
+      "pipelineErrors": 25
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_exception_storage.cpp",
+      "nodes": 1,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 61,
+      "firstKind": "MISSING ::",
+      "firstLine": "void _LIBCPP_TLS_DESTRUCTOR_CC destruct_(void *p) {",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_guard.cpp",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 47,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCXXABI_FUNC_VIS void __cxa_guard_abort(guard_type *raw_guard_object) {",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_handlers.cpp",
+      "nodes": 1,
+      "missingTokens": [
+        "#endif"
+      ],
+      "errorNodes": 0,
+      "firstRow": 62,
+      "firstKind": "MISSING #endif",
+      "firstLine": "#ifndef _LIBCXXABI_NO_EXCEPTIONS",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_personality.cpp",
+      "nodes": 17,
+      "missingTokens": [
+        "::",
+        ";"
+      ],
+      "errorNodes": 3,
+      "firstRow": 1305,
+      "firstKind": "MISSING ::",
+      "firstLine": "_LIBCXXABI_FUNC_VIS _Unwind_Reason_Code __xlcxx_personality_v1(",
+      "pipelineErrors": 21
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_thread_atexit.cpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 111,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCXXABI_FUNC_VIS int __cxa_thread_atexit(Dtor dtor, void* obj, void* dso_symbol) throw() {",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_vector.cpp",
+      "nodes": 11,
+      "missingTokens": [],
+      "errorNodes": 11,
+      "firstRow": 403,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCXXABI_FUNC_VIS void",
+      "pipelineErrors": 14
+    },
+    {
+      "file": "lib/libcxxabi/src/cxa_virtual.cpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 19,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCXXABI_FUNC_VIS _LIBCXXABI_NORETURN",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libcxxabi/src/fallback_malloc.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 2,
+      "firstRow": 63,
+      "firstKind": "ERROR",
+      "firstLine": "char heap[HEAP_SIZE] __attribute__((aligned));",
+      "pipelineErrors": 3
+    },
+    {
+      "file": "lib/libcxxabi/src/private_typeinfo.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        "type_identifier"
+      ],
+      "errorNodes": 3,
+      "firstRow": 909,
+      "firstKind": "ERROR",
+      "firstLine": "extern \"C\" _LIBCXXABI_FUNC_VIS void *",
+      "pipelineErrors": 7
+    },
+    {
+      "file": "lib/libcxxabi/src/stdlib_new_delete.cpp",
+      "nodes": 28,
+      "missingTokens": [
+        "::",
+        "type_identifier"
+      ],
+      "errorNodes": 22,
+      "firstRow": 234,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBCPP_WEAK void operator delete[](void* ptr, size_t, std::align_val_t alignment) noexcept {",
+      "pipelineErrors": 31
+    },
+    {
+      "file": "lib/libtsan/interception/interception_type_test.cpp",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 17,
+      "firstKind": "ERROR",
+      "firstLine": "#if __has_include(<sys/types.h>)",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/interception/interception_win.cpp",
+      "nodes": 7,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 6,
+      "firstRow": 1254,
+      "firstKind": "ERROR",
+      "firstLine": "#  endif",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_allocator.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 2,
+      "firstRow": 134,
+      "firstKind": "ERROR",
+      "firstLine": "void InternalAllocatorUnlock() SANITIZER_NO_THREAD_SAFETY_ANALYSIS {",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_allocator_report.cpp",
+      "nodes": 9,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 136,
+      "firstKind": "MISSING ::",
+      "firstLine": "void NORETURN ReportRssLimitExceeded(const StackTrace *stack) {",
+      "pipelineErrors": 9
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_common.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 2,
+      "firstRow": 413,
+      "firstKind": "ERROR",
+      "firstLine": "int __sanitizer_install_malloc_and_free_hooks(void (*malloc_hook)(const void *,",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_common_libcdep.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 1,
+      "firstRow": 213,
+      "firstKind": "ERROR",
+      "firstLine": "SANITIZER_WEAK_ATTRIBUTE void StackDepotStopBackgroundThread() {}",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_fuchsia.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 2,
+      "firstRow": 465,
+      "firstKind": "ERROR",
+      "firstLine": "static _Thread_local size_t cur = 0;",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_haiku.cpp",
+      "nodes": 30,
+      "missingTokens": [],
+      "errorNodes": 30,
+      "firstRow": 354,
+      "firstKind": "ERROR",
+      "firstLine": "DEFINE__REAL(int, clone, int (*a)(void *b), void *c, int d, void *e);",
+      "pipelineErrors": 33
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_libc.cpp",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 82,
+      "firstKind": "ERROR",
+      "firstLine": "SANITIZER_INTERFACE_ATTRIBUTE void *__sanitizer_internal_memset(void *s, int c,",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_linux.cpp",
+      "nodes": 79,
+      "missingTokens": [
+        ";",
+        "\"",
+        ")"
+      ],
+      "errorNodes": 70,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "//===-- sanitizer_linux.cpp -----------------------------------------------===//",
+      "pipelineErrors": 53
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_linux_libcdep.cpp",
+      "nodes": 16,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 14,
+      "firstRow": 996,
+      "firstKind": "ERROR",
+      "firstLine": "uptr min_shadow_base_alignment, UNUSED uptr &high_mem_end,",
+      "pipelineErrors": 17
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_linux_s390.cpp",
+      "nodes": 15,
+      "missingTokens": [],
+      "errorNodes": 15,
+      "firstRow": 99,
+      "firstKind": "ERROR",
+      "firstLine": "#  endif",
+      "pipelineErrors": 18
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_mac.cpp",
+      "nodes": 19,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 13,
+      "firstRow": 14,
+      "firstKind": "ERROR",
+      "firstLine": "#if SANITIZER_APPLE",
+      "pipelineErrors": 16
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_mutex.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 1,
+      "firstRow": 218,
+      "firstKind": "MISSING ::",
+      "firstLine": "InternalDeadlockDetector deadlock_detector;",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_netbsd.cpp",
+      "nodes": 41,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 26,
+      "firstRow": 344,
+      "firstKind": "ERROR",
+      "firstLine": "DEFINE__REAL(int, clone, int (*a)(void *b), void *c, int d, void *e);",
+      "pipelineErrors": 44
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_platform_limits_netbsd.cpp",
+      "nodes": 6,
+      "missingTokens": [],
+      "errorNodes": 6,
+      "firstRow": 317,
+      "firstKind": "ERROR",
+      "firstLine": "#if __has_include(<netinet/ip_fil.h>)",
+      "pipelineErrors": 9
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_platform_limits_posix.cpp",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 105,
+      "firstKind": "ERROR",
+      "firstLine": "#   define ARM_VFPREGS_SIZE_ASAN (32 * 8 /*fpregs*/ + 4 /*fpscr*/)",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_posix_libcdep.cpp",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 463,
+      "firstKind": "ERROR",
+      "firstLine": "SANITIZER_WEAK_ATTRIBUTE int",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_printf.cpp",
+      "nodes": 130,
+      "missingTokens": [
+        "}",
+        ">",
+        "::"
+      ],
+      "errorNodes": 127,
+      "firstRow": 368,
+      "firstKind": "MISSING }",
+      "firstLine": "} // namespace __sanitizer",
+      "pipelineErrors": 53
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_procmaps_bsd.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 129,
+      "firstKind": "ERROR",
+      "firstLine": "} // namespace __sanitizer",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_procmaps_mac.cpp",
+      "nodes": 9,
+      "missingTokens": [
+        "::",
+        "#endif"
+      ],
+      "errorNodes": 7,
+      "firstRow": 212,
+      "firstKind": "ERROR",
+      "firstLine": "dyldHdr = hdr;",
+      "pipelineErrors": 12
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_stackdepot.cpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 120,
+      "firstKind": "MISSING ;",
+      "firstLine": "void *thread_ SANITIZER_GUARDED_BY(mutex_) = nullptr;",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_stacktrace_libcdep.cpp",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 221,
+      "firstKind": "ERROR",
+      "firstLine": "int __sanitizer_get_module_and_offset_for_pc(void *pc, char *module_name,",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_stoptheworld_win.cpp",
+      "nodes": 1,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 85,
+      "firstKind": "MISSING ::",
+      "firstLine": "DWORD WINAPI RunThread(void *argument) {",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_symbolizer_posix_libcdep.cpp",
+      "nodes": 8,
+      "missingTokens": [],
+      "errorNodes": 8,
+      "firstRow": 339,
+      "firstKind": "ERROR",
+      "firstLine": "SANITIZER_INTERFACE_ATTRIBUTE SANITIZER_WEAK_ATTRIBUTE bool",
+      "pipelineErrors": 11
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_termination.cpp",
+      "nodes": 3,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 1,
+      "firstRow": 96,
+      "firstKind": "ERROR",
+      "firstLine": "void __sanitizer_set_death_callback(void (*callback)(void)) {",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_tls_get_addr.cpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 112,
+      "firstKind": "ERROR",
+      "firstLine": "const void *__sanitizer_get_allocated_begin(const void *p);",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libtsan/sanitizer_common/sanitizer_win.cpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 765,
+      "firstKind": "ERROR",
+      "firstLine": "__declspec(allocate(\".CRT$XID\")) int (*__run_atexit)() = RunAtexit;",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libtsan/tsan_debugging.cpp",
+      "nodes": 12,
+      "missingTokens": [],
+      "errorNodes": 12,
+      "firstRow": 244,
+      "firstKind": "ERROR",
+      "firstLine": "int __tsan_get_alloc_stack(uptr addr, uptr *trace, uptr size, int *thread_id,",
+      "pipelineErrors": 15
+    },
+    {
+      "file": "lib/libtsan/tsan_external.cpp",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 126,
+      "firstKind": "ERROR",
+      "firstLine": "void __tsan_external_write(void *addr, void *caller_pc, void *tag) {",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "lib/libtsan/tsan_flags.cpp",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 30,
+      "firstKind": "ERROR",
+      "firstLine": "const char *__tsan_default_options() {",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libtsan/tsan_interceptors_mac.cpp",
+      "nodes": 55,
+      "missingTokens": [
+        "#endif",
+        ";"
+      ],
+      "errorNodes": 45,
+      "firstRow": 546,
+      "firstKind": "ERROR",
+      "firstLine": "}  // namespace __tsan",
+      "pipelineErrors": 53
+    },
+    {
+      "file": "lib/libtsan/tsan_interceptors_posix.cpp",
+      "nodes": 24,
+      "missingTokens": [],
+      "errorNodes": 24,
+      "firstRow": 3240,
+      "firstKind": "ERROR",
+      "firstLine": "SANITIZER_INTERFACE_ATTRIBUTE void __tsan_testonly_barrier_wait(",
+      "pipelineErrors": 27
+    },
+    {
+      "file": "lib/libtsan/tsan_interface.cpp",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 81,
+      "firstKind": "ERROR",
+      "firstLine": "void __tsan_set_fiber_name(void *fiber, const char *name) {",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "lib/libtsan/tsan_interface_ann.cpp",
+      "nodes": 53,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 11,
+      "firstRow": 453,
+      "firstKind": "ERROR",
+      "firstLine": "void __tsan_check_no_mutexes_held() {",
+      "pipelineErrors": 53
+    },
+    {
+      "file": "lib/libtsan/tsan_interface_atomic.cpp",
+      "nodes": 76,
+      "missingTokens": [],
+      "errorNodes": 76,
+      "firstRow": 987,
+      "firstKind": "ERROR",
+      "firstLine": "void __tsan_go_atomic64_compare_exchange(ThreadState *thr, uptr cpc, uptr pc,",
+      "pipelineErrors": 53
+    },
+    {
+      "file": "lib/libtsan/tsan_md5.cpp",
+      "nodes": 64,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 1,
+      "firstRow": 125,
+      "firstKind": "ERROR",
+      "firstLine": "a += saved_a;",
+      "pipelineErrors": 51
+    },
+    {
+      "file": "lib/libtsan/tsan_mman.cpp",
+      "nodes": 5,
+      "missingTokens": [],
+      "errorNodes": 5,
+      "firstRow": 282,
+      "firstKind": "ERROR",
+      "firstLine": "UNUSED uptr sz = ctx->metamap.FreeBlock(thr->proc(), p, false);",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "lib/libtsan/tsan_new_delete.cpp",
+      "nodes": 29,
+      "missingTokens": [],
+      "errorNodes": 29,
+      "firstRow": 197,
+      "firstKind": "ERROR",
+      "firstLine": "std::align_val_t align) NOEXCEPT {",
+      "pipelineErrors": 32
+    },
+    {
+      "file": "lib/libtsan/tsan_platform_linux.cpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 155,
+      "firstKind": "ERROR",
+      "firstLine": "static NOINLINE void MapRodata(char* buffer, uptr size) {",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libtsan/tsan_platform_mac.cpp",
+      "nodes": 7,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 6,
+      "firstRow": 196,
+      "firstKind": "ERROR",
+      "firstLine": "#  endif",
+      "pipelineErrors": 10
+    },
+    {
+      "file": "lib/libtsan/tsan_rtl.cpp",
+      "nodes": 17,
+      "missingTokens": [
+        "}",
+        ";"
+      ],
+      "errorNodes": 12,
+      "firstRow": 1119,
+      "firstKind": "ERROR",
+      "firstLine": "}  // namespace __tsan",
+      "pipelineErrors": 20
+    },
+    {
+      "file": "lib/libtsan/tsan_rtl_access.cpp",
+      "nodes": 23,
+      "missingTokens": [],
+      "errorNodes": 23,
+      "firstRow": 663,
+      "firstKind": "ERROR",
+      "firstLine": "NOINLINE void RestartMemoryAccessRange(ThreadState* thr, uptr pc, uptr addr,",
+      "pipelineErrors": 26
+    },
+    {
+      "file": "lib/libtsan/tsan_rtl_report.cpp",
+      "nodes": 5,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 4,
+      "firstRow": 868,
+      "firstKind": "ERROR",
+      "firstLine": "void __sanitizer_print_stack_trace() {",
+      "pipelineErrors": 8
+    },
+    {
+      "file": "lib/libtsan/tsan_suppressions.cpp",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 38,
+      "firstKind": "ERROR",
+      "firstLine": "const char *__tsan_default_suppressions() {",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/libtsan/tsan_symbolize.cpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 51,
+      "firstKind": "ERROR",
+      "firstLine": "void __tsan_symbolize_external_ex(uptr pc,",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libunwind/src/AddressSpace.hpp",
+      "nodes": 4,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 0,
+      "firstRow": 377,
+      "firstKind": "MISSING ;",
+      "firstLine": "typedef ElfW(Addr) Elf_Addr;",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libunwind/src/DwarfInstructions.hpp",
+      "nodes": 26,
+      "missingTokens": [],
+      "errorNodes": 26,
+      "firstRow": 951,
+      "firstKind": "ERROR",
+      "firstLine": "fprintf(stderr, \"expression evaluates to 0x%\" PRIx64 \"\\n\", (uint64_t)*sp);",
+      "pipelineErrors": 29
+    },
+    {
+      "file": "lib/libunwind/src/DwarfParser.hpp",
+      "nodes": 27,
+      "missingTokens": [],
+      "errorNodes": 27,
+      "firstRow": 859,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBUNWIND_TRACE_DWARF(\"DW_CFA_restore(reg=%\" PRIu64 \")\\n\",",
+      "pipelineErrors": 30
+    },
+    {
+      "file": "lib/libunwind/src/EHHeaderParser.hpp",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 73,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBUNWIND_LOG(\"unsupported .eh_frame_hdr version: %\" PRIu8 \" at %\" PRIx64,",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "lib/libunwind/src/FrameHeaderCache.hpp",
+      "nodes": 3,
+      "missingTokens": [
+        "}"
+      ],
+      "errorNodes": 2,
+      "firstRow": 147,
+      "firstKind": "ERROR",
+      "firstLine": "};",
+      "pipelineErrors": 5
+    },
+    {
+      "file": "lib/libunwind/src/RWMutex.hpp",
+      "nodes": 10,
+      "missingTokens": [
+        "}",
+        "::",
+        ";"
+      ],
+      "errorNodes": 5,
+      "firstRow": 108,
+      "firstKind": "ERROR",
+      "firstLine": "};",
+      "pipelineErrors": 13
+    },
+    {
+      "file": "lib/libunwind/src/Registers.hpp",
+      "nodes": 33,
+      "missingTokens": [
+        "identifier",
+        ";"
+      ],
+      "errorNodes": 17,
+      "firstRow": 5100,
+      "firstKind": "MISSING identifier",
+      "firstLine": "};",
+      "pipelineErrors": 36
+    },
+    {
+      "file": "lib/libunwind/src/Unwind-EHABI.cpp",
+      "nodes": 17,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 6,
+      "firstRow": 1196,
+      "firstKind": "MISSING ::",
+      "firstLine": "extern \"C\" _LIBUNWIND_EXPORT _Unwind_Reason_Code",
+      "pipelineErrors": 20
+    },
+    {
+      "file": "lib/libunwind/src/Unwind-seh.cpp",
+      "nodes": 9,
+      "missingTokens": [
+        "::"
+      ],
+      "errorNodes": 4,
+      "firstRow": 495,
+      "firstKind": "ERROR",
+      "firstLine": "_LIBUNWIND_TRACE_API(\"_Unwind_GetRegionStart(context=%p) => 0x%\" PRIxPTR,",
+      "pipelineErrors": 12
+    },
+    {
+      "file": "lib/libunwind/src/UnwindCursor.hpp",
+      "nodes": 5,
+      "missingTokens": [
+        ";",
+        "identifier"
+      ],
+      "errorNodes": 1,
+      "firstRow": 3157,
+      "firstKind": "ERROR",
+      "firstLine": "} else",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "lib/libunwind/src/libunwind.cpp",
+      "nodes": 36,
+      "missingTokens": [
+        ";",
+        "::"
+      ],
+      "errorNodes": 19,
+      "firstRow": 463,
+      "firstKind": "ERROR",
+      "firstLine": "bool logDWARF() {",
+      "pipelineErrors": 39
+    },
+    {
+      "file": "src/zig_clang_cc1as_main.cpp",
+      "nodes": 20,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 0,
+      "firstRow": 173,
+      "firstKind": "MISSING ;",
+      "firstLine": "LLVM_PREFERRED_TYPE(bool)",
+      "pipelineErrors": 20
+    },
+    {
+      "file": "src/zig_clang_driver.cpp",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 232,
+      "firstKind": "ERROR",
+      "firstLine": "llvm::setBugReportMsg(\"PLEASE submit a bug report to \" BUG_REPORT_URL",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "src/zig_llvm.cpp",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 225,
+      "firstKind": "ERROR",
+      "firstLine": "ZIG_EXTERN_C bool ZigLLVMTargetMachineEmitToFile(LLVMTargetMachineRef targ_machine_ref, LLVMModuleRef module_ref,",
+      "pipelineErrors": 2
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}
