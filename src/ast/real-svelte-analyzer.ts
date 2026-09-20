@@ -106,6 +106,21 @@ function isIdentifier(text: string): boolean {
   return true
 }
 
+/**
+ * `/^on[a-z]+$/` as a char walk — the Svelte-5 event-attribute spelling test
+ * (`on` + one or more lowercase letters, nothing else). M49.R2: the AST regex
+ * census counted the literal as review-class debt, and a fixed prefix plus a
+ * lowercase run needs no regex.
+ */
+function isOnEventAttrName(name: string): boolean {
+  if (name.length < 3 || name[0] !== "o" || name[1] !== "n") return false
+  for (let i = 2; i < name.length; i++) {
+    const c = name[i]
+    if (c < "a" || c > "z") return false
+  }
+  return true
+}
+
 // ============================================================================
 // ANALYZER
 // ============================================================================
@@ -390,7 +405,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             const isOnDirective = attrName.startsWith("on:")
             const isOnclickAttr =
               !isOnDirective &&
-              /^on[a-z]+$/.test(attrName) &&
+              isOnEventAttrName(attrName) &&
               attrName.length > 4 &&
               !!tag &&
               tag[0] === tag[0].toLowerCase() &&
