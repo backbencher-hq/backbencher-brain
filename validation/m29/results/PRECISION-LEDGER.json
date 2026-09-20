@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "8411aeb9b1f2e414e00ea1d93ce2bb87f90797b7",
+  "inputsHash": "014640e8a0ec3edfb15d00629fc1c9d3c993504f",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -331,9 +331,9 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 5.39,
-    "inEditorHoverP95Ms": 4.77,
-    "coldMedianMs": 838,
+    "hoverP95Ms": 4.78,
+    "inEditorHoverP95Ms": 8.13,
+    "coldMedianMs": 882,
     "tierRatio": {
       "totalRelationships": 785954,
       "inferredRatioBeforePct": 42.1,

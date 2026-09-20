@@ -11,10 +11,10 @@
     "mutantsTotal": 5,
     "ok": true
   },
-  "currentCommit": "20364e4e7799b78b9c679edb2f571ab311d26d1a",
+  "currentCommit": "92581608d9ca53ee0ea045f7aaf8727b13d09da8",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-09-20T01:18:10.455Z",
+  "generatedAt": "2026-09-20T01:32:28.883Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
@@ -23,7 +23,7 @@
   "details": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:18:10.456Z",
-    "contentSha256": "78c5cff97ebee3bf123bebf2a573c0c0eed673bce8e48cbf6e80d5fcc82ee85f"
+    "sealedAt": "2026-09-20T01:32:28.883Z",
+    "contentSha256": "69f1e346f53d0ecb1643565657d406c89120d61f2c913dd40e931f82e39357fe"
   }
 }
