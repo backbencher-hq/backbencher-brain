@@ -373,29 +373,48 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         // on: directives — the handler is the first call-target identifier or
         // bare-identifier leaf of the expression value (`on:click={inc}` →
         // inc; `on:click={() => bump()}` → bump; `on:greet={greet}` → greet).
-        // NOTE: the svelte grammar exposes template expressions as opaque
-        // raw_text_expr leaves (no AST structure), so the handler leaf is
-        // extracted with pure-String scanning — the documented fallback for
-        // constructs the grammar cannot express. Arrow-param/`=>`/property
-        // expressions with no call target and no bare identifier emit nothing.
+        // Svelte 5 `onclick`-style attributes (`onclick={save}`) are the same
+        // edge through the modern spelling — but ONLY on intrinsic tags. On a
+        // component, `onclick` is a *prop* (parent→child data flow reads the
+        // value as uses elsewhere, never a call). `on:` stays universal
+        // (component event-listener syntax); bare `onclick` on a component
+        // must not fabricate. Short words (`on`, `once`, `only`) are never
+        // events.
         const startTag = this.findChildByType(n, "start_tag") || this.findChildByType(n, "self_closing_tag")
         if (startTag) {
           for (let i = 0; i < startTag.namedChildCount; i++) {
             const attr = startTag.namedChild(i)
             if (!attr || attr.type !== "attribute") continue
             const attrName = this.attributeName(attr)
-            if (!attrName || !attrName.startsWith("on:")) continue
-            const handler = this.onHandlerLeaf(attr)
+            if (!attrName) continue
+            const isOnDirective = attrName.startsWith("on:")
+            const isOnclickAttr =
+              !isOnDirective &&
+              /^on[a-z]+$/.test(attrName) &&
+              attrName.length > 4 &&
+              !!tag &&
+              tag[0] === tag[0].toLowerCase() &&
+              !tag.includes(".") &&
+              (!tag.includes(":") || tag.startsWith("svelte:"))
+            if (!isOnDirective && !isOnclickAttr) continue
+            // The handler's LINE is where its identifier starts, not where
+            // the expression opens — a multiline arrow body
+            // (`onsubmit={(e) => {\n e.preventDefault()\n}}`) names its callee
+            // lines below the attribute. Same rule for both spellings.
+            const handlerSite = this.onHandlerCall(attr)
+            const handler = handlerSite?.name
             if (handler && handler !== moduleName) {
               relationships.push({
                 source: moduleName,
                 target: handler,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.85,
-                // M59 (#825): the handler is written in the directive's
-                // expression — that node's line, falling back to the attribute.
-                ...(this.lineField(this.findChildByType(attr, "expression") ?? attr)),
-                metadata: { context: `Svelte event directive ${attrName}` },
+                ...(typeof handlerSite.line === "number" ? { line_number: handlerSite.line } : {}),
+                metadata: {
+                  context: isOnDirective
+                    ? `Svelte event directive ${attrName}`
+                    : `Svelte event attribute ${attrName}`,
+                },
               })
             }
           }
@@ -601,16 +620,31 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       const memberNames = new Set(symbols.map((s) => s.name))
       const seenUses = new Set<string>()
       for (const [name, line] of templateExprNames) {
-        if (!memberNames.has(name)) continue
-        const key = `${moduleName}:${name}`
+        // Svelte store auto-subscription: `{$store}` reads the VALUE of the
+        // `store` member (`$:` rules don't apply in markup). A single-`$`
+        // name that matches no member resolves through the sigil to a member
+        // that does — measured on a `writable` store read with zero edges.
+        // Exact matches win first (a member literally named `$x` keeps its
+        // edge); `$$` legacy specials (`$$props`) never strip.
+        let resolved = name
+        if (
+          !memberNames.has(name) &&
+          name.startsWith("$") &&
+          !name.startsWith("$$") &&
+          memberNames.has(name.slice(1))
+        ) {
+          resolved = name.slice(1)
+        }
+        if (!memberNames.has(resolved)) continue
+        const key = `${moduleName}:${resolved}`
         if (seenUses.has(key)) continue
         seenUses.add(key)
         relationships.push({
           source: moduleName,
-          target: name,
+          target: resolved,
           type: ASTEngine.RelationshipType.Uses,
           confidence: 0.95,
-          // M59 (#825): the line the identifier is written on, recorded where
+          // M59 (#825): the line the identifier is WRITTEN on, recorded where
           // the text was scanned. `0` can only appear if a caller passed no
           // base line for a fragment it could not locate — the oracle counts
           // that as a wrong line rather than a silent pass.
@@ -747,20 +781,47 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private objectPatternNames(pattern: Node): string[] {
-    const out: string[] = []
-    if (pattern.type !== "object_pattern") return out
-    for (let i = 0; i < pattern.namedChildCount; i++) {
-      const pn = pattern.namedChild(i)
-      if (!pn) continue
-      if (pn.type === "shorthand_property_identifier_pattern") out.push(pn.text)
-      else if (pn.type === "object_assignment_pattern") {
-        const nm = pn.namedChild(0)
-        if (nm) out.push(nm.text)
-      } else if (pn.type === "pair_pattern") {
-        const key = pn.childForFieldName?.("key")?.text ?? pn.namedChild(0)?.text
-        if (key) out.push(key)
+    return this.objectPatternPairs(pattern).map((p) => p.name)
+  }
+
+  /**
+   * M59 (#825) follow-up, measured on a `$props()` rename destructure: the
+   * pair VALUE binds, not the key (`let { renamed: local }` binds `local`).
+   * The old key-side naming emitted a phantom Property `renamed` AND defeated
+   * the merge dedupe (the JS delegate's correct `local` survived alongside
+   * it — one binding, two symbols). Each pair also carries its node so the
+   * symbol ranges at its own NAME line, not the whole declarator.
+   */
+  private objectPatternPairs(pattern: Node): Array<{ name: string; node: Node }> {
+    const out: Array<{ name: string; node: Node }> = []
+    const take = (n: Node): void => {
+      if (
+        n.type === "identifier" ||
+        n.type === "shorthand_property_identifier" ||
+        n.type === "shorthand_property_identifier_pattern"
+      ) {
+        out.push({ name: n.text, node: n })
+      } else if (n.type === "pair_pattern") {
+        const value = n.childForFieldName?.("value")
+        if (value) take(value)
+      } else if (n.type === "rest_pattern") {
+        const inner = n.namedChild(0)
+        if (inner) take(inner)
+      } else if (n.type === "assignment_pattern") {
+        const left = n.childForFieldName?.("left") ?? n.namedChild(0)
+        if (left) take(left)
+      } else if (
+        n.type === "object_assignment_pattern" ||
+        n.type === "object_pattern" ||
+        n.type === "array_pattern"
+      ) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) take(c)
+        }
       }
     }
+    take(pattern)
     return out
   }
 
@@ -812,29 +873,22 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           const declarator = this.findAncestor(n, (p) => p.type === "variable_declarator")
           if (declarator) {
             const pattern = declarator.childForFieldName?.("name") ?? this.findChildByType(declarator, "object_pattern")
-            if (pattern && pattern.type === "object_pattern") {
-              for (let i = 0; i < pattern.namedChildCount; i++) {
-                const pn = pattern.namedChild(i)
-                if (!pn) continue
-                let name: string | undefined
-                if (pn.type === "shorthand_property_identifier_pattern") name = pn.text
-                else if (pn.type === "object_assignment_pattern") {
-                  name = pn.namedChild(0)?.text
-                } else if (pn.type === "pair_pattern") {
-                  name = pn.childForFieldName?.("key")?.text
-                }
-                if (!name) continue
-                symbols.push({
-                  name,
-                  kind: ASTEngine.SymbolKind.Property,
-                  range: this.offsetRange(this.nodeToRange(declarator), lineOffset, colOffset, indexOffset),
-                  scope: componentName,
-                  ownerName: componentName,
-                  ownerKind: ASTEngine.SymbolKind.Class,
-                  visibility: "public",
-                  metadata: { isSvelteProp: true, fromRunes: true },
-                })
-              }
+            // M59 (#825): each binding ranges at its OWN name node — a wrapped
+            // `$props()` destructure stamped the whole declarator line for
+            // every member. Pairs carry value-side names (see
+            // objectPatternPairs), so a rename binds `local`, not `renamed`.
+            const pairs = pattern && pattern.type === "object_pattern" ? this.objectPatternPairs(pattern) : []
+            for (const { name, node: nameNode } of pairs) {
+              symbols.push({
+                name,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.offsetRange(this.nodeToRange(nameNode), lineOffset, colOffset, indexOffset),
+                scope: componentName,
+                ownerName: componentName,
+                ownerKind: ASTEngine.SymbolKind.Class,
+                visibility: "public",
+                metadata: { isSvelteProp: true, fromRunes: true },
+              })
             }
           }
         }
@@ -1194,7 +1248,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     return -1
   }
 
-  private onHandlerLeaf(attr: Node): string | undefined {
+  /**
+   * M59 (#825) follow-up, measured on shadcn-svelte forms: the handler's
+   * NAME and its LINE travel together. The old text-only leaf plus the
+   * expression node's line split them across lines for multiline arrow
+   * bodies. Same three rules as before (first call target, bare identifier,
+   * dotted callable leaf), each now carrying its offset into the raw text.
+   */
+  private onHandlerCall(attr: Node): { name: string; line: number } | undefined {
     // The maintained grammar (v0.6.0, Svelte 5) wraps attribute expression
     // values as `attribute > expression > svelte_raw_text`; older grammars
     // used `expr_attribute_value > raw_text_expr`. Handle both shapes.
@@ -1207,16 +1268,22 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // with pure-String ops (the documented fallback for constructs the
     // grammar can't express).
     let text = ""
+    let baseLine = 0
     const stack: Node[] = [value]
     while (stack.length > 0) {
       const m = stack.pop()!
-      if (m.type === "svelte_raw_text") { text = m.text; break }
+      if (m.type === "svelte_raw_text") {
+        text = m.text
+        baseLine = m.startPosition.row + 1
+        break
+      }
       for (let i = m.namedChildCount - 1; i >= 0; i--) {
         const c = m.namedChild(i)
         if (c) stack.push(c)
       }
     }
     if (!text) return undefined
+    const at = (offset: number): number => baseLine + RealSvelteAnalyzer.linesBefore(text, offset)
     // 1. First identifier immediately followed by `(` = call target
     //    (`() => bump()` → bump; `() => onSelect(title)` → onSelect).
     // 2. Else, if the whole text is a bare identifier → that identifier
@@ -1232,20 +1299,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           else break
         }
         const ident = text.slice(i, end)
-        if (end < text.length && text[end] === "(") return ident
+        if (end < text.length && text[end] === "(") return { name: ident, line: at(i) }
         // not a call target — move past this identifier
         i = end
       }
     }
     // Bare-identifier check
-    if (isIdentifier(text)) return text
+    if (isIdentifier(text)) return { name: text, line: at(0) }
     // Dotted member leaf: `on:click={box.open}` binds the method reference -
     // the CALLABLE LEAF is the last segment. (Previously emitted nothing.)
     const parts = text.split(".")
     if (parts.length > 1 && parts.every((p) => isIdentifier(p))) {
-      return parts[parts.length - 1]
+      const leaf = parts[parts.length - 1]
+      return { name: leaf, line: at(text.lastIndexOf(leaf)) }
     }
     return undefined
+  }
+
+  private onHandlerLeaf(attr: Node): string | undefined {
+    return this.onHandlerCall(attr)?.name
   }
 
   /**
