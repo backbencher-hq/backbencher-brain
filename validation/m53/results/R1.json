@@ -2,9 +2,9 @@
   "issue": "M53.R1",
   "code": "R1",
   "milestone": "M53",
-  "status": "known-gap",
-  "passed": 38,
-  "failed": 3,
+  "status": "verified",
+  "passed": 41,
+  "failed": 0,
   "mutantsCaught": 1,
   "mutantsTotal": 1,
   "checksList": [
@@ -202,9 +202,9 @@
     {
       "name": "m29-closure",
       "script": "script/m29/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (31/32 passed, 3 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (32/32 passed, 3 negatives)",
+      "ok": true
     },
     {
       "name": "m42-enrichment",
@@ -251,9 +251,9 @@
     {
       "name": "m42-closure",
       "script": "script/m42/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (28/30 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (30/30 passed, 7 negatives)",
+      "ok": true
     },
     {
       "name": "m44-hub-tree",
@@ -280,7 +280,7 @@
       "name": "m44-hub-list",
       "script": "script/m44/verify-hub-list.ts",
       "rc": 0,
-      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ c24d12f0)",
+      "verdict": "VERIFIED (12/12 passed, source validation/m26/results/V1.json @ 6508e5fc)",
       "ok": true
     },
     {
@@ -300,17 +300,17 @@
     {
       "name": "m44-closure",
       "script": "script/m44/verify-closure.ts",
-      "rc": 1,
-      "verdict": "KNOWN-GAP (46/48 passed, 7 negatives)",
-      "ok": false
+      "rc": 0,
+      "verdict": "VERIFIED (48/48 passed, 7 negatives)",
+      "ok": true
     }
   ],
-  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
+  "currentCommit": "6508e5fc44f3cc56efaafa0d7100e21a2fa2caf9",
   "verifierCommand": "npx tsx script/m53/verify-r1-ladder.ts",
-  "generatedAt": "2026-09-20T01:13:06.483Z",
+  "generatedAt": "2026-09-20T01:57:36.957Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:13:06.483Z",
-    "contentSha256": "bb1d2734f6d8a2b95482af78ce092957ff95500d699837f1141b24435878ad31"
+    "sealedAt": "2026-09-20T01:57:36.957Z",
+    "contentSha256": "b251498eeb9f7284c012f76dbb94a22021a12a7e403ba43801847fd3e9ca39e2"
   }
 }
