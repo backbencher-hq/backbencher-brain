@@ -244,6 +244,17 @@ export interface GraphTraversalResult {
     callersIfUncapped: number | null
     calleesIfUncapped: number | null
     totalsAreLowerBounds: boolean
+    /** M59 (#895, #854): stored rows collapsed at the tool layer before
+     *  becoming edges — cascadeRepeatsCollapsed: the same rowId re-fetched by
+     *  a deeper cascade; spellingVariantsCollapsed: same call site + same
+     *  resolved target stored under different spellings, emitted once (the
+     *  collapse is line-guarded: a NULL line never proves one site). Both are
+     *  DECLARED, never silent: an agent can see how many rows were merged to
+     *  produce the returned edge set. */
+    dedupedAtToolLayer: {
+      cascadeRepeatsCollapsed: number
+      spellingVariantsCollapsed: number
+    }
   }
   /** M28.A2 (D-6): the root symbol's agent/human annotations, author-labeled.
    *  Empty array when none — the webview then renders NO annotation badge. */

@@ -146,6 +146,14 @@ export async function traverseGraph(
   totalCalleesIfKnown: number | null
   /** The count is a lower bound because the counting scan itself is bounded. */
   totalsAreLowerBounds: boolean
+  /** M59 (#895): stored rows collapsed at the tool layer before becoming
+   *  edges — cascadeRepeatsCollapsed: the same rowId re-fetched by a deeper
+   *  cascade; spellingVariantsCollapsed: reserved for the #854 site-level
+   *  collapse (0 until its identity key is pinned from stored data). */
+  dedupedAtToolLayer: {
+    cascadeRepeatsCollapsed: number
+    spellingVariantsCollapsed: number
+  }
 }> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const maxDepth = Math.min(options.maxDepth || DEFAULT_MAX_DEPTH, 10)
@@ -205,6 +213,29 @@ export async function traverseGraph(
     isExternal: false,
   })
 
+  // ---- M59 (#895) edge dedupe -------------------------------------------
+  // The owner-cascade re-queries the same stored row once per traced symbol
+  // whose cascade contains its target (measured: one rowId emitted at depths
+  // [0,2,3] — 72 callers built from 31 rows). One stored row must emit at
+  // most ONE edge per direction: the FIRST traversal depth to reach it emits;
+  // the edge's `depth` stays truthful to that traversal. The set is shared
+  // across all depths of the direction; caps/budgets/limits are unaffected.
+  // #854's same-site spelling rows (`Async` vs `cekernel.Async`) are DISTINCT
+  // rowIds, so row-level dedupe cannot see them. They are collapsed by SITE:
+  // same relationship type, same source symbol, same resolved target, same
+  // file + line. Measured guard (cats-effect, probe-rel-identity): the site
+  // key is applied ONLY to rows carrying a real call-site line — the NULL-line
+  // groups the store shows (YAML `contains`, 15 distinct keypaths in one
+  // group) are genuinely different sites that a NULL line cannot distinguish,
+  // so they pass through untouched. Collapses are DECLARED:
+  // `summary.dedupedAtToolLayer` reports both counts.
+  const emittedCallerRows = new Set<string>()
+  const emittedCallerSites = new Set<string>()
+  const emittedCalleeRows = new Set<string>()
+  const emittedCalleeSites = new Set<string>()
+  let collapsedCascadeRepeats = 0
+  let collapsedSpellingVariants = 0
+
   // ---- callers ----
   const callers: GraphEdge[] = []
   const visitedCallers = new Set<string>()
@@ -250,6 +281,25 @@ export async function traverseGraph(
       if (!row.symName || AnalysisExclusions.isNoiseSymbolName(row.symName)) continue
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      // M59 (#895): one stored row must emit at most one edge per direction —
+      // the cascade re-queries it once per traced ancestor (measured depths
+      // [0,2,3]). Row-level dedupe is exact: same rowId = same everything.
+      if (emittedCallerRows.has(row.rowId)) {
+        collapsedCascadeRepeats++
+        continue
+      }
+      emittedCallerRows.add(row.rowId)
+      // M59 (#854, consumer option): same call site + same resolved target,
+      // different spelling → one edge, first spelling wins. Line-guarded:
+      // a NULL line cannot prove two rows name one site.
+      if (row.lineNumber != null && row.lineNumber > 0) {
+        const siteKey = `${row.relType}|${row.symId ?? ""}|${symbolId}|${row.srcFileRel ?? ""}|${row.lineNumber}`
+        if (emittedCallerSites.has(siteKey)) {
+          collapsedSpellingVariants++
+          continue
+        }
+        emittedCallerSites.add(siteKey)
+      }
       const node = nodeFromEdge(row)
       registerNode(node)
       callers.push({
@@ -347,6 +397,21 @@ export async function traverseGraph(
       if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) continue
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      // M59 (#895): same stored row must not emit once per cascade depth.
+      if (emittedCalleeRows.has(row.rowId)) {
+        collapsedCascadeRepeats++
+        continue
+      }
+      emittedCalleeRows.add(row.rowId)
+      // M59 (#854, consumer option): same-site spelling collapse, as in callers.
+      if (row.lineNumber != null && row.lineNumber > 0) {
+        const calleeKey = `${row.relType}|${symbolId}|${row.symId ?? `ext:${row.extName ?? ""}`}|${row.srcFileRel ?? ""}|${row.lineNumber}`
+        if (emittedCalleeSites.has(calleeKey)) {
+          collapsedSpellingVariants++
+          continue
+        }
+        emittedCalleeSites.add(calleeKey)
+      }
       const node = nodeFromEdge(row)
       registerNode(node)
       callees.push({
@@ -396,6 +461,10 @@ export async function traverseGraph(
     totalCallersIfKnown,
     totalCalleesIfKnown,
     totalsAreLowerBounds,
+    dedupedAtToolLayer: {
+      cascadeRepeatsCollapsed: collapsedCascadeRepeats,
+      spellingVariantsCollapsed: collapsedSpellingVariants,
+    },
   }
 }
 
@@ -446,6 +515,7 @@ export async function graphTraversal(
     totalCallersIfKnown,
     totalCalleesIfKnown,
     totalsAreLowerBounds,
+    dedupedAtToolLayer,
   } = await traverseGraph(projectId, root, options)
   const rootNode = nodes[root.id]!
   const crossLanguageEdges = [...callers, ...callees].filter((e) => e.isCrossLanguage).length
@@ -471,6 +541,11 @@ export async function graphTraversal(
       callersIfUncapped: totalCallersIfKnown,
       calleesIfUncapped: totalCalleesIfKnown,
       totalsAreLowerBounds,
+      // M59 (#895, #854): what the tool layer collapsed before handing edges
+      // to the agent. cascadeRepeatsCollapsed: the same stored row re-fetched
+      // by a deeper cascade. spellingVariantsCollapsed: same call site + same
+      // resolved target stored under different spellings, emitted once.
+      dedupedAtToolLayer,
     },
   }
 }
