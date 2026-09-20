@@ -144,4 +144,20 @@ if (!perfBreach.perfRegressions.some((x: string) => x.startsWith(ROW)) || perfBr
   throw new Error(`expected a context-scored perf breach to fire: ${JSON.stringify(perfBreach)}`)
 }
 
-console.log("differential evidence evaluation checks passed (8 cases: pass, regression, resampled-clean, rotated-growth-is-triage, unpinned, probe-mode, perf-refused-without-context, perf-breach-fires)")
+// 9. #871 §2 — a lane-vs-run-median outlier is DISCLOSED, never scored: the
+// ratio cannot be told apart from a busy machine (lodash:javascript fired on
+// three ceremonies at load 3.9-22), so it must not fail a lane.
+const medReport = { a: { filesSampled: 1, coveragePct: 100, fabricationPct: 0 }, b: { filesSampled: 1, coveragePct: 100, fabricationPct: 0 }, c: { filesSampled: 1, coveragePct: 100, fabricationPct: 0 } }
+const medCounts = (avg: number) => ({ missing: 0, unexplained: 0, heuristic: 0, perf: { avgMsPerFile: avg, loadAvg1: 1 } })
+const medCurrent = { "r:a": { ...medCounts(10), sampleHash: "h1" }, "r:b": { ...medCounts(11), sampleHash: "h2" }, "r:c": { ...medCounts(900), sampleHash: "h3" } }
+const medBaseline = { "r:a": medCounts(10), "r:b": medCounts(11), "r:c": medCounts(900) }
+const med = evaluateDifferential(medReport, medCurrent, medBaseline, 60, 60, "r", { "r:a": "h1", "r:b": "h2", "r:c": "h3" })
+if (
+  !med.medianOutliers.some((x: string) => x.startsWith("r:c"))
+  || med.perfRegressions.length !== 0
+  || med.checks.some((c: any) => c.status !== "pass")
+) {
+  throw new Error(`expected a median outlier to be disclosed, not scored: ${JSON.stringify(med)}`)
+}
+
+console.log("differential evidence evaluation checks passed (9 cases: pass, regression, resampled-clean, rotated-growth-is-triage, unpinned, probe-mode, perf-refused-without-context, perf-breach-fires, median-outlier-disclosed)")
