@@ -1,0 +1,140 @@
+{
+  "analyzer": "go",
+  "corpus": "$HOME/fixtures/repositories/go-tools",
+  "corpusRepo": "go-tools",
+  "revision": "bf54bcd2f14a330f0dcffa4cf631235de771bde2",
+  "extensions": [
+    "*.go"
+  ],
+  "mode": "deterministic-first-400-sorted",
+  "trackedFilesInCorpus": 1931,
+  "measuredFiles": 400,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 5,
+  "cleanFiles": 395,
+  "missingNodeFiles": 2,
+  "errorNodeFiles": 5,
+  "errorRates": {
+    "any": 1.3,
+    "missing": 0.5,
+    "error": 1.3
+  },
+  "grammarErrorFiles": 5,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 20149,
+  "missingTokens": {
+    "]": 21,
+    "identifier": 2
+  },
+  "errorLineSignatures": {
+    "ID ID(ID []ID) {": 66,
+    "ID ID(ID []ID, ID ID) {": 17,
+    "ID ID": 16,
+    "ID ID, ID := ID ID { // ID ID": 13,
+    "ID ID == ID {": 13,
+    "ID ID(ID []ID, ID ID) ID {": 13,
+    "ID ID, ID := ID ID {": 13,
+    "ID ID := ID(ID) - 1; ID >= 0; ID-- {": 11,
+    "ID ID := ID(ID) - 1; ID >= 0; ID-- { // ID ID": 8,
+    "}": 8,
+    "ID = ID": 7,
+    "ID ID(ID) {": 7,
+    "ID ID(ID ID, ID []ID) {": 7,
+    "ID ID[ID ID](ID []ID, ID ID(ID) ID) ID {": 6,
+    "ID ID(ID []*ID) {": 4,
+    "ID = ID[ID]": 4,
+    "ID(ID)": 4,
+    "ID := ID": 4,
+    "ID (ID ID) ID() { ID.ID(ID) }": 4,
+    "ID ID(ID) { // ID ID ID ID ID ID": 4,
+    "ID[ID][0]++": 3,
+    "ID ID(ID []ID, ID []ID) {": 3,
+    "ID ID(ID []ID.ID) {": 3,
+    "ID (ID ID) ID() ID { ID ID{} }": 3,
+    "ID ID(ID []ID) ID {": 3,
+    "ID ID(ID, ...ID) ID": 3,
+    "ID": 3,
+    "ID ID(ID [][3]ID) {": 2,
+    "ID ID(ID [][]ID) {": 2,
+    "ID = ID[ID].ID()": 2,
+    "ID (*ID) ID() ID { ID ID }": 2,
+    "ID (ID) ID() ID { ID ID }": 2,
+    "ID ID := ID(ID) - 2; ID >= 0; ID-- {": 2,
+    "ID ID() {": 2,
+    "ID = ID - 1 // ID: ID ID ID": 2,
+    "ID ID := ID(ID) - 1; ID >= 0; ID -= 2 {": 2,
+    "ID ID(ID []ID, ID ID() ID) ID {": 2,
+    "ID ID(ID ID, ID ...ID) {": 2,
+    "ID ID(ID []ID, ID ID(ID) ID) ID {": 2,
+    "ID ID(ID) ID": 2
+  },
+  "firstErrorLineSignatures": {
+    "ID ID(ID *ID.ID) {": 1,
+    "ID ID[ID ID] = ID[ID]ID": 1,
+    "ID := (ID)(ID[ID]ID, ID(ID))": 1,
+    "// ID 2025 ID ID ID. ID ID ID.": 1,
+    "ID ID": 1
+  },
+  "errorFileList": [
+    {
+      "file": "go/analysis/passes/copylock/testdata/src/a/newexpr_go126.go",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 11,
+      "firstKind": "ERROR",
+      "firstLine": "func _(ptr *sync.Mutex) {",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "go/analysis/passes/inline/testdata/src/a/a.go",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 192,
+      "firstKind": "ERROR",
+      "firstLine": "type M[K comparable] = map[K]V",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "go/analysis/passes/modernize/testdata/src/mapsloop/mapsloop.go",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 69,
+      "firstKind": "ERROR",
+      "firstLine": "dst := (make)(map[int]string, len(src))",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go",
+      "nodes": 145,
+      "missingTokens": [
+        "identifier",
+        "]"
+      ],
+      "errorNodes": 142,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Copyright 2025 The Go Authors. All rights reserved.",
+      "pipelineErrors": 195
+    },
+    {
+      "file": "go/analysis/passes/modernize/testdata/src/slicescontains/slicescontains.go",
+      "nodes": 183,
+      "missingTokens": [
+        "]"
+      ],
+      "errorNodes": 163,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "package slicescontains",
+      "pipelineErrors": 233
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}
