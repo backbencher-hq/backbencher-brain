@@ -8093,47 +8093,64 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
   let nsName = "user"
   const aliases = new Map<string, string>()
-  // #881 mirror: the comment macro can be shadowed by a local definition —
-  // a bare `comment` sym outside head position anywhere in the file means
-  // `(comment …)` forms are ordinary calls and must be walked.
-  let mayShadowComment = false
+  // #881 + W23-b mirror: the comment macro can be shadowed — but only
+  // REGIONALLY and in ORDER. Ranges: def-family NAME binds at form end
+  // (order-aware from there on); a binding vector covers its ENCLOSING form
+  // only (params live inside their fn/defn form; a multi-arity clause's
+  // param covers that clause). See the analyzer for the full rationale.
+  const shadowRanges: Array<{ start: number; end: number }> = []
   {
-    // F4 mirror: only DEFINITION evidence flips the flag (a def-family NAME
-    // or a binding-vector position) — a DATA-position `comment` symbol does
-    // not shadow the macro (see the analyzer; adversarial review F4).
     const DEF_NAME_HEADS = new Set(["def", "defn", "defn-", "defmacro", "defonce", "defmulti"])
     const BINDING_VEC_HEADS = new Set(["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"])
     const FN_PARAM_HEADS = new Set(["fn", "defn", "defn-", "defmacro", "defmethod", "deftest"])
-    const isShadowingComment = (c: any): boolean => {
+    const shadowRangeOf = (c: any): { start: number; end: number } | null => {
       const p = c.parent
-      if (!p) return false
+      if (!p) return null
       if (p.type === "list_lit") {
         const head = formNameOf(p)
-        return !!(DEF_NAME_HEADS.has(head) && p.namedChild(1)?.startIndex === c.startIndex)
+        if (DEF_NAME_HEADS.has(head) && p.namedChild(1)?.startIndex === c.startIndex) {
+          return { start: p.endIndex, end: Infinity }
+        }
+        return null
       }
       if (p.type === "vec_lit") {
         const gp = p.parent
-        if (!gp || gp.type !== "list_lit") return false
+        if (!gp || gp.type !== "list_lit") return null
         const head = formNameOf(gp)
         if (FN_PARAM_HEADS.has(head)) {
           for (let i = 0; i < gp.namedChildCount; i++) {
             const cc = gp.namedChild(i)
-            if (cc?.type === "vec_lit") return cc.startIndex === p.startIndex
+            if (cc?.type === "vec_lit") return cc.startIndex === p.startIndex ? { start: gp.startIndex, end: gp.endIndex } : null
           }
-          return false
+          return null
         }
-        if (BINDING_VEC_HEADS.has(head)) return gp.namedChild(1)?.startIndex === p.startIndex
-        return false
+        if (BINDING_VEC_HEADS.has(head) && gp.namedChild(1)?.startIndex === p.startIndex) {
+          return { start: gp.startIndex, end: gp.endIndex }
+        }
+        if (gp.namedChild(0)?.startIndex === p.startIndex) {
+          const ggp = gp.parent
+          if (ggp && ggp.type === "list_lit" && FN_PARAM_HEADS.has(formNameOf(ggp))) {
+            return { start: gp.startIndex, end: gp.endIndex }
+          }
+        }
+        return null
       }
-      return false
+      return null
     }
     const scan: any[] = [root]
     while (scan.length > 0) {
       const c = scan.pop()!
       if (c.type === "dis_expr" || c.type === "quoting_lit") continue
-      if (c.type === "sym_lit" && symName(c) === "comment" && isShadowingComment(c)) { mayShadowComment = true; break }
+      if (c.type === "sym_lit" && symName(c) === "comment") {
+        const range = shadowRangeOf(c)
+        if (range) shadowRanges.push(range)
+      }
       for (const k of kids(c)) scan.push(k)
     }
+  }
+  const isShadowedAt = (pos: number): boolean => {
+    for (const r of shadowRanges) if (pos >= r.start && pos < r.end) return true
+    return false
   }
   const resolveQualified = (name: string): string => {
     const slash = name.indexOf("/")
@@ -8279,7 +8296,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       const form = formNameOf(n)
       // F10 mirror: spelling-independent data-form skip.
       const canon = resolveQualified(form)
-      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !mayShadowComment)) continue
+      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt(n.startIndex))) continue
       if (n.parent?.type === "list_lit" && LIBSITE_FORMS.has(clauseNameOf(n.parent) || formNameOf(n.parent))) continue
       if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent)?.startIndex !== n.startIndex) {
         // CLJ-D6: method definition, not a call (defprotocol/definterface sigs

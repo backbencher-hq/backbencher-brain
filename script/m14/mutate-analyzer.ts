@@ -1052,6 +1052,21 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "clj.fixture.cdata", target: "fabricated", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true, isTopLevel: true } }] }),
   },
   {
+    id: "clojure/comment-shadow-region-leak",
+    language: "clojure",
+    defectClass: "relationship-fabrication",
+    description: "W23-b regression: shadow ranges collapse back into one file-wide order-blind flag — the data block BEFORE any shadow (w23b-ordered-ghost), the block after the let's region closed (w23b-region-ghost) and a sibling arity clause's data block (w23b-multi-ghost) are all walked as code (the pre-fix fabrication), caught by shadowed-comment-881's three forbidden ghosts",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "calls", source: "shadow-boundary-probe", target: "w23b-ordered-ghost", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true, isTopLevel: true } },
+        { type: "calls", source: "w23b-region-window", target: "w23b-region-ghost", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } },
+        { type: "calls", source: "w23b-multi", target: "w23b-multi-ghost", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } },
+      ],
+    }),
+  },
+  {
     id: "clojure/meta-values-walked",
     language: "clojure",
     defectClass: "relationship-fabrication",
