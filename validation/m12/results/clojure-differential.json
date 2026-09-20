@@ -4,8 +4,8 @@
   "inputs": {
     "files": {
       "src/ast/analysis-exclusions.ts": {
-        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
-        "bytes": 9702
+        "sha256": "046f04758d07e4455b9f8423c18ece3dea387b984f6a4025658a3d7eec31b898",
+        "bytes": 11665
       },
       "src/ast/engine.ts": {
         "sha256": "d3359e4b857f1a4bd21b410a2141394e99a444fb570c3ca66040ff9e937e8f28",
@@ -44,8 +44,8 @@
         "bytes": 22600
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "10bb0638c017f88d1def36a3e391bfb820cf56df0b6ee2d8c41ad02388542731",
-        "bytes": 84065
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
       },
       "src/ast/real-cpp-analyzer.ts": {
         "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "27a4891170a5d90c07d13bbb6e96ed46ceef8130872d3c014433b529d8f8989a",
-        "bytes": 49950
+        "sha256": "2613db49c14e030b8bdb1939086b010d502505e6d35aea855eaa98ba60fa9bb9",
+        "bytes": 52383
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -252,7 +252,7 @@
         "bytes": 10168
       }
     },
-    "digest": "7327a3c6ecbf94c03e169b49e449464b50d80c435ed05955b49c418f8565ac00",
+    "digest": "af713771ff21f6e96c3622f04b5a92c8312c3c475f0c5b46c0b0c11620d2baad",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm",
       "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
@@ -357,11 +357,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 43.314695,
-      "userCpuMs": 70.182,
-      "systemCpuMs": 8.526,
-      "peakRssBytes": 217710592,
-      "rssDeltaBytes": 2097152,
+      "wallTimeMs": 44.68456,
+      "userCpuMs": 53.607,
+      "systemCpuMs": 10.208,
+      "peakRssBytes": 228409344,
+      "rssDeltaBytes": 1990656,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
