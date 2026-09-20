@@ -3,7 +3,7 @@
   "milestone": "M62",
   "githubMilestone": 62,
   "title": "Address Truth — nothing shows a position it does not know",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m62/M62-MASTER-PLAN.md (Issues / Issue groups)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "prerequisite": "M55 and M61 completion bars met — re-audited by G1 on every run through the persisted closure records",
@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "0321f5e7590b379398b9677e98f08715a328b671",
-        "recordSealedAt": "2026-09-20T02:56:30.220Z"
+        "recordCommit": "e3d736751426ce3734bf13fd65cc91f302199960",
+        "recordSealedAt": "2026-09-20T02:56:35.946Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "negativeCases": 6,
-        "recordCommit": "0321f5e7590b379398b9677e98f08715a328b671",
-        "recordSealedAt": "2026-09-20T02:56:31.761Z"
+        "recordCommit": "e3d736751426ce3734bf13fd65cc91f302199960",
+        "recordSealedAt": "2026-09-20T02:56:37.449Z"
       }
     },
     {
@@ -142,8 +142,8 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "0321f5e7590b379398b9677e98f08715a328b671",
-        "recordSealedAt": "2026-09-20T02:56:33.149Z"
+        "recordCommit": "e3d736751426ce3734bf13fd65cc91f302199960",
+        "recordSealedAt": "2026-09-20T02:56:38.856Z"
       }
     },
     {
@@ -174,7 +174,7 @@
         "failed": 1,
         "realFailed": 1,
         "negativeCases": 10,
-        "recordCommit": "0e3c3cf182e768cff5419658fcf05782596ceea4"
+        "recordCommit": "e3d736751426ce3734bf13fd65cc91f302199960"
       }
     }
   ]
