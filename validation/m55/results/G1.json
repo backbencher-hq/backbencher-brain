@@ -2,17 +2,17 @@
   "issue": "M55.G1",
   "code": "G1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 16,
-  "passed": 14,
+  "passed": 16,
   "failed": 0,
-  "realFailed": 2,
+  "realFailed": 0,
   "negativeCases": 8,
-  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-20T01:13:10.429Z",
+  "generatedAt": "2026-09-20T02:31:49.653Z",
   "ledger": {
     "issues": 9,
     "verified": [
@@ -35,25 +35,22 @@
     "rules": 6
   },
   "bar": {
-    "status": "failed",
-    "reason": "m53-ladder exit=1, m53-closure exit=1",
+    "status": "verified",
+    "reason": "",
     "ladder": [
       {
         "gate": "m53-ladder",
-        "exit": 1,
+        "exit": 0,
         "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json"
       },
       {
         "gate": "m53-closure",
-        "exit": 1,
+        "exit": 0,
         "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
       }
     ]
   },
-  "failures": [
-    "G1: the M44 bar (via the M53 R1 ladder, which includes m44-closure) re-audits green at HEAD — Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json",
-    "G1: the M53 completion bar re-audits green at HEAD — Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
-  ],
+  "failures": [],
   "limitations": [
     "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
     "Relevance-based staleness mirrors M24.G1: a file not listed for an issue does not invalidate its evidence. The list is maintained here; a new component must be added to it when its issue lands.",
@@ -61,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:13:10.429Z",
-    "contentSha256": "d7244229e99ca2775f405dd1a965cc2c99af654ff106dc14614ffad0ef288d1a"
+    "sealedAt": "2026-09-20T02:31:49.653Z",
+    "contentSha256": "ea1a181592119cb399dd4d3d517b4fd9dbc46d727c3506ca6ee5ff6f800ae6b1"
   }
 }
