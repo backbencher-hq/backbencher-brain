@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "b6a6cfffd9898bd523189edba1581f2e581fc825",
+  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-09-20T00:46:07.390Z",
+  "generatedAt": "2026-09-20T01:04:44.998Z",
   "differential": {
     "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
     "l3TotalCount": 4,
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:46:07.392Z",
-    "contentSha256": "9c15c12ff6d2d7290f2f673324aa938c936ab41cfba745407ac102d72c8b9dac"
+    "sealedAt": "2026-09-20T01:04:44.998Z",
+    "contentSha256": "e13c2d1bdadab36bfc1e774a7cba13e30b4f39d5a24b9aeaa31bf9f192ea588e"
   }
 }
