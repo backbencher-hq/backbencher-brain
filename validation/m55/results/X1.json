@@ -2,27 +2,27 @@
   "issue": "M55.X1",
   "code": "X1",
   "milestone": "M55",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 42,
-  "passed": 40,
-  "failed": 2,
-  "realFailed": 2,
+  "passed": 42,
+  "failed": 0,
+  "realFailed": 0,
   "negativeCases": 5,
   "mutants": {
     "total": 5,
     "caught": 5
   },
-  "currentCommit": "a538566b70e20a5ad92c6ae45938744fa1bd8047",
+  "currentCommit": "ad920ca2c9ee851eee94694a5db9add869040893",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-20T02:14:40.006Z",
+  "generatedAt": "2026-09-20T02:41:12.501Z",
   "audit": {
-    "head": "a538566b70e20a5ad92c6ae45938744fa1bd8047",
+    "head": "ad920ca2c9ee851eee94694a5db9add869040893",
     "ladder": {
       "record": "validation/m53/results/R1.json",
       "status": "verified",
-      "pin": "a0052611197af820953bba93730e6a55b921ba68",
+      "pin": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
       "green": 41,
       "total": 41,
       "milestones": {
@@ -359,10 +359,7 @@
     ],
     "handoffIssue": 816
   },
-  "failures": [
-    "C1: G1 evidence is verified and fresh by relevance (the G1 rule): status=known-gap pin=c24d12f0c38f realFailed=2",
-    "C2: G1's bar re-audit records every ladder gate green: [{\"gate\":\"m53-ladder\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json\"},{\"gate\":\"m53-closure\",\"exit\":1,\"lastLine\":\"Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json\"}]"
-  ],
+  "failures": [],
   "limitations": [
     "X1 is the auditor, so its own evidence pin is self-consistency (written at the audit HEAD by this run) rather than a pre-existing pin: requiring the latter would make the gate un-passable at a fresh HEAD. The eight other issues ARE pin-checked.",
     "The per-milestone audit reads the M53 R1 ladder's record instead of re-running 41 gates: the ladder is the machine record of that run at the same HEAD, and G1 re-audits it on every governance run. Re-running it here would duplicate ~20 minutes of work and could not be stricter.",
@@ -370,7 +367,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:14:40.008Z",
-    "contentSha256": "ab2a250e4080f22d22695052e9046b27ffb4c2bb489d02030b15f1e666697c55"
+    "sealedAt": "2026-09-20T02:41:12.504Z",
+    "contentSha256": "8e37b10dc126ea25110af59d6b3f963acc4feaf2879faccca4becbe349a36192"
   }
 }
