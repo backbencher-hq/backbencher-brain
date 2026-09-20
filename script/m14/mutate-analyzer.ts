@@ -1067,6 +1067,37 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "clojure/letfn-spec-shadow-dropped",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "W24-mr1 regression (fixture shadowed-comment-881 shapes C/D/E): letfn fn-spec bindings stop shadowing the comment macro — the spec-head name and spec params emit no ranges again, so `(comment (target))` bodies are dropped as data (three missing live edges; the after-form ghost stays forbidden)",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && ((x.source === "w24-letfn-name" && x.target === "w24-letfn-name-live") || (x.source === "f" && x.target === "w24-letfn-param-live") || (x.source === "w24-letfn-after" && x.target === "w24-letfn-after-live")))),
+    }),
+  },
+  {
+    id: "clojure/refer-target-unresolved",
+    language: "clojure",
+    defectClass: "identity-corruption",
+    description: "W24-mr2 regression (fixture refer-forms): `:refer` names stop resolving — call targets keep the bare dangling identity (U1-class) and the fixture's qualified expects go missing; locals-wins shapes stay bare either way",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && ["clj.fixture.util/rewrite-text", "clj.fixture.more/combine-sets", "clj.fixture.util/join-all"].includes(x.target))) }),
+  },
+  {
+    id: "clojure/meta-private-ignored",
+    language: "clojure",
+    defectClass: "metadata-integrity",
+    description: "W24-mr3 regression (fixture meta-visibility): `^{:private true}` / `^:private` stop counting as private — meta-private vars and fns export as public API again",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (["secret", "hidden", "flagged"].includes(s.name) ? { ...s, visibility: "public" } : s)) }),
+  },
+  {
+    id: "clojure/defmethod-docstring-name",
+    language: "clojure",
+    defectClass: "symbol-identity-corruption",
+    description: "W24-mr4 regression (fixture defmethod-forms): the Clojure 1.12 defmethod docstring form names the symbol after the docstring text instead of the multifn",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "Docstring for the circle impl.", kind: "function", scope: "clj.fixture.defmethodforms", ownerName: "clj.fixture.defmethodforms", visibility: "public" }] }),
+  },
+  {
     id: "clojure/meta-values-walked",
     language: "clojure",
     defectClass: "relationship-fabrication",

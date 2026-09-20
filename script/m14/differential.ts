@@ -8093,6 +8093,12 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
   let nsName = "user"
   const aliases = new Map<string, string>()
+  // W24-mr2 mirror: `:refer [a b]` names resolve unqualified calls — a
+  // CONFIRMED target, resolved to its source lib (last libspec wins).
+  const refers = new Map<string, string>()
+  // W24-mr2 mirror: names defined in-file (def family) shadow `:refer`ed
+  // names at resolution time (Clojure's ns mapping).
+  const localNames = new Set<string>()
   // #881 + W23-b mirror: the comment macro can be shadowed — but only
   // REGIONALLY and in ORDER. Ranges: def-family NAME binds at form end
   // (order-aware from there on); a binding vector covers its ENCLOSING form
@@ -8110,6 +8116,18 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         const head = formNameOf(p)
         if (DEF_NAME_HEADS.has(head) && p.namedChild(1)?.startIndex === c.startIndex) {
           return { start: p.endIndex, end: Infinity }
+        }
+        // W24-mr1 mirror: a letfn fn-spec head — `[(comment [args] body) …]`
+        // — binds the name for the whole enclosing letfn form.
+        if (p.namedChild(0)?.startIndex === c.startIndex) {
+          const specVec = p.parent
+          if (specVec && specVec.type === "vec_lit") {
+            const letfnForm = specVec.parent
+            if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn"
+                && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
+              return { start: letfnForm.startIndex, end: letfnForm.endIndex }
+            }
+          }
         }
         return null
       }
@@ -8131,6 +8149,18 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           const ggp = gp.parent
           if (ggp && ggp.type === "list_lit" && FN_PARAM_HEADS.has(formNameOf(ggp))) {
             return { start: gp.startIndex, end: gp.endIndex }
+          }
+        }
+        // W24-mr1b mirror: a letfn fn-spec PARAM vector — `[(f [comment] …)]`
+        // — the param covers its own spec form only.
+        {
+          const specVec = gp.parent
+          if (specVec && specVec.type === "vec_lit") {
+            const letfnForm = specVec.parent
+            if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn"
+                && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
+              return { start: gp.startIndex, end: gp.endIndex }
+            }
           }
         }
         return null
@@ -8186,6 +8216,16 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             // F12 mirror: `:as-alias` registers the alias but the lib is not
             // loaded — no references edge for the alias-only form.
             if (kw === "as-alias") hasAsAlias = true
+          }
+          // W24-mr2 mirror: `:refer [a b]` names resolve unqualified calls.
+          if (kw === "refer" && k + 1 < spec.namedChildCount) {
+            const refVec = spec.namedChild(k + 1)
+            if (refVec && refVec.type === "vec_lit") {
+              for (let r = 0; r < refVec.namedChildCount; r++) {
+                const rn = refVec.namedChild(r)
+                if (rn && rn.type === "sym_lit") refers.set(symName(rn), libName)
+              }
+            }
           }
         } else if (part.type === "vec_lit") {
           // PREFIX-LIST spec mirror: `[prefix [sub :as a] …]` — alias a -> prefix.sub.
@@ -8348,13 +8388,19 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           if (libNode) handleLib(libNode)
         }
       } else if (form === "defn" || form === "defn-" || form === "defmacro" || form === "s/defn" || form === "mu/defn") {
-        frames.push({ name: symName(n.namedChild(1)) || "unknown", isFn: true })
+        const dn0 = symName(n.namedChild(1))
+        if (dn0) localNames.add(dn0)
+        frames.push({ name: dn0 || "unknown", isFn: true })
         pushedFrame = true
       } else if (form === "deftest") {
-        frames.push({ name: symName(n.namedChild(1)) || `test_${n.startPosition.row}`, isFn: true })
+        const dn1 = symName(n.namedChild(1))
+        if (dn1) localNames.add(dn1)
+        frames.push({ name: dn1 || `test_${n.startPosition.row}`, isFn: true })
         pushedFrame = true
       } else if (form === "defmethod") {
-        frames.push({ name: symName(n.namedChild(1)) || "unknown", isFn: true })
+        const dn2 = symName(n.namedChild(1))
+        if (dn2) localNames.add(dn2)
+        frames.push({ name: dn2 || "unknown", isFn: true })
         pushedFrame = true
       } else if (form === "fn") {
         frames.push({ name: `lambda_${n.startPosition.row}_${n.startPosition.column}`, isFn: true })
@@ -8367,6 +8413,11 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           frames.push({ name: fName, isFn: true })
           pushedFrame = true
         }
+      } else if (form === "def" || form === "defonce" || form === "defmulti") {
+        // W24-mr2 mirror: a def-family name IS a local declaration (shadows
+        // `:refer`ed names at resolution; no frame — mirroring the analyzer).
+        const dn3 = symName(n.namedChild(1))
+        if (dn3) localNames.add(dn3)
       } else if (form === "defrecord" || form === "deftype") {
         const rn = symName(n.namedChild(1))
         for (let pi = 3; pi < n.namedChildCount; pi++) {
@@ -8481,6 +8532,24 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     }
     const cs = kids(n)
     for (let i = cs.length - 1; i >= 0; i--) work.push({ n: cs[i], qd })
+  }
+  // W24-mr2 mirror: bare calls to `:refer`-ed names resolve to the source
+  // lib, locals win (Clojure's ns mapping) — the analyzer's post-walk shape.
+  for (const e of edges) {
+    if (e.label !== "calls") continue
+    if (!e.target || e.target.indexOf("/") !== -1 || e.target.indexOf(".") !== -1) continue
+    if (localNames.has(e.target)) continue
+    const lib = refers.get(e.target)
+    if (lib) e.target = `${lib}/${e.target}`
+  }
+  {
+    const seenFinal = new Set<string>()
+    for (let i = edges.length - 1; i >= 0; i--) {
+      const e = edges[i]!
+      const k = `${e.label}|${e.from}|${e.target}`
+      if (seenFinal.has(k)) edges.splice(i, 1)
+      else seenFinal.add(k)
+    }
   }
   return edges
 }
