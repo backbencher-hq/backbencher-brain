@@ -12,7 +12,8 @@ const report = {
 const ROW = "grails-core:java"
 // One declared-heuristic edge, mirroring a lane whose baseline allowance
 // tolerates heuristic suspicion (so heuristic 1 is the baseline value here).
-const ROW_COUNTS = { missing: 0, unexplained: 0, heuristic: 1, perf: { avgMsPerFile: 10 } }
+// #871: perf rows carry load context; a row pinned without it is not scored.
+const ROW_COUNTS = { missing: 0, unexplained: 0, heuristic: 1, perf: { avgMsPerFile: 10, loadAvg1: 1 } }
 const current = { [ROW]: { ...ROW_COUNTS, sampleHash: "aaa111" } }
 const baseline = { [ROW]: { ...ROW_COUNTS } }
 const HASHES = { [ROW]: "aaa111" }
@@ -107,4 +108,40 @@ if (probe.comparable || probe.checks[0]?.status !== "fail" || !probe.checks[0]?.
   throw new Error(`expected mismatched sample to be non-comparable: ${JSON.stringify(probe)}`)
 }
 
-console.log("differential evidence evaluation checks passed (6 cases: pass, regression, resampled-clean, rotated-growth-is-triage, unpinned, probe-mode)")
+// 7. #871 §1 — a baseline row without load context is REFUSED, not scored: a
+// breach-versus-busy-machine judgement needs the context, so the perf check
+// must not fire (and the refusal must be disclosed). Counts are still scored.
+const noContextBaseline = { [ROW]: { ...ROW_COUNTS, perf: { avgMsPerFile: 10 } } }
+const noContext = evaluateDifferential(
+  report,
+  { ...current, [ROW]: { ...current[ROW], perf: { avgMsPerFile: 999, loadAvg1: 1 } } },
+  noContextBaseline,
+  60,
+  60,
+  "grails-core",
+  HASHES,
+)
+if (
+  noContext.perfRegressions.length !== 0
+  || !noContext.perfUnscored.some((x: string) => x.startsWith(ROW))
+  || noContext.regressions.length !== 0
+) {
+  throw new Error(`expected a context-less baseline perf row to be refused, not scored: ${JSON.stringify(noContext)}`)
+}
+
+// 8. The perf gate must still be able to FAIL: with context recorded on both
+// sides, a >3x breach is a regression.
+const perfBreach = evaluateDifferential(
+  report,
+  { ...current, [ROW]: { ...current[ROW], perf: { avgMsPerFile: 999, loadAvg1: 1 } } },
+  baseline,
+  60,
+  60,
+  "grails-core",
+  HASHES,
+)
+if (!perfBreach.perfRegressions.some((x: string) => x.startsWith(ROW)) || perfBreach.perfUnscored.length !== 0) {
+  throw new Error(`expected a context-scored perf breach to fire: ${JSON.stringify(perfBreach)}`)
+}
+
+console.log("differential evidence evaluation checks passed (8 cases: pass, regression, resampled-clean, rotated-growth-is-triage, unpinned, probe-mode, perf-refused-without-context, perf-breach-fires)")
