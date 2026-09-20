@@ -2089,6 +2089,21 @@ export async function storeResults(
            for (const s of result.symbols) {
              const nm = s.name || ""
              if (nm && !nameToSymbol.has(nm)) nameToSymbol.set(nm, s)
+             // #17 seam repair: elixir function-scope relationship sources carry
+             // the arity-qualified identity (`Mod.fn/N` — scopeName = fnId), and
+             // the store must resolve that spelling back to the SYMBOL. Without
+             // this, every elixir function-sourced edge landed with
+             // source_symbol_id NULL (caught by the pipeline e2e through the
+             // REAL CLI: `calls` joined via the source symbol read 0 while
+             // symbols and docstrings persisted). Register the exact spellings
+             // the analyzers emit — `Scope.name` and `Scope.name/arity`.
+             const sScope = s.scope || s.ownerName || ""
+             if (nm && sScope) {
+               const q = `${sScope}.${nm}`
+               if (!nameToSymbol.has(q)) nameToSymbol.set(q, s)
+               const sArity = s.metadata?.arity
+               if (typeof sArity === "number" && !nameToSymbol.has(`${q}/${sArity}`)) nameToSymbol.set(`${q}/${sArity}`, s)
+             }
              const k = s.type || s.kind || "unknown"
              if (CONTAINER_TYPES_LOOKUP.has(k)) {
                const cStart = s.startLine ?? s.range?.startLine ?? 0
@@ -2541,8 +2556,13 @@ export async function storeResults(
              const extractLeaf = (name: string) => {
                // Remove line number suffix ":123"
                const noLine = name.replace(/:\d+$/, "")
+               // #17: elixir scope spellings end with "/N" (the arity-qualified
+               // fnId) — strip it so the leaf fallbacks below see `Mod.fn`, not
+               // `fn/0`. Exact spellings already hit via the nameToSymbol
+               // aliases; this keeps the fallback path honest too.
+               const noArity = noLine.replace(/\/\d+$/, "")
                // Split by ":" and take last (handles "file:scope:name")
-               const byColon = noLine.split(":")
+               const byColon = noArity.split(":")
                const lastColon = byColon[byColon.length - 1]
                // Split by "." and take last (handles "a.b.c")
                const byDot = lastColon.split(".")
