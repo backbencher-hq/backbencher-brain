@@ -5,17 +5,17 @@
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
+  "currentCommit": "20364e4e7799b78b9c679edb2f571ab311d26d1a",
   "relevantInputsHash": "5162995beeccb46efd16376c5441dc3b9c8cdf4d",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-20T01:08:47.312Z",
+  "generatedAt": "2026-09-20T01:16:41.119Z",
   "details": [
     "R2: relevant inputs unchanged since the evidence run: evidence=5351bbd29279fefd7fec23c355752c1312a9eaf5 vs current=5162995beeccb46efd16376c5441dc3b9c8cdf4d — re-run giant-repo-budget.ts --reuse to refresh"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:08:47.313Z",
-    "contentSha256": "4ed8e892feb50f9636840849fd277305357256e3637e305b11fa8d240c8ef574"
+    "sealedAt": "2026-09-20T01:16:41.119Z",
+    "contentSha256": "5f50a29a6ef802f6aff4849f9e381817365fe9a516bd901840f3eda958139611"
   }
 }
