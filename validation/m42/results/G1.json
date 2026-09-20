@@ -2,16 +2,16 @@
   "issue": "M42.G1",
   "code": "G1",
   "milestone": "M42",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 25,
-  "passed": 23,
-  "failed": 2,
+  "passed": 25,
+  "failed": 0,
   "negativeCases": 7,
-  "currentCommit": "f4c07e7b9879985396b9b76995695f9076927d6a",
+  "currentCommit": "2fe0d21f70fdd4e5129c46cf2b69a67f3ae08f37",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-20T00:31:39.243Z",
+  "generatedAt": "2026-09-20T01:36:44.346Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -20,7 +20,7 @@
     "hubOpenP95Ms": 300
   },
   "m29Bar": {
-    "gateExit": 1
+    "gateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",
@@ -28,7 +28,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:31:39.249Z",
-    "contentSha256": "4b7f2f7f2c2aac1d048cb254fa914b6ea8f680012f2083b8111b3abae7c52908"
+    "sealedAt": "2026-09-20T01:36:44.348Z",
+    "contentSha256": "c72afa7ce39c646d5b3835c0126aa0a653c48b02831759c784ee6e6a7f107f62"
   }
 }
