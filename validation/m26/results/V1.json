@@ -8,17 +8,17 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "d46c564cbe9124414a5af29d2d2164ed48fcf6dc",
+  "currentCommit": "b6a6cfffd9898bd523189edba1581f2e581fc825",
   "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-20T00:24:18.694Z",
+  "generatedAt": "2026-09-20T00:46:11.161Z",
   "limitations": [
     "The harness asserts the DOM contract (classes, data attributes, counts) over a stub DOM; CSS/paint is per-editor presentation.",
     "Full-budget A4 profile: the pinned fixture's traversal truncation is declared, so the marker assertions are the expected failures there."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:24:18.695Z",
-    "contentSha256": "89ed0b496bddb7edfd5f6f4bb61b1c129a97a223f53883b6fbb3b577a20ad324"
+    "sealedAt": "2026-09-20T00:46:11.162Z",
+    "contentSha256": "023f4bbd247d222b8e80dcfce6239dde3e0470a15290e9c4587b9d50a2b60e23"
   }
 }
