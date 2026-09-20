@@ -36,16 +36,16 @@
         "bytes": 29157
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "c2ad88731ea82e93432d6a31fb410e3a5840dcf1f23bbae8b1fafc03f7c6564c",
-        "bytes": 105651
+        "sha256": "804302cf964b52530a11f0d3b1e566d6df7519daa73c3bcc97e84fcc5d86d8fb",
+        "bytes": 106664
       },
       "src/ast/real-clean-analyzer.ts": {
         "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
         "bytes": 22600
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "c394a6e20b81cb4a1da5e309dc94e78fc9899f02961803c491a62e2d6c301789",
-        "bytes": 82612
+        "sha256": "10bb0638c017f88d1def36a3e391bfb820cf56df0b6ee2d8c41ad02388542731",
+        "bytes": 84065
       },
       "src/ast/real-cpp-analyzer.ts": {
         "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
@@ -64,12 +64,12 @@
         "bytes": 102001
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "54ad89a6862385df9479b1c26b6c361e50baf81f63461b90ee3e105cca54dd7b",
-        "bytes": 78459
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "e5fb95a9496d265379e4cc405f9f99d042b248419d1bae113e9dc994382d0ad3",
-        "bytes": 39841
+        "sha256": "52ed72da36b6f881b7c01f9b71a8146a40fcf3d4bcadedee7bfe923734e44813",
+        "bytes": 40264
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
@@ -168,8 +168,8 @@
         "bytes": 29215
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "221d2e2e67794dec25be68e32f289473904f05c512eb422163fe2af94c1f2dc6",
-        "bytes": 65513
+        "sha256": "29634663ed28b5af12231c4e10223af4c42287e6300a9bbe553d8676d11a1cea",
+        "bytes": 68705
       },
       "src/ast/real-swift-analyzer.ts": {
         "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
@@ -252,7 +252,7 @@
         "bytes": 10168
       }
     },
-    "digest": "0632b8e3f8f9ac751e31c706afa80980384422dc80cda040213053a3aae0aa07",
+    "digest": "7327a3c6ecbf94c03e169b49e449464b50d80c435ed05955b49c418f8565ac00",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm",
       "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
@@ -357,11 +357,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 13.331419,
-      "userCpuMs": 30.887,
-      "systemCpuMs": 4.677,
-      "peakRssBytes": 232185856,
-      "rssDeltaBytes": 2883584,
+      "wallTimeMs": 43.314695,
+      "userCpuMs": 70.182,
+      "systemCpuMs": 8.526,
+      "peakRssBytes": 217710592,
+      "rssDeltaBytes": 2097152,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
