@@ -1176,7 +1176,7 @@ const MUTANTS: Mutant[] = [
     language: "elixir",
     defectClass: "relationship-fabrication",
     description: "ELX-ADV X2: struct literals in pattern positions emit instantiates (case/fn clause patterns, `=`/`<-` LHS) — 43+16 live corpus sites fabricated before the pattern guard",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "EP.run", target: "Ping", line_number: 7, confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } }] }),
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "EP.run/1", target: "Ping", line_number: 7, confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } }] }),
   },
   {
     id: "elixir/chained-target-kept",
@@ -1186,8 +1186,8 @@ const MUTANTS: Mutant[] = [
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? [])
-        .filter(x => !(x.type === "calls" && x.source === "EC.run" && x.target === "error"))
-        .concat([{ type: "calls", source: "EC.run", target: "Mix.shell().error", confidence: 0.8, metadata: { elixirSpecific: true } }]),
+        .filter(x => !(x.type === "calls" && x.source === "EC.run/0" && x.target === "error"))
+        .concat([{ type: "calls", source: "EC.run/0", target: "Mix.shell().error", confidence: 0.8, metadata: { elixirSpecific: true } }]),
     }),
   },
   {
@@ -1195,14 +1195,14 @@ const MUTANTS: Mutant[] = [
     language: "elixir",
     defectClass: "relationship-fabrication",
     description: "ELX-ADV X9: `Kernel.`-qualified builtins emit calls (49 corpus sites) while bare Kernel names are excluded by EX-D2",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "EK.run", target: "Kernel.length", confidence: 0.8, metadata: { elixirSpecific: true } }] }),
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "EK.run/1", target: "Kernel.length", confidence: 0.8, metadata: { elixirSpecific: true } }] }),
   },
   {
     id: "elixir/pipe-arity-raw",
     language: "elixir",
     defectClass: "metadata-integrity",
     description: "ELX-ADV X6: pipe steps report the WRITTEN arity — `x |> f(1)` states f/1 while invoking f/2 (thread-adjusted arity is the fix)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (x.type === "calls" && x.source === "EPipe.run" && x.target === "f" ? { ...x, metadata: { ...(x.metadata ?? {}), callArity: 1 } } : x)) }),
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => (x.type === "calls" && x.source === "EPipe.run/1" && x.target === "f" ? { ...x, metadata: { ...(x.metadata ?? {}), callArity: 1 } } : x)) }),
   },
   {
     id: "elixir/module-literal-target",
@@ -1212,8 +1212,8 @@ const MUTANTS: Mutant[] = [
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? [])
-        .filter(x => !(x.type === "calls" && x.source === "ESelf.run" && x.target === "ESelf.raise"))
-        .concat([{ type: "calls", source: "ESelf.run", target: "__MODULE__.raise", confidence: 0.8, metadata: { elixirSpecific: true } }]),
+        .filter(x => !(x.type === "calls" && x.source === "ESelf.run/1" && x.target === "ESelf.raise"))
+        .concat([{ type: "calls", source: "ESelf.run/1", target: "__MODULE__.raise", confidence: 0.8, metadata: { elixirSpecific: true } }]),
     }),
   },
   {
@@ -1221,14 +1221,14 @@ const MUTANTS: Mutant[] = [
     language: "elixir",
     defectClass: "relationship-loss",
     description: "ELX-ADV X8: defdelegate emits no link to its delegated target (71+12 corpus definitions silent)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && (x.source === "ED.fetch" || x.source === "ED.get"))) }),
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && (x.source === "ED.fetch/1" || x.source === "ED.get/1"))) }),
   },
   {
     id: "elixir/unquote-dropped",
     language: "elixir",
     defectClass: "relationship-loss",
     description: "ELX-ADV X7: unquote arguments treated as data — the expansion-time call is dropped (26+7 corpus sites)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "EU.m" && x.target === "compute")) }),
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "EU.m/0" && x.target === "compute")) }),
   },
   {
     id: "elixir/derive-list-dropped",
@@ -1249,7 +1249,7 @@ const MUTANTS: Mutant[] = [
     language: "elixir",
     defectClass: "relationship-loss",
     description: "ELX-ADV X13: arity outside the dedupe key — `{f(1), f(2, 3)}` collapses to one edge, losing f/2 (the name+arity contract says both survive)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "ES.run" && x.target === "f" && x.metadata?.callArity === 2)) }),
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "ES.run/0" && x.target === "f" && x.metadata?.callArity === 2)) }),
   },
   {
     id: "elixir/proto-complexity-inflated",
@@ -1274,7 +1274,7 @@ const MUTANTS: Mutant[] = [
       ...r,
       relationships: (r.relationships ?? [])
         .filter(x => !(x.type === "references" && x.source === "Collide.Supervisor" && x.target === "Supervisor"))
-        .map(x => (x.type === "instantiates" && x.source === "Collide.Inner.make" && x.target === "Inner") ? { ...x, target: "Collide.Inner" } : x),
+        .map(x => (x.type === "instantiates" && x.source === "Collide.Inner.make/0" && x.target === "Inner") ? { ...x, target: "Collide.Inner" } : x),
     }),
   },
   {
@@ -1311,10 +1311,26 @@ const MUTANTS: Mutant[] = [
     transform: r => ({
       ...r,
       relationships: [
-        ...(r.relationships ?? []).filter(x => !(x.type === "instantiates" && ((x.source === "Leak.After.make" && x.target === "Bar") || (x.source === "Nest.After.make" && x.target === "Sup")))),
-        { type: "instantiates", source: "Leak.After.make", target: "Deep.Bar", confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } },
-        { type: "instantiates", source: "Nest.After.make", target: "Nest.Outer.Sup", confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } },
+        ...(r.relationships ?? []).filter(x => !(x.type === "instantiates" && ((x.source === "Leak.After.make/0" && x.target === "Bar") || (x.source === "Nest.After.make/0" && x.target === "Sup")))),
+        { type: "instantiates", source: "Leak.After.make/0", target: "Deep.Bar", confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } },
+        { type: "instantiates", source: "Nest.After.make/0", target: "Nest.Outer.Sup", confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } },
       ],
+    }),
+  },
+  {
+    id: "elixir/scope-arity-collapsed",
+    language: "elixir",
+    defectClass: "identity-corruption",
+    description: "W24 #17 regression (fixture scope-arity): the function scope name drops the arity again — `Mod.fn/1` and `Mod.fn/2` bodies merge under the pre-fix collision identity `Mod.fn` (review E7); the fixture's three bare-form forbids catch the revert",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? [])
+        .filter(x => !(x.type === "calls" && ((x.source === "ScopeArity.call_one/1" && x.target === "one_hop") || (x.source === "ScopeArity.call_two/2" && x.target === "two_hop") || (x.source === "ScopeDeleg.fetch/1" && x.target === "Store.fetch"))))
+        .concat([
+          { type: "calls", source: "ScopeArity.call_one", target: "one_hop", confidence: 0.8, metadata: { elixirSpecific: true } },
+          { type: "calls", source: "ScopeArity.call_two", target: "two_hop", confidence: 0.8, metadata: { elixirSpecific: true } },
+          { type: "calls", source: "ScopeDeleg.fetch", target: "Store.fetch", confidence: 0.9, metadata: { elixirSpecific: true, isDelegate: true } },
+        ]),
     }),
   },
   {
@@ -7019,7 +7035,7 @@ const MUTANTS: Mutant[] = [
     language: "elixir",
     defectClass: "relationship-loss",
     description: "EX2 regression: a function-scoped `import only:` becomes unresolvable again — the in-def Enum.map call is dropped (ex2-import-scope pins ImpFun.run -> Enum.map)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.source === "ImpFun.run" && x.target === "Enum.map")) }),
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.source === "ImpFun.run/0" && x.target === "Enum.map")) }),
   },
   {
     id: "elixir/capture-dropped",

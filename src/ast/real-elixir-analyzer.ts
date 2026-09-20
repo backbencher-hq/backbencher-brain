@@ -1247,7 +1247,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (toMod) {
         const resolved = this.resolveAlias(toMod, ctx)
-        const delScope = currentScope ? `${currentScope.name}.${name}` : name
+        // W24 #17: the delegate edge's source follows the scope-arity rule —
+        // the declared function's identity is name+arity (see scopeName).
+        const delScope = currentScope ? `${currentScope.name}.${name}/${arity}` : `${name}/${arity}`
         this.pushRel(ctx, delScope, `${resolved}.${asName || name}`, ASTEngine.RelationshipType.Calls, 0.9, { elixirSpecific: true, isDelegate: true }, toLine)
       }
     }
@@ -1258,9 +1260,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // across modules, so two different `run/0` functions produced
     // indistinguishable edge sources and the source|type|target dedupe
     // silently deleted one module's call edge (3487 bare-sourced calls on the
-    // phoenix corpus). The SYMBOL keeps its bare name + ownerName; only the
-    // scope identity and the edges sourced from it are qualified.
-    const scopeName = currentScope ? `${currentScope.name}.${name}` : name
+    // phoenix corpus). W24 #17 (review E7): the name ALSO carries the ARITY —
+    // `run/0` and `run/1` bodies previously shared one identity (`MyMod.run`)
+    // and merged, the same collision class one level down; the scope name now
+    // equals the symbol's merge key (fnId, `MyMod.run/1`). The SYMBOL keeps
+    // its bare name + ownerName; only the scope identity and the edges
+    // sourced from it are qualified.
+    const scopeName = currentScope ? `${currentScope.name}.${name}/${arity}` : `${name}/${arity}`
     // W23-E1: function bodies are lexical too — an `alias` inside a def
     // scopes to that def, never to the whole module.
     scopeStack.push({ node, name: scopeName, kind: symbolKind, complexity: 0, symbol: fnSym, savedAliases: ctx.aliases })
