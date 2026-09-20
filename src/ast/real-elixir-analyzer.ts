@@ -34,6 +34,12 @@ interface Scope {
   // the scope's symbol on exit as 1 + count (multi-clause takes the max).
   complexity: number
   symbol?: ASTEngine.UniversalSymbol
+  // W23-E1: the alias map of the ENCLOSING frame at entry — restored on
+  // scope exit, so alias registrations are lexical (child frames are
+  // Object.create(parent) chains; writes land in the innermost map, reads
+  // walk the chain). Explicit `alias` directives never leak to siblings;
+  // a nested module's implied alias dies with its enclosing frame.
+  savedAliases?: Record<string, string>
 }
 
 // Call-target keywords that are decision points in this grammar. Each fires
@@ -90,7 +96,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const ctx: ElixirContext = {
         symbols: [], relationships: [], imports: [], exports: [], errors: [],
         patterns: {}, frameworks: {}, content,
-        aliases: {}, functionHeads: {}, pendingDoc: undefined, importList: [], symbolByName: new Map(), seenRels: new Set(),
+        // W23-E1: alias frames are prototype CHAINS (Object.create(parent));
+        // the null-prototype root makes chain lookups pollution-safe.
+        aliases: Object.create(null), functionHeads: {}, pendingDoc: undefined, importList: [], symbolByName: new Map(), seenRels: new Set(),
     }
     const scopeStack: Scope[] = []
     const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
@@ -104,6 +112,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sc = scopeStack.pop()!
           // ELXD15: per-symbol complexity write-out (max across merged heads).
           if (sc.symbol) sc.symbol.complexity = Math.max(sc.symbol.complexity ?? 1, sc.complexity + 1)
+          // W23-E1: leave the frame's alias scope — restore the ENCLOSING
+          // map BEFORE the implied registration below, so the automatic
+          // last-segment alias goes live in the enclosing scope only.
+          if (sc.savedAliases) ctx.aliases = sc.savedAliases
           // EX-L5 (CLJ1-session correction; F5 falsifier: the elixir lane's
           // MISSING edge `Registry.Supervisor -> Supervisor`): the automatic
           // last-segment alias (`defmodule A.B` means `B` names A.B) goes
@@ -908,7 +920,12 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // A new scope is a documentation boundary (ELXD14) — a staged @doc
     // never leaks past it.
     ctx.pendingDoc = undefined
-    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Module, complexity: 0, symbol })
+    // W23-E1: alias scoping is LEXICAL — the frame saves the enclosing map
+    // and swaps in a child map. The prototype chain gives lookups the
+    // enclosing aliases for free; writes land in this frame only, and the
+    // exit block restores the parent BEFORE the own-implied registration.
+    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Module, complexity: 0, symbol, savedAliases: ctx.aliases })
+    ctx.aliases = Object.create(ctx.aliases)
     return true
   }
 
@@ -924,7 +941,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // EX-L5 (corrected): same exit-time registration for protocols — the
     // alias belongs to the enclosing scope, not the defining body.
     ctx.pendingDoc = undefined
-    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Interface, complexity: 0, symbol: protocolSym })
+    // W23-E1: same lexical alias swap as modules (protocols are scopes too).
+    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Interface, complexity: 0, symbol: protocolSym, savedAliases: ctx.aliases })
+    ctx.aliases = Object.create(ctx.aliases)
     return true
   }
 
@@ -1012,7 +1031,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, implLineNode ? implLineNode.startPosition.row + 1 : node.startPosition.row + 1)
     }
     ctx.pendingDoc = undefined
-    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class, complexity: 0, symbol: implSym })
+    // W23-E1: same lexical alias swap as modules (defimpl bodies are scopes).
+    scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class, complexity: 0, symbol: implSym, savedAliases: ctx.aliases })
+    ctx.aliases = Object.create(ctx.aliases)
     return true
   }
 
@@ -1240,7 +1261,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // phoenix corpus). The SYMBOL keeps its bare name + ownerName; only the
     // scope identity and the edges sourced from it are qualified.
     const scopeName = currentScope ? `${currentScope.name}.${name}` : name
-    scopeStack.push({ node, name: scopeName, kind: symbolKind, complexity: 0, symbol: fnSym })
+    // W23-E1: function bodies are lexical too — an `alias` inside a def
+    // scopes to that def, never to the whole module.
+    scopeStack.push({ node, name: scopeName, kind: symbolKind, complexity: 0, symbol: fnSym, savedAliases: ctx.aliases })
+    ctx.aliases = Object.create(ctx.aliases)
     return true
   }
 

@@ -1289,6 +1289,20 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "elixir/alias-scope-flat-registry",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "W23-E1 regression (fixture implied-alias-scope): alias scoping reverts to a flat file-global registry — Leak.Source's `alias Deep.Bar` leaks into later sibling Leak.After (%Bar{} -> Deep.Bar) and Nest.Outer's implied `Sup` escapes to the file root (Nest.After %Sup{} -> Nest.Outer.Sup); both fixture-forbidden",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []).filter(x => !(x.type === "instantiates" && ((x.source === "Leak.After.make" && x.target === "Bar") || (x.source === "Nest.After.make" && x.target === "Sup")))),
+        { type: "instantiates", source: "Leak.After.make", target: "Deep.Bar", confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } },
+        { type: "instantiates", source: "Nest.After.make", target: "Nest.Outer.Sup", confidence: 0.9, metadata: { elixirSpecific: true, isStruct: true } },
+      ],
+    }),
+  },
+  {
     id: "elixir/export-owned-struct",
     language: "elixir",
     defectClass: "export-duplication",
