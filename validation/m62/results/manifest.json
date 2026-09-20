@@ -13,7 +13,7 @@
       "code": "G1",
       "githubIssue": 874,
       "tool": "m62-governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "the M62 ledger; the bar re-audit that re-executes A1/A2/A3/D1 on every run; the chain wiring audit; the lane's prerequisites (M55 + M61 bars)",
       "acceptanceCriteria": [
         "gate exits 0 only on a fully verified ledger; a hollow closure, a removed issue, a mis-ordered group, a lane escape, a tampered record, an unwired gate and a hand-edited count each FAIL (proven by in-memory negatives)",
@@ -31,14 +31,14 @@
         "validation/m62/results/manifest.json"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m62/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 10,
-        "failed": 0,
-        "realFailed": 0,
+        "passed": 8,
+        "failed": 3,
+        "realFailed": 3,
         "negativeCases": 8,
-        "recordCommit": "05890cf78f2bb56b30ef81a463903e15b436db36"
+        "recordCommit": "013a3613ca60c707e40aaa179f6f3e040224409d"
       }
     },
     {
@@ -72,8 +72,8 @@
         "mutantsCaught": 9,
         "mutantsTotal": 9,
         "negativeCases": 9,
-        "recordCommit": "c56d580c5ce3b22fd59cedb203418aa2df4a2775",
-        "recordSealedAt": "2026-09-20T01:21:09.197Z"
+        "recordCommit": "013a3613ca60c707e40aaa179f6f3e040224409d",
+        "recordSealedAt": "2026-09-20T01:21:14.934Z"
       }
     },
     {
@@ -108,8 +108,8 @@
         "mutantsCaught": 6,
         "mutantsTotal": 6,
         "negativeCases": 6,
-        "recordCommit": "c56d580c5ce3b22fd59cedb203418aa2df4a2775",
-        "recordSealedAt": "2026-09-20T01:21:10.679Z"
+        "recordCommit": "013a3613ca60c707e40aaa179f6f3e040224409d",
+        "recordSealedAt": "2026-09-20T01:21:16.124Z"
       }
     },
     {
@@ -142,8 +142,8 @@
         "mutantsCaught": 2,
         "mutantsTotal": 2,
         "negativeCases": 2,
-        "recordCommit": "c56d580c5ce3b22fd59cedb203418aa2df4a2775",
-        "recordSealedAt": "2026-09-20T01:21:11.985Z"
+        "recordCommit": "013a3613ca60c707e40aaa179f6f3e040224409d",
+        "recordSealedAt": "2026-09-20T01:21:17.294Z"
       }
     },
     {
