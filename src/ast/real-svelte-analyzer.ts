@@ -418,6 +418,41 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
+          // {@attach handler} / {@attach handler(args)} — Svelte 5 attachment
+          // directives. The pinned grammar has no rule for them: they parse as
+          // a stable ERROR shape — `{`, `@`, ERROR[attach], the handler
+          // expression, `}` (measured in script/m14/tmp/web-adv-attach-tree.ts,
+          // the adversarial round on the M12 census residual). The lane reads
+          // that shape structurally: identifier and call forms emit a calls
+          // edge at the handler's own line; any other expression (arrow
+          // params, member chains) emits nothing — the same no-fabrication
+          // policy as the event lane. Attach is a behavior hook on intrinsic
+          // AND component tags.
+          for (let i = 0; i < startTag.childCount; i++) {
+            const directive = startTag.child(i)
+            if (!directive || directive.type !== "ERROR") continue
+            const kids: Node[] = []
+            for (let j = 0; j < directive.childCount; j++) {
+              const c = directive.child(j)
+              if (c) kids.push(c)
+            }
+            const attachIdx = kids.findIndex((k) => k.type === "ERROR" && k.text === "attach")
+            if (attachIdx < 0) continue
+            const nameTok = kids[attachIdx + 1]
+ if (!nameTok || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(nameTok.text)) continue
+            const afterText = (kids[attachIdx + 2]?.text ?? "}").trim()
+            if (afterText !== "}" && afterText !== "(") continue
+            const attachHandler = nameTok.text
+            if (attachHandler === moduleName) continue
+            relationships.push({
+              source: moduleName,
+              target: attachHandler,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.8,
+              line_number: nameTok.startPosition.row + 1,
+              metadata: { context: "Svelte attach directive" },
+            })
+          }
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
