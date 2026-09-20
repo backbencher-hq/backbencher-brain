@@ -103,7 +103,15 @@ function jsDecoratorName(decorator: Node): string {
         ? (inner.childForFieldName("function")?.text ?? inner.text.split("(")[0])
         : inner.text.split("(")[0]
       : decorator.text
-  return nameText.replace(/^@/, "") || decorator.text.replace(/^@/, "")
+  return stripLeadingAt(nameText) || stripLeadingAt(decorator.text)
+}
+
+/**
+ * `/^@/` as a prefix check (M49.R2: the AST regex census counted the literal
+ * as review-class debt; a single-character prefix needs no regex).
+ */
+function stripLeadingAt(text: string): string {
+  return text.startsWith("@") ? text.slice(1) : text
 }
 
 function stripWhitespace(text: string): string {
