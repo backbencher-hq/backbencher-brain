@@ -44,8 +44,8 @@
         "bytes": 22600
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "6bb1e60666cf970d6dbe265c848ff8dfc16d449f37202e4b93d651b68e6b3739",
-        "bytes": 83191
+        "sha256": "10bb0638c017f88d1def36a3e391bfb820cf56df0b6ee2d8c41ad02388542731",
+        "bytes": 84065
       },
       "src/ast/real-cpp-analyzer.ts": {
         "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
@@ -64,12 +64,12 @@
         "bytes": 102001
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "a6d8eb51edc221865a6313d218e3adfb0bea4f81cc8c605c4ba2588fd2bd975a",
-        "bytes": 82721
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "e5fb95a9496d265379e4cc405f9f99d042b248419d1bae113e9dc994382d0ad3",
-        "bytes": 39841
+        "sha256": "52ed72da36b6f881b7c01f9b71a8146a40fcf3d4bcadedee7bfe923734e44813",
+        "bytes": 40264
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
@@ -168,8 +168,8 @@
         "bytes": 29215
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "221d2e2e67794dec25be68e32f289473904f05c512eb422163fe2af94c1f2dc6",
-        "bytes": 65513
+        "sha256": "29634663ed28b5af12231c4e10223af4c42287e6300a9bbe553d8676d11a1cea",
+        "bytes": 68705
       },
       "src/ast/real-swift-analyzer.ts": {
         "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
@@ -248,11 +248,11 @@
         "bytes": 1182
       },
       "validation/m12/ground-truth/elixir.json": {
-        "sha256": "f8997e591af59f598e607feafc17e5690bb269d0e8316b2c0342a7b5b9607a6e",
-        "bytes": 17738
+        "sha256": "a53a2d214fad9b0c9e735068d88029ec6ab9d72581ff837200a98bd247d1b23b",
+        "bytes": 17754
       }
     },
-    "digest": "76bc5bbffc4a95381411e6d885aef9d83ae9e11586bf85b238b8c9c96c62a73f",
+    "digest": "c789020f086f8eabfc01e172f3bc74b3371cbaa7ac0e5ddfec75dd8e48209aeb",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
@@ -304,13 +304,13 @@
       "rel:Negative.ex:contains:Negative:member_access",
       "rel:Negative.ex:contains:Negative:pattern_struct",
       "rel:Negative.ex:contains:Negative:quoted",
-      "rel:Service.ex:calls:MyApp.User.count_down:count_down",
-      "rel:Service.ex:calls:MyApp.User.update:Map.merge",
-      "rel:Service.ex:calls:MyApp.User.update:validate",
-      "rel:Service.ex:calls:MyApp.UserStore.find:Logger.info",
-      "rel:Service.ex:calls:MyApp.UserStore.find:MyApp.User.new",
-      "rel:Service.ex:calls:MyApp.UserStore.find:serialize",
-      "rel:Service.ex:calls:MyApp.UserStore.handle_call:find",
+      "rel:Service.ex:calls:MyApp.User.count_down/1:count_down",
+      "rel:Service.ex:calls:MyApp.User.update/2:Map.merge",
+      "rel:Service.ex:calls:MyApp.User.update/2:validate",
+      "rel:Service.ex:calls:MyApp.UserStore.find/1:Logger.info",
+      "rel:Service.ex:calls:MyApp.UserStore.find/1:MyApp.User.new",
+      "rel:Service.ex:calls:MyApp.UserStore.find/1:serialize",
+      "rel:Service.ex:calls:MyApp.UserStore.handle_call/3:find",
       "rel:Service.ex:contains:MyApp.Behaviour:__using__",
       "rel:Service.ex:contains:MyApp.Helpers:helper",
       "rel:Service.ex:contains:MyApp.User:count_down",
@@ -329,7 +329,7 @@
       "rel:Service.ex:contains:Serializable:to_map",
       "rel:Service.ex:implements:MyApp.User:MyApp.Behaviour",
       "rel:Service.ex:implements:MyApp.User:Serializable",
-      "rel:Service.ex:instantiates:MyApp.User.new:MyApp.User",
+      "rel:Service.ex:instantiates:MyApp.User.new/2:MyApp.User",
       "rel:Service.ex:references:MyApp.UserStore:GenServer",
       "rel:Service.ex:references:MyApp.UserStore:Logger",
       "rel:Service.ex:references:MyApp.UserStore:MyApp.Helpers",
@@ -377,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 68.206907,
-      "userCpuMs": 83.59,
-      "systemCpuMs": 48.03,
-      "peakRssBytes": 248885248,
-      "rssDeltaBytes": 4603904,
+      "wallTimeMs": 45.905259,
+      "userCpuMs": 81.483,
+      "systemCpuMs": 12.365,
+      "peakRssBytes": 249257984,
+      "rssDeltaBytes": 1961984,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
