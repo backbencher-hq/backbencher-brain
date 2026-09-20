@@ -11,25 +11,26 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 175,
-  "cleanFiles": 6389,
-  "missingNodeFiles": 63,
-  "errorNodeFiles": 166,
+  "errorFiles": 133,
+  "cleanFiles": 6431,
+  "missingNodeFiles": 61,
+  "errorNodeFiles": 123,
   "errorRates": {
-    "any": 2.7,
-    "missing": 1,
-    "error": 2.5
+    "any": 2,
+    "missing": 0.9,
+    "error": 1.9
   },
-  "grammarErrorFiles": 175,
+  "grammarErrorFiles": 133,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 272123,
+  "wallMs": 367500,
   "missingTokens": {
-    ";": 112,
+    ";": 103,
     "identifier": 30,
-    "}": 15,
     "decimal_integer_literal": 14,
+    "}": 12,
+    "->": 5,
     ")": 4,
     "]": 2,
     ">": 2,
@@ -37,17 +38,14 @@
     "/": 1
   },
   "errorLineSignatures": {
-    "}": 49,
     "@ID": 35,
+    "}": 34,
     "<%=ID ? ID : ID%>": 24,
-    "ID.ID.ID(ID)": 21,
     "ID.ID{ID}ID = ID(ID{ID}ID) {": 18,
-    "/*": 16,
     ".ID() == ID": 16,
-    "ID ID(ID ID) {": 15,
     "(ID.ID): { ID.ID ID, ID ID, ID ID = ID, ID ID = ID ->": 14,
+    "ID ID(ID ID) {": 14,
     "ID ID < ID": 13,
-    "ID ID ID ID(ID ID, ID ID, ID ID) {": 12,
     "(ID.ID): { ID.ID ID, ID ID, ID ID=ID, ID ID = ID ->": 12,
     "ID ID() {": 12,
     "(ID.ID): { ID, ID ID, ID.ID ID, ID ID = { ID } ->": 11,
@@ -56,38 +54,38 @@
     "ID @ID.ID@ID ID ID ID ID<@ID.ID@ID> {": 10,
     "ID @ID.ID.ID@": 9,
     "ID ID.ID.ID": 9,
-    "ID.ID.ID(ID) {": 7,
-    "ID.ID()": 7,
-    "ID.ID.ID(ID, ID)": 7,
     "ID ID.ID.*": 7,
     "ID ID{ID}ID {": 7,
-    "ID.ID.ID.ID(ID)": 6,
-    "ID.ID.ID(ID.ID)": 6,
-    "ID (ID.ID.ID { ID ID -> ID.ID.ID == ID }) ID": 6,
     "ID ID(ID<ID, ID> ID) {": 6,
     "1 * ID(2) >> ID ID{ID}()": 6,
     "<% ID (ID) { %>@ID(ID{ID}<ID{ID}>)<% } ID ID (ID) { %>@ID(ID<ID{ID}>)<": 6,
+    "ID.ID ID, ID, ID, ID, ID, ID": 6,
     "ID !ID.ID(ID, ID)": 6,
+    "/*": 5,
     "<% ID (ID) { %>@ID(ID{ID}<ID{ID}>)<% } ID { %>@ID(ID{ID})<% } %>": 5,
     "ID ID ID ID, ID.ID(ID, ID ID ID)": 5,
     "ID ID ID ID, ID.ID(ID, (ID)ID)": 5,
-    "ID ID ID ID(ID ID) {": 4,
-    "ID ID ID ID(ID ID, ID ID, ID ID, ID ID) {": 4,
-    "ID:": 4,
-    "ID ID ID(ID ID, ID ID) {": 4,
     "((ID.ID.ID.ID.ID.ID.ID(ID, ID) && ID.ID.ID(ID) == ID) ||": 4,
-    "ID ID{ID}ID ID ID {": 4
+    "ID ID{ID}ID ID ID {": 4,
+    "ID @ID.ID@ID ID ID ID ID<@ID.ID@> {": 4,
+    "ID ID(ID{ID} ID{ID}) {": 4,
+    "ID ID{ID}ID.ID(ID), ID:[ID{ID}ID: ID{ID}ID.ID()]": 4,
+    "ID{ID} ID{ID} = ID ID{ID}()": 4,
+    "1 * ID(ID ID ID{ID}) >> { ID{ID} ID{ID} ->": 4,
+    "1 * ID(ID ID ID{ID})": 4,
+    "ID @ID.ID@ID ID ID ID ID<@ID.ID@ID>{": 4,
+    "ID ID{ID}ID {<% ID (ID) { %>": 4,
+    "ID ID{ID}.ID{ID}<% } ID { %><%=ID ? ID : ID%><% } %>": 4,
+    "ID ID = ID ID ID(ID, ID, ID)": 4,
+    "ID.ID.ID(ID)": 3
   },
   "firstErrorLineSignatures": {
     "}": 29,
-    "/*": 16,
-    "ID.ID.ID(ID)": 9,
-    "ID.ID.ID(ID.ID)": 5,
+    "/*": 5,
     "ID @ID.ID.ID@": 5,
     "@ID": 4,
-    "ID ID ID ID {": 3,
     "@ID.ID@": 3,
-    "ID.ID.ID(ID, ID)": 2,
+    "ID.ID.ID(ID)": 2,
     "ID ID ID ID{ID ID} ID ID{ID ID = ID.ID} ID ID{ID.ID} = ID": 2,
     "}()": 2,
     ".ID == ID.ID": 2,
@@ -95,11 +93,7 @@
     "ID ID(ID<ID, ID> ID) {": 2,
     "ID ID ID ID ID ID {": 2,
     "ID ID = ID.ID 1, 2": 2,
-    "ID.ID.ID.ID(ID.ID + ID + ID.ID)": 1,
-    "}.ID { ID ID -> ID.ID.ID.ID }": 1,
-    "ID ID = ID?.ID() { ID ID -> ID.ID.ID(ID) }": 1,
-    "ID (ID && ID.ID() { ID ID -> ID.ID.ID(ID) }) {": 1,
-    "ID.ID { ID ID, ID ID -> ID.ID.ID(ID, ID) }": 1,
+    "ID ID ID ID {": 2,
     "ID[ID]()": 1,
     "ID ID(ID ID)": 1,
     "1 * ID.ID(ID.ID.ID(), ID, ID, ID, ID, ID) >> ID": 1,
@@ -110,170 +104,57 @@
     "ID.ID.ID.ID == ID.ID": 1,
     "ID ID = ID.ID ID, ID": 1,
     ".ID() == 1": 1,
-    "ID.ID.ID(ID, [": 1,
-    "ID ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
-    "ID ID = ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
-    "ID (!ID.ID() { ID ID ->": 1,
     ".ID() == ID": 1,
     "ID ID {": 1,
     "ID().ID ID, ID": 1,
     "ID ID ID(ID ID)": 1,
-    "ID ID ID(ID ID, ID ID)": 1
+    "ID ID ID(ID ID, ID ID)": 1,
+    "ID.ID ID.ID(ID.ID.ID, ((ID)ID).ID(), ID)": 1,
+    "ID ID<ID> ID(ID ID, ID ID) {": 1,
+    "ID.ID.ID([ID: ID],": 1,
+    "ID.ID.ID(ID).ID { ID ID ->": 1,
+    "ID ID = ID.ID(ID, ID, ID, ID, ID, ID.ID())": 1,
+    "ID ID < ID": 1,
+    "@ID(ID) ID ID ->": 1,
+    "ID ID() {": 1,
+    "ID.ID{ID}()": 1,
+    "ID \\ID{ID}": 1,
+    "ID ID.ID.*": 1
   },
   "errorFileList": [
     {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/CompilePlugin.groovy",
-      "nodes": 7,
-      "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 14
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsCodeStylePlugin.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 158,
-      "firstKind": "ERROR",
-      "firstLine": "element.file.absolutePath.contains(File.separator + 'build' + File.separator)",
-      "pipelineErrors": 2
-    },
-    {
       "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsDependencyValidatorPlugin.groovy",
-      "nodes": 2,
+      "nodes": 1,
       "missingTokens": [
         "identifier"
       ],
-      "errorNodes": 1,
-      "firstRow": 161,
-      "firstKind": "ERROR",
-      "firstLine": "}.flatMap { Configuration it -> it.incoming.resolutionResult.rootComponent }",
-      "pipelineErrors": 3
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsJacocoPlugin.groovy",
-      "nodes": 17,
-      "missingTokens": [],
-      "errorNodes": 17,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 34
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsRepoSettingsPlugin.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 70,
-      "firstKind": "ERROR",
-      "firstLine": "manager.repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)",
-      "pipelineErrors": 4
+      "errorNodes": 0,
+      "firstRow": 154,
+      "firstKind": "MISSING identifier",
+      "firstLine": "? Collections.<String> emptySet()",
+      "pipelineErrors": 1
     },
     {
       "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsViolationAggregationPlugin.groovy",
-      "nodes": 8,
+      "nodes": 3,
       "missingTokens": [
         ";"
       ],
-      "errorNodes": 6,
+      "errorNodes": 1,
       "firstRow": 460,
       "firstKind": "MISSING ;",
       "firstLine": "groupedByModule.each { module, coverageList ->",
-      "pipelineErrors": 14
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GroovydocEnhancerPlugin.groovy",
-      "nodes": 12,
-      "missingTokens": [],
-      "errorNodes": 12,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 24
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/PublishPlugin.groovy",
-      "nodes": 32,
-      "missingTokens": [],
-      "errorNodes": 32,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 64
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/SbomPlugin.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 378,
-      "firstKind": "ERROR",
-      "firstLine": "task.componentName.set(componentName)",
-      "pipelineErrors": 8
-    },
-    {
-      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/TestTaskShardingPlugin.groovy",
-      "nodes": 6,
-      "missingTokens": [],
-      "errorNodes": 6,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 12
-    },
-    {
-      "file": "grails-bootstrap/src/main/groovy/grails/io/ResourceUtils.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 72,
-      "firstKind": "ERROR",
-      "firstLine": "boolean hasGroovySources = dirFiles?.find() { File f -> f.name.endsWith('.groovy') }",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-bootstrap/src/main/groovy/org/grails/io/watch/FileExtensionFileChangeListener.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 50,
-      "firstKind": "ERROR",
-      "firstLine": "if (file && extensions.any() { String ext -> file.name.endsWith(ext) }) {",
       "pipelineErrors": 4
     },
     {
-      "file": "grails-cache/src/test/groovy/grails/plugin/cache/CacheAutoConfigurationSpec.groovy",
-      "nodes": 1,
+      "file": "build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/PublishPlugin.groovy",
+      "nodes": 3,
       "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 154,
+      "errorNodes": 3,
+      "firstRow": 158,
       "firstKind": "ERROR",
-      "firstLine": "properties.each { String key, Object value -> grailsApplication.config.put(key, value) }",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-controllers/src/main/groovy/grails/artefact/Controller.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 482,
-      "firstKind": "ERROR",
-      "firstLine": "cemd.exceptionType.isAssignableFrom(exceptionType)",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-core-cli-legacy/src/test/groovy/org/apache/grails/core/cli/LegacyCommandRegistryLoadingSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 316,
-      "firstKind": "ERROR",
-      "firstLine": "event.formattedMessage.contains('deprecated grails.dev.commands compatibility layer')",
-      "pipelineErrors": 2
+      "firstLine": "project.pluginManager.apply(ChecksumPlugin)",
+      "pipelineErrors": 6
     },
     {
       "file": "grails-core/src/test/groovy/org/grails/exception/reporting/StackTraceFiltererSpec.groovy",
@@ -284,28 +165,6 @@
       "firstKind": "ERROR",
       "firstLine": "controller['show']()",
       "pipelineErrors": 4
-    },
-    {
-      "file": "grails-core/src/test/groovy/org/grails/plugins/CoreAutoConfigurationSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 56,
-      "firstKind": "ERROR",
-      "firstLine": "context.beanFactory.registerSingleton(name, instance)",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-data-graphql/core/src/test/groovy/org/grails/gorm/graphql/entity/property/manager/DefaultGraphQLDomainPropertyManagerSpec.groovy",
-      "nodes": 8,
-      "missingTokens": [
-        "}"
-      ],
-      "errorNodes": 6,
-      "firstRow": 227,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 14
     },
     {
       "file": "grails-data-hibernate5/core/src/main/groovy/org/grails/orm/hibernate/AbstractHibernateGormValidationApi.groovy",
@@ -526,71 +385,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-datamapping-core-test/src/test/groovy/org/apache/grails/data/simple/core/GrailsDataCoreTckManager.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 96,
-      "firstKind": "ERROR",
-      "firstLine": "simple.mappingContext.addEntityValidator(entity, [",
-      "pipelineErrors": 6
-    },
-    {
-      "file": "grails-datamapping-core/src/main/groovy/org/grails/compiler/gorm/DirtyCheckingTransformer.groovy",
-      "nodes": 16,
-      "missingTokens": [
-        "}",
-        ";"
-      ],
-      "errorNodes": 11,
-      "firstRow": 492,
-      "firstKind": "MISSING }",
-      "firstLine": "}",
-      "pipelineErrors": 27
-    },
-    {
-      "file": "grails-datamapping-core/src/main/groovy/org/grails/datastore/gorm/services/implementers/AbstractServiceImplementer.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 83,
-      "firstKind": "ERROR",
-      "firstLine": "return handledPrefixes.find() { String it -> mn.name.startsWith(it) }",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-datamapping-core/src/main/groovy/org/grails/datastore/gorm/services/implementers/DeleteWhereImplementer.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 52,
-      "firstKind": "ERROR",
-      "firstLine": "String prefix = handledPrefixes.find() { String it -> methodNode.name.startsWith(it) }",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-datamapping-core/src/main/groovy/org/grails/datastore/gorm/transform/AbstractMethodDecoratingTransformation.groovy",
-      "nodes": 2,
-      "missingTokens": [
-        ";"
-      ],
-      "errorNodes": 1,
-      "firstRow": 131,
-      "firstKind": "MISSING ;",
-      "firstLine": "if (md.getAnnotations().any { AnnotationNode an -> an.classNode.name == 'org.spockframework.runtime.model.DataProviderMe",
-      "pipelineErrors": 3
-    },
-    {
-      "file": "grails-datamapping-core/src/main/groovy/org/grails/datastore/gorm/transform/OrderedGormTransformation.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 75,
-      "firstKind": "ERROR",
-      "firstLine": "if (!annotations.any() { AnnotationNode ann ->",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-datamapping-core/src/test/groovy/grails/gorm/services/ConnectionRoutingServiceTransformSpec.groovy",
       "nodes": 16,
       "missingTokens": [],
@@ -664,16 +458,6 @@
       "pipelineErrors": 28
     },
     {
-      "file": "grails-datastore-core/src/main/groovy/org/grails/datastore/mapping/reflect/AstAnnotationUtils.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 104,
-      "firstKind": "ERROR",
-      "firstLine": "ann.classNode.equals(annotationNode.classNode)",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-domain-class/src/main/groovy/org/grails/plugins/domain/DomainClassGrailsPlugin.groovy",
       "nodes": 3,
       "missingTokens": [
@@ -685,16 +469,6 @@
       "firstKind": "MISSING ;",
       "firstLine": "bean('gormValidatorRegistry', ValidatorRegistryFactoryBean).lazy() { @Qualifier('grailsDomainClassMappingContext') Mappi",
       "pipelineErrors": 4
-    },
-    {
-      "file": "grails-forge/grails-forge-core/src/test/groovy/org/grails/forge/feature/view/GrailsGspSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 323,
-      "firstKind": "ERROR",
-      "firstLine": "new File(forgeResources, \"i18n\").listFiles({ File f -> f.name.startsWith(\"messages\") } as FileFilter).each {",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-geb/src/main/templates/FunctionalSpec.groovy",
@@ -720,123 +494,33 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/bom/BomManagedVersions.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 215,
-      "firstKind": "ERROR",
-      "firstLine": "dependencies.constraints.add(configurationName, coordinate) {",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/commands/GrailsCliArtifactGradlePlugin.groovy",
-      "nodes": 13,
-      "missingTokens": [],
-      "errorNodes": 13,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 26
-    },
-    {
       "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/core/GrailsGradlePlugin.groovy",
-      "nodes": 16,
+      "nodes": 6,
       "missingTokens": [],
-      "errorNodes": 16,
-      "firstRow": 1,
+      "errorNodes": 6,
+      "firstRow": 259,
       "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 32
+      "firstLine": "protected Closure<String> getGroovyCompilerScript(GroovyCompile compile, Project project) {",
+      "pipelineErrors": 12
     },
     {
       "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/core/GrailsPluginGradlePlugin.groovy",
-      "nodes": 4,
+      "nodes": 2,
       "missingTokens": [],
-      "errorNodes": 4,
+      "errorNodes": 2,
       "firstRow": 344,
       "firstKind": "ERROR",
       "firstLine": "target.output.dir([builtBy: copyCommands],",
-      "pipelineErrors": 8
-    },
-    {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/core/IntegrationTestGradlePlugin.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 53,
-      "firstKind": "ERROR",
-      "firstLine": "phase.sourceFolderName.set(sourceFolderName)",
       "pipelineErrors": 4
-    },
-    {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/core/TestPhasesGradlePlugin.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 190,
-      "firstKind": "ERROR",
-      "firstLine": "it.testSources.from(acceptedSourceDirs)",
-      "pipelineErrors": 6
     },
     {
       "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/exploded/GrailsExplodedPlugin.groovy",
-      "nodes": 5,
-      "missingTokens": [],
-      "errorNodes": 5,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 10
-    },
-    {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/model/GrailsClasspathToolingModelBuilder.groovy",
       "nodes": 1,
       "missingTokens": [],
       "errorNodes": 1,
-      "firstRow": 54,
+      "firstRow": 67,
       "firstKind": "ERROR",
-      "firstLine": "artifact.file.toURI().toURL()",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/profiles/GrailsProfileGradlePlugin.groovy",
-      "nodes": 12,
-      "missingTokens": [],
-      "errorNodes": 12,
-      "firstRow": 1,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 24
-    },
-    {
-      "file": "grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/profiles/tasks/ProfileCompilerTask.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 206,
-      "firstKind": "ERROR",
-      "firstLine": "f.name.endsWith('.yml')",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-gradle/plugins/src/test/groovy/org/grails/gradle/plugin/commands/CliCompanionPublishingSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 89,
-      "firstKind": "ERROR",
-      "firstLine": "File[] files = versionDir.listFiles({ File file -> file.name.endsWith(extension) } as FileFilter)",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-gradle/plugins/src/test/groovy/org/grails/gradle/plugin/core/TestPhasesGradlePluginSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 98,
-      "firstKind": "ERROR",
-      "firstLine": "phase.sourceFolderName.set('src/custom-cli-phase')",
+      "firstLine": "project.configurations.named('runtimeElements').configure { Configuration runtimeElements ->",
       "pipelineErrors": 2
     },
     {
@@ -860,16 +544,6 @@
       "firstKind": "ERROR",
       "firstLine": ".beanClassName == InternalResourceViewResolver.name",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-gsp/grails-web-gsp/src/test/groovy/org/grails/web/servlet/view/GroovyPageViewResolverSpec.groovy",
-      "nodes": 7,
-      "missingTokens": [],
-      "errorNodes": 7,
-      "firstRow": 32,
-      "firstKind": "ERROR",
-      "firstLine": "class GroovyPageViewResolverSpec extends Specification {",
-      "pipelineErrors": 14
     },
     {
       "file": "grails-gsp/grails-web-taglib/src/main/groovy/grails/artefact/TagLibrary.groovy",
@@ -973,6 +647,7 @@
       "file": "grails-profiles/base/templates/artifacts/Command.groovy",
       "nodes": 4,
       "missingTokens": [
+        "->",
         ";"
       ],
       "errorNodes": 2,
@@ -1230,6 +905,7 @@
       "missingTokens": [
         "}",
         ";",
+        "->",
         "identifier",
         "decimal_integer_literal"
       ],
@@ -1434,16 +1110,6 @@
       "pipelineErrors": 9
     },
     {
-      "file": "grails-rest-transforms/src/main/groovy/org/grails/plugins/web/rest/render/DefaultRendererRegistry.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 261,
-      "firstKind": "ERROR",
-      "firstLine": "if (containerRenderers.keySet().any { ContainerRendererCacheKey key -> key.containerType.isAssignableFrom(aClass) }) {",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-scaffolding/src/main/templates/scaffolding/AsyncController.groovy",
       "nodes": 26,
       "missingTokens": [
@@ -1463,6 +1129,7 @@
       "missingTokens": [
         ";",
         "}",
+        "->",
         "identifier",
         "decimal_integer_literal"
       ],
@@ -1551,6 +1218,7 @@
       "missingTokens": [
         ";",
         "}",
+        "->",
         "identifier",
         "decimal_integer_literal"
       ],
@@ -1559,16 +1227,6 @@
       "firstKind": "ERROR",
       "firstLine": "}",
       "pipelineErrors": 69
-    },
-    {
-      "file": "grails-shell-cli/src/main/groovy/org/grails/cli/gradle/commands/ReadGradleTasks.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 2,
-      "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 4
     },
     {
       "file": "grails-spring-security/plugin/src/main/groovy/grails/plugin/springsecurity/ReflectionUtils.groovy",
@@ -1663,16 +1321,6 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-spring-security/rest/core/src/test/groovy/grails/plugin/springsecurity/rest/token/TokenGeneratorSpec.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 51,
-      "firstKind": "ERROR",
-      "firstLine": "token.accessToken.size() == 32 && StringUtils.isAlphanumeric(token.accessToken)",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-spring-security/ui/plugin/grails-app/controllers/grails/plugin/springsecurity/ui/AbstractS2UiDomainController.groovy",
       "nodes": 3,
       "missingTokens": [],
@@ -1694,13 +1342,15 @@
     },
     {
       "file": "grails-spring-security/ui/plugin/grails-app/services/grails/plugin/springsecurity/ui/SpringSecurityUiService.groovy",
-      "nodes": 32,
-      "missingTokens": [],
-      "errorNodes": 32,
-      "firstRow": 1,
+      "nodes": 12,
+      "missingTokens": [
+        "->"
+      ],
+      "errorNodes": 11,
+      "firstRow": 781,
       "firstKind": "ERROR",
-      "firstLine": "/*",
-      "pipelineErrors": 64
+      "firstLine": "log.warn 'Discarding transient properties {} from {}', discardedNames as String, bean as String",
+      "pipelineErrors": 23
     },
     {
       "file": "grails-test-examples/async-events-pubsub-demo/grails-app/controllers/pubsub/demo/SumController.groovy",
@@ -1710,16 +1360,6 @@
       "firstRow": 34,
       "firstKind": "ERROR",
       "firstLine": "int sum = sumService.sum 1, 2",
-      "pipelineErrors": 2
-    },
-    {
-      "file": "grails-test-examples/graphql/grails-docs-app/grails-app/domain/demo/Author.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 56,
-      "firstKind": "ERROR",
-      "firstLine": "author.books.collect { key, value -> //<4>",
       "pipelineErrors": 2
     },
     {
@@ -1827,16 +1467,6 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-test-suite-uber/src/test/groovy/grails/test/MetaTestHelper.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 46,
-      "firstKind": "ERROR",
-      "firstLine": "GroovySystem.metaClassRegistry.setMetaClass(clazz, metaClass)",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-test-suite-uber/src/test/groovy/grails/web/JSONBuilderSpec.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -1855,16 +1485,6 @@
       "firstKind": "ERROR",
       "firstLine": "assertTrue !ScriptNameResolver.resolvesTo('Foo', 'FooBar')",
       "pipelineErrors": 12
-    },
-    {
-      "file": "grails-test-suite-uber/src/test/groovy/org/grails/commons/DefaultGrailsCodecClassTests.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 43,
-      "firstKind": "ERROR",
-      "firstLine": "GroovySystem.metaClassRegistry.removeMetaClass(targetClass)",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-test-suite-uber/src/test/groovy/org/grails/commons/metaclass/LazyMetaPropertyMapTests.groovy",
@@ -1897,16 +1517,6 @@
       "firstKind": "ERROR",
       "firstLine": "JSONObject json = grails.converters.JSON.parse(input)",
       "pipelineErrors": 6
-    },
-    {
-      "file": "grails-testing-support-mongodb/src/main/groovy/org/apache/grails/testing/mongo/StartMongoGrailsUnitExtension.groovy",
-      "nodes": 4,
-      "missingTokens": [],
-      "errorNodes": 4,
-      "firstRow": 97,
-      "firstKind": "ERROR",
-      "firstLine": "FieldInfo mongoDatastoreField = spec.getSpecsBottomToTop().findResult { SpecInfo s -> s.fields.find { is(isSharedMongoDa",
-      "pipelineErrors": 8
     },
     {
       "file": "grails-validation/src/test/groovy/grails/validation/ValidateableTraitAdHocSpec.groovy",
@@ -1953,16 +1563,6 @@
       "pipelineErrors": 4
     },
     {
-      "file": "grails-views-core/src/main/groovy/grails/views/compiler/ViewsTransform.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 151,
-      "firstKind": "ERROR",
-      "firstLine": "ti.artefactTypes.contains(Views.TYPE)",
-      "pipelineErrors": 2
-    },
-    {
       "file": "grails-views-core/src/main/groovy/grails/views/mvc/GenericGroovyTemplateView.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -1971,16 +1571,6 @@
       "firstKind": "ERROR",
       "firstLine": "}()",
       "pipelineErrors": 4
-    },
-    {
-      "file": "grails-views-gson/src/main/groovy/grails/plugin/json/view/internal/JsonViewsTransform.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 47,
-      "firstKind": "ERROR",
-      "firstLine": "ti.artefactTypes.contains(JsonViewWritableScript.TYPE)",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-views-gson/src/main/groovy/grails/plugin/json/view/test/JsonViewTest.groovy",
@@ -2007,16 +1597,6 @@
       "firstKind": "ERROR",
       "firstLine": "class JsonViewTestSpec extends Specification implements JsonViewTest {",
       "pipelineErrors": 12
-    },
-    {
-      "file": "grails-views-markup/src/main/groovy/grails/plugin/markup/view/internal/MarkupViewsTransform.groovy",
-      "nodes": 1,
-      "missingTokens": [],
-      "errorNodes": 1,
-      "firstRow": 47,
-      "firstKind": "ERROR",
-      "firstLine": "ti.artefactTypes.contains(MarkupViewTemplate.TYPE)",
-      "pipelineErrors": 2
     },
     {
       "file": "grails-web-common/src/test/groovy/grails/web/servlet/mvc/GrailsParameterMapTests.groovy",
