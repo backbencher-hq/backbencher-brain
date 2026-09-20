@@ -7434,6 +7434,10 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             const als = kids(args).filter((c: any) => c.type === "alias")
             const protocol = als.length > 0 && als[0] ? resolveAliasO(als[0].text) : "Unknown"
             let forType = "Unknown"
+            // W23 mirror (fixture defimpl-target-forms): a multi-type
+            // `for: [A, B]` is one Implements truth per element — the raw
+            // list text is never a target.
+            const forTypeList: string[] = []
             const kw = find(args, (c: any) => c.type === "keywords")
             if (kw) {
               for (let i = 0; i < kw.namedChildCount; i++) {
@@ -7442,7 +7446,11 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                 const kwn = find(pair, (c: any) => c.type === "keyword")
                 if (kwn && stripAfterColon(kwn.text) === "for" && pair.namedChildCount > 1) {
                   const v = pair.namedChild(1)
-                  if (v) forType = resolveAliasO(v.text)
+                  if (!v) continue
+                  if (v.type === "list") {
+                    for (const el of kids(v)) if (el.type === "alias") forTypeList.push(resolveAliasO(el.text))
+                    forType = forTypeList.length > 0 ? forTypeList[0] : "Unknown"
+                  } else forType = resolveAliasO(v.text)
                 }
               }
             }
@@ -7450,7 +7458,9 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             // ELXD6/ELXD7 mirror: for-less nested defimpl targets the
             // enclosing scope; defmacro heads are not implementations.
             const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
-            if (implName !== protocol) push("implements", implName, protocol)
+            if (forTypeList.length > 0) {
+              for (const t of forTypeList) if (t && t !== "Unknown" && t !== protocol) push("implements", t, protocol)
+            } else if (implName !== protocol) push("implements", implName, protocol)
             stack.push({ node: n, name: implName, kind: "class" })
             pushed = true
           }
@@ -7563,7 +7573,11 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
         if (attrTarget === "behaviour" || attrTarget === "behavior") {
           const args = find(attrCall, (c: any) => c.type === "arguments")
           const first = args && args.namedChildCount > 0 ? args.namedChild(0) : undefined
-          const bhv = first ? resolveAliasO(stripQuotes(first.text).trim()) : ""
+          let bhvRaw = first ? stripQuotes(first.text).trim() : ""
+          // W23 mirror (fixture behaviour-atom): the atom form's leading
+          // colon is syntax, not part of the behaviour's identity.
+          if (bhvRaw.startsWith(":")) bhvRaw = bhvRaw.slice(1)
+          const bhv = bhvRaw ? resolveAliasO(bhvRaw) : ""
           if (bhv) push("implements", stack.length > 0 ? innerOf(stack) : "Global", bhv)
         }
         if (attrTarget === "derive") {
