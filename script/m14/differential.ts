@@ -7337,7 +7337,25 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
   }
   interface Scope { node: any; name: string; kind: string }
   const declaredByScope = new Map<string, Set<string>>()
-  const aliases = new Map<string, string>()
+  // W23-E1 mirror: alias scoping is LEXICAL on both sides. The old flat Map
+  // leaked a module's explicit aliases to later siblings (Leak.After) and a
+  // nested module's implied alias to the file root (Nest.After). Each scope
+  // frame now owns a Map; lookups fall through enclosing frames to a root
+  // (the Map analog of the analyzer's Object.create(parent) chain).
+  const aliasesRoot = new Map<string, string>()
+  const aliasFrames: Map<string, string>[] = []
+  const aliasFrameOf = new Map<number, Map<string, string>>()
+  const aliasLookup = (k: string): string | undefined => {
+    for (let i = aliasFrames.length - 1; i >= 0; i--) {
+      const m = aliasFrames[i]!
+      if (m.has(k)) return m.get(k)
+    }
+    return aliasesRoot.get(k)
+  }
+  const aliasSetCurrent = (k: string, v: string): void => {
+    const m = aliasFrames.length > 0 ? aliasFrames[aliasFrames.length - 1]! : aliasesRoot
+    m.set(k, v)
+  }
   // ELXD17 mirror: ordered :only-constrained imports per scope.
   // (Keyword-colon stripping reuses the module-level stripAfterColon.)
   const importList: { module: string; only?: Set<string>; scope: string }[] = []
@@ -7355,8 +7373,9 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     if (!name) return name
     const parts = name.split(".")
     const root = parts[0] ?? ""
-    if (root && aliases.has(root)) {
-      parts[0] = aliases.get(root)!
+    const hit = root ? aliasLookup(root) : undefined
+    if (hit) {
+      parts[0] = hit
       return parts.join(".")
     }
     return name
@@ -7402,6 +7421,9 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       if (exit) {
         if (stack.length > 0 && stack[stack.length - 1].node === n) {
           const sc: any = stack.pop()!
+          // W23-E1 mirror: pop the frame's alias map FIRST — the implied
+          // registration below must land in the ENCLOSING frame only.
+          if (sc.afm) aliasFrames.pop()
           // EX-L5 mirror (CLJ1-session correction): the implied last-segment
           // alias goes live in the ENCLOSING scope when the definition
           // CLOSES — never inside the module's own body (`use Supervisor`
@@ -7409,7 +7431,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           // analyzer was corrected to the same timing).
           if ((sc.kind === "module" || sc.kind === "interface") && sc.name) {
             const implied = String(sc.name).split(".").pop()
-            if (implied && !aliases.has(implied)) aliases.set(implied, sc.name)
+            if (implied && !aliasLookup(implied)) aliasSetCurrent(implied, String(sc.name))
           }
         }
         continue
@@ -7424,7 +7446,10 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             const nm = modName(args)
             if (nm) {
               const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
-              stack.push({ node: n, name: full, kind: target === "defmodule" ? "module" : "interface" })
+              const mfr = new Map<string, string>()
+              stack.push({ node: n, name: full, kind: target === "defmodule" ? "module" : "interface", afm: mfr })
+              aliasFrameOf.set(n.startIndex, mfr)
+              aliasFrames.push(mfr)
               pushed = true
             }
           }
@@ -7461,14 +7486,20 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             if (forTypeList.length > 0) {
               for (const t of forTypeList) if (t && t !== "Unknown" && t !== protocol) push("implements", t, protocol)
             } else if (implName !== protocol) push("implements", implName, protocol)
-            stack.push({ node: n, name: implName, kind: "class" })
+            const implMfr = new Map<string, string>()
+            stack.push({ node: n, name: implName, kind: "class", afm: implMfr })
+            aliasFrameOf.set(n.startIndex, implMfr)
+            aliasFrames.push(implMfr)
             pushed = true
           }
         } else if (DEFS.has(target) && !isHead(n) && !isAttr(n)) {
           const nm = declName(n)
           if (nm) {
             decl(ownerOf(stack), nm)
-            stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function" })
+            const fnMfr = new Map<string, string>()
+            stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function", afm: fnMfr })
+            aliasFrameOf.set(n.startIndex, fnMfr)
+            aliasFrames.push(fnMfr)
             pushed = true
           }
         } else if (DIRECTIVES.has(target)) {
@@ -7504,7 +7535,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                   const full = prefix ? `${prefix}.${kid.text}` : kid.text
                   const key = kid.text.split(".").pop()
                   if (key && full) {
-                    aliases.set(key, full)
+                    aliasSetCurrent(key, full)
                     depModules.push(full)
                   }
                 }
@@ -7524,7 +7555,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                 }
                 const parts = moduleName.split(".")
                 const key = asName ?? parts[parts.length - 1]
-                if (key) aliases.set(key, moduleName)
+                if (key) aliasSetCurrent(key, moduleName)
               }
             }
             if (target === "import" && moduleName) {
@@ -7650,9 +7681,12 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       if (KERNEL.has(leaf) || SPECIAL.has(leaf)) return
     }
     const parts = finalTarget.split(".")
-    if (parts.length > 1 && aliases.has(parts[0])) {
-      parts[0] = aliases.get(parts[0])!
-      finalTarget = parts.join(".")
+    if (parts.length > 1) {
+      const hit = aliasLookup(parts[0] ?? "")
+      if (hit) {
+        parts[0] = hit
+        finalTarget = parts.join(".")
+      }
     }
     if (!finalTarget) return
     if (finalTarget.indexOf(".") !== -1) {
@@ -7683,10 +7717,10 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       if (exit) {
         if (stack.length > 0 && stack[stack.length - 1].node === n) {
           const sc: any = stack.pop()!
-          // EX-L5 mirror: restore the implied alias hidden at module entry —
-          // pass 2 walks in source order, so the alias exists only in the
-          // ENCLOSING scope AFTER the definition (analyzer timing).
-          if (sc.hiddenImplied) aliases.set(sc.hiddenImplied, sc.name)
+          // W23-E1 mirror: leave the frame's alias map; the implied alias
+          // hidden at entry (if any) goes back into the map that held it.
+          if (sc.afm) aliasFrames.pop()
+          if (sc.hiddenImplied && sc.hiddenIn) sc.hiddenIn.set(sc.hiddenImplied, sc.name)
         }
         continue
       }
@@ -7699,16 +7733,28 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           const nm = args ? modName(args) : ""
           if (nm) {
             const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
-            // EX-L5 mirror (CLJ1 session): pass 1 registered every implied
-            // alias at scope EXIT; pass 2 must HIDE this module's own alias
-            // while walking its body and restore it at close, or body-time
-            // references resolve to the module itself (the pre-fix analyzer
-            // bug; `use Supervisor` inside Registry.Supervisor).
+            // EX-L5 mirror (CLJ1 session): the module's OWN implied alias
+            // must be hidden while walking its body (pass 1 registered it at
+            // scope EXIT; pass 2 walks in source order), or body-time
+            // references resolve to the module itself (`use Supervisor`
+            // inside Registry.Supervisor). W23-E1: with scoped frames the
+            // pair may live in the root OR any enclosing frame map — find
+            // the map that holds exactly (impliedKey -> full) and hide
+            // there; restore at close. Search BEFORE entering this frame's
+            // own map so body directives are never false-hidden.
             const impliedKey = String(full).split(".").pop() ?? ""
-            const hideImplied = !!impliedKey && aliases.get(impliedKey) === full
-            if (hideImplied) aliases.delete(impliedKey)
+            let hiddenIn: Map<string, string> | null = null
+            if (impliedKey && aliasLookup(impliedKey) === full) {
+              for (let i = aliasFrames.length - 1; i >= 0; i--) {
+                const m = aliasFrames[i]!
+                if (m.get(impliedKey) === full) { hiddenIn = m; m.delete(impliedKey); break }
+              }
+              if (!hiddenIn && aliasesRoot.get(impliedKey) === full) { hiddenIn = aliasesRoot; aliasesRoot.delete(impliedKey) }
+            }
             const frame: any = { node: n, name: full, kind: target === "defmodule" ? "module" : "interface" }
-            if (hideImplied) frame.hiddenImplied = impliedKey
+            const p2m = aliasFrameOf.get(n.startIndex)
+            if (p2m) { frame.afm = p2m; aliasFrames.push(p2m) }
+            if (hiddenIn) { frame.hiddenImplied = impliedKey; frame.hiddenIn = hiddenIn }
             stack.push(frame)
             pushed = true
           }
@@ -7734,13 +7780,17 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             // ELXD6/ELXD7 mirror (scope naming must match pass 1 exactly —
             // resolution sets diverge otherwise).
             const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
-            stack.push({ node: n, name: implName, kind: "class" })
+            const implP2 = aliasFrameOf.get(n.startIndex)
+            stack.push({ node: n, name: implName, kind: "class", afm: implP2 })
+            if (implP2) aliasFrames.push(implP2)
             pushed = true
           }
         } else if (DEFS.has(target) && !isHead(n) && !isAttr(n)) {
           const nm = declName(n)
           if (nm) {
-            stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function" })
+            const fnP2 = aliasFrameOf.get(n.startIndex)
+            stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function", afm: fnP2 })
+            if (fnP2) aliasFrames.push(fnP2)
             pushed = true
             if (target === "defdelegate") {
               // X8 mirror: the delegation to `to:` (as: renames the target
