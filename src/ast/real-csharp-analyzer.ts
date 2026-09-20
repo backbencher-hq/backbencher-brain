@@ -1170,6 +1170,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     this.classifyEvidenceTier(relationships)
 
+    // CONV-CS-2 (#751): framework markers from using roots / base types /
+    // attribute names — family-aligned payload (the java sibling keys:
+    // framework + detectedFrameworks + frameworkPatterns), ALWAYS present,
+    // [] when nothing matches (never undefined — python's empty shell).
+    const { detectedFrameworks, frameworkPatterns } = this.detectCSharpFrameworks(rootNode)
+
     return {
       symbols,
       relationships,
@@ -1181,6 +1187,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: cyclomaticComplexity,
         linesOfCode: content.split("\n").length,
         hasTypeInference: true,
+        framework: detectedFrameworks.length > 0 ? detectedFrameworks[0] : undefined,
+        detectedFrameworks,
+        frameworkPatterns,
+        hasFrameworkIntelligence: true,
         analysisVersion: "4.1.0-pure-ast-m12",
       },
     }
@@ -1213,6 +1223,63 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (type === "overrides") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * CONV-CS-2 (#751): framework detection — the family contract (java
+   * sibling): metadata carries `framework` (deterministic primary pick),
+   * `detectedFrameworks` (always an array, [] when none) and
+   * `frameworkPatterns`. Markers are grammar-level: using-directive roots
+   * (incl. static / alias / global forms), base-list type names and
+   * attribute names. The emitted order is the fixed CS_FRAMEWORK_ORDER
+   * (application frameworks most-specific first, test frameworks last), so
+   * source/import order can never change the payload. String ops only (R2
+   * shrink-only: no new regex literals); edges are untouched — fixtures +
+   * mutants gate this surface.
+   */
+  private detectCSharpFrameworks(rootNode: Node): {
+    detectedFrameworks: string[]
+    frameworkPatterns: Array<{ framework: string; patterns: string[] }>
+  } {
+    const usings = new Set<string>()
+    const bases = new Set<string>()
+    const attributes = new Set<string>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const t = n.type
+      if (t === "using_directive") {
+        const path = csharpUsingDirectivePath(n.text)
+        if (path) usings.add(path)
+        continue // directive subtrees contribute nothing else
+      }
+      if (t === "base_list") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const leaf = csharpTypeLeafName(n.namedChild(i)!)
+          if (leaf) bases.add(leaf)
+        }
+        // keep descending: base entries carry no using/attribute nodes
+      }
+      if (t === "attribute") {
+        const first = n.namedChild(0)
+        const leaf = first ? csharpTypeLeafName(first) : undefined
+        if (leaf) attributes.add(leaf)
+        // keep descending: arguments may contain further subtrees
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    const detected: string[] = []
+    for (let i = 0; i < CS_FRAMEWORK_ORDER.length; i++) {
+      const fw = CS_FRAMEWORK_ORDER[i]
+      if (CS_FRAMEWORK_MARKERS[fw](usings, bases, attributes)) detected.push(fw)
+    }
+    return {
+      detectedFrameworks: detected,
+      frameworkPatterns: detected.map((fw) => ({ framework: fw, patterns: CS_FRAMEWORK_PATTERNS[fw] })),
     }
   }
 
@@ -2497,4 +2564,131 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
 function stringIncludes(str: string, val: string): boolean {
   return str.indexOf(val) !== -1
+}
+
+// ============================================================================
+// CONV-CS-2 (#751) FRAMEWORK DETECTION — family-aligned marker table
+// ============================================================================
+// Order = detection priority (application frameworks most-specific first,
+// test frameworks last); the emitted detectedFrameworks array uses this
+// order, so the payload is byte-stable regardless of source/import order.
+const CS_FRAMEWORK_ORDER = [
+  "ASP.NET Core",
+  "Entity Framework Core",
+  "Unity",
+  "WPF",
+  "Windows Forms",
+  "xUnit",
+  "NUnit",
+  "MSTest",
+]
+
+const CS_FRAMEWORK_PATTERNS: Record<string, string[]> = {
+  "ASP.NET Core": ["mvc_pattern", "api_endpoints"],
+  "Entity Framework Core": ["orm_mapping", "repository_pattern"],
+  Unity: ["game_engine"],
+  WPF: ["ui_framework"],
+  "Windows Forms": ["ui_framework"],
+  xUnit: ["test_framework"],
+  NUnit: ["test_framework"],
+  MSTest: ["test_framework"],
+}
+
+function csharpSetHasAny(s: Set<string>, vs: string[]): boolean {
+  for (let i = 0; i < vs.length; i++) if (s.has(vs[i])) return true
+  return false
+}
+
+function csharpUsingPrefix(usings: Set<string>, prefix: string): boolean {
+  for (const u of usings) {
+    if (u === prefix || u.startsWith(prefix + ".")) return true
+  }
+  return false
+}
+
+const CS_FRAMEWORK_MARKERS: Record<
+  string,
+  (usings: Set<string>, bases: Set<string>, attributes: Set<string>) => boolean
+> = {
+  "ASP.NET Core": (u, b, a) =>
+    csharpUsingPrefix(u, "Microsoft.AspNetCore") ||
+    csharpSetHasAny(b, ["Controller", "ControllerBase", "PageModel", "Hub"]) ||
+    csharpSetHasAny(a, ["ApiController", "HttpGet", "HttpPost", "HttpPut", "HttpDelete", "HttpPatch"]),
+  "Entity Framework Core": (u, b) =>
+    csharpUsingPrefix(u, "Microsoft.EntityFrameworkCore") ||
+    b.has("DbContext"),
+  Unity: (u, b) =>
+    csharpUsingPrefix(u, "UnityEngine") ||
+    csharpSetHasAny(b, ["MonoBehaviour", "ScriptableObject"]),
+  WPF: (u, b) => {
+    // `System.Windows.Forms` is a strict child path of `System.Windows` —
+    // WinForms files must never double-report as WPF (Forms is checked
+    // before window-level bases that WinForms code also uses).
+    for (const x of u) {
+      if (
+        (x === "System.Windows" || x.startsWith("System.Windows.")) &&
+        !(x === "System.Windows.Forms" || x.startsWith("System.Windows.Forms."))
+      ) {
+        return true
+      }
+    }
+    return csharpSetHasAny(b, ["Window", "UserControl"])
+  },
+  "Windows Forms": (u, b) =>
+    csharpUsingPrefix(u, "System.Windows.Forms") ||
+    b.has("Form"),
+  xUnit: (u, _b, a) =>
+    csharpUsingPrefix(u, "Xunit") ||
+    csharpSetHasAny(a, ["Fact", "Theory"]),
+  NUnit: (u, _b, a) =>
+    csharpUsingPrefix(u, "NUnit") ||
+    a.has("TestFixture"),
+  MSTest: (u, _b, a) =>
+    csharpUsingPrefix(u, "Microsoft.VisualStudio.TestTools") ||
+    csharpSetHasAny(a, ["TestClass", "TestMethod"]),
+}
+
+/**
+ * Dotted path of a using_directive's text: strips `global` / `using` /
+ * `static` keywords and resolves aliases to their SOURCE path
+ * (`using E = X.Y;` -> `X.Y`), so marker matching sees what the file
+ * actually references.
+ */
+function csharpUsingDirectivePath(text: string): string | undefined {
+  let t = text.trim()
+  const semi = t.indexOf(";")
+  if (semi >= 0) t = t.slice(0, semi)
+  t = t.trim()
+  for (;;) {
+    if (t.startsWith("global ")) { t = t.slice(7).trim(); continue }
+    if (t.startsWith("using ")) { t = t.slice(6).trim(); continue }
+    if (t.startsWith("static ")) { t = t.slice(7).trim(); continue }
+    break
+  }
+  const eq = t.indexOf("=")
+  if (eq >= 0) t = t.slice(eq + 1).trim()
+  const space = t.indexOf(" ")
+  if (space >= 0) t = t.slice(0, space)
+  return t.length > 0 ? t : undefined
+}
+
+/**
+ * Leaf type name of a base-list entry / attribute name / qualified type:
+ * identifier -> itself; generic_name -> its name child;
+ * primary_constructor_base_type -> its inner type; qualified_name /
+ * alias_qualified_name -> their rightmost member.
+ */
+function csharpTypeLeafName(n: Node): string | undefined {
+  if (!n) return undefined
+  const t = n.type
+  if (t === "identifier") return n.text
+  if (t === "generic_name" || t === "primary_constructor_base_type") {
+    const first = n.namedChild(0)
+    return first ? csharpTypeLeafName(first) : undefined
+  }
+  if (t === "qualified_name" || t === "alias_qualified_name") {
+    const last = n.namedChild(n.namedChildCount - 1)
+    return last ? csharpTypeLeafName(last) : undefined
+  }
+  return undefined
 }
