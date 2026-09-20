@@ -1893,11 +1893,67 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * suppressed 115 of the 608 fabricated edges; the source test covers the
    * rest).
    */
+  /** The JS `\s` set, as a char test — kept exact so the char walks below are
+   * behaviour-identical to the regexes they replace (M49.R2: the AST regex
+   * census counted those three literals as review-class debt). */
+  private static isRegexSpace(c: string, code: number): boolean {
+    if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\v" || c === "\f") return true
+    return code === 0x00a0 || code === 0x1680 || (code >= 0x2000 && code <= 0x200a) ||
+      code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
+      code === 0x3000 || code === 0xfeff
+  }
+
+  /** `/^[\s]*$/` as a char walk. */
+  private static isWhitespaceOnly(text: string): boolean {
+    for (let i = 0; i < text.length; i++) {
+      if (!RealGroovyAnalyzer.isRegexSpace(text[i], text.charCodeAt(i))) return false
+    }
+    return true
+  }
+
+  /**
+   * `/^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*$/` as a char walk: a
+   * type-cased name, optionally dotted, every segment starting uppercase and
+   * otherwise word characters. Lowercase juxt callees (`echo`, `sh`) never
+   * match, so ordinary Jenkins-style juxtaposition is untouched.
+   */
+  private static isTypeCasedDottedName(text: string): boolean {
+    if (text.length === 0) return false
+    let i = 0
+    while (i < text.length) {
+      const first = text[i]
+      if (!(first >= "A" && first <= "Z")) return false
+      i++
+      while (i < text.length && text[i] !== ".") {
+        const c = text[i]
+        if (!((c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "_")) return false
+        i++
+      }
+      if (i < text.length) {
+        i++ // consume '.'; the next segment must be non-empty (checked by the loop head)
+        if (i >= text.length) return false
+      }
+    }
+    return true
+  }
+
+  /** `/^[\s,.<>\[\]A-Za-z0-9_]*$/` as a char walk: parameter-list material only. */
+  private static isParamMaterialOnly(text: string): boolean {
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      if (RealGroovyAnalyzer.isRegexSpace(c, text.charCodeAt(i))) continue
+      if (c === "," || c === "." || c === "<" || c === ">" || c === "[" || c === "]") continue
+      if ((c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "_") continue
+      return false
+    }
+    return true
+  }
+
   private looksLikeTypedClosureMisparse(juxtNode: Node, nameNode: Node, content?: string): boolean {
     const nameText = nameNode.text.trim()
     // Type-cased head (optionally dotted). Lowercase juxt callees (echo, sh)
     // never enter here, so ordinary Jenkins-style juxtaposition is untouched.
-    if (!/^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*$/.test(nameText)) return false
+    if (!RealGroovyAnalyzer.isTypeCasedDottedName(nameText)) return false
     const argsNode = juxtNode.childForFieldName("args")
     if (!argsNode) return false
     // Args must be made only of identifier tokens and separators — bare param
@@ -1913,7 +1969,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const between = tail.slice(0, arrow)
         // Only identifiers, dots, generics, arrays, commas, whitespace. A `)`,
         // `(`, `{`, `}`, `;`, quote or operator means real code intervened.
-        if (/^[\s,.<>\[\]A-Za-z0-9_]*$/.test(between)) return true
+        if (RealGroovyAnalyzer.isParamMaterialOnly(between)) return true
       }
     }
 
@@ -2258,7 +2314,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.type !== "method_declaration" && s.type !== "constructor_declaration" && s.type !== "function_definition") continue
       if (s.startPosition.row !== node.startPosition.row) continue
       if (s.startIndex <= node.endIndex) continue
-      if (/^[\s]*$/.test(content.slice(node.endIndex, s.startIndex))) return true
+      if (RealGroovyAnalyzer.isWhitespaceOnly(content.slice(node.endIndex, s.startIndex))) return true
     }
     return false
   }
