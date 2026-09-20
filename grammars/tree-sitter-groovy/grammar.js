@@ -252,6 +252,24 @@ module.exports = grammar(Java, {
     // #841 round 3: `(x) -> …` lambda vs `(Type) x` cast vs `(x)` expression
     // — the parenthesized prefix is shared once types are value expressions.
     [$.lambda_expression, $.primary_expression, $._unannotated_type],
+    // #841 round 22: `{ Type name -> ... }` — the typed params head vs the body's
+    // juxt reading of the same tokens. Declared so GLR keeps both; the
+    // error-free params-head parse then wins resolution.
+    [$.juxt_function_call, $._closure_params_head],
+    // #841 round 22 (generate-forced): `{ a, b -> … }` — the comma after the
+    // first param reads as either the params-head separator or a variable
+    // declarator list in the body. GLR keeps both; '->' decides.
+    [$._variable_declarator_id, $._closure_params_head],
+    // NOTE: generate also listed [lambda_expression, _closure_params_head] as
+    // necessary in gen8 but UNNECESSARY in gen12 — the unnecessary form is a
+    // known deregulation source (Legacy), so it is deliberately omitted.
+    // #841 round 22 (generate-forced): `x = { a, b -> … }` — after '=' the
+    // '{' body's first `identifier ,` forks three ways (primary_expression,
+    // variable-declarator, params-head). GLR keeps all; '->' decides.
+    [$.primary_expression, $._variable_declarator_id, $._closure_params_head],
+    // #841 round 22 (generate-forced): same tie inside a `def f = { … }`
+    // initializer — declaration RHS vs closure body. GLR keeps both.
+    [$.primary_expression, $._variable_declarator_id, $._closure_params_head],
     // #841 round 3: string callee vs string argument (`"lit"."m"()` paths).
     [$._literal, $.method_invocation],
     // #841 round 3: command-chain callee/object vs type operand vs
@@ -1210,6 +1228,22 @@ module.exports = grammar(Java, {
       field('value', $.expression),
     ),
 
+    // #841 round 22: closure typed-parameter head, extracted from the closure
+    // rule as a HIDDEN rule (underscore = spliced into the parent, so the
+    // produced tree is byte-identical to the previous inline form). Exists as
+    // a named symbol solely so the `ILoggingEvent event` ambiguity against the
+    // body's juxt_function_call can be declared in `conflicts`.
+    _closure_params_head: $ => prec(1, prec.dynamic(1, seq(
+      repeat(seq(optional(choice($._unannotated_type, 'def')), $.identifier, ',')),
+      // #841 round 3: typed closure params may be declared `def`
+      // (`out./print.*/(* _) >> { def args -> … }`, GrailsConsoleSpec) —
+      // def is not a type in the grammar's eyes, so the param list needs
+      // it explicitly.
+      optional(choice($._unannotated_type, 'def')),
+      $.identifier,
+      '->',
+    ))),
+
     closure: $ => prec(1, seq(
       '{',
       // Groovy closures take an implicit parameter list: `{ it }` (default),
@@ -1217,16 +1251,11 @@ module.exports = grammar(Java, {
       // typed (`{ MethodNode mn -> ... }`). Without it, `each { key, value ->
       // ... }` — ubiquitous in real code — forces ERROR recovery.
       optional(choice(
-        seq(
-          repeat(seq(optional(choice($._unannotated_type, 'def')), $.identifier, ',')),
-          // #841 round 3: typed closure params may be declared `def`
-          // (`out./print.*/(* _) >> { def args -> … }`, GrailsConsoleSpec) —
-          // def is not a type in the grammar's eyes, so the param list needs
-          // it explicitly.
-          optional(choice($._unannotated_type, 'def')),
-          $.identifier,
-          '->',
-        ),
+        // #841 round 22: named HIDDEN rule (tree shape unchanged) so the
+        // type-vs-juxt ambiguity below can be DECLARED (inline alternatives
+        // cannot be named in `conflicts`). With both stacks alive, GLR
+        // completes the params-head and the error-free parse wins.
+        $._closure_params_head,
         // #841 round 3: zero-arg arrow form `{ -> ... }`
         // (GrailsApplicationLifeCycleAdapter `return { -> }`).
         '->',
