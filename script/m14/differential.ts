@@ -9958,10 +9958,15 @@ export interface DifferentialEvaluation {
    * strict count comparison (it is the only claim available) but the gap is
    * reported so it can only shrink. */
   unpinnedLanes: string[]
-  /** #871: lanes whose perf could NOT be scored because the baseline row
-   * records no load context. Refusing beats mislabelling a busy machine as a
-   * regression; disclosed so the list can only shrink. */
+  /** #871: perf rows we refused to score (baseline carries no load context).
+   * Refusing beats mislabelling a busy machine as a regression; disclosed so
+   * the list can only shrink. */
   perfUnscored: string[]
+  /** #871: lane-vs-run-median outlier ratios. DISCLOSED, never scored: the
+   * ratio cannot be told apart from a busy machine (measured firing at load
+   * 3.9, 8.7 and ~22 across three ceremonies while the run median stayed put).
+   * The failing perf gate is the baseline ratio, which is context-gated. */
+  medianOutliers: string[]
   checks: { id: string; description: string; status: "pass" | "fail"; detail: string }[]
 }
 
@@ -9992,8 +9997,8 @@ export function evaluateDifferential(
   //                the gap is visible and can only shrink.
   const resampled = new Set<string>()
   const unpinnedLanes: string[] = []
-  // #871: perf rows we refused to score (baseline carries no load context).
   const perfUnscored: string[] = []
+  const medianOutliers: string[] = []
   for (const l of Object.keys(current)) {
     const cur = current[l]?.sampleHash
     const base = baselineHashes[l]
@@ -10029,7 +10034,12 @@ export function evaluateDifferential(
       for (const l of Object.keys(current)) {
         const cAvg = current[l]?.perf?.avgMsPerFile
         if (cAvg && median && cAvg > Math.max(3 * median, median + 200)) {
-          perfRegressions.push(`${l}: outlier vs median (${cAvg}ms vs ${median}ms median)`)
+          // #871 §2: DISCLOSED, never scored. The ratio cannot separate a busy
+          // machine from lane slowness — lodash:javascript fired on all three
+          // ceremonies (load 3.9 / 8.7 / ~22) while its own avg barely moved
+          // relative to the run median's stability. The failing perf gate is
+          // the baseline ratio above, which is context-gated.
+          medianOutliers.push(`${l}: outlier vs median (${cAvg}ms vs ${median}ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)`)
         }
       }
     }
@@ -10114,7 +10124,7 @@ export function evaluateDifferential(
         : `${r.filesSampled} files; NOT COMPARABLE: baseline sampled ${baselineSample ?? "unknown"}/lang, run ${samplePerLang}/lang`,
     }
   })
-  return { comparable, regressions, perfRegressions, resampled: [...resampled], unpinnedLanes, perfUnscored, checks }
+  return { comparable, regressions, perfRegressions, resampled: [...resampled], unpinnedLanes, perfUnscored, medianOutliers, checks }
 }
 
 async function main() {
@@ -11144,7 +11154,7 @@ async function main() {
       { description: "a lane whose corpus checkout was not at its pin is measured in a detached worktree of the pin (see data.pinDrift); the measurement is of committed content, so an in-flight working-tree edit in a corpus repo is deliberately excluded from the differential" },
       { description: "the measured code is this checkout's working tree, so `differential-code-inputs` fails — and the run exits 6 — when any analyzer, oracle or spec input differs from `regeneratedAtCommit`; a dirty tree can measure lanes but cannot claim them" },
       { description: "#871 §1: the heuristic metric matches (label, normalized target) only — source re-attribution is invisible to it; fixture source/line pins are the coverage for attribution moves, and 'no regressions' here must not be read as 'attribution did not change'" },
-      { description: "#871 §1-2: perf rows record per-lane loadAvg1 and the run records loadAvgStart/End + slice count; a baseline row without load context is NOT scored (perfUnscoredLanes) rather than mislabelled as a regression" },
+      { description: "#871 §1-2: perf rows record per-lane loadAvg1 and the run records loadAvgStart/End + slice count; a baseline row without load context is NOT scored (perfUnscoredLanes) rather than mislabelled as a regression; the lane-vs-run-median outlier check is DISCLOSED (medianOutliers) not scored — measured firing at load 3.9/8.7/~22 across ceremonies while the run median stayed put, it cannot separate machine load from lane slowness" },
     ],
     data: {
       corpusPins: repoPins,
@@ -11175,6 +11185,8 @@ async function main() {
         // #871 §1: perf rows REFUSED because the baseline carries no load
         // context — disclosed so the list can only shrink.
         perfUnscoredLanes: [...evaluation.perfUnscored, ...evaluationSecond.perfUnscored],
+        // #871 §2: lane-vs-run-median outliers, DISCLOSED never scored.
+        medianOutliers: [...evaluation.medianOutliers, ...evaluationSecond.medianOutliers],
       },
     },
   })
@@ -11246,6 +11258,7 @@ async function main() {
     for (const r of [...evaluation.regressions, ...evaluationSecond.regressions]) console.error(`DIFFERENTIAL REGRESSION ${r}: ${JSON.stringify(baselineCounts[r])} -> ${JSON.stringify(current[r] ?? currentSecond[r])}`)
     for (const r of [...evaluation.perfRegressions, ...evaluationSecond.perfRegressions]) console.error(`PERF BUDGET EXCEEDED ${r}`)
     for (const r of [...evaluation.perfUnscored, ...evaluationSecond.perfUnscored]) console.log(`PERF NOT SCORED ${r}`)
+    for (const r of [...evaluation.medianOutliers, ...evaluationSecond.medianOutliers]) console.log(`PERF OUTLIER DISCLOSED ${r}`)
     if (evaluation.regressions.length || evaluation.perfRegressions.length || evaluationSecond.regressions.length || evaluationSecond.perfRegressions.length) process.exit(5)
     console.log(`differential baseline gate: no regressions on a pinned file set (primary + second corpus); perf budgets respected${resampledLanes.length ? `; ${resampledLanes.length} lane(s) resampled (triage)` : ""}`)
   }
