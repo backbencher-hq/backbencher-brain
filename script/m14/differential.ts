@@ -10560,11 +10560,13 @@ async function main() {
         }
         // M37.21 #611 svelte TEMPLATE call truth — the analyzer's template
         // pass emits calls the embedded-script trees cannot express:
-        //   on:click={inc} / on:click={() => bump()} → handler leaf (0.85)
+        //   on:click={inc} / on:click={() => bump()} → handler (0.85)
+        //   onclick={save} on intrinsic tags          → handler (0.85, Svelte 5)
+        //   {@attach handler} / {@attach handler(args)} → handler (0.8)
         //   {@render children(...)}                    → snippet name (0.9)
         // The svelte grammar exposes attribute values as opaque
-        // svelte_raw_text leaves, so both are scanned with the analyzer's
-        // pure-String contract, mirrored verbatim here.
+        // svelte_raw_text leaves, so all of these are scanned with the
+        // analyzer's pure-String contract, mirrored verbatim here.
         if (lang === "svelte") {
           const isIdent = (s: string): boolean => {
             if (!s) return false
@@ -10583,7 +10585,14 @@ async function main() {
             }
             return ""
           }
-          const handlerLeaf = (text: string): string | undefined => {
+          // #898 closure: the handler derivation IS the analyzer's
+          // onHandlerCall contract (src/ast/real-svelte-analyzer.ts), mirrored
+          // rule for rule — the previous leaf-only scan derived member-call
+          // property names the analyzer stopped emitting (the #898 fabrication
+          // class: `rest?.onclick()` → onclick) and missed the dotted-leaf
+          // method-reference form it emits. 1: free identifier followed by
+          // `(`; 2: bare identifier; 3: dotted member leaf. Else: nothing.
+          const handlerCall = (text: string): string | undefined => {
             for (let i = 0; i < text.length; i++) {
               const ch = text[i]
               if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_" || ch === "$") {
@@ -10594,11 +10603,18 @@ async function main() {
                   else break
                 }
                 const ident = text.slice(i, end)
-                if (end < text.length && text[end] === "(") return ident
+                if (end < text.length && text[end] === "(") {
+                  let back = i - 1
+                  while (back >= 0 && (text[back] === " " || text[back] === "\t" || text[back] === "\n")) back--
+                  if (back < 0 || text[back] !== ".") return ident
+                }
                 i = end
               }
             }
-            return isIdent(text) ? text : undefined
+            if (isIdent(text)) return text
+            const parts = text.split(".")
+            if (parts.length > 1 && parts.every((p) => isIdent(p))) return parts[parts.length - 1]
+            return undefined
           }
           const moduleName = path.basename(relPath, path.extname(relPath))
           const seenRender = new Set<string>()
@@ -10608,16 +10624,56 @@ async function main() {
               if (t === "element" || t === "self_closing_tag") {
                 const startTag = n.namedChildren?.find((c: any) => c.type === "start_tag") ?? (t === "self_closing_tag" ? n : undefined)
                 if (startTag) {
+                  const tagName = startTag.namedChildren?.find((c: any) => c.type === "tag_name")?.text ?? ""
                   for (const attr of startTag.namedChildren ?? []) {
                     if (attr.type !== "attribute") continue
                     const nameNode = attr.namedChildren?.find((c: any) => c.type === "attribute_name")
                     const attrName = nameNode?.text ?? ""
-                    if (!attrName.startsWith("on:")) continue
-                    const handler = handlerLeaf(rawText(attr))
+                    // #898 closure: both event spellings, the analyzer's gates
+                    // character for character. on: directives are universal;
+                    // Svelte-5 on* attributes only on intrinsic tags — on a
+                    // component, onclick is a prop and deriving it would
+                    // fabricate. Short words (`once`, len 4) are never events.
+                    const isOnDirective = attrName.startsWith("on:")
+                    const isOnclickAttr =
+                      !isOnDirective &&
+                      /^on[a-z]+$/.test(attrName) &&
+                      attrName.length > 4 &&
+                      tagName.length > 0 &&
+                      tagName[0] === tagName[0].toLowerCase() &&
+                      !tagName.includes(".") &&
+                      (!tagName.includes(":") || tagName.startsWith("svelte:"))
+                    if (!isOnDirective && !isOnclickAttr) continue
+                    const handler = handlerCall(rawText(attr))
                     if (handler && handler !== moduleName && !seenRender.has("h|" + handler)) {
                       seenRender.add("h|" + handler)
                       ;(truth as any[]).push({ label: "calls", from: "(template)", target: handler })
                     }
+                  }
+                  // #898 closure: {@attach handler} / {@attach handler(args)} —
+                  // the pinned grammar has no rule for the directive; it parses
+                  // as a stable ERROR shape (`{`, `@`, ERROR[attach], handler
+                  // expression, `}`), measured in
+                  // script/m14/tmp/web-adv-attach-tree.ts. The analyzer lane
+                  // reads that shape structurally, so the oracle mirrors the
+                  // same gates — identifier and call forms only; arrow params,
+                  // member chains etc. stay silent (no fabrication). Attach is
+                  // a behavior hook on intrinsic AND component tags.
+                  for (let ci = 0; ci < (startTag.childCount ?? 0); ci++) {
+                    const directive = startTag.child(ci)
+                    if (!directive || directive.type !== "ERROR") continue
+                    const kids: any[] = []
+                    for (let j = 0; j < directive.childCount; j++) { const c = directive.child(j); if (c) kids.push(c) }
+                    const attachIdx = kids.findIndex((k: any) => k.type === "ERROR" && k.text === "attach")
+                    if (attachIdx < 0) continue
+                    const nameTok = kids[attachIdx + 1]
+                    if (!nameTok || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(nameTok.text)) continue
+                    const afterText = (kids[attachIdx + 2]?.text ?? "}").trim()
+                    if (afterText !== "}" && afterText !== "(") continue
+                    const attachHandler = nameTok.text
+                    if (attachHandler === moduleName || seenRender.has("a|" + attachHandler)) continue
+                    seenRender.add("a|" + attachHandler)
+                    ;(truth as any[]).push({ label: "calls", from: "(template)", target: attachHandler })
                   }
                 }
               }
