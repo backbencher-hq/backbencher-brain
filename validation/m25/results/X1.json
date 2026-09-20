@@ -62,10 +62,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "a37c8a29fa92c5813310ec63d6d3958f124ee60c",
+  "currentCommit": "b6a6cfffd9898bd523189edba1581f2e581fc825",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-20T00:23:33.078Z",
+  "generatedAt": "2026-09-20T00:45:14.024Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -73,7 +73,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:23:33.079Z",
-    "contentSha256": "3469ca484ecc74c44f93633c271b947215a498a850d42f08633504a907551a4d"
+    "sealedAt": "2026-09-20T00:45:14.025Z",
+    "contentSha256": "c354dc33bca27be2ad81a19809f2c3cadbd74d8ac9ee11d76fb2639e36496285"
   }
 }
