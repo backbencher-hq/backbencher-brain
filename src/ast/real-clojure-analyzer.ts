@@ -497,57 +497,74 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
 
-    let mayShadowComment = false
-    // #881 widened (adversarial F4): a DATA-position `comment` symbol
-    // (`{comment 1}` map key, a `case` leg, a plain vector element) does NOT
-    // shadow the macro — the original "any non-head occurrence" scan flipped
-    // file-globally on those, and EVERY `(comment …)` body in the file was
-    // then walked as code (measured on clj-kondo analyzer.clj: a fabricated
-    // `calls parse-string` from a scratch comment block). Only DEFINITION
-    // evidence flips the flag now: `comment` as a def-family NAME, or as a
-    // binding in a binding vector (fn/defn params, let/loop/for/…) — the
-    // #881 fixture's two live shadows are exactly those two shapes.
+    // W23-b (M49 W24): the shadow is REGIONAL and ORDER-AWARE. The old flat
+    // flag (any definition anywhere, order-blind) flipped every `(comment …)`
+    // body in the file to code-walking — fabricating calls from data blocks
+    // the macro still owns. Ranges now: a def-family NAME binds the var at
+    // the FORM'S END (order-aware, live from there on); a binding vector
+    // scopes to its ENCLOSING form (params/let bindings are visible only
+    // inside it — a multi-arity clause's param covers that clause alone).
+    const shadowRanges: Array<{ start: number; end: number }> = []
     const DEF_NAME_HEADS: Record<string, boolean> = Object.create(null)
     for (const h of ["def", "defn", "defn-", "defmacro", "defonce", "defmulti"]) DEF_NAME_HEADS[h] = true
     const BINDING_VEC_HEADS: Record<string, boolean> = Object.create(null)
     for (const h of ["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"]) BINDING_VEC_HEADS[h] = true
     const FN_PARAM_HEADS: Record<string, boolean> = Object.create(null)
     for (const h of ["fn", "defn", "defn-", "defmacro", "defmethod", "deftest"]) FN_PARAM_HEADS[h] = true
-    const isShadowingComment = (candidate: Node): boolean => {
+    const shadowRangeOf = (candidate: Node): { start: number; end: number } | null => {
       const parent = candidate.parent
-      if (!parent) return false
+      if (!parent) return null
       if (parent.type === "list_lit") {
+        // `(def comment …)`-family: the var binds when the form completes —
+        // a `(comment …)` inside this form's own init is still the macro.
         const head = formNameOf(parent)
-        return !!(DEF_NAME_HEADS[head] && parent.namedChild(1)?.startIndex === candidate.startIndex)
+        if (DEF_NAME_HEADS[head] && parent.namedChild(1)?.startIndex === candidate.startIndex) {
+          return { start: parent.endIndex, end: Infinity }
+        }
+        return null
       }
       if (parent.type === "vec_lit") {
         const gp = parent.parent
-        if (!gp || gp.type !== "list_lit") return false
+        if (!gp || gp.type !== "list_lit") return null
         const head = formNameOf(gp)
         if (FN_PARAM_HEADS[head]) {
           for (let i = 0; i < gp.namedChildCount; i++) {
             const c = gp.namedChild(i)
-            if (c?.type === "vec_lit") return c.startIndex === parent.startIndex
+            if (c?.type === "vec_lit") return c.startIndex === parent.startIndex ? { start: gp.startIndex, end: gp.endIndex } : null
           }
-          return false
+          return null
         }
-        if (BINDING_VEC_HEADS[head]) return gp.namedChild(1)?.startIndex === parent.startIndex
-        return false
+        if (BINDING_VEC_HEADS[head] && gp.namedChild(1)?.startIndex === parent.startIndex) {
+          return { start: gp.startIndex, end: gp.endIndex }
+        }
+        // Multi-arity clause: the vec is the FIRST named child of a list
+        // whose parent is a fn/defn form — the param covers that clause.
+        if (gp.namedChild(0)?.startIndex === parent.startIndex) {
+          const ggp = gp.parent
+          if (ggp && ggp.type === "list_lit" && FN_PARAM_HEADS[formNameOf(ggp)]) {
+            return { start: gp.startIndex, end: gp.endIndex }
+          }
+        }
+        return null
       }
-      return false
+      return null
     }
     const bindingStack: Node[] = [rootNode]
     while (bindingStack.length > 0) {
       const candidate = bindingStack.pop()!
       if (candidate.type === "dis_expr" || candidate.type === "quoting_lit") continue
-      if (candidate.type === "sym_lit" && symName(candidate) === "comment" && isShadowingComment(candidate)) {
-        mayShadowComment = true
-        break
+      if (candidate.type === "sym_lit" && symName(candidate) === "comment") {
+        const range = shadowRangeOf(candidate)
+        if (range) shadowRanges.push(range)
       }
       for (let i = 0; i < candidate.namedChildCount; i++) {
         const child = candidate.namedChild(i)
         if (child) bindingStack.push(child)
       }
+    }
+    const isShadowedAt = (pos: number): boolean => {
+      for (const r of shadowRanges) if (pos >= r.start && pos < r.end) return true
+      return false
     }
     // F13: threading step lists already emitted their thread-adjusted call
     // at the macro site — their own walk must not re-emit the written arity.
@@ -624,7 +641,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `clojure.core/quote` and an aliased `c/comment` (`[clojure.core :as
         // c]`) walked their bodies as code before this canonicalisation.
         const canon = resolveQualified(form)
-        if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !mayShadowComment)) continue
+        if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt(node.startIndex))) continue
       }
 
       const previousActiveFunction = activeFunction
