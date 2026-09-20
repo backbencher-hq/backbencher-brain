@@ -12,7 +12,7 @@ export const CLOJURE_CORE_BUILTINS = (function(){ const r: Record<string, boolea
 
 const HOF_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["apply", "map", "reduce", "filter", "comp", "partial"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 const STM_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["swap!", "reset!", "deref", "alter", "commute", "dosync", "ref", "atom", "agent", "send", "send-off"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
-const COMPLEXITY_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["if", "cond", "when", "case", "for", "loop", "when-let", "if-let"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
+const COMPLEXITY_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["if", "if-not", "if-let", "if-some", "when", "when-not", "when-let", "when-some", "cond", "condp", "case", "for", "while", "loop", "cond->", "cond->>", "some->", "some->>"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["println", "print", "def", "alter-var-root", "with-redefs", "set!", "swap!", "reset!", "alter"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
 // C9: forms whose DIRECT list_lit children are METHOD DEFINITIONS, not calls —
@@ -1174,6 +1174,15 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ordinary expressions and walk normally.
         else if (formName === "->" || formName === "->>" || formName === "some->" || formName === "some->>" || formName === "cond->" || formName === "cond->>" || formName === "doto") {
           if (activeFunction) patterns["Threading Macros"] = true
+          // CC1-c (CLJ-D16): a CONDITIONAL threader counts +1 — once, like
+          // `cond` (its tests/steps are expressions, not clause nodes). Plain
+          // `->`/`->>`/`doto` are not conditionals and do not count. This
+          // branch intercepts before the COMPLEXITY_BUILTINS check below, so
+          // the counting lives here.
+          if ((formName === "cond->" || formName === "cond->>" || formName === "some->" || formName === "some->>") && activeFunction?.metadata) {
+            activeFunction.metadata.complexity = (activeFunction.metadata.complexity || 1) + 1
+            totalCyclomaticComplexity++
+          }
           const isCond = formName === "cond->" || formName === "cond->>"
           const tSrc = activeFunction ? activeFunction.name : currentNamespace
           const tTop: Record<string, any> = activeFunction ? {} : { isTopLevel: true }
@@ -1380,6 +1389,16 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (seenFinal.has(key)) relationships.splice(i, 1)
         else seenFinal.add(key)
       }
+    }
+
+    // CC1-f (elixir-parity, the ELXD15 shape): per-symbol complexity exposure —
+    // functions/macros mirror the walk's metadata.complexity so consumers and
+    // fixtures can pin the decision baseline per symbol, not only the file
+    // total. Additive for clojure (nothing read the field before); pinned by
+    // fixture complexity-forms.
+    for (const s of symbols) {
+      const cx = (s.metadata as any)?.complexity
+      if (typeof cx === "number" && s.complexity === undefined) s.complexity = cx
     }
 
     return {
