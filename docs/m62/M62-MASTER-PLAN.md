@@ -96,7 +96,8 @@ always for an `unusable` store, which must never be quietly degraded into a
 
 X1 requires every lane bar verified **and fresh by relevance**. Re-earning them
 at one HEAD exposed eight defects in the lane that no single milestone's own gate
-could see. Each is fixed at its owner; none is a documentation note.
+could see, plus a ninth found in the pass-7 re-audit that follows. Each is fixed
+at its owner; none is a documentation note.
 
 1. **A byte-gated document asserted machine reality** (M26 `D1`/`W3`).
    `docs/m26/GRAPH.md` and `docs/m26/CROSS-LANGUAGE.md` are byte-gated against a
@@ -170,6 +171,18 @@ could see. Each is fixed at its owner; none is a documentation note.
    a lane record makes claims about (`src/lsp/`, `src/intelligence/`, the MCP
    handler, each lane's own gate scripts); a real regression is still caught.
    Both halves are pinned by negatives, so neither can drift into the other.
+9. **A staleness digest over an untracked build output** (M29 `R3`, found in
+   the pass-7 lane sweep). The relevant-inputs hash listed
+   `dist/lsp/server.js` — an ignored, machine-local file. A clone without
+   `dist/` skipped it SILENTLY (the hash loop guarded with `existsSync`), so
+   the digest meant different things on different machines and R3 read stale
+   on every machine that had not built the exact bundle the record was
+   measured with. Fixed: the digest covers the TRACKED inputs that produce the
+   bundle (every `.ts` under `src/`, sorted, plus the build config), and the
+   built bundle is recorded as an observation with its own sha256 — never
+   compared. Two can-fail legs pin the rule: the digest is stable for
+   identical inputs and flips when an input's content changes. R3 re-earned
+   over the persistent giant index at the fix: 28/28.
 
 ## Not in scope (declared)
 
