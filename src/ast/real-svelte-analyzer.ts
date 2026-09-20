@@ -1319,8 +1319,14 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (!text) return undefined
     const at = (offset: number): number => baseLine + RealSvelteAnalyzer.linesBefore(text, offset)
-    // 1. First identifier immediately followed by `(` = call target
+    // 1. First FREE identifier immediately followed by `(` = call target
     //    (`() => bump()` → bump; `() => onSelect(title)` → onSelect).
+    //    FREE = not a member call: an identifier preceded by `.` (which also
+    //    covers `?.`) names a property of the receiver (`rest?.onclick()`,
+    //    `deferred.shift()`, `console.log('…')`) — emitting it fabricated a
+    //    calls edge to a name that may not even exist in scope (#898, all six
+    //    arrow-body cases). Member-call targets stay unemitted: the receiver
+    //    resolution is a different, not-yet-built lane.
     // 2. Else, if the whole text is a bare identifier → that identifier
     //    (`nextPage` → nextPage).
     // 3. Else (arrow params, property access, etc.) → nothing.
@@ -1334,7 +1340,11 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           else break
         }
         const ident = text.slice(i, end)
-        if (end < text.length && text[end] === "(") return { name: ident, line: at(i) }
+        if (end < text.length && text[end] === "(") {
+          let back = i - 1
+          while (back >= 0 && (text[back] === " " || text[back] === "\t" || text[back] === "\n")) back--
+          if (back < 0 || text[back] !== ".") return { name: ident, line: at(i) }
+        }
         // not a call target — move past this identifier
         i = end
       }
