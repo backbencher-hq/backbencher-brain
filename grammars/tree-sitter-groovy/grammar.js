@@ -182,6 +182,10 @@ module.exports = grammar(Java, {
     // group can be an argument_list element or a named-arg's parenthesized
     // value. GLR defers; context decides.
     [$.argument_list, $.map_item],
+    // #841 round 21: Java's switch-case record patterns share the bare `_`
+    // token with the new primary_expression admission (`case _(x) ->`); GLR
+    // defers, context decides.
+    [$.primary_expression, $.record_pattern_component],
     // #841 round 19: after an RHS method-invocation head, the next identifier
     // either continues the ordinary expression chain (primary_expression) or
     // starts a spaced chain segment (_command_chain_value, then-chains).
@@ -341,6 +345,18 @@ module.exports = grammar(Java, {
       '[',
       field('index', commaSep1($.expression)),
       ']',
+    ),
+
+    // #841 round 21: in real Groovy `_` is an ordinary IDENTIFIER (oracle:
+    // `def _ = 5`, `_ + 1`, `{ _ -> _ }` and the Spock interaction wildcard
+    // `_ * builder.foo() >> false` — 2 corpus files — all ACCEPT). It lexes
+    // as Java's underscore_pattern token, which Java reaches only through
+    // pattern/declarator positions, so every `_`-in-expression died into
+    // ERROR recovery. Admitting the token into primary_expression makes it a
+    // legal expression operand everywhere, exactly as in real Groovy.
+    primary_expression: ($, original) => choice(
+      original,
+      $.underscore_pattern,
     ),
 
     program: $ => seq(
@@ -1139,9 +1155,15 @@ module.exports = grammar(Java, {
       DELIMITER,
     ),
 
+    // #841 round 21: `_` as a MAP KEY — `[_: '', name: 'x']` "apply every
+    // other property" (GrailsWebDataBinderSpec:1608, oracle-ACCEPTED) and the
+    // bare subscript `m[_]` — died when `_` became a primary: the key slot
+    // reads identifiers, not primaries, and the old ERROR recovery had masked
+    // the distinction entirely.
     map_item: $ => seq(
       field('key', choice(
         $.identifier,
+        $.underscore_pattern,
         // M49 W21 (#850): Java reserves `open`, `module`, `record`, `with` and
         // `sealed` as keywords, and this grammar extends Java — so a named
         // argument whose KEY is one of them (`exclude group: 'x', module: 'y'`,
