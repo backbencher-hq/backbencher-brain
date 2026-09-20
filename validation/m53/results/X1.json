@@ -3,19 +3,19 @@
   "code": "X1",
   "milestone": "M53",
   "status": "known-gap",
-  "passed": 5,
-  "failed": 2,
+  "passed": 6,
+  "failed": 1,
   "negatives": {
     "total": 3,
     "caught": 3
   },
   "receipt": "docs/m53/INTEGRATION-RECEIPT.md",
-  "currentCommit": "c481197f020ad27bfa88d66a4df2dc0a253341bc",
+  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
   "verifierCommand": "npx tsx script/m53/verify-closure.ts",
-  "generatedAt": "2026-09-20T00:56:10.742Z",
+  "generatedAt": "2026-09-20T01:13:10.379Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:56:10.743Z",
-    "contentSha256": "b3337ca2df142994db450c070d1d9bb1f9f21d21bb4d4748fb1f6d18d166d129"
+    "sealedAt": "2026-09-20T01:13:10.379Z",
+    "contentSha256": "9435ac85409f1966eb80bd493798e29d6cc734abd38ccb13d56540a08503c18e"
   }
 }
