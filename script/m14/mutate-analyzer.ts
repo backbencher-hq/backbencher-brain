@@ -1263,6 +1263,32 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "elixir/defimpl-list-garbage",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "W23 regression (fixture defimpl-target-forms): multi-type `for: [A, B]` reverts to the raw list text as one garbage impl target (\"[Integer, Float]\") instead of one Implements edge per type",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []).filter(x => !(x.type === "implements" && (x.source === "Integer" || x.source === "Float") && x.target === "W23Multi")),
+        { type: "implements", source: "[Integer, Float]", target: "W23Multi", confidence: 1, metadata: { elixirSpecific: true } },
+      ],
+    }),
+  },
+  {
+    id: "elixir/behaviour-atom-colon",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "W23 regression (fixture behaviour-atom): the @behaviour atom form re-emits the leading colon as part of the target (`:gen_server`) instead of the behaviour name",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []).filter(x => !(x.type === "implements" && x.target === "gen_server")),
+        { type: "implements", source: "W23BehaviourAtom", target: ":gen_server", confidence: 0.9, metadata: { elixirSpecific: true } },
+      ],
+    }),
+  },
+  {
     id: "elixir/export-owned-struct",
     language: "elixir",
     defectClass: "export-duplication",
