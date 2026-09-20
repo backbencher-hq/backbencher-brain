@@ -8,12 +8,12 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 4,
-  "currentCommit": "b6a6cfffd9898bd523189edba1581f2e581fc825",
+  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
   "readmeFingerprint": "1e418d8e23c3c605149f54a3f456964843711423a93521d65792b90d0c12fe82",
   "listingPath": "ide/vscode/README.md",
   "verifierCommand": "npx tsx script/m25/verify-listing.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-09-20T00:45:13.975Z",
+  "generatedAt": "2026-09-20T01:04:14.078Z",
   "limitations": [
     "The lint is lexical: it proves the listing avoids banned phrasing, not that every sentence is strategically perfect (that word is banned too).",
     "Claim drift is checked against the ledger and F-*.json evidence at run time; a re-run after any evidence change re-derives the allowed claims.",
@@ -21,7 +21,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:45:13.976Z",
-    "contentSha256": "e2e5dfb2dea099e755f13ef93d45cc59b45233ac4984f375972947ca34573257"
+    "sealedAt": "2026-09-20T01:04:14.078Z",
+    "contentSha256": "703cb7299c67e00f2edd4a97308c227cab959cd38f52ad5b1b6d29889f75caac"
   }
 }
