@@ -23,10 +23,10 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 121,
+    "scanned": 125,
     "skipped": 3
   },
-  "realDbsScanned": 121,
+  "realDbsScanned": 125,
   "realDbsSkipped": 3,
   "realCrossLanguagePairs": 3,
   "realPairRows": [
@@ -53,16 +53,16 @@
     }
   ],
   "docFile": "docs/m26/GRAPH.md",
-  "currentCommit": "c24d12f0c38f49688ba1f448b2ad0482949ea948",
+  "currentCommit": "6508e5fc44f3cc56efaafa0d7100e21a2fa2caf9",
   "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
-  "generatedAt": "2026-09-20T01:04:47.650Z",
+  "generatedAt": "2026-09-20T01:49:18.720Z",
   "limitations": [
     "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
     "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:04:47.650Z",
-    "contentSha256": "ad051c7e9061f82ebe3d9e0f8e066cfc202c42c8698d845e07952615fb0b3311"
+    "sealedAt": "2026-09-20T01:49:18.720Z",
+    "contentSha256": "c1f009585b96071933ed592793b28bf76b2be230dcd6077b14ba5827f27e220e"
   }
 }
