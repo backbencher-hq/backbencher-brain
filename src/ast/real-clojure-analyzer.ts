@@ -45,6 +45,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `"function toString() { [native code] }/f"` (and the oracle's Map
     // emitted the honest `toString/f` — a latent MISSING/unexplained pair).
     let namespaceAliases: Record<string, string> = Object.create(null)
+    // W24-mr2: `:refer`-ed names (ns `:refer [a b]` / top-level require) — a
+    // CONFIRMED call target, resolved to its source lib (last libspec wins).
+    const refers: Record<string, string> = Object.create(null)
     let activeFunction: ASTEngine.UniversalSymbol | null = null
 
     let totalCyclomaticComplexity = 0
@@ -76,6 +79,27 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         return node.text
       }
       return node.text
+    }
+
+    // W24-mr3 (review CLJ-MR3): `^{:private true}` / `^:private` IS the
+    // visibility contract (the canonical alternative to the `defn-` suffix) —
+    // only the suffix was read before, so meta-private vars/fns exported as
+    // public. Meta stays DATA (CLJ-D5) — this only READS the flag.
+    const metaHasPrivate = (nd: Node | null): boolean => {
+      if (!nd) return false
+      const scan = (n: Node): boolean => {
+        if (n.type === "kwd_lit" && n.text === ":private") return true
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && scan(c)) return true
+        }
+        return false
+      }
+      for (let i = 0; i < nd.namedChildCount; i++) {
+        const c = nd.namedChild(i)
+        if (c && c.type === "meta_lit" && scan(c)) return true
+      }
+      return false
     }
 
     // Read the form-name of a list_lit: the first EXECUTABLE value child.
@@ -413,6 +437,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         if (alias) namespaceAliases[alias] = libName
+        // W24-mr2: `:refer [a b]` names resolve unqualified calls — the
+        // ELXD17 sibling contract (last libspec wins, like the alias rule).
+        if (referNames.length > 0 && libName) for (const rn of referNames) refers[rn] = libName
         const items = referNames.length > 0 ? referNames : subNames.length > 0 && !sawKwd ? subNames : alias ? [alias] : ["*"]
         if (!hasAsAlias) {
           imports.push({ module: libName, items: [...items], type: "named", isExternal: true, line: (libNameNode ?? spec).startPosition.row + 1 })
@@ -521,6 +548,19 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (DEF_NAME_HEADS[head] && parent.namedChild(1)?.startIndex === candidate.startIndex) {
           return { start: parent.endIndex, end: Infinity }
         }
+        // W24-mr1: a letfn fn-spec head — `[(comment [args] body) …]` — binds
+        // the name for the whole enclosing letfn form (specs are mutually
+        // visible, exactly like a binding-vector entry).
+        if (parent.namedChild(0)?.startIndex === candidate.startIndex) {
+          const specVec = parent.parent
+          if (specVec && specVec.type === "vec_lit") {
+            const letfnForm = specVec.parent
+            if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn"
+                && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
+              return { start: letfnForm.startIndex, end: letfnForm.endIndex }
+            }
+          }
+        }
         return null
       }
       if (parent.type === "vec_lit") {
@@ -543,6 +583,18 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const ggp = gp.parent
           if (ggp && ggp.type === "list_lit" && FN_PARAM_HEADS[formNameOf(ggp)]) {
             return { start: gp.startIndex, end: gp.endIndex }
+          }
+        }
+        // W24-mr1b: a letfn fn-spec PARAM vector — `[(f [comment] …)]` — the
+        // param covers its own spec form only (params are local to the spec).
+        {
+          const specVec = gp.parent
+          if (specVec && specVec.type === "vec_lit") {
+            const letfnForm = specVec.parent
+            if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn"
+                && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
+              return { start: gp.startIndex, end: gp.endIndex }
+            }
           }
         }
         return null
@@ -765,7 +817,8 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ── defn / defn- / defmacro ──────────────────────────────────────
         else if (formName === "defn" || formName === "defn-" || formName === "defmacro" || formName === "s/defn" || formName === "mu/defn") {
           const isMacro = formName === "defmacro"
-          const isPrivate = formName === "defn-"
+          // W24-mr3: `defn-` AND `^{:private true}` / `^:private` both bind private.
+          const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1))
           const name = symName(node.namedChild(1)) || "unknown"
           const funcSymbol: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Function,
@@ -987,14 +1040,16 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nameNode = node.namedChild(1)
           if (nameNode && nameNode.type === "sym_lit") {
             const name = symName(nameNode)
+            // W24-mr3: `^{:private true}` / `^:private` binds a private var.
+            const varVisibility = metaHasPrivate(nameNode) ? "private" : "public"
             const varSym: ASTEngine.UniversalSymbol = {
               name, kind: ASTEngine.SymbolKind.Variable, range: this.nodeToRange(node),
-              scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
+              scope: currentNamespace, ownerName: currentNamespace, visibility: varVisibility,
               metadata: { clojureSpecific: true }
             }
             symbols.push(varSym)
             attachDocs(varSym, node, "def")
-            exports.push({ name, kind: ASTEngine.SymbolKind.Variable, range: this.nodeToRange(node), visibility: "public" })
+            exports.push({ name, kind: ASTEngine.SymbolKind.Variable, range: this.nodeToRange(node), visibility: varVisibility })
           }
         }
         // ── spec forms ───────────────────────────────────────────────────
@@ -1297,6 +1352,35 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // baseline — one per function — never a number invented from unrelated
     // symbols; a file with neither functions nor decisions reports 1 below.
     if (totalCyclomaticComplexity === 0) totalCyclomaticComplexity = funcCount
+
+    // W24-mr2 (review CLJ-MR2, the ELXD17 sibling): a bare call whose name is
+    // a `:refer` — `(:require [lib :refer [name]])` — is a CONFIRMED
+    // dependency; resolve the target to `lib/name` in a POST-WALK pass so
+    // order plays no role and a LOCAL definition of the same name wins
+    // (Clojure's ns mapping: locals shadow refers). The elixir lane's
+    // declared-set post-pass is the same shape.
+    {
+      const localDecls = new Set<string>()
+      for (const s of symbols) {
+        if (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Macro || s.kind === ASTEngine.SymbolKind.Variable) localDecls.add(s.name)
+      }
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Calls) continue
+        if (typeof r.target !== "string" || r.target.indexOf("/") !== -1 || r.target.indexOf(".") !== -1) continue
+        if (localDecls.has(r.target)) continue
+        const lib = refers[r.target]
+        if (lib) r.target = `${lib}/${r.target}`
+      }
+      // The rewrite can collide with an already-qualified edge; re-dedupe
+      // with pushRel's own identity (source|type|target|callArity|line).
+      const seenFinal = new Set<string>()
+      for (let i = relationships.length - 1; i >= 0; i--) {
+        const r = relationships[i]!
+        const key = `${r.source}|${r.type}|${r.target}|${(r.metadata as any)?.callArity ?? ""}|${r.line_number ?? ""}`
+        if (seenFinal.has(key)) relationships.splice(i, 1)
+        else seenFinal.add(key)
+      }
+    }
 
     return {
       language: "clojure",
