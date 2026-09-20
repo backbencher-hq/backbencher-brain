@@ -5163,6 +5163,37 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "csharp/framework-detection-dropped",
+    language: "csharp",
+    defectClass: "payload-loss",
+    description: "CONV-CS-2 (#751) regression: framework payload reverts to the pre-fix state (keys absent / empty) — framework-detection pins framework + detectedFrameworks + frameworkPatterns, framework-none pins the [] shell",
+    transform: r => ({
+      ...r,
+      metadata: { ...(r.metadata ?? {}), framework: undefined, detectedFrameworks: [], frameworkPatterns: [] },
+    }),
+  },
+  {
+    id: "csharp/framework-overshoot",
+    language: "csharp",
+    defectClass: "payload-noise",
+    description: "CONV-CS-2 (#751) over-match regression: every absent family fabricated into detectedFrameworks + frameworkPatterns — framework-detection forbids Unity/WPF/Windows Forms/NUnit/MSTest and framework-none pins []",
+    transform: r => ({
+      ...r,
+      metadata: {
+        ...(r.metadata ?? {}),
+        detectedFrameworks: [...((r.metadata as any)?.detectedFrameworks ?? []), "Unity", "WPF", "Windows Forms", "NUnit", "MSTest"],
+        frameworkPatterns: [
+          ...((r.metadata as any)?.frameworkPatterns ?? []),
+          { framework: "Unity", patterns: ["game_engine"] },
+          { framework: "WPF", patterns: ["ui_framework"] },
+          { framework: "Windows Forms", patterns: ["ui_framework"] },
+          { framework: "NUnit", patterns: ["test_framework"] },
+          { framework: "MSTest", patterns: ["test_framework"] },
+        ],
+      },
+    }),
+  },
+  {
     id: "dart/drop-implements-edge",
     language: "dart",
     defectClass: "relationship-loss",

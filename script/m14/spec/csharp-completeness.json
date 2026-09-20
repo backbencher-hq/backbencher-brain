@@ -313,6 +313,20 @@
         "status": "RULED",
         "question": "C# second review (2026-09-13): class-scope reads (member initializers, class-level attribute arguments) attributed to global, and top-level-statement locals had no frame (member-name collisions leaked).",
         "resolution": "FIXED + GATED: innermost enclosing class attributes class-scope reads (strictly more precise; field pass unchanged by design); a file-scope frame binds top-level locals. Fixture expects Holder->Limit/Annotated->Other class sources and forbids global->topmark."
+      },
+      {
+        "id": "CONV-CS-1",
+        "node_type": "member_access_expression (chain roots) + bare identifier reads",
+        "status": "FIXED",
+        "question": "CONV-CS-1 (#750, #739/#744 family): bare member reads emitted ZERO uses edges (`return x;`) and chain roots (`inner` in `inner.deeper.leaf`) were missing while deeper leaves emitted \u2014 the THIRD analyzer with the same read-attribution blind spot (java #739, javascript #744).",
+        "resolution": "FIXED + GATED at this wave's commit: the CS-R1 bare-identifier mechanism (identifier_usage edges via lexical-frame resolution) repairs both recorded shapes; probe-verified live (`uses Get->x`, `uses Read->inner/deeper/leaf`). The issue's own code is the fixture csharp/chain-root-reads (verbatim; root + bare reads pin meta.relationshipType=identifier_usage), and the drop-bare-uses mutant reproduces the pre-CS-R1 state and now fails on it \u2014 a live gate, not documentation."
+      },
+      {
+        "id": "CONV-CS-2",
+        "node_type": "using_directive / base_list / attribute (framework markers)",
+        "status": "FIXED",
+        "question": "CONV-CS-2 (#751): csharp had NO framework detection at all \u2014 metadata.detectedFrameworks undefined (python emits [], java a string): the only language missing both the mechanism and the metadata key, so the family payload contract was not uniform.",
+        "resolution": "FIXED + GATED: detectCSharpFrameworks (grammar-level markers: using-directive roots incl. static/alias/global forms, base-list leaf names, attribute names) feeds the family-aligned payload \u2014 framework (fixed-priority primary), detectedFrameworks (ALWAYS an array, [] when none), frameworkPatterns, hasFrameworkIntelligence. Emitted order is the fixed CS_FRAMEWORK_ORDER so import order can never change the payload; string ops only (no new regex literals). Fixtures csharp/framework-detection (3 simultaneous families + exact payload pin + 5 forbidFrameworks over-match guards) and csharp/framework-none (the [] shell); mutants framework-detection-dropped + framework-overshoot CAUGHT."
       }
     ]
   }
