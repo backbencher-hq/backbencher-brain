@@ -1937,6 +1937,53 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     return true
   }
 
+  /** Identifier start character (the regexes' `[A-Za-z_]`). */
+  private static isIdentStart(c: string): boolean {
+    return (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_"
+  }
+
+  /** Identifier continuation character (the regexes' `[A-Za-z0-9_]`). */
+  private static isWordChar(c: string): boolean {
+    return (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "_"
+  }
+
+  /**
+   * `/^[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*`-style list as a char
+   * walk: comma-separated items, each an identifier optionally dotted, with
+   * optional whitespace around the commas only (`Type name`, `a.b.C`,
+   * `x, y.Z`). Mirrors the regex exactly — leading and trailing whitespace are
+   * not accepted (the call site trims first), and a trailing comma fails.
+   */
+  private static isDottedIdentifierList(text: string): boolean {
+    let i = 0
+    const spaced = (): void => {
+      while (i < text.length && RealGroovyAnalyzer.isRegexSpace(text[i], text.charCodeAt(i))) i++
+    }
+    const dotted = (): boolean => {
+      if (!RealGroovyAnalyzer.isIdentStart(text[i])) return false
+      i++
+      while (i < text.length && RealGroovyAnalyzer.isWordChar(text[i])) i++
+      while (i < text.length && text[i] === ".") {
+        i++
+        if (!RealGroovyAnalyzer.isIdentStart(text[i])) return false
+        i++
+        while (i < text.length && RealGroovyAnalyzer.isWordChar(text[i])) i++
+      }
+      return true
+    }
+    if (!dotted()) return false
+    while (i < text.length) {
+      const save = i
+      spaced()
+      if (i >= text.length) { i = save; break }
+      if (text[i] !== ",") return false
+      i++
+      spaced()
+      if (!dotted()) return false
+    }
+    return i >= text.length
+  }
+
   /** `/^[\s,.<>\[\]A-Za-z0-9_]*$/` as a char walk: parameter-list material only. */
   private static isParamMaterialOnly(text: string): boolean {
     for (let i = 0; i < text.length; i++) {
@@ -1959,7 +2006,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Args must be made only of identifier tokens and separators — bare param
     // names or `Type name` fragments. Anything else (strings, parens, operators)
     // is a real argument list.
-    if (!/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*(\s*,\s*[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*)*$/.test(argsNode.text.trim())) return false
+    if (!RealGroovyAnalyzer.isDottedIdentifierList(argsNode.text.trim())) return false
 
     // Source check: parameter-list material then the closure arrow.
     if (content != null) {
