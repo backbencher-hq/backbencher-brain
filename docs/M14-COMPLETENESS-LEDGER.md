@@ -152,7 +152,7 @@ analyzer via classifyEvidenceTier() so emission sites cannot forget it.
 | Web embedded (TS core) | typescript | vue-core@f8975657 (60 seeded files) | GATED: 100% coverage, 0.9% unexplained (1 duplicate-emission residual, tracked) |
 | Mixed server | js/ts + python + json/yaml (ProxiCall shape) | ProxiCall as living corpus | PENDING -> #299 + #384 |
 | .NET | csharp + fsharp | — | PENDING -> #384 |
-| BEAM | elixir + erlang | — | PENDING -> #384 |
+| BEAM | elixir + erlang | — | PENDING -> #384 (the *polyglot E2E fixture* is what remains — analyzer certification is COMPLETE for both lanes: elixir dual-lens 100%/0 on both corpora, F6/F7/F8 closed, W24 evidence `3cc8629a`; erlang ER1/ER2 landings per the M49 ledger; see the M37 note above) |
 | Mobile | dart + swift + kotlin + objc | — | PENDING -> #384 |
 | Systems | c + cpp + rust + go + zig | SC1 systems-cluster (polyglot c/cpp/rust/go/zig project via real CLI) | GATED (M14.0.SC1: symbols, imports, cross-language c→cpp edge verified; cited as M14.0.F9 until M49 W8, when a second producer was found to be overwriting this evidence) |
 
@@ -172,7 +172,7 @@ No pair-map will ever be hardcoded.
 Tracked per issue in plans/M14-issues.json / GitHub #245-#297:
 grammar conformance · symbols · relationships · heuristic honesty · adversarial
 fixtures · differential corpus · mutation hardening.
-Done: java, groovy (stations 1-7; L5 pending owner spot-checks).
+Done: java, groovy (stations 1-7; L5 pending owner spot-checks); **clojure + elixir** (stations 1-7 — grammar/census, symbols, relationships, heuristic honesty F7, adversarial fixtures CLJ-ADV/EX-ADV, dual-corpus differential F5, mutation hardening clojure 43/43 + elixir 55/55; evidence CLJ1 `f115661e` → W24 `8e9b7937`; EX2 `4c7d8489` → W24 `3cc8629a`; wave records in `reviews/{clojure,elixir}/master-review.md` and the M49 ledger CLJ/ELX rows).
 PENDING: remaining 39 analyzers.
 
 ## Matrix 4 — Grammar / WASM / version provenance per language
@@ -597,7 +597,7 @@ cc76e37 with F1-F9 + SPEC + CC1 fresh.
 > read + corpus census + probe-verified fixes), one at a time: python -> java ->
 > ts/js -> kotlin/scala/groovy -> zig -> c/cpp/rust/go -> dart/php/swift/objc/ruby
 > confirms. When M37 closes, return HERE to M14 for the not-yet-done analyzers
-> (clean, clojure, elixir, ...) under the F1-F9 + dual-lens regime. Milestone:
+> (clean, ...) under the F1-F9 + dual-lens regime. **UPDATE (M49 W24, 2026-09-20): clojure and elixir are DONE under this regime** — clojure (CLJ1 `f115661e`, deep review `df169ab8`, CLJ-ADV `8e386361`, F5-CERT `2a511fb2`, W23 `1787c4a3`, W24 `8e9b7937`) and elixir (EX2 `4c7d8489`, EX3 `9dcf3eef`, EX-ADV `f2bbfe56`, W23b `00f715be`, W24 `3d80d4d6` + `3cc8629a`): F1-F9 scoped green, dual-lens corpora 100%/0 both lanes (clojure repo + clj-kondo; elixir repo + phoenix), F6/F7 closed at `31e845f1`, master-review formula passes recorded in `reviews/{clojure,elixir}/master-review.md`. Milestone:
 > "M37: Dual-Lens Analyzer Backfill". The milestone formerly carried the
 > number M34 until the collision was found; "M34" in this repo now means
 > Consumability Hardening, not the backfill.
