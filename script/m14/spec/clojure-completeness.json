@@ -156,6 +156,13 @@
         "status": "RULED",
         "question": "Which comment blocks attach as a form's doc?",
         "resolution": "RULED (adversarial F11): a CONTIGUOUS block of `;;` comments DIRECTLY above the form (each comment starting exactly one visible row above the next; comment nodes carry their trailing newline, so all row comparisons are visible-row). A trailing comment on the previous form's line, a blank-line-separated header, and single-`;` notes do NOT attach. Fixture doc-blocks + mutant doc-trailing-attached."
+      },
+      {
+        "id": "CLJ-D16",
+        "node_type": "list_lit (complexity counting — conditional family)",
+        "status": "RULED",
+        "question": "CC1: which forms count +1 cyclomatic complexity? The lane counted only if/cond/when/case/for/loop/when-let/if-let — omitting the not/some variants of its own if/when family, condp, the conditional threaders and while (W23-a, review #2).",
+        "resolution": "RULED (M49 CC1-c, 2026-09-20): one rule — every conditional/loop CONSTRUCT counts +1; the full family = if/if-not/if-let/if-some, when/when-not/when-let/when-some, cond/condp/case, for/while/loop, cond->/cond->>/some->/some->>. Clause nodes are not counted in clojure (case children are pairs, not nodes — the elixir lane counts stab_clause nodes where the grammar exposes them, EX-D10); try/catch/finally and and/or count nothing (declared; elixir omits try too); the JVM/TS per-entry granularity stays declared-divergent (EX-D10 precedent). The four conditional threaders are counted in the THREADING branch (which intercepts before the builtin check). A companion parity item exposes per-symbol complexity (symbol.complexity mirrors metadata.complexity, the ELXD15 shape). FAIL-proof: pre-fix the ten additions read 1 (file total 8); post-fix the fixture reads 2 each (total 18). Fixture complexity-forms + mutants complexity-policy-dropped, symbol-complexity-stripped."
       }
     ]
   }

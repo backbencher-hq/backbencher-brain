@@ -172,7 +172,7 @@ No pair-map will ever be hardcoded.
 Tracked per issue in plans/M14-issues.json / GitHub #245-#297:
 grammar conformance · symbols · relationships · heuristic honesty · adversarial
 fixtures · differential corpus · mutation hardening.
-Done: java, groovy (stations 1-7; L5 pending owner spot-checks); **clojure + elixir** (stations 1-7 — grammar/census, symbols, relationships, heuristic honesty F7, adversarial fixtures CLJ-ADV/EX-ADV, dual-corpus differential F5, mutation hardening clojure 47/47 + elixir 55/55; evidence CLJ1 `f115661e` → W24 `8e9b7937` → W25 `11328db7`; EX2 `4c7d8489` → W24 `3cc8629a`; wave records in `reviews/{clojure,elixir}/master-review.md` and the M49 ledger CLJ/ELX rows).
+Done: java, groovy (stations 1-7; L5 pending owner spot-checks); **clojure + elixir** (stations 1-7 — grammar/census, symbols, relationships, heuristic honesty F7, adversarial fixtures CLJ-ADV/EX-ADV, dual-corpus differential F5, mutation hardening clojure 47/47 + elixir 55/55; evidence CLJ1 `f115661e` → W24 `8e9b7937` → W25 `11328db7`; EX2 `4c7d8489` → W24 `3cc8629a`; wave records in `reviews/{clojure,elixir}/master-review.md`; CC1 cross-language audit closed (`reviews/cc1-cross-language-audit.md` — complexity family CLJ-D16, per-symbol exposure parity, guard/use-option/struct pins, lambda keep-declared); M49 ledger CLJ/ELX rows).
 PENDING: remaining 39 analyzers.
 
 ## Matrix 4 — Grammar / WASM / version provenance per language
@@ -597,7 +597,7 @@ cc76e37 with F1-F9 + SPEC + CC1 fresh.
 > read + corpus census + probe-verified fixes), one at a time: python -> java ->
 > ts/js -> kotlin/scala/groovy -> zig -> c/cpp/rust/go -> dart/php/swift/objc/ruby
 > confirms. When M37 closes, return HERE to M14 for the not-yet-done analyzers
-> (clean, ...) under the F1-F9 + dual-lens regime. **UPDATE (M49 W24, 2026-09-20): clojure and elixir are DONE under this regime** — clojure (CLJ1 `f115661e`, deep review `df169ab8`, CLJ-ADV `8e386361`, F5-CERT `2a511fb2`, W23 `1787c4a3`, W24 `8e9b7937`, W25 `11328db7` — master-review findings closed: letfn spec shadow, :refer resolution, meta-:private, defmethod pins) and elixir (EX2 `4c7d8489`, EX3 `9dcf3eef`, EX-ADV `f2bbfe56`, W23b `00f715be`, W24 `3d80d4d6` + `3cc8629a`): F1-F9 scoped green, dual-lens corpora 100%/0 both lanes (clojure repo + clj-kondo; elixir repo + phoenix), F6/F7 closed at `31e845f1`, master-review formula passes recorded in `reviews/{clojure,elixir}/master-review.md`. Milestone:
+> (clean, ...) under the F1-F9 + dual-lens regime. **UPDATE (M49 W24, 2026-09-20): clojure and elixir are DONE under this regime** — clojure (CLJ1 `f115661e`, deep review `df169ab8`, CLJ-ADV `8e386361`, F5-CERT `2a511fb2`, W23 `1787c4a3`, W24 `8e9b7937`, W25 `11328db7` — master-review findings closed: letfn spec shadow, :refer resolution, meta-:private, defmethod pins) and elixir (EX2 `4c7d8489`, EX3 `9dcf3eef`, EX-ADV `f2bbfe56`, W23b `00f715be`, W24 `3d80d4d6` + `3cc8629a`): F1-F9 scoped green, dual-lens corpora 100%/0 both lanes (clojure repo + clj-kondo; elixir repo + phoenix), F6/F7 closed at `31e845f1`, master-review formula passes recorded in `reviews/{clojure,elixir}/master-review.md`; CC1 cross-language audit closed in the CC1 wave (`reviews/cc1-cross-language-audit.md`). Milestone:
 > "M37: Dual-Lens Analyzer Backfill". The milestone formerly carried the
 > number M34 until the collision was found; "M34" in this repo now means
 > Consumability Hardening, not the backfill.
