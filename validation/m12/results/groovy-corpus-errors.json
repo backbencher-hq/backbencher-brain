@@ -11,20 +11,20 @@
   "trackedFilesInCorpus": 6564,
   "measuredFiles": 6564,
   "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 179,
-  "cleanFiles": 6385,
+  "errorFiles": 175,
+  "cleanFiles": 6389,
   "missingNodeFiles": 63,
-  "errorNodeFiles": 170,
+  "errorNodeFiles": 166,
   "errorRates": {
     "any": 2.7,
     "missing": 1,
-    "error": 2.6
+    "error": 2.5
   },
-  "grammarErrorFiles": 179,
+  "grammarErrorFiles": 175,
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 265514,
+  "wallMs": 272123,
   "missingTokens": {
     ";": 112,
     "identifier": 30,
@@ -41,7 +41,6 @@
     "@ID": 35,
     "<%=ID ? ID : ID%>": 24,
     "ID.ID.ID(ID)": 21,
-    "ID * ID.ID() >> ID": 20,
     "ID.ID{ID}ID = ID(ID{ID}ID) {": 18,
     "/*": 16,
     ".ID() == ID": 16,
@@ -51,7 +50,6 @@
     "ID ID ID ID(ID ID, ID ID, ID ID) {": 12,
     "(ID.ID): { ID.ID ID, ID ID, ID ID=ID, ID ID = ID ->": 12,
     "ID ID() {": 12,
-    "ID * ID.ID(ID) >> ID": 11,
     "(ID.ID): { ID, ID ID, ID.ID ID, ID ID = { ID } ->": 11,
     "}()": 11,
     "ID @ID.ID@ID {": 10,
@@ -76,7 +74,9 @@
     "ID ID ID ID(ID ID) {": 4,
     "ID ID ID ID(ID ID, ID ID, ID ID, ID ID) {": 4,
     "ID:": 4,
-    "ID ID ID(ID ID, ID ID) {": 4
+    "ID ID ID(ID ID, ID ID) {": 4,
+    "((ID.ID.ID.ID.ID.ID.ID(ID, ID) && ID.ID.ID(ID) == ID) ||": 4,
+    "ID ID{ID}ID ID ID {": 4
   },
   "firstErrorLineSignatures": {
     "}": 29,
@@ -89,7 +89,6 @@
     "@ID.ID@": 3,
     "ID.ID.ID(ID, ID)": 2,
     "ID ID ID ID{ID ID} ID ID{ID ID = ID.ID} ID ID{ID.ID} = ID": 2,
-    "ID * ID.ID() >> ID": 2,
     "}()": 2,
     ".ID == ID.ID": 2,
     "ID ID + ID, ID": 2,
@@ -106,8 +105,6 @@
     "1 * ID.ID(ID.ID.ID(), ID, ID, ID, ID, ID) >> ID": 1,
     "0 * ID.ID(ID.ID.ID(), ID)": 1,
     ".ID() != ID": 1,
-    "ID * ID.ID(ID) >> ID": 1,
-    "ID * ID.ID() >> [ID, ID]": 1,
     "(ID.ID): { ID.ID ID, ID ID, ID ID = ID, ID ID = ID ->": 1,
     "ID.ID.ID() == 1": 1,
     "ID.ID.ID.ID == ID.ID": 1,
@@ -118,7 +115,10 @@
     "ID ID = ID.ID() { ID ID -> ID.ID.ID(ID) }": 1,
     "ID (!ID.ID() { ID ID ->": 1,
     ".ID() == ID": 1,
-    "ID ID {": 1
+    "ID ID {": 1,
+    "ID().ID ID, ID": 1,
+    "ID ID ID(ID ID)": 1,
+    "ID ID ID(ID ID, ID ID)": 1
   },
   "errorFileList": [
     {
@@ -374,16 +374,6 @@
       "pipelineErrors": 2
     },
     {
-      "file": "grails-data-hibernate7/core/src/test/groovy/grails/orm/CriteriaMethodInvokerSpec.groovy",
-      "nodes": 9,
-      "missingTokens": [],
-      "errorNodes": 9,
-      "firstRow": 588,
-      "firstKind": "ERROR",
-      "firstLine": "_ * builder.getTargetClass() >> CBEmployee",
-      "pipelineErrors": 18
-    },
-    {
       "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/HibernateGormInstanceApiSpec.groovy",
       "nodes": 28,
       "missingTokens": [
@@ -430,16 +420,6 @@
       "pipelineErrors": 6
     },
     {
-      "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/cfg/domainbinding/SimpleValueBinderSpec.groovy",
-      "nodes": 27,
-      "missingTokens": [],
-      "errorNodes": 27,
-      "firstRow": 262,
-      "firstKind": "ERROR",
-      "firstLine": "_ * owner.getHibernateMappedForm() >> mapping",
-      "pipelineErrors": 54
-    },
-    {
       "file": "grails-data-hibernate7/core/src/test/groovy/org/grails/orm/hibernate/query/HqlQueryMethodsSpec.groovy",
       "nodes": 2,
       "missingTokens": [],
@@ -458,26 +438,6 @@
       "firstKind": "ERROR",
       "firstLine": ".listDirtyPropertyNames() != null",
       "pipelineErrors": 2
-    },
-    {
-      "file": "grails-data-hibernate7/dbmigration/src/test/groovy/liquibase/ext/hibernate/diff/HibernateChangedColumnChangeGeneratorSpec.groovy",
-      "nodes": 2,
-      "missingTokens": [],
-      "errorNodes": 2,
-      "firstRow": 105,
-      "firstKind": "ERROR",
-      "firstLine": "_ * differences.getDifference(\"type\") >> diff",
-      "pipelineErrors": 4
-    },
-    {
-      "file": "grails-data-hibernate7/dbmigration/src/test/groovy/liquibase/ext/hibernate/diff/HibernateChangedSequenceChangeGeneratorSpec.groovy",
-      "nodes": 3,
-      "missingTokens": [],
-      "errorNodes": 3,
-      "firstRow": 94,
-      "firstKind": "ERROR",
-      "firstLine": "_ * differences.getDifferences() >> [diff1, diff2]",
-      "pipelineErrors": 6
     },
     {
       "file": "grails-data-mongodb/core/src/test/groovy/org/apache/grails/data/mongo/core/GrailsDataMongoTckManager.groovy",
