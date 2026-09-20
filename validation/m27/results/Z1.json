@@ -22,7 +22,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "40adc7581f19f020695fc3ea422b7a51ce860581",
+  "currentCommit": "b6a6cfffd9898bd523189edba1581f2e581fc825",
   "build": {
     "ran": false,
     "ok": false,
@@ -30,7 +30,7 @@
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-09-20T00:25:22.341Z",
+  "generatedAt": "2026-09-20T00:47:30.400Z",
   "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
   "blockedLegs": [
     {
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T00:25:22.342Z",
-    "contentSha256": "70d88f7da9ed4e08d7499f65e084fb68d1d0af3a20087941e6218718aeaeb0a8"
+    "sealedAt": "2026-09-20T00:47:30.401Z",
+    "contentSha256": "a158a51a40abe364d380274c2a0e17fc382bc1134a8ab816082c3b350b8bb0b7"
   }
 }
