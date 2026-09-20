@@ -95,6 +95,22 @@ try {
 } catch {}
 check("R2: evidence commit is an ancestor of HEAD", commitIsAncestor, `${evidence?.commit?.slice(0, 8)} vs HEAD ${gitCommit().slice(0, 8)}`)
 check("R2: relevant inputs unchanged since the evidence run", evidence?.relevantInputsHash === relevantInputsHash(), `evidence=${evidence?.relevantInputsHash ?? "none"} vs current=${relevantInputsHash()} — re-run giant-repo-budget.ts --reuse to refresh`)
+// The staleness rule's can-fail legs (added with the tracked-inputs fix): the
+// digest must be STABLE for identical inputs and SENSITIVE to a content change,
+// so it can be neither a constant (always fresh) nor noise (never fresh).
+check("R2: the staleness digest is stable for identical inputs", relevantInputsHash() === relevantInputsHash())
+check(
+  "R2: the staleness digest changes when an input's CONTENT changes (the rule can fail)",
+  relevantInputsHash({ "src/brain/schema-ddl.ts": "mutated" }) !== relevantInputsHash(),
+)
+// The measured artifact is untracked, so it is recorded as an observation and
+// never compared: what is gated is the tracked input set above.
+check(
+  "R2: the built artifact is recorded as an observation, not a gate input",
+  evidence?.builtArtifact === undefined ||
+    (evidence.builtArtifact?.path === "dist/lsp/server.js" && /^(?:[0-9a-f]{40}|null)$/.test(String(evidence.builtArtifact?.sha256))),
+  JSON.stringify(evidence?.builtArtifact ?? null),
+)
 // The recorded indexed counts must agree with the manifest.
 check("R2: evidence indexed counts agree with the manifest", evidence?.corpus?.indexedFiles === manifest?.totalFiles, `${evidence?.corpus?.indexedFiles} vs ${manifest?.totalFiles}`)
 check("R2: index regime declared (reuse vs fresh build is not ambiguous)", typeof evidence?.corpus?.indexRegime === "string" && evidence.corpus.indexRegime.length > 0)
