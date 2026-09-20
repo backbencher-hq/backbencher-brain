@@ -1,19 +1,21 @@
 {
-  "status": "verified",
-  "passed": 25,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 24,
+  "failed": 1,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "d8cd3ac00a647fbacc83c21dd183d1a236deec74",
-  "relevantInputsHash": "5351bbd29279fefd7fec23c355752c1312a9eaf5",
+  "currentCommit": "03903b608e7468555a0087da503433f82c0ae18f",
+  "relevantInputsHash": "5162995beeccb46efd16376c5441dc3b9c8cdf4d",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-19T03:55:45.197Z",
-  "details": [],
+  "generatedAt": "2026-09-20T00:28:28.072Z",
+  "details": [
+    "R2: relevant inputs unchanged since the evidence run: evidence=5351bbd29279fefd7fec23c355752c1312a9eaf5 vs current=5162995beeccb46efd16376c5441dc3b9c8cdf4d — re-run giant-repo-budget.ts --reuse to refresh"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T03:55:45.197Z",
-    "contentSha256": "2cc7cacc60082cdf73cf5f8517452374b34075624851b1c4d6ab8eb18114ebe0"
+    "sealedAt": "2026-09-20T00:28:28.073Z",
+    "contentSha256": "d910fdf17289e70f6b1b5edf31d397b766820211506c8c2df57b0f809424e3fb"
   }
 }
