@@ -22,7 +22,7 @@
     "M29-V1": 0,
     "M29-D1": 0
   },
-  "currentCommit": "92581608d9ca53ee0ea045f7aaf8727b13d09da8",
+  "currentCommit": "a18b7aa6fb300dfa48c955054ffe8415ce3c3900",
   "verifierCommand": "npx tsx script/m29/verify-closure.ts",
   "evidenceFile": "X1.json",
   "ownerSpotCheck": {
@@ -36,7 +36,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-20T01:32:30.882Z",
+  "generatedAt": "2026-09-20T01:35:23.389Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -45,7 +45,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:32:30.883Z",
-    "contentSha256": "2c39dae6e6aead12ccff7316cfd648991d7e54c084f3c665c2a5aa1ea8567661"
+    "sealedAt": "2026-09-20T01:35:23.389Z",
+    "contentSha256": "de8c473d357e70713d97f08c28ed10ec20959d79ba2aca17859c8630745e342d"
   }
 }
