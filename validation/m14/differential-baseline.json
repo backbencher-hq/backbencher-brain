@@ -1,5 +1,10 @@
 {
   "samplePerLang": 60,
+  "loadContext": {
+    "loadAvgStart": 2.99,
+    "loadAvgEnd": 3.81,
+    "sliceCount": 6
+  },
   "counts": {
     "java": {
       "missing": 0,
@@ -22,25 +27,27 @@
       "unexplained": 0,
       "heuristic": 81,
       "perf": {
-        "avgMsPerFile": 2.6
+        "avgMsPerFile": 8.4
       },
-      "note": "Re-pinned 76->81 @M49 exports wave: +5 are overrides@0.5 first-parent-guess (JD18/JD19 anonymous-class + multihop-override wave, baseline predated it). Classified live: 70/81 unmatched heuristic on grails-core are overrides 0.5 external-base edges (ASTTransformation.visit, ConsoleLogger.*) \u2014 the declared-honest class, coverage 100%/0 unexplained unchanged. Probe: script/m14/tmp/java-heuristic-classify.ts"
+      "sampleSetHash": "2fff892462bb64ee"
     },
     "grails-core:groovy": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 27,
+      "heuristic": 33,
       "perf": {
-        "avgMsPerFile": 5.9
-      }
+        "avgMsPerFile": 6.7
+      },
+      "sampleSetHash": "3a9248865d3bbbd9"
     },
     "Exposed:kotlin": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 57,
       "perf": {
-        "avgMsPerFile": 39.3
-      }
+        "avgMsPerFile": 57.7
+      },
+      "sampleSetHash": "f39e30d3648bd4a2"
     },
     "Exposed:java": {
       "missing": 0,
@@ -69,10 +76,11 @@
     "scala3:scala": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 61,
+      "heuristic": 55,
       "perf": {
-        "avgMsPerFile": 12.8
-      }
+        "avgMsPerFile": 9
+      },
+      "sampleSetHash": "807ae633353d4d0f"
     },
     "scala3:java": {
       "missing": 0,
@@ -111,8 +119,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 46.9
-      }
+        "avgMsPerFile": 141
+      },
+      "sampleSetHash": "771c854fefb7fcdc"
     },
     "vue-core:kotlin": {
       "missing": 0,
@@ -226,9 +235,11 @@
     "cats-effect:scala": {
       "missing": 0,
       "unexplained": 0,
+      "heuristic": 84,
       "perf": {
-        "avgMsPerFile": 14.6
-      }
+        "avgMsPerFile": 12
+      },
+      "sampleSetHash": "8e07cd86346c004a"
     },
     "cats-effect:java": {
       "missing": 0,
@@ -265,8 +276,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 4
-      }
+        "avgMsPerFile": 12.1
+      },
+      "sampleSetHash": "32c4318f0f3db775"
     },
     "grails-core:typescript": {
       "missing": 0,
@@ -297,8 +309,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 193.7
-      }
+        "avgMsPerFile": 824.2
+      },
+      "sampleSetHash": "494e1b94766e8ade"
     },
     "lodash:typescript": {
       "missing": 0,
@@ -353,8 +366,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 43.9
-      }
+        "avgMsPerFile": 38.8
+      },
+      "sampleSetHash": "02f7248d60f646f7"
     },
     "element-plus:kotlin": {
       "missing": 0,
@@ -393,8 +407,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 10.1
-      }
+        "avgMsPerFile": 19.4
+      },
+      "sampleSetHash": "31404f2ddefaec87"
     },
     "vue-core:vue": {
       "missing": 0,
@@ -617,8 +632,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 64.6
-      }
+        "avgMsPerFile": 86.4
+      },
+      "sampleSetHash": "89b51095c4659906"
     },
     "jq:javascript": {
       "missing": 0,
@@ -785,16 +801,18 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 14.1
-      }
+        "avgMsPerFile": 70.8
+      },
+      "sampleSetHash": "3726f83d65a6e09a"
     },
     "sqlite:c": {
-      "missing": 9,
-      "unexplained": 105,
+      "missing": 0,
+      "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 131.2
-      }
+        "avgMsPerFile": 171.1
+      },
+      "sampleSetHash": "ef6794727cd236d8"
     },
     "fmt:c": {
       "missing": 0,
@@ -897,8 +915,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 9.7
-      }
+        "avgMsPerFile": 21.3
+      },
+      "sampleSetHash": "ae9449eb50c1f68f"
     },
     "zig:javascript": {
       "missing": 0,
@@ -1001,8 +1020,9 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 18.2
-      }
+        "avgMsPerFile": 27.5
+      },
+      "sampleSetHash": "053fa67f6663fddb"
     },
     "powershell:javascript": {
       "missing": 0,
@@ -1113,32 +1133,36 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 21
-      }
+        "avgMsPerFile": 95.8
+      },
+      "sampleSetHash": "3b3dd5e9fc860788"
     },
     "proxicall:dart": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 29.5
-      }
+        "avgMsPerFile": 68.8
+      },
+      "sampleSetHash": "c12e195da011f6ed"
     },
     "swift-nio:swift": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 28.9
-      }
+        "avgMsPerFile": 37.2
+      },
+      "sampleSetHash": "ea2ac2a489ca0853"
     },
     "phpunit:php": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 94,
       "perf": {
-        "avgMsPerFile": 2.5
-      }
+        "avgMsPerFile": 3.5
+      },
+      "sampleSetHash": "4be02ca7685ed414"
     },
     "rake:c": {
       "missing": 0,
@@ -1151,10 +1175,11 @@
     "rake:ruby": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 382,
+      "heuristic": 307,
       "perf": {
-        "avgMsPerFile": 5
-      }
+        "avgMsPerFile": 2.3
+      },
+      "sampleSetHash": "0c505b9b4aeda127"
     },
     "cython:javascript": {
       "missing": 0,
@@ -1175,18 +1200,20 @@
     "cython:python": {
       "missing": 0,
       "unexplained": 0,
-      "heuristic": 433,
+      "heuristic": 428,
       "perf": {
-        "avgMsPerFile": 35.2
-      }
+        "avgMsPerFile": 51.3
+      },
+      "sampleSetHash": "d44b4e45b381caec"
     },
     "cabal:haskell": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 8.8
-      }
+        "avgMsPerFile": 3.9
+      },
+      "sampleSetHash": "2040e3ad57636818"
     },
     "jq:python": {
       "missing": 0,
@@ -1217,8 +1244,254 @@
       "unexplained": 0,
       "heuristic": 163,
       "perf": {
-        "avgMsPerFile": 9.8
-      }
+        "avgMsPerFile": 22.2
+      },
+      "sampleSetHash": "8234cb008232a69b"
+    },
+    "elixir:elixir": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 37.5
+      },
+      "sampleSetHash": "96895fbad6c5eabd"
+    },
+    "rebar3:erlang": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 7.8
+      },
+      "sampleSetHash": "346c26d74ea36d84"
+    },
+    "clojure:clojure": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 12.5
+      },
+      "sampleSetHash": "e0395ac2bf495bf0"
+    },
+    "kotlinx-coroutines:kotlin": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 81,
+      "perf": {
+        "avgMsPerFile": 12.7
+      },
+      "sampleSetHash": "d2351846d054edea"
+    },
+    "clojure:java": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 64,
+      "perf": {
+        "avgMsPerFile": 14
+      },
+      "sampleSetHash": "86f37ca7cf27bbd4"
+    },
+    "geb:groovy": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 32,
+      "perf": {
+        "avgMsPerFile": 3.4
+      },
+      "sampleSetHash": "afddb7a7aeb00bd8"
+    },
+    "vue-element-admin:vue": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 18.5
+      },
+      "sampleSetHash": "b38e2e502caa0f35"
+    },
+    "nlohmann-json:cpp": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 37.8
+      },
+      "sampleSetHash": "88dc095dd86d8301"
+    },
+    "cargo:rust": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 23.9
+      },
+      "sampleSetHash": "e09029111a6cc4ec"
+    },
+    "terraform:go": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 45
+      },
+      "sampleSetHash": "9c09cea779eb5ca6"
+    },
+    "zls:zig": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 50.7
+      },
+      "sampleSetHash": "c1285552d459a43a"
+    },
+    "fsharp:csharp": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 39.8
+      },
+      "sampleSetHash": "ff6eeb46eef5e9d4"
+    },
+    "dart-http:dart": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 15.8
+      },
+      "sampleSetHash": "549143339f0cfaa9"
+    },
+    "alamofire:swift": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 43.9
+      },
+      "sampleSetHash": "0052e892f6e0d27b"
+    },
+    "afnetworking:objc": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 315,
+      "perf": {
+        "avgMsPerFile": 11
+      },
+      "sampleSetHash": "29684f4b8391be9f"
+    },
+    "phpmyadmin:php": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 159,
+      "perf": {
+        "avgMsPerFile": 7.9
+      },
+      "sampleSetHash": "a6ec6aafaf16080e"
+    },
+    "rack:ruby": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 58,
+      "perf": {
+        "avgMsPerFile": 5.3
+      },
+      "sampleSetHash": "cbf9b090af441408"
+    },
+    "requests:python": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 118,
+      "perf": {
+        "avgMsPerFile": 18.8
+      },
+      "sampleSetHash": "e3679fa2131e9b78"
+    },
+    "hledger:haskell": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 19.6
+      },
+      "sampleSetHash": "d1c3ed0e861d118d"
+    },
+    "phoenix:elixir": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 17.7
+      },
+      "sampleSetHash": "5c95656137506145"
+    },
+    "otp:erlang": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 9.2
+      },
+      "sampleSetHash": "c3632c972f79c9a2"
+    },
+    "clj-kondo:clojure": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 7.8
+      },
+      "sampleSetHash": "93bd5239a044ad6d"
     }
+  },
+  "hashes": {
+    "grails-core:javascript": "32c4318f0f3db775",
+    "vue-core:typescript": "771c854fefb7fcdc",
+    "Exposed:kotlin": "f39e30d3648bd4a2",
+    "scala3:scala": "807ae633353d4d0f",
+    "grails-core:java": "2fff892462bb64ee",
+    "grails-core:groovy": "3a9248865d3bbbd9",
+    "element-plus:vue": "31404f2ddefaec87",
+    "fmt:cpp": "89b51095c4659906",
+    "sqlite:c": "ef6794727cd236d8",
+    "ripgrep:rust": "3726f83d65a6e09a",
+    "go-tools:go": "ae9449eb50c1f68f",
+    "zig:zig": "053fa67f6663fddb",
+    "powershell:csharp": "3b3dd5e9fc860788",
+    "proxicall:dart": "c12e195da011f6ed",
+    "swift-nio:swift": "ea2ac2a489ca0853",
+    "sdwebimage:objc": "8234cb008232a69b",
+    "phpunit:php": "4be02ca7685ed414",
+    "rake:ruby": "0c505b9b4aeda127",
+    "cython:python": "d44b4e45b381caec",
+    "cabal:haskell": "2040e3ad57636818",
+    "elixir:elixir": "96895fbad6c5eabd",
+    "rebar3:erlang": "346c26d74ea36d84",
+    "clojure:clojure": "e0395ac2bf495bf0",
+    "lodash:javascript": "494e1b94766e8ade",
+    "element-plus:typescript": "02f7248d60f646f7",
+    "kotlinx-coroutines:kotlin": "d2351846d054edea",
+    "cats-effect:scala": "8e07cd86346c004a",
+    "clojure:java": "86f37ca7cf27bbd4",
+    "geb:groovy": "afddb7a7aeb00bd8",
+    "vue-element-admin:vue": "b38e2e502caa0f35",
+    "nlohmann-json:cpp": "88dc095dd86d8301",
+    "cargo:rust": "e09029111a6cc4ec",
+    "terraform:go": "9c09cea779eb5ca6",
+    "zls:zig": "c1285552d459a43a",
+    "fsharp:csharp": "ff6eeb46eef5e9d4",
+    "dart-http:dart": "549143339f0cfaa9",
+    "alamofire:swift": "0052e892f6e0d27b",
+    "afnetworking:objc": "29684f4b8391be9f",
+    "phpmyadmin:php": "a6ec6aafaf16080e",
+    "rack:ruby": "cbf9b090af441408",
+    "requests:python": "e3679fa2131e9b78",
+    "hledger:haskell": "d1c3ed0e861d118d",
+    "phoenix:elixir": "5c95656137506145",
+    "otp:erlang": "c3632c972f79c9a2",
+    "clj-kondo:clojure": "93bd5239a044ad6d"
   }
 }
