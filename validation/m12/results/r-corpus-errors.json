@@ -1,0 +1,35 @@
+{
+  "analyzer": "r",
+  "corpus": "$HOME/fixtures/repositories/dplyr",
+  "corpusRepo": "dplyr",
+  "revision": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
+  "extensions": [
+    "*.R",
+    "*.r"
+  ],
+  "mode": "full-corpus",
+  "trackedFilesInCorpus": 195,
+  "measuredFiles": 195,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 0,
+  "cleanFiles": 195,
+  "missingNodeFiles": 0,
+  "errorNodeFiles": 0,
+  "errorRates": {
+    "any": 0,
+    "missing": 0,
+    "error": 0
+  },
+  "grammarErrorFiles": 0,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 8072,
+  "missingTokens": {},
+  "errorLineSignatures": {},
+  "firstErrorLineSignatures": {},
+  "errorFileList": [],
+  "crashes": [],
+  "passed": true,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

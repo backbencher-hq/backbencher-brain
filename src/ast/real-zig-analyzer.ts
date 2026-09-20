@@ -381,7 +381,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // resolves. Control flow is an execution artifact, family contract.)
 
       // ─── ERROR REPORTING ───
-      if (node.hasError || type === "ERROR") {
+      // Per ERROR/MISSING node, not per hasError-bearing ancestor: the old
+      // `node.hasError ||` arm fired once for EVERY node on the spine above a
+      // single real error — the root spans the whole file, so one parse error
+      // cascaded into 163 pipeline rows on aro/Attribute.zig (the #897
+      // cross-check caught it: tree walk found the file's nodes, pipeline
+      // reported 163). A MISSING node carries hasError too but its type is
+      // the expected token, so the isMissing arm keeps that reporting.
+      if (node.type === "ERROR" || node.isMissing) {
         const snippet = nodeText.substring(0, 50)
         errors.push({
           message: `Zig syntax error: ${snippet}`,
