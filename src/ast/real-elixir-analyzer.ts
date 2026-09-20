@@ -267,7 +267,12 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (attrName === "behaviour" || attrName === "behavior") {
           const argsNode = attrCall?.type === "call" ? this.findChild(attrCall, (c) => c?.type === "arguments") : undefined
           const first = argsNode && argsNode.namedChildCount > 0 ? argsNode.namedChild(0) : undefined
-          const bhvRaw = first ? this.stripQuotes(first.text).trim() : ""
+          let bhvRaw = first ? this.stripQuotes(first.text).trim() : ""
+          // W23 (review finding, fixture behaviour-atom): the ATOM form
+          // (`@behaviour :gen_server`) kept its leading colon in the target —
+          // the colon is syntax, not part of the behaviour's identity, and
+          // the alias form never carried it.
+          if (bhvRaw.startsWith(":")) bhvRaw = bhvRaw.slice(1)
           const bhv = bhvRaw ? this.resolveAlias(bhvRaw, ctx) : ""
           if (bhv) {
             this.pushRel(ctx, currentScope?.name || "Global", bhv, ASTEngine.RelationshipType.Implements, 0.9, {}, first ? first.startPosition.row + 1 : node.startPosition.row + 1)
@@ -937,6 +942,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const aliases = this.filterChildren(argsNode, (c) => c?.type === "alias")
     const protocol = aliases.length > 0 && aliases[0] ? this.resolveAlias(aliases[0].text, ctx) : "Unknown"
     let forType = "Unknown"
+    // W23 (review finding, fixture defimpl-target-forms): `defimpl P, for:
+    // [A, B]` is a valid MULTI-TYPE implementation — the old path passed the
+    // RAW list text through resolveAlias, minting a garbage impl name and
+    // edge target ("[A, B]"). Valid `for:` values are one alias or a list
+    // of aliases.
+    const forTypeList: string[] = []
+    let forTypeListNode: Node | null = null
     const keywordsNode = this.findChild(argsNode, (c) => c?.type === "keywords")
     if (keywordsNode) {
       for (let i = 0; i < keywordsNode.namedChildCount; i++) {
@@ -945,7 +957,17 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         const kw = this.findChild(pair, (c) => c?.type === "keyword")
         if (kw && this.stripAfterColon(kw.text) === "for" && pair.namedChildCount > 1) {
           const val = pair.namedChild(1)
-          if (val) forType = this.resolveAlias(val.text, ctx)
+          if (!val) continue
+          if (val.type === "list") {
+            forTypeListNode = val
+            for (let k = 0; k < val.namedChildCount; k++) {
+              const el = val.namedChild(k)
+              if (el && el.type === "alias") forTypeList.push(this.resolveAlias(el.text, ctx))
+            }
+            forType = forTypeList.length > 0 ? forTypeList[0] : "Unknown"
+          } else {
+            forType = this.resolveAlias(val.text, ctx)
+          }
         }
       }
     }
@@ -959,14 +981,36 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     const forTypeAlias = aliases.length > 1 ? this.resolveAlias(aliases[1].text, ctx) : forType
     const implName = forTypeAlias && forTypeAlias !== "Unknown" ? forTypeAlias : (currentScope ? currentScope.name : protocol)
     const fullName = implName
-    const implSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true, protocol, forType } }
+    // W23: a multi-type list mints one implementation symbol per type and
+    // one Implements edge per type (each type genuinely implements the
+    // protocol); the shared method body's scope rides the FIRST type.
+    // Single-type output is byte-identical to the pre-fix behavior.
+    const implSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true, protocol, forType: forTypeList.length > 0 ? forTypeList : forType } }
     ctx.symbols.push(implSym)
     ctx.symbolByName.set(fullName, implSym)
+    if (forTypeList.length > 1) {
+      for (let ti = 1; ti < forTypeList.length; ti++) {
+        const tSym: ASTEngine.UniversalSymbol = { name: forTypeList[ti], kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true, protocol, forType: forTypeList[ti] } }
+        ctx.symbols.push(tSym)
+        ctx.symbolByName.set(forTypeList[ti], tSym)
+      }
+    }
     // A degenerate for-less defimpl names nothing real — never a self-loop.
     // (Line fallback made real: `(x)?.a.b + 1 ?? y` short-circuits to NaN,
     // not y — tsc flagged the dead `??`; the intended node fallback now runs.)
     const implLineNode = aliases.length > 1 ? aliases[1] : aliases[0]
-    if (fullName !== protocol) this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, implLineNode ? implLineNode.startPosition.row + 1 : node.startPosition.row + 1)
+    if (forTypeListNode && forTypeList.length > 0) {
+      // W23: per-element edges with per-element lines (each list entry has
+      // its own name-bearing node).
+      for (let k = 0; k < forTypeListNode.namedChildCount; k++) {
+        const el = forTypeListNode.namedChild(k)
+        if (!el || el.type !== "alias") continue
+        const t = this.resolveAlias(el.text, ctx)
+        if (t && t !== "Unknown" && t !== protocol) this.pushRel(ctx, t, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, el.startPosition.row + 1)
+      }
+    } else if (fullName !== protocol) {
+      this.pushRel(ctx, fullName, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, implLineNode ? implLineNode.startPosition.row + 1 : node.startPosition.row + 1)
+    }
     ctx.pendingDoc = undefined
     scopeStack.push({ node, name: fullName, kind: ASTEngine.SymbolKind.Class, complexity: 0, symbol: implSym })
     return true
