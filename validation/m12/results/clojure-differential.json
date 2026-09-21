@@ -4,8 +4,8 @@
   "inputs": {
     "files": {
       "src/ast/analysis-exclusions.ts": {
-        "sha256": "046f04758d07e4455b9f8423c18ece3dea387b984f6a4025658a3d7eec31b898",
-        "bytes": 11665
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
       },
       "src/ast/engine.ts": {
         "sha256": "d3359e4b857f1a4bd21b410a2141394e99a444fb570c3ca66040ff9e937e8f28",
@@ -52,8 +52,8 @@
         "bytes": 90257
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "85fe678e96f8228539e846c04a42c5c3734b7ea04dd70636a063ab5d20fa242a",
-        "bytes": 113391
+        "sha256": "77d6732f951502841928fd1be42639acbc6e1aca2ef5f6c778bf7dc485e9b931",
+        "bytes": 120796
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
@@ -68,8 +68,8 @@
         "bytes": 83204
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "52ed72da36b6f881b7c01f9b71a8146a40fcf3d4bcadedee7bfe923734e44813",
-        "bytes": 40264
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
@@ -84,12 +84,12 @@
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "43a4a4be57210285a9b3d8433815be1c95bcf7a65da90e94bdfa0d7557f056dc",
-        "bytes": 110060
+        "sha256": "374431f94bcfe953577cdc14f7903cc0ce894dfcc6f8d32f4d9b8869cf155c44",
+        "bytes": 114112
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "5b0499af96353c18c69f420cd314ce8ad88d213fcba0d926a43fb71934e79a69",
-        "bytes": 55039
+        "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
+        "bytes": 54878
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -104,8 +104,8 @@
         "bytes": 133991
       },
       "src/ast/real-javascript-analyzer.ts": {
-        "sha256": "f664650d6fa4152cf1227b5237e71e4bc25438cca5d69f4482feab6dd8d7d1f0",
-        "bytes": 110870
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
       },
       "src/ast/real-json-analyzer.ts": {
         "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "2613db49c14e030b8bdb1939086b010d502505e6d35aea855eaa98ba60fa9bb9",
-        "bytes": 52383
+        "sha256": "27a4891170a5d90c07d13bbb6e96ed46ceef8130872d3c014433b529d8f8989a",
+        "bytes": 49950
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -168,8 +168,8 @@
         "bytes": 29215
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "29634663ed28b5af12231c4e10223af4c42287e6300a9bbe553d8676d11a1cea",
-        "bytes": 68705
+        "sha256": "e421b023c9b862d9f030ec3c56e47333532c35f8390594dbdba771fb2765fae1",
+        "bytes": 71811
       },
       "src/ast/real-swift-analyzer.ts": {
         "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
@@ -192,8 +192,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "5766309f5f290a8a40b12f9f0df57ec5d0f37d0a82b99f009aa1fb47c33c69c2",
-        "bytes": 57037
+        "sha256": "25ac06734eaab0dbc753963cc40e2e55645a67137a79be7d362316e80b579580",
+        "bytes": 57574
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -252,7 +252,7 @@
         "bytes": 10168
       }
     },
-    "digest": "af713771ff21f6e96c3622f04b5a92c8312c3c475f0c5b46c0b0c11620d2baad",
+    "digest": "0f496633fa75e0884821562015b514a68aab07b2dcefb41b5ada734280b8dee0",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm",
       "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
@@ -357,11 +357,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 44.68456,
-      "userCpuMs": 53.607,
-      "systemCpuMs": 10.208,
-      "peakRssBytes": 228409344,
-      "rssDeltaBytes": 1990656,
+      "wallTimeMs": 53.58427,
+      "userCpuMs": 69.154,
+      "systemCpuMs": 6.56,
+      "peakRssBytes": 228192256,
+      "rssDeltaBytes": 2228224,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
