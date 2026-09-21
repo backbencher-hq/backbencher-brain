@@ -129,13 +129,23 @@ export interface GroupedUsages {
   root: { symbolId: string; name: string; file: string; language: string; line: number }
   callers: UsageGroup[]
   callees: UsageGroup[]
-  fileLevel: { imports: FileLevelRow[]; exports: FileLevelRow[] }
+  /** File-level rows, both directions. `imports`/`exports` are INCOMING —
+   *  rows that target the root (who imports this symbol, §13.5).
+   *  `dependencies` (M60/#910) are OUTGOING — the root FILE's own module
+   *  dependencies, which is the only shape a `#include` can take: it has no
+   *  symbol endpoint on either side, so the incoming query can never reach
+   *  it. Declared separately rather than mixed into `imports`, so a consumer
+   *  can never mistake "what this file includes" for "who imports this". */
+  fileLevel: { imports: FileLevelRow[]; exports: FileLevelRow[]; dependencies: FileLevelRow[] }
   counts: {
     callerGroups: number
     calleeGroups: number
     callerRows: number
     calleeRows: number
     fileLevelRows: number
+    /** M60/#910: the outgoing subset of fileLevelRows — counted so the two
+     *  directions can never be conflated in a header number. */
+    fileDependencyRows: number
   }
   summary: {
     truncated: boolean
@@ -237,22 +247,24 @@ export function groupUsagesEdges(result: GraphTraversalResult): { callers: Usage
 /** Assemble the full grouped-usages response (root + groups + counts). */
 export function buildGroupedUsages(
   result: GraphTraversalResult,
-  fileLevel: { imports: FileLevelRow[]; exports: FileLevelRow[] },
+  fileLevel: { imports: FileLevelRow[]; exports: FileLevelRow[]; dependencies?: FileLevelRow[] },
 ): GroupedUsages {
   const { callers, callees } = groupUsagesEdges(result)
   const crossLanguageGroups = [...callers, ...callees].filter((g) => g.rows.some((r) => r.isCrossLanguage)).length
   const root = result.root
+  const sections = { imports: fileLevel.imports, exports: fileLevel.exports, dependencies: fileLevel.dependencies ?? [] }
   return {
     root: { symbolId: root.id, name: root.name, file: root.file, language: root.language, line: root.line },
     callers,
     callees,
-    fileLevel,
+    fileLevel: sections,
     counts: {
       callerGroups: callers.length,
       calleeGroups: callees.length,
       callerRows: callers.reduce((n, g) => n + g.rows.length, 0),
       calleeRows: callees.reduce((n, g) => n + g.rows.length, 0),
-      fileLevelRows: fileLevel.imports.length + fileLevel.exports.length,
+      fileLevelRows: sections.imports.length + sections.exports.length + sections.dependencies.length,
+      fileDependencyRows: sections.dependencies.length,
     },
     summary: {
       truncated: result.summary.truncated,

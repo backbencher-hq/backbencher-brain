@@ -149,7 +149,10 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     // metadata; an `exports -> <symbol>` edge has no resolvable foreign
     // boundary target and would be a phantom, exactly the class the family
     // contract forbids). imports is pinned via the references edge whose
-    // meta.isImport is true (c family standard).
+    // meta.isImport is true. (M60/#910 moved c to the first-class `imports`
+    // kind; the isImport marker still pins zig, whose lane has not come up
+    // yet, and remains the c family's evidence that an unresolved edge IS a
+    // dependency. When zig's lane is ruled, its emission moves with it.)
     requiredKinds: ["calls", "uses", "contains", "references", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "zig/calls-uses-complexity (symbol complexity)" },

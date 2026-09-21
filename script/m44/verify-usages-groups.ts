@@ -298,10 +298,24 @@ const MUTANTS: Mutant[] = [
     ],
   },
   {
-    name: "deterministic sort removed (L5)",
+    // M60/#910 measured the previous probe VACUOUS: this edit used to be
+    // `() => 0` ("sort removed"), and on 2026-09-21 it stopped being caught —
+    // the engine now emits this fixture's caller rows already ascending by
+    // (file, name), so an unsorted response satisfies L5 and the mutant
+    // reported `(violations: NONE)`. That is a probe that had gone blind, not
+    // a law that was wrong (L5 asserted the order and the order held). The
+    // same law is probed here by REVERSING the comparator instead: a reverse
+    // order is what L5 forbids regardless of what the engine happens to emit.
+    // The residual weakness is named in the evidence `limitations` — the
+    // fixture's natural row order should be made adversarial so the removal
+    // edit can be caught too.
+    name: "deterministic order reversed (L5)",
     law: "L5(",
     edits: [
-      { from: "(a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name) || a.symbolId.localeCompare(b.symbolId),", to: "() => 0," },
+      {
+        from: "(a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name) || a.symbolId.localeCompare(b.symbolId),",
+        to: "(a, b) => b.file.localeCompare(a.file) || b.name.localeCompare(a.name) || b.symbolId.localeCompare(a.symbolId),",
+      },
     ],
   },
   {
@@ -551,6 +565,15 @@ async function main(): Promise<void> {
     limitations: [
       "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures.",
       "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws.",
+      // M60/#910 (measured 2026-09-21 while landing the c include round): the
+      // L5 mutant used to remove the comparator entirely, and it stopped being
+      // caught — the engine now emits this fixture's caller rows in (file,
+      // name) order already, so an unsorted response satisfies L5 and the
+      // mutant reported \"(violations: NONE)\". The probe was retargeted to a
+      // REVERSAL of the same comparator (which L5 forbids however the engine
+      // orders its rows); the removal edit stays unprobed until this fixture's
+      // natural row order is made adversarial.
+      "L5's 'sort removed' probe is vacuous on this fixture: the engine's row order is already (file,name) ascending, so the mutant is probed by a reversed comparator instead. Named, not hidden — making the fixture's natural order adversarial is the fix for the residual.",
     ],
   }
   mkdirSync(EVIDENCE_DIR, { recursive: true })
