@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-21T16:41:09.039Z",
+  "snapshotAt": "2026-09-21T18:12:09.560Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 120,
+  "count": 119,
   "issues": [
     {
       "number": 134,
@@ -698,11 +698,6 @@
       "labels": [
         "bug"
       ]
-    },
-    {
-      "number": 908,
-      "title": "M60-C: jq c lane's residual row — uses yyparse -> YY_INITIAL_VALUE (truth/analyzer disagreement on a macro wrapping a declaration)",
-      "labels": []
     },
     {
       "number": 909,
