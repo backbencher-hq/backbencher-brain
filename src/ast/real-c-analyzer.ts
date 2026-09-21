@@ -2559,42 +2559,199 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     content: string,
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    // Only ERRORs swallowed into a body: `compound_statement` on the path, and never
-    // a parameter list (a declarator there is a function-pointer parameter).
+    // Never a parameter list: a declarator there is a function-pointer parameter.
+    // A `compound_statement` on the path is NOT required — round 2 of #907 measured
+    // the same loss at ROOT scope (jq `jv.c:673` `jv jv_number(double x) {`, whose
+    // ERROR is a direct child of `translation_unit`) and in `jv_dtoa.c`'s
+    // `ERROR[2-4277]`, so gating on "swallowed into a body" left four sites unfixed.
+    // What carries the safety is the brace test below, not the ancestor shape: a
+    // prototype, call, or initializer ends in `;`, `,`, `)`, or `=`.
+    let macroAncestor: Node | null = null
     let insideBody = false
     let w: Node | null = node.parent
     while (w) {
       if (w.type === "parameter_list") return
-      if (w.type === "compound_statement") {
-        insideBody = true
-        break
-      }
+      if (w.type === "preproc_def" || w.type === "preproc_function_def") macroAncestor = w
+      if (w.type === "compound_statement") insideBody = true
       w = w.parent
     }
-    if (!insideBody) return
 
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const c = node.namedChild(i)
-      if (!c || c.type !== "function_declarator") continue
-      const id = c.childForFieldName("declarator")
-      if (!id || id.type !== "identifier") continue
+    for (const { id, wrapped, rangeNode } of this.gluedDeclaratorNames(node, content)) {
       const name = id.text.trim()
       if (!name || C_KEYWORDS.has(name)) continue
-      // Definition iff the next non-space character is the body's opening brace.
-      let j = c.endIndex
-      if (!(j >= 0 && j <= content.length)) continue
-      while (j < content.length && (content[j] === " " || content[j] === "\t" || content[j] === "\n" || content[j] === "\r")) j++
-      if (content[j] !== "{") continue
+      // Definition iff the name's own parameter list is followed by the body's
+      // opening brace. The test is made on the TEXT from the name rather than on
+      // the declarator node's end, because when recovery degrades far enough the
+      // name is a bare `identifier` whose parent is the whole ERROR region — using
+      // the parent's end makes every such site look like `…}` and refuses it (that
+      // was measured: decNumber.c's three public functions were still lost after
+      // the identifier rule was added for exactly this reason).
+      if (!this.definitionBodyFollows(content, id)) continue
+      // A `#define` body can write a definition-shaped sequence too (`#define
+      // DEF(name) void name(void) {`), and `name` there is the macro PARAMETER, not
+      // a symbol. A declarator inside the macro's own logical line is therefore
+      // skipped; one that lives past the last backslash-continuation is not — that
+      // is how jq's `parser.c` reaches `void yyerror(...)` (macro ends at L403, the
+      // definition is L406).
+      if (macroAncestor && this.insideMacroContinuation(macroAncestor, id, content)) continue
       if (symbols.some((s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function)) continue
       symbols.push({
         name,
         kind: ASTEngine.SymbolKind.Function,
-        range: this.nodeToRange(c),
+        range: this.nodeToRange(rangeNode ?? id),
         scope: "global",
-        visibility: /\bstatic\b/.test(node.text) ? "private" : "public",
-        metadata: { cSpecific: true, recoveredFromGlue: true },
+        visibility: this.isStaticInDeclaration(id, content) ? "private" : "public",
+        // The arrival is recorded because it is what round 2 added, and because
+        // a mutant can only target one arrival if the result says which it was.
+        metadata: {
+          cSpecific: true,
+          recoveredFromGlue: true,
+          glueArrival: insideBody ? "body" : "file-scope",
+          glueWrapped: wrapped,
+          glueNameShape: rangeNode.type === "function_declarator" ? "declarator" : "bare-identifier",
+        },
       })
     }
+  }
+
+  /**
+   * #907: the identifiers a glued definition header can expose, unwrapping the
+   * declarator forms the damaged tree actually produces. Two measured arrivals:
+   *   ERROR > function_declarator                       (jv.c `jv_number`)
+   *   ERROR > pointer_declarator > function_declarator  (util.c `strptime`,
+   *                                                      jv_dtoa.c `jvp_dtoa`)
+   * Only the ERROR's own children are visited, and only through declarator
+   * wrappers — a `function_declarator` nested in a struct or an argument list is
+   * NOT a file-scope definition header and is deliberately unreachable here.
+   */
+  private gluedDeclaratorNames(error: Node, content: string): Array<{ id: Node; wrapped: boolean; rangeNode: Node }> {
+    const found: Array<{ id: Node; wrapped: boolean; rangeNode: Node }> = []
+    const unwrap = (n: Node, depth: number, wrapped: boolean): void => {
+      if (depth > 3) return
+      if (n.type === "function_declarator") {
+        const id = n.childForFieldName("declarator")
+        if (id && id.type === "identifier") found.push({ id, wrapped, rangeNode: n })
+        return
+      }
+      // A more degraded recovery drops the declarator node entirely: the name
+      // arrives as a BARE identifier under the ERROR (jq decNumber.c:2303
+      // `decNumber * decNumberNormalize(...) {` inside a swallowed body; jq
+      // parser.c:406 `void yyerror(...) {` under a macro's ERROR). Calls are the
+      // same shape — which is why an identifier is only accepted when the text
+      // before it still reads as a DECLARATION (see declarationHeaderBefore
+      // below): `FOREACH(item) {` and `foo(x) {` have no return type and are
+      // refused, while `void yyerror(...)` and `decNumber * decNumberNormalize(...)`
+      // are not.
+      if (n.type === "identifier" && this.declarationHeaderBefore(n, content)) {
+        found.push({ id: n, wrapped, rangeNode: n })
+        return
+      }
+      if (
+        n.type === "pointer_declarator" ||
+        n.type === "parenthesized_declarator" ||
+        n.type === "attributed_declarator"
+      ) {
+        const inner = n.childForFieldName("declarator")
+        if (inner) unwrap(inner, depth + 1, true)
+      }
+    }
+    for (let i = 0; i < error.namedChildCount; i++) {
+      const c = error.namedChild(i)
+      if (c) unwrap(c, 0, false)
+    }
+    return found
+  }
+
+  /**
+   * #907: does this name's own parameter list end at a `{`? Walked on the text so
+   * it works the same for a proper declarator node and for the bare-identifier
+   * arrival. Anything else after the parameter list (`;`, `,`, `)`, `=`, or a
+   * trailing attribute/initialiser) means prototype, call, or initialiser.
+   */
+  private definitionBodyFollows(content: string, id: Node): boolean {
+    let j = id.endIndex
+    if (!(j >= 0 && j <= content.length)) return false
+    while (j < content.length && /\s/.test(content[j])) j++
+    if (content[j] !== "(") return false
+    let depth = 0
+    for (; j < content.length; j++) {
+      if (content[j] === "(") depth++
+      else if (content[j] === ")") {
+        depth--
+        if (depth === 0) break
+      }
+    }
+    if (depth !== 0) return false
+    j++
+    while (j < content.length && /\s/.test(content[j])) j++
+    return content[j] === "{"
+  }
+
+  /**
+   * #907: is there a declaration header — a return type and/or storage class —
+   * between the previous statement terminator and this name? This is the guard
+   * that lets a bare `identifier` be read as a definition without swallowing mere
+   * CALLS, which arrive in exactly the same AST shape. Comments are stripped and
+   * whitespace does not count, so a macro invocation at the start of a line
+   * (`FOREACH(item) {`, nothing but the name before it) yields an empty header and
+   * is refused, while `void yyerror(`, `decNumber * decNumberNormalize(`, and
+   * `static block gen_last_1(` all keep a type token.
+   */
+  private declarationHeaderBefore(id: Node, content: string): boolean {
+    const from = Math.max(0, id.startIndex - 400)
+    const window = content.slice(from, id.startIndex)
+    let cut = -1
+    for (const ch of [";", "{", "}"]) {
+      const at = window.lastIndexOf(ch)
+      if (at > cut) cut = at
+    }
+    const header = window.slice(cut + 1)
+      .replace(/\/\*[\s\S]*?\*\//g, " ")
+      .replace(/\/\/[^\n]*/g, " ") // eslint-disable-line no-useless-escape
+    return /[A-Za-z_]\w*/.test(header)
+  }
+
+  /**
+   * #907: is the declarator inside the `#define` macro's own logical line? True
+   * only while every line from the directive to the declarator ends with a
+   * backslash continuation — the macro's body. A declarator reached after a line
+   * that does NOT continue is ordinary file text the damaged tree merely reparented.
+   */
+  private insideMacroContinuation(macroNode: Node, id: Node, content: string): boolean {
+    const startRow = macroNode.startPosition.row
+    const declRow = id.startPosition.row
+    if (declRow <= startRow) return true
+    let lineStart = macroNode.startIndex
+    for (let row = startRow; row < declRow; row++) {
+      const nl = content.indexOf("\n", lineStart)
+      if (nl < 0) return false
+      let end = nl - 1
+      if (end >= lineStart && content[end] === "\r") end--
+      if (content[end] !== "\\") return false
+      lineStart = nl + 1
+    }
+    return true
+  }
+
+  /**
+   * #907: `static` belongs to the declaration, not to the ERROR that swallowed it —
+   * a root-level ERROR can span thousands of lines (jv.c `ERROR[673-2185]`,
+   * jv_dtoa.c `ERROR[2-4277]`), so testing the ERROR's whole text marks public
+   * functions private. The storage class is looked for in the window since the
+   * previous statement/brace terminator, which is where a wrapped header writes it
+   * (`static double` on the line above `ulp`).
+   */
+  private isStaticInDeclaration(id: Node, content: string): boolean {
+    const from = Math.max(0, id.startIndex - 400)
+    const window = content.slice(from, id.startIndex)
+    let cut = -1
+    for (const ch of [";", "{", "}"]) {
+      const at = window.lastIndexOf(ch)
+      if (at > cut) cut = at
+    }
+    const blank = window.lastIndexOf("\n\n")
+    if (blank > cut) cut = blank
+    return /\bstatic\b/.test(window.slice(cut + 1))
   }
 
   /**
