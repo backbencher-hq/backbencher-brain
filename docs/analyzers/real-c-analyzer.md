@@ -113,8 +113,30 @@ From `validation/m12/results/c-complexity.json`:
 | fixtures | 4 | 46 | 49 | 573.5 | 80 | 85 | 192.3 MB |
 | corpus_subset | 400 | 3692 | 14593 | 58278.9 | 63 | 250 | 952.6 MB |
 
-Declared budgets: fixtures < 2 s (met: 0.57 s); 400-file corpus < 120 s
-(met: 58.3 s).
+Declared budgets: fixtures < 2 s (met: 0.48 s); 400-file corpus < 120 s
+(met: 6.5 s, attributed re-measure below).
+
+**#909 — the two rows above are historical, and neither was attributable.** The
+2026-09-19 `corpus_subset` run recorded `corpusDir: "/tmp/c-corpus-copy"`, a temp path
+that no longer exists, with no manifest, no size distribution and no machine-load
+context — so 58.3 s describes an unknown file set on an unknown box and cannot be
+compared against any other number (this page's own "met: 58.3 s" and the audit's
+"~10x inflated" reading both compared it against different sets; see `#909`).
+
+The harness now records what a run measured, and the attributed re-measure at HEAD is:
+
+| Run | files | avg size | set digest | wall | user CPU | per file | peak RSS | load1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| fixtures | 4 | — | — | 481 ms | 0.40 s | 100 ms | 241.8 MB | 3.98 |
+| corpus_subset | 400 | 5,032 B | `07cb4b7f997b820c` | 6.5 s | 10.8 s | 16.3 ms wall / 26.9 ms CPU | 307.6 MB | 3.90 |
+
+Command: `bun script/m12/measure-analyzer.ts c $HOME/fixtures/repositories/zig
+--ext=.c --min-bytes=1024 --limit=400`. On this shared box wall time is the unstable
+half of the pair (the same rule measured 6.5 s, 11.5 s and 86.1 s minutes apart while
+other agents' load moved), so **compare `userCpuMsPerFile` or the per-1k-node ratio** —
+C runs 25.9 ms/1k nodes vs cpp's 23.8 in the same 8-40 KB band (1.09x). Without
+`--ext`, the walker measures EVERY file in the directory under the language's name,
+which is how a "c" number can silently describe other languages.
 
 Hot-path audit: single-pass DFS stack over AST children with a pre-pass over
 the same stack for declared-type collection (both O(nodes)); per-node lookups
@@ -147,7 +169,8 @@ O(n) scans.
   `fmt`'s single C file (16/16, 0/0) is pinned as `fmt:c`. The broader
   historical 400-file probe had 122 parse-recovery files, 0 crashes, and
   0 timeouts. `Clyde` had no `.c` files and was not counted as C evidence.
-- Symbols 3692 / relationships 14593 / wall 58.3 s / **0 crashes / 0 timeouts
+- Symbols 3692 / relationships 14593 / wall 58.3 s (historical, unattributable — see
+  `#909` above) / **0 crashes / 0 timeouts
   / 122 error files** (30.5%) — down from 139/400 (34.8%) with the previous
   grammar; all 122 are genuine hard-system C gaps of the newest available
   grammar (see Unsupported). Scan script `script/m12/c-corpus-errors.ts`
