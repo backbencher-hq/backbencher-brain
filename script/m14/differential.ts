@@ -2468,6 +2468,20 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
   // members). Local declarations inside compound statements are execution
   // artifacts and excluded.
   const declaredNames = new Set<string>()
+  // CGD41 (#908 ruling, measured jq src/parser.c L2229/2230): a FUNCTION-LIKE
+  // macro's NAME cannot be a declaration of that name — the previewer expands
+  // it wherever it appears, so `YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);`
+  // parses as a declaration whose DECLARATOR field is a function_declarator
+  // named after the macro (the real declared name, `yylval`, is demoted to the
+  // declaration's type_identifier). The oracle's local collector read that fd's
+  // leftmost identifier as a BINDING, put YY_INITIAL_VALUE into yyparse's locals,
+  // and then suppressed the genuine use at L2229 — while the analyzer (whose own
+  // collector is order-dependent and had not yet reached L2230) emitted it: the
+  // lane's single unexplained row. The ruling is the one the four-row lesson
+  // established (a macro invocation is a USE), applied to the local collector:
+  // these names bind nothing. Built here, in the same pre-pass that admits macro
+  // names to declaredNames, so both sides can share one rule.
+  const functionLikeMacros = new Set<string>()
   // CGD14 (REVISED, measured): blanket ERROR-ancestor exclusion is WRONG —
   // os_win.c parses as ONE giant ERROR span (L1–L5345, #if-chain recovery)
   // containing wholly real declarations the analyzer correctly extracts;
@@ -2661,6 +2675,10 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
           if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
+            // CGD41: a function-like macro's definition site (its NAME's parent
+            // is the preproc_function_def) is what makes the name unmaskable-as-
+            // binding later — see the collector's gate.
+            if (n.parent && (n.parent.type === "preproc_function_def")) functionLikeMacros.add(n.text)
           }
         }
       }
@@ -2699,7 +2717,12 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
               const c = node.namedChild(k)
               if (c && (c.type.endsWith("declarator") || c.type === "identifier")) {
                 const id = leftmostDeclaratorIdentifier(c)
-                if (id) locals.add(id)
+                // CGD41 (#908): a function-like macro's NAME never BINDS — it
+                // is expanded away, and the mention is a use (emitted by the
+                // identifier path). Without this the L2230 macro-invocation
+                // declarator put the name in yyparse's locals and suppressed
+                // the genuine L2229 use.
+                if (id && !functionLikeMacros.has(id)) locals.add(id)
               }
             }
           }
