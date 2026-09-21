@@ -120,6 +120,16 @@ const FIX = exists("validation/m60/results/fixtures-at-head.json") ? readJson("v
 // unpinned one CANNOT be checked, so it is disclosed (amber), never scored as a pass.
 const FRESH = exists("validation/m60/results/m12-freshness-at-head.json") ? readJson("validation/m60/results/m12-freshness-at-head.json") : null
 const freshPinned = new Set<string>((FRESH?.freshPinned ?? []).map(canon))
+// Depth: the canonical M14.0.F5 draw is 60 files/lane. These are deeper draws on
+// the same pinned repos (200), and a lane is clean at depth only if EVERY draw is
+// clean — one red draw is a defect that reproduces, not noise.
+const DEPTH = exists("validation/m60/results/depth-probes.json") ? readJson("validation/m60/results/depth-probes.json") : null
+// Depth residuals whose owner is the TRUTH MACHINERY, not the analyzer (see the
+// depth evidence file's `adjudicated` map). Listed here so the distinction is
+// explicit and auditable rather than a judgement made in the render loop.
+const ORACLE_SIDE_RESIDUALS = new Set<string>(["#905"])
+const depthWorst: Record<string, { maxSample: number; missing: number; unexplained: number; drawsRed: number; issue?: string }> =
+  DEPTH?.worstPerLang ?? {}
 
 if (!F5 || !F3 || !F1 || !CLAIMS || !P1 || !TRACKER) {
   console.error("missing an input artifact — refusing to compute a matrix from partial evidence")
@@ -198,6 +208,22 @@ const rows: Row[] = languages.map(lang => {
   if (lang in claims) { cells.corpus = claims[lang] ? "pass" : "fail"; if (!claims[lang]) notes.push("corpus: manifest claim does not agree with its artifact") }
   else { cells.corpus = "n/a" }
 
+  const dp = depthWorst[lang]
+  if (dp) {
+    const clean = dp.missing === 0 && dp.unexplained === 0
+    // A residual edge has an OWNER, and the owner decides the cell. An
+    // analyzer-side residual is work this product owes -> fail. An ORACLE-side
+    // residual (the truth derivation over-derives, the analyzer's refusal is
+    // correct — #905) is truth-machinery debt, disclosed with its issue number
+    // and never silently passed, but not scored as an unfinished analyzer: the
+    // question this table answers is whether the LANGUAGE is done.
+    const oracleSide = !!dp.issue && ORACLE_SIDE_RESIDUALS.has(dp.issue)
+    cells.depth = clean ? "pass" : oracleSide ? "disclosed" : "fail"
+    notes.push(clean
+      ? `depth: clean on ${dp.maxSample}-file draws (canonical draw is 60)`
+      : `depth: MISSING=${dp.missing} unexplained=${dp.unexplained} at ${dp.maxSample} files, red in ${dp.drawsRed} draw(s)${dp.issue ? ` — ${dp.issue} (${oracleSide ? "ORACLE-side, analyzer refusal correct" : "ANALYZER-side, work owed"})` : ""}`)
+  } else { cells.depth = "n/a"; notes.push("depth: no deeper-than-canonical draw measured for this lane") }
+
   if (lang in claims) {
     const pinned = freshPinned.has(lang)
     cells.fresh = pinned ? "pass" : "disclosed"
@@ -228,7 +254,7 @@ const rows: Row[] = languages.map(lang => {
 
 // ---------------------------------------------------------------- report
 const SYM: Record<Cell, string> = { pass: "✓", fail: "✗", "n/a": "·", disclosed: "~" }
-const COLS = ["diff", "fixtures", "corpus", "fresh", "grammar", "lines", "folder", "tracker"]
+const COLS = ["diff", "depth", "fixtures", "corpus", "fresh", "grammar", "lines", "folder", "tracker"]
 console.log(`\nM60.LCM — per-language completion at ${F5.commit?.slice(0, 8)} (F5) / HEAD`)
 console.log(`${"language".padEnd(12)} ${"family".padEnd(11)} ${COLS.map(c => c.slice(0, 7).padStart(8)).join("")}   TRULY DONE`)
 for (const r of rows) {
@@ -262,8 +288,10 @@ writeFileSync(OUT, JSON.stringify({
     tracker: `validation/m49/lang-open-issues.json @ ${TRACKER.snapshotAt} (${TRACKER.count} open)`,
   },
   crossCuttingIssues: CROSS_CUTTING,
+  depthProbes: DEPTH?.runs ?? [],
   columns: {
     diff: "M14.0.F5 MISSING/unexplained/fabrication all zero",
+    depth: "every 200-file draw on the lane's pinned repo is MISSING=0 and unexplained=0 (60 is the canonical draw)",
     fixtures: "M14.0.F3 committed-fixture fail=0 (untracked failures excluded, #899)",
     corpus: "M12 claim agrees with artifact",
     fresh: "M12 artifact pinned to input digests and confirmed to describe this tree (~ = unpinned, disclosed not passed)",
