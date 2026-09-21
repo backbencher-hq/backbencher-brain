@@ -2218,6 +2218,29 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "zig/lines-dropped",
+    language: "zig",
+    defectClass: "payload-loss",
+    description: "M59.A7 (#825) regression: strips every line_number — the MEASURED pre-fix state (0 of 20,789 edges lined on a 200-file zig draw, validation/m59/results/oracle-callsite-scoped-zig-f200.json) — callsite-lines-825's expect entries carry line_number on every row, so the unlined collapse fails the gate",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map(x => { const { line_number, ...rest } = x; return rest }) }),
+  },
+  {
+    id: "zig/construct-start-line",
+    language: "zig",
+    defectClass: "payload-corruption",
+    description: "M59.A7 (#825) regression: restores the construct-start line instead of the name-bearing LEAF — the @import reports the `const std =` line (18 not 19), a wrapped declared-type reference reports the `pub fn` keyword line (30 not 31), and a wrapped field access reports the RECEIVER line (39 not 40, the same class the c lane measured on a newline-continued call). Exactly the pre-fix positions callsite-lines-825 forbids",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const rt = (x.metadata ?? {}).relationshipType
+        if ((rt === "zig_import" || rt === "declared_type" || rt === "zig_field_access") && typeof x.line_number === "number") {
+          return { ...x, line_number: x.line_number - 1 }
+        }
+        return x
+      }),
+    }),
+  },
+  {
     id: "java/argument-count-inflation",
     language: "java",
     defectClass: "payload-drift",

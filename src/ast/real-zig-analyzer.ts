@@ -73,6 +73,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: ltarget,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 1.0,
+                // M59.A7 (#825): an import dependency occurs where its TARGET is
+                // written — the path literal, not the declaration statement.
+                ...(this.nodeLine(lstr) ? { line_number: this.nodeLine(lstr)! } : {}),
                 metadata: { relationshipType: "zig_import", isImport: true },
               })
             }
@@ -137,6 +140,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: importTarget,
                 type: ASTEngine.RelationshipType.References,
                 confidence: 1.0,
+                // M59.A7 (#825): the line of the module path as written.
+                ...(this.nodeLine(strNode) ? { line_number: this.nodeLine(strNode)! } : {}),
                 metadata: { relationshipType: "zig_import", isImport: true },
               })
             }
@@ -246,6 +251,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: importTarget,
               type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
+              // M59.A7 (#825): the module path as written.
+              ...(this.nodeLine(strNode) ? { line_number: this.nodeLine(strNode)! } : {}),
               metadata: { relationshipType: "zig_import", isImport: true },
             })
           }
@@ -417,6 +424,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59.A7 (#825): a containment edge has no call site, but it has a
+          // navigable one — the member's own declaration line. Omitted, never
+          // written as 0, when the symbol carries no range (#820).
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
         })
       }
@@ -509,7 +520,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (nameNode) { nextFn = nameNode.text; nextInFn = true }
       }
       if (n.type === "call_expression") {
-        const leaf = this.zigCalleeLeaf(n)
+        const leafNode = this.zigCalleeLeafNode(n)
+        const leaf = leafNode?.text
         // NOTE (zig wave, 2026-08-29): NO `leaf !== nextFn` guard here. A
         // same-named method called from within that method (IconDir.
         // writeResData calling entry.writeResData; initComptime calling
@@ -532,13 +544,17 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: leaf,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.85,
+              // M59.A7 (#825): the callee LEAF as written — the name-bearing
+              // node, not the call expression (which a receiver can precede).
+              ...(this.nodeLine(leafNode) ? { line_number: this.nodeLine(leafNode)! } : {}),
               metadata: { relationshipType: "zig_function_call", callExpression: n.text.slice(0, 60) },
             })
           }
         }
       }
       if (n.type === "field_expression" && !this.isCallCallee(n)) {
-        const field = this.zigFieldLeaf(n)
+        const fieldNode = this.zigFieldLeafNode(n)
+        const field = fieldNode?.text
         const notBuiltinAccess =
           this.anyChild(n, (c) => c.type === "identifier") !== null
         // ZGD1 (zig wave, M37 #600 — standing-rule write-gate class): an
@@ -574,6 +590,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.75,
+              // M59.A7 (#825): the field LEAF as written.
+              ...(this.nodeLine(fieldNode) ? { line_number: this.nodeLine(fieldNode)! } : {}),
               metadata: { relationshipType: "zig_field_access", fieldAccessExpression: n.text.slice(0, 60) },
             })
           }
@@ -886,6 +904,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: name,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
+              // M59.A7 (#825): the read occurs on the identifier's own line.
+              ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
               metadata: { relationshipType: "identifier_usage", nodeType: node.type },
             })
           }
@@ -914,7 +934,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** Builtin @-prefixed calls and generic type applications are not user
    *  call targets. Returns the leaf name for a real user call site, else
    *  undefined. */
-  private zigCalleeLeaf(call: Node): string | undefined {
+  private zigCalleeLeafNode(call: Node): Node | undefined {
     const callee = call.namedChildCount > 0 ? call.namedChild(0) : null
     if (!callee) return undefined
     if (callee.type === "identifier") {
@@ -923,21 +943,32 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // fabricated a `calls -> usingnamespace` edge (probe-verified).
       if (callee.text === "usingnamespace") return undefined
       // Skip builtin intrinsics (@foo).
-      return callee.text
+      return callee
     }
     if (callee.type === "field_expression") {
-      return this.zigFieldLeaf(callee)
+      return this.zigFieldLeafNode(callee)
     }
     // call_expression whose callee is a builtin_function / generic_identifier
     // / pointer_wrapped — not a plain user call.
     return undefined
   }
 
-  /** Leaf name of a field_expression (`std.math.abs` -> abs, `list.items` ->
+  private zigCalleeLeaf(call: Node): string | undefined {
+    return this.zigCalleeLeafNode(call)?.text
+  }
+
+  /** Leaf NAME of a field_expression (`std.math.abs` -> abs, `list.items` ->
    *  items). */
   private zigFieldLeaf(expr: Node): string | undefined {
+    return this.zigFieldLeafNode(expr)?.text
+  }
+
+  /** The name-bearing field LEAF of a field_expression — the same node whose
+   *  text `zigFieldLeaf` returns, kept so an emitted edge can carry the SITE
+   *  line (M59.A7 #825) as well as the name. */
+  private zigFieldLeafNode(expr: Node): Node | undefined {
     const last = expr.namedChildCount > 0 ? expr.namedChild(expr.namedChildCount - 1) : null
-    if (last && last.type === "identifier") return last.text
+    if (last && last.type === "identifier") return last
     return undefined
   }
 
@@ -962,7 +993,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     const BUILTINS = new Set(["void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "anytype", "comptime_int", "comptime_float", "noreturn", "type", "anyerror", "c_char", "c_short", "c_int", "c_long", "c_longlong", "c_uint", "c_ulong", "c_ulonglong", "c_void", "error", "test"])
     const emitted = new Set<string>()
-    const push = (leaf: string) => {
+    // `site` is the type node the leaf name was read from — M59.A7 (#825) wants
+    // the reference line of the NAME, not of the enclosing declaration.
+    const push = (leaf: string, site?: Node) => {
       if (!leaf) return
       const trim = leaf.replace(/[!*\s\[\]\{\}]+/g, "").trim()
       if (!trim) return
@@ -977,6 +1010,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: head,
           type: ASTEngine.RelationshipType.References,
           confidence: 0.9,
+          // M59.A7 (#825): the type as written at this site.
+          ...(this.nodeLine(site) ? { line_number: this.nodeLine(site)! } : {}),
           metadata: { relationshipType: "declared_type" },
         })
       }
@@ -990,8 +1025,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 0; i < paramsNode.namedChildCount; i++) {
             const param = paramsNode.namedChild(i)
             if (param?.type !== "parameter") continue
-            const t = this.zigTypeLeaf(param)
-            if (t) push(t)
+            const tNode = this.zigTypeLeafNode(param)
+            if (tNode) push(tNode.text, tNode)
           }
         }
         // Return type: error_union_type / nullable_type / pointer_type /
@@ -1007,13 +1042,13 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         const retNode = kids
           .filter((c) => c.type !== "identifier" || kids.indexOf(c) !== 0)
           .find((c) => c.type === "error_union_type" || c.type === "nullable_type" || c.type === "pointer_type" || c.type === "slice_type" || c.type === "builtin_type" || c.type === "identifier" || c.type === "field_expression")
-        const retLeaf = retNode ? this.zigTypeLeaf(retNode) : undefined
-        if (retLeaf) push(retLeaf)
+        const retLeafNode = retNode ? this.zigTypeLeafNode(retNode) : undefined
+        if (retLeafNode) push(retLeafNode.text, retLeafNode)
       }
       if (n.type === "container_field") {
         // struct/union/enum member type
-        const t = this.zigTypeLeaf(n)
-        if (t) push(t)
+        const tNode = this.zigTypeLeafNode(n)
+        if (tNode) push(tNode.text, tNode)
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
@@ -1038,30 +1073,60 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    *       now yield undefined — no more phantom declared-type refs to
    *       enum members. */
   private zigTypeLeaf(node: Node): string | undefined {
-    if (node.type === "identifier") return node.text
-    const idents: string[] = []
+    return this.zigTypeLeafNode(node)?.text
+  }
+
+  /** The identifier NODE whose text `zigTypeLeaf` returns (identical traversal
+   *  and identical drop-the-declaration-name rule), so a declared-type
+   *  reference can carry the line the type is written on (M59.A7 #825). */
+  private zigTypeLeafNode(node: Node): Node | undefined {
+    if (node.type === "identifier") return node
+    const ids: Node[] = []
     const stack: Node[] = [node]
     let guard = 0
     while (stack.length > 0 && guard++ < 200) {
       const n = stack.pop()!
-      if (n.type === "identifier") idents.push(n.text)
+      if (n.type === "identifier") ids.push(n)
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
-    if (idents.length === 0) return undefined
+    if (ids.length === 0) return undefined
     // parameter/container_field: child 0 is the declaration NAME — drop it.
     if (
       (node.type === "parameter" || node.type === "container_field") &&
       node.namedChildCount > 0 &&
       node.namedChild(0)?.type === "identifier"
     ) {
-      idents.shift()
-      if (idents.length === 0) return undefined
+      ids.shift()
+      if (ids.length === 0) return undefined
     }
     // The LAST identifier after the name is the type leaf.
-    return idents[idents.length - 1]
+    return ids[ids.length - 1]
+  }
+
+  /**
+   * M59.A7 (#825): the 1-based line of a syntax node, or `undefined` when the
+   * node is absent. Never 0 — a missing site is OMITTED from the edge (the
+   * #820 rule), so a reader can tell "no line" from "line 1".
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
+    return node.startPosition.row + 1
+  }
+
+  /**
+   * M59.A7 (#825): a declaration's start is not always the line its NAME is
+   * written on (a wrapped declaration puts the name on the next line), so the
+   * grammar's `name` field is the site when it exists. Mirror of the C and C++
+   * lanes' `nameLine`.
+   */
+  private nameLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    const nameField =
+      typeof (node as any).childForFieldName === "function" ? node.childForFieldName("name") : null
+    return this.nodeLine(nameField ?? node)
   }
 
   /** Per-symbol cyclomatic complexity of a function/method body (family
