@@ -56,7 +56,7 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "daf922f402531588128421bd781f761a2309cb79",
-  "committedAt": "2026-09-21T02:19:42-04:00",
+  "commit": "9bebadb29c58a3d36d9b118005a05617195b795d",
+  "committedAt": "2026-09-21T09:05:15-04:00",
   "data": {
     "details": [
       {
@@ -2417,6 +2417,16 @@
         "problems": []
       },
       {
+        "fixture": "c/swallowed-identifier-arrival-907",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/swallowed-root-definitions-907",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/bare-value-reads",
         "ok": true,
         "problems": []
@@ -3239,7 +3249,7 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 10
+        "pass": 12
       },
       "clojure": {
         "fail": 0,
@@ -3352,8 +3362,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-21T06:59:52.172Z",
-  "regeneratedAtCommit": "daf922f402531588128421bd781f761a2309cb79",
+  "regeneratedAt": "2026-09-21T13:53:44.015Z",
+  "regeneratedAtCommit": "9bebadb29c58a3d36d9b118005a05617195b795d",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
