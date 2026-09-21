@@ -576,7 +576,25 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           ? i.items
           : [i.localName || i.module || ""]
         const baseType = i.isDefault || i.isDefaultImport ? "default" : i.isNamespace || i.isNamespaceImport ? "namespace" : "named"
-        const external = typeof i.module === "string" ? !i.module.startsWith(".") && !i.module.startsWith("/") : !!i.isExternal
+        // M60/#910: the analyzer's OWN classification wins over the
+        // bare-specifier shape rule. That rule is a js/ts idiom ("bare module
+        // specifier = package"), and applying it to every language made c's
+        // two include forms indistinguishable: `#include "util.h"` (a project
+        // header) and `#include <stdio.h>` (a system header) both have a
+        // specifier that starts with neither "." nor "/", so both were stored
+        // external and the file-dependency engine could not tell a sibling
+        // header from libc. c/cpp declare it (`metadata.isSystemInclude`),
+        // clojure/sql declare it (`isExternal`); an undeclared dependency keeps
+        // the historical heuristic unchanged.
+        const declared = (i.metadata ?? {}) as Record<string, any>
+        const external =
+          declared.isSystemInclude === true || declared.isExternal === true || i.isExternal === true
+            ? true
+            : declared.isSystemInclude === false || declared.isExternal === false
+              ? false
+              : typeof i.module === "string"
+                ? !i.module.startsWith(".") && !i.module.startsWith("/")
+                : !!i.isExternal
         const line = i.range?.startLine ?? i.line ?? 0
         return items
           .filter((name: string) => typeof name === "string" && name.length > 0)

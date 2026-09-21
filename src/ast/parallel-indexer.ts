@@ -2515,7 +2515,31 @@ export async function storeResults(
              const importType =
                imp.importType ??
                (imp.isDefault || imp.isDefaultImport ? "default" : imp.isNamespace || imp.isNamespaceImport ? "namespace" : "named")
-             const importId = `${fileId}:import:${moduleName}:${imp.range?.startLine ?? 0}`
+             // M60/#910: `is_external` was HARDCODED 0, so every analyzer that
+             // already classifies its dependencies — clojure (`isExternal`),
+             // sql (`isExternal`), c/cpp (`metadata.isSystemInclude`: `<stdio.h>`
+             // vs `"util.h"`) — had its declaration silently discarded, and
+             // the one consumer that reads the flag (the file-dependency
+             // engine, which keeps external packages out of internal
+             // resolution and honours `includeExternal: false`) treated a
+             // system header as a project-internal dependency candidate.
+             // The analyzer's own classification is the evidence; an
+             // undeclared dependency stays 0 (unknown ≠ external).
+             const impMeta = (imp.metadata ?? {}) as Record<string, any>
+             const impIsExternal =
+               imp.isExternal === true || impMeta.isExternal === true || impMeta.isSystemInclude === true ? 1 : 0
+             // M60/#910: the row's LINE was always 0 for every import that
+             // arrived in the worker's BasicImport shape (`{name, path, type,
+             // isExternal, line}`) — the worker carried the line, this read
+             // looked only at the analyzer's `range.startLine`, so the column
+             // was written as 0 for c's includes while the value sat one field
+             // away. Read every shape the two producers use; an import whose
+             // line is genuinely unknown stays 0 (never invented).
+             const impLine =
+               (typeof imp.range?.startLine === "number" && imp.range.startLine > 0 ? imp.range.startLine : 0) ||
+               (typeof (imp.range as any)?.start?.line === "number" && (imp.range as any).start.line > 0 ? (imp.range as any).start.line : 0) ||
+               (typeof imp.line === "number" && imp.line > 0 ? imp.line : 0)
+             const importId = `${fileId}:import:${moduleName}:${impLine}`
              stmt.insertImport.run(
                importId,
                projectId,
@@ -2523,8 +2547,8 @@ export async function storeResults(
                moduleName,
                imp.path || moduleName,
                importType,
-               0,
-               imp.range?.startLine ?? 0,
+               impIsExternal,
+               impLine,
                now,
                now,
              )
@@ -2607,11 +2631,26 @@ export async function storeResults(
                  const dummyName = sourceLeaf || sourceName.replace(/[:.]/g, "_").replace(/:?\d+$/, "")
                  if (/^[a-z][a-z0-9_.]*$/.test(dummyName) && dummyName.includes(".")) continue
                  if (/^[a-z][a-z0-9_.]*$/.test(targetName) && targetName.includes(".")) continue
-               }
-               sourceId = null
+               }               sourceId = null
                sourceExternal = sourceName
              }
- 
+
+             // M60/#910: a FILE-LEVEL dependency is a module -> module edge, so
+             // when its source did not resolve to a symbol it is the IMPORTING
+             // FILE that is the importer — not the file-scope placeholder scope
+             // name the analyzer had to spell (`global`). Without this the
+             // stored row named no importer at all, which is why no surface
+             // could answer "what does this file include": the row existed, the
+             // dependency existed, and the only thing missing was who declared
+             // it. The analyzer's own spelling is kept in metadata.scopeName
+             // (nothing is discarded), and the row's `source_external` now
+             // holds the project-relative path every reader keys on.
+             if (!sourceSymbol && rel.metadata?.fileLevel === true) {
+               rel.metadata = rel.metadata || {}
+               rel.metadata.scopeName = rel.metadata.scopeName ?? sourceName
+               sourceExternal = relativePath
+             }
+
              // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later
              const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any
              const targetId = resolvedRow?.id || null

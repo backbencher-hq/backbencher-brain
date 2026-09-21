@@ -179,7 +179,28 @@ export async function handleGraphRequest(
       )
       .all(projectId, rootNode.id) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
     const fileLevel = classifyFileLevel(fileLevelRaw)
-    return buildGroupedUsages(result as GraphTraversalResult, fileLevel)
+    // M60/#910 (second direction): the SAME section, read outward. The query
+    // above answers "what imports this symbol" (rows targeting the root). A
+    // file-level dependency — `#include "util.h"`, emitted by c as the
+    // first-class `imports` kind and stored with the importing file in
+    // source_external — has no symbol endpoint on EITHER side, so no symbol
+    // JOIN and no root target can ever reach it: c's include list was
+    // unanswerable in this surface no matter how the edge was typed. Read it
+    // by IMPORTER instead: rows whose source is this file, whose type is the
+    // first-class `imports` kind, and whose target is external (a specifier,
+    // not a symbol). Exact path match on source_external — no basename
+    // guessing, so a language whose imports rows name a module leaf (ts/js)
+    // is untouched, and a row that cannot name its importer is NOT returned
+    // here (it stays a declared external row).
+    const fileDepsRaw = db
+      .prepare(
+        "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
+          "FROM brain_relationship WHERE project_id = ? AND relationship_type = 'imports' AND source_symbol_id IS NULL " +
+          "AND target_symbol_id IS NULL AND source_external = ?",
+      )
+      .all(projectId, rootNode.file) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
+    const dependencies = classifyFileLevel(fileDepsRaw).imports
+    return buildGroupedUsages(result as GraphTraversalResult, { ...fileLevel, dependencies })
   }
   return result
 }
