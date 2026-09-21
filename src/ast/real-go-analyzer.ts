@@ -89,8 +89,19 @@ export interface GoContext {
 }
 
 export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * M59.A7 (#825): the CALLEE node of each deduped call, keyed by the enclosing
+   * function's `startIndex` and then by the call text. The calls lane iterates
+   * `symbol.qualified_calls` — a deduped STRING list by design (M37 #604, GOD9)
+   * — so the node an edge's line comes from has to be recorded where the scan
+   * still holds it. Reset at the top of every `analyze()`: a `startIndex` is
+   * file-local, so a retained map would attribute another file's line.
+   */
+  private goCallSites = new Map<number, Map<string, Node>>()
+
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: GoContext = { filePath, content }
+    this.goCallSites = new Map()
 
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -166,6 +177,10 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // kind by completeness section B (family convention — c pins the
         // stdlib.h include edge the same way); isGoImportDep keeps the go-idiom
         // marker for the oracle.
+        // M59.A7 (#825): the import_spec, whose line is the path's line for a
+        // single import and for each entry of a grouped one (the spec starts
+        // at its path — an alias would share the line).
+        ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
         metadata: { isGoImportDep: true, isImport: true, packageName: imp.metadata?.packageName },
       })
     }
@@ -284,20 +299,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emitted = new Set<string>()
     const BUILTINS = new Set(["int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "float32", "float64", "complex64", "complex128", "string", "bool", "byte", "rune", "error", "any"])
 
-    const collectTypeNames = (n: Node, out: string[], qualified?: string): void => {
-      if (n.type === "qualified_type") {
-        // Full dotted pkg.Type per dotted-name convention.
-        if (!out.includes(n.text) && !BUILTINS.has(n.text)) out.push(n.text)
-        return
-      }
-      if (n.type === "type_identifier") {
-        if (!BUILTINS.has(n.text) && !out.includes(n.text)) out.push(n.text)
+    // M59.A7 (#825): the node form of collectTypeNames — same traversal, same
+    // BUILTINS guard, same first-wins dedupe, but it keeps the NODE the name is
+    // written on so the edge can carry that line instead of the construct's.
+    const collectTypeNameNodes = (n: Node, out: Node[], qualified?: string): void => {
+      if (n.type === "qualified_type" || n.type === "type_identifier") {
+        if (!BUILTINS.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
       if (n.type === "block" || n.type === "expression_list") return
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) collectTypeNames(c, out, qualified)
+        if (c) collectTypeNameNodes(c, out, qualified)
       }
     }
 
@@ -328,17 +341,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emit = (source: string, roots: (Node | null)[], relType: string): void => {
       for (const r of roots) {
         if (!r) continue
-        const names: string[] = []
-        collectTypeNames(r, names)
+        const names: Node[] = []
+        collectTypeNameNodes(r, names)
         for (const t of names) {
-          const key = `${source}|${t}|${relType}`
+          const key = `${source}|${t.text}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
           relationships.push({
             source,
-            target: t,
+            target: t.text,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
+            ...(this.nodeLine(t) ? { line_number: this.nodeLine(t)! } : {}),
             metadata: { relationshipType: relType },
           })
         }
@@ -1011,8 +1025,46 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
+  /**
+   * M59.A7 (#825): the 1-based line of a syntax node, or `undefined` when the
+   * node is absent. Never 0 — a site that cannot be named is OMITTED from the
+   * edge (the #820 rule), so a reader can tell "no line" from "line 1".
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
+    return node.startPosition.row + 1
+  }
+
+  /**
+   * M59.A7 (#825): the node that NAMES a call. A `selector_expression` starts at
+   * its RECEIVER, and a receiver-continued chain is valid Go — `.` does not
+   * insert a semicolon, so `builder.` + newline + `Reset()` parses — which makes
+   * the selector's own start the wrong site exactly as the c lane measured on a
+   * newline-continued function-pointer call. The `field` child is the leaf the
+   * edge's target is built from, so it is the leaf that carries the line.
+   */
+  private goCalleeNameNode(funcNode: Node | null | undefined): Node | undefined {
+    if (!funcNode) return undefined
+    if (funcNode.type === "selector_expression") {
+      return funcNode.childForFieldName("field") ?? funcNode
+    }
+    return funcNode
+  }
+
+  /**
+   * M59.A7 (#825): the callee leaf of a STATEMENT-level call — `defer`/`go`
+   * statements. The statement starts at its keyword (and `defer` does not insert
+   * a semicolon, so `defer` + newline + `cleanup()` is valid Go), so the keyword
+   * is not where the target is named.
+   */
+  private goStatementCalleeNode(node: Node): Node | undefined {
+    const callExpr = this.findChildByType(node, "call_expression")
+    return callExpr ? this.goCalleeNameNode(callExpr.childForFieldName("function")) : undefined
+  }
+
   private findGoFunctionCalls(functionNode: Node): string[] {
     const calls: string[] = []
+    const sites = new Map<string, Node>()
     const seen = new Set<string>()
 
     const bodyNode = functionNode.childForFieldName("body")
@@ -1032,6 +1084,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (callExpression && !this.isGoBuiltin(callExpression) && !seen.has(callExpression)) {
               seen.add(callExpression)
               calls.push(callExpression)
+              // The callee's LEAF is the naming node the edge's line comes
+              // from, not the selector (which starts at its receiver). The
+              // first site wins, exactly like the dedup above keeps the first
+              // occurrence.
+              sites.set(callExpression, this.goCalleeNameNode(funcNode) ?? funcNode)
             }
           }
         }
@@ -1042,6 +1099,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    this.goCallSites.set(functionNode.startIndex, sites)
     return calls
   }
 
@@ -1294,6 +1352,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59.A7 (#825): the member's own declaration line (its name node, so
+          // a wrapped declaration reports where the name is written).
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
         })
       }
@@ -1326,13 +1387,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // only, no dangling type-text targets).
           const structSpec = this.findChildByType(typeSpec, "struct_type")
           if (structSpec) {
-            const embeddedTypes = this.extractGoEmbeddedTypes(structSpec)
-            forEachSymbol(embeddedTypes, (embeddedType) => {
+            const embeddedTypeNodes = this.extractGoEmbeddedTypeNodes(structSpec)
+            forEachSymbol(embeddedTypeNodes, (embeddedType) => {
               relationships.push({
                 source: typeName,
-                target: embeddedType,
+                target: embeddedType.text,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 0.8,
+                // M59.A7 (#825): the EMBEDDED TYPE's line — the site the
+                // embedded declaration is written on.
+                ...(this.nodeLine(embeddedType) ? { line_number: this.nodeLine(embeddedType)! } : {}),
                 metadata: {
                   relationshipType: "go_struct_embedding",
                   isEmbedding: true,
@@ -1370,6 +1434,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: leaf,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 0.8,
+                // M59.A7 (#825): the embedded interface reference's own line.
+                ...(this.nodeLine(inner) ? { line_number: this.nodeLine(inner)! } : {}),
                 metadata: {
                   relationshipType: "go_interface_embedding",
                   isEmbedding: true,
@@ -1484,6 +1550,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: interfaceSymbol.name,
             type: ASTEngine.RelationshipType.Implements,
             confidence: valueImpl.confidence,
+            // M59.A7 (#825): the interface declaration's own line — the site
+            // that NAMES the target (the struct's line would name the source).
+            ...(interfaceSymbol.range?.startLine ? { line_number: interfaceSymbol.range.startLine } : {}),
             metadata: {
               relationshipType: "go_interface_implementation",
               isImplicit: true,
@@ -1500,6 +1569,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: interfaceSymbol.name,
             type: ASTEngine.RelationshipType.Implements,
             confidence: pointerImpl.confidence,
+            ...(interfaceSymbol.range?.startLine ? { line_number: interfaceSymbol.range.startLine } : {}),
             metadata: {
               relationshipType: "go_interface_implementation",
               isImplicit: true,
@@ -1597,7 +1667,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const dotImported = this.hasGoDotImport(rootNode)
     forEachSymbol(functions, (func) => {
       const qualifiedCalls = func.qualified_calls || []
+      // M59.A7 (#825): the callee leaf recorded by findGoFunctionCalls, keyed by
+      // the enclosing symbol's startIndex (file-local, so it cannot collide).
+      const callSites = this.goCallSites.get(func.range?.startIndex ?? -1)
       forEachSymbol(qualifiedCalls, (call) => {
+        const callLine = this.nodeLine(callSites?.get(call))
         // Handle package-qualified calls (package.Function) — leaf target
         const targetFunction = this.resolveGoFunctionCall(call, symbols, dotImported)
         // Builtin-leaf guard (deep-review 2026-08-29, go-tools @200): the
@@ -1616,6 +1690,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: targetFunction,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.8,
+            ...(callLine ? { line_number: callLine } : {}),
             metadata: {
               relationshipType: "go_function_call",
               callExpression: call,
@@ -1641,6 +1716,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: targetFunction,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.6,
+              ...(callLine ? { line_number: callLine } : {}),
               metadata: { relationshipType: "go_instantiation", callExpression: call },
             })
           }
@@ -1731,6 +1807,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: leaf,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
+              // M59.A7 (#825): the package-scope walk holds the callee node
+              // directly — its LEAF's line, not the statement's.
+              ...(this.nodeLine(this.goCalleeNameNode(fn)) ? { line_number: this.nodeLine(this.goCalleeNameNode(fn))! } : {}),
               metadata: {
                 relationshipType: "go_package_scope_call",
                 callExpression: fn.text,
@@ -1749,6 +1828,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: leaf,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.6,
+              ...(this.nodeLine(this.goCalleeNameNode(fn)) ? { line_number: this.nodeLine(this.goCalleeNameNode(fn))! } : {}),
               metadata: { relationshipType: "go_package_scope_instantiation", callExpression: fn.text },
             })
           }
@@ -1833,6 +1913,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.8,
+              // M59.A7 (#825): the constructed TYPE's line.
+              ...(this.nodeLine(typeNode) ? { line_number: this.nodeLine(typeNode)! } : {}),
               metadata: { relationshipType: "go_composite_literal_construction", isConstructor: true },
             })
           }
@@ -1890,6 +1972,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: functionCall,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
+              // M59.A7 (#825): the callee leaf of the `go` statement.
+              ...(this.nodeLine(this.goStatementCalleeNode(node)) ? { line_number: this.nodeLine(this.goStatementCalleeNode(node))! } : {}),
               metadata: {
                 relationshipType: "go_goroutine",
                 isAsynchronous: true,
@@ -1935,6 +2019,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: channelVar.name,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.8,
+              // M59.A7 (#825): the send/receive statement's line.
+              ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
               metadata: {
                 relationshipType: "go_channel_operation",
                 operationType: isSend ? "send" : "receive",
@@ -1959,6 +2045,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: deferredFunction,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
+            // M59.A7 (#825): the callee leaf of the `defer` statement.
+            ...(this.nodeLine(this.goStatementCalleeNode(node)) ? { line_number: this.nodeLine(this.goStatementCalleeNode(node))! } : {}),
             metadata: {
               relationshipType: "go_defer",
               isDeferred: true,
@@ -2348,6 +2436,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: name,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
+              // M59.A7 (#825): the identifier's own line.
+              ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
               metadata: { relationshipType: "identifier_usage", nodeType: node.type },
             })
           }
@@ -2422,6 +2512,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: tgt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.7,
+              // M59.A7 (#825): the FIELD identifier's line, not the receiver's —
+              // the c lane's receiver-start lesson applied to `a.b`.
+              ...(this.nodeLine(field) ? { line_number: this.nodeLine(field)! } : {}),
               metadata: { relationshipType: "go_selector_use", selectorExpression: key },
             })
           }
@@ -3250,7 +3343,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Extract embedded types from struct (anonymous fields)
    */
   private extractGoEmbeddedTypes(structNode: Node): string[] {
-    const embeddedTypes: string[] = []
+    return this.extractGoEmbeddedTypeNodes(structNode).map((n) => n.text)
+  }
+
+  /**
+   * M59.A7 (#825): the node form of extractGoEmbeddedTypes. The extends edge
+   * this feeds carries the embedded TYPE's own line, so the walk has to return
+   * the node the name is written on, not just its text. One traversal serves
+   * both — the text form delegates here, so the two can never disagree.
+   */
+  private extractGoEmbeddedTypeNodes(structNode: Node): Node[] {
+    const embeddedTypes: Node[] = []
     const fieldList = this.findChildByType(structNode, "field_declaration_list")
 
     if (fieldList) {
@@ -3267,7 +3370,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             // This is an embedded field
             const typeNode = field.childForFieldName("type") || this.findChildByType(field, "type_identifier")
             if (typeNode) {
-              embeddedTypes.push(typeNode.text)
+              embeddedTypes.push(typeNode)
             }
           }
         }
