@@ -499,7 +499,9 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Dispatch by the block's lang attribute — lang="ts" blocks were run
       // through the JS analyzer even though the engine pre-parses them with
       // the TS grammar, silently dropping TS-only declarations.
-      const isTs = context?.sfcScriptLangs?.[bi] === "ts"
+      // #903: `tsx` is TypeScript too (the engine parses it with the
+      // JSX-capable tsx grammar and reports the block's own lang here).
+      const isTs = context?.sfcScriptLangs?.[bi] === "ts" || context?.sfcScriptLangs?.[bi] === "tsx"
 
       let sub: ASTEngine.ParseResult
       try {

@@ -8,8 +8,8 @@
         "bytes": 9702
       },
       "src/ast/engine.ts": {
-        "sha256": "d3359e4b857f1a4bd21b410a2141394e99a444fb570c3ca66040ff9e937e8f28",
-        "bytes": 73144
+        "sha256": "df286a99659c4f14faffaecc6370da8b5bf9dd6809a10e2ad397253b65e58fc9",
+        "bytes": 74072
       },
       "src/ast/fingerprint.ts": {
         "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
@@ -100,8 +100,8 @@
         "bytes": 20521
       },
       "src/ast/real-java-analyzer.ts": {
-        "sha256": "236f39021f277976135df7b6788519ca5874598181a12f379654b1b063e0813d",
-        "bytes": 133991
+        "sha256": "95c0f695ba799b7b0da97fc4be20df2faf7672814e862ec050b2ab6b4899ecfe",
+        "bytes": 140683
       },
       "src/ast/real-javascript-analyzer.ts": {
         "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
@@ -168,8 +168,8 @@
         "bytes": 29215
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "e421b023c9b862d9f030ec3c56e47333532c35f8390594dbdba771fb2765fae1",
-        "bytes": 71811
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
       },
       "src/ast/real-swift-analyzer.ts": {
         "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
@@ -180,8 +180,8 @@
         "bytes": 236668
       },
       "src/ast/real-vue-analyzer.ts": {
-        "sha256": "16830a7e246a36d9f63d4fc282ec58af5d4220a9f43148c3c27303ed533786de",
-        "bytes": 58656
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
       },
       "src/ast/real-xml-analyzer.ts": {
         "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
@@ -252,7 +252,7 @@
         "bytes": 10168
       }
     },
-    "digest": "7270966869df1d52b99c55e056742473eb6003c1f99bf988f4114730b3de2e6b",
+    "digest": "5ac659f0ab170458e0369f9593b8be4c6ca593e0f9e8ee730d226888eee5adc1",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm",
       "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
@@ -357,11 +357,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 17.576441,
-      "userCpuMs": 41.6,
-      "systemCpuMs": 6.575,
-      "peakRssBytes": 228990976,
-      "rssDeltaBytes": 2490368,
+      "wallTimeMs": 12.27848,
+      "userCpuMs": 32.196,
+      "systemCpuMs": 0.003,
+      "peakRssBytes": 228433920,
+      "rssDeltaBytes": 2883584,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

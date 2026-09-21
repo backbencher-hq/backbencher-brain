@@ -888,8 +888,18 @@ export namespace ASTEngine {
               if (a && a.type === "attribute") {
                 const attrName = findAttributeName(a)
                 if (attrName === "lang") {
+                  // #903: `tsx` must SURVIVE normalization. There is a separate
+                  // grammar for it (tree-sitter-tsx.wasm) because the plain
+                  // typescript grammar carries no JSX; collapsing tsx onto ts
+                  // parsed every JSX-bearing block with ERROR nodes — measured on
+                  // element-plus docs/examples/table-v2/cell-templating.vue
+                  // (<script lang="tsx" setup>), where the nested `dayjs(date)`
+                  // call disappeared and the surviving edge's callee span came
+                  // out as a slab of raw source. `jsx` stays on `js`: the
+                  // javascript grammar parses JSX itself.
                   let v = findAttributeValue(a)
-                  if (v === "ts" || v === "tsx") lang = "ts"
+                  if (v === "ts") lang = "ts"
+                  else if (v === "tsx") lang = "tsx"
                 }
               }
             }
@@ -1212,7 +1222,9 @@ export namespace ASTEngine {
             const sfcScriptCols: number[] = []
             const sfcScriptStartIndex: number[] = []
             for (const block of scriptBlocks) {
-              const subLang = block.lang === "ts" ? "typescript" : "javascript"
+              // #903: three-way dispatch — a tsx block needs the JSX-capable
+              // typescript grammar, not the plain one (see extractSfcScriptBlocks).
+              const subLang = block.lang === "ts" ? "typescript" : block.lang === "tsx" ? "tsx" : "javascript"
               const subParser = await getParser(subLang)
               const subTree = subParser.parse(block.body)
               sfcScriptTrees.push(subTree)
