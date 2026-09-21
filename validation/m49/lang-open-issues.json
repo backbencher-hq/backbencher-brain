@@ -1,7 +1,7 @@
 {
- "snapshotAt": "2026-09-21T00:15:43.494891Z",
+ "snapshotAt": "2026-09-21T00:29:25.206829Z",
  "source": "gh issue list --state open --limit 300",
- "count": 119,
+ "count": 116,
  "issues": [
   {
    "number": 902,
@@ -31,11 +31,6 @@
    "labels": [
     "analyzer"
    ]
-  },
-  {
-   "number": 896,
-   "title": "Refactor RealGroovyAnalyzer dispatch to a handler map (post-#841 tech debt)",
-   "labels": []
   },
   {
    "number": 894,
@@ -329,16 +324,6 @@
   {
    "number": 753,
    "title": "M49-CONV: CONV-DART-2 dart \u2014 duplicate method names keep FIRST body (wrong-body class, #745 family)",
-   "labels": []
-  },
-  {
-   "number": 751,
-   "title": "M49-CONV: CONV-CS-2 csharp \u2014 framework detection entirely absent (no mechanism, no metadata key)",
-   "labels": []
-  },
-  {
-   "number": 750,
-   "title": "M49-CONV: CONV-CS-1 csharp \u2014 bare identifier reads and chain-root reads emit no Uses (#739 family)",
    "labels": []
   },
   {
