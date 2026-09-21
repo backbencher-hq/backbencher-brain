@@ -83,6 +83,25 @@ const GROOVY_DECLARATION_TYPES = new Set([
   "class_declaration", "trait_declaration", "enum_declaration",
 ])
 
+/**
+ * #896 — the groovy walk state. `analyze` owns traversal; the `handleX`
+ * methods own extraction. Nothing else is shared between them.
+ */
+interface GroovyWalkState {
+  content: string
+  symbols: ASTEngine.UniversalSymbol[]
+  relationships: ASTEngine.UniversalRelationship[]
+  imports: ASTEngine.ImportInfo[]
+  symbolMap: Map<string, ASTEngine.UniversalSymbol>
+  classHierarchy: Map<string, string[]>
+  overrideTasks: OverrideTask[]
+  scopeStack: Scope[]
+  parentContext: Scope | undefined
+  newContext: Scope | undefined
+  pushedScope: boolean
+  currentPackage: string
+}
+
 export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -96,7 +115,6 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
 
-    let currentPackage = ""
 
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
@@ -104,6 +122,27 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const scopeStack: Scope[] = []
     const stack: StackItem[] = [{ node: rootNode }]
+
+    // #896 (handler-map refactor): the WALK STATE. `analyze` owns TRAVERSAL —
+    // the stack loop, its exit items, the child pushes — and the handlers below
+    // own EXTRACTION, reading and mutating this object and nothing else. The
+    // containers are references, so handler mutations land in the same arrays
+    // the rest of this method consumes; the scalars are the loop-carried state
+    // the chain used to keep as locals.
+    const walk: GroovyWalkState = {
+      content,
+      symbols,
+      relationships,
+      imports,
+      symbolMap,
+      classHierarchy,
+      overrideTasks,
+      scopeStack,
+      parentContext: undefined,
+      newContext: undefined,
+      pushedScope: false,
+      currentPackage: "",
+    }
 
     while (stack.length > 0) {
       const item = stack.pop()!
@@ -128,619 +167,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      let newContext = parentContext
-      const type = node.type
-      let pushedScope = false
+      walk.parentContext = parentContext
+      walk.newContext = parentContext
+      walk.pushedScope = false
+      const handler = this.nodeHandlers.get(node.type)
+      if (handler) handler(node, walk)
 
-      if (type === "package_declaration") {
-        const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
-        if (nameNode) currentPackage = nameNode.text
-      } else if (type === "import_declaration") {
-        const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
-        if (nameNode) {
-          const moduleName = nameNode.text
-          // G5 (review wave): `static` and the wildcard marker are ANONYMOUS
-          // children (probe-verified shape: import_declaration >
-          // [import, static?, scoped_identifier, ., asterisk]). The old
-          // named-children text scan never matched `static`, so every static
-          // import was recorded non-static; and isNamespace (module suffix
-          // test) permanently disagreed with isWildcard (raw-text test) on
-          // `.*` imports because the module text never contains `.*`. Both
-          // flags now derive from the same anonymous-token scan.
-          let isStatic = false
-          let isWildcard = false
-          for (let i = 0; i < node.childCount; i++) {
-            const c = node.child(i)
-            if (!c) continue
-            if (c.type === "static") isStatic = true
-            else            // M49.S1 F1 finding: this pinned groovy grammar declares the
-            // wildcard token as `asterisk` (probe s1-groovy-shape) — there
-            // is no `wildcard_import` node type, so the old second disjunct
-            // was dead code that could never fire.
-            if (c.type === "asterisk") isWildcard = true
-          }
-          imports.push({
-            module: moduleName,
-            items: [],
-            isDefault: false,
-            range: this.nodeToRange(node),
-            isNamespace: isWildcard,
-            metadata: { isWildcard, isStatic },
-          })
-          // DependsOn for imports — source rewritten to the file's primary
-          // type after the walk (imports precede type declarations). GAD2:
-          // script files with no class keep the "(script)" sentinel (the old
-          // "root" was a third phantom node).
-          relationships.push({
-            source: currentPackage || "(script)",
-            target: moduleName,
-            type: ASTEngine.RelationshipType.References,
-            confidence: 0.9,
-            // M59 (#825): the line the imported MODULE is named on (java's rule).
-            ...this.lineField(nameNode, node),
-            metadata: { isGroovyImport: true, isWildcard },
-          })
-        }
-      } else if (
-        type === "class_declaration" ||
-        type === "interface_declaration" ||
-        type === "trait_declaration" ||
-        type === "enum_declaration" ||
-        type === "record_declaration" ||
-        type === "annotation_type_declaration"
-      ) {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier")
-        if (nameNode) {
-          const name = nameNode.text
-          const kind = type === "interface_declaration" || type === "trait_declaration"
-            ? ASTEngine.SymbolKind.Interface
-            : type === "enum_declaration"
-              ? ASTEngine.SymbolKind.Enum
-              : ASTEngine.SymbolKind.Class
-          const fqn = this.buildFqn(currentPackage, scopeStack, name)
-          const visibility = this.extractVisibility(node)
-
-          const parents = this.extractInheritance(node, type)
-          classHierarchy.set(fqn, parents)
-          // Class/trait/enum annotations: previously only methods carried
-          // them, so Spring/Grails service classes had no annotation data.
-          const classAnnotations = this.extractAnnotations(node)
-
-          // extends (superclass / interface-extends)
-          if (type === "class_declaration") {
-            const superClass = this.findChild(node, (n) => n.type === "superclass")
-            if (superClass) {
-              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
-              if (sc) {
-                relationships.push({
-                  source: name,
-                  target: this.baseTypeName(sc),
-                  type: ASTEngine.RelationshipType.Extends,
-                  confidence: 1.0,
-                  // M59 (#825): the SUPERtype's own line, never the class header's.
-                  ...this.lineField(sc, node),
-                  metadata: { relationshipType: "extends" },
-                })
-              }
-            }
-          } else if (type === "interface_declaration") {
-            const ext = this.findChild(node, (n) => n.type === "extends_interfaces")
-            if (ext) {
-              for (const tid of this.collectTypeNodes(ext)) {
-                relationships.push({
-                  source: name,
-                  target: this.baseTypeName(tid),
-                  type: ASTEngine.RelationshipType.Extends,
-                  confidence: 1.0,
-                  // M59 (#825): each interface parent is named on its OWN line.
-                  ...this.lineField(tid, node),
-                  metadata: { relationshipType: "extends_interface" },
-                })
-              }
-            }
-          } else if (type === "trait_declaration") {
-            const superClass = this.findChild(node, (n) => n.type === "superclass")
-            if (superClass) {
-              const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
-              if (sc) {
-                relationships.push({
-                  source: name,
-                  target: this.baseTypeName(sc),
-                  type: ASTEngine.RelationshipType.Extends,
-                  confidence: 1.0,
-                  ...this.lineField(sc, node),
-                  metadata: { relationshipType: "extends_trait" },
-                })
-              }
-            }
-          }
-
-          // implements (super_interfaces — classes and traits)
-          const superInterfaces = this.findChild(node, (n) => n.type === "super_interfaces")
-          if (superInterfaces) {
-            for (const tid of this.collectTypeNodes(superInterfaces)) {
-              relationships.push({
-                source: name,
-                target: this.baseTypeName(tid),
-                type: ASTEngine.RelationshipType.Implements,
-                confidence: 1.0,
-                // M59 (#825): each interface is named on its OWN line.
-                ...this.lineField(tid, node),
-                metadata: { relationshipType: "implements" },
-              })
-            }
-          }
-
-          const sym: ASTEngine.UniversalSymbol = {
-            name,
-            kind,
-            comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
-            genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
-            // M59 (#825): annotations skipped — the class is written on its own line.
-            range: this.symbolRange(node),
-            visibility,
-            decorators: classAnnotations,
-            ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
-            ownerKind: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined,
-            metadata: { nodeType: type, annotations: classAnnotations, isRecord: type === "record_declaration" },
-          }
-          symbols.push(sym)
-          symbolMap.set(fqn, sym)
-          symbolMap.set(name, sym)
-
-          if (type === "record_declaration") {
-            // Record components are constructor-backed properties (Groovy 4
-            // records, mirroring the java analyzer): each formal_parameter of
-            // the record header becomes a public Property symbol.
-            const fp = this.findChild(node, (n) => n.type === "formal_parameters")
-            if (fp) {
-              for (let i = 0; i < fp.namedChildCount; i++) {
-                const p = fp.namedChild(i)
-                if (!p || p.type !== "formal_parameter") continue
-                const pName = this.findChild(p, (n) => n.type === "identifier")
-                const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "generic_type" || n.type === "array_type" || n.type === "scoped_type_identifier")
-                if (pName) {
-                  symbols.push({
-                    name: pName.text,
-                    kind: ASTEngine.SymbolKind.Property,
-                    range: this.symbolRange(p),
-                    returnType: pType ? this.baseTypeName(pType) : undefined,
-                    visibility: "public",
-                    ownerName: name,
-                    ownerKind: kind,
-                    metadata: { nodeType: "record_component" },
-                  })
-                }
-              }
-            }
-          }
-
-          newContext = {
-            node,
-            name,
-            kind,
-            fqn,
-            symbolRef: sym,
-            visibility,
-            isInterface: type === "interface_declaration" || type === "trait_declaration",
-            parents,
-          }
-          scopeStack.push(newContext)
-          pushedScope = true
-        }
-      } else if (type === "method_declaration" || type === "constructor_declaration" || type === "function_definition") {
-        const isConstructorRaw = type === "constructor_declaration"
-        const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "string_literal")
-        if (nameNode) {
-          const rawName = nameNode.type === "string_literal"
-            ? this.stripQuotes(nameNode.text)
-            : nameNode.text
-          // G4 (review wave, java C3 parity): ctors keep their DECLARED name
-          // (the class name). The old "constructor" literal collided across
-          // classes (contains:A->constructor vs contains:B->constructor are
-          // indistinguishable; overloads collapsed). Kind still says
-          // Constructor; self-contains (A->A) matches the java/kotlin
-          // reference behavior exactly.
-          const name = rawName
-          const modifiers = this.extractModifiers(node)
-          const visibility = this.extractVisibility(node)
-          const annotations = this.extractAnnotations(node)
-
-          // #841 round 3 (def-method contract): a class-body method declared
-          // `def name() {}` parses as constructor_declaration because Java's
-          // method header requires a type and `def` is not one — the grammar
-          // squeezes `def` into a separate bogus field and the remainder reads
-          // as a constructor. A constructor's name MUST equal its class; when
-          // it does not, this is a def-returning method, not a constructor
-          // (emits kind=method on both wasms; the grammar-level fix regressed
-          // `def x = …` fields and was reverted — see git history).
-          const enclosingName = scopeStack.length > 0 && scopeStack[scopeStack.length - 1].kind === ASTEngine.SymbolKind.Class
-            ? scopeStack[scopeStack.length - 1].name
-            : undefined
-          const isMisnamedCtor = isConstructorRaw && enclosingName !== undefined && rawName !== enclosingName
-          const isConstructor = isConstructorRaw && !isMisnamedCtor
-          const parameters: ASTEngine.Parameter[] = []
-          const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
-          if (paramList) {
-            for (let i = 0; i < paramList.namedChildCount; i++) {
-              const p = paramList.namedChild(i)
-              if (!p || (p.type !== "formal_parameter" && p.type !== "spread_parameter")) continue
-              const isSpread = p.type === "spread_parameter"
-              // Varargs: the grammar has no named fields; the name lives in
-              // the trailing variable_declarator (JVM erasure: type + "[]").
-              let pName = this.findChild(p, (n) => n.type === "identifier")
-              if (isSpread) {
-                const decl = this.findChild(p, (n) => n.type === "variable_declarator")
-                pName = decl ? this.findChild(decl, (n) => n.type === "identifier") : null
-              }
-              const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type")
-              parameters.push({
-                name: pName?.text ?? "anonymous",
-                type: pType ? this.baseTypeName(pType) + (isSpread ? "[]" : "") : undefined,
-              })
-            }
-          }
-          const signature = `(${parameters.map((p) => p.type ?? "").join(",")})`
-
-          const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
-          const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
-          const fqn = this.buildFqn(currentPackage, scopeStack, name)
-
-          // Abstract: no body in an interface/trait, or body-less declaration.
-          const hasBody = !!this.findChild(node, (n) => n.type === "block" || n.type === "closure" || n.type === "constructor_body")
-          const isAbstract = !hasBody || (!!(newContext?.isInterface) && !hasBody)
-
-          // G2 (review wave, java JAO1 parity): @Override is a CHECK, not a
-          // requirement — un-annotated instance methods with matching
-          // signatures still override. Implicit tasks resolve but emit ONLY
-          // on a verified exact-signature in-file match (pass 1); explicit
-          // tasks keep the companion/guess tiers so overloads never
-          // fabricate an override edge.
-          if (annotations.indexOf("Override") !== -1 && newContext) {
-            overrideTasks.push({
-              fqn,
-              methodName: name,
-              signature,
-              ownerFqn: newContext.fqn,
-              explicit: true,
-              line: this.declarationLineNode(node).startPosition.row + 1,
-            })
-          } else if (newContext && !isConstructor &&
-                     modifiers.indexOf("static") === -1 && visibility !== "private") {
-            overrideTasks.push({
-              fqn,
-              methodName: name,
-              signature,
-              ownerFqn: newContext.fqn,
-              explicit: false,
-              line: this.declarationLineNode(node).startPosition.row + 1,
-            })
-          }
-
-          const sym: ASTEngine.UniversalSymbol = {
-            name,
-            kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
-            comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
-            complexity: this.calculateGroovyMethodComplexity(node),
-            // M59 (#825): annotations skipped — `@Override` is not where the
-            // overriding method is written — and the range starts at the NAME.
-            // tree-sitter-groovy absorbs a preceding field's type into a
-            // constructor's node (`final Distance distance` + `Sphere(...)`
-            // parse as one method_declaration starting at the field), so the
-            // node start is the field's line while the name is written 7 lines
-            // lower (measured: grails-core Sphere.groovy). The line belongs to
-            // the name, never to the construct that contains it (java/scala
-            // contract); the contains edge follows the range, so both move.
-            range: this.symbolRange(node, node.childForFieldName("name") ?? nameNode),
-            visibility,
-            genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
-            parameters,
-            decorators: annotations,
-            ownerName,
-            ownerKind,
-            metadata: { nodeType: type, modifiers, annotations, isAbstract },
-          }
-          symbols.push(sym)
-          symbolMap.set(fqn, sym)
-          // Raw `Owner.method(signature)` key so the override BFS (which walks
-          // raw parent names) can match in-file declarations.
-          const rawKey = ownerName ? `${ownerName}.${name}${signature}` : `${name}${signature}`
-          symbolMap.set(rawKey, sym)
-
-          newContext = {
-            node,
-            name,
-            kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
-            fqn,
-            symbolRef: sym,
-            visibility,
-            isInterface: false,
-            parents: [],
-          }
-          scopeStack.push(newContext)
-          pushedScope = true
-        }
-      } else if (type === "field_declaration" || type === "constant_declaration") {
-        const modifiers = this.extractModifiers(node)
-        const visibility = this.extractVisibility(node)
-        const isStatic = modifiers.indexOf("static") !== -1
-        const isConstant = modifiers.indexOf("final") !== -1 && isStatic
-        // Field annotations (@Column on fields = THE GORM/JPA idiom) were
-        // never extracted — classes and methods carried decorators, fields
-        // did not.
-        const fieldAnnotations = this.extractAnnotations(node)
-        const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
-        const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
-
-        for (let i = 0; i < node.namedChildCount; i++) {
-          const child = node.namedChild(i)
-          if (child?.type !== "variable_declarator") continue
-          const idNode = this.findChild(child, (n) => n.type === "identifier")
-          if (!idNode || !ownerName) continue
-          // #841 round 3 (def-squeeze phantom): when a `def name() {}` method
-          // is force-split, the grammar also manufactures a bogus field whose
-          // declared "name" is literally the keyword `def` (the type token it
-          // absorbed). No real Groovy field can be named `def` — reserved — so
-          // such symbols are parse artifacts, never emitted. The same shape
-          // legitimately carries the SQUEEZED METHOD's calls, which attribute
-          // to the enclosing class context below.
-          if (idNode.text === "def") continue
-          // M59 (#825) follow-up, measured on grails-core Sphere.groovy:
-          // `static Sphere valueOf(...)` parses as BOTH a
-          // constructor_declaration (the real method) AND a phantom
-          // field_declaration covering the header prefix (`static Sphere`);
-          // `final Distance distance` + ctor similarly split the field's
-          // TYPE into the field node and its NAME into the method node.
-          // Same defect family as the `def`-squeeze guard above: a grammar-
-          // manufactured field naming a member the class does not have.
-          // Proof of duplicate parse, not heuristic: two distinct same-line
-          // declarations must be `;`-separated, so a sibling method starting
-          // after the field with only whitespace between them (no `;`) is
-          // the same declaration parsed twice — the full-span method wins.
-          // Real shapes stay: `x; void foo()` has `;` in the gap, untyped
-          // `private test` has no same-line method, typed fields never match
-          // a trivia-only gap to a method consuming their own tokens.
-          if (this.isDuplicateParseField(node, content)) continue
-          symbols.push({
-            name: idNode.text,
-            kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
-            range: this.symbolRange(child),
-            visibility,
-            ownerName,
-            ownerKind,
-            decorators: fieldAnnotations,
-            metadata: { nodeType: type, modifiers, isConstant, annotations: fieldAnnotations },
-          })
-        }
-      } else if (type === "enum_constant") {
-        const nameNode = this.findChild(node, (n) => n.type === "identifier")
-        const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
-        if (nameNode && ownerName) {
-          symbols.push({
-            name: nameNode.text,
-            kind: ASTEngine.SymbolKind.EnumMember,
-            range: this.symbolRange(node),
-            visibility: "public",
-            ownerName,
-            ownerKind: ASTEngine.SymbolKind.Enum,
-            metadata: { nodeType: type },
-          })
-        }
-      } else if (type === "method_invocation") {
-        const nameNode = node.childForFieldName("name")
-        if (nameNode) {
-          const methodName = nameNode.text
-          const objectNode = node.childForFieldName("object")
-          // Dotted path WITHOUT argument text (family contract with java).
-          // Raw object text embedded inner-call arguments on chains:
-          // `db.list(user).collect` was stored as "db.list(user).collect".
-          const callExpr = this.buildGroovyQualifiedCall(objectNode, methodName)
-          // Script-level invocations (Jenkins-pipeline style: no enclosing
-          // class/method) are attributed to the "(script)" sentinel so the
-          // call graph of script files is not silently empty. Design
-          // decision recorded in wave M14.1.
-          const sourceName = parentContext?.name ?? "(script)"
-          if (!this.isGroovyBuiltin(callExpr)) {
-            // Matrix 1b payload: symbol-level qualified call list (#383) —
-            // attached to the enclosing method symbol when one exists.
-            if (parentContext?.symbolRef) {
-              if (!parentContext.symbolRef.qualified_calls) parentContext.symbolRef.qualified_calls = []
-              parentContext.symbolRef.qualified_calls.push(callExpr)
-            }
-            relationships.push({
-              source: sourceName,
-              target: methodName,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.7,
-              // M59 (#825): the method NAME's line, not the receiver's — a
-              // multi-line chain opens on the receiver (scala's measured defect).
-              ...this.lineField(nameNode, node),
-              metadata: { groovyCallExpression: callExpr },
-            })
-          }
-        }
-      } else if (type === "explicit_constructor_invocation") {
-        // super(...) / this(...) delegation (JLS-adjacent, Groovy ctor
-        // bodies produce this node). Honest literal target ("super"/"this")
-        // — never resolved to a guessed parent type.
-        const first = node.namedChild(0)
-        if (first && (first.type === "super" || first.type === "this")) {
-          relationships.push({
-            source: parentContext?.name ?? "(script)",
-            target: first.type,
-            type: ASTEngine.RelationshipType.Calls,
-            confidence: 1.0,
-            ...this.lineField(first, node),
-            metadata: { relationshipType: "constructor_invocation" },
-          })
-        }
-      } else if (type === "juxt_function_call") {
-        // Groovy juxtaposition call syntax: `echo "msg"` / `sh "cmd"` IS a
-        // method call under Groovy semantics — Jenkins pipelines are built
-        // on it. Grammar: juxt_function_call [name, args].
-        //
-        // #852: the family contract (java/kotlin/scala, and this analyzer's own
-        // `method_invocation` branch) is that a `calls` edge targets the BARE
-        // callee leaf. A dotted juxt name parses as `field_access`, so
-        // `helper.build "x"` — and every chain continuation, since a continued
-        // dotted call folds into a juxt call — used to store the whole dotted
-        // text as the target, putting ONE method in the graph twice under two
-        // names (`build` at its own line and `helper.build` at the
-        // continuation). Measured: `helper.build(2)\n .configure(3)` emitted
-        // `calls f -> helper.build` where the one-line `helper.build(2).configure(3)`
-        // emits `calls f -> build`. The leaf's own line is used for the same
-        // reason (#825): the name's line, not the spanning expression's.
-        const nameNode = node.childForFieldName("name")
-        if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
-          // #841 round 14: the typed-closure-parameter misparse reaches this
-          // branch. When a closure's bare-name parameter type cannot win its
-          // reading (measured: six grammar routes closed in
-          // reviews/m59-841-assert-comma-separator.md §7f–§7q), the parser folds
-          // `{ Test task -> … }` into `juxt_function_call(name: Test, args:
-          // (task))` + `lambda_expression` — so this branch used to emit a
-          // FABRICATED `calls -> Test` edge naming the parameter's TYPE as a
-          // callee (measured: up to 45 such edges in one corpus file). The
-          // discriminator is the misparse's exact shape, measured on the pinned
-          // grammar: type-cased juxt name, args made only of identifier tokens
-          // (bare param names or `Type name` fragments), and a lambda expression
-          // as the adjacent sibling. A real juxtaposed call with a type-cased
-          // callee name in that company does not occur in the corpus — and the
-          // A/B below counts every suppression to keep that true.
-          if (this.looksLikeTypedClosureMisparse(node, nameNode, content)) {
-            // The closure body itself still walks (its calls/uses extract from
-            // the lambda_expression sibling), so only the fabricated callee
-            // edge is dropped — nothing else about the shape changes.
-          } else {
-            const leafNode = nameNode.type === "field_access"
-              ? nameNode.childForFieldName("field") ?? nameNode
-              : nameNode
-            relationships.push({
-              source: parentContext?.name ?? "(script)",
-              target: leafNode.text,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.7,
-              ...this.lineField(leafNode, node),
-              // The callee expression AS WRITTEN (the sibling method_invocation
-              // branch's payload) — kept so the dotted form is recoverable by a
-              // consumer even though the edge itself names the bare leaf.
-              metadata: { relationshipType: "juxt_call", groovyCallExpression: nameNode.text },
-            })
-          }
-        }
-      } else if (type === "leading_dot_call") {
-        // #841 round 3: Groovy 3 leading-dot chain continuation. When the
-        // previous statement is complete the newline-terminated segment
-        // becomes its own statement node (documented grammar tradeoff); the
-        // call must still be analyzer-visible and attributed to the enclosing
-        // scope, exactly like a same-line method_invocation.
-        //
-        // #851: a continuation segment is a CALL only when it carries an
-        // argument list. Measured on the pinned grammar — `helper\n .build(1)`
-        // parses as `leading_dot_call name: (identifier) arguments:
-        // (argument_list …)`, while `this\n .label` parses with `name` and NO
-        // arguments. The branch used to emit `calls` for both, so a multi-line
-        // property access — an extremely common Groovy layout — fabricated a
-        // call edge to a property name and lost the read entirely. The
-        // paren-less form is a MEMBER READ, emitted in the exact shape
-        // `collectFieldAccessUses` uses for the same-line `field_access`
-        // (`obj.thing` -> `uses <owner> -> thing`), attributed to the enclosing
-        // method because the continuation node does not carry its receiver
-        // (GAD1: an unresolvable receiver attributes to the enclosing method).
-        const nameNode = node.childForFieldName("name")
-        if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
-          const args = node.childForFieldName("arguments") ?? this.findChild(node, (n) => n.type === "argument_list")
-          if (args) {
-            relationships.push({
-              source: parentContext?.name ?? "(script)",
-              target: nameNode.text,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.7,
-              ...this.lineField(nameNode, node),
-              metadata: { relationshipType: "leading_dot_call" },
-            })
-          } else {
-            relationships.push({
-              source: parentContext?.name ?? "(script)",
-              target: nameNode.text,
-              type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.6,
-              ...this.lineField(nameNode, node),
-              metadata: { isFieldAccess: true },
-            })
-          }
-        }
-      } else if (type === "object_creation_expression") {
-        // new Foo(...) → Instantiates. Type is a type_identifier for plain
-        // types, a generic_type for generic constructions, and a
-        // scoped_type_identifier for qualified/inner-class constructions
-        // (new java.util.ArrayList(), new Outer.Builder()) — dropping any of
-        // these silently loses real dependency edges.
-        const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier" || n.type === "identifier")
-        if (typeNode) {
-          // GAD2 (M37 #599): script-level files used THREE different
-          // sentinels — calls "(script)", instantiates "global", import refs
-          // "root". One graph node per file is the contract (M14.1's
-          // "(script)" design decision); unified here and in resolveSource
-          // below. Class-level files are unaffected (parentContext set).
-          const source = parentContext?.name || parentContext?.symbolRef?.name || "(script)"
-          relationships.push({
-            source,
-            target: this.baseTypeName(typeNode),
-            type: ASTEngine.RelationshipType.Instantiates,
-            confidence: 0.95,
-            // M59 (#825): the constructed TYPE's own line.
-            ...this.lineField(typeNode, node),
-            metadata: { relationshipType: "instantiates", isNew: true },
-          })
-          // M37.21 #610 (JD18 family lesson from java/scala, probe-verified
-          // in groovy: run inside new Runnable() {...} attributed to Service
-          // with no anonymous symbol): an anonymous inner class body
-          // declares REAL members. Mirror the kotlin/java/scala family
-          // convention: anonymous_<SuperName> Class symbol (noise name,
-          // never leaks into the index) owned by the enclosing type, scope
-          // pushed so the body's members attribute to the anonymous type
-          // (contains anonymous_Runnable -> run).
-          const classBody = this.findChild(node, (n) => n.type === "class_body")
-          if (classBody && parentContext) {
-            const superName = this.baseTypeName(typeNode)
-            const anonName = superName ? `anonymous_${superName}` : "anonymous_class"
-            const anonFqn = parentContext.fqn ? `${parentContext.fqn}.${anonName}` : anonName
-            const anonSym: ASTEngine.UniversalSymbol = {
-              name: anonName,
-              kind: ASTEngine.SymbolKind.Class,
-              range: this.symbolRange(node),
-              visibility: parentContext.visibility || "public",
-              ownerName: parentContext.name,
-              ownerKind: parentContext.kind,
-              metadata: { nodeType: type, isAnonymousClass: true, superTypes: superName ? [superName] : [] },
-            }
-            symbols.push(anonSym)
-            symbolMap.set(anonFqn, anonSym)
-            newContext = {
-              node: classBody,
-              name: anonName,
-              kind: ASTEngine.SymbolKind.Class,
-              fqn: anonFqn,
-              symbolRef: anonSym,
-              visibility: parentContext.visibility,
-              isInterface: false,
-              parents: superName ? [superName] : [],
-            }
-            scopeStack.push(newContext)
-            pushedScope = true
-          }
-        }
-      }
       // Closures, local variables, gstrings, command expressions: intentionally
       // produce NO symbols and NO relationships (pure AST contract).
 
-      if (pushedScope) {
-        stack.push({ node, parentContext: newContext, isExit: true })
+      if (walk.pushedScope) {
+        stack.push({ node, parentContext: walk.newContext, isExit: true })
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (child) {
-          stack.push({ node: child, parentContext: newContext })
+          stack.push({ node: child, parentContext: walk.newContext })
         }
       }
     }
@@ -750,7 +192,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // tree-sitter's error recovery flattens into root-level fragments (see
     // recoverDegradedClassShapes). Runs before override resolution and the
     // primary-type rewrite so both consume the recovered class.
-    this.recoverDegradedClassShapes(rootNode, symbols, relationships, symbolMap, currentPackage)
+    this.recoverDegradedClassShapes(rootNode, symbols, relationships, symbolMap, walk.currentPackage)
 
     this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
 
@@ -766,7 +208,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const rel of relationships) {
         // GAD2: the emit-side sentinel is "(script)" now; "root" kept so
         // pre-existing callers of this rewrite path stay covered.
-        if (rel.type === ASTEngine.RelationshipType.References && (rel.source === currentPackage || rel.source === "(script)" || rel.source === "root")) {
+        if (rel.type === ASTEngine.RelationshipType.References && (rel.source === walk.currentPackage || rel.source === "(script)" || rel.source === "root")) {
           rel.source = primaryType.name
         }
       }
@@ -830,11 +272,676 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: this.calculateGroovyMethodComplexity(rootNode),
         cyclomaticComplexity: this.calculateGroovyMethodComplexity(rootNode),
         linesOfCode: content.split("\n").length,
-        currentPackage,
+        currentPackage: walk.currentPackage,
         framework: fw.framework,
         detectedFrameworks: fw.detected,
         analysisVersion: "5.0.0-groovy-pure-ast",
       },
+    }
+  }
+
+  // ── #896: node-type dispatch table ────────────────────────────────────────
+  // `analyze` walks (push/visit/pop); these handlers extract. Each is a named
+  // method taking the walk state, so a handler can be exercised on its own —
+  // which is what the review asked for and what the if/else chain prevented.
+  // The misparse guards (§ juxt_function_call / field_declaration) are named
+  // handlers here for the same reason: they stay individually testable, and
+  // #841 rounds 3/14/22 measured them as load-bearing, so they are kept.
+  private nodeHandlersCache?: Map<string, (node: Node, s: GroovyWalkState) => void>
+
+  private get nodeHandlers(): Map<string, (node: Node, s: GroovyWalkState) => void> {
+    if (!this.nodeHandlersCache) {
+      const m = new Map<string, (node: Node, s: GroovyWalkState) => void>()
+      const reg = (types: string[], h: (node: Node, s: GroovyWalkState) => void) => {
+        for (const t of types) m.set(t, h)
+      }
+      reg(["package_declaration"], (n, s) => this.handlePackageDeclaration(n, s))
+      reg(["import_declaration"], (n, s) => this.handleImportDeclaration(n, s))
+      reg(["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration", "record_declaration", "annotation_type_declaration"], (n, s) => this.handleTypeDeclaration(n, s))
+      reg(["method_declaration", "constructor_declaration", "function_definition"], (n, s) => this.handleMethodDeclaration(n, s))
+      reg(["field_declaration", "constant_declaration"], (n, s) => this.handleFieldDeclaration(n, s))
+      reg(["enum_constant"], (n, s) => this.handleEnumConstant(n, s))
+      reg(["method_invocation"], (n, s) => this.handleMethodInvocation(n, s))
+      reg(["explicit_constructor_invocation"], (n, s) => this.handleExplicitConstructorInvocation(n, s))
+      reg(["juxt_function_call"], (n, s) => this.handleJuxtFunctionCall(n, s))
+      reg(["leading_dot_call"], (n, s) => this.handleLeadingDotCall(n, s))
+      reg(["object_creation_expression"], (n, s) => this.handleObjectCreationExpression(n, s))
+      this.nodeHandlersCache = m
+    }
+    return this.nodeHandlersCache
+  }
+
+  private handlePackageDeclaration(node: Node, s: GroovyWalkState): void {
+    const type = node.type
+    const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
+    if (nameNode) s.currentPackage = nameNode.text
+  }
+
+  private handleImportDeclaration(node: Node, s: GroovyWalkState): void {
+    const { relationships, imports } = s
+    const type = node.type
+    const nameNode = this.findChild(node, (n) => n.type === "scoped_identifier" || n.type === "identifier")
+    if (nameNode) {
+      const moduleName = nameNode.text
+          // G5 (review wave): `static` and the wildcard marker are ANONYMOUS
+          // children (probe-verified shape: import_declaration >
+          // [import, static?, scoped_identifier, ., asterisk]). The old
+          // named-children text scan never matched `static`, so every static
+          // import was recorded non-static; and isNamespace (module suffix
+          // test) permanently disagreed with isWildcard (raw-text test) on
+          // `.*` imports because the module text never contains `.*`. Both
+          // flags now derive from the same anonymous-token scan.
+      let isStatic = false
+      let isWildcard = false
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i)
+        if (!c) continue
+        if (c.type === "static") isStatic = true
+        else            // M49.S1 F1 finding: this pinned groovy grammar declares the
+            // wildcard token as `asterisk` (probe s1-groovy-shape) — there
+            // is no `wildcard_import` node type, so the old second disjunct
+            // was dead code that could never fire.
+        if (c.type === "asterisk") isWildcard = true
+      }
+      imports.push({
+        module: moduleName,
+        items: [],
+        isDefault: false,
+        range: this.nodeToRange(node),
+        isNamespace: isWildcard,
+        metadata: { isWildcard, isStatic },
+      })
+          // DependsOn for imports — source rewritten to the file's primary
+          // type after the walk (imports precede type declarations). GAD2:
+          // script files with no class keep the "(script)" sentinel (the old
+          // "root" was a third phantom node).
+      relationships.push({
+        source: s.currentPackage || "(script)",
+        target: moduleName,
+        type: ASTEngine.RelationshipType.References,
+        confidence: 0.9,
+            // M59 (#825): the line the imported MODULE is named on (java's rule).
+        ...this.lineField(nameNode, node),
+        metadata: { isGroovyImport: true, isWildcard },
+      })
+    }
+  }
+
+  private handleTypeDeclaration(node: Node, s: GroovyWalkState): void {
+    const { symbols, relationships, symbolMap, classHierarchy, scopeStack } = s
+    const type = node.type
+    const nameNode = this.findChild(node, (n) => n.type === "identifier")
+    if (nameNode) {
+      const name = nameNode.text
+      const kind = type === "interface_declaration" || type === "trait_declaration"
+        ? ASTEngine.SymbolKind.Interface
+        : type === "enum_declaration"
+          ? ASTEngine.SymbolKind.Enum
+          : ASTEngine.SymbolKind.Class
+      const fqn = this.buildFqn(s.currentPackage, scopeStack, name)
+      const visibility = this.extractVisibility(node)
+
+      const parents = this.extractInheritance(node, type)
+      classHierarchy.set(fqn, parents)
+          // Class/trait/enum annotations: previously only methods carried
+          // them, so Spring/Grails service classes had no annotation data.
+      const classAnnotations = this.extractAnnotations(node)
+
+          // extends (superclass / interface-extends)
+      if (type === "class_declaration") {
+        const superClass = this.findChild(node, (n) => n.type === "superclass")
+        if (superClass) {
+          const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
+          if (sc) {
+            relationships.push({
+              source: name,
+              target: this.baseTypeName(sc),
+              type: ASTEngine.RelationshipType.Extends,
+              confidence: 1.0,
+                  // M59 (#825): the SUPERtype's own line, never the class header's.
+              ...this.lineField(sc, node),
+              metadata: { relationshipType: "extends" },
+            })
+          }
+        }
+      } else if (type === "interface_declaration") {
+        const ext = this.findChild(node, (n) => n.type === "extends_interfaces")
+        if (ext) {
+          for (const tid of this.collectTypeNodes(ext)) {
+            relationships.push({
+              source: name,
+              target: this.baseTypeName(tid),
+              type: ASTEngine.RelationshipType.Extends,
+              confidence: 1.0,
+                  // M59 (#825): each interface parent is named on its OWN line.
+              ...this.lineField(tid, node),
+              metadata: { relationshipType: "extends_interface" },
+            })
+          }
+        }
+      } else if (type === "trait_declaration") {
+        const superClass = this.findChild(node, (n) => n.type === "superclass")
+        if (superClass) {
+          const sc = this.findChild(superClass, (n) => n.type === "type_identifier" || n.type === "identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier")
+          if (sc) {
+            relationships.push({
+              source: name,
+              target: this.baseTypeName(sc),
+              type: ASTEngine.RelationshipType.Extends,
+              confidence: 1.0,
+              ...this.lineField(sc, node),
+              metadata: { relationshipType: "extends_trait" },
+            })
+          }
+        }
+      }
+
+          // implements (super_interfaces — classes and traits)
+      const superInterfaces = this.findChild(node, (n) => n.type === "super_interfaces")
+      if (superInterfaces) {
+        for (const tid of this.collectTypeNodes(superInterfaces)) {
+          relationships.push({
+            source: name,
+            target: this.baseTypeName(tid),
+            type: ASTEngine.RelationshipType.Implements,
+            confidence: 1.0,
+                // M59 (#825): each interface is named on its OWN line.
+            ...this.lineField(tid, node),
+            metadata: { relationshipType: "implements" },
+          })
+        }
+      }
+
+      const sym: ASTEngine.UniversalSymbol = {
+        name,
+        kind,
+        comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
+        genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
+            // M59 (#825): annotations skipped — the class is written on its own line.
+        range: this.symbolRange(node),
+        visibility,
+        decorators: classAnnotations,
+        ownerName: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined,
+        ownerKind: scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined,
+        metadata: { nodeType: type, annotations: classAnnotations, isRecord: type === "record_declaration" },
+      }
+      symbols.push(sym)
+      symbolMap.set(fqn, sym)
+      symbolMap.set(name, sym)
+
+      if (type === "record_declaration") {
+            // Record components are constructor-backed properties (Groovy 4
+            // records, mirroring the java analyzer): each formal_parameter of
+            // the record header becomes a public Property symbol.
+        const fp = this.findChild(node, (n) => n.type === "formal_parameters")
+        if (fp) {
+          for (let i = 0; i < fp.namedChildCount; i++) {
+            const p = fp.namedChild(i)
+            if (!p || p.type !== "formal_parameter") continue
+            const pName = this.findChild(p, (n) => n.type === "identifier")
+            const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "generic_type" || n.type === "array_type" || n.type === "scoped_type_identifier")
+            if (pName) {
+              symbols.push({
+                name: pName.text,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.symbolRange(p),
+                returnType: pType ? this.baseTypeName(pType) : undefined,
+                visibility: "public",
+                ownerName: name,
+                ownerKind: kind,
+                metadata: { nodeType: "record_component" },
+              })
+            }
+          }
+        }
+      }
+
+      s.newContext = {
+        node,
+        name,
+        kind,
+        fqn,
+        symbolRef: sym,
+        visibility,
+        isInterface: type === "interface_declaration" || type === "trait_declaration",
+        parents,
+      }
+      scopeStack.push(s.newContext)
+      s.pushedScope = true
+    }
+  }
+
+  private handleMethodDeclaration(node: Node, s: GroovyWalkState): void {
+    const { symbols, symbolMap, overrideTasks, scopeStack } = s
+    const type = node.type
+    const isConstructorRaw = type === "constructor_declaration"
+    const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "string_literal")
+    if (nameNode) {
+      const rawName = nameNode.type === "string_literal"
+        ? this.stripQuotes(nameNode.text)
+        : nameNode.text
+          // G4 (review wave, java C3 parity): ctors keep their DECLARED name
+          // (the class name). The old "constructor" literal collided across
+          // classes (contains:A->constructor vs contains:B->constructor are
+          // indistinguishable; overloads collapsed). Kind still says
+          // Constructor; self-contains (A->A) matches the java/kotlin
+          // reference behavior exactly.
+      const name = rawName
+      const modifiers = this.extractModifiers(node)
+      const visibility = this.extractVisibility(node)
+      const annotations = this.extractAnnotations(node)
+
+          // #841 round 3 (def-method contract): a class-body method declared
+          // `def name() {}` parses as constructor_declaration because Java's
+          // method header requires a type and `def` is not one — the grammar
+          // squeezes `def` into a separate bogus field and the remainder reads
+          // as a constructor. A constructor's name MUST equal its class; when
+          // it does not, this is a def-returning method, not a constructor
+          // (emits kind=method on both wasms; the grammar-level fix regressed
+          // `def x = …` fields and was reverted — see git history).
+      const enclosingName = scopeStack.length > 0 && scopeStack[scopeStack.length - 1].kind === ASTEngine.SymbolKind.Class
+        ? scopeStack[scopeStack.length - 1].name
+        : undefined
+      const isMisnamedCtor = isConstructorRaw && enclosingName !== undefined && rawName !== enclosingName
+      const isConstructor = isConstructorRaw && !isMisnamedCtor
+      const parameters: ASTEngine.Parameter[] = []
+      const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
+      if (paramList) {
+        for (let i = 0; i < paramList.namedChildCount; i++) {
+          const p = paramList.namedChild(i)
+          if (!p || (p.type !== "formal_parameter" && p.type !== "spread_parameter")) continue
+          const isSpread = p.type === "spread_parameter"
+              // Varargs: the grammar has no named fields; the name lives in
+              // the trailing variable_declarator (JVM erasure: type + "[]").
+          let pName = this.findChild(p, (n) => n.type === "identifier")
+          if (isSpread) {
+            const decl = this.findChild(p, (n) => n.type === "variable_declarator")
+            pName = decl ? this.findChild(decl, (n) => n.type === "identifier") : null
+          }
+          const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type")
+          parameters.push({
+            name: pName?.text ?? "anonymous",
+            type: pType ? this.baseTypeName(pType) + (isSpread ? "[]" : "") : undefined,
+          })
+        }
+      }
+      const signature = `(${parameters.map((p) => p.type ?? "").join(",")})`
+
+      const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
+      const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
+      const fqn = this.buildFqn(s.currentPackage, scopeStack, name)
+
+          // Abstract: no body in an interface/trait, or body-less declaration.
+      const hasBody = !!this.findChild(node, (n) => n.type === "block" || n.type === "closure" || n.type === "constructor_body")
+      const isAbstract = !hasBody || (!!(s.newContext?.isInterface) && !hasBody)
+
+          // G2 (review wave, java JAO1 parity): @Override is a CHECK, not a
+          // requirement — un-annotated instance methods with matching
+          // signatures still override. Implicit tasks resolve but emit ONLY
+          // on a verified exact-signature in-file match (pass 1); explicit
+          // tasks keep the companion/guess tiers so overloads never
+          // fabricate an override edge.
+      if (annotations.indexOf("Override") !== -1 && s.newContext) {
+        overrideTasks.push({
+          fqn,
+          methodName: name,
+          signature,
+          ownerFqn: s.newContext.fqn,
+          explicit: true,
+          line: this.declarationLineNode(node).startPosition.row + 1,
+        })
+      } else if (s.newContext && !isConstructor &&
+                 modifiers.indexOf("static") === -1 && visibility !== "private") {
+        overrideTasks.push({
+          fqn,
+          methodName: name,
+          signature,
+          ownerFqn: s.newContext.fqn,
+          explicit: false,
+          line: this.declarationLineNode(node).startPosition.row + 1,
+        })
+      }
+
+      const sym: ASTEngine.UniversalSymbol = {
+        name,
+        kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+        comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
+        complexity: this.calculateGroovyMethodComplexity(node),
+            // M59 (#825): annotations skipped — `@Override` is not where the
+            // overriding method is written — and the range starts at the NAME.
+            // tree-sitter-groovy absorbs a preceding field's type into a
+            // constructor's node (`final Distance distance` + `Sphere(...)`
+            // parse as one method_declaration starting at the field), so the
+            // node start is the field's line while the name is written 7 lines
+            // lower (measured: grails-core Sphere.groovy). The line belongs to
+            // the name, never to the construct that contains it (java/scala
+            // contract); the contains edge follows the range, so both move.
+        range: this.symbolRange(node, node.childForFieldName("name") ?? nameNode),
+        visibility,
+        genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
+        parameters,
+        decorators: annotations,
+        ownerName,
+        ownerKind,
+        metadata: { nodeType: type, modifiers, annotations, isAbstract },
+      }
+      symbols.push(sym)
+      symbolMap.set(fqn, sym)
+          // Raw `Owner.method(signature)` key so the override BFS (which walks
+          // raw parent names) can match in-file declarations.
+      const rawKey = ownerName ? `${ownerName}.${name}${signature}` : `${name}${signature}`
+      symbolMap.set(rawKey, sym)
+
+      s.newContext = {
+        node,
+        name,
+        kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+        fqn,
+        symbolRef: sym,
+        visibility,
+        isInterface: false,
+        parents: [],
+      }
+      scopeStack.push(s.newContext)
+      s.pushedScope = true
+    }
+  }
+
+  private handleFieldDeclaration(node: Node, s: GroovyWalkState): void {
+    const { symbols, scopeStack } = s
+    const type = node.type
+    const modifiers = this.extractModifiers(node)
+    const visibility = this.extractVisibility(node)
+    const isStatic = modifiers.indexOf("static") !== -1
+    const isConstant = modifiers.indexOf("final") !== -1 && isStatic
+        // Field annotations (@Column on fields = THE GORM/JPA idiom) were
+        // never extracted — classes and methods carried decorators, fields
+        // did not.
+    const fieldAnnotations = this.extractAnnotations(node)
+    const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
+    const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
+
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child?.type !== "variable_declarator") continue
+      const idNode = this.findChild(child, (n) => n.type === "identifier")
+      if (!idNode || !ownerName) continue
+          // #841 round 3 (def-squeeze phantom): when a `def name() {}` method
+          // is force-split, the grammar also manufactures a bogus field whose
+          // declared "name" is literally the keyword `def` (the type token it
+          // absorbed). No real Groovy field can be named `def` — reserved — so
+          // such symbols are parse artifacts, never emitted. The same shape
+          // legitimately carries the SQUEEZED METHOD's calls, which attribute
+          // to the enclosing class context below.
+      if (idNode.text === "def") continue
+          // M59 (#825) follow-up, measured on grails-core Sphere.groovy:
+          // `static Sphere valueOf(...)` parses as BOTH a
+          // constructor_declaration (the real method) AND a phantom
+          // field_declaration covering the header prefix (`static Sphere`);
+          // `final Distance distance` + ctor similarly split the field's
+          // TYPE into the field node and its NAME into the method node.
+          // Same defect family as the `def`-squeeze guard above: a grammar-
+          // manufactured field naming a member the class does not have.
+          // Proof of duplicate parse, not heuristic: two distinct same-line
+          // declarations must be `;`-separated, so a sibling method starting
+          // after the field with only whitespace between them (no `;`) is
+          // the same declaration parsed twice — the full-span method wins.
+          // Real shapes stay: `x; void foo()` has `;` in the gap, untyped
+          // `private test` has no same-line method, typed fields never match
+          // a trivia-only gap to a method consuming their own tokens.
+      if (this.isDuplicateParseField(node, s.content)) continue
+      symbols.push({
+        name: idNode.text,
+        kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
+        range: this.symbolRange(child),
+        visibility,
+        ownerName,
+        ownerKind,
+        decorators: fieldAnnotations,
+        metadata: { nodeType: type, modifiers, isConstant, annotations: fieldAnnotations },
+      })
+    }
+  }
+
+  private handleEnumConstant(node: Node, s: GroovyWalkState): void {
+    const { symbols, scopeStack } = s
+    const type = node.type
+    const nameNode = this.findChild(node, (n) => n.type === "identifier")
+    const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
+    if (nameNode && ownerName) {
+      symbols.push({
+        name: nameNode.text,
+        kind: ASTEngine.SymbolKind.EnumMember,
+        range: this.symbolRange(node),
+        visibility: "public",
+        ownerName,
+        ownerKind: ASTEngine.SymbolKind.Enum,
+        metadata: { nodeType: type },
+      })
+    }
+  }
+
+  private handleMethodInvocation(node: Node, s: GroovyWalkState): void {
+    const { relationships } = s
+    const type = node.type
+    const nameNode = node.childForFieldName("name")
+    if (nameNode) {
+      const methodName = nameNode.text
+      const objectNode = node.childForFieldName("object")
+          // Dotted path WITHOUT argument text (family contract with java).
+          // Raw object text embedded inner-call arguments on chains:
+          // `db.list(user).collect` was stored as "db.list(user).collect".
+      const callExpr = this.buildGroovyQualifiedCall(objectNode, methodName)
+          // Script-level invocations (Jenkins-pipeline style: no enclosing
+          // class/method) are attributed to the "(script)" sentinel so the
+          // call graph of script files is not silently empty. Design
+          // decision recorded in wave M14.1.
+      const sourceName = s.parentContext?.name ?? "(script)"
+      if (!this.isGroovyBuiltin(callExpr)) {
+            // Matrix 1b payload: symbol-level qualified call list (#383) —
+            // attached to the enclosing method symbol when one exists.
+        if (s.parentContext?.symbolRef) {
+          if (!s.parentContext.symbolRef.qualified_calls) s.parentContext.symbolRef.qualified_calls = []
+          s.parentContext.symbolRef.qualified_calls.push(callExpr)
+        }
+        relationships.push({
+          source: sourceName,
+          target: methodName,
+          type: ASTEngine.RelationshipType.Calls,
+          confidence: 0.7,
+              // M59 (#825): the method NAME's line, not the receiver's — a
+              // multi-line chain opens on the receiver (scala's measured defect).
+          ...this.lineField(nameNode, node),
+          metadata: { groovyCallExpression: callExpr },
+        })
+      }
+    }
+  }
+
+  private handleExplicitConstructorInvocation(node: Node, s: GroovyWalkState): void {
+    const { relationships } = s
+    const type = node.type
+        // super(...) / this(...) delegation (JLS-adjacent, Groovy ctor
+        // bodies produce this node). Honest literal target ("super"/"this")
+        // — never resolved to a guessed parent type.
+    const first = node.namedChild(0)
+    if (first && (first.type === "super" || first.type === "this")) {
+      relationships.push({
+        source: s.parentContext?.name ?? "(script)",
+        target: first.type,
+        type: ASTEngine.RelationshipType.Calls,
+        confidence: 1.0,
+        ...this.lineField(first, node),
+        metadata: { relationshipType: "constructor_invocation" },
+      })
+    }
+  }
+
+  private handleJuxtFunctionCall(node: Node, s: GroovyWalkState): void {
+    const { relationships } = s
+    const type = node.type
+        // Groovy juxtaposition call syntax: `echo "msg"` / `sh "cmd"` IS a
+        // method call under Groovy semantics — Jenkins pipelines are built
+        // on it. Grammar: juxt_function_call [name, args].
+        //
+        // #852: the family contract (java/kotlin/scala, and this analyzer's own
+        // `method_invocation` branch) is that a `calls` edge targets the BARE
+        // callee leaf. A dotted juxt name parses as `field_access`, so
+        // `helper.build "x"` — and every chain continuation, since a continued
+        // dotted call folds into a juxt call — used to store the whole dotted
+        // text as the target, putting ONE method in the graph twice under two
+        // names (`build` at its own line and `helper.build` at the
+        // continuation). Measured: `helper.build(2)\n .configure(3)` emitted
+        // `calls f -> helper.build` where the one-line `helper.build(2).configure(3)`
+        // emits `calls f -> build`. The leaf's own line is used for the same
+        // reason (#825): the name's line, not the spanning expression's.
+    const nameNode = node.childForFieldName("name")
+    if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
+          // #841 round 14: the typed-closure-parameter misparse reaches this
+          // branch. When a closure's bare-name parameter type cannot win its
+          // reading (measured: six grammar routes closed in
+          // reviews/m59-841-assert-comma-separator.md §7f–§7q), the parser folds
+          // `{ Test task -> … }` into `juxt_function_call(name: Test, args:
+          // (task))` + `lambda_expression` — so this branch used to emit a
+          // FABRICATED `calls -> Test` edge naming the parameter's TYPE as a
+          // callee (measured: up to 45 such edges in one corpus file). The
+          // discriminator is the misparse's exact shape, measured on the pinned
+          // grammar: type-cased juxt name, args made only of identifier tokens
+          // (bare param names or `Type name` fragments), and a lambda expression
+          // as the adjacent sibling. A real juxtaposed call with a type-cased
+          // callee name in that company does not occur in the corpus — and the
+          // A/B below counts every suppression to keep that true.
+      if (this.looksLikeTypedClosureMisparse(node, nameNode, s.content)) {
+            // The closure body itself still walks (its calls/uses extract from
+            // the lambda_expression sibling), so only the fabricated callee
+            // edge is dropped — nothing else about the shape changes.
+      } else {
+        const leafNode = nameNode.type === "field_access"
+          ? nameNode.childForFieldName("field") ?? nameNode
+          : nameNode
+        relationships.push({
+          source: s.parentContext?.name ?? "(script)",
+          target: leafNode.text,
+          type: ASTEngine.RelationshipType.Calls,
+          confidence: 0.7,
+          ...this.lineField(leafNode, node),
+              // The callee expression AS WRITTEN (the sibling method_invocation
+              // branch's payload) — kept so the dotted form is recoverable by a
+              // consumer even though the edge itself names the bare leaf.
+          metadata: { relationshipType: "juxt_call", groovyCallExpression: nameNode.text },
+        })
+      }
+    }
+  }
+
+  private handleLeadingDotCall(node: Node, s: GroovyWalkState): void {
+    const { relationships } = s
+    const type = node.type
+        // #841 round 3: Groovy 3 leading-dot chain continuation. When the
+        // previous statement is complete the newline-terminated segment
+        // becomes its own statement node (documented grammar tradeoff); the
+        // call must still be analyzer-visible and attributed to the enclosing
+        // scope, exactly like a same-line method_invocation.
+        //
+        // #851: a continuation segment is a CALL only when it carries an
+        // argument list. Measured on the pinned grammar — `helper\n .build(1)`
+        // parses as `leading_dot_call name: (identifier) arguments:
+        // (argument_list …)`, while `this\n .label` parses with `name` and NO
+        // arguments. The branch used to emit `calls` for both, so a multi-line
+        // property access — an extremely common Groovy layout — fabricated a
+        // call edge to a property name and lost the read entirely. The
+        // paren-less form is a MEMBER READ, emitted in the exact shape
+        // `collectFieldAccessUses` uses for the same-line `field_access`
+        // (`obj.thing` -> `uses <owner> -> thing`), attributed to the enclosing
+        // method because the continuation node does not carry its receiver
+        // (GAD1: an unresolvable receiver attributes to the enclosing method).
+    const nameNode = node.childForFieldName("name")
+    if (nameNode && !this.isGroovyBuiltin(nameNode.text)) {
+      const args = node.childForFieldName("arguments") ?? this.findChild(node, (n) => n.type === "argument_list")
+      if (args) {
+        relationships.push({
+          source: s.parentContext?.name ?? "(script)",
+          target: nameNode.text,
+          type: ASTEngine.RelationshipType.Calls,
+          confidence: 0.7,
+          ...this.lineField(nameNode, node),
+          metadata: { relationshipType: "leading_dot_call" },
+        })
+      } else {
+        relationships.push({
+          source: s.parentContext?.name ?? "(script)",
+          target: nameNode.text,
+          type: ASTEngine.RelationshipType.Uses,
+          confidence: 0.6,
+          ...this.lineField(nameNode, node),
+          metadata: { isFieldAccess: true },
+        })
+      }
+    }
+  }
+
+  private handleObjectCreationExpression(node: Node, s: GroovyWalkState): void {
+    const { symbols, relationships, symbolMap, scopeStack } = s
+    const type = node.type
+        // new Foo(...) → Instantiates. Type is a type_identifier for plain
+        // types, a generic_type for generic constructions, and a
+        // scoped_type_identifier for qualified/inner-class constructions
+        // (new java.util.ArrayList(), new Outer.Builder()) — dropping any of
+        // these silently loses real dependency edges.
+    const typeNode = this.findChild(node, (n) => n.type === "type_identifier" || n.type === "generic_type" || n.type === "scoped_type_identifier" || n.type === "identifier")
+    if (typeNode) {
+          // GAD2 (M37 #599): script-level files used THREE different
+          // sentinels — calls "(script)", instantiates "global", import refs
+          // "root". One graph node per file is the contract (M14.1's
+          // "(script)" design decision); unified here and in resolveSource
+          // below. Class-level files are unaffected (parentContext set).
+      const source = s.parentContext?.name || s.parentContext?.symbolRef?.name || "(script)"
+      relationships.push({
+        source,
+        target: this.baseTypeName(typeNode),
+        type: ASTEngine.RelationshipType.Instantiates,
+        confidence: 0.95,
+            // M59 (#825): the constructed TYPE's own line.
+        ...this.lineField(typeNode, node),
+        metadata: { relationshipType: "instantiates", isNew: true },
+      })
+          // M37.21 #610 (JD18 family lesson from java/scala, probe-verified
+          // in groovy: run inside new Runnable() {...} attributed to Service
+          // with no anonymous symbol): an anonymous inner class body
+          // declares REAL members. Mirror the kotlin/java/scala family
+          // convention: anonymous_<SuperName> Class symbol (noise name,
+          // never leaks into the index) owned by the enclosing type, scope
+          // pushed so the body's members attribute to the anonymous type
+          // (contains anonymous_Runnable -> run).
+      const classBody = this.findChild(node, (n) => n.type === "class_body")
+      if (classBody && s.parentContext) {
+        const superName = this.baseTypeName(typeNode)
+        const anonName = superName ? `anonymous_${superName}` : "anonymous_class"
+        const anonFqn = s.parentContext.fqn ? `${s.parentContext.fqn}.${anonName}` : anonName
+        const anonSym: ASTEngine.UniversalSymbol = {
+          name: anonName,
+          kind: ASTEngine.SymbolKind.Class,
+          range: this.symbolRange(node),
+          visibility: s.parentContext.visibility || "public",
+          ownerName: s.parentContext.name,
+          ownerKind: s.parentContext.kind,
+          metadata: { nodeType: type, isAnonymousClass: true, superTypes: superName ? [superName] : [] },
+        }
+        symbols.push(anonSym)
+        symbolMap.set(anonFqn, anonSym)
+        s.newContext = {
+          node: classBody,
+          name: anonName,
+          kind: ASTEngine.SymbolKind.Class,
+          fqn: anonFqn,
+          symbolRef: anonSym,
+          visibility: s.parentContext.visibility,
+          isInterface: false,
+          parents: superName ? [superName] : [],
+        }
+        scopeStack.push(s.newContext)
+        s.pushedScope = true
+      }
     }
   }
 
