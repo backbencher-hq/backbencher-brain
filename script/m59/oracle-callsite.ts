@@ -254,7 +254,12 @@ function tierAConsistent(lines: string[], line: number, token: string): boolean 
 // correct line for the edge, unverifiable by a name-token check. Adjudicated by
 // hand and then classified as what it is: structurally uncheckable, not a
 // failure on either side.
-const SYNTHETIC_NAME = /^(constructor|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+|default)$/
+// The synthesis family. `anonymous` (bare) is the same class as `anonymous_*`: the
+// cpp lane synthesises it for a struct/union/enum/namespace with no identifier
+// (`typedef struct { … } Foo;` has no name token for the aggregate), and the c
+// lane spells the same thing `anonymous_struct`/`anonymous_union`. No file writes
+// `anonymous`, so no line can be its site — a checkability fact, not an excuse.
+const SYNTHETIC_NAME = /^(constructor|anonymous|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+|default)$/
 const UNKNOWN_TARGETS = new Set(["?", "<unknown>", "<anonymous>", ""])
 
 function isCheckable(token: string | null, target: unknown): token is string {
@@ -267,6 +272,12 @@ function isCheckable(token: string | null, target: unknown): token is string {
   return true
 }
 
+/** The `Self` keyword, as a whole word. Rust's `Self` is a KEYWORD, not an
+ *  identifier: an analyzer that resolves it (correctly) emits the ENCLOSING impl
+ *  or trait type as the target, and that name is written nowhere on the line —
+ *  the source writes `Self`. `-> Self` inside `impl GlobSet` names GlobSet. */
+const SELF_WORD = /\bSelf\b/
+
 interface FileResult {
   file: string
   language: string
@@ -277,6 +288,10 @@ interface FileResult {
   inconsistent: number
   notCheckable: number
   inconsistentSample: Array<{ type: string; callee: string; claimedLine: number; sourceLine: string }>
+  // M59.A7 (#825): the CHECKABILITY residual, sampled rather than counted — a
+  // target the token check cannot see is a third state, and which targets those
+  // are has to be inspectable or "not checkable" becomes a place to hide.
+  notCheckableSample: Array<{ type: string; callee: string; claimedLine: number; sourceLine: string; reason: string }>
 }
 
 /** The canonical sweep's own shape — read off the committed artifact, not chosen:
@@ -414,6 +429,7 @@ async function main() {
         inconsistent: 0,
         notCheckable: 0,
         inconsistentSample: [],
+        notCheckableSample: [],
       }
       for (const rel of rels) {
         const ln = rel?.line_number
@@ -456,10 +472,26 @@ async function main() {
         const checkToken = typeof nsAttr === "string" && nsAttr.length > 0 ? nsAttr : token
         if (!isCheckable(checkToken, isNsEdge ? checkToken : (rel?.target ?? rel?.to))) {
           r.notCheckable++
+          if (r.notCheckableSample.length < 5) {
+            r.notCheckableSample.push({ type: String(rel?.type ?? "?"), callee: token ?? "", claimedLine: ln, sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100), reason: "target is not a written token (synthetic or unresolved-name shape)" })
+          }
           continue
         }
         if (tierAConsistent(lines, ln, checkToken)) {
           r.consistent++
+        } else if (SELF_WORD.test(lines[ln - 1] ?? "")) {
+          // The `Self`-resolution class, measured on the rust lane: 21 of 65,390
+          // claims, every one an edge whose target was resolved from `Self`
+          // (`-> Self`, `-> Result<Self, D::Error>`, `&mut Self`, `Self { .. }`)
+          // so the LINE is the correct site and only the implied NAME is absent.
+          // The rule is narrow on purpose — the claimed line must itself contain
+          // the `Self` keyword — so a claim pointing at a line that names
+          // something else still reads INCONSISTENT. Nothing is excused silently:
+          // the class is SAMPLED with its reason, never just counted.
+          r.notCheckable++
+          if (r.notCheckableSample.length < 5) {
+            r.notCheckableSample.push({ type: String(rel?.type ?? "?"), callee: token, claimedLine: ln, sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100), reason: "target resolved from the `Self` keyword — written as `Self` on the claimed line" })
+          }
         } else {
           r.inconsistent++
           if (r.inconsistentSample.length < 5) {
@@ -608,7 +640,7 @@ async function main() {
       sharedWithAnalyzers: "the tree-sitter parser only",
       tierA: "necessary condition — a pass means 'consistent', not 'correct'",
       tierB: "exact call-node lines via independent AST query — NOT IMPLEMENTED, reported absent",
-      notCheckable: "synthesised names (constructor / anonymous_* / given_N) and unresolved targets — a THIRD state, never counted as a pass and never as a failure",
+      notCheckable: "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
       boundarySelfTest,
       tokenSelfTest,
     },
