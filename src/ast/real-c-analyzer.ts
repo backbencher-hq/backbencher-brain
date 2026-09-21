@@ -135,7 +135,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // for file B's same-offset ERROR span and silently drops B's legitimate
     // declarations (probe: file-A glue@0/14 suppresses file-B clean@24).
     // Fresh instances (engine per-file path) were never affected.
-    this.cgd19HeaderIdx.clear();
+    this.cgd19HeaderIdx.clear()
+    // #907 round 2: same per-file hygiene for the recovered-definition name
+    // offsets — a reused instance must not carry file A's name offsets into
+    // file B's identifier dispatch.
+    this.gluedDefNameOffsets.clear()
     // CGD40 (M49 W17): the line-anchor gate needs the raw file text — a
     // directive line spliced into code by parse recovery is physically a
     // '#' line even with no surviving preproc_* ancestor.
@@ -966,7 +970,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // ERROR spans while the 1105 real uses parse as type_identifier).
           // Suppression mirrors the oracle's declaredNames-gated uses truth
           // and keeps the one-edge-per-semantic contract.
-          !(node.type === "identifier" && !resolvesAsType && this.isTypeOnlyName(text, symbols, globalVars, structs, unions, enums, declaredTypes, declaredNames))
+          !(node.type === "identifier" && !resolvesAsType && this.isTypeOnlyName(text, symbols, globalVars, structs, unions, enums, declaredTypes, declaredNames)) &&
+          // #907 round 2: the NAME of a recovered glued definition is a
+          // declaration of that name, never a read of it. Without this the use
+          // path resolves the definition header's own identifier against the
+          // symbol the recovery just added and fabricates a `uses` edge from the
+          // enclosing function (F5 flagged exactly these; see gluedDefNameOffsets).
+          !this.gluedDefNameOffsets.has(node.startIndex)
         ) {
           // Family contract (matches Java M12.01): a type identifier is a
           // REFERENCES edge (type usage); a value identifier (global var, enum
@@ -1976,6 +1986,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   // span's startIndex; lives for the lifetime of one analyze() call.
   private cgd19HeaderIdx = new Map<number, number>()
 
+  // #907 round 2: startIndex of every NAME that recoverGluedDefinitionHeader
+  // emitted this file. The use path reads a bare identifier under an ERROR as a
+  // read, which is right for the swallowed body's real references and wrong for
+  // the definition header's own name — F5 measured the fabrication this way:
+  // `decNumberPower uses decNumberQuantize` at the header's own line
+  // (vendor/decNumber/decNumber.c L2284/2304/2306) and the os_win.c dispatch
+  // table's `uses winRead` / `uses winWrite` pair. This set is what tells the
+  // two apart, and it is filled before those identifiers are walked because the
+  // ERROR node is processed before its children are pushed.
+  private gluedDefNameOffsets = new Set<number>()
+
   // CGD19 (M37 #601): positional ERROR-span discriminator for VARIABLE
   // declarations. The innermost ERROR ancestor containing `node` is scanned
   // ONCE (memoized per span by startIndex): glue = the FIRST
@@ -2595,6 +2616,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // definition is L406).
       if (macroAncestor && this.insideMacroContinuation(macroAncestor, id, content)) continue
       if (symbols.some((s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function)) continue
+      this.gluedDefNameOffsets.add(id.startIndex)
       symbols.push({
         name,
         kind: ASTEngine.SymbolKind.Function,
