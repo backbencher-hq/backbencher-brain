@@ -2730,6 +2730,105 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * The whitespace set the JS `\s` class matches, as a code-point test. These
+   * #907 recovery guards scan raw source text, so they need a character test,
+   * not an extraction — and the census's standing rule (R2) is that a character
+   * test is string logic, not a regex literal. Same set as `\s`: ASCII space,
+   * tab, LF, VT, FF, CR, NBSP, OGHAM SPACE MARK, the EN/EM quad family,
+   * LINE/PARAGRAPH SEPARATOR, NNBSP, MMSP, IDEOGRAPHIC SPACE.
+   */
+  private static isSourceSpace(ch: string): boolean {
+    const c = ch.charCodeAt(0)
+    return (
+      c === 32 ||
+      (c >= 9 && c <= 13) ||
+      c === 0xa0 ||
+      c === 0x1680 ||
+      (c >= 0x2000 && c <= 0x200a) ||
+      c === 0x2028 ||
+      c === 0x2029 ||
+      c === 0x202f ||
+      c === 0x205f ||
+      c === 0x3000
+    )
+  }
+
+  /** `\w` for this file's purposes: ASCII word characters, the set `\b` uses. */
+  private static isWordChar(ch: string | undefined): boolean {
+    if (ch === undefined) return false
+    return (
+      (ch >= "a" && ch <= "z") ||
+      (ch >= "A" && ch <= "Z") ||
+      (ch >= "0" && ch <= "9") ||
+      ch === "_"
+    )
+  }
+
+  /**
+   * Replace `/* ... *\/` and `// ...` comments with a single space, the same
+   * rewrite the two `.replace()` calls performed: a block comment is non-greedy
+   * and may span lines, a line comment ends at (but does not consume) the
+   * newline, and an UNTERMINATED block comment is left verbatim because the
+   * original pattern could not match it either.
+   */
+  private static stripComments(text: string): string {
+    let out = ""
+    let i = 0
+    while (i < text.length) {
+      const ch = text[i]
+      if (ch === "/" && text[i + 1] === "*") {
+        const end = text.indexOf("*/", i + 2)
+        if (end === -1) {
+          out += text.slice(i)
+          break
+        }
+        out += " "
+        i = end + 2
+        continue
+      }
+      if (ch === "/" && text[i + 1] === "/") {
+        const nl = text.indexOf("\n", i)
+        out += " "
+        if (nl === -1) break
+        i = nl
+        continue
+      }
+      out += ch
+      i++
+    }
+    return out
+  }
+
+  /**
+   * Does the text carry an identifier-shaped token at all — any ASCII letter or
+   * underscore (the `[A-Za-z_]\w*` test's exact meaning: the `\w*` tail may be
+   * empty, so one such character is the whole condition).
+   */
+  private static hasIdentifierToken(text: string): boolean {
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_") return true
+    }
+    return false
+  }
+
+  /**
+   * Does the text carry the keyword `static` as a WHOLE word — the `\bstatic\b`
+   * test, walked so the census stays free of a new regex literal.
+   */
+  private static hasStaticKeyword(text: string): boolean {
+    const word = "static"
+    let at = text.indexOf(word)
+    while (at !== -1) {
+      const before = at === 0 ? undefined : text[at - 1]
+      const after = text[at + word.length]
+      if (!RealCAnalyzer.isWordChar(before) && !RealCAnalyzer.isWordChar(after)) return true
+      at = text.indexOf(word, at + 1)
+    }
+    return false
+  }
+
+  /**
    * #907: does this name's own parameter list end at a `{`? Walked on the text so
    * it works the same for a proper declarator node and for the bare-identifier
    * arrival. Anything else after the parameter list (`;`, `,`, `)`, `=`, or a
@@ -2738,7 +2837,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   private definitionBodyFollows(content: string, id: Node): boolean {
     let j = id.endIndex
     if (!(j >= 0 && j <= content.length)) return false
-    while (j < content.length && /\s/.test(content[j])) j++
+    while (j < content.length && RealCAnalyzer.isSourceSpace(content[j])) j++
     if (content[j] !== "(") return false
     let depth = 0
     for (; j < content.length; j++) {
@@ -2750,7 +2849,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (depth !== 0) return false
     j++
-    while (j < content.length && /\s/.test(content[j])) j++
+    while (j < content.length && RealCAnalyzer.isSourceSpace(content[j])) j++
     return content[j] === "{"
   }
 
@@ -2772,10 +2871,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const at = window.lastIndexOf(ch)
       if (at > cut) cut = at
     }
-    const header = window.slice(cut + 1)
-      .replace(/\/\*[\s\S]*?\*\//g, " ")
-      .replace(/\/\/[^\n]*/g, " ") // eslint-disable-line no-useless-escape
-    return /[A-Za-z_]\w*/.test(header)
+    const header = RealCAnalyzer.stripComments(window.slice(cut + 1))
+    return RealCAnalyzer.hasIdentifierToken(header)
   }
 
   /**
@@ -2818,7 +2915,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const blank = window.lastIndexOf("\n\n")
     if (blank > cut) cut = blank
-    return /\bstatic\b/.test(window.slice(cut + 1))
+    return RealCAnalyzer.hasStaticKeyword(window.slice(cut + 1))
   }
 
   /**
