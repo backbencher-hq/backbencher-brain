@@ -1,0 +1,209 @@
+{
+ "at": "2026-09-20T21:10:00.000000Z",
+ "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
+ "draws": [
+  {
+   "repo": "svelte",
+   "lang": "javascript",
+   "files": 200,
+   "truth": 1952,
+   "covered": 1952,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "svelte",
+   "lang": "typescript",
+   "files": 84,
+   "truth": 1197,
+   "covered": 1197,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "svelte",
+   "lang": "svelte",
+   "files": 200,
+   "truth": 137,
+   "covered": 137,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "element-plus",
+   "lang": "javascript",
+   "files": 2,
+   "truth": 30,
+   "covered": 30,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "element-plus",
+   "lang": "typescript",
+   "files": 200,
+   "truth": 1000,
+   "covered": 1000,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "element-plus",
+   "lang": "vue",
+   "files": 200,
+   "truth": 1219,
+   "covered": 1213,
+   "missing": 6,
+   "unexplained": 3,
+   "note": "draw 1"
+  },
+  {
+   "repo": "element-plus",
+   "lang": "vue",
+   "files": 200,
+   "truth": 1416,
+   "covered": 1412,
+   "missing": 4,
+   "unexplained": 4,
+   "note": "draw 2 (samples captured)"
+  },
+  {
+   "repo": "lodash",
+   "lang": "javascript",
+   "files": 55,
+   "truth": 12232,
+   "covered": 12232,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "grails-core",
+   "lang": "java",
+   "files": 200,
+   "truth": 3653,
+   "covered": 3653,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "grails-core",
+   "lang": "groovy",
+   "files": 200,
+   "truth": 3852,
+   "covered": 3852,
+   "missing": 0,
+   "unexplained": 1,
+   "note": "draw 1 — the self-override leaf-name collision (FindAllByFinder.doInvokeInternal)",
+   "supersededBy": "grails-core:groovy post-fix draw (2026-09-20)"
+  },
+  {
+   "repo": "grails-core",
+   "lang": "groovy",
+   "files": 200,
+   "truth": 3351,
+   "covered": 3351,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 2"
+  },
+  {
+   "repo": "Exposed",
+   "lang": "kotlin",
+   "files": 200,
+   "truth": 5111,
+   "covered": 5111,
+   "missing": 0,
+   "unexplained": 0
+  },
+  {
+   "repo": "scala3",
+   "lang": "scala",
+   "files": 200,
+   "truth": 2105,
+   "covered": 2105,
+   "missing": 0,
+   "unexplained": 1,
+   "note": "draw 1 — the self-named extension (object Position extends Position)",
+   "supersededBy": "scala3:scala post-fix draw (2026-09-20)"
+  },
+  {
+   "repo": "scala3",
+   "lang": "scala",
+   "files": 200,
+   "truth": 2333,
+   "covered": 2333,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 2"
+  },
+  {
+   "repo": "scala3",
+   "lang": "java",
+   "files": 200,
+   "truth": 342,
+   "covered": 342,
+   "missing": 0,
+   "unexplained": 0
+  }
+ ],
+ "current": [
+  {
+   "repo": "grails-core",
+   "lang": "groovy",
+   "files": 200,
+   "truth": 2892,
+   "covered": 2892,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "post-fix draw (2026-09-20, self-override fix live)"
+  },
+  {
+   "repo": "grails-core",
+   "lang": "java",
+   "files": 200,
+   "truth": 2803,
+   "covered": 2803,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "post-fix draw (2026-09-20)"
+  },
+  {
+   "repo": "scala3",
+   "lang": "scala",
+   "files": 200,
+   "truth": 1800,
+   "covered": 1799,
+   "missing": 1,
+   "unexplained": 0,
+   "note": "post-fix draw (2026-09-20) — the one uncovered edge is Transformation.submitWithValue -> DefaultPromise.submitWithValue, adjudicated ORACLE-side (#905: the base member is `private final def` and Scala does not inherit private members; the analyzer's refusal is correct). The self-override that this same draw previously showed is gone."
+  },
+  {
+   "repo": "scala3",
+   "lang": "java",
+   "files": 200,
+   "truth": 441,
+   "covered": 440,
+   "missing": 1,
+   "unexplained": 0,
+   "note": "draw 3 — the one uncovered edge is anonymous_Inner.foo -> Inner.foo (tests/untried/pos/t3943/Outer_1.java), adjudicated ANALYZER-side and registered as #904 (anonymous class implementing a generic abstract member)."
+  }
+ ],
+ "adjudicated": {
+  "vue": "#903 — 200-file depth on element-plus: 6 MISSING / 3–4 unexplained edges across two draws (deep-array reactivity unwrapping, dynamic component names). Analyzer-side, OPEN.",
+  "scala": "#905 — one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
+  "java": "#904 — one uncovered edge at depth, ANALYZER-side (anonymous class + generic substitution). OPEN.",
+  "go": "#872 — long-registered; reproduced at depth.",
+  "c": "#901 — two MISSING `uses` on all-caps macro names, from the canonical sweep.",
+  "python": "#902 — one UNEXPLAINED with-statement `calls` edge at `line: 0`, from the canonical sweep."
+ },
+ "worstPerLang": {
+  "javascript": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "typescript": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "svelte": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "vue": { "maxSample": 200, "missing": 6, "unexplained": 4, "drawsRed": 2, "issue": "#903" },
+  "java": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#904" },
+  "groovy": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "kotlin": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "scala": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#905" }
+ }
+}
