@@ -175,7 +175,37 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
-  } ],
+  } ,
+  {
+   "repo": "nlohmann-json",
+   "lang": "cpp",
+   "files": 17,
+   "truth": 1016,
+   "covered": 1016,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0."
+  },
+  {
+   "repo": "fmt",
+   "lang": "cpp",
+   "files": 73,
+   "truth": 5372,
+   "covered": 5372,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0."
+  },
+  {
+   "repo": "sqlite",
+   "lang": "cpp",
+   "files": 42,
+   "truth": 28,
+   "covered": 28,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
+  }],
  "current": [
   {
    "repo": "grails-core",
@@ -307,7 +337,37 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
-  } ],
+  } ,
+  {
+   "repo": "nlohmann-json",
+   "lang": "cpp",
+   "files": 17,
+   "truth": 1016,
+   "covered": 1016,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0."
+  },
+  {
+   "repo": "fmt",
+   "lang": "cpp",
+   "files": 73,
+   "truth": 5372,
+   "covered": 5372,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0."
+  },
+  {
+   "repo": "sqlite",
+   "lang": "cpp",
+   "files": 42,
+   "truth": 28,
+   "covered": 28,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
+  }],
  "adjudicated": {
   "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
   "scala": "#905 — one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
@@ -325,6 +385,7 @@
   "groovy": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "kotlin": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "scala": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#905" },
+  "cpp": { "maxSample": 73, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "c": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 }
  },
  "closedInThisRound": {
