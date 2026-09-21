@@ -3535,7 +3535,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < rootNode.namedChildCount; i++) {
       const child = rootNode.namedChild(i)
       if (child && child.type === "package_clause") {
-        const pkgId = child.childForFieldName("package_identifier") || child.namedChild(0)
+        // M14.0.F1 (#880): `package_clause` declares NO fields in this grammar —
+        // the old `childForFieldName("package_identifier")` could never match
+        // (it is a node TYPE, not a field) and the named-child fallback carried
+        // the value all along. Read the node by type, so the audit's field table
+        // and this lookup agree.
+        const pkgId = this.findChildByType(child, "package_identifier") ?? child.namedChild(0)
         return pkgId ? pkgId.text : undefined
       }
     }

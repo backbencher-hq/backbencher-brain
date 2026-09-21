@@ -1225,7 +1225,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       let cur = n
       while (cur) {
         if (cur.type === "identifier") return cur.text
-        cur = cur.childForFieldName("declarator") || cur.namedChild(0)
+        // M14.0.F1 (#880): `declarator` is a C/C++ field and this grammar
+        // declares none — the old `childForFieldName("declarator")` was copied
+        // from the cpp lane, could never match, and the named-child step below
+        // carried the walk. Stated once, without the dead probe.
+        cur = cur.namedChild(0)
       }
       return null
     }
