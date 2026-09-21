@@ -4405,6 +4405,53 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/callsite-lines-dropped",
+    language: "c",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: c's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 414 on the lane audit; 47,575 relationships across sqlite/jq/zig carry one at HEAD). Caught by c/callsite-lines-825, which pins the include paths at 12/13, both wrapped specifier tags at 16/32, the calls at 33/38/46 and the contains lines at 17/22/23/24.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "c/callsite-lines-receiver-start",
+    language: "c",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a function-pointer member call takes the line the RECEIVER is written on instead of the callee leaf — the construct-start shape, because a `call_expression` starts at its receiver. Caught by c/callsite-lines-825: run -> record must be 46 (where `->record` is written); the receiver line 45 is forbidden.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x && String(x.type) === "calls" && x.metadata?.isFunctionPointer === true && typeof x.line_number === "number"
+          ? { ...x, line_number: x.line_number - 1 }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "c/reference-lines-specifier-start",
+    language: "c",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a struct reference takes the specifier KEYWORD's line instead of the tag's — the exact defect measured on jq jv_dtoa.c (`struct` on 512, `Bigint {` on 513), the only Tier-A inconsistency in 13,186 jq relationships before the fix. Caught by c/callsite-lines-825: Tally must be 16 and 32; the keyword lines 15 and 31 are forbidden.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x && String(x.type) === "references" && x.metadata?.nodeType === "struct_specifier" && typeof x.line_number === "number"
+          ? { ...x, line_number: x.line_number - 1 }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "c/contains-lines-enclosing",
+    language: "c",
+    defectClass: "line-attribution",
+    description: "M59 (#825) regression: a contains edge takes the ENCLOSING declaration's line instead of the member's own — the fabricated-substitute class the contract forbids. Caught by c/callsite-lines-825: contains Counters -> hits must be 22 (where `hits` is declared); the opening-brace line 21 is forbidden.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x && String(x.type) === "contains" && typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x,
+      ),
+    }),
+  },
+  {
     id: "c/proto-param-uses",
     language: "c",
     defectClass: "relationship-fabrication",
