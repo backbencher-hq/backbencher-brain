@@ -84,8 +84,8 @@
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "374431f94bcfe953577cdc14f7903cc0ce894dfcc6f8d32f4d9b8869cf155c44",
-        "bytes": 114112
+        "sha256": "8dcba02ee159768453093d85535139ce0dc7648faefab8831d3acfeeceefb05f",
+        "bytes": 119797
       },
       "src/ast/real-haskell-analyzer.ts": {
         "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
@@ -160,8 +160,8 @@
         "bytes": 87903
       },
       "src/ast/real-scala-analyzer.ts": {
-        "sha256": "15ba603d58804adba5e7ea95b504192ead24a0150b680c74e7d2e1a35ee64e41",
-        "bytes": 122047
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
       },
       "src/ast/real-sql-analyzer.ts": {
         "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
@@ -252,7 +252,7 @@
         "bytes": 17754
       }
     },
-    "digest": "be82216600fcee3eeb44f5d396205ebabe006c8423ea9ccc8d35c422c95e62ae",
+    "digest": "4a959b2840e6a61a9308d03c808560fc5850d327f2e6f69543f579846d1da165",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
@@ -377,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 18.093168,
-      "userCpuMs": 39.04,
-      "systemCpuMs": 5.253,
-      "peakRssBytes": 258371584,
-      "rssDeltaBytes": 2752512,
+      "wallTimeMs": 26.145179,
+      "userCpuMs": 67.514,
+      "systemCpuMs": 4.553,
+      "peakRssBytes": 252928000,
+      "rssDeltaBytes": 2883584,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

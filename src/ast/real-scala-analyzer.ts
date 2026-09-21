@@ -47,6 +47,21 @@ function sigHasTypeVar(sig: string): boolean {
   return false
 }
 
+/**
+ * A symbol cannot override ITSELF. Measured at 200-file depth on scala3:
+ * `Position.checkInput -> Position.checkInput` (line 106) — `private[scala]
+ * object Position extends Position`, so the declaring ancestor resolves back to
+ * the owning name. The oracle refuses the same edge by its own rule ("self-
+ * collision guard": `parentName === occName` seeds no override chain), so the
+ * analyzer and the truth machinery agree that it is unrepresentable rather than
+ * merely unverified. Guarded by class identity rather than by the emitted
+ * source/target text, because two distinct classes may share a leaf name and
+ * THAT override is legitimate.
+ */
+function isSelfOverride(declaring: string | undefined | null, ownerName: string | undefined | null): boolean {
+  return !!declaring && !!ownerName && declaring === ownerName
+}
+
 export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   // S1.21: stable per-file counter for anonymous given names (see handleGiven).
   // Reset at the top of every analyze() so each file counts from 1.
@@ -536,7 +551,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ancestor (exact signature); only if none exists do the companion /
         // first-supertype guess tiers run.
         const declaringInFile = findDeclaringAncestor(s)
-        if (declaringInFile) {
+        if (declaringInFile && !isSelfOverride(declaringInFile, s.ownerName)) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${declaringInFile}.${s.name}`,
@@ -575,7 +590,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             reasonCode = "companion-index"
           }
         }
-        if (overrideParent) {
+        if (overrideParent && !isSelfOverride(overrideParent, s.ownerName)) {
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${overrideParent}.${s.name}`,
@@ -599,7 +614,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
       if (s.metadata?.isPhantom || s.metadata?.isOverride || s.visibility === "private") continue
       const declaringInFile = findDeclaringAncestor(s)
-      if (declaringInFile) {
+      if (declaringInFile && !isSelfOverride(declaringInFile, s.ownerName)) {
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
           target: `${declaringInFile}.${s.name}`,

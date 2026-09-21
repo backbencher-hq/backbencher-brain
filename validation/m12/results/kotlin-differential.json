@@ -84,8 +84,8 @@
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "374431f94bcfe953577cdc14f7903cc0ce894dfcc6f8d32f4d9b8869cf155c44",
-        "bytes": 114112
+        "sha256": "8dcba02ee159768453093d85535139ce0dc7648faefab8831d3acfeeceefb05f",
+        "bytes": 119797
       },
       "src/ast/real-haskell-analyzer.ts": {
         "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
@@ -160,8 +160,8 @@
         "bytes": 87903
       },
       "src/ast/real-scala-analyzer.ts": {
-        "sha256": "15ba603d58804adba5e7ea95b504192ead24a0150b680c74e7d2e1a35ee64e41",
-        "bytes": 122047
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
       },
       "src/ast/real-sql-analyzer.ts": {
         "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
@@ -256,7 +256,7 @@
         "bytes": 26356
       }
     },
-    "digest": "08a0f085149559d1e267c175c1678ac74713534c222e4dab617beaf1b51be4ad",
+    "digest": "18265ba81fce2ef8289cef234b4dd35258ed828c92c8f37f61dd75f4cf8dbcd9",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-kotlin_tree-sitter-kotlin.wasm",
       "sha256": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
@@ -504,11 +504,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:kotlin",
-      "wallTimeMs": 57.354617,
-      "userCpuMs": 149.759,
-      "systemCpuMs": 7.6,
-      "peakRssBytes": 288690176,
-      "rssDeltaBytes": 5242880,
+      "wallTimeMs": 57.001534,
+      "userCpuMs": 178.717,
+      "systemCpuMs": 13.699,
+      "peakRssBytes": 286879744,
+      "rssDeltaBytes": 5636096,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
