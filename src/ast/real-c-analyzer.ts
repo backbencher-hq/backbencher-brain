@@ -579,6 +579,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: includePath,
               type: ASTEngine.RelationshipType.References,
               confidence: 1.0,
+              // M59.A7 (#825): the include directive is the source construct and
+              // its written name is the path token — take THAT node's line, not
+              // the directive's (multi-line directives put the path last).
+              line_number: this.nodeLine(rawPathNode ?? node),
               metadata: { relationshipType: "include_dependency", isSystem: isSystemInclude, isImport: true },
             })
           }
@@ -637,10 +641,19 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (fnNode) {
           let target = fnNode.text
           let isFuncPtr = false
+          // M59.A7 (#825): the line belongs to the name, never to the construct
+          // that contains it. `obj->method()`'s call_expression starts at the
+          // RECEIVER, so a newline-continued member call would take the line the
+          // receiver is written on (the scala/java/groovy defect class, in C's
+          // node shape); the callee leaf is the naming node.
+          let targetNode: Node | null = fnNode
 
           if (fnNode.type === "field_expression") {
             const field = fnNode.childForFieldName("field")
-            if (field) target = field.text
+            if (field) {
+              target = field.text
+              targetNode = field
+            }
             isFuncPtr = true
           } else if (fnNode.type === "subscript_expression") {
             // Dispatch-table invocation handlers[i]() - no static callee
@@ -684,6 +697,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 1.0,
+              line_number: this.nodeLine(targetNode),
               metadata: { relationshipType: "c_function_call", isFunctionPointer: isFuncPtr },
             })
 
@@ -722,6 +736,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: "KERNEL_EXPORT",
                   type: ASTEngine.RelationshipType.Exports,
                   confidence: 1.0,
+                  // M59.A7: the exported NAME is written in the macro argument;
+                  // the marker target (KERNEL_EXPORT) is synthesised and the
+                  // oracle verifies this edge by its SOURCE token.
+                  line_number: this.nodeLine(arg),
                   metadata: { relationshipType: "linux_kernel_export", exportMacro: target },
                 })
               }
@@ -779,6 +797,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(field),
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
           }
@@ -957,6 +976,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: text,
               type: isTypeNode ? ASTEngine.RelationshipType.References : ASTEngine.RelationshipType.Uses,
               confidence: isTypeNode ? 0.8 : 1.0,
+              // M59.A7: the identifier node the name came from — a type
+              // expression's start is not the line of the types inside it.
+              line_number: this.nameLine(node),
               metadata: isTypeNode
                 ? { relationshipType: "type_reference", nodeType: node.type }
                 : { relationshipType: "identifier_usage", nodeType: node.type },
@@ -1084,6 +1106,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: s.name,
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1.0,
+        // M59.A7 (#825): a contains edge moves WITH its symbol — the child's own
+        // declaration line, so the edge and the symbol range can never disagree
+        // (the JVM lesson). Measured: 0/7,974 sqlite+jq symbols carry a name that
+        // is absent from this line, so the contract's name-on-line rule holds.
+        line_number: s.range?.startLine,
         metadata: {},
       })
     }
@@ -2492,6 +2519,36 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const arr: string[] = []
     for (const f in frameworks) arr.push(f)
     return arr
+  }
+
+  /**
+   * M59.A7 (#825): the 1-based line of the node that NAMES a relationship.
+   * The contract (reviews/m49-callsite-line-gap.md) is "the line belongs to the
+   * name, never to the construct that contains it": a call takes its callee
+   * leaf, a type reference the node the name came from, an include its path.
+   * Returns undefined — the honest value — when no node can derive a line; a
+   * synthesised target must never be given an enclosing declaration's line.
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
+    return node.startPosition.row + 1
+  }
+
+  /**
+   * M59.A7 (#825): a type expression's start is not the line of the names inside
+   * it. A `struct_specifier` starts at its KEYWORD, and a wrapped declaration
+   * puts the tag on the following line — measured on jq `jv_dtoa.c`:
+   *
+   *   struct        <- 512 (the specifier's start)
+   *   Bigint {      <- 513 (where the name is written)
+   *
+   * The grammar's `name` field is the site when it exists; otherwise the node is.
+   */
+  private nameLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    const nameField =
+      typeof (node as any).childForFieldName === "function" ? node.childForFieldName("name") : null
+    return this.nodeLine(nameField ?? node)
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
