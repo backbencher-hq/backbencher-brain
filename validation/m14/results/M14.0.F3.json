@@ -1,44 +1,50 @@
 {
   "checks": [
     {
+      "description": "clojure adversarial fixtures",
+      "detail": "36/36 fixtures pass",
+      "id": "fixtures-clojure",
+      "status": "pass"
+    },
+    {
       "description": "javascript adversarial fixtures",
-      "detail": "60/60 fixtures pass",
+      "detail": "61/61 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
     {
       "description": "vue adversarial fixtures",
-      "detail": "31/31 fixtures pass",
+      "detail": "32/32 fixtures pass",
       "id": "fixtures-vue",
       "status": "pass"
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "28/28 fixtures pass",
+      "detail": "32/32 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "68/68 fixtures pass",
+      "detail": "71/71 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "44/44 fixtures pass",
+      "detail": "45/45 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "57/57 fixtures pass",
+      "detail": "68/68 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "42/42 fixtures pass",
+      "detail": "43/43 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
@@ -50,7 +56,7 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
@@ -86,7 +92,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "6/6 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -127,17 +133,209 @@
       "status": "pass"
     },
     {
+      "description": "elixir adversarial fixtures",
+      "detail": "56/56 fixtures pass",
+      "id": "fixtures-elixir",
+      "status": "pass"
+    },
+    {
       "description": "xml adversarial fixtures",
       "detail": "1/1 fixtures pass",
       "id": "fixtures-xml",
       "status": "pass"
+    },
+    {
+      "description": "erlang adversarial fixtures",
+      "detail": "0/0 fixtures pass",
+      "id": "fixtures-erlang",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a47d560772e705294c535f6900947e4f39a8cb9b",
-  "committedAt": "2026-09-17T03:23:36+02:00",
+  "commit": "c6ab5b9ea8cac72cd4210e540649ec16415cc652",
+  "committedAt": "2026-09-20T19:47:14-04:00",
   "data": {
     "details": [
+      {
+        "fixture": "clojure/anon-fn-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/case-constants",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/cljc-aliases",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/comment-data",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/complexity-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/ctors",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/definterface",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/defmethod-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/doc-blocks",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/docstrings",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/dotdot",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/extend-reify",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/head-position-881",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/implements-alias",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/import-list",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/kwd-headed-data",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/letfn",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/meta-value",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/meta-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/non-executable-881",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/params",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/prefix-paren",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/prefix-require",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/proto-alias",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/qualified-data",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/record-doc",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/refer-clojure",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/refer-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/self-reference",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/shadowed-comment-881",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/tagged-ctors",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/threading",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/toplevel-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/toplevel-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clojure/tostring-impl",
+        "ok": true,
+        "problems": []
+      },
       {
         "fixture": "javascript/accessor-name-collision",
         "ok": true,
@@ -250,6 +448,11 @@
       },
       {
         "fixture": "javascript/destructure-symbols",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/destructured-binding-lines",
         "ok": true,
         "problems": []
       },
@@ -504,6 +707,11 @@
         "problems": []
       },
       {
+        "fixture": "vue/macro-prop-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "vue/member-chain",
         "ok": true,
         "problems": []
@@ -594,6 +802,11 @@
         "problems": []
       },
       {
+        "fixture": "svelte/attach-directives",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/await-block",
         "ok": true,
         "problems": []
@@ -639,7 +852,17 @@
         "problems": []
       },
       {
+        "fixture": "svelte/onclick-handler-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/payload-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/props-rename-lines",
         "ok": true,
         "problems": []
       },
@@ -685,6 +908,11 @@
       },
       {
         "fixture": "svelte/store-derived",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/store-subscription-lines",
         "ok": true,
         "problems": []
       },
@@ -799,6 +1027,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/ctor-param-property-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/decorator-declaration-lines-861",
         "ok": true,
         "problems": []
@@ -820,6 +1053,11 @@
       },
       {
         "fixture": "typescript/destructure-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/destructured-binding-lines",
         "ok": true,
         "problems": []
       },
@@ -890,6 +1128,11 @@
       },
       {
         "fixture": "typescript/import-edges",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/index-signature-lines",
         "ok": true,
         "problems": []
       },
@@ -1070,6 +1313,11 @@
       },
       {
         "fixture": "typescript/wrapped-new-858",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/annotation-column-lines",
         "ok": true,
         "problems": []
       },
@@ -1324,6 +1572,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/assert-comma-841",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/attribution-visibility",
         "ok": true,
         "problems": []
@@ -1374,7 +1627,22 @@
         "problems": []
       },
       {
+        "fixture": "groovy/ctor-field-split-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/ctor-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/degraded-class-recovery-841",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/duplicate-parse-field",
         "ok": true,
         "problems": []
       },
@@ -1454,6 +1722,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/identity-operators-841",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/implicit-override",
         "ok": true,
         "problems": []
@@ -1479,6 +1752,16 @@
         "problems": []
       },
       {
+        "fixture": "groovy/keyword-named-args-841",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/line-continuation-841",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/lines-825",
         "ok": true,
         "problems": []
@@ -1495,6 +1778,16 @@
       },
       {
         "fixture": "groovy/multihop-override-resolution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/multiple-assignment-841",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/numeric-suffixes-841",
         "ok": true,
         "problems": []
       },
@@ -1575,6 +1868,16 @@
       },
       {
         "fixture": "groovy/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/typed-closure-params-841",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/value-position-types-841",
         "ok": true,
         "problems": []
       },
@@ -1760,6 +2063,11 @@
       },
       {
         "fixture": "kotlin/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/secondary-ctor-lines",
         "ok": true,
         "problems": []
       },
@@ -2084,6 +2392,11 @@
         "problems": []
       },
       {
+        "fixture": "c/macro-composed-include",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/malloc-instantiates-noise",
         "ok": true,
         "problems": []
@@ -2264,7 +2577,22 @@
         "problems": []
       },
       {
+        "fixture": "csharp/chain-root-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "csharp/csd14-array-member-news",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/framework-detection",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/framework-none",
         "ok": true,
         "problems": []
       },
@@ -2454,15 +2782,303 @@
         "problems": []
       },
       {
+        "fixture": "elixir/alias-members-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/alias-self-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/behaviour-atom",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/chained-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/complexity-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/control-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/defdelegate",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/defexception-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/defimpl-target-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/defmacro-head-no-struct",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/delegate-local-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/derive-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/derive-list",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/doc-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-alias-resolution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-generic-types",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-import-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-otp-fake",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-otp-real",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-scope-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-sigil-docs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex2-signature-defaults",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex3-callsite-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex3-captures",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex3-derive-list",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex3-literal-params",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/ex3-no-self-and-implied",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/framework-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/genserver-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/guard-skips",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/implied-alias-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/import-only-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/kernel-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/kernel-qualified",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/module-self-call",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/multi-alias-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/nested-head-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/operator-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/pattern-structs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/pipe-arity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/proto-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/protocol-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/quote-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/quoted-attrs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/quoted-struct-fields",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/remote-ref-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/same-line-arity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/scope-arity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/self-struct-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/struct-field-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/struct-fn-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/struct-update",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/top-level-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/try-blocks",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/unquote-code",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "elixir/use-option-source",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "xml/lines-825",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "(none)",
+        "ok": true
       }
     ],
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 6
+        "pass": 7
+      },
+      "clojure": {
+        "fail": 0,
+        "pass": 36
       },
       "cpp": {
         "fail": 0,
@@ -2470,11 +3086,19 @@
       },
       "csharp": {
         "fail": 0,
-        "pass": 3
+        "pass": 6
       },
       "dart": {
         "fail": 0,
         "pass": 7
+      },
+      "elixir": {
+        "fail": 0,
+        "pass": 56
+      },
+      "erlang": {
+        "fail": 0,
+        "pass": 0
       },
       "go": {
         "fail": 0,
@@ -2482,7 +3106,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 57
+        "pass": 68
       },
       "haskell": {
         "fail": 0,
@@ -2490,15 +3114,15 @@
       },
       "java": {
         "fail": 0,
-        "pass": 44
+        "pass": 45
       },
       "javascript": {
         "fail": 0,
-        "pass": 60
+        "pass": 61
       },
       "kotlin": {
         "fail": 0,
-        "pass": 42
+        "pass": 43
       },
       "objc": {
         "fail": 0,
@@ -2526,7 +3150,7 @@
       },
       "svelte": {
         "fail": 0,
-        "pass": 28
+        "pass": 32
       },
       "swift": {
         "fail": 0,
@@ -2534,11 +3158,11 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 68
+        "pass": 71
       },
       "vue": {
         "fail": 0,
-        "pass": 31
+        "pass": 32
       },
       "xml": {
         "fail": 0,
@@ -2563,8 +3187,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-17T01:27:45.724Z",
-  "regeneratedAtCommit": "a47d560772e705294c535f6900947e4f39a8cb9b",
+  "regeneratedAt": "2026-09-21T00:19:12.905Z",
+  "regeneratedAtCommit": "c6ab5b9ea8cac72cd4210e540649ec16415cc652",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
