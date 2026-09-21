@@ -2756,15 +2756,21 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
         }
       }
     } else if (n.type === "preproc_include") {
-      // CGD16: include truth mirrors the analyzer's include_dependency
-      // references — target is the RAW path text (quotes/brackets
-      // stripped), measured from the analyzer (`references sqliteInt.h`).
+      // CGD16: include truth mirrors the analyzer's include_dependency edge —
+      // target is the RAW path text (quotes/brackets stripped), measured from
+      // the analyzer (`imports sqliteInt.h`).
+      //
+      // M60/#910: the KIND is `imports`, not `references`. The oracle is the
+      // analyzer's mirror, so the ontology change had to land on both sides in
+      // one round: pre-fix the analyzer emitted references+isImport and this
+      // pushed `references`, which kept the asymmetry invisible to every
+      // harness while the LSP reader saw a kind that could never match.
       const pathNode = n.namedChildren.find((c: any) => c.type === "string_literal" || c.type === "system_lib_string")
       if (pathNode) {
         const raw = pathNode.text.replace(/^["<]/, "").replace(/[">]$/, "")
-        if (raw && !seen.has("ref:" + raw)) {
-          seen.add("ref:" + raw)
-          edges.push({ label: "references", from: "(expr)", target: raw })
+        if (raw && !seen.has("inc:" + raw)) {
+          seen.add("inc:" + raw)
+          edges.push({ label: "imports", from: "(expr)", target: raw })
         }
       }
     } else if (n.type === "identifier" && !isAssignLhs(n)) {
@@ -11059,6 +11065,13 @@ async function main() {
       // as unexplained. CGD (M37 #601): c's oracle now derives member/bare
       // USES truth as well (write-gated), so c joins the uses-audited set.
       //
+      // M60/#910: c joins the IMPORTS-audited set. Its include edges are the
+      // first-class `imports` kind now, and without the allowance below the
+      // allowlist silently dropped them from the ANALYZER side — measured 129
+      // MISSING on a 40-file sqlite draw (3462 truth edges, 96.3% coverage)
+      // the moment the oracle started emitting the new label, i.e. the change
+      // would have read as an analyzer regression when it was a harness gap.
+      //
       // M49.G7: groovy joins it too, and the round is why. Groovy had NO read
       // oracle, so `uses` was excluded from its comparison by construction (the
       // W20 note recorded that as a declared limitation: a restored read rode
@@ -11071,7 +11084,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" ? ["references"] : [])].includes(r.label))
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a

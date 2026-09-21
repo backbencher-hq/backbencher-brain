@@ -1596,8 +1596,20 @@ const MUTANTS: Mutant[] = [
     id: "c/drop-include-references",
     language: "c",
     defectClass: "relationship-loss",
-    description: "drops C include dependency References edges",
+    description: "drops C include dependency edges (the first-class imports kind, M60/#910)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => (x.metadata ?? {}).relationshipType !== "include_dependency") }),
+  },
+  {
+    id: "c/include-kind-downgraded",
+    language: "c",
+    defectClass: "relationship-ontology",
+    description: "M60/#910 regression: downgrades the include edge from the first-class `imports` kind back to the old `references` + metadata shape — the asymmetry every harness was blind to while the LSP file-level reader filters relationship_type IN ('imports','exports')",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x =>
+        (x.metadata ?? {}).relationshipType === "include_dependency" ? { ...x, type: "references" } : x,
+      ),
+    }),
   },
   {
     id: "c/drop-complexity",
@@ -1657,8 +1669,8 @@ const MUTANTS: Mutant[] = [
     id: "c/macro-include-fabrication",
     language: "c",
     defectClass: "relationship-fabrication",
-    description: "W22 regression: re-fabricates an include_dependency edge for a MACRO-COMPOSED include argument (#include INC__STRINGIFY(SQLITE_C), sqlite3-wasm.c shape) — not a statically resolvable header name (C-D2); the macro-composed-include fixture forbids it",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "global", target: "INC__STRINGIFY(SQLITE_C)", confidence: 1, metadata: { relationshipType: "include_dependency", isSystem: false, isImport: true } }] }),
+    description: "W22 regression: re-fabricates an include_dependency edge for a MACRO-COMPOSED include argument (#include INC__STRINGIFY(SQLITE_C), sqlite3-wasm.c shape) — not a statically resolvable header name (C-D2); the macro-composed-include fixture forbids it (in the first-class `imports` kind, M60/#910)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "imports", source: "global", target: "INC__STRINGIFY(SQLITE_C)", confidence: 1, metadata: { relationshipType: "include_dependency", isSystem: false, isImport: true } }] }),
   },
   {
     id: "c/cgd38-phantom-function-symbol",

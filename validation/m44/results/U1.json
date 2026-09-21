@@ -11,10 +11,10 @@
   "negativeCases": 6,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
+  "currentCommit": "1666c5d77819d4c20fb16f2ae8d22df08848f8d3",
   "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-16T12:39:35.582Z",
+  "generatedAt": "2026-09-21T15:53:07.548Z",
   "schemaVersion": 2,
   "laws": [
     "L1 one-group-per-symbol",
@@ -46,6 +46,7 @@
   },
   "limitations": [
     "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures.",
-    "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws."
+    "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws.",
+    "L5's 'sort removed' probe is vacuous on this fixture: the engine's row order is already (file,name) ascending, so the mutant is probed by a reversed comparator instead. Named, not hidden — making the fixture's natural order adversarial is the fix for the residual."
   ]
 }

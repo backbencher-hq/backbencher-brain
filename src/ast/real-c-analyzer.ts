@@ -587,16 +587,36 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               node.childForFieldName("path") ||
               this.findChild(node, (c) => c?.type === "string_literal" || c?.type === "system_lib_string")
             const isSystemInclude = rawPathNode ? rawPathNode.text.trimStart().startsWith("<") : false
+            // M60/#910: the include is a FIRST-CLASS `imports` edge, not a
+            // `references` edge with import metadata. Measured gap the old
+            // shape created: every include-family language (c/cpp/go/rust/
+            // ruby/php) hid its dependency edges behind `references` +
+            // metadata.isImport while ts/js/python/dart/bash/lua/makefile
+            // emitted the dedicated `imports` kind, so the one reader that
+            // answers "what does this module depend on" (the LSP usages
+            // file-level section, `relationship_type IN ('imports','exports')`)
+            // could never see a C include. The metadata markers stay — they
+            // are the evidence (written path, system-vs-quoted) — but the
+            // relationship KIND now says what it is. `module` and `fileLevel`
+            // let the store name the importing file on a row whose source is
+            // file-scope (see parallel-indexer `importerExternal`).
             relationships.push({
               source: scopeManager.getRelationshipSource(),
               target: includePath,
-              type: ASTEngine.RelationshipType.References,
+              type: ASTEngine.RelationshipType.Imports,
               confidence: 1.0,
               // M59.A7 (#825): the include directive is the source construct and
               // its written name is the path token — take THAT node's line, not
               // the directive's (multi-line directives put the path last).
               line_number: this.nodeLine(rawPathNode ?? node),
-              metadata: { relationshipType: "include_dependency", isSystem: isSystemInclude, isImport: true },
+              metadata: {
+                relationshipType: "include_dependency",
+                isSystem: isSystemInclude,
+                isSystemInclude,
+                isImport: true,
+                module: includePath,
+                fileLevel: true,
+              },
             })
           }
           break
@@ -1218,6 +1238,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = String(r.type ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      // M60/#910: the dedicated `imports` kind carries module dependencies
+      // (the JVM/web families' import_based tier, T1 bug class) — the same
+      // class the old references+isImport path was given explicitly below.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") {
         md.evidenceClass =
           md.includeDependency || md.isImport ? "import_based"
