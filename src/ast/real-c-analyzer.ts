@@ -217,6 +217,19 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // for the second row. The attempt was reverted and the residual registered
     // as #908. Do not re-add a blanket macro-name suppression here.
     const declaredNames = new Set<string>()
+    // CGD41 (#908 ruling, measured jq src/parser.c L2229/2230): a FUNCTION-LIKE
+    // macro's NAME never BINDS. `YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);`
+    // parses as a declaration whose DECLARATOR field is a function_declarator
+    // named after the macro (the real declared name, `yylval`, is demoted to the
+    // declaration's type_identifier). collectBoundLocals read that fd's leftmost
+    // identifier as a function-LOCAL binding, so any later mention of the macro
+    // inside that function was suppressed as a shadowed read. That made the
+    // emission ORDER-DEPENDENT (the jq lane's row survived only because L2229 is
+    // walked before L2230): the preprocessor expands the name wherever it
+    // appears, so it is an invocation, never a binding — the same "an invocation
+    // is a use" ruling the four-row lesson (#908) established. The oracle's
+    // collector carries the identical gate, so both sides agree by construction.
+    const functionLikeMacroNames = new Set<string>()
     {
       const preStack: { n: Node; inFn: boolean }[] = [{ n: rootNode, inFn: false }]
       while (preStack.length > 0) {
@@ -329,6 +342,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             })()
             if (isProto || isMacroName || !(isInsideCompoundStatement || isGlueFdName || this.isCgd19SuppressedVarDecl(n))) {
               declaredNames.add(n.text)
+              // CGD41: the definition site of a function-like macro is where the
+              // name's un-bindability is recorded (its NAME's parent is the
+              // preproc_function_def).
+              if (p.type === "preproc_function_def") functionLikeMacroNames.add(n.text)
             }
           }
         }
@@ -530,7 +547,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               // (probe c-emit2 B1: `return g + 1` emitted nothing). A local
               // variable shadowing a global is legitimately filtered; a
               // READ of the global is not.
-              const bound = this.collectBoundLocals(node)
+              const bound = this.collectBoundLocals(node, functionLikeMacroNames)
               for (let i = 0; i < bound.length; i++) {
                 locals.add(bound[i])
               }
@@ -1978,7 +1995,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * must bind only `y`. Binding `g` (the old collectDeclaredIdentifiers
    * behavior) suppressed every later genuine read of `g` in the function.
    */
-  private collectBoundLocals(node: Node): string[] {
+  private collectBoundLocals(node: Node, functionLikeMacroNames?: Set<string>): string[] {
     const names: string[] = []
     const seen: Record<string, boolean> = {}
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -1996,7 +2013,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           child.type === "init_declarator"
             ? this.getIdentifierFromDeclarator(child.childForFieldName("declarator"))
             : this.getIdentifierFromDeclarator(child)
-        if (decl && decl.text.trim() && !seen[decl.text]) {
+        // CGD41 (#908): a function-like macro's NAME is not a binding — the
+        // declarator it appears in is the macro INVOCATION spliced into the
+        // declaration (see the pre-pass note above). Mirrors the oracle's
+        // collectLocalDecl gate one-for-one.
+        if (decl && decl.text.trim() && !seen[decl.text] && !(functionLikeMacroNames && functionLikeMacroNames.has(decl.text))) {
           seen[decl.text] = true
           names.push(decl.text)
         }

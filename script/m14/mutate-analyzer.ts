@@ -1612,6 +1612,18 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/function-like-macro-bound-as-local",
+    language: "c",
+    defectClass: "relationship-loss",
+    description: "#908 regression: re-injects the false LOCAL BINDING — a declaration whose DECLARATOR is a function_declarator named after a function-like macro (`YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);`, jq src/parser.c L2230) puts the macro name into the enclosing function's locals, so every later mention of the macro in that function is suppressed as a shadowed read. Re-injected as the row the defect suppresses, because a suppressed row is by definition absent from the output it would have polluted: `uses c908_after -> YY_INITIAL_VALUE` (that function's misparsed declaration L45 precedes its use L46). Caught by c/function-like-macro-not-a-binding-908's expectRelationships. Note the corpus lane CANNOT see this class — jq's parser.c happens to walk the use (L2229) before the declaration (L2230), so the row survives the defect; the fixture's reversed order is what makes it observable.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && x.source === "c908_after" && x.target === "YY_INITIAL_VALUE"),
+      ),
+    }),
+  },
+  {
     id: "c/drop-complexity",
     language: "c",
     defectClass: "payload-loss",
