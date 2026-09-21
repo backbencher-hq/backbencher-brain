@@ -1076,6 +1076,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         seen.add(parent)
         const candidates = suffixIndex.get(parent) ?? [parent]
         for (const cand of candidates) {
+          // Pass 1 is the IN-FILE hierarchy pass: a candidate that is not a
+          // class declared in this file cannot supply an in-file target.
+          // Measured at 200-file depth on grails-core (FindAllByFinder.groovy):
+          // the class extends `org.grails.datastore.gorm.finders.FindAllByFinder`
+          // — a QUALIFIED target, i.e. EXTERNAL (the differential oracle's own
+          // rule: a qualified heritage target is never in-file). The suffix
+          // index misses it, the `?? [parent]` fallback kept the FQN, and the
+          // leaf-name match below (the candidate's bare class name is the
+          // raw-key ownerName) then hit the OWNER'S OWN method under the
+          // parent's leaf name, emitting
+          // `FindAllByFinder.doInvokeInternal -> FindAllByFinder.doInvokeInternal`
+          // at confidence 1.0. Cross-file ancestors are pass 2's job; gating
+          // here is what makes the collision unrepresentable rather than merely
+          // unlikely. In-file nested chains (BlackVal extends Black extends
+          // Node) are unaffected: every in-file class is a classHierarchy key.
+          if (!classHierarchy.has(cand)) continue
           // Groovy symbolMap keys method symbols by the OWNER-NAME raw key
           // (Owner.method(sig)) — an FQN candidate (Outer.Black.val) has no
           // direct key. Match on the method's declaring-owner leaf: the
@@ -1126,6 +1142,27 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (targetFqn) {
         const localSource = task.fqn.split("(")[0].split(".").slice(-2).join(".")
         const localTarget = targetFqn.split("(")[0].split(".").slice(-2).join(".")
+        // A symbol cannot override ITSELF. The guard is on the EMITTED labels
+        // (so it covers every resolution tier) rather than on the declaring
+        // FQN, because the collision that produces a self-edge here is a
+        // LEAF-NAME one, not a class-identity one: measured at 200-file depth
+        // on grails-core, `org.grails.gorm.rx.finders.FindAllByFinder` extends
+        // `org.grails.datastore.gorm.finders.FindAllByFinder` — same leaf,
+        // different class — so both ends of the edge reduce to
+        // `FindAllByFinder.doInvokeInternal` under the project's two-segment
+        // edge vocabulary. Pass 1 could reach it through the leaf-name key
+        // match; pass 3 (first-parent-guess, below threshold) still can. The
+        // edge as emitted asserts X overrides X, which no reader can act on and
+        // the tree cannot derive (the differential oracle classifies a
+        // QUALIFIED heritage target as external, so it never derives a truth
+        // edge here). Cross-file overrides between same-leaf-named classes are
+        // therefore UNREPRESENTABLE in this vocabulary, not merely unverified —
+        // dropping the degenerate label is the honest outcome; the class is
+        // registered rather than silently absorbed. Scala's analogous site
+        // (`object Position extends Position`) is guarded by class identity in
+        // real-scala-analyzer.ts: there the declARING name and the owner are
+        // the same symbol's name, a different shape of the same impossibility.
+        if (localSource === localTarget) continue
         relationships.push({
           source: localSource,
           target: localTarget,

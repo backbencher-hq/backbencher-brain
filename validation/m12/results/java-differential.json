@@ -84,8 +84,8 @@
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "374431f94bcfe953577cdc14f7903cc0ce894dfcc6f8d32f4d9b8869cf155c44",
-        "bytes": 114112
+        "sha256": "8dcba02ee159768453093d85535139ce0dc7648faefab8831d3acfeeceefb05f",
+        "bytes": 119797
       },
       "src/ast/real-haskell-analyzer.ts": {
         "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
@@ -160,8 +160,8 @@
         "bytes": 87903
       },
       "src/ast/real-scala-analyzer.ts": {
-        "sha256": "15ba603d58804adba5e7ea95b504192ead24a0150b680c74e7d2e1a35ee64e41",
-        "bytes": 122047
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
       },
       "src/ast/real-sql-analyzer.ts": {
         "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
@@ -260,7 +260,7 @@
         "bytes": 48370
       }
     },
-    "digest": "4aa2ccda8d6efc4f244d3448f209ab975704606e60fead725e6ee6acef74919e",
+    "digest": "d3ef0956ec1e9e1daa632b313f7f1b7c5354dcf2c75397a774c29b11011fbff3",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm",
       "sha256": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f",
@@ -534,11 +534,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:java",
-      "wallTimeMs": 55.497156,
-      "userCpuMs": 145.86,
-      "systemCpuMs": 18.145,
-      "peakRssBytes": 245612544,
-      "rssDeltaBytes": 10747904,
+      "wallTimeMs": 42.182328,
+      "userCpuMs": 116.368,
+      "systemCpuMs": 14.943,
+      "peakRssBytes": 240635904,
+      "rssDeltaBytes": 8073216,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
