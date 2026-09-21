@@ -67,6 +67,7 @@ import path from "node:path"
 import * as WTS from "web-tree-sitter"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { LANGS, LANG_REPOS, SECOND_CORPUS } from "./differential"
+import { emitEvidence } from "./evidence-harness"
 
 const ROOT = path.resolve(__dirname, "..", "..")
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -467,34 +468,61 @@ async function main() {
   // cannot fail on a moved corpus is the class this project keeps paying for.
   const verdict = failures > 0 ? "fail" : moved.length > 0 ? "needs-repin" : "pass"
   if (!SCOPED) {
-    writeFileSync(
-      EVIDENCE_PATH,
-      JSON.stringify(
+    // Emitted through the shared harness, so the artifact carries the standard
+    // governance/schema fields and G8 can see M14.0.F10's producer in source
+    // (a hand-written JSON file is an ORPHAN artifact to that gate — which is how
+    // the first draft of this gate failed it).
+    const checks = scored.map((r) => ({
+      id: `M14.0.F10.${r.lane}`,
+      description: `parse-success floor for ${r.lane}: ${r.eitherPct}% of ${r.files} files carry an ERROR node or a MISSING token (floor ${r.pinnedEitherPct ?? "unpinned"})`,
+      status: (r.verdict === "FAIL" ? "fail" : "pass") as "pass" | "fail",
+      detail:
+        `files=${r.files} ERROR=${r.errorFiles} MISSING=${r.missingFiles} either=${r.eitherFiles} ` +
+        `damaged-lines median=${r.errorLinesMedian} max=${r.errorLinesMax} digest=${r.sampleDigest} verdict=${r.verdict}`,
+    }))
+    emitEvidence({
+      issueId: "M14.0.F10",
+      title: "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
+      claimLevel: "L1",
+      layers: [
+        "corpus routing (the pipeline's own detectLanguageFromPath, including the .h sniff)",
+        "pinned grammar per lane (wasm), one fresh module per lane in its own child process",
+        "per-lane floors in validation/m14/parse-success-baseline.json, sample-digest pinned",
+      ],
+      checks,
+      limitations: [
         {
-          gate: "M14.0.F10",
-          title: "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
-          at: new Date().toISOString(),
-          ...provenance(),
-          method:
-            "files routed by the PRODUCT's detectLanguageFromPath (including the .h sniff), ordered by a hash of their relative path and capped deterministically; each lane parsed in its own child process with a fresh module; ERROR nodes and MISSING tokens counted separately; the rate compared against a pinned per-lane floor whose sample digest must match",
-          sampleLimit: SAMPLE_LIMIT > 0 ? SAMPLE_LIMIT : null,
-          scoped: false,
-          baseline: path.relative(ROOT, BASELINE_PATH),
-          limitations: [
-            "This measures the GRAMMAR's surface, not recovery quality: symbols flow through an ERROR region, so a high and a zero error rate can both be 'no symbol loss' — that is why F5 stays green and why this gate exists separately.",
-            "The corpora are local checkouts; each lane records its repo pin so a moved corpus is visible beside its floor.",
-            "A lane whose candidate set changed reports sample-moved and is NOT compared — the honest state, not a pass.",
-            "The rate is the full production-routed surface, so c includes plain C headers and cpp includes the headers production sniffs as C++. The per-extension split is recorded beside every row so these figures reconcile with the .c-only census in reviews/m49-w17-parse-success-census.md.",
-          ],
-          rows,
-          failures,
-          improved,
-          verdict,
+          description:
+            "This measures the GRAMMAR's surface, not recovery quality: symbols flow through an ERROR region, so a high rate and a zero rate can both be 'no symbol loss' — that is why F5 stays green and why this gate exists separately.",
         },
-        null,
-        2,
-      ) + "\n",
-    )
+        {
+          description:
+            "The corpora are local checkouts; each lane records its repo pin so a moved corpus is visible beside its floor.",
+        },
+        {
+          description:
+            "A lane whose candidate set changed reports sample-moved and is NOT compared — the honest state, not a pass. The gate exits 2 in that case.",
+        },
+        {
+          description:
+            "The rate is the full production-routed surface, so the c figure includes plain C headers and the cpp figure includes the headers production sniffs as C++. The per-extension split is recorded beside every row so these reconcile with the .c-only census in reviews/m49-w17-parse-success-census.md.",
+        },
+      ],
+      corpusPins: Object.fromEntries(
+        scored.filter((r) => r.repoPin).map((r) => [r.repo, r.repoPin]),
+      ),
+      data: {
+        method:
+          "files routed by the pipeline's detectLanguageFromPath, ordered by a hash of their relative path and capped deterministically; each lane parsed in its own child process with a fresh module; ERROR nodes and MISSING tokens counted separately; the rate compared against a pinned per-lane floor whose sample digest must match",
+        sampleLimit: SAMPLE_LIMIT > 0 ? SAMPLE_LIMIT : null,
+        baseline: path.relative(ROOT, BASELINE_PATH),
+        ...provenance(),
+        rows,
+        failures,
+        improved,
+        verdict,
+      },
+    })
     console.log(`\nwrote ${path.relative(ROOT, EVIDENCE_PATH)}`)
   } else {
     console.log("\nscoped run — M14.0.F10 NOT written (the canonical artifact is the full lane set)")
