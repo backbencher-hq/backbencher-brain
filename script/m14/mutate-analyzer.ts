@@ -2047,6 +2047,30 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "worker", target: "h.jobs", type: "uses", confidence: 0.8, metadata: { relationshipType: "go_channel_operation", operationType: "send", pattern: "channel_communication" } }] }),
   },
   {
+    id: "rust/callsite-lines-dropped",
+    language: "rust",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: rust's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 65,390 edges on a 200-file draw of cargo+ripgrep). Caught by rust/callsite-lines-825, which pins the broken call chain at 62, the broken field access at 55/56, the wrapped supertrait bounds at 23/24, the wrapped impl trait reference at 40 and the Self-returning constructor at 49.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "rust/callsite-construct-start-line",
+    language: "rust",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: restores the CONSTRUCT-START line instead of the node that names the edge — the callee reports its receiver (`repo` on 61, not the leaf on 62), a wrapped field access reports the value line (54, not 55), wrapped supertrait bounds report the `trait` keyword (22, not 23/24), a wrapped impl header reports `impl` (39, not 40) and a member reports its container (29, not 30). Exactly the pre-fix positions rust/callsite-lines-825 forbids.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const t = String(x.type ?? "")
+        const trapBearing = ["calls", "contains", "extends", "implements", "instantiates", "uses", "references"]
+        if (trapBearing.includes(t) && typeof x.line_number === "number") {
+          return { ...x, line_number: x.line_number - 1 }
+        }
+        return x
+      }),
+    }),
+  },
+  {
     id: "go/callsite-lines-dropped",
     language: "go",
     defectClass: "line-attribution",

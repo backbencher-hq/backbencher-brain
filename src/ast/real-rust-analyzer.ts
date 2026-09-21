@@ -27,7 +27,10 @@ interface RustContext {
   exports: ASTEngine.ExportInfo[]
   metadata: Partial<ASTEngine.FileMetadata>
   emittedUses: Set<string>
-  pendingInstantiations: Array<{ source: string; target: string; qualified: string }>
+  // M59.A7 (#825): the constructor candidate carries the 1-based line of the
+  // node that NAMES the type it constructs — the edge is emitted in a deferred
+  // pass (after the symbol table exists), long after the node is in hand.
+  pendingInstantiations: Array<{ source: string; target: string; qualified: string; line?: number }>
   // startIndex of call_expression / macro_invocation nodes that sit directly
   // inside an await_expression (`.await`). The DFS visits the inner call node
   // anyway, so the await branch must NOT push a second edge — instead it
@@ -42,6 +45,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   // `impl Foo` blocks previously produced THREE symbols all id "Foo"; 2,852
   // duplicates across cargo+ripgrep). Reset per analyze() call.
   private usedIds = new Set<string>()
+
+  /**
+   * M59.A7 (#825): the 1-based line of a syntax node, or `undefined` when the
+   * node is absent. Never 0 — a site that cannot be named is OMITTED from the
+   * edge (the #820 rule), so a reader can tell "no line" from "line 1".
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
+    return node.startPosition.row + 1
+  }
 
   public analyze(
     rootNode: Node,
@@ -178,6 +191,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              // M59.A7 (#825): the FIELD identifier's line, not the receiver's —
+              // a `field_expression` starts at its value.
+              ...(this.nodeLine(field) ? { line_number: this.nodeLine(field)! } : {}),
               metadata: { relationshipType: "field_access", accessedFrom: value?.text },
             })
           }
@@ -200,6 +216,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: leaf,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.8,
+              // M59.A7 (#825): the constructed TYPE's own line.
+              ...(this.nodeLine(typeNode) ? { line_number: this.nodeLine(typeNode)! } : {}),
               metadata: { relationshipType: "struct_literal", isConstructor: true },
             })
           }
@@ -318,6 +336,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
                 source: parent?.name || "global",
                 target: left.text,
                 type: ASTEngine.RelationshipType.References,
+                // M59.A7 (#825): the bound's own line.
+                ...(this.nodeLine(left) ? { line_number: this.nodeLine(left)! } : {}),
                 metadata: { rustSpecific: true, whereBound: true },
               })
             }
@@ -356,7 +376,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Add Contains (REAL container ownership only; imports stay in the
     // imports array — Java-family contract, no dangling `references root`)
     for (const s of ctx.symbols) {
-      const _owner = s.ownerName || s.scope; if (_owner) ctx.relationships.push({ source: _owner, target: s.name, type: ASTEngine.RelationshipType.Contains, confidence: 1.0, metadata: {} })
+      const _owner = s.ownerName || s.scope
+      if (!_owner) continue
+      ctx.relationships.push({
+        source: _owner,
+        target: s.name,
+        type: ASTEngine.RelationshipType.Contains,
+        confidence: 1.0,
+        // M59.A7 (#825): the member's own declaration line.
+        ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+        metadata: {},
+      })
     }
 
     // #383 payload attach: qualified_calls were attached DIRECTLY to the
@@ -390,6 +420,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           toSymbol: cand.qualified,
           type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.8,
+          // M59.A7 (#825): recorded at the call site (the type that names the
+          // construction), carried through the deferred resolution pass.
+          ...(cand.line ? { line_number: cand.line } : {}),
           metadata: { isConstructor: true },
         })
       }
@@ -476,6 +509,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         target,
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
+        // M59.A7 (#825): the leaf that names the type.
+        ...(this.nodeLine(leafNode) ? { line_number: this.nodeLine(leafNode)! } : {}),
         metadata: { relationshipType: "declared_type" },
       })
     }
@@ -684,6 +719,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: nameNode.text,
               target: routePath,
               type: ASTEngine.RelationshipType.Exports,
+              // M59.A7 (#825): the function that carries the attribute.
+              ...(this.nodeLine(nameNode) ? { line_number: this.nodeLine(nameNode)! } : {}),
               metadata: {},
             })
           }
@@ -918,6 +955,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: this.extractTraitName(bound),
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
+            // M59.A7 (#825): the supertrait's own line in the bound list.
+            ...(this.nodeLine(bound) ? { line_number: this.nodeLine(bound)! } : {}),
             metadata: { rustSpecific: true, traitBound: true },
           })
         }
@@ -990,6 +1029,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: typeName,
         target: this.extractTraitName(traitNode),
         type: ASTEngine.RelationshipType.Implements,
+        // M59.A7 (#825): the TRAIT reference's line — the site that names the
+        // target, not the implementing type's.
+        ...(this.nodeLine(traitNode) ? { line_number: this.nodeLine(traitNode)! } : {}),
         metadata: {},
       })
     }
@@ -1612,6 +1654,8 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: name,
       type: ASTEngine.RelationshipType.Uses,
       confidence: 1.0,
+      // M59.A7 (#825): the identifier's own line.
+      ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
       metadata: { relationshipType: "identifier_usage", nodeType: node.type },
     })
   }
@@ -1858,6 +1902,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let target = ""
     let qualified = ""
+    // M59.A7 (#825): the leaf that NAMES the callee. A `field_expression`
+    // starts at its VALUE (`self.repository.find()` starts at `self`) and a
+    // `scoped_identifier` at its leftmost segment, so the construct-start node
+    // is the wrong site — and Rust allows a call chain to break before the dot
+    // (`repo\n.find(id)`), which makes it a line too early in real code.
+    let calleeNameNode: Node | null = null
 
     if (functionNode.type === "field_expression") {
       // obj.method() or self.method()
@@ -1866,6 +1916,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (fieldNode) {
         target = fieldNode.text
         qualified = valueNode ? `${valueNode.text}.${fieldNode.text}` : fieldNode.text
+        calleeNameNode = fieldNode
       }
     } else if (functionNode.type === "scoped_identifier") {
       // std::fs::read() or crate::foo::bar()
@@ -1873,6 +1924,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (nameNode) {
         target = nameNode.text
         qualified = functionNode.text
+        calleeNameNode = nameNode
       }
     } else if (functionNode.type === "generic_function") {
       // foo::<T>() / obj.method::<T>() — turbofish wraps the real callee.
@@ -1887,16 +1939,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (fieldNode) {
             target = fieldNode.text
             qualified = baseNode.text
+            calleeNameNode = fieldNode
           }
         } else if (baseNode.type === "scoped_identifier") {
           const nameNode = baseNode.childForFieldName("name") || baseNode.namedChild(baseNode.namedChildCount - 1)
           if (nameNode) {
             target = nameNode.text
             qualified = baseNode.text
+            calleeNameNode = nameNode
           }
         } else {
           target = baseNode.text
           qualified = baseNode.text
+          calleeNameNode = baseNode
         }
       }
     } else {
@@ -1906,6 +1961,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (functionNode.type === "identifier") {
         target = functionNode.text
         qualified = target
+        calleeNameNode = functionNode
       }
     }
 
@@ -1926,6 +1982,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       fromSymbol: source,
       toSymbol: qualified,
       type: ASTEngine.RelationshipType.Calls,
+      ...(this.nodeLine(calleeNameNode) ? { line_number: this.nodeLine(calleeNameNode)! } : {}),
       metadata,
     })
 
@@ -1974,7 +2031,21 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // std/external type (Arc, Ok, foreign builders) - 90%+ noise that could
     // never resolve to a project symbol.
     if (instTarget) {
-      ctx.pendingInstantiations.push({ source, target: instTarget, qualified })
+      // M59.A7 (#825): the constructed TYPE's naming node — the receiver of
+      // `Foo::new()` / `Foo::default()`, or the callee itself for a PascalCase
+      // constructor call.
+      const instNameNode =
+        functionNode.type === "identifier"
+          ? functionNode
+          : functionNode.type === "scoped_identifier"
+            ? (functionNode.childForFieldName("path") ?? functionNode)
+            : (functionNode.childForFieldName("value") ?? functionNode)
+      ctx.pendingInstantiations.push({
+        source,
+        target: instTarget,
+        qualified,
+        line: this.nodeLine(instNameNode),
+      })
     }
   }
 
@@ -2009,11 +2080,14 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!macroNode) return
 
     let macroName = ""
+    // M59.A7 (#825): the name node, not the scoped path's leftmost segment.
+    let macroNameNode: Node | null = macroNode
 
     if (macroNode.type === "scoped_identifier") {
       // std::println!() or crate::my_macro!()
       const nameNode = macroNode.childForFieldName("name") || macroNode.namedChild(macroNode.namedChildCount - 1)
       macroName = nameNode ? nameNode.text : macroNode.text
+      macroNameNode = nameNode ?? macroNode
     } else {
       macroName = macroNode.text
     }
@@ -2034,6 +2108,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       fromSymbol: source,
       toSymbol: `macro:${macroName}`,
       type: ASTEngine.RelationshipType.Calls,
+      ...(this.nodeLine(macroNameNode) ? { line_number: this.nodeLine(macroNameNode)! } : {}),
       metadata,
     })
 
