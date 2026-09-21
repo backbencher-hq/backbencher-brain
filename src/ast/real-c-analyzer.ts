@@ -204,6 +204,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // exists, so symbol-based resolution silently dropped the edge. Uses of
     // names in this set resolve order-independently; the symbol walk still
     // provides scoped/shadowed resolution and kind/visibility payloads.
+    // NOTE (M60, #908): a first attempt at the jq lane's single UNEXPLAINED row
+    // (`uses yyparse -> YY_INITIAL_VALUE`, src/parser.c L2229-2230) suppressed
+    // `uses` for every function-like macro NAME collected here. That traded one
+    // UNEXPLAINED row for FOUR MISSING rows (isleap, YYDPRINTF, decFinish,
+    // CFUNC) because the truth counts a macro INVOCATION as both `calls (expr)`
+    // and `uses (expr)` — the analyzer's identifier-path `uses` was load-bearing
+    // for the second row. The attempt was reverted and the residual registered
+    // as #908. Do not re-add a blanket macro-name suppression here.
     const declaredNames = new Set<string>()
     {
       const preStack: { n: Node; inFn: boolean }[] = [{ n: rootNode, inFn: false }]
@@ -241,7 +249,26 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // declaredNames, fabricating a dangling `uses -> count` for any
           // later read (the oracle's isFunctionLocal already excludes
           // parameter ancestry, so this also restores mirror parity).
-          if (p && (!inFn || isFnDefName) && this.isDeclarationLikeIdentifier(n) && !this.isDirectiveConditionText(n) && !this.isInsideParameterList(n)) {
+          // #901 (M60, second half of the basexx.c miss): the directive gate
+          // below (`!isDirectiveConditionText`) walks UP to the first
+          // `preproc_*` ancestor — and a macro definition's NAME has
+          // `preproc_def` as its direct parent, so the gate returned true and
+          // killed every macro name before the `isMacroName` branch could add
+          // it. That branch has therefore been DEAD CODE since CGD26, and the
+          // measured consequence is order dependence for exactly one symbol
+          // class: a macro READ above its `#define` (basexx.c: read at L40,
+          // `#define` at L48) resolved through the order-dependent Constant
+          // symbol and dropped the edge, while a function call or global read
+          // in the same position resolved through declaredNames and emitted
+          // (measured probes: `later()`/`gv2` forward refs emit, `FWD` macro
+          // forward ref does not). The oracle's declaredNames has always
+          // admitted macros (its own isDeclaringIdentifier excludes only
+          // function-local ancestry), so this restores mirror parity.
+          // Narrowed to the NAME field by the helper: macro-body identifiers
+          // (`preproc_arg` is an opaque blob, C-D2) and every "mention in
+          // directive text" case keep the suppression — the definition site
+          // is the one place a `preproc_*`-ancestored name DECLARES.
+          if (p && (!inFn || isFnDefName) && this.isDeclarationLikeIdentifier(n) && (!this.isDirectiveConditionText(n) || this.isMacroDefinitionName(n)) && !this.isInsideParameterList(n)) {
             // Prototype names declare even inside ERROR-glued spans
             // (CGD19 scope refinement); the glue-name test below handles
             // bare-fd artifacts.
@@ -1724,13 +1751,29 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const isFunctionLikeMacro = node.type === "preproc_function_def"
 
-    // Skip include guards: `#define NAME` with no value body (the name matches
-    // an enclosing #ifndef/#ifdef guard). They are file artifacts, not symbols.
-    if (!isFunctionLikeMacro) {
-      const valueNode = node.childForFieldName("value")
-      const hasBody = valueNode && valueNode.text.trim().length > 0
-      if (!hasBody) return
-    }
+    // #901 (M60, measured on the sqlite pin): a `#define NAME` with no value body
+    // was skipped entirely — the old comment called these "include guards ... file
+    // artifacts, not symbols". The intent was guard-noise reduction; the CODE was
+    // body-based, so it skipped EVERY value-less define, including macros that are
+    // later READ in expression position. Measured: `SQLITE_EXTENSION_INIT1;`
+    // (ext/misc/basexx.c L40, where the define sits at L48) and `SQLITE_TCLAPI`
+    // between the return type and the function name (src/tclsqlite.c L277, defined
+    // by a `#ifndef SQLITE_TCLAPI / #define SQLITE_TCLAPI` pair at L43-45) are both
+    // real reads the F5 truth counts — the c lane was the only 100%-coverage lane
+    // in the sweep with MISSING=2, both edges of this shape.
+    //
+    // The rule is now the honest one: a `#define` DECLARES a name whatever its
+    // body, exactly as the pre-pass already treated macro names
+    // (`isMacroName` never looked at the body). Minting the symbol is what makes
+    // the read resolvable; the alternative — leaving the name unresolvable so the
+    // read stays silent — is a missing true edge, and the family's contract is
+    // that a missing edge is a defect while a DECLARATION is not an edge.
+    // Measured blast radius: 30 value-less defines across sqlite's src/*.c +
+    // ext/misc/*.c, each now one Constant symbol (object-like, the same kind a
+    // VALUED object-like macro gets — `MAXN` is a Constant, only function-like
+    // macros are Macro-kind), no new edge unless the name is genuinely read.
+    // Include guards are therefore minted too; they cost one symbol per guarded
+    // file and produce no edge, which is the right trade for not losing reads.
 
     const parameters: ASTEngine.Parameter[] = []
     if (isFunctionLikeMacro) {
@@ -2005,6 +2048,23 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       cur = cur.parent
     }
     return false
+  }
+
+  // #901: is `node` the NAME field of a macro definition (`#define NAME ...`
+  // or `#define NAME(...) ...`)? Field-identity by SPAN (web-tree-sitter
+  // hands back fresh node objects per property access — the KAD2/TSD2 lesson
+  // cited in isGlueFdName), not by object identity. A macro body is an
+  // opaque preproc_arg (C-D2) and never the name field, so this cannot admit
+  // a body mention; `#undef NAME` is a preproc_call with no name field, so it
+  // cannot admit an undef target either (the oracle does not treat `#undef`
+  // as a declaration).
+  private isMacroDefinitionName(node: Node): boolean {
+    const p = node.parent
+    if (!p) return false
+    if (p.type !== "preproc_def" && p.type !== "preproc_function_def") return false
+    const nameNode = p.childForFieldName("name")
+    if (!nameNode) return false
+    return nameNode.startIndex === node.startIndex && nameNode.endIndex === node.endIndex
   }
 
   // CGD40-mirror helper (see the use-emission gate): the C preprocessor is
