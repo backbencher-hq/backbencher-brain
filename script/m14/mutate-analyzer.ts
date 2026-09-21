@@ -4407,6 +4407,36 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/glue-requires-body-ancestor",
+    language: "c",
+    defectClass: "symbol-loss",
+    description: "#907 (M60-C) round-2 regression: re-imposes round 1's guard that the ERROR must sit inside a `compound_statement`, so a definition header glued at FILE SCOPE loses its symbol again. This is exactly the pre-round-2 state and it is why the guard was wrong: jq src/jv.c's `jv_number` and src/util.c's `strptime` are both file-scope arrivals (measured LOST by script/m14/tmp/c907-slice-hunt.ts at the round-1 tree). Caught by c/swallowed-root-definitions-907, which pins both.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.recoveredFromGlue === true && s.metadata?.glueArrival !== "body")),
+    }),
+  },
+  {
+    id: "c/glue-bare-identifier-dropped",
+    language: "c",
+    defectClass: "symbol-loss",
+    description: "#907 (M60-C) round-2 regression: the recovery stops accepting a name that arrives as a bare `identifier` under the ERROR, so the most degraded arrival loses its symbols again. Caught by c/swallowed-identifier-arrival-907, which pins the three public decNumber API definitions (decNumberQuantize/Normalize/Reduce) — real sites jq vendor/decNumber/decNumber.c:2283/2303/2308, where the damaged region has lost both the return type and the function_declarator node.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.recoveredFromGlue === true && s.metadata?.glueNameShape === "bare-identifier")),
+    }),
+  },
+  {
+    id: "c/glue-wrapped-declarator-dropped",
+    language: "c",
+    defectClass: "symbol-loss",
+    description: "#907 (M60-C) round-2 regression: the recovery stops unwrapping `pointer_declarator`, so only a bare function_declarator directly under the ERROR is recovered and every pointer-returning glued definition keeps losing its symbol. Caught by c/swallowed-root-definitions-907 through `strptime` (`char* strptime(...)`, real site jq src/util.c:617 — its ERROR path is ERROR > pointer_declarator > function_declarator).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.recoveredFromGlue === true && s.metadata?.glueWrapped === true)),
+    }),
+  },
+  {
     id: "c/drop-valueless-macro-symbol",
     language: "c",
     defectClass: "symbol-loss",
