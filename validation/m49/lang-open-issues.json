@@ -1,0 +1,715 @@
+{
+ "snapshotAt": "2026-09-21T00:15:43.494891Z",
+ "source": "gh issue list --state open --limit 300",
+ "count": 119,
+ "issues": [
+  {
+   "number": 902,
+   "title": "python: one UNEXPLAINED `calls` edge at HEAD (with-statement context manager, line 0)",
+   "labels": [
+    "bug"
+   ]
+  },
+  {
+   "number": 901,
+   "title": "c: two MISSING `uses` edges at HEAD (macro-name identifiers in expression position)",
+   "labels": [
+    "bug"
+   ]
+  },
+  {
+   "number": 900,
+   "title": "M12 differential: 35 of 42 artifacts are unpinned (claims unverifiable) + 6 re-emitted ones aged within days \u2014 the re-emit treadmill",
+   "labels": [
+    "testing",
+    "m14"
+   ]
+  },
+  {
+   "number": 899,
+   "title": "Fresh-checkout hygiene: uncommitted fixtures mask 11 mutants (erlang \u00d79 \u2014 whole fixtures dir untracked; haskell \u00d72) at e29d1dcb",
+   "labels": [
+    "analyzer"
+   ]
+  },
+  {
+   "number": 896,
+   "title": "Refactor RealGroovyAnalyzer dispatch to a handler map (post-#841 tech debt)",
+   "labels": []
+  },
+  {
+   "number": 894,
+   "title": "M59 \u2014 20% of owned symbols have an owner whose span does not enclose them (Tier-2 'nearest preceding container' invents owners)",
+   "labels": []
+  },
+  {
+   "number": 892,
+   "title": "M59 \u2014 3 languages the detector names cannot be parsed: nim, protobuf, vb are detected, offered to the parser, and counted as ERROR FILES",
+   "labels": []
+  },
+  {
+   "number": 891,
+   "title": "m44 U1/U3/U4 harnesses degraded to KNOWN-GAP: the R4 server leg cannot see the harness's index, and the L5 sort mutant survives",
+   "labels": []
+  },
+  {
+   "number": 889,
+   "title": "Go: grouped field declaration keeps only the first name",
+   "labels": []
+  },
+  {
+   "number": 886,
+   "title": "F4: filtered mutation runs overwrite canonical evidence and empty selections can pass",
+   "labels": []
+  },
+  {
+   "number": 885,
+   "title": "M59: the same slice indexed twice binds 755 edges to different target symbols (index answers are not reproducible across builds)",
+   "labels": []
+  },
+  {
+   "number": 884,
+   "title": "Clean: comma-separated imports lose modules and fabricate aliases",
+   "labels": []
+  },
+  {
+   "number": 883,
+   "title": "Clojure: defmethod bodies lack active function attribution",
+   "labels": []
+  },
+  {
+   "number": 882,
+   "title": "Clojure: builtin suppression drops explicitly declared map calls",
+   "labels": []
+  },
+  {
+   "number": 881,
+   "title": "Clojure: non-executable quote, discard and comment forms fabricate calls and declarations",
+   "labels": []
+  },
+  {
+   "number": 880,
+   "title": "Erlang: preserve function arity and multi-clause declaration identity",
+   "labels": []
+  },
+  {
+   "number": 872,
+   "title": "go + haskell: one analyzer-missed heritage edge each on the rotated F5 sample (`implements Client`, `extends Applicative`)",
+   "labels": [
+    "bug",
+    "analyzer",
+    "m14",
+    "m14.0-foundation"
+   ]
+  },
+  {
+   "number": 871,
+   "title": "M14 F5: `heuristic` and `perf` are scored against unpinned baselines and an unrecorded load context, so untouched languages are flagged as regressions",
+   "labels": [
+    "testing",
+    "m14",
+    "m14.0-foundation"
+   ]
+  },
+  {
+   "number": 870,
+   "title": "cpp: a member read emits `uses` with line_number 0 (the only unexplained edge in the whole 21-language F5 sweep)",
+   "labels": [
+    "bug",
+    "analyzer",
+    "m14",
+    "m14.0-foundation"
+   ]
+  },
+  {
+   "number": 869,
+   "title": "M49.PHP2 PHP second review wave: bare $var/NAME value reads under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 864,
+   "title": "[M14 Matrix 4] Grammar provenance + version pinning for vendored/upstream wasms (fsharp, clean, all others)",
+   "labels": []
+  },
+  {
+   "number": 863,
+   "title": "[GAP] Corrected F1 field oracle surfaces dead childForFieldName calls in lua/perl/r (registered, not landed)",
+   "labels": []
+  },
+  {
+   "number": 862,
+   "title": "M40/M43 ledgers cite a different commit than the evidence files they point at",
+   "labels": []
+  },
+  {
+   "number": 856,
+   "title": "M49.DT2 Dart second review wave: process reviews/dart DT2-A/B under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 853,
+   "title": "M49.OC2 ObjC second review wave: process reviews/objc OC-F/G/H under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 840,
+   "title": "M49 W16/F5 harness: sweep-state key + corpus pin (fixed in 9dfc8e84) \u2014 register the residual: corpus repos must be pinned checkouts",
+   "labels": []
+  },
+  {
+   "number": 839,
+   "title": "M49 W9 residue: zig parameter/argument binding defect registered-not-landed (fix diverges from in-flight oracle)",
+   "labels": []
+  },
+  {
+   "number": 838,
+   "title": "M49.SW2 Swift second review wave: process reviews/swift SW-G/SW-H under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 837,
+   "title": "Payload seam: brain_symbol.scope_kind is never written \u2014 declared, DDL'd, schema-typed, and silently dropped for every language",
+   "labels": []
+  },
+  {
+   "number": 836,
+   "title": "M49.SW1 Swift ultimate review wave: process reviews/swift SW-A/B/D/E/F under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 835,
+   "title": "M49.PHP1 PHP first review wave: process reviews/php PHP-A-H/O1-O2 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 833,
+   "title": "ASTEngine.parseFile reports 0 syntax errors for files that contain ERROR nodes (rootNode.hasError guard is unsound)",
+   "labels": []
+  },
+  {
+   "number": 832,
+   "title": "M60.X1 \u2014 Closure: fold into M49, hand M14 one analyzer milestone, prove no new milestone is required",
+   "labels": []
+  },
+  {
+   "number": 829,
+   "title": "M60.P1 \u2014 Payload-seam matrix: 33 fields \u00d7 21 languages \u00d7 4 seam stages",
+   "labels": []
+  },
+  {
+   "number": 828,
+   "title": "M60.G1 \u2014 Standing rules R1\u2013R4 and the gate that enforces them",
+   "labels": []
+  },
+  {
+   "number": 827,
+   "title": "M49.DT1 Dart first review wave: process reviews/dart DT-A-DT-F under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 826,
+   "title": "M59.X1 \u2014 Closure gate",
+   "labels": []
+  },
+  {
+   "number": 825,
+   "title": "M59.A7 \u2014 Analyzer lane: emit the call-site line per language (handoff)",
+   "labels": []
+  },
+  {
+   "number": 815,
+   "title": "M49.OC1 ObjC first review wave: process reviews/objc OC-B/OC-D/OC-E/OC-R1/OC-R2 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 812,
+   "title": "M49.RB1 Ruby second review wave: process reviews/ruby RB-F-RB-K under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 811,
+   "title": "`script/m13/verify-patterns-e2e-corpus.ts` \u2014 RED (foreign conviction, analyzer lane)",
+   "labels": []
+  },
+  {
+   "number": 805,
+   "title": "`script/m13/verify-patterns-docs.ts` \u2014 RED (foreign conviction, analyzer lane)",
+   "labels": []
+  },
+  {
+   "number": 804,
+   "title": "M49.CS1 C# first review wave: process reviews/csharp CS-R1/CS-B1-CS-B5 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 803,
+   "title": "`script/verify-deletion-safety.ts` \u2014 RED (foreign conviction, analyzer lane)",
+   "labels": []
+  },
+  {
+   "number": 802,
+   "title": "`script/m20/verify-patterns-orphan-semantics.ts` \u2014 RED (foreign conviction, analyzer lane)",
+   "labels": []
+  },
+  {
+   "number": 800,
+   "title": "M49.Z1 Zig deep + extreme review waves: process reviews/zig Z1-Z10 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 799,
+   "title": "M49.GO1 Go master review wave: process reviews/go GO1-GO8/G12 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 798,
+   "title": "M49.RS1 Rust master + second review waves: process reviews/rust R1/R8/D2/D3 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 797,
+   "title": "M49.CPP1 C++ master review wave: process reviews/cpp CP1-CP4 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 795,
+   "title": "M49.C1 C holy-c review waves: process reviews/c HC1-HC6 under the verify-first protocol",
+   "labels": []
+  },
+  {
+   "number": 787,
+   "title": "M56.X1 \u2014 Closure, Deploy and M41 Fold-In",
+   "labels": []
+  },
+  {
+   "number": 786,
+   "title": "M56.D2 \u2014 Design Pass on New and Changed Surfaces",
+   "labels": []
+  },
+  {
+   "number": 785,
+   "title": "M56.I1 \u2014 IA, Redirects and Sitemap",
+   "labels": []
+  },
+  {
+   "number": 784,
+   "title": "M56.S1 \u2014 Support Consolidation (FAQ and Contact)",
+   "labels": []
+  },
+  {
+   "number": 783,
+   "title": "M56.D1 \u2014 Docs Completion from Existing Material",
+   "labels": []
+  },
+  {
+   "number": 782,
+   "title": "M56.L1 \u2014 Languages Substance on the Homepage",
+   "labels": []
+  },
+  {
+   "number": 781,
+   "title": "M56.T1 \u2014 Tool Reference Single-Sourced from the Registry",
+   "labels": []
+  },
+  {
+   "number": 780,
+   "title": "M56.E1 \u2014 Editors & IDEs Surface",
+   "labels": []
+  },
+  {
+   "number": 779,
+   "title": "M56.G1 \u2014 Governance, Ledger & Evidence Integrity",
+   "labels": []
+  },
+  {
+   "number": 755,
+   "title": "M49-CONV: CONV-HS-1 haskell \u2014 value-level references between bindings emit no edges (only applications do)",
+   "labels": []
+  },
+  {
+   "number": 753,
+   "title": "M49-CONV: CONV-DART-2 dart \u2014 duplicate method names keep FIRST body (wrong-body class, #745 family)",
+   "labels": []
+  },
+  {
+   "number": 751,
+   "title": "M49-CONV: CONV-CS-2 csharp \u2014 framework detection entirely absent (no mechanism, no metadata key)",
+   "labels": []
+  },
+  {
+   "number": 750,
+   "title": "M49-CONV: CONV-CS-1 csharp \u2014 bare identifier reads and chain-root reads emit no Uses (#739 family)",
+   "labels": []
+  },
+  {
+   "number": 749,
+   "title": "M49-CONV: CONV-RB-1 ruby \u2014 framework detection limited to ActiveRecord/ActionController leaves; require-level gems invisible",
+   "labels": []
+  },
+  {
+   "number": 748,
+   "title": "M49-CONV: CONV-PY-2 python \u2014 duplicate def keeps BOTH symbols (runtime rebinding is last-wins)",
+   "labels": []
+  },
+  {
+   "number": 747,
+   "title": "M49-CONV: CONV-PY-1 python \u2014 framework detection is dead code (ctx.frameworks never written)",
+   "labels": []
+  },
+  {
+   "number": 743,
+   "title": "M49-CONV: CONV-CPPC-1 cpp/c \u2014 parse-success 27%/56% on corpus; F5 parity blind to grammar loss",
+   "labels": []
+  },
+  {
+   "number": 712,
+   "title": "M45.X1 \u2014 Closure Gate (one-commit batch, frame truth)",
+   "labels": []
+  },
+  {
+   "number": 711,
+   "title": "M45.T1 \u2014 Website Embed (hero video + /demos page)",
+   "labels": []
+  },
+  {
+   "number": 710,
+   "title": "M45.D1 \u2014 LSP Flagship Film (Remotion, VS Code)",
+   "labels": []
+  },
+  {
+   "number": 709,
+   "title": "M45.C1 \u2014 Capture Harness (real VS Code, 4\u00d7 captures + manifest)",
+   "labels": []
+  },
+  {
+   "number": 708,
+   "title": "M45.G1 \u2014 Governance, Ledger & Demo-Media Rules Gate",
+   "labels": []
+  },
+  {
+   "number": 647,
+   "title": "M41.X1 \u2014 Closure & Deploy Gate",
+   "labels": []
+  },
+  {
+   "number": 646,
+   "title": "M41.D1 \u2014 Premium Design (truth-invariance constrained)",
+   "labels": []
+  },
+  {
+   "number": 644,
+   "title": "M41.S1 \u2014 Technical SEO",
+   "labels": []
+  },
+  {
+   "number": 643,
+   "title": "M41.T3 \u2014 New Pages: install, FAQ, troubleshooting, contact",
+   "labels": []
+  },
+  {
+   "number": 642,
+   "title": "M41.T2 \u2014 Truth Content Rewrite (existing pages)",
+   "labels": []
+  },
+  {
+   "number": 641,
+   "title": "M41.T1 \u2014 Truth Pipeline & Side-by-Side Inventory",
+   "labels": []
+  },
+  {
+   "number": 640,
+   "title": "M41.G1 \u2014 Governance, Ledger & Deploy-Gate Contract",
+   "labels": []
+  },
+  {
+   "number": 614,
+   "title": "M37.X1 closure gate: all 18 analyzers dual-lens verified, family closures complete, return path to M14 armed",
+   "labels": []
+  },
+  {
+   "number": 612,
+   "title": "M37.19 System family closure: c+cpp+rust+go+zig joint gates",
+   "labels": []
+  },
+  {
+   "number": 593,
+   "title": "M37: Dual-lens backfill of the 18 gated-done analyzers (read + census, csharp/haskell method)",
+   "labels": []
+  },
+  {
+   "number": 546,
+   "title": "[IDE Program] Tracking issue \u2014 plan, milestones, dependency order (M24\u2013M29)",
+   "labels": []
+  },
+  {
+   "number": 384,
+   "title": "[GAP] Language-cluster pipeline e2e fixtures (web/.NET/BEAM/mobile/systems/mixed-server)",
+   "labels": [
+    "m14",
+    "m14.0-foundation"
+   ]
+  },
+  {
+   "number": 299,
+   "title": "[F8] Edge-evidence tiers: kill cross-language name-collision fabrications (ProxiCall: 18.8k poisoned edges)",
+   "labels": [
+    "m14",
+    "m14.0-foundation"
+   ]
+  },
+  {
+   "number": 297,
+   "title": "[I6] Integration: Docs + final release gate",
+   "labels": [
+    "m14",
+    "m14.8-integration"
+   ]
+  },
+  {
+   "number": 296,
+   "title": "[I5] Integration: Brain DB semantic integrity",
+   "labels": [
+    "m14",
+    "m14.8-integration"
+   ]
+  },
+  {
+   "number": 295,
+   "title": "[I4] Integration: Taint & data-flow honesty",
+   "labels": [
+    "m14",
+    "m14.8-integration"
+   ]
+  },
+  {
+   "number": 294,
+   "title": "[I3] Integration: Cross-language consumers",
+   "labels": [
+    "m14",
+    "m14.8-integration"
+   ]
+  },
+  {
+   "number": 293,
+   "title": "[I2] Integration: parallel-indexer integrity",
+   "labels": [
+    "m14",
+    "m14.8-integration"
+   ]
+  },
+  {
+   "number": 292,
+   "title": "[I1] Integration: engine.ts wiring truth",
+   "labels": [
+    "m14",
+    "m14.8-integration"
+   ]
+  },
+  {
+   "number": 291,
+   "title": "Analyzer hcl: reach L5 SCOPED-VERIFIED (real-hcl-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 290,
+   "title": "Analyzer markdown: reach L5 SCOPED-VERIFIED (real-markdown-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 289,
+   "title": "Analyzer css: reach L5 SCOPED-VERIFIED (real-css-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 288,
+   "title": "Analyzer html: reach L5 SCOPED-VERIFIED (real-html-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 287,
+   "title": "Analyzer xml: reach L5 SCOPED-VERIFIED (real-xml-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 286,
+   "title": "Analyzer yaml: reach L5 SCOPED-VERIFIED (real-yaml-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 285,
+   "title": "Analyzer json: reach L5 SCOPED-VERIFIED (real-json-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 284,
+   "title": "Analyzer graphql: reach L5 SCOPED-VERIFIED (real-graphql-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 283,
+   "title": "Analyzer sql: reach L5 SCOPED-VERIFIED (real-sql-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.7-dataconfigdocs"
+   ]
+  },
+  {
+   "number": 282,
+   "title": "Analyzer makefile: reach L5 SCOPED-VERIFIED (real-makefile-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.6-scripting"
+   ]
+  },
+  {
+   "number": 281,
+   "title": "Analyzer r: reach L5 SCOPED-VERIFIED (real-r-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.6-scripting"
+   ]
+  },
+  {
+   "number": 280,
+   "title": "Analyzer lua: reach L5 SCOPED-VERIFIED (real-lua-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.6-scripting"
+   ]
+  },
+  {
+   "number": 279,
+   "title": "Analyzer perl: reach L5 SCOPED-VERIFIED (real-perl-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.6-scripting"
+   ]
+  },
+  {
+   "number": 278,
+   "title": "Analyzer powershell: reach L5 SCOPED-VERIFIED (real-powershell-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.6-scripting"
+   ]
+  },
+  {
+   "number": 277,
+   "title": "Analyzer bash: reach L5 SCOPED-VERIFIED (real-bash-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.6-scripting"
+   ]
+  },
+  {
+   "number": 276,
+   "title": "Analyzer fsharp: reach L5 SCOPED-VERIFIED (real-fsharp-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.5-functional"
+   ]
+  },
+  {
+   "number": 275,
+   "title": "Analyzer erlang: reach L5 SCOPED-VERIFIED (real-erlang-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.5-functional"
+   ]
+  },
+  {
+   "number": 274,
+   "title": "Analyzer elixir: reach L5 SCOPED-VERIFIED (real-elixir-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.5-functional"
+   ]
+  },
+  {
+   "number": 273,
+   "title": "Analyzer clojure: reach L5 SCOPED-VERIFIED (real-clojure-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.5-functional"
+   ]
+  },
+  {
+   "number": 272,
+   "title": "Analyzer clean: reach L5 SCOPED-VERIFIED (real-clean-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.5-functional"
+   ]
+  },
+  {
+   "number": 271,
+   "title": "Analyzer haskell: reach L5 SCOPED-VERIFIED (real-haskell-analyzer.ts)",
+   "labels": [
+    "m14",
+    "m14.5-functional"
+   ]
+  },
+  {
+   "number": 247,
+   "title": "[F3] Foundation: Adversarial fixture corpus",
+   "labels": [
+    "m14",
+    "m14.0-foundation"
+   ]
+  },
+  {
+   "number": 139,
+   "title": "M11.18: Final real-repository audit and release-readiness decision",
+   "labels": []
+  },
+  {
+   "number": 138,
+   "title": "M11.17: Publish machine-checked 40+ language support and limitation matrix",
+   "labels": []
+  },
+  {
+   "number": 137,
+   "title": "M11.16: Establish indexing and analyzer time-space complexity envelopes at scale",
+   "labels": []
+  },
+  {
+   "number": 136,
+   "title": "M11.15: Prove Bun, compiled Node CLI, MCP, and library parity on the corpus",
+   "labels": []
+  },
+  {
+   "number": 135,
+   "title": "M11.14: Calibrate all intelligence analyzers against corrected index facts",
+   "labels": []
+  },
+  {
+   "number": 134,
+   "title": "M11.13: Complete universal cross-file and cross-language relationship resolution",
+   "labels": []
+  }
+ ]
+}
