@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (29/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (31/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "4b7c5029c1e2d13b5b2462ef15cde9ea4e62135d",
-  "committedAt": "2026-09-16T23:26:18+02:00",
+  "commit": "76d3a09b0f6baa103c25079f784141b65cfc98f0",
+  "committedAt": "2026-09-21T19:02:31-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -55,7 +55,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
         "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 44,
+        "referencedTypeLiterals": 45,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -73,7 +73,7 @@
         "oracleFieldCount": 28,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 271,
-        "referencedFieldLiterals": 0,
+        "referencedFieldLiterals": 1,
         "referencedTypeLiterals": 34,
         "status": "pass",
         "unknownFields": [],
@@ -93,7 +93,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 75,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 5,
+        "referencedTypeLiterals": 17,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -221,7 +221,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 205,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 22,
+        "referencedTypeLiterals": 32,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -288,16 +288,10 @@
         "oracleFieldCount": 35,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 213,
-        "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 53,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-go-analyzer.ts:field-call:childForFieldName",
-            "line": 3435,
-            "literal": "package_identifier"
-          }
-        ],
+        "referencedFieldLiterals": 12,
+        "referencedTypeLiterals": 54,
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -329,11 +323,11 @@
       "groovy": {
         "analyzer": "src/ast/real-groovy-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 44,
+        "oracleFieldCount": 45,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 373,
-        "referencedFieldLiterals": 7,
-        "referencedTypeLiterals": 67,
+        "oracleNodeTypeCount": 381,
+        "referencedFieldLiterals": 8,
+        "referencedTypeLiterals": 72,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -342,7 +336,7 @@
           "tree-sitter-groovy.wasm"
         ],
         "wasmFieldCounts": [
-          44
+          45
         ]
       },
       "haskell": {
@@ -731,16 +725,10 @@
         "oracleFieldCount": 31,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
-        "referencedFieldLiterals": 16,
+        "referencedFieldLiterals": 15,
         "referencedTypeLiterals": 79,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-rust-analyzer.ts:field-call:childForFieldName",
-            "line": 1186,
-            "literal": "declarator"
-          }
-        ],
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -861,7 +849,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
         "referencedFieldLiterals": 4,
-        "referencedTypeLiterals": 28,
+        "referencedTypeLiterals": 32,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -984,7 +972,7 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 92,
+        "referencedTypeLiterals": 93,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1067,8 +1055,8 @@
         "oracleFieldCount": 16,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 40,
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 41,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1082,10 +1070,10 @@
       }
     },
     "summary": {
-      "fail": 12,
+      "fail": 10,
       "languagesAudited": 41,
-      "pass": 29,
-      "totalUnknownReferences": 34
+      "pass": 31,
+      "totalUnknownReferences": 32
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1110,9 +1098,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-16T23:12:03.499Z",
-  "regeneratedAtCommit": "4b7c5029c1e2d13b5b2462ef15cde9ea4e62135d",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-09-21T23:11:16.199Z",
+  "regeneratedAtCommit": "76d3a09b0f6baa103c25079f784141b65cfc98f0",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }
