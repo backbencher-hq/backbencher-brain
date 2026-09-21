@@ -1,5 +1,5 @@
 {
-  "snapshotAt": "2026-09-21T05:29:01.532Z",
+  "snapshotAt": "2026-09-21T15:19:07.089Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
   "count": 121,
