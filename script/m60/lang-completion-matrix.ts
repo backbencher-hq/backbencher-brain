@@ -127,7 +127,7 @@ const DEPTH = exists("validation/m60/results/depth-probes.json") ? readJson("val
 // Depth residuals whose owner is the TRUTH MACHINERY, not the analyzer (see the
 // depth evidence file's `adjudicated` map). Listed here so the distinction is
 // explicit and auditable rather than a judgement made in the render loop.
-const ORACLE_SIDE_RESIDUALS = new Set<string>(["#905"])
+const ORACLE_SIDE_RESIDUALS = new Set<string>(["#905", "#906"])
 const depthWorst: Record<string, { maxSample: number; missing: number; unexplained: number; drawsRed: number; issue?: string }> =
   DEPTH?.worstPerLang ?? {}
 

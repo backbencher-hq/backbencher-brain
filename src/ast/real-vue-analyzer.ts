@@ -246,7 +246,10 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // across the line and index dimensions. Absent (hand-built contexts,
       // older callers) it defaults to 0, preserving old behavior exactly.
       const scriptStartIndex: number = context?.sfcScriptStartIndex?.[bi] ?? 0
-      const isTs = context?.sfcScriptLangs?.[bi] === "ts"
+      // #903: `tsx` is TypeScript too (the engine parses it with the JSX-capable
+      // tsx grammar and reports the block's own lang here). Before this, a
+      // <script lang="tsx"> block was handed to the JavaScript analyzer.
+      const isTs = context?.sfcScriptLangs?.[bi] === "ts" || context?.sfcScriptLangs?.[bi] === "tsx"
       {
       const scriptContent = scriptTree.rootNode?.text ?? ""
       const lineOffset = scriptStartLine - 1
