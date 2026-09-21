@@ -182,16 +182,76 @@
    "lang": "java",
    "files": 200,
    "truth": 441,
-   "covered": 440,
-   "missing": 1,
+   "covered": 441,
+   "missing": 0,
    "unexplained": 0,
-   "note": "draw 3 — the one uncovered edge is anonymous_Inner.foo -> Inner.foo (tests/untried/pos/t3943/Outer_1.java), adjudicated ANALYZER-side and registered as #904 (anonymous class implementing a generic abstract member)."
+   "note": "draw 3, POST-FIX — this is the draw that first reported anonymous_Inner.foo -> Inner.foo as MISSING (#904). After the generic-substitution pairing: covered 441/441."
+  },
+  {
+   "repo": "scala3",
+   "lang": "java",
+   "files": 200,
+   "truth": 283,
+   "covered": 283,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "post-fix draw (2026-09-20)"
+  },
+  {
+   "repo": "scala3",
+   "lang": "java",
+   "files": 200,
+   "truth": 345,
+   "covered": 345,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "post-fix draw (2026-09-20)"
+  },
+  {
+   "repo": "element-plus",
+   "lang": "vue",
+   "files": 200,
+   "truth": 1192,
+   "covered": 1192,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "post-fix draw 1 (2026-09-20, tsx SFC dispatch live)"
+  },
+  {
+   "repo": "element-plus",
+   "lang": "vue",
+   "files": 200,
+   "truth": 1486,
+   "covered": 1486,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "post-fix draw 2 (2026-09-20)"
+  },
+  {
+   "repo": "element-plus",
+   "lang": "vue",
+   "files": 200,
+   "truth": 1282,
+   "covered": 1276,
+   "missing": 6,
+   "unexplained": 8,
+   "note": "post-fix draw 3 — every remaining row is ORACLE-side (#906): truth derives calls to the keywords `return`/`if`/`string`/`key` from a JSX `return (` statement and an `if (el) {` condition, and does not derive real script-setup calls such as `generateColumns(10)` at line 79. The `dayjs` class that #903 opened with is GONE (the tsx grammar fix)."
+  },
+  {
+   "repo": "element-plus",
+   "lang": "vue",
+   "files": 200,
+   "truth": 1243,
+   "covered": 1241,
+   "missing": 2,
+   "unexplained": 4,
+   "note": "post-fix draw 4 — same oracle-side shapes only (`calls (expr) -> key`/`-> return`; `generateColumns -> map`/`from`; `inline-editing -> generateColumns`/`generateData`)."
   }
  ],
  "adjudicated": {
-  "vue": "#903 — 200-file depth on element-plus: 6 MISSING / 3–4 unexplained edges across two draws (deep-array reactivity unwrapping, dynamic component names). Analyzer-side, OPEN.",
+  "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
   "scala": "#905 — one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
-  "java": "#904 — one uncovered edge at depth, ANALYZER-side (anonymous class + generic substitution). OPEN.",
+  "java": "#904 — CLOSED this round (generic substitution + edge label). 4 draws clean.",
   "go": "#872 — long-registered; reproduced at depth.",
   "c": "#901 — two MISSING `uses` on all-caps macro names, from the canonical sweep.",
   "python": "#902 — one UNEXPLAINED with-statement `calls` edge at `line: 0`, from the canonical sweep."
@@ -200,10 +260,14 @@
   "javascript": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "typescript": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "svelte": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
-  "vue": { "maxSample": 200, "missing": 6, "unexplained": 4, "drawsRed": 2, "issue": "#903" },
-  "java": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#904" },
+  "vue": { "maxSample": 200, "missing": 6, "unexplained": 8, "drawsRed": 2, "issue": "#906", "oracleSide": true },
+  "java": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "groovy": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "kotlin": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "scala": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#905" }
+ },
+ "closedInThisRound": {
+  "#904": "java analyzer — generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
+  "#903 (analyzer half)": "vue/svelte SFC — `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone."
  }
 }
