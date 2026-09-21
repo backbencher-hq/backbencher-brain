@@ -62,7 +62,7 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "9/9 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "5e97dc1d8bc553f0e99584cfd1f6984d4927a290",
-  "committedAt": "2026-09-21T13:19:28-04:00",
+  "commit": "469e52fd6bf17ac6b52b4063657816dc523143f1",
+  "committedAt": "2026-09-21T14:52:50-04:00",
   "data": {
     "details": [
       {
@@ -2437,6 +2437,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/ctor-and-overload-regressions",
         "ok": true,
         "problems": []
@@ -3262,7 +3267,7 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 9
+        "pass": 10
       },
       "csharp": {
         "fail": 0,
@@ -3367,8 +3372,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-21T18:09:05.462Z",
-  "regeneratedAtCommit": "5e97dc1d8bc553f0e99584cfd1f6984d4927a290",
+  "regeneratedAt": "2026-09-21T19:06:17.114Z",
+  "regeneratedAtCommit": "469e52fd6bf17ac6b52b4063657816dc523143f1",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
