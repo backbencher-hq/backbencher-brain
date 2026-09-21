@@ -2447,13 +2447,30 @@ const MUTANTS: Mutant[] = [
       "M60.P1 (#873) regression: the metadata line mirror goes back to the 0-based `startPosition.row` while the row's `line_number` stays 1-based — the exact pre-fix state of the eight typescript writers (measured through the production pipeline: typescript 148 of 155 rows off by one, tsx 173 of 179, vue 3 of 3, and ZERO on java/scala/groovy/gradle/cpp/python/js). Caught by typescript/one-line-base-873, which pins both fields on three rows and forbids the one-below values.",
     transform: revertMetadataLineBase,
   },
+  // RETIRED (cpp M59.A7 handoff, 2026-09-21): `cpp/metadata-only-line-second-base`
+  // mutated the ONE-FIELD shape — rows carrying `metadata.line` and NO
+  // `line_number` — which the cpp analyzer no longer produces at all: every one
+  // of its nine emit sites now writes `line_number`, so the mutant became a
+  // no-op and would have reported SURVIVED on a fixture that still passes (a
+  // mutant that cannot fail proves nothing). Measured after the round: cpp rows
+  // with `metadata.line` and no `line_number` = 0 of 10,157 across nlohmann-json
+  // (6 files), fmt (20) and sqlite (12). The class itself is still covered, by
+  // the two mutants below and by cpp/callsite-lines-825.
   {
-    id: "cpp/metadata-only-line-second-base",
+    id: "cpp/metadata-line-second-base",
     language: "cpp",
     defectClass: "line-attribution",
     description:
-      "M60.P1 (#873) regression, the ONE-FIELD shape: the metadata line mirror goes back to the 0-based `startPosition.row` on the rows that carry NO `line_number` — the cpp/hpp Calls and Instantiates rows, where the mirror is the row's entire line (measured before the fix: 708 cpp and 1,327 hpp such rows in a three-file-per-language sample). The two-field mutant cannot reach this shape, so it is mutated separately. Caught by cpp/metadata-line-base-873, which pins the instantiation on source line 18 and the call on 19 and forbids the one-above values 17 and 18.",
-    transform: revertMetadataOnlyLineBase,
+      "M60.P1 (#873) regression, the TWO-FIELD shape on cpp: the metadata line mirror goes back to `line_number - 1` while the row's own `line_number` stays 1-based — the pre-fix writer's off-by-one, now reachable on cpp because these rows carry both fields. Caught by cpp/callsite-lines-825 (forbid entries: `calls callMultiLine -> size` meta.line 33 and `instantiates makeIt -> Widget` meta.line 38) and by cpp/metadata-line-base-873, which forbids the one-above mirror on its two sites.",
+    transform: revertMetadataLineBase,
+  },
+  {
+    id: "cpp/lines-dropped",
+    language: "cpp",
+    defectClass: "line-attribution",
+    description:
+      "M59 (#825) regression: cpp's relationships go back to carrying NO `line_number` — the exact pre-fix state of this analyzer (measured before the round: 0 of 3,418 rows on the two-file lane carried a row line; a fmt member read reached the graph at line 0, #870). Caught by cpp/callsite-lines-825, whose forbid entry pins the `uses readField -> value` row against the `line_number: null` (line-less) state, and by the positive pins on the call/instantiation/contains rows.",
+    transform: dropAllLineNumbers,
   },
   {
     id: "svelte/lines-dropped",

@@ -52,7 +52,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const usesSeen = new Set<string>()
     let fileDecisions = 0
     const classVirtuals = new Map<string, Map<string, string[]>>()
-    const pendingOverrides: Array<{ cls: string; method: string; params: string }> = []
+    const pendingOverrides: Array<{ cls: string; method: string; params: string; line?: number }> = []
     const classBases = new Map<string, string[]>()
 
     // CP1 (cpp review) bare-read resolution sets. C++ has no runtime —
@@ -592,6 +592,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: raw,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
+              // M59.A7 (#825): the written path names the edge, not the `using`
+              // keyword — `using namespace\n  std;` would otherwise name the line
+              // above the module.
+              line_number: this.nodeLine(targetNode ?? node),
               metadata: { isUsingDeclaration: true, isImport: true, relationshipType: "using_dependency" },
             })
           }
@@ -653,6 +657,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: includePath,
             type: ASTEngine.RelationshipType.References,
             confidence: 1.0,
+            // M59.A7 (#825), the C lane's rule: the include directive is the
+            // source construct and its WRITTEN NAME is the path token — take
+            // that node's line, not the directive's (a multi-line include puts
+            // the path last).
+            line_number: this.nodeLine(
+              this.findChild(node, "string_literal") ?? this.findChild(node, "system_lib_string") ?? node,
+            ),
             metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
           })
         }
@@ -792,6 +803,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: rawText,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
+                // M59.A7 (#825): a type expression's start is not always the
+                // line of the names inside it (a specifier starts at its
+                // KEYWORD) — `nameLine` prefers the grammar's `name` field.
+                line_number: this.nameLine(typeNode),
                 metadata: { nodeType: typeNode.type },
               })
             }
@@ -1025,7 +1040,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             else sigs.set(funcName, prev)
             classVirtuals.set(parentContext.name, sigs)
             if ((classBases.get(parentContext.name)?.length ?? 0) > 0) {
-              pendingOverrides.push({ cls: parentContext.name, method: funcName, params: normParams })
+              pendingOverrides.push({ cls: parentContext.name, method: funcName, params: normParams, line: this.nodeLine(node) })
             }
           }
 
@@ -1199,6 +1214,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              // M59.A7 (#825) / #870: the FIELD LEAF names this edge. This row
+              // carried no line at all, which is the #870 measurement (a member
+              // read reported at line 0 in the fmt lane).
+              line_number: this.nodeLine(field),
               metadata: { relationshipType: "field_access", accessedFrom: obj?.text },
             })
           }
@@ -1222,20 +1241,27 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Stops at identifier / field_identifier / type_identifier /
           // operator_name / destructor_name. The FULL qualified path stays in
           // qualifiedName (qc payload) — only the edge target is the leaf.
-          const calleeLeaf = (n: any): string => {
+          // M59.A7 (#825) contract, mirrored from the C lane: a row's line is the
+          // line of the node that NAMES the relationship. For a call that is the
+          // CALLEE LEAF — a `call_expression` starts at its RECEIVER, so a
+          // multi-line receiver (`return obj\n  .method()`) would stamp the call
+          // one line early, and a receiver span (a call inside a template
+          // argument) further off. This returns the NODE, not its text, so the
+          // edge's `line_number` and its `target` cannot name different nodes.
+          const calleeLeafNode = (n: any): any => {
             let cur = n
             let guard = 0
             while (cur && guard++ < 8) {
               const t = cur.type
               if (t === "field_expression") {
                 const f = cur.childForFieldName("field") ?? cur.namedChild(cur.namedChildCount - 1)
-                if (!f) return cur.text
+                if (!f) return cur
                 cur = f
                 continue
               }
               if (t === "template_function" || t === "template_method") {
                 const base = cur.namedChild(0)
-                if (!base) return cur.text
+                if (!base) return cur
                 cur = base
                 continue
               }
@@ -1248,7 +1274,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                   cur = inner
                   continue
                 }
-                return cur.text
+                return cur
               }
               if (t === "qualified_identifier" && cur.namedChildCount >= 1) {
                 cur = cur.namedChild(cur.namedChildCount - 1)
@@ -1260,12 +1286,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
               if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
                   t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
-                return cur.text
+                return cur
               }
-              return cur.text
+              return cur
             }
-            return cur?.text ?? ""
+            return cur
           }
+          const calleeLeaf = (n: any): string => calleeLeafNode(n)?.text ?? ""
+          // The naming node of the call edge — the SAME leaf whose text becomes
+          // `targetName` below, so line and target can never disagree.
+          let calleeSite: any = calleeLeafNode(funcNode)
           if (funcNode.type === "field_expression") {
             // obj.method() or ptr->method()
             const field = funcNode.childForFieldName("field")
@@ -1273,6 +1303,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (field) {
               targetName = calleeLeaf(field)
               qualifiedName = obj ? `${obj.text}.${field.text}` : field.text
+              calleeSite = calleeLeafNode(field)
             }
           } else {
             targetName = calleeLeaf(funcNode)
@@ -1304,14 +1335,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               fromSymbol: source,
               toSymbol: qualifiedName,
               type: ASTEngine.RelationshipType.Calls,
-              // M60.P1 (#873): the line mirror is 1-based, the same base as the
-              // row's own `line_number` everywhere else in the payload. Written
-              // as `startPosition.row` until now — and these rows carry NO
-              // `line_number` at all, so the mirror was their only line and it
-              // was a row below the source line (measured: cpp 708 and hpp 1,327
-              // such rows in a 3-file-per-language sample, via
-              // script/m59/probe-metadata-line-base.ts).
-              metadata: { line: node.startPosition.row + 1, qualified: qualifiedName },
+              // M59.A7 (#825) / M60.P1 (#873): ONE line, ONE base, ONE node. The
+              // row's `line_number` is the callee leaf's line (the node that
+              // names the edge) and the metadata mirror repeats THAT value
+              // instead of the call node's — a mirror that named a different
+              // node would make "the row's line" ambiguous again, which is what
+              // #873 was about. Base stays 1-based (R6).
+              line_number: this.nodeLine(calleeSite),
+              metadata: { line: this.nodeLine(calleeSite), qualified: qualifiedName },
             })
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
             // :: separators), attributed to the enclosing function/method
@@ -1377,7 +1408,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               toSymbol: typeNode.text,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: typeNode.hasError ? 0.6 : 1.0,
-              metadata: { line: node.startPosition.row + 1, isNew: true },
+              // M59.A7 (#825): the constructed type's own node names this edge —
+              // `new` and its type can sit on different lines. Same value in the
+              // #873 mirror, 1-based.
+              line_number: this.nodeLine(typeNode),
+              metadata: { line: this.nodeLine(typeNode), isNew: true },
             })
           }
         }
@@ -1458,6 +1493,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: node.text,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 1.0,
+                line_number: this.nodeLine(node),
                 metadata: { relationshipType: "identifier_usage", nodeType: node.type },
               })
             }
@@ -1549,6 +1585,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${pend.method}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.9,
+            // M59.A7 (#825): the overriding method's own declaration site (the
+            // pending record carries the line captured where the method was
+            // walked — a post-loop resolution has no node to ask).
+            line_number: pend.line,
             metadata: { isVirtualOverride: true, reasonCode: "signature-match" },
           })
         }
@@ -1564,6 +1604,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59.A7 (#825), the C lane's rule: a contains edge takes the CHILD's
+          // own line, so it can never disagree with the symbol range it mirrors.
+          line_number: s.range?.startLine,
           metadata: {},
         })
       }
@@ -1748,6 +1791,35 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  /**
+   * M59.A7 (#825): the line of the node that NAMES a relationship, 1-based, or
+   * `undefined` when the site is not attributable — never a fabricated 0 and
+   * never an enclosing declaration's line. The C lane carries the identical
+   * helper; the contract is "call-site line or NULL" (M59.O2).
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
+    return node.startPosition.row + 1
+  }
+
+  /**
+   * M59.A7 (#825): a type expression's start is not the line of the names inside
+   * it. A specifier starts at its KEYWORD, and a wrapped declaration puts the
+   * name on the following line:
+   *
+   *   struct          <- the specifier's start
+   *   Bigint {        <- where the name is written
+   *
+   * The grammar's `name` field is the site when it exists; otherwise the node is.
+   * (Mirror of the C lane's `nameLine`.)
+   */
+  private nameLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    const nameField =
+      typeof (node as any).childForFieldName === "function" ? node.childForFieldName("name") : null
+    return this.nodeLine(nameField ?? node)
   }
 
   private nodeToRange(node: Node) {
