@@ -4385,6 +4385,28 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/drop-glue-recovered-definitions",
+    language: "c",
+    defectClass: "symbol-loss",
+    description: "#907 (M60-C) regression: the swallowed-definition recovery stops emitting — a definition header glued into a preceding function's body loses its symbol again (swallowed-definitions-907 pins jv_dumpf/jv_dump; the real sites are jq src/jv_print.c's two public API functions, absent from the catalog before the fix). This reproduces the pre-fix state exactly (measured: 1 function symbol on the fixture, targets absent).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.metadata?.recoveredFromGlue !== true),
+    }),
+  },
+  {
+    id: "c/glue-recovery-wrong-kind",
+    language: "c",
+    defectClass: "symbol-identity",
+    description: "#907 (M60-C) regression: a glued definition header is recovered as the BLOCK's business rather than file scope — the traversal lends it out as a variable declaration, so the catalog carries `jv_dumpf` as a variable instead of a function. That is the failure mode the whole discriminator exists to prevent, since the swallowed body ALSO holds `jv_dumpf(x, stdout, flags)` as a function_declarator whose next character is `;`. Caught by c/swallowed-definitions-907, whose forbidSymbols pin both recovered names as variable-kind.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.metadata?.recoveredFromGlue === true ? { ...s, kind: "variable", metadata: { ...(s.metadata ?? {}), isVariable: true } } : s,
+      ),
+    }),
+  },
+  {
     id: "c/drop-valueless-macro-symbol",
     language: "c",
     defectClass: "symbol-loss",

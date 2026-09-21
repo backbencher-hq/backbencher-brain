@@ -430,6 +430,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
+        case "ERROR": {
+          // #907 (M60-C, measured jq src/jv_print.c): a top-level definition that
+          // parse recovery absorbs into a preceding function's body survives only as
+          // an ERROR holding a type node plus a bare function_declarator — no
+          // function_definition wrapper, so the walk never emits it and the public
+          // API function vanishes from the catalog (jv_dumpf/jv_dump).
+          this.recoverGluedDefinitionHeader(node, content, symbols)
+          break
+        }
         case "compound_statement": {
           // KAD2 sweep: comparing a STORED wrapper (scope entry) to a fresh
           // `node.parent` never matched — the guard was dead and nested
@@ -2519,6 +2528,73 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const arr: string[] = []
     for (const f in frameworks) arr.push(f)
     return arr
+  }
+
+  /**
+   * #907 (M60-C): recover a definition HEADER that parse recovery glued into a
+   * preceding function's body. Measured shape (jq src/jv_print.c L389/L393, where a
+   * `} else {` at L262 pairs with a closing brace living inside a later
+   * `#ifdef USE_DECNUM`, so the `case` at L254 runs away to L394):
+   *
+   *   ERROR { primitive_type "void", function_declarator "jv_dumpf(...)" }  then `{`
+   *
+   * The invariant that makes emission safe: **C has no nested functions.** A
+   * definition header inside a body can therefore only be recovery glue for a
+   * FILE-SCOPE definition, so the symbol is emitted at global scope rather than
+   * into the block that swallowed it.
+   *
+   * The discriminator is the character after the declarator — `{` means definition,
+   * while `;`/`,`/`)` means prototype, call, or initializer. That single test is what
+   * keeps this from fabricating: recovery ALSO misparses ordinary calls as
+   * function_declarators (jv_dump's body holds `jv_dumpf(x, stdout, flags)` as one),
+   * and those are followed by `;`.
+   *
+   * Deliberately SILENT about anything else: no symbol, no scope push, no local
+   * re-attribution. The swallowed bodies keep the attribution they already have, so
+   * this adds catalog entries without moving a single relationship (which is what
+   * keeps it F5-neutral).
+   */
+  private recoverGluedDefinitionHeader(
+    node: Node,
+    content: string,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    // Only ERRORs swallowed into a body: `compound_statement` on the path, and never
+    // a parameter list (a declarator there is a function-pointer parameter).
+    let insideBody = false
+    let w: Node | null = node.parent
+    while (w) {
+      if (w.type === "parameter_list") return
+      if (w.type === "compound_statement") {
+        insideBody = true
+        break
+      }
+      w = w.parent
+    }
+    if (!insideBody) return
+
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || c.type !== "function_declarator") continue
+      const id = c.childForFieldName("declarator")
+      if (!id || id.type !== "identifier") continue
+      const name = id.text.trim()
+      if (!name || C_KEYWORDS.has(name)) continue
+      // Definition iff the next non-space character is the body's opening brace.
+      let j = c.endIndex
+      if (!(j >= 0 && j <= content.length)) continue
+      while (j < content.length && (content[j] === " " || content[j] === "\t" || content[j] === "\n" || content[j] === "\r")) j++
+      if (content[j] !== "{") continue
+      if (symbols.some((s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function)) continue
+      symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Function,
+        range: this.nodeToRange(c),
+        scope: "global",
+        visibility: /\bstatic\b/.test(node.text) ? "private" : "public",
+        metadata: { cSpecific: true, recoveredFromGlue: true },
+      })
+    }
   }
 
   /**
