@@ -1,43 +1,43 @@
 {
   "gate": "M52.V1",
   "issue": 723,
-  "at": "2026-09-11T18:09:03.209Z",
-  "commit": "4d04aa440f0d6d821b8406402f32c632e4ba8cec",
+  "at": "2026-09-20T23:57:00.010Z",
+  "commit": "c6ab5b9ea8cac72cd4210e540649ec16415cc652",
   "rig": {
-    "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
-    "dbBytes": 187908096,
-    "files": 255
+    "dbPath": "$HOME/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+    "dbBytes": 4899897344,
+    "files": 2910
   },
   "parity": {
     "modelRows": {
-      "legacyMs": 3,
-      "m52Ms": 1,
+      "legacyMs": 127,
+      "m52Ms": 120,
       "equal": true
     },
     "entities": {
-      "legacyMs": 7,
-      "m52Ms": 2,
-      "equal": true,
-      "value": 6907
+      "legacyMs": 360,
+      "m52Ms": 103,
+      "equal": false,
+      "value": 163202
     },
     "languageRows": {
-      "legacyMs": 131,
-      "m52Ms": 5,
+      "legacyMs": 944,
+      "m52Ms": 200,
       "multisetEqual": true,
       "orderContract": true,
-      "rows": 6
+      "rows": 43
     }
   },
   "latency": {
-    "initMs": 449,
-    "coldMs": 117,
-    "warmMs": 34,
+    "initMs": 998,
+    "coldMs": 2087,
+    "warmMs": 723,
     "budgetMs": 2000,
     "baselineMs": 37000
   },
   "checks": {
     "total": 10,
-    "passed": 10,
-    "failed": 0
+    "passed": 9,
+    "failed": 1
   }
 }
