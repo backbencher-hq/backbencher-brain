@@ -209,6 +209,27 @@
     "status": "RULED",
     "question": "Deepest review (#736): file-scope prototype parameter names (`int libfn(int count);`) entered the declaredNames pre-pass, fabricating a dangling `uses main->count` for later reads (the oracle's isFunctionLocal already excluded parameter ancestry — mirror parity restored, no oracle change needed).",
     "resolution": "FIXED + GATED (2026-09-11): parameter-list ancestry excluded from the pre-pass via isInsideParameterList; fixture c/declaration-identity (forbids uses main->count) + mutant c/proto-param-uses CAUGHT."
+   },
+   {
+    "id": "HC7",
+    "node_type": "value-less `#define` symbols + macro read order-independence",
+    "status": "RULED",
+    "question": "#901 (M60, F5 sqlite rotation): the c lane was the only 100%-coverage lane with MISSING=2, both `uses` edges on all-caps macro names read in expression position (ext/misc/basexx.c SQLITE_EXTENSION_INIT1; src/tclsqlite.c SQLITE_TCLAPI). Two independent defects: extractMacro skipped EVERY value-less define (a body test disguised as include-guard filtering), and even with the symbol minted, a read ABOVE its define stayed silent — the CGD26 pre-pass's directive gate rejects anything with a preproc_ ancestor, so the neighbouring isMacroName branch had been dead code since CGD26 and macros alone resolved order-dependently (functions/globals did not).",
+    "resolution": "FIXED + GATED (2026-09-20): the body test is gone (a `#define` declares a name whatever its body — 30 value-less defines across sqlite's src/*.c + ext/misc/*.c, include guards minted too, one Constant each) and isMacroDefinitionName(node) admits exactly the macro NAME field through the directive gate (field identity by span; preproc_arg bodies and directive-condition mentions keep the suppression). Fixture c/macro-forward-read (symbols M60_TRACE_FLAG/M60_API, forward `uses global -> M60_TRACE_FLAG`, tclsqlite declaration-token read with a multi-line signature) + mutants c/drop-valueless-macro-symbol and c/drop-forward-macro-uses CAUGHT; all 18 c mutants caught."
+   },
+   {
+    "id": "HC8",
+    "node_type": "function-like macro name wrapping a declaration (truth/analyzer disagreement)",
+    "status": "REGISTERED",
+    "question": "The jq c lane's residual after #901: `UNEXPLAINED src/parser.c :: uses yyparse -> YY_INITIAL_VALUE` — a FUNCTION-LIKE macro used to wrap declarations inside yyparse's body (L2229 parent macro_type_specifier, L2230 parent function_declarator). Pre-existing (measured before either #901 edit: MISSING=0 unexplained=1 with the same totals; jq has no forward macro read, so #901's fixes do not touch this lane). A blanket 'function-like macro names are never reads' suppression was attempted and REVERTED — it removed this row and produced MISSING=4 (isleap, YYDPRINTF, decFinish, CFUNC), because the truth counts a macro INVOCATION as BOTH `calls (expr)` and `uses (expr)` and the analyzer's identifier-path uses is the load-bearing match for the second row.",
+    "resolution": "REGISTERED as #908 (2026-09-20), with the shape, the four-row lesson as a regression test, and the open adjudication: on the same tree truth derives no row although its CGD13 exemption puts macro names in declaredNames and its use gate should admit the L2229 mention — either its walk misses the mention or a gate excludes it, and one side is wrong. A warning comment now sits at the declaredNames pre-pass so the reverted attempt is not repeated. c's diff column stays red on this single named, reproduced residual."
+   },
+   {
+    "id": "HC9",
+    "node_type": "swallowed top-level definitions (symbol loss under brace imbalance)",
+    "status": "REGISTERED",
+    "question": "Found by the clang-reference audit of the jq error files (#743's second question): jq src/jv_print.c's public functions `void jv_dumpf`/`void jv_dump` are absent from the catalog entirely (no symbol, no edges) while jv_show/jv_dump_string/jv_dump_string_trunc are present. Mechanism bisected: a brace imbalance (preprocessor-conditional body) makes lines 219-395 parse as ONE function_definition — jv_dump_term's body swallows the rest — and the recovery path that saves nested function_definition nodes does not cover the pair arriving as declaration + compound_statement. The file's first ERROR row is 443, AFTER both definitions, so this is not 'the error region'. F5 cannot see it: a lost symbol produces no lost edge (both sides share the tree).",
+    "resolution": "REGISTERED as #907 (2026-09-20) with the reproduction, the clang reference (script/m14/tmp/c901-clang-audit.ts), the census (script/m14/tmp/c907-swallow-census.ts: jq 3/45 files, sqlite 15/315 — sqlite's are recovered, prepare.c's 17 core functions all PRESENT) and four acceptance clauses. NOT fixed in this round; the residual is exactly the declaration+compound_statement shape."
    }
   ]
  }

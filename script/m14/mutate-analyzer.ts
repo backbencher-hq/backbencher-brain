@@ -4385,6 +4385,26 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/drop-valueless-macro-symbol",
+    language: "c",
+    defectClass: "symbol-loss",
+    description: "#901 (M60) regression: re-applies the body-based skip in extractMacro — a `#define NAME` with no value body mints no symbol (macro-forward-read pins M60_TRACE_FLAG and M60_API as constants; the real sites were basexx.c SQLITE_EXTENSION_INIT1 and tclsqlite.c SQLITE_TCLAPI)",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "constant" && (s.name === "M60_TRACE_FLAG" || s.name === "M60_API"))),
+    }),
+  },
+  {
+    id: "c/drop-forward-macro-uses",
+    language: "c",
+    defectClass: "relationship-loss",
+    description: "#901 (M60) regression: drops the order-independent `uses` for a macro read ABOVE its define (macro-forward-read expects uses global -> M60_TRACE_FLAG; the real row was basexx.c L40 reading SQLITE_EXTENSION_INIT1 defined at L48)",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "uses" && x.target === "M60_TRACE_FLAG")),
+    }),
+  },
+  {
     id: "c/proto-param-uses",
     language: "c",
     defectClass: "relationship-fabrication",
