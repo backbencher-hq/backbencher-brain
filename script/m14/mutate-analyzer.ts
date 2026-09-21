@@ -2047,6 +2047,30 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "worker", target: "h.jobs", type: "uses", confidence: 0.8, metadata: { relationshipType: "go_channel_operation", operationType: "send", pattern: "channel_communication" } }] }),
   },
   {
+    id: "go/callsite-lines-dropped",
+    language: "go",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: go's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 11,893 edges on a 200-file draw of go-tools). Caught by go/callsite-lines-825, which pins the import spec at 22, the wrapped parameter type at 53, the defer/go callees at 64/66, the receiver-continued selector leaf at 68 and the embedding/implements lines at 32/25.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "go/callsite-construct-start-line",
+    language: "go",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: restores the CONSTRUCT-START line instead of the node that names the edge — the import reports `import (` (21 not 22), a receiver-continued selector call reports the receiver (67 not 68), `defer`/`go` report their keyword (63/65 not 64/66) and a wrapped parameter type reports the `func` line (52 not 53). Exactly the pre-fix positions go/callsite-lines-825 forbids.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const rt = String((x.metadata ?? {}).relationshipType ?? "")
+        const isImport = (x.metadata ?? {}).isImport === true
+        if ((rt === "go_function_call" || rt === "declared_type" || isImport) && typeof x.line_number === "number") {
+          return { ...x, line_number: x.line_number - 1 }
+        }
+        return x
+      }),
+    }),
+  },
+  {
     id: "zig/drop-calls",
     language: "zig",
     defectClass: "relationship-loss",
