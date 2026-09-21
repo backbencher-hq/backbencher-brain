@@ -1,5 +1,5 @@
 {
-  "snapshotAt": "2026-09-21T15:19:07.089Z",
+  "snapshotAt": "2026-09-21T16:40:24.455Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
   "count": 121,
@@ -700,11 +700,6 @@
       ]
     },
     {
-      "number": 907,
-      "title": "M60-C: swallowed top-level definitions lose their symbols (jq jv_print.c: jv_dump/jv_dumpf) — F5-blind class",
-      "labels": []
-    },
-    {
       "number": 908,
       "title": "M60-C: jq c lane's residual row — uses yyparse -> YY_INITIAL_VALUE (truth/analyzer disagreement on a macro wrapping a declaration)",
       "labels": []
@@ -726,6 +721,11 @@
     {
       "number": 911,
       "title": "M60.P1 recorded an emission no commit contains (erlang line_number); P1 had no commit frame at all",
+      "labels": []
+    },
+    {
+      "number": 912,
+      "title": "M60-C: the #907 residue — 1 call-shaped macro-driven definition site and 38 flex-generated aliases with no source location",
       "labels": []
     }
   ]
