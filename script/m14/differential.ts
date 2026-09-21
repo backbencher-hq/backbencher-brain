@@ -2339,6 +2339,98 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
     }
     return false
   }
+  // #907 round 2 MIRROR (one contract with src/ast/real-c-analyzer.ts
+  // recoverGluedDefinitionHeader): the analyzer now creates a FILE-SCOPE symbol
+  // for a definition header that parse recovery glued into an ERROR — at root
+  // scope, through a pointer_declarator, behind a `#define`'s ERROR, and even
+  // when the name arrives as a BARE identifier. `isBareFdGlueName` above still
+  // excludes such a name from declaredNames, and the reason its comment gives
+  // ("the analyzer structurally cannot resolve it — no symbol") is now false:
+  // the symbol exists, so the exclusion makes truth blind to real uses of it.
+  // F5 measured exactly that the moment the symbol appeared — sqlite os_win.c's
+  // method table (`winRead,` / `winWrite,` in winIoMethod) is a REAL use of the
+  // two recovered functions, the analyzer emits it, and truth had no
+  // counterpart: `unexplained 0 -> 2` was the round's only regression.
+  // Ported arrival for arrival from the analyzer's predicates
+  // (definitionBodyFollows / insideMacroContinuation / declarationHeaderBefore).
+  const isGlueDefinitionName = (n: any, src: string): boolean => {
+    if (typeof src !== "string" || !n) return false
+    // Arrival 1: `function_declarator` directly under the ERROR, or reached
+    // through pointer/parenthesized wrappers (jv_dtoa.c `char * jvp_dtoa(...)`).
+    let declarator: any = null
+    if (n.parent && n.parent.type === "function_declarator") declarator = n.parent
+    else if (n.parent && /^(pointer|parenthesized|attributed)_declarator$/.test(n.parent.type)) {
+      let cur: any = n.parent
+      for (let depth = 0; cur && depth < 4; depth++) {
+        if (cur.type === "function_declarator") { declarator = cur; break }
+        if (!/^(pointer|parenthesized|attributed)_declarator$/.test(cur.type)) break
+        cur = cur.childForFieldName("declarator")
+      }
+    }
+    // Arrival 2: the name IS the ERROR's direct child (decNumber.c, where the
+    // return type and the declarator node are both gone).
+    const bare = !declarator && n.parent?.type === "ERROR"
+    if (!declarator && !bare) return false
+    // A `declaration`/`function_definition` wrapper on the way to the ERROR
+    // means an ordinary prototype the analyzer's own pre-pass already catalogs.
+    let w: any = declarator ? declarator.parent : n.parent
+    let sawError = false
+    while (w) {
+      if (w.type === "declaration" || w.type === "function_definition") return false
+      if (w.type === "ERROR") { sawError = true; break }
+      w = w.parent
+    }
+    if (!sawError) return false
+    // (a) the name's own parameter list must end at the body's `{`.
+    let j = n.endIndex
+    while (j < src.length && /\s/.test(src[j])) j++
+    if (src[j] !== "(") return false
+    let pd = 0
+    for (; j < src.length; j++) {
+      if (src[j] === "(") pd++
+      else if (src[j] === ")") { pd--; if (pd === 0) break }
+    }
+    if (pd !== 0) return false
+    j++
+    while (j < src.length && /\s/.test(src[j])) j++
+    if (src[j] !== "{") return false
+    // (b) a `#define` body's `name` is the macro PARAMETER, not a symbol. Skip
+    // only inside the directive's own logical line: a definition past the last
+    // backslash continuation is ordinary file text (jq parser.c `yyerror`).
+    let mac: any = n.parent
+    while (mac) {
+      if (mac.type === "preproc_def" || mac.type === "preproc_function_def") {
+        let lineStart = mac.startIndex
+        let allContinuation = true
+        for (let row = mac.startPosition.row; row < n.startPosition.row; row++) {
+          const nl = src.indexOf("\n", lineStart)
+          if (nl < 0) { allContinuation = false; break }
+          let end = nl - 1
+          if (end >= lineStart && src[end] === "\r") end--
+          if (src[end] !== "\\") { allContinuation = false; break }
+          lineStart = nl + 1
+        }
+        if (allContinuation) return false
+      }
+      mac = mac.parent
+    }
+    // (c) a BARE identifier declares only with a type/storage header before it;
+    // a call has the identical shape (`FOREACH(item) {`).
+    if (bare) {
+      const from = Math.max(0, n.startIndex - 400)
+      const win = src.slice(from, n.startIndex)
+      let cut = -1
+      for (const ch of [";", "{", "}"]) {
+        const at = win.lastIndexOf(ch)
+        if (at > cut) cut = at
+      }
+      const header = win.slice(cut + 1)
+        .replace(/\/\*[\s\S]*?\*\//g, " ")
+        .replace(/\/\/[^\n]*/g, " ")
+      if (!/[A-Za-z_]\w*/.test(header)) return false
+    }
+    return true
+  }
   // Truth scope refinement 2 (CGD-PREPROC): identifiers inside PREPROCESSOR
   // CONDITION TEXT are not code — `#if SQLITE_MAX_MMAP_SIZE>0` conditions,
   // `defined(X)` tests, `#ifndef X` guards, `#define IOMETHODS(...CLOSE,
@@ -2561,7 +2653,13 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
             && n.parent?.parent?.parent?.type === "enum_specifier"
             && !isFunctionLocal(n)
           const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
-          if (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed))) {
+          // #907 round 2: a glued definition the ANALYZER emits at file scope is
+          // admitted here on its own arm, because the analyzer's own rule is
+          // unconditional at that point — C has no nested functions, so the
+          // symbol is file-scope whatever the damaged tree's ancestors say. The
+          // generic arm below keeps its gates untouched for everything else.
+          const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
+          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
           }
         }
@@ -2717,7 +2815,14 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
             return sourceText[i] === "#"
           })()
         : false
-      if (p && p.type !== "call_expression" && !isTopLevelErrorDebris && !isHashLine && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n)) {
+      // #907 round 2 mirror: the NAME of a recovered glued definition is a
+      // declaration of that name, not a read of it. The analyzer suppresses this
+      // exact occurrence (gluedDefNameOffsets) because the damaged tree makes the
+      // header look like an expression — without the same suppression here, truth
+      // would expect a `uses` edge the analyzer correctly refuses to emit
+      // (decNumber.c L2284/2304/2309: `decNumberPower uses decNumberQuantize`).
+      const isGlueDefNameOccurrence = isGlueDefinitionName(n, sourceText ?? "")
+      if (p && p.type !== "call_expression" && !isTopLevelErrorDebris && !isHashLine && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isGlueDefNameOccurrence) {
         const name = n.text
         // CGD15: a function-local BINDING of the name (param or local
         // declaration in the enclosing function) shadows the file-scope
