@@ -24,6 +24,7 @@
 // Run: npx tsx script/m60/payload-matrix.ts  → validation/m60/results/P1.json
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
+import { execFileSync } from "node:child_process"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/P1.json")
@@ -463,10 +464,40 @@ function main() {
   const blocked = fieldRows.filter((r) => String(r.verdict).startsWith("BLOCKED"))
   const partialFields = fieldRows.filter((r) => String(r.verdict).startsWith("alive (partial"))
 
+  // EVIDENCE FRAME (added 2026-09-21 after a measured defect): this artifact's
+  // `emit` column is read straight out of the working tree's analyzer sources, so
+  // a run in a tree holding UNCOMMITTED analyzer work records a claim about code
+  // that does not exist in the repository. That is not hypothetical — the
+  // 2026-09-19 artifact recorded `line_number` alive for erlang, and no commit
+  // ever contained that emission (`git log -S line_number --
+  // src/ast/real-erlang-analyzer.ts` is empty), so erlang's row replaced a real
+  // emission with a phantom one and the language-completion matrix read it as a
+  // pass. The frame below makes that state impossible to hide: the commit the
+  // numbers describe, and whether the measured sources were clean at the moment
+  // of measurement.
+  const gitOut = (args: string[]): string => {
+    try {
+      return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" }).trim()
+    } catch {
+      return ""
+    }
+  }
+  const commit = gitOut(["rev-parse", "HEAD"]) || null
+  const measuredSources = ["src/ast/types.ts", "src/ast/indexer.ts", ...langs.map((l) => analyzerPathFor(l))]
+  const dirtySources = gitOut(["status", "--porcelain", "--", ...measuredSources])
+    .split("\n")
+    .filter(Boolean)
+
   const result = {
     gate: "M60.P1",
     title: `Payload-seam matrix — ${symbolFields.length + relFields.length} declared fields × ${langs.length} onboarded languages × 4 seam stages`,
     at: new Date().toISOString(),
+    commit,
+    measuredSources: {
+      clean: dirtySources.length === 0,
+      dirty: dirtySources,
+      rule: "emit is measured by reading the working tree, so a dirty measured source means this artifact describes a state that is not in any commit; a frame whose sources were dirty is a probe, not milestone evidence",
+    },
     method: "fields parsed from src/ast/types.ts; every needle verified against the live tree (fatal on mismatch, so the matrix cannot rot silently); emit measured per-language against src/ast/real-<lang>-analyzer.ts; store against parallel-indexer/schema-ddl; query against brain.sql/graph-engine/doc-engine/taint; tool against the MCP surface.",
     surface: {
       declaredFieldCount: symbolFields.length + relFields.length,

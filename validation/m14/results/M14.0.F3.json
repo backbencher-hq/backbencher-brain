@@ -56,7 +56,7 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "9/9 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b7ab255103104878705c998ce6ad12dade0a1536",
-  "committedAt": "2026-09-20T23:48:00-04:00",
+  "commit": "70358e6dce4bb1977145d30312c76fde4d9eca5f",
+  "committedAt": "2026-09-21T00:51:37-04:00",
   "data": {
     "details": [
       {
@@ -2372,6 +2372,11 @@
         "problems": []
       },
       {
+        "fixture": "c/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/cgd31-37-regressions",
         "ok": true,
         "problems": []
@@ -3229,7 +3234,7 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 8
+        "pass": 9
       },
       "clojure": {
         "fail": 0,
@@ -3342,8 +3347,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-21T03:48:51.840Z",
-  "regeneratedAtCommit": "b7ab255103104878705c998ce6ad12dade0a1536",
+  "regeneratedAt": "2026-09-21T05:07:16.024Z",
+  "regeneratedAtCommit": "70358e6dce4bb1977145d30312c76fde4d9eca5f",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
