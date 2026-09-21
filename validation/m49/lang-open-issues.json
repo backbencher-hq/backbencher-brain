@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-21T18:12:09.560Z",
+  "snapshotAt": "2026-09-21T20:22:50.650Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 119,
+  "count": 118,
   "issues": [
     {
       "number": 134,
@@ -430,11 +430,6 @@
       "labels": []
     },
     {
-      "number": 797,
-      "title": "M49.CPP1 C++ master review wave: process reviews/cpp CP1-CP4 under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 798,
       "title": "M49.RS1 Rust master + second review waves: process reviews/rust R1/R8/D2/D3 under the verify-first protocol",
       "labels": []
@@ -580,16 +575,6 @@
       "labels": []
     },
     {
-      "number": 870,
-      "title": "cpp: a member read emits `uses` with line_number 0 (the only unexplained edge in the whole 21-language F5 sweep)",
-      "labels": [
-        "analyzer",
-        "bug",
-        "m14",
-        "m14.0-foundation"
-      ]
-    },
-    {
       "number": 871,
       "title": "M14 F5: `heuristic` and `perf` are scored against unpinned baselines and an unrecorded load context, so untouched languages are flagged as regressions",
       "labels": [
@@ -714,6 +699,11 @@
     {
       "number": 912,
       "title": "M60-C: the #907 residue — 1 call-shaped macro-driven definition site and 38 flex-generated aliases with no source location",
+      "labels": []
+    },
+    {
+      "number": 913,
+      "title": "python: the detector maps .pyx/.pxd to the Python grammar, so Python's primary corpus is 68.8% unparseable",
       "labels": []
     }
   ]
