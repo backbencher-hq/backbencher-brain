@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-21T16:40:24.455Z",
+  "snapshotAt": "2026-09-21T16:41:09.039Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 121,
+  "count": 120,
   "issues": [
     {
       "number": 134,
@@ -707,13 +707,6 @@
     {
       "number": 909,
       "title": "M12 perf evidence: c-complexity.json records a 10x-inflated number with no load disclosure",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 910,
-      "title": "c (and cpp/go/rust/ruby/php): #include edges are unreadable — no consumer of isImport/include_dependency, and the imports surface filters relationship_type IN ('imports','exports')",
       "labels": [
         "bug"
       ]
