@@ -58,7 +58,7 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm" }
+  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm", scala: "tree-sitter-scala.wasm" }
   const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfgs[lang])))
   const parser = new P()
   parser.setLanguage(langWasm)
@@ -74,6 +74,82 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
       ? (diff as any)[deriveFn](tree.rootNode, lang)
       : (diff as any)[deriveFn](tree.rootNode, new Set())
   return new Set(edges.map((e: any) => `${e.label}:${e.target}`))
+}
+
+/**
+ * #906: the SFC-truth lane parses every `<script>` block with the grammar its
+ * `lang` attribute names. The oracle used to dispatch on a /lang=["']ts["']/
+ * test while holding only js+ts parsers, so a `<script lang="tsx" setup>`
+ * block was parsed as JAVASCRIPT: JSX recovered as relational expressions,
+ * which fabricated `calls -> return/key/if/string` (single letters the analyzer
+ * rightly refuses) AND swallowed the following real declarations, so genuine
+ * script-setup calls (`generateColumns`, `dayjs`) landed as UNEXPLAINED. Both
+ * directions are asserted here, analyzer first and oracle second, exactly as
+ * probeLang does for the deriveTreeEdges languages.
+ */
+async function oracleVue(content: string): Promise<Set<string>> {
+  const diff = await import("./differential")
+  const wts: any = WTS
+  const P = wts.Parser ?? wts.default ?? wts
+  const L = wts.Language ?? wts.default?.Language
+  await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, "tree-sitter-vue.wasm")))
+  const parser = new P()
+  parser.setLanguage(langWasm)
+  const root = parser.parse(content).rootNode
+  const out = new Set<string>()
+  for (const t of await (diff as any).deriveEmbeddedScriptTrees(root, content, "vue")) {
+    for (const e of (diff as any).deriveTypeScriptEdges(t)) out.add(`${e.label}:${e.target}`)
+  }
+  return out
+}
+
+async function probeVue(
+  id: string,
+  description: string,
+  src: string,
+  expect: string[],
+  forbid: string[],
+) {
+  try {
+    // The PRODUCTION entry, not a hand-built context: the SFC script trees,
+    // their langs and their byte bases are constructed by the engine
+    // (sfcScriptTrees/sfcScriptLangs), so a probe that assembled them itself
+    // could pass while the pipeline dispatched the block differently.
+    const eng: any = await import("../../src/ast/engine")
+    const res = await eng.ASTEngine.parseFile("probe.vue", src)
+    const got = res.relationships.map((r: any) => `${r.type}:${r.source}->${r.target}`)
+    const matches = (g: string, e: string) =>
+      e.includes("->") ? g === e : g.split(":")[0] === e.split(":")[0] && g.split("->")[1] === e.split(":")[1]
+    const missing = expect.filter((e) => !got.some((g) => matches(g, e)))
+    const fabricated = forbid.filter((f) => got.some((g) => matches(g, f)))
+    if (missing.length > 0) {
+      record(id, "vue", description, false, `analyzer missing: ${missing.join(", ")}`)
+      return
+    }
+    if (fabricated.length > 0) {
+      record(id, "vue", description, false, `analyzer fabricated: ${fabricated.join(", ")}`)
+      return
+    }
+    const oracle = await oracleVue(src)
+    const targetOf = (e: string) => {
+      const [label, rest] = e.split(":")
+      return `${label}:${rest.includes("->") ? rest.split("->")[1] : rest}`
+    }
+    const oracleMiss = expect.filter((e) => !oracle.has(targetOf(e)))
+    if (oracleMiss.length > 0) {
+      record(id, "vue", description, false, `oracle no longer derives: ${oracleMiss.join(", ")} (oracle regression)`)
+      return
+    }
+    const collusion = forbid.filter((f) => oracle.has(targetOf(f)))
+    if (collusion.length > 0) {
+      record(id, "vue", description, false, `oracle colludes: truth also derives ${collusion.join(", ")} (lockstep mirrored a fabrication — lane cannot see it)`)
+      return
+    }
+    record(id, "vue", description, true, "ok (oracle agrees, no collusion on the forbidden set)")
+  } catch (e: any) {
+    record(id, "vue", description, false, e.message)
+  }
 }
 
 async function probeLang(
@@ -567,6 +643,76 @@ class Host
       `imported=[${[...imported].join(",")}] local=[${[...localOnly].join(",")}]`
     )
   }
+
+  // ── SCAD11 (M49 #905): a BARE-`private` base member is not inherited ────
+  // Real defect: the scala truth derivation had no privacy notion at all, so
+  // it paired `Transformation.submitWithValue -> DefaultPromise.submitWithValue`
+  // through a `private final def` base member (scala3 Promise.scala:473/488) —
+  // the analyzer's documented JLS/Scala rule refuses it, and the lane reported
+  // it as MISSING = 1 on a 200-file draw. The QUALIFIED form is the control:
+  // `private[probe]` IS inheritable (the analyzer models it as package-scoped),
+  // so the filter must not swallow it. Asserted on both sides; the forbidden
+  // bare-private pair additionally asserts the ORACLE does not derive it.
+  await probeLang("F9-PROBE-SCAD11", "scala",
+    "bare-`private` base member seeds no override pair (not inherited); qualified `private[pkg]` still pairs",
+    { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: ".scala" },
+    "deriveTreeEdges",
+    [
+      `package probe`, "", "trait Base {",
+      `  private def secret(x: Int): Int = 1`,
+      `  private[probe] def scoped(x: Int): Int`,
+      `  def open(x: Int): Int`,
+      "}", "", "class Child extends Base {",
+      `  def secret(x: Int): Int = 2`,
+      `  def scoped(x: Int): Int = 3`,
+      `  def open(x: Int): Int = 4`,
+      "}", "",
+    ].join("\n"),
+    ["overrides:Child.open->Base.open", "overrides:Child.scoped->Base.scoped"],
+    ["overrides:Child.secret->Base.secret"],
+    { oracleForbid: true },
+  )
+
+  // ── VUED11 (M49 #906): the SFC block's grammar comes from its `lang` ────
+  // Real defect: the truth lane dispatched `<script lang="tsx">` onto the
+  // JAVASCRIPT grammar (its isTs test matched only `ts`), so JSX recovered as
+  // relational expressions — truth invented `calls -> return/key/string/if`,
+  // which no analyzer may emit, while the real script-setup calls were lost.
+  await probeVue("F9-PROBE-VUED11",
+    "`<script lang=\"tsx\" setup>` truth parses as tsx: real script-setup calls derived, no keyword callees invented",
+    [
+      `<script lang="tsx" setup>`,
+      `import { ref } from 'vue'`,
+      ``,
+      `type Props = {`,
+      `  value: boolean`,
+      `  ariaLabel?: string`,
+      `  onChange: (value: string) => void`,
+      `}`,
+      ``,
+      `const Cell: FunctionalComponent<Props> = ({ value, onChange }) => {`,
+      `  return (`,
+      `    <ElCheckbox`,
+      `      onChange={onChange}`,
+      `      modelValue={value}`,
+      `    />`,
+      `  )`,
+      `}`,
+      ``,
+      `const generateColumns = (length = 10, prefix = 'column-') =>`,
+      `  Array.from({ length }).map((_, i) => ({ key: \`\${prefix}\${i}\` }))`,
+      ``,
+      `const columns = generateColumns(10)`,
+      `</script>`,
+      `<template><div /></template>`,
+      ``,
+    ].join("\n"),
+    // MEASURED under the javascript dispatch (the pre-#906 behaviour): the js
+    // parse of this block yields ONLY `key` and `return` and loses all three
+    // real calls; the tsx parse yields exactly the analyzer's targets.
+    ["calls:generateColumns", "calls:from", "calls:map"],
+    ["calls:return", "calls:key", "calls:string", "calls:if"],
+  )
 
   // ── F7 detector self-test: regexes regress like any code ────────────────
   {

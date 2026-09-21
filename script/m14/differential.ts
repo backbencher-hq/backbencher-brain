@@ -572,44 +572,70 @@ export function deriveSvelteComponentUsages(
 // measured past the canonical 60-file rotation. Parsers are stateless between
 // parses, so they are built once and reused (the same fix the per-language
 // grammar cache above applies to lane parsers).
-let EMBEDDED_SCRIPT_PARSERS: { js: any; ts: any } | null = null
-export async function embeddedScriptParsers(): Promise<{ js: any; ts: any }> {
+let EMBEDDED_SCRIPT_PARSERS: { js: any; ts: any; tsx: any } | null = null
+export async function embeddedScriptParsers(): Promise<{ js: any; ts: any; tsx: any }> {
   if (EMBEDDED_SCRIPT_PARSERS) return EMBEDDED_SCRIPT_PARSERS
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
   const Lang = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const language = await Lang.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-javascript.wasm")))
-  const parser = new P()
-  parser.setLanguage(language)
-  const tsLanguage = await Lang.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-typescript.wasm")))
-  const tsParser = new P()
-  tsParser.setLanguage(tsLanguage)
-  EMBEDDED_SCRIPT_PARSERS = { js: parser, ts: tsParser }
+  const mk = async (wasm: string) => {
+    const l = await Lang.load(fs.readFileSync(path.join(ROOT, "wasm", wasm)))
+    const p = new P()
+    p.setLanguage(l)
+    return p
+  }
+  const parser = await mk("tree-sitter-javascript.wasm")
+  const tsParser = await mk("tree-sitter-typescript.wasm")
+  // #906: the JSX-capable grammar. Without it a `<script lang="tsx">` block is
+  // parsed as JavaScript, where JSX recovers as relational expressions.
+  const tsxParser = await mk("tree-sitter-tsx.wasm")
+  EMBEDDED_SCRIPT_PARSERS = { js: parser, ts: tsParser, tsx: tsxParser }
   return EMBEDDED_SCRIPT_PARSERS
 }
 
-// Embedded-script truth for SFC languages: extract <script> raw_text
-// blocks and parse them with the JS grammar (lang="ts" blocks included -
-// the JS-family structural rules apply identically).
+// Embedded-script truth for SFC languages.
+//
+// M49.#906: block extraction and grammar dispatch come from the ENGINE
+// (`ASTEngine.extractSfcScriptBlocks` + its three-way `ts`/`tsx`/`js`
+// dispatch), not from a second implementation here. The old local version had
+// two defects that together were the whole of #906, and both were measured on
+// element-plus's `<script lang="tsx" setup>` docs examples (probe:
+// script/m14/tmp/vue906-probe.ts):
+//
+//   its lang test was /lang=["']ts["']/, which does NOT match `lang="tsx"`, so
+//   a tsx block went to the JAVASCRIPT grammar — the same defect class #903
+//   fixed in the analyzer, still live on the truth side; and
+//   with no tsx parser at all, a JSX-bearing block had no way to be represented.
+//
+// Measured consequence per file (js parse -> tsx parse): ERROR nodes 23 -> 0 /
+// 20 -> 0 / 25 -> 0; fabricated calls to `key`, `return`, `string`, `if` (all
+// four are JSX recovery artifacts, none is a call in the source) appear only in
+// the js parse; real calls (`generateColumns`, `generateData`, `Array.from`,
+// `.map`) are present only in the tsx parse.
+//
+// Sharing the engine's extraction is not a loosening: WHICH grammar parses an
+// SFC block is an input property of the pipeline, not a claim either side makes,
+// and the analyzer receives exactly these trees. The truth derivation over them
+// (deriveTypeScriptEdges) stays independent.
 export async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
-  const { js: parser, ts: tsParser } = await embeddedScriptParsers()
+  const { js: parser, ts: tsParser, tsx: tsxParser } = await embeddedScriptParsers()
   const out: any[] = []
-  const walk = (n: any): void => {
-    if (n.type === "script_element") {
-      const raw = n.namedChildren.find((c: any) => c.type === "raw_text")
-      const startTag = n.namedChildren.find((c: any) => c.type === "start_tag")
-      const isTs = !!startTag && /lang=["']ts["']/.test(startTag.text)
-      if (raw && raw.text.trim().length > 0) {
-        try {
-          // ts blocks need the TS grammar or heritage clauses error-recover away
-          out.push((isTs ? tsParser : parser).parse(raw.text).rootNode)
-        } catch { /* skip */ }
-      }
+  const eng = await import("../../src/ast/engine")
+  const blocks = (eng as any).ASTEngine.extractSfcScriptBlocks(root, content) as {
+    body: string
+    lang: string
+  }[]
+  for (const block of blocks) {
+    if (!block.body || block.body.trim().length === 0) continue
+    try {
+      // the engine's own dispatch: `ts` -> typescript, `tsx` -> tsx, else js
+      const sub = block.lang === "ts" ? tsParser : block.lang === "tsx" ? tsxParser : parser
+      out.push(sub.parse(block.body).rootNode)
+    } catch {
+      /* a block the grammar refuses outright contributes no truth */
     }
-    for (let k = 0; k < n.namedChildCount; k++) walk(n.namedChild(k))
   }
-  walk(root)
   return out
 }
 
@@ -9613,6 +9639,32 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     }
     return false
   }
+  // #905: a BARE `private` member is NOT inherited (Scala/JLS) — it is part of
+  // nobody's inheritance interface, so it can neither declare the member a
+  // subclass overrides nor itself be an override. A QUALIFIED `private[pkg]`
+  // IS inheritable (the analyzer models it as package-scoped), so it stays.
+  // Mirrors RealScalaAnalyzer.getVisibility exactly; before this the scala
+  // truth derivation had no privacy notion at all, so it paired
+  // Transformation.submitWithValue -> DefaultPromise.submitWithValue through a
+  // `private final def` base member (Promise.scala:473/488) that the analyzer
+  // correctly refuses (#905, MISSING=1 on the scala3 depth draw).
+  const scalaMemberIsBarePrivate = (member: any): boolean => {
+    for (let i = 0; i < member.childCount; i++) {
+      const c = member.child(i)
+      if (!c || c.type !== "modifiers") continue
+      for (let j = 0; j < c.childCount; j++) {
+        const mod = c.child(j)
+        if (!mod) continue
+        if (mod.type === "private") return true
+        if (mod.type !== "access_modifier") continue
+        if (mod.text.includes("[")) continue // `private[pkg]` — inheritable
+        if (mod.text.trim() === "private") return true
+        const inner = mod.child(0)
+        if (inner?.type === "private") return true
+      }
+    }
+    return false
+  }
   const sigCompatible = (child: any, parent: any, m: string): boolean => {
     const cs = child.sigs?.get(m)
     const ps = parent.sigs?.get(m)
@@ -9770,6 +9822,11 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           if (body) {
             for (const m of membersOf(body)) {
               if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
+              // #905: exclude a BARE-`private` member from the occurrence set.
+              // One filter, both directions: this set is the child frontier AND
+              // the parent lookup, so a private base member can never seed an
+              // override chain and a private child member is never paired.
+              if (scalaMemberIsBarePrivate(m)) continue
               const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
               if (smn && smn.text !== "constructor" && smn.text !== nm) {
                 ownMethods.add(smn.text)
@@ -9849,6 +9906,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const ownSigs = new Map<string, Set<string>>()
         for (const m of membersOf(body)) {
           if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
+          if (scalaMemberIsBarePrivate(m)) continue // #905: bare private is not inherited
           const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
           if (smn && smn.text !== "constructor" && smn.text !== anonName) {
             ownMethods.add(smn.text)
