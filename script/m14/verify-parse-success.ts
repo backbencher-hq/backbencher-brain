@@ -236,6 +236,25 @@ function repoPin(repo: string): string | null {
   }
 }
 
+/**
+ * Provenance for a number-naming artifact: the commit it describes and how many
+ * ANALYZER sources the working tree had modified when it ran. Grammar damage is
+ * a property of the pinned wasm, so a dirty analyzer does not move these numbers
+ * — but a reader is entitled to know, rather than having to assume.
+ */
+function provenance(): { atCommit: string | null; treeModifiedInputs: number } {
+  let atCommit: string | null = null
+  let treeModifiedInputs = 0
+  try {
+    atCommit = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
+    const dirty = execSync("git status --porcelain -- src/ast", { cwd: ROOT }).toString().trim()
+    treeModifiedInputs = dirty ? dirty.split("\n").filter(Boolean).length : 0
+  } catch {
+    /* provenance is recorded as unknown rather than guessed */
+  }
+  return { atCommit, treeModifiedInputs }
+}
+
 async function measureLane(lane: Lane, outPath: string) {
   const repoDir = path.join(CORPUS_ROOT, lane.repo)
 
@@ -455,6 +474,7 @@ async function main() {
           gate: "M14.0.F10",
           title: "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
           at: new Date().toISOString(),
+          ...provenance(),
           method:
             "files routed by the PRODUCT's detectLanguageFromPath (including the .h sniff), ordered by a hash of their relative path and capped deterministically; each lane parsed in its own child process with a fresh module; ERROR nodes and MISSING tokens counted separately; the rate compared against a pinned per-lane floor whose sample digest must match",
           sampleLimit: SAMPLE_LIMIT > 0 ? SAMPLE_LIMIT : null,
@@ -486,6 +506,7 @@ async function main() {
       purpose:
         "Per-lane parse-success floors. A floor is the measured failure rate on a deterministic, digest-pinned sample; the gate fails when a lane exceeds it. Re-pin only with --update-baseline, only for the whole lane set, and only when the change is understood.",
       establishedAt: new Date().toISOString(),
+      ...provenance(),
       sampleLimit: SAMPLE_LIMIT > 0 ? SAMPLE_LIMIT : null,
       lanes: Object.fromEntries(
         scored.map((r) => [
