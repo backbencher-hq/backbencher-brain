@@ -59,6 +59,7 @@
     "audit:hygiene": "bun run script/m14/verify-analyzer-hygiene.ts",
     "audit:census": "bun run script/m14/verify-corpus-census.ts",
     "audit:probes": "bun run script/m14/verify-probe-battery.ts",
+    "audit:parse-success": "bun run script/m14/verify-parse-success.ts",
     "audit:fixture-coverage": "bun run script/m14/verify-fixture-coverage.ts",
     "audit:fixture-coverage-selftest": "bun run script/m14/verify-fixture-coverage.ts --selftest",
     "audit:hygiene-selftest": "bun run script/m14/verify-analyzer-hygiene.ts --selftest",

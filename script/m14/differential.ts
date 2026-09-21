@@ -242,7 +242,7 @@ export function readCodeInputs(root: string): CodeInputs {
 // `files=0`), and the single-pin corpusPins emission silently DISCARDED the
 // historical multi-repo pin set on every run. Default now sweeps one honest
 // repo per language; --repo <name> still restricts to a single repo.
-const LANG_REPOS: Record<string, string> = {
+export const LANG_REPOS: Record<string, string> = {
   java: "grails-core",
   groovy: "grails-core",
   kotlin: "Exposed",
@@ -278,7 +278,7 @@ const LANG_REPOS: Record<string, string> = {
 // maps exactly like the primary rows, so regressions on EITHER corpus block
 // release. Each repo is an independent git checkout under CORPUS_ROOT whose
 // pin is recorded in corpusPins.
-const SECOND_CORPUS: Record<string, string> = {
+export const SECOND_CORPUS: Record<string, string> = {
   java: "clojure",
   groovy: "geb",
   kotlin: "kotlinx-coroutines",
@@ -340,7 +340,7 @@ const CHILD_SLICE = (() => {
 const NO_BATCH = process.argv.includes("--no-batch")
 const BATCH_SIZE = process.env.BB_F5_BATCH_SIZE ? parseInt(process.env.BB_F5_BATCH_SIZE) : 8
 
-const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
       typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
