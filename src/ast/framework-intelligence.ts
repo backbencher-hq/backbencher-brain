@@ -6,6 +6,28 @@ import type { Node } from "web-tree-sitter"
 
 export namespace FrameworkIntelligence {
 
+  /**
+   * The two policy sets that decide what a LEGITIMATE primary framework looks like.
+   *
+   * They were local to `enhanceWithFrameworkIntelligence` until M60.R8 (CONV-OC-1) needed
+   * them: the runtime half of the framework-surface rule reads the PUBLISHED payload, and
+   * the published payload deliberately keeps a primary when nothing was detected —
+   * `"unknown"`, or a pure-language name such as `"Dart"`. Without these lists the
+   * instrument cannot tell that documented default from a fabricated framework, so it
+   * convicted 1,000+ real corpus files for the pipeline's stated policy. Exported rather
+   * than re-listed in the probe, because a second copy of a policy is a second policy.
+   */
+  export const PURE_LANGUAGE_PRIMARIES: ReadonlySet<string> = new Set([
+    "JavaScript", "TypeScript", "Python", "Ruby", "Java", "C#", "C++", "C",
+    "Go", "Rust", "SQL", "Dart", "Objective-C", "YAML", "JSON", "Lua",
+    "R", "Haskell", "Scala", "Clojure", "Groovy", "Elixir", "PHP",
+    "Swift", "Kotlin", "Erlang", "Bash", "unknown",
+  ])
+  export const TOOLING_DEFAULTS: ReadonlySet<string> = new Set([
+    "stl", "win32", "POSIX", "Standard Library", "Standard C Library",
+    "test-framework", "cmake",
+  ])
+
   export interface FrameworkPattern {
     name: string
     framework: string
@@ -887,16 +909,10 @@ export namespace FrameworkIntelligence {
   // HTML "HTML5", Vue "Vue", Svelte "Svelte", C "Standard C Library",
   // Bash "Bash Script", HCL "HCL/Terraform", Java "spring", PHP "Laravel",
   // Haskell "Servant" — are treated as real primaries and never overwritten.
-  const PURE_LANGUAGE_PRIMARIES = new Set<string>([
-    "JavaScript", "TypeScript", "Python", "Ruby", "Java", "C#", "C++", "C",
-    "Go", "Rust", "SQL", "Dart", "Objective-C", "YAML", "JSON", "Lua",
-    "R", "Haskell", "Scala", "Clojure", "Groovy", "Elixir", "PHP",
-    "Swift", "Kotlin", "Erlang", "Bash", "unknown",
-  ])
-  const TOOLING_DEFAULTS = new Set<string>([
-    "stl", "win32", "POSIX", "Standard Library", "Standard C Library",
-    "test-framework", "cmake",
-  ])
+  // The two policy sets are module-scope exports above (M60.R8): the rule they encode —
+  // which primaries are honest defaults rather than framework claims — has to be readable
+  // by the instruments that verify this function's output, or they will re-derive it and
+  // convict the policy.
 
   // --------------------------------------------------------------------------
   // Detection canonicalization

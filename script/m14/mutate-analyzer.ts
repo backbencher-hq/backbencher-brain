@@ -7355,6 +7355,109 @@ const MUTANTS: Mutant[] = [
       }
     },
   },
+  // --------------------------------------------------------------------------
+  // M60.R8 (#838/#836): the swift framework trigger surface. Three mutants: the
+  // order regression (the pre-fix observable), and the two contract keys the lane
+  // did not publish at all before this round.
+  // --------------------------------------------------------------------------
+  {
+    id: "swift/framework-walk-order",
+    language: "swift",
+    defectClass: "nondeterministic-primary-pick",
+    description:
+      "R8 (M60) regression: the emitted array goes back to the OBSERVATION-map order, which is the pre-fix observable — the analyzer iterated `frameworksObj` and pushed as it went, so the payload was whichever order the walk visited triggers in. Caught by swift/framework-surface-pins, which imports Foundation and UIKit FIRST and pins [SwiftUI, Combine, UIKit, Foundation] with SwiftUI as the primary pick: the mutant emits [Foundation, UIKit, SwiftUI, Combine] and picks Foundation, so the array pin, the primary pin and the patterns pin all fail.",
+    transform: r => {
+      const det: string[] = (r.metadata as any)?.detectedFrameworks ?? []
+      // the pre-fix order for this fixture: imports first (Foundation, UIKit, SwiftUI,
+      // Combine), then anything only the wrapper handler saw. Reproduced by reversing
+      // the two halves rather than hardcoding, so the mutant stays a real reordering.
+      const pre = ["Foundation", "UIKit", "SwiftUI", "Combine"].filter((f) => det.indexOf(f) !== -1)
+      for (const f of det) if (pre.indexOf(f) === -1) pre.push(f)
+      const pats: any[] = (r.metadata as any)?.frameworkPatterns ?? []
+      const byName = new Map(pats.map((p: any) => [p.framework, p]))
+      return {
+        ...r,
+        metadata: {
+          ...(r.metadata ?? {}),
+          detectedFrameworks: pre,
+          framework: pre[0],
+          frameworkPatterns: pre.map((f) => byName.get(f)).filter(Boolean),
+        },
+      }
+    },
+  },
+  {
+    id: "swift/framework-primary-pick-dropped",
+    language: "swift",
+    defectClass: "missing-contract-key",
+    description:
+      "R8 (M60) regression: the lane detects frameworks and publishes no PRIMARY PICK, which is exactly what swift did before this round — measured at 0 of 81 detecting files on the deterministic draw. Every consumer that keys on the primary framework then reads an iOS file as framework-less while `detectedFrameworks` says otherwise. Caught by swift/framework-surface-pins' expectPrimaryFramework and by the R8 runtime probe's A3 assertion.",
+    transform: r => {
+      const m: any = { ...(r.metadata ?? {}) }
+      delete m.framework
+      return { ...r, metadata: m }
+    },
+  },
+  {
+    id: "swift/framework-patterns-dropped",
+    language: "swift",
+    defectClass: "missing-contract-key",
+    description:
+      "R8 (M60) regression: the lane publishes the detection array without `frameworkPatterns` — the other half of the contract the lane never emitted before this round. The two keys are not redundant: detection says WHICH framework, the patterns say what was observed and therefore why. Caught by swift/framework-surface-pins' frameworkPatterns metadata pin, which pins the whole array and its order.",
+    transform: r => {
+      const m: any = { ...(r.metadata ?? {}) }
+      delete m.frameworkPatterns
+      return { ...r, metadata: m }
+    },
+  },
+  // --------------------------------------------------------------------------
+  // M60.R8 (CONV-OC-1): the objective-c framework trigger surface. Two mutants,
+  // both faithful reverts of this lane's own pre-fix observable — the order the
+  // Set's insertion produced (which is the file's `#import` order), and the
+  // missing `frameworkPatterns` key the census registered.
+  // --------------------------------------------------------------------------
+  {
+    id: "objc/framework-import-order",
+    language: "objc",
+    defectClass: "nondeterministic-primary-pick",
+    description:
+      "R8 (M60) regression: the emitted array goes back to the SET'S INSERTION ORDER, which is the pre-fix observable — the analyzer published `[...frameworks]` and picked `[...frameworks][0]`, so the payload was the order the `#import` statements happened to be walked in. Caught by objc/framework-surface-pins, which imports Foundation and Cocoa FIRST and pins [UIKit, AppKit, Cocoa, Foundation] with UIKit as the primary pick: the mutant emits [Foundation, Cocoa, AppKit, UIKit] and picks Foundation — the base library every Objective-C file imports, reported as the primary framework of a UIKit view.",
+    transform: r => {
+      const det: string[] = (r.metadata as any)?.detectedFrameworks ?? []
+      // Derived from the result's OWN import list, not from a hardcoded order: the pre-fix
+      // order IS import order, so this stays a faithful revert on any fixture. Frameworks
+      // whose module is not among the imports keep their relative position at the end.
+      const modules: string[] = (r.imports ?? []).map((i: any) => String(i.module ?? ""))
+      const rank = (f: string) => {
+        const at = modules.findIndex((m) => m.includes(f))
+        return at === -1 ? modules.length : at
+      }
+      const pre = [...det].sort((a, b) => rank(a) - rank(b))
+      const pats: any[] = (r.metadata as any)?.frameworkPatterns ?? []
+      const byName = new Map(pats.map((p: any) => [p.framework, p]))
+      return {
+        ...r,
+        metadata: {
+          ...(r.metadata ?? {}),
+          detectedFrameworks: pre,
+          framework: pre[0],
+          frameworkPatterns: pre.map((f) => byName.get(f)).filter(Boolean),
+        },
+      }
+    },
+  },
+  {
+    id: "objc/framework-patterns-dropped",
+    language: "objc",
+    defectClass: "missing-contract-key",
+    description:
+      "R8 (M60) regression: the lane goes back to publishing `detectedFrameworks` and a primary pick and NOTHING ELSE — the state the census registered as missing-contract-key and the runtime half measured on 7 of 7 detecting files over 153 real corpus files. `frameworkPatterns` is not a redundant copy of detection: it says what was observed and therefore why the framework is claimed. Caught by objc/framework-surface-pins' frameworkPatterns metadata pin, and by the R8 runtime probe's A7 assertion — which exists because this exact shape measured CLEAN before it was added.",
+    transform: r => {
+      const m: any = { ...(r.metadata ?? {}) }
+      delete m.frameworkPatterns
+      return { ...r, metadata: m }
+    },
+  },
   {
     id: "haskell/drop-tuple-superclass",
     language: "haskell",
