@@ -53,14 +53,72 @@ export function csharpCleanTypeLeaf(text: string): string {
   return (br > 0 ? noQ.slice(0, br) : noQ).trim()
 }
 
+/**
+ * The CANONICAL text of a type / namespace name: whitespace runs collapse to one
+ * space, spaces next to a `.` are removed, and the result is trimmed.
+ *
+ * C# lets a qualified name WRAP (the grammar allows whitespace between the `.`
+ * and the next identifier, or before the dot), and the target of a relationship
+ * is the NAME, never the layout. Measured (script/m14/tmp/cs-wrapped-qualified.ts):
+ * `using System\n    .Collections.Generic;` parsed with the target text
+ * `"System\n    .Collections.Generic"` and `class C :\n    System.\n        IDisposable`
+ * with `"System.\n        IDisposable"` — the ruby lane's D3 class, found on this
+ * lane by probing the same shape rather than assuming it away. Single-line names
+ * are unchanged by construction. Shared with the differential's C# truth
+ * derivation, so the two sides clean identically (lockstep, CSD14's rule).
+ * Zero-regex char scan (R2).
+ */
+export function csharpTypeNameText(text: string): string {
+  const out: string[] = []
+  let pendingSpace = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\f" || ch === "\v") {
+      if (out.length > 0) pendingSpace = true
+      continue
+    }
+    if (pendingSpace) {
+      const last = out[out.length - 1]
+      if (last !== "." && ch !== ".") out.push(" ")
+      pendingSpace = false
+    }
+    out.push(ch)
+  }
+  return out.join("")
+}
+
+/** The node types that can CARRY a declared type — module-level so the M59.A7
+ *  line stamp and the text extraction resolve the SAME holder through ONE
+ *  definition (two copies of this set would be free to drift apart). */
+const CSHARP_DECLARED_TYPE_NODES = new Set([
+  "identifier", "generic_name", "qualified_name", "predefined_type",
+  "array_type", "pointer_type", "nullable_type", "ref_type", "tuple_type",
+])
+
+/** The declaration node types this analyzer turns into SYMBOLS whose name is a
+ *  `name` field (or, for an indexer, the `this` keyword). Used by the M59.A7
+ *  containment stamp (#825) to find the line a member's NAME is written on, so
+ *  the set has to mirror the symbol pass — a type missing here is a member whose
+ *  containment edge falls back to the declaration's start line, which is the
+ *  pre-existing behaviour rather than a wrong claim. `field_declaration` and
+ *  `event_field_declaration` are NOT here (their names live on the declarators,
+ *  which the collector walks separately) and neither is `destructor_declaration`
+ *  (its symbol name is synthesised — see collectContainmentSites). */
+const CSHARP_SYMBOL_DECLARATIONS = new Set([
+  "namespace_declaration", "file_scoped_namespace_declaration",
+  "class_declaration", "struct_declaration", "interface_declaration",
+  "record_declaration", "record_struct_declaration", "enum_declaration",
+  "enum_member_declaration", "delegate_declaration", "event_declaration",
+  "operator_declaration", "conversion_operator_declaration",
+  "method_declaration", "constructor_declaration",
+  "property_declaration", "indexer_declaration",
+])
+
 export function csharpMemberDeclaredTypeText(memberLike: any): string | null {
   // A member-LIKE node is any declaration that carries (or wraps) a declared
   // type: field_declaration > variable_declaration, property/indexer, or a
   // variable_declarator whose type lives on the enclosing variable_declaration.
-  const TYPES = new Set([
-    "identifier", "generic_name", "qualified_name", "predefined_type",
-    "array_type", "pointer_type", "nullable_type", "ref_type", "tuple_type",
-  ])
+  const TYPES = CSHARP_DECLARED_TYPE_NODES
 
   const resolveHolder = (holder: any, nameFieldChild: any): string | null => {
     // Preferred: the explicit `type` FIELD (never the declarator name).
@@ -101,7 +159,22 @@ export function csharpMemberDeclaredTypeText(memberLike: any): string | null {
   return resolveHolder(holder, nameFieldChild)
 }
 
-export function csharpResolveTargetTypedNew(nodeLike: any, memberTypes?: Map<string, string>): string | null {
+/**
+ * WHERE a target-typed `new()` gets its construction target.
+ *
+ * ONE walk, TWO consumers — CSD14's rule, extended by M59.A7 (#825): the
+ * differential oracle needs the resolution's *text*, and the analyzer's line
+ * stamp needs the resolution's *site* (the declaration that writes the target
+ * name). Two copies of this walk would be free to disagree about which
+ * declaration answered — and a line stamp derived from a walk the oracle does
+ * not share is exactly the kind of claim the line round exists to make
+ * checkable. So the walk returns the site, and the text is derived from it.
+ */
+export type CSharpTargetTypedNewSite =
+  | { kind: "declaration"; decl: any; isElement: boolean }
+  | { kind: "assignment"; memberName: string; isElement: boolean }
+
+export function csharpTargetTypedNewSite(nodeLike: any): CSharpTargetTypedNewSite | null {
   // Walk UP from the implicit new: collect whether we crossed an element
   // position (collection_expression / collection_element / initializer of an
   // array creation) and bail when we cross an enclosing object_creation
@@ -134,23 +207,30 @@ export function csharpResolveTargetTypedNew(nodeLike: any, memberTypes?: Map<str
     }
     if (cur.type === "variable_declarator" || cur.type === "property_declaration" ||
         cur.type === "indexer_declaration" || cur.type === "field_declaration") {
-      const declared = csharpMemberDeclaredTypeText(cur)
-      if (!declared) return null
-      if (declared === "var") return null
-      return csharpTargetFromDeclaredType(declared, isElement)
+      return { kind: "declaration", decl: cur, isElement }
     }
     if (cur.type === "assignment_expression") {
       const lhs = cur.childForFieldName?.("left")
-      if (lhs && memberTypes) {
-        const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
-        const declared = name ? memberTypes.get(name) : undefined
-        if (declared) return csharpTargetFromDeclaredType(declared, isElement)
-      }
-      return null
+      if (!lhs) return null
+      const name = lhs.type === "identifier" ? lhs.text : (lhs.childForFieldName?.("name")?.text ?? "")
+      return name ? { kind: "assignment", memberName: name, isElement } : null
     }
     cur = cur.parent
   }
   return null
+}
+
+export function csharpResolveTargetTypedNew(nodeLike: any, memberTypes?: Map<string, string>): string | null {
+  const site = csharpTargetTypedNewSite(nodeLike)
+  if (!site) return null
+  if (site.kind === "declaration") {
+    const declared = csharpMemberDeclaredTypeText(site.decl)
+    if (!declared) return null
+    if (declared === "var") return null
+    return csharpTargetFromDeclaredType(declared, site.isElement)
+  }
+  const declared = memberTypes?.get(site.memberName)
+  return declared ? csharpTargetFromDeclaredType(declared, site.isElement) : null
 }
 
 export function csharpTargetFromDeclaredType(typeText: string, isElement: boolean): string {
@@ -195,6 +275,11 @@ interface OverrideTask {
   methodName: string
   signature: string
   ownerFqn: string
+  /** M59.A7 (#825): the line of the OVERRIDING declaration — the node that
+   *  writes the overriding name. The target (the base member) is external, so
+   *  the overriding symbol's own declaration is the family contract's site
+   *  (same rule as ruby's `overrides` stamp). */
+  line?: number
 }
 
 interface StackItem {
@@ -266,7 +351,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (`_items = new();` in a constructor) can resolve through the assignment
     // LHS regardless of declaration order.
     const memberTypes = new Map<string, string>()
-    this.collectMemberTypes(rootNode, memberTypes)
+    // M59.A7 (#825): the declared-type NODE per member name. A target-typed
+    // `new()` resolves its target through this table (CSD14's assignment form),
+    // so the table has to carry the node and not only the text — otherwise the
+    // only claimable line would be the assignment's, where the target name is
+    // not written at all.
+    const memberTypeNodes = new Map<string, Node>()
+    this.collectMemberTypes(rootNode, memberTypes, memberTypeNodes)
 
     const scopeStack: Scope[] = []
     // File-scoped namespaces (C# 10: `namespace A.B;`) apply to every type
@@ -339,7 +430,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `global::X.Y` is captured raw (honest full path).
           const nameNode2 =
             this.findChild(node, (n) => n.type === "qualified_name") || nameNode
-          const text = nameNode2.text
+          // M59.A7 (#825): the canonical name, never the layout — a wrapped
+          // qualified name (`using System\n  .Collections;`) carries a newline in
+          // its raw text, which is not a module name (the ruby D3 class).
+          const text = csharpTypeNameText(nameNode2.text)
           const aliasMatch = /using\s+([\w.]+)\s*=/.exec(node.text)
           imports.push({
             module: text,
@@ -353,6 +447,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: text,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
+            // M59.A7 (#825): the line of the node that NAMES the target — the
+            // qualified_name / identifier the using directive writes, which for
+            // the alias form (`using A = B.C;`) is the TARGET, never the alias.
+            // `nodeNamingToken` descends to the last segment's own node, so a
+            // WRAPPED qualified name stamps the line its leaf is written on
+            // rather than the line the name starts on.
+            line_number: this.nodeLine(this.nodeNamingToken(nameNode2, text) ?? nameNode2),
             // isImport (family contract — c/go emit import deps with isImport)
             // lets the completeness section-B `imports` pin and the tier
             // classifier mark this import_based.
@@ -475,6 +576,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const baseList = this.findChild(node, "base_list")
         if (baseList) {
           const baseTypes: string[] = []
+          // M59.A7 (#825): the base type's OWN node, in lockstep with the name —
+          // a wrapped base list (`class D :` / `  Base`) writes `Base` on a
+          // different line than the `:`, so the base_list node would stamp the
+          // wrong one. `null` is an honest no-line.
+          const baseNodes: Array<Node | null> = []
           for (let i = 0; i < baseList.namedChildCount; i++) {
             const baseType = baseList.namedChild(i)
             if (!baseType) continue
@@ -486,21 +592,29 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // base_list (the argument_list is not a base type — skip it).
             if (baseType.type === "primary_constructor_base_type") {
               const tn = this.findChild(baseType, (n) => n.type === "identifier" || n.type === "generic_name")
-              if (tn) baseTypes.push(this.cleanTypeName(tn.text))
+              if (tn) {
+                baseTypes.push(this.cleanTypeName(tn.text))
+                baseNodes.push(tn)
+              }
               continue
             }
             if (baseType.type === "argument_list") continue
-            baseTypes.push(this.cleanTypeName(baseType.text))
+            // M59.A7 (#825): canonical text (a wrapped qualified base carries a
+            // newline in its raw text — see csharpTypeNameText).
+            baseTypes.push(this.cleanTypeName(csharpTypeNameText(baseType.text)))
+            baseNodes.push(baseType)
           }
           if (isInterface) {
             // All base types of an interface are extended interfaces.
-            for (const b of baseTypes) {
+            for (let i = 0; i < baseTypes.length; i++) {
+              const b = baseTypes[i]
               parents.push(b)
               relationships.push({
                 source: fullName,
                 target: b,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
+                line_number: this.nodeLine(this.nodeNamingToken(baseNodes[i], b) ?? baseNodes[i]),
                 metadata: { isInterfaceBase: true },
               })
             }
@@ -540,6 +654,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: b,
                 type: isImplements ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
+                // the leaf's own node: a wrapped qualified base writes its last
+                // segment on a different line than the name starts on
+                line_number: this.nodeLine(this.nodeNamingToken(baseNodes[i], b) ?? baseNodes[i]),
                 metadata: { isImplements },
               })
             }
@@ -793,6 +910,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target,
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.95,
+            // M59.A7 (#825): the `base`/`this` KEYWORD, not the initializer: the
+            // node starts at the `:` and a wrapped initializer writes the
+            // keyword on the next line. Both tokens are anonymous children.
+            line_number: this.nodeLine(this.initializerKeywordNode(node)),
             metadata: { isConstructorInitializer: true },
           })
         }
@@ -821,15 +942,81 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         let sigParams = ""
         const paramList = this.findChild(node, "parameter_list")
         if (paramList) {
-          for (let i = 0; i < paramList.namedChildCount; i++) {
-            const p = paramList.namedChild(i)
-            if (p && p.type === "parameter") {
-              const pName = p.childForFieldName("name")?.text || this.childText(p, "identifier") || "anonymous"
-              const pType = p.childForFieldName("type")?.text || this.extractTypeString(p) || "unknown"
-              if (p.text.startsWith("this ")) isExtensionMethod = true
-              parameters.push({ name: pName, type: pType })
+          // The parameter list is read from ALL children, not only the named
+          // `parameter` ones, because `params` parameters are the one shape
+          // tree-sitter-c-sharp does NOT wrap: `params string[] a` puts the
+          // ANONYMOUS `params` token, the array_type and the identifier as
+          // DIRECT children of the parameter_list (probe:
+          // script/m14/tmp/cs-params-modifier.ts), so the old named-only loop
+          // silently dropped every `params` parameter — from the published
+          // payload AND from the overload signature. The bare form is accepted
+          // ONLY behind the `params` token, so nothing else is guessed, and the
+          // modifier is modelled the way java models varargs: the array type IS
+          // the published type (`params string[] a` -> `string[]`).
+          let inParamsForm = false
+          let paramsTypeNode: Node | null = null
+          for (let i = 0; i < paramList.childCount; i++) {
+            const child = paramList.child(i)
+            if (!child) continue
+            const childType = child.type
+            if (childType === "params") {
+              inParamsForm = true
+              paramsTypeNode = null
+              continue
+            }
+            if (childType === "parameter") {
+              inParamsForm = false
+              paramsTypeNode = null
+              const pName = child.childForFieldName("name")?.text || this.childText(child, "identifier") || "anonymous"
+              const pTypeField = child.childForFieldName("type")?.text
+              // M60.R7 paydown (csharp lane, 2026-09-22): a parameter whose type
+              // cannot be resolved publishes NO type, never the placeholder
+              // `"unknown"` the census adjudicated as a fabricated value — the
+              // family convention is already `type: undefined` (groovy/kotlin).
+              // And `extractTypeString`'s last-resort scan can land on the
+              // parameter's OWN NAME on a damaged list (`void M(int a, b)` ->
+              // type `"b"`, measured), which is the same fabrication class: a
+              // value in a type field that is not a type. Neither branch is
+              // reachable on a well-formed corpus (measured: 0 of 12,946
+              // published parameters over 400 powershell files), so both are
+              // pinned by the fixture instead.
+              let pType = pTypeField || this.extractTypeString(child) || undefined
+              if (!pTypeField && pType && pType === pName) pType = undefined
+              if (child.text.startsWith("this ")) isExtensionMethod = true
+              parameters.push(pType ? { name: pName, type: pType } : { name: pName })
               if (sigParams.length > 0) sigParams += ","
-              sigParams += pType
+              // The signature is an overload-IDENTITY key, never a published
+              // name: an unresolved type contributes the parameter AS WRITTEN,
+              // which is the most informative honest token available and cannot
+              // collide with a type the resolver would have extracted.
+              sigParams += pType ?? csharpTypeNameText(child.text)
+              continue
+            }
+            if (!inParamsForm) continue
+            if (!paramsTypeNode && CSHARP_DECLARED_TYPE_NODES.has(childType)) {
+              paramsTypeNode = child
+              continue
+            }
+            if (childType === "identifier" || childType === "generic_name" || childType === "qualified_name") {
+              const pName = csharpTypeNameText(child.text)
+              // An EMPTY name is not a name. The grammar's recovery for a nameless
+              // `params` parameter still inserts an `identifier` child and writes
+              // NOTHING in it (tree, measured with script/m14/tmp/cs-param-noname-tree.ts:
+              // `void M(params int[])` -> `array_type(int[])` then `identifier ""`),
+              // so reading the node's text published `{ name: "" }` — a name-bearing
+              // field holding a blank, which is the same fabrication class as the
+              // `"unknown"` literal this round removed. The source writes no name, so
+              // the honest state is NO parameter, and the type it could have carried
+              // is genuinely unattributable: `params int[]` with no parameter has no
+              // symbol to hang `int[]` on.
+              if (pName.length > 0) {
+                const pType = paramsTypeNode ? csharpTypeNameText(paramsTypeNode.text) : undefined
+                parameters.push(pType ? { name: pName, type: pType } : { name: pName })
+                if (sigParams.length > 0) sigParams += ","
+                sigParams += pType ?? pName
+              }
+              inParamsForm = false
+              paramsTypeNode = null
             }
           }
         }
@@ -873,6 +1060,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             methodName: name,
             signature,
             ownerFqn,
+            // M59.A7 (#825): the NAME node, not the declaration's start — an
+            // attribute above the override would otherwise be the claimed site
+            // of a name written on the next line.
+            line: this.nodeLine(this.declarationNameNode(node)),
           })
         }
 
@@ -925,6 +1116,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           continue
         }
         const callExpr = this.buildCSharpCallExpression(node)
+        // M59.A7 (#825, depth-draw finding): the callee NODE, needed both for
+        // the line stamp and for the name-node hygiene below.
+        const calleeNode = this.csharpCallCalleeNode(node)
         // Call sites live in method bodies AND constructor/property/indexer
         // bodies (csharp #264 Station-6: calls inside a constructor like
         // `this._list.Add(...)` were silently dropped because the guard
@@ -968,12 +1162,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isCSharpKeyword = CSHARP_KEYWORDS.has(target)
           // ≡ /^[A-Za-z_][A-Za-z0-9_]*$/ — full-string identifier shape
           // (cpp isPlainIdentifier twin; same \w class semantics).
-          if (!isCSharpKeyword && this.isPlainIdentifier(target) && !this.isCSharpBuiltin(callExpr)) {
+          if (!isCSharpKeyword && this.isPlainIdentifier(target) && !this.isCSharpBuiltin(callExpr) && this.isCSharpCalleeNameNode(calleeNode)) {
             relationships.push({
               source: callSource,
               target,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
+              // M59.A7 (#825): the CALLEE LEAF, never the call node — an
+              // invocation starts at its receiver, so `helper\n  .Strip()`
+              // would otherwise be stamped on the receiver's line.
+              line_number: this.nodeLine(this.csharpCallCalleeNode(node)),
               metadata: { csharpCallExpression: callExpr },
             })
           }
@@ -989,6 +1187,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: this.cleanTypeName(typeNode.text),
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            line_number: this.nodeLine(typeNode),
             metadata: { isNew: true },
           })
         }
@@ -1003,6 +1202,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: declaredType,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            line_number: this.nodeLine(
+              this.targetTypedNewTypeNode(node, memberTypes, memberTypeNodes, declaredType),
+            ),
             metadata: { isNew: true, isImplicit: true },
           })
         }
@@ -1125,6 +1327,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // M59.A7 (#825): where each symbol's NAME is written (see the collector for
+    // why the symbol's range start is not it).
+    const containmentSites = this.collectContainmentSites(rootNode)
+
     // Contains: owner -> owned members via ownerName (top-level declarations
     // inside a namespace have the namespace as owner).
     for (const s of symbols) {
@@ -1135,6 +1341,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // M59.A7 (#825): the member's own declaration — but the line its NAME
+          // is written on, which is NOT always the declaration's start line: an
+          // attribute (`[Parameter]`) or a wrapped signature puts the name a
+          // line or more later. Measured on a 200-file draw: the range-start
+          // stamp claimed a line the target is not written on for 653 of 23,924
+          // relationships, every one of them this shape.
+          line_number: this.containmentLine(s, containmentSites),
           metadata: {},
         })
       }
@@ -1317,7 +1530,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // resolveImplicitNewType). Locals are NOT collected — a local resolved
   // through an assignment LHS would need a locals map with block scoping;
   // out of scope here, honestly unresolved instead.
-  private collectMemberTypes(rootNode: Node, memberTypes: Map<string, string>): void {
+  private collectMemberTypes(
+    rootNode: Node,
+    memberTypes: Map<string, string>,
+    memberTypeNodes: Map<string, Node>,
+  ): void {
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
@@ -1348,13 +1565,114 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nm = n.childForFieldName("name")?.text || this.childText(n, "identifier")
           if (nm) names.push(nm)
         }
+        const declaredTypeNode = this.memberDeclaredTypeNode(n)
         if (declaredType) for (const nm of names) if (!memberTypes.has(nm)) memberTypes.set(nm, declaredType)
+        if (declaredTypeNode) for (const nm of names) if (!memberTypeNodes.has(nm)) memberTypeNodes.set(nm, declaredTypeNode)
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const child = n.namedChild(i)
         if (child) stack.push(child)
       }
     }
+  }
+
+  /**
+   * M59.A7 (#825): where each SYMBOL's name is written.
+   *
+   * The containment edge's contract is "the line of the node that NAMES the
+   * target", and for a member that node is the declaration's NAME — which the
+   * symbol's `range` cannot stand in for, because the range starts at the
+   * declaration node and a C# declaration can begin a line or more before its
+   * name (attributes such as `[Parameter]`, modifiers on their own line, a
+   * wrapped signature). One walk over the declarations this analyzer turns into
+   * symbols, keyed by the declaration's start index AND its name, because the
+   * start index alone is ambiguous: a multi-declarator field (`int a, b;`)
+   * produces two symbols that share the field_declaration's range. Keying by
+   * name is also what makes the mapping self-protecting — a symbol whose name the
+   * declaration does NOT write (a constructor is named `constructor`, an
+   * operator `operator +`) finds no entry here and so can never claim a line the
+   * target is not written on.
+   */
+  private collectContainmentSites(rootNode: Node): {
+    named: Map<string, number>
+    synthesized: Set<number>
+  } {
+    const named = new Map<string, number>()
+    const synthesized = new Set<number>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const t = n.type
+      if (t === "field_declaration" || t === "event_field_declaration") {
+        // The member names live on the declarators — one symbol per name.
+        const varDecl = this.findChild(n, "variable_declaration")
+        if (varDecl) {
+          for (let i = 0; i < varDecl.namedChildCount; i++) {
+            const d = varDecl.namedChild(i)
+            if (!d || d.type !== "variable_declarator") continue
+            const id = this.findChild(d, "identifier")
+            if (id) named.set(`${n.startIndex}\u0000${id.text}`, id.startPosition.row + 1)
+          }
+        }
+      } else if (t === "destructor_declaration" || t === "constructor_declaration") {
+        // Two declarations whose SYMBOL name the source never writes: a
+        // destructor is named `Finalize` (written `~ClassName`) and a constructor
+        // is named `constructor` (written `<ClassName>(...)`). No line in the
+        // file can be the site of either name, so the honest state is NO line —
+        // the same state java's synthesised members take, and the state the
+        // oracle's own phantom rule calls correct (it counts a synthesised
+        // member's containment edge CLAIMING a line as a definite defect).
+        // Measured on the 200-file draw before this rule: 366 constructor edges
+        // claimed the declaration's start line, which for an attributed
+        // constructor is the ATTRIBUTE's line (`[Obsolete(...)]`) — a claim the
+        // token check can only classify as uncheckable, never as true.
+        synthesized.add(n.startIndex)
+      } else if (CSHARP_SYMBOL_DECLARATIONS.has(t)) {
+        const nameNode = this.declarationNameNode(n)
+        if (nameNode) named.set(`${n.startIndex}\u0000${nameNode.text}`, nameNode.startPosition.row + 1)
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return { named, synthesized }
+  }
+
+  /**
+   * The containment edge's line: the NAME node where the declaration writes the
+   * symbol's name, the declaration's own start line otherwise (a synthesised or
+   * rewritten name still has a navigable declaration, and the oracle classifies
+   * an uncheckable target as `notCheckable` rather than as a failed claim), and
+   * NO line for a declaration whose symbol name is written nowhere in the file.
+   */
+  private containmentLine(
+    s: ASTEngine.UniversalSymbol,
+    sites: { named: Map<string, number>; synthesized: Set<number> },
+  ): number | undefined {
+    const start = s.range?.startIndex
+    if (typeof start !== "number") return undefined
+    if (sites.synthesized.has(start)) return undefined
+    return sites.named.get(`${start}\u0000${s.name}`) ?? s.range?.startLine
+  }
+
+  /**
+   * The node that WRITES a declaration's name — the symbol pass's own rule
+   * (`childForFieldName("name")`, then the first identifier), plus the one shape
+   * where the name is not a field: an indexer's symbol is named `this`, which the
+   * grammar writes as an anonymous keyword child.
+   */
+  private declarationNameNode(node: Node): Node | null {
+    const field = node.childForFieldName("name")
+    if (field) return field
+    if (node.type === "indexer_declaration") {
+      for (let i = 0; i < node.childCount; i++) {
+        const child = node.child(i)
+        if (child && child.type === "this") return child
+      }
+      return null
+    }
+    return this.findChild(node, "identifier")
   }
 
   private collectDeclaredTypeKinds(rootNode: Node, typeKinds: Map<string, string>): void {
@@ -1444,6 +1762,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 1.0,
+          line_number: task.line,
           metadata: { relationshipType: "method_override", isCSharpOverride: true },
         })
       }
@@ -1527,6 +1846,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: tgt,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.7,
+                // M59.A7 (#825): the member-access NAME field (`obj\n  .Radius`
+                // writes Radius on line 2, the access node starts on line 1).
+                line_number: this.nodeLine(field),
                 metadata: { relationshipType: "csharp_field_access", fieldAccess: key },
               })
             }
@@ -2135,6 +2457,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: name,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
+              // M59.A7 (#825): the identifier node IS the node that names the
+              // target (this pass visits the read itself).
+              line_number: this.nodeLine(node),
               metadata: { relationshipType: "identifier_usage", nodeType: node.type },
             })
           }
@@ -2525,6 +2850,206 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return attrs
+  }
+
+  /**
+   * M59.A7 (#825): the 1-based line of the node that NAMES an edge's target.
+   *
+   * The contract is the family's, not this file's: a relationship's
+   * `line_number` is the line where the TARGET is written — the callee for a
+   * call, the read for a member use, the constructed type for an instantiation,
+   * the symbol's own declaration for contains/overrides. It is checked
+   * independently by script/m59/oracle-callsite.ts, which re-derives every edge
+   * from the tree and requires the target token to appear on the claimed line.
+   *
+   * Three shapes are traps and all three were measured on this lane (probe:
+   * script/m14/tmp/cs-line-shapes.ts) rather than assumed:
+   *   * an invocation node starts at its RECEIVER, so `helper\n  .Strip()` needs
+   *     the callee leaf, not the call node;
+   *   * a `constructor_initializer` starts at its `:` and `base`/`this` are
+   *     anonymous children, so a wrapped initializer needs the keyword token or
+   *     it lands one line early;
+   *   * a target-typed `new()` names NO type at the call site at all — the
+   *     target is written in the DECLARATION (see targetTypedNewTypeNode).
+   *
+   * `undefined` is a first-class answer. A node that does not exist contributes
+   * NO line rather than a fabricated 0, which is the rule `0 means unknown and
+   * unknown must be absent` (#820/#821) applied to this field.
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
+  }
+
+  /**
+   * The `base` / `this` keyword of a constructor_initializer.
+   *
+   * Both are ANONYMOUS tokens in tree-sitter-c-sharp, so findChild (named
+   * children only) cannot see them, and the initializer node itself starts at
+   * the `:`. Measured: `public C(int x)\n  :\n    base(x)` puts the colon on 3
+   * and the keyword on 4 — the keyword is the node that names the target.
+   */
+  private initializerKeywordNode(node: Node): Node | null {
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i)
+      if (child && (child.type === "base" || child.type === "this")) return child
+    }
+    return null
+  }
+
+  /**
+   * The node that CARRIES a declaration's declared type.
+   *
+   * Mirrors csharpMemberDeclaredTypeText's holder resolution exactly (the same
+   * three shapes: field_declaration > variable_declaration, a variable_declarator
+   * whose type lives on the enclosing variable_declaration, and property/
+   * indexer/other declarations that hold the type themselves), because the two
+   * must never disagree about WHICH declaration answered — one writes the text,
+   * the other is used for the line stamp.
+   */
+  private memberDeclaredTypeNode(memberLike: Node | null): Node | null {
+    if (!memberLike) return null
+    let holder: Node | null = memberLike
+    if (memberLike.type === "field_declaration") {
+      holder = this.findChild(memberLike, "variable_declaration")
+    } else if (memberLike.type === "variable_declarator" && memberLike.parent?.type === "variable_declaration") {
+      holder = memberLike.parent
+    }
+    if (!holder) return null
+    const typeField = holder.childForFieldName("type")
+    if (typeField) return typeField
+    // Fallback: the first direct type-ish child that is not the node's NAME
+    // field — the same CSD14 guard csharpMemberDeclaredTypeText carries (a
+    // declaration's own name must never read as its type).
+    const nameChild = holder.childForFieldName("name")
+    for (let i = 0; i < holder.namedChildCount; i++) {
+      const child = holder.namedChild(i)
+      if (!child || !CSHARP_DECLARED_TYPE_NODES.has(child.type)) continue
+      if (nameChild && child.startIndex === nameChild.startIndex && child.endIndex === nameChild.endIndex) continue
+      return child
+    }
+    return null
+  }
+
+  /**
+   * The narrowest node inside a type annotation whose text IS `target`.
+   *
+   * For `List<EnumSettingEntry> xs = new();` the target is the ELEMENT type, so
+   * the node that names it is the type argument, not the annotation. Matching is
+   * by exact text (then by csharpCleanTypeLeaf, which is the same unwrapping the
+   * target text went through), and the narrowest match wins. No match means the
+   * target was resolved from something other than a written name — an honest
+   * no-line, never a guess at a nearby line.
+   */
+  private nodeNamingToken(typeNode: Node | null, target: string): Node | null {
+    if (!typeNode) return null
+    const parts = target.split(".")
+    const leaf = parts[parts.length - 1] || target
+    let best: Node | null = null
+    const stack: Node[] = [typeNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const text = n.text
+      if (text === leaf || csharpCleanTypeLeaf(text) === leaf) {
+        if (!best || n.endIndex - n.startIndex <= best.endIndex - best.startIndex) best = n
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+    return best
+  }
+
+  /**
+   * M59.A7 (#825), the target-typed-`new()` site.
+   *
+   * `List<T> xs = new();` writes its construction target in the DECLARATION, and
+   * the assignment form (`xs = new();`) writes it on the MEMBER's declaration,
+   * not on the assignment line. Both are reached through the shared walk
+   * (csharpTargetTypedNewSite) so the stamp and the resolved target can never
+   * describe different declarations; the member table carries the node for the
+   * assignment form, because the declaration is in another subtree.
+   */
+  private targetTypedNewTypeNode(
+    node: Node,
+    memberTypes: Map<string, string>,
+    memberTypeNodes: Map<string, Node>,
+    target: string,
+  ): Node | null {
+    const site = csharpTargetTypedNewSite(node)
+    if (!site) return null
+    const holder = site.kind === "declaration" ? site.decl : memberTypeNodes.get(site.memberName) ?? null
+    return this.nodeNamingToken(this.memberDeclaredTypeNode(holder), target)
+  }
+
+  /**
+   * Is a call's callee a node that NAMES something?
+   *
+   * Found by a depth draw rather than by reading the code: on powershell's
+   * `RunspaceConnectionInfo.cs` the grammar's error recovery (one ERROR node
+   * spanning `false; return StartSSHProcessImpl(...)`) produced an
+   * invocation_expression whose `function` field IS a `boolean_literal`, and the
+   * analyzer emitted `calls StartSSHProcess -> false` — a fabricated call to a
+   * literal, the only unexplained edge on a 900-file draw (line 2331, measured
+   * with script/m14/tmp/cs-u2331-probe.ts). The old hygiene checked the target
+   * STRING (keyword set + identifier shape + builtin set), and `false` is a
+   * well-formed identifier as far as a string check can see. The rule is
+   * structural instead: a callee names its target only if the node that carries
+   * it is a NAME node (an identifier or a generic_name) — which is what the
+   * existing keyword-list rejection encodes for the legal `if (...)` case, done
+   * once for every junk-callee shape.
+   */
+  private isCSharpCalleeNameNode(node: Node | null): boolean {
+    if (!node) return false
+    return node.type === "identifier" || node.type === "generic_name"
+  }
+
+  /**
+   * The node that names a call's target: the callee leaf.
+   *
+   * Mirrors buildCSharpCallExpression's leaf selection (the member-access NAME
+   * field, a generic_name's name field, else the callee node itself) — that
+   * function returns the text, this returns the node the text is written on.
+   */
+  private csharpCallCalleeNode(node: Node): Node | null {
+    const func = node.childForFieldName("function") || this.findChild(node, (n) => n.type === "identifier" || n.type === "generic_name" || n.type === "member_access_expression")
+    if (!func) return null
+    if (func.type === "member_access_expression") {
+      const nameNode = func.childForFieldName("name")
+      if (!nameNode) return null
+      return nameNode.type === "generic_name" ? nameNode.childForFieldName("name") ?? nameNode : nameNode
+    }
+    if (func.type === "generic_name") return func.childForFieldName("name") ?? func
+    // `Overflow?.Invoke(x)` (the lane's CSD4 shape): a null-conditional call's
+    // callee is a conditional_access_expression whose LAST member BINDING
+    // (`.Invoke`) names it — and a binding carries no `name` field, so the leaf
+    // is its identifier child. Returning the conditional access itself would
+    // both mis-name the callee and stamp the RECEIVER's line (the trap this
+    // round exists to remove); measured with script/m14/tmp/cs-conditional-callee.ts.
+    if (func.type === "conditional_access_expression" || func.type === "member_binding_expression") {
+      const binding = func.type === "member_binding_expression"
+        ? func
+        : this.findChild(func, (n) => n.type === "member_binding_expression")
+      const leaf = binding ? this.csharpBindingLeaf(binding) : null
+      return leaf ?? func
+    }
+    return func
+  }
+
+  /**
+   * The identifier a `member_binding_expression` binds: the member name after
+   * the dot (`.Invoke` -> `Invoke`). Walks the binding's children backwards
+   * because the dot is an anonymous token and the name is the last name node.
+   */
+  private csharpBindingLeaf(binding: Node): Node | null {
+    for (let i = binding.childCount - 1; i >= 0; i--) {
+      const child = binding.child(i)
+      if (!child) continue
+      if (child.type === "identifier") return child
+      if (child.type === "generic_name") return child.childForFieldName("name") ?? child
+    }
+    return null
   }
 
   private nodeToRange(node: Node) {
