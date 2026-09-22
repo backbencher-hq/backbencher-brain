@@ -13,6 +13,23 @@ function stringIncludes(str: string, val: string): boolean {
 // (`<stddef.h>` → `stddef.h`, `"CoreApi.h"` → `CoreApi.h`). Pure-String
 // scan — replaces the legacy `/[<>"']/g` regex used by getIncludePath and
 // extractInclude.
+/**
+ * #916: an ALL-CAPS identifier — the shape a bare macro has and a declarator
+ * almost never does. Mirrors the cpp analyzer's `isAllCapsName`, and is used to
+ * decide whether a truncated declaration's last child is a MACRO (so the real
+ * declarator must be read from the sibling) or a genuine declarator (left
+ * alone).
+ */
+function isAllCapsIdentifier(text: string): boolean {
+  let hasUpper = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch >= "a" && ch <= "z") return false
+    if (ch >= "A" && ch <= "Z") hasUpper = true
+  }
+  return hasUpper
+}
+
 function stripIncludeChars(text: string): string {
   let out = ""
   for (let i = 0; i < text.length; i++) {
@@ -428,10 +445,22 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             return !!d
           })()
           const nameNode = declIsCallable ? this.getIdentifierFromDeclarator(rawDecl) : null
+          // #916-D: the macro-decorated DEFINITION whose return type the preceding
+          // truncated declaration ate. Measured on `sqlite3-jni.c:6245`, where
+          // `JNIEXPORT void JNICALL` (declaration) is followed by
+          // `Java_…(JniArgsEnvClass){…}` — a function_definition whose `type` field
+          // is the NAME and whose `declarator` is the PARAMETER LIST, so the CGD38
+          // guard above reads it as "not callable" and the name, had it been derived
+          // from the declarator, would have been the parameter. The recovery is
+          // gated on the sibling declaration in `recoveredMacroTruncatedFunction`,
+          // which is what keeps CGD38's real subject — a macro-qualified STRUCT
+          // whose declarator is a bare identifier — untouched.
+          const recoveredFn = this.recoveredMacroTruncatedFunction(node)
+          const effectiveName = recoveredFn ? recoveredFn.name : nameNode ? nameNode.text : null
           // CGD22: ERROR-glued pseudo definitions can carry a KEYWORD as the
           // "function name" — no scope, no symbol, no locals for it.
-          if (nameNode && nameNode.text.trim() && !C_KEYWORDS.has(nameNode.text)) {
-            scopeManager.pushScope(ScopeKind.Function, nameNode.text, node)
+          if (effectiveName && effectiveName.trim() && !C_KEYWORDS.has(effectiveName)) {
+            scopeManager.pushScope(ScopeKind.Function, effectiveName, node)
             willPushScope = true
             activeFunctionSymbol = this.extractFunction(
               node,
@@ -439,6 +468,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               symbols,
               scopeManager.getScopeName(),
               isConditional,
+              recoveredFn,
             )
             const locals = new Set<string>()
             if (activeFunctionSymbol?.parameters) {
@@ -447,7 +477,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 if (p && p.name && p.name !== "...") locals.add(p.name)
               }
             }
-            functionLocals.set(nameNode.text, locals)
+            functionLocals.set(effectiveName, locals)
           }
           break
         }
@@ -994,6 +1024,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           !(node.parent?.type === "assignment_expression" &&
             node.parent.namedChild(0)?.startIndex === node.startIndex &&
             (node.parent.namedChild(0)?.endIndex ?? 0) >= node.endIndex) &&
+          // A C KEYWORD can never name a value — reserved words are lexed as
+          // keywords, so an `identifier` whose TEXT is one is grammar-recovery
+          // debris, never a read. Measured (resolve.c L1336): the `#endif`-glued
+          // `else if( is_agg==0 && …)` leaves an `identifier "if"` inside an ERROR
+          // whose enclosing scope is resolveExprStep, and the resolvable-use gate
+          // below resolved it, fabricating `uses resolveExprStep -> if` — the one
+          // unexplained edge the whole-corpus c lane kept after #916. The
+          // C_KEYWORDS filter above covers function NAMES only, which is exactly
+          // what its comment predicted ("each seeding a bogus `uses` edge").
+          !C_KEYWORDS.has(text) &&
           (this.isResolvableUseTarget(text, node.type, symbols, globalVars, structs, unions, enums, declaredTypes, declaredNames) || resolvesAsType) &&
           // CGD33 (M37 #601, measured jimsh0.c ×101 / libcmpp.c ×86): a
           // plain `identifier` that resolves ONLY as a TYPE declaration
@@ -1328,10 +1368,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     scope: string,
     isConditional: boolean,
+    // #916-D: a macro-decorated definition whose return type was eaten by a
+    // preceding bare-macro declaration arrives with its NAME in the `type` field
+    // and its parameter list in `declarator` — the inverse of every other
+    // function_definition. Deriving the name from the declarator there yields the
+    // PARAMETER (`function JniArgsEnvClass`) and the return type yields the NAME.
+    // The caller proves that shape from the sibling declaration and passes the
+    // truth in, rather than this method guessing.
+    recovered?: { name: string; returnType: string } | null,
   ): ASTEngine.UniversalSymbol | null {
     const declaratorNode = node.childForFieldName("declarator")
-    const nameNode = this.getIdentifierFromDeclarator(declaratorNode)
-    if (!nameNode) return null
+    const nameNode = recovered ? null : this.getIdentifierFromDeclarator(declaratorNode)
+    if (!recovered && !nameNode) return null
 
     const isStatic = this.hasStorageClass(node, "static")
     const isInline = this.hasStorageClass(node, "inline")
@@ -1393,16 +1441,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const symbol: ASTEngine.UniversalSymbol = {
-      name: nameNode.text,
+      name: recovered ? recovered.name : nameNode!.text,
       kind: ASTEngine.SymbolKind.Function,
       range: this.recoverFunctionRange(node, content),
       scope: "global",
       complexity: this.functionComplexity(node),
       visibility: isStatic ? "private" : "public",
       isStatic,
-      returnType: returnTypeNode ? returnTypeNode.text : "any",
+      returnType: recovered ? recovered.returnType : returnTypeNode ? returnTypeNode.text : "any",
       parameters,
-      metadata: { cSpecific: true, usesPointers, isInline, isConditional },
+      metadata: { cSpecific: true, usesPointers, isInline, isConditional, ...(recovered ? { recoveredFromMacroTruncation: true } : {}) },
     }
 
     symbols.push(symbol)
@@ -1742,6 +1790,26 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // span (keyed by startIndex) and answered per declaration by position.
     if (this.isCgd19SuppressedVarDecl(node)) return
 
+    // #916 (measured on sqlite, 5 real symbols): a BARE macro between a type and
+    // its declarator truncates the declaration at the macro with a MISSING `;`,
+    // and what should have been the declarator is re-parsed as the NEXT SIBLING.
+    // `static BtShared *SQLITE_WSD sqlite3SharedCacheList = 0;` becomes
+    // `declaration "static BtShared *SQLITE_WSD"` + `expression_statement
+    // "sqlite3SharedCacheList = 0;"`; `static void SQLITE_NOINLINE f(Btree*);`
+    // becomes `declaration "static void SQLITE_NOINLINE"` +
+    // `expression_statement "f(Btree *p);"`; and a macro-decorated DEFINITION has
+    // its return type eaten, arriving as a `function_definition` with no
+    // declarator field at all. In every case the old code emitted the MACRO as a
+    // symbol (`variable SQLITE_WSD`) and the real declaration produced nothing.
+    //
+    // The trigger is structural and cannot fire on a valid declaration: a MISSING
+    // token AND a last named child that resolves to a bare ALL-CAPS identifier
+    // (the macro). A `MyType MAX_SIZE;` is clean, so it is not touched; a file
+    // that simply ENDS mid-declaration (`static Foo bar`, no `;`) has no next
+    // sibling of a recovery shape and is therefore left exactly as it is today —
+    // the guard never suppresses without a sibling it can read the truth from.
+    if (this.recoverBareMacroTruncation(node, symbols, globalVars, isStatic, isConditional)) return
+
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (
@@ -1983,9 +2051,161 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   private getIdentifierFromDeclarator(node: Node | null): Node | null {
     let current = node
     while (current && !inArray(["identifier", "field_identifier", "type_identifier"], current.type)) {
-      current = current.childForFieldName("declarator") || current.namedChild(0)
+      const byField = current.childForFieldName("declarator")
+      if (byField) {
+        current = byField
+        continue
+      }
+      // #916-C: a parenthesized declarator can hold an ERROR child BESIDE the
+      // real declarator — `(SQLITE_CDECL *sqlite3IoTrace)` recovers as
+      // `parenthesized_declarator( ERROR[ SQLITE_CDECL ],
+      //  pointer_declarator( *, sqlite3IoTrace ) )`. `namedChild(0)` descends
+      // into that ERROR and RETURNS THE MACRO'S NAME, which is how
+      // `sqlite3IoTrace` was emitted as `variable SQLITE_CDECL` (the phantom did
+      // not merely accompany the real symbol — it took its place). The first
+      // child that is not ERROR/MISSING is the declarator; when every child is an
+      // error the old behaviour is preserved exactly.
+      const kids = (current.namedChildren ?? []).filter((k: Node | null): k is Node => !!k)
+      const clean = kids.find((k: Node) => !k.isError && !k.isMissing)
+      current = clean ?? kids[0] ?? null
     }
     return current
+  }
+
+  /**
+   * #916: the real declarator of a declaration truncated by a bare macro, read
+   * from the SIBLING the recovery re-parsed. Returns false — leaving the old
+   * behaviour untouched — unless the truncation is proven AND the sibling is one
+   * of the measured recovery shapes, so no symbol is ever dropped on a guess.
+   */
+  private recoverBareMacroTruncation(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    globalVars: Record<string, boolean>,
+    isStatic: boolean,
+    isConditional: boolean,
+  ): boolean {
+    const macroId = this.macroTruncatedDeclarationIdentifier(node)
+    if (!macroId) return false
+
+    const next = node.nextSibling
+    if (!next) return false
+
+    // Shape A/B — the declarator was re-parsed as an expression statement.
+    if (next.type === "expression_statement") {
+      const match = /^([A-Za-z_][A-Za-z0-9_]*)\s*(=|\()/.exec(next.text.trim())
+      if (!match) return false
+      const name = match[1]
+      if (name === macroId.text) return false
+      const callable = match[2] === "("
+      if (callable) {
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Function,
+          range: this.nodeToRange(node),
+          scope: "global",
+          visibility: isStatic ? "private" : "public",
+          metadata: {
+            isDeclaration: true,
+            cSpecific: true,
+            isConditional,
+            recoveredFromMacroTruncation: true,
+          },
+        })
+      } else {
+        globalVars[name] = true
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Variable,
+          range: this.nodeToRange(next),
+          scope: "global",
+          visibility: isStatic ? "private" : "public",
+          metadata: {
+            isVariable: true,
+            cSpecific: true,
+            isGlobal: true,
+            isConditional,
+            recoveredFromMacroTruncation: true,
+          },
+        })
+      }
+      return true
+    }
+
+    // Shape D — a macro-decorated DEFINITION whose return type the truncated
+    // declaration ate: it arrives with NO declarator field, which the
+    // function_definition branch reads as "not callable" (CGD38's correct rule for
+    // a different shape) and drops. The symbol and its scope are emitted THERE, so
+    // the body's reads and calls stay attributed to the function; here only the
+    // phantom is suppressed.
+    if (next.type === "function_definition" && this.recoveredMacroTruncatedFunction(next)) {
+      return true
+    }
+    return false
+  }
+
+  /**
+   * #916: the macro identifier of a declaration truncated by a bare macro — a
+   * MISSING token AND a last named child that resolves to a bare ALL-CAPS
+   * identifier. Null for every valid declaration (`MyType MAX_SIZE;` is clean) and
+   * for a file that merely ENDS mid-declaration, which has no MISSING token and
+   * is therefore never treated as this shape.
+   */
+  private macroTruncatedDeclarationIdentifier(node: Node): Node | null {
+    if (node.type !== "declaration") return null
+    let missing = false
+    for (let i = 0; i < node.childCount; i++) {
+      if (node.child(i)?.isMissing) missing = true
+    }
+    if (!missing) return null
+    const last = node.namedChild(node.namedChildCount - 1)
+    const id = last ? this.getIdentifierFromDeclarator(last) : null
+    if (!id || !isAllCapsIdentifier(id.text)) return null
+    return id
+  }
+
+  /**
+   * #916-D: the truth for a function_definition whose return type was consumed by
+   * a bare-macro declaration immediately before it — `JNIEXPORT void JNICALL`
+   * (truncated) then `NAME(params){...}`, which parses with the NAME in the `type`
+   * field and the PARAMETER LIST in `declarator`. Every condition is structural and
+   * the sibling declaration is the proof, so this cannot fire on an ordinary
+   * definition (whose declarator is a function_declarator and whose prev sibling is
+   * not a truncated declaration).
+   */
+  private recoveredMacroTruncatedFunction(node: Node): { name: string; returnType: string } | null {
+    if (node.type !== "function_definition") return null
+    const prev = node.previousSibling
+    if (!prev || prev.type !== "declaration" || !this.macroTruncatedDeclarationIdentifier(prev)) return null
+    const typeField = node.childForFieldName("type")
+    const declField = node.childForFieldName("declarator")
+    if (!typeField || !declField) return null
+    if (declField.type !== "parenthesized_declarator") return null
+    if (!inArray(["identifier", "field_identifier", "type_identifier"], typeField.type)) return null
+    return { name: typeField.text, returnType: this.macroTruncatedReturnType(prev) }
+  }
+
+  /**
+   * The return type the truncation ate: the specifier the macro decorates. For
+   * `macro_prefixed_type_specifier "JNIEXPORT void"` the macro is a decorator and
+   * `void` is the type, so the macro's text is stripped rather than reported as
+   * the type.
+   */
+  private macroTruncatedReturnType(decl: Node): string {
+    const kids = ((decl as any).namedChildren ?? []).filter((c: Node | null): c is Node => !!c) as Node[]
+    const spec = kids.find((c) =>
+      inArray(
+        ["macro_prefixed_type_specifier", "primitive_type", "type_identifier", "sized_type_specifier", "struct_specifier"],
+        c.type,
+      ),
+    )
+    if (!spec) return "any"
+    if (spec.type === "macro_prefixed_type_specifier") {
+      const specKids = ((spec as any).namedChildren ?? []).filter((c: Node | null): c is Node => !!c) as Node[]
+      const macro = specKids.find((c) => c.type === "macro_specifier")
+      if (macro) return spec.text.slice(macro.text.length).trim() || "any"
+    }
+    return spec.text.trim() || "any"
   }
 
   /**
