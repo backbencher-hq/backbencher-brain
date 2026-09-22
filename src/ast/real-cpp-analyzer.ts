@@ -1117,7 +1117,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 fnScope.locals.add(name)
               }
             }
-            if (name && !stringIncludes(name, "(") && !insideFunction) {
+            if (name && !stringIncludes(name, "(") && !insideFunction && !this.isBareMacroDeclaration(node, name)) {
               // File-scope static (internal linkage) → private, matching the
               // C family contract; class-scope members keep the
               // access-specifier visibility.
@@ -1663,6 +1663,67 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!p) continue
       if (p.type === "comment") continue
       if (this.paramHasType(p)) return false
+    }
+    return true
+  }
+
+  // #915: a bare top-level macro must not become a `variable`. Two consecutive
+  // macros at file scope are recovered by the grammar as a `declaration` whose
+  // "type" is itself a macro and whose terminator is MISSING
+  // (`FMT_END_EXPORT` / `FMT_END_NAMESPACE` -> type_identifier + identifier +
+  // MISSING `;`), and the declaration branch then names the symbol after the
+  // second macro. Measured on fmt: 13 such phantoms in a 58-file draw, all bare
+  // ALL-CAPS macro names (`variable FMT_END_NAMESPACE` x8, `GTEST_ATTRIBUTE_UNUSED_`
+  // x2, `RUN_ALL_TESTS`, `GTEST_DEFAULT_DEATH_TEST_STYLE`, `FMT_BEGIN_EXPORT`),
+  // and 0 on nlohmann-json. This is the BARE sibling of the call-shaped class
+  // `isMacroFunctionShape` already suppresses.
+  //
+  // Three conditions, each doing real work — the first two alone would lose a
+  // real symbol:
+  //   * the name is ALL-CAPS            (`MAX_SIZE` stays a symbol, `MAX_SIZE;`)
+  //   * the node is ERROR-RECOVERED     (a clean `MyType MAX_SIZE;` is kept,
+  //                                      because its terminator is real; only
+  //                                      already-broken code is affected)
+  //   * it carries NO hard type         (`int MAX_SIZE` and
+  //                                      `MyType *MAX_SIZE` are kept — a lone
+  //                                      `type_identifier` is the grammar's
+  //                                      classification of macro soup, not a type,
+  //                                      the same reading `paramHasType` uses)
+  private isBareMacroDeclaration(node: Node, name: string): boolean {
+    if (!this.isAllCapsName(name)) return false
+
+    let recovered = false
+    const walkRecovered: Node[] = [node]
+    while (walkRecovered.length > 0) {
+      const m = walkRecovered.pop()!
+      if (m.isMissing || m.isError) {
+        recovered = true
+        break
+      }
+      for (let i = 0; i < m.childCount; i++) {
+        const c = m.child(i)
+        if (c) walkRecovered.push(c)
+      }
+    }
+    if (!recovered) return false
+
+    const walkType: Node[] = [node]
+    while (walkType.length > 0) {
+      const m = walkType.pop()!
+      if (
+        m.type === "primitive_type" || m.type === "sized_type_specifier" ||
+        m.type === "template_type" || m.type === "qualified_identifier" ||
+        m.type === "dependent_type" || m.type === "decltype" ||
+        m.type === "struct_specifier" || m.type === "union_specifier" ||
+        m.type === "enum_specifier" || m.type === "class_specifier" ||
+        m.type === "placeholder_type_specifier" || m.type === "macro_prefixed_type_specifier"
+      ) {
+        return false
+      }
+      for (let i = 0; i < m.childCount; i++) {
+        const c = m.child(i)
+        if (c) walkType.push(c)
+      }
     }
     return true
   }
