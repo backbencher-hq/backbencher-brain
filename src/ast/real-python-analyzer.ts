@@ -258,7 +258,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       const owner = s.ownerName
       if (owner && owner !== s.name) {
-        this.pushRel(ctx, owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {})
+        this.pushRel(ctx, owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
       }
     }
 
@@ -343,7 +343,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (baseLeaf !== className) {
           this.pushRel(ctx, className, baseLeaf, ASTEngine.RelationshipType.Extends, 1.0, {
             pythonSpecific: true,
-          })
+          }, this.nodeLine(arg))
         }
       }
     }
@@ -531,7 +531,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         this.pushRel(ctx, ctx.moduleName, `${moduleName}:*`, ASTEngine.RelationshipType.Imports, 1.0, {
           pythonSpecific: true,
-        })
+        }, this.nodeLine(name))
       }
     } else if (node.type === "import_from_statement") {
       // `from .models import User, Role, format_name as fmt`
@@ -548,16 +548,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       const items: string[] = []
+      // M59.A7 (#825): each item carries its OWN node, because the item's line
+      // is where the name is written (`from typing import (` / newline /
+      // `Optional,` — the statement starts on the `from` line, the item on its
+      // own). The relationship is emitted per item, so the node must survive
+      // the string collection.
+      const itemNodes: Array<{ name: string; node: Node | null }> = []
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (!c) continue
         if (c.type === "dotted_name" || c.type === "identifier") {
-          if (c.text !== moduleName) items.push(c.text)
+          if (c.text !== moduleName) { items.push(c.text); itemNodes.push({ name: c.text, node: c }) }
         } else if (c.type === "aliased_import") {
           const itemNameNode = c.childForFieldName("name") || c.namedChild(0)
-          if (itemNameNode) items.push(itemNameNode.text)
+          if (itemNameNode) { items.push(itemNameNode.text); itemNodes.push({ name: itemNameNode.text, node: itemNameNode }) }
         } else if (c.type === "wildcard_import") {
-          items.push("*")
+          items.push("*"); itemNodes.push({ name: "*", node: c })
         }
       }
 
@@ -569,10 +575,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         isNamespace: true,
         range: this.nodeToRange(node),
       })
-      for (const item of items) {
-        this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item === "*" ? "*" : item}`, ASTEngine.RelationshipType.Imports, 1.0, {
+      for (const item of itemNodes) {
+        this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
           pythonSpecific: true,
-        })
+        }, this.nodeLine(item.node))
       }
     }
   }
@@ -627,7 +633,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               ctx.exports.push({ name: exportName, type: "list_item" })
               this.pushRel(ctx, ctx.moduleName, exportName, ASTEngine.RelationshipType.Exports, 1.0, {
                 pythonSpecific: true,
-              })
+              }, this.nodeLine(child))
             }
           }
         }
@@ -704,6 +710,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const fullCallee = funcChild.text
     const targetName = this.callLeafName(funcChild)
+    // M59.A7 (#825): the edge NAMES the callee leaf (callLeafName's node twin),
+    // so the line is the leaf's own — never the receiver the construct starts
+    // at (`items` on 17 while `.upper` is written on 19).
+    const calleeLeaf = this.callLeafNode(funcChild)
     if (!targetName) return
     if (PYTHON_BUILTINS.has(targetName)) return
     if (targetName.startsWith("__") && targetName.endsWith("__")) return // dunder: not a user call
@@ -719,7 +729,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
           pythonSpecific: true,
           qualified: fullCallee,
-        })
+        }, this.nodeLine(calleeLeaf))
       }
       return
     }
@@ -727,7 +737,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Calls, 0.9, {
       pythonSpecific: true,
       qualified: fullCallee,
-    })
+    }, this.nodeLine(calleeLeaf))
   }
 
   // ========================================================================
@@ -791,7 +801,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!isAssignLhs && !isGpAssignLhs && !isAugLhs && !isCallFn && !isReceiverOfCall) {
             this.pushRel(ctx, inFn, leaf.text, ASTEngine.RelationshipType.Uses, 0.9, {
               pythonSpecific: true, isMemberRead: true,
-            })
+            }, this.nodeLine(leaf))
           }
         }
       }
@@ -814,15 +824,18 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emitted = new Set<string>()
     const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
 
-    const collectTypeNames = (n: Node, out: string[]): void => {
+    // M59.A7 (#825): nodes, not just names — the edge's line is where the
+    // type NAME is written (a wrapped annotation's own line), so the node must
+    // survive the collection.
+    const collectTypeNodes = (n: Node, out: Node[]): void => {
       if (n.type === "identifier") {
-        if (!PRIMITIVES.has(n.text) && !out.includes(n.text)) out.push(n.text)
+        if (!PRIMITIVES.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
       if (n.type === "none" || n.type === "string" || n.type === "concatenated_string") return
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) collectTypeNames(c, out)
+        if (c) collectTypeNodes(c, out)
       }
     }
 
@@ -847,9 +860,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emit = (source: string, roots: (Node | null | undefined)[], relType: string): void => {
       for (const r of roots) {
         if (!r) continue
-        const names: string[] = []
-        collectTypeNames(r, names)
-        for (const t of names) {
+        const nodes: Node[] = []
+        collectTypeNodes(r, nodes)
+        for (const tn of nodes) {
+          const t = tn.text
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -858,6 +872,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: t,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
+            ...(this.nodeLine(tn) ? { line_number: this.nodeLine(tn)! } : {}),
             metadata: { relationshipType: relType },
           })
         }
@@ -938,7 +953,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!base) continue
         const inFileDeclares = byName.get(s.name)?.some((bm) => bm.ownerName === base) ?? false
         if (inFileDeclares || overrideCompanion?.get(base)?.has(s.name)) {
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {})
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
         } else if (!overrideCompanion?.has(base)) {
           // Pass 3 (family parity with java/groovy resolveOverrides): the
           // base is not declared in this file and the companion index gave
@@ -948,7 +963,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (honest suspicion) by the differential, never contaminating
           // thresholded analysis. Pre-M37.10 this edge was silently dropped
           // for every externally-declared base.
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" })
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
         }
       }
     }
@@ -965,6 +980,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     type: ASTEngine.RelationshipType,
     confidence: number,
     metadata: Record<string, any>,
+    line?: number,
   ) {
     if (!source || !target) return
     const key = `${type}\u001f${source}\u001f${target}`
@@ -978,8 +994,38 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       type,
       relationshipType: type,
       confidence,
+      // M59.A7 (#825): the call-site line is the node that NAMES the edge.
+      // Absent when there is no node to ask (never a fabricated 0).
+      ...(typeof line === "number" ? { line_number: line } : {}),
       metadata,
     })
+  }
+
+  /**
+   * M59.A7 (#825): the 1-based line of the node that NAMES an edge. Callers
+   * pass the node the edge's target is written as — never the construct that
+   * contains it. A decorated definition's name is on its `def`/`class` line,
+   * an import item's on its own item line, a call's on its callee leaf, a
+   * member read's on the read leaf. Returns undefined when there is no node to
+   * ask; a missing line is honest, a fabricated 0 is not.
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
+  }
+
+  /** The node that names a call's callee — callLeafName's node twin. */
+  private callLeafNode(node: Node | null | undefined): Node | null {
+    if (!node) return null
+    if (node.type === "identifier") return node
+    if (node.type === "attribute") {
+      return node.namedChild(node.namedChildCount - 1) ?? null
+    }
+    if (node.type === "call") return this.callLeafNode(node.namedChild(0))
+    // Same boundaries callLeafName documents: a computed/subscript callee and
+    // a string callee name nothing, so there is no node to attribute.
+    if (node.type === "subscript" || node.type === "string") return null
+    return this.callLeafNode(node.namedChild(0))
   }
 
   private baseClassLeaf(node: Node): string | undefined {
@@ -1221,14 +1267,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
-    const target = node.parent?.type === "decorated_definition" ? node.parent : node
+    // M59.A7 (#825): a decorated definition ranges at its OWN `def`/`class`
+    // line — the line its NAME is written on — never the decorator's. The old
+    // form preferred the `decorated_definition` parent, whose start is the `@`
+    // line, so `@paramatize("x", [1])` on 23 made `decorated` claim 23 while
+    // its name is written on 24 (the requests 30-row class the line fixture
+    // pins). Only the start moves: a decorated_definition ENDS where its
+    // declaration ends, so endLine/endIndex are unchanged.
     return {
-      startLine: target.startPosition.row + 1,
-      startColumn: target.startPosition.column + 1,
-      endLine: target.endPosition.row + 1,
-      endColumn: target.endPosition.column + 1,
-      startIndex: target.startIndex,
-      endIndex: target.endIndex,
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column + 1,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column + 1,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
     }
   }
 }
