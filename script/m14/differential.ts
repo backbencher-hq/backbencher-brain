@@ -28,6 +28,9 @@ import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew } from "../../src/ast/real-csharp-analyzer"
+// #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
+// one rule for both sides, never a re-implementation (see isWrappedHeadingName).
+import { macroWrappedHeadingShape, wrappedBodyAfter } from "../../src/ast/real-c-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -2457,6 +2460,35 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
     }
     return true
   }
+  // #917 MIRROR — and it is the SAME CODE, not a copy: the shape rule is
+  // exported by the analyzer (`macroWrappedHeadingShape` / `wrappedBodyAfter`)
+  // and imported here, so the two sides cannot drift. A macro-wrapped function
+  // heading (`MACRO(ret, name)(params){ body }`) names its function in the
+  // macro's LAST identifier argument, and the analyzer suppresses that
+  // occurrence as a DEFINING one (gluedDefNameOffsets). Truth must suppress the
+  // same occurrence, because the mention is otherwise an ordinary identifier
+  // read of anything else in the file that happens to carry the name —
+  // measured: the moment the recovery emitted `cmpp_stream` as a symbol, truth
+  // still derived `uses -> cmpp_stream` for the heading mention at libcmpp.c
+  // L8748 (that file also `#define`s the name in an alternative preprocessor
+  // branch), and the whole 315-file sqlite c lane read MISSING=68 with the
+  // recovery landed. Every refusal travels with the shared rule: when the
+  // analyzer declines the shape (no top-level comma, name == macro name, C
+  // keyword) it does NOT suppress the mention, and neither does truth.
+  const isWrappedHeadingName = (n: any): boolean => {
+    if (!n || n.type !== "identifier") return false
+    const argList = n.parent
+    if (!argList || argList.type !== "argument_list") return false
+    const c2 = argList.parent
+    if (!c2 || c2.type !== "call_expression") return false
+    const c1 = c2.parent
+    if (!c1 || c1.type !== "call_expression") return false
+    const stmt = c1.parent
+    if (!stmt || stmt.type !== "expression_statement") return false
+    const shape = macroWrappedHeadingShape(stmt)
+    if (!shape || shape.nameNode?.startIndex !== n.startIndex) return false
+    return !!wrappedBodyAfter(stmt)
+  }
   // Truth scope refinement 2 (CGD-PREPROC): identifiers inside PREPROCESSOR
   // CONDITION TEXT are not code — `#if SQLITE_MAX_MMAP_SIZE>0` conditions,
   // `defined(X)` tests, `#ifndef X` guards, `#define IOMETHODS(...CLOSE,
@@ -2949,7 +2981,11 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
       // would expect a `uses` edge the analyzer correctly refuses to emit
       // (decNumber.c L2284/2304/2309: `decNumberPower uses decNumberQuantize`).
       const isGlueDefNameOccurrence = isGlueDefinitionName(n, sourceText ?? "")
-      if (p && p.type !== "call_expression" && !isTopLevelErrorDebris && !isHashLine && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isGlueDefNameOccurrence) {
+      // #917 mirror: the naming occurrence of a macro-wrapped heading is a
+      // DECLARATION of the name the heading defines, never a read of it (the
+      // analyzer's pinned #917 contract) — see isWrappedHeadingName above.
+      const isWrappedHeadingNameOccurrence = isWrappedHeadingName(n)
+      if (p && p.type !== "call_expression" && !isTopLevelErrorDebris && !isHashLine && !isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isGlueDefNameOccurrence && !isWrappedHeadingNameOccurrence) {
         const name = n.text
         // CGD15: a function-local BINDING of the name (param or local
         // declaration in the enclosing function) shadows the file-scope
