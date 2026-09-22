@@ -62,19 +62,19 @@
     },
     {
       "file": "real-rust-analyzer.ts",
-      "line": 643,
+      "line": 678,
       "source": "/\\b(Serialize|Deserialize)\\b/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained]"
+      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained] [M59.A7 systems line round commit 76d3a09b: line shifted 643 -> 678 by the call-site line insertions; regex retained]"
     },
     {
       "file": "real-rust-analyzer.ts",
-      "line": 644,
+      "line": 679,
       "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained]"
+      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained] [M59.A7 systems line round commit 76d3a09b: line shifted 644 -> 679 by the call-site line insertions; regex retained]"
     },
     {
       "file": "real-svelte-analyzer.ts",
@@ -134,11 +134,11 @@
     },
     {
       "file": "real-zig-analyzer.ts",
-      "line": 967,
+      "line": 1000,
       "source": "/[!*\\s\\[\\]\\{\\}]+/g",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census]"
+      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained]"
     },
     {
       "file": "real-clojure-analyzer.ts",
