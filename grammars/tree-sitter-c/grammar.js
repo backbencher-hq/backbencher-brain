@@ -205,11 +205,33 @@ module.exports = grammar({
       field('arguments', alias($.preproc_argument_list, $.argument_list)),
     )),
 
+    // #743b: a header name as a PREPROCESSOR ARGUMENT — `__has_include(<vector>)`,
+    // `__has_include("meta")`, and the wrapper form real headers use,
+    // `FMT_HAS_INCLUDE(<string_view>)`. Measured: EVERY one of those shapes was an
+    // ERROR node (`<string_view>` is not a preproc expression — `<` would have to
+    // be a binary operator with a missing left operand), and the shape reaches 16
+    // files across the two cpp corpora, in the guard of every portable header.
+    //
+    // It is scoped to the ARGUMENT position deliberately, and that is what makes
+    // it safe rather than a lexer gamble: `<` cannot BEGIN a `_preproc_expression`
+    // (the unary operators are `! ~ - +`), so at the start of an argument there is
+    // no competing `<` token to lose the tie to, and the header token is preferred
+    // purely by match length. Anywhere else `<` stays the comparison operator,
+    // which is why `#if A < B && C > D` and `#if MAX(A < B, C > D)` — both pinned
+    // clean before this change — still parse as comparisons. The character class
+    // also excludes what a header name cannot contain, so `< B && C >` is not a
+    // candidate for the token in the first place.
     preproc_argument_list: $ => seq(
       '(',
-      commaSep($._preproc_expression),
+      commaSep(choice(
+        $._preproc_expression,
+        $.preproc_header_name,
+        $.string_literal,
+      )),
       ')',
     ),
+
+    preproc_header_name: _ => token(seq('<', /[A-Za-z0-9_][A-Za-z0-9_.+\/-]*/, '>')),
 
     preproc_binary_expression: $ => {
       const table = [
