@@ -19,8 +19,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c15c7fd20b6014abcf36ded8d9cde516b6a93884",
-  "committedAt": "2026-09-22T15:21:44-04:00",
+  "commit": "a3ce114f98ec6bef7bb0fa3c9a252d54d672908a",
+  "committedAt": "2026-09-22T19:17:49-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -55,7 +55,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 332,
         "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 51,
+        "referencedTypeLiterals": 55,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -130,7 +130,7 @@
         "oracleFieldCount": 26,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
-        "referencedFieldLiterals": 5,
+        "referencedFieldLiterals": 6,
         "referencedTypeLiterals": 72,
         "status": "pass",
         "unknownFields": [],
@@ -1098,8 +1098,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-22T21:31:40.299Z",
-  "regeneratedAtCommit": "c15c7fd20b6014abcf36ded8d9cde516b6a93884",
+  "regeneratedAt": "2026-09-22T23:49:33.397Z",
+  "regeneratedAtCommit": "a3ce114f98ec6bef7bb0fa3c9a252d54d672908a",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

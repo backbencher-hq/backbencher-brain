@@ -224,6 +224,158 @@ export function macroWrappedHeadingShape(header: Node): {
 }
 
 /**
+ * #918: the POINTER-RETURN spelling of a macro-wrapped heading.
+ *
+ * `#917` recovers `MACRO(ret, name)(params){ body }` when the grammar leaves
+ * the BODY as an orphan `compound_statement`. When the return type is a
+ * POINTER the same heading parses differently — the grammar accepts the
+ * heading as a `function_definition` (or, where recovery swallows the region,
+ * a `declaration`) whose `type` field is a `macro_type_specifier` holding BOTH
+ * macro arguments:
+ *
+ *   (function_definition
+ *     type: (macro_type_specifier name: (identifier)               // CMPP__EXPORT
+ *              (ERROR (type_descriptor … declarator: (abstract_pointer_declarator)))
+ *              type: (type_descriptor type: (type_identifier)))   // the NAME
+ *     declarator: (parenthesized_declarator …)                     // the PARAM LIST
+ *     body: (compound_statement …))
+ *
+ * Measured on `ext/wasm/libcmpp.c`, all six pointer spellings (`char const *`,
+ * `void *`, `cmpp_b *`): the declarator is the PARAMETER list, so the
+ * analyzer's declarator route (`function_declarator`) finds nothing. The
+ * definition was never a symbol and its body never a Function scope; five of
+ * the six names existed only as the `#define`d macro constant from the file's
+ * thunk block.
+ *
+ * The POINTER is required, not assumed: `abstract_pointer_declarator` inside
+ * the macro's first argument is the parse's own evidence for this spelling, and
+ * it is what keeps the value-return headings (the `#917` class, whose body is
+ * orphaned instead) out of this rule.
+ *
+ * The declared NAME is the macro's LAST argument, read structurally: the
+ * `macro_type_specifier`'s last named child is a `type_descriptor` whose `type`
+ * field is the `type_identifier` that names the function. Never a source-line
+ * scan: the return type and the name are the two `type_descriptor`s the parse
+ * itself separated.
+ */
+export function macroWrappedTypedHeadingShape(node: Node): {
+  name: string
+  returnType: string
+  nameNode: Node
+  paramGroups: Node[][]
+  macroNameText: string
+  body: Node | null
+  braced: boolean
+} | null {
+  if (!node) return null
+  if (node.type !== "function_definition" && node.type !== "declaration") return null
+  const typeField = node.childForFieldName("type")
+  if (!typeField || typeField.type !== "macro_type_specifier") return null
+  const macroNameNode = typeField.childForFieldName("name")
+  if (!macroNameNode || macroNameNode.type !== "identifier" || !macroNameNode.text.trim()) return null
+
+  const mtsKids = ((typeField as any).namedChildren ?? []).filter((c: Node | null): c is Node => !!c) as Node[]
+  const retErr = mtsKids.find((c) => c.isError)
+  if (!retErr) return null
+  const retDesc = (((retErr as any).namedChildren ?? []) as Node[]).find((c) => c?.type === "type_descriptor") ?? null
+  // THE POINTER — the discriminator this whole rule rests on.
+  if (!retDesc || retDesc.childForFieldName("declarator")?.type !== "abstract_pointer_declarator") return null
+  const returnType = retDesc.text.trim()
+  if (!returnType) return null
+
+  // The NAME slot: the LAST named child of the specifier, and it must FOLLOW
+  // the return-type ERROR — the parse's own ordering evidence, so a shape whose
+  // name would have to be guessed is refused instead.
+  const nameSlot = mtsKids[mtsKids.length - 1]
+  if (!nameSlot || nameSlot.type !== "type_descriptor" || nameSlot.startIndex <= retErr.endIndex) return null
+  const nameIdent = nameSlot.childForFieldName("type")
+  if (!nameIdent || !inArray(["type_identifier", "identifier"], nameIdent.type)) return null
+  const name = nameIdent.text.trim()
+  if (!name || name === macroNameNode.text.trim() || C_KEYWORDS.has(name)) return null
+
+  const decl = node.childForFieldName("declarator")
+  if (!decl || decl.type !== "parenthesized_declarator") return null
+  const paramGroups = splitParamGroups(decl)
+  if (!paramGroups || paramGroups.length === 0) return null
+
+  const body = node.childForFieldName("body")
+  if (body && body.type === "compound_statement") {
+    return { name, returnType, nameNode: nameIdent, paramGroups, macroNameText: macroNameNode.text.trim(), body, braced: true }
+  }
+  // The DECLARATION spelling: recovery cut the heading after the first
+  // parameter and left the rest of the parameter list plus the body's opening
+  // in an ERROR child. Only the measured shape is accepted — the ERROR's named
+  // children are ALL identifiers (the remaining type word(s) and the parameter
+  // name), and the declaration ends at a lone `}` the ERROR could not hold.
+  // Anything else is refused: this rule never invents an end.
+  if (node.type !== "declaration") return null
+  const kids = ((node as any).namedChildren ?? []).filter((c: Node | null): c is Node => !!c) as Node[]
+  const pdIdx = kids.findIndex((c) => c.startIndex === decl.startIndex && c.endIndex === decl.endIndex)
+  const tail = pdIdx >= 0 ? kids[pdIdx + 1] : null
+  if (!tail || !tail.isError) return null
+  const tailKids = (((tail as any).namedChildren ?? []) as Node[]).filter((c) => !!c)
+  if (tailKids.length === 0 || !tailKids.every((c) => c.type === "identifier" && c.text.trim() !== "")) return null
+  // The region's closing brace, straight after the declaration — the parse's
+  // own end evidence (measured: `declaration … ; }`). No brace, no end: the
+  // shape is refused rather than given an invented span.
+  if (node.nextSibling?.type !== "}") return null
+  return { name, returnType, nameNode: nameIdent, paramGroups: [...paramGroups, tailKids], macroNameText: macroNameNode.text.trim(), body: null, braced: true }
+}
+
+/**
+ * #918: the parameter groups of a degraded parameter list, split on the list's
+ * own top-level `,` TOKENS (nested parens live inside child nodes, so every
+ * top-level comma is a direct child). Returns null when the list carries
+ * anything other than the measured shapes — the caller refuses rather than
+ * guessing. An empty group is dropped; a `...` group is kept as a node so the
+ * variadic evidence survives.
+ */
+function splitParamGroups(list: Node): Node[][] | null {
+  const groups: Node[][] = []
+  let cur: Node[] = []
+  for (let i = 0; i < list.childCount; i++) {
+    const c = list.child(i)
+    if (!c) continue
+    // A MISSING token is only ever the list's own mended `)` (measured: the
+    // declaration spelling cuts at `(void * p` and mends the paren). Anywhere
+    // else a MISSING token means the list is a shape this rule has not
+    // measured — refused, never guessed.
+    if (c.isMissing) {
+      if (i === list.childCount - 1) continue
+      return null
+    }
+    if (c.type === ",") {
+      if (cur.length) groups.push(cur)
+      cur = []
+      continue
+    }
+    if (c.isNamed) cur.push(c)
+  }
+  if (cur.length) groups.push(cur)
+  return groups
+}
+
+/**
+ * #918: the RIGHTMOST identifier of a degraded parameter group in SOURCE
+ * order, skipping C keywords (a type word such as `const` or `int` is never
+ * the declared name, and the rightmost survivor is the declarator).
+ */
+function lastNonKeywordIdentifierIn(group: Node[]): Node | null {
+  let found: Node | null = null
+  const st: Node[] = [...group].reverse()
+  while (st.length > 0) {
+    const n = st.pop()!
+    const text = n.text.trim()
+    if (n.type === "identifier" && text && !C_KEYWORDS.has(text)) found = n
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const ch = n.namedChild(i)
+      if (ch) st.push(ch)
+    }
+  }
+  return found
+}
+
+/**
  * The body of a wrapped heading — the sibling right after it. The call-shaped
  * reading can leave a mended `;` (MISSING, taken by the heading itself) or a
  * lone `;` token between the two, so both are stepped over; anything else
@@ -578,6 +730,27 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // --- Scope Management (Enter) ---
       switch (node.type) {
         case "function_definition": {
+          // #918: the POINTER-RETURN macro-wrapped heading. Measured on sqlite
+          // `ext/wasm/libcmpp.c`: `CMPP__EXPORT(void *, cmpp_mrealloc)(…)` and
+          // its five siblings arrive as a function_definition whose `type` field
+          // is the macro call and whose `declarator` is the PARAMETER list — so
+          // CGD38's declarator route (correctly) finds no callable and the
+          // definition was never a symbol, its body never a Function scope.
+          // The shape rule is the exported module-scope one the oracle shares;
+          // every refusal travels with it.
+          {
+            const typed = macroWrappedTypedHeadingShape(node)
+            if (typed) {
+              scopeManager.pushScope(ScopeKind.Function, typed.name, node)
+              willPushScope = true
+              // The heading's naming argument is a DECLARATION of the name, not
+              // a read of it — the #916/#917 contract, applied to the same
+              // occurrence class.
+              this.gluedDefNameOffsets.add(typed.nameNode.startIndex)
+              activeFunctionSymbol = this.extractMacroWrappedTypedFunction(typed, node, content, symbols, isConditional)
+              break
+            }
+          }
           // CGD38 (M37 #601, measured mem3.c/malloc.c/loadext.c): a
           // macro-qualified struct definition — `static SQLITE_WSD struct
           // Mem3Global {` (SQLITE_WSD is an unknown identifier) — recovers
@@ -761,6 +934,22 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         case "declaration":
           {
+            // #918, the DECLARATION spelling of the same heading — recovery cut
+            // the region at the first parameter (`declaration` + an ERROR holding
+            // the rest of the parameter list and the body's opening — measured:
+            // libcmpp.c:5529, `CMPP__EXPORT(void *, cmpp_mrealloc)`). The rule
+            // proves the shape structurally (pointer return, name slot, all-
+            // identifier tail, a lone `}` after the declaration); when it holds,
+            // the definition is emitted and its region becomes the Function
+            // scope, exactly as the function_definition spelling does.
+            const typedDecl = macroWrappedTypedHeadingShape(node)
+            if (typedDecl) {
+              scopeManager.pushScope(ScopeKind.Function, typedDecl.name, node)
+              willPushScope = true
+              this.gluedDefNameOffsets.add(typedDecl.nameNode.startIndex)
+              activeFunctionSymbol = this.extractMacroWrappedTypedFunction(typedDecl, node, content, symbols, isConditional)
+              break
+            }
             const currentFunction = scopeManager.getCurrentFunctionName()
             // #917: a recovered macro-wrapped definition gets NO locals model.
             // The mirror is exact rather than convenient: the oracle's
@@ -2543,6 +2732,104 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     symbols.push(symbol)
     return symbol
+  }
+
+  /**
+   * #918: emit the definition a POINTER-RETURN macro-wrapped heading names (the
+   * `function_definition` and `declaration` spellings of the same shape). The
+   * range starts at the heading so a reader lands on the macro-decorated
+   * header, and ends at the body's matching brace, found by the same
+   * brace-matcher every other function uses.
+   *
+   * The LOCALS model is the one asymmetry the two spellings have, and it is a
+   * mirror, not a taste: the F5 oracle keys `fnLocals` by `function_definition`
+   * startIndex, so the function_definition spelling gets truth-side locals
+   * (collected from body declarations) and the declaration spelling gets none.
+   * Registering locals the oracle cannot see is how a recovery fabricates a
+   * MISSING row — measured twice in this family (the #917 heading mention, the
+   * #917 enum case) — so the declaration spelling joins the
+   * `macroWrappedFunctionNames` set the #917 contract built for exactly this.
+   */
+  private extractMacroWrappedTypedFunction(
+    rec: {
+      name: string
+      returnType: string
+      nameNode: Node
+      paramGroups: Node[][]
+      macroNameText: string
+      body: Node | null
+      braced: boolean
+    },
+    node: Node,
+    content: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    isConditional: boolean,
+  ): ASTEngine.UniversalSymbol | null {
+    if (!rec.body) this.macroWrappedFunctionNames.add(rec.name)
+    const parameters = this.collectTypedWrappedParameters(rec.paramGroups)
+    const endNode = rec.body ?? node
+    const bodyRange = this.recoverFunctionRange(endNode, content)
+    const headerRange = this.nodeToRange(node)
+    const symbol: ASTEngine.UniversalSymbol = {
+      name: rec.name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: {
+        ...bodyRange,
+        startLine: headerRange.startLine,
+        startColumn: headerRange.startColumn,
+        startIndex: headerRange.startIndex,
+      },
+      scope: "global",
+      complexity: this.functionComplexity(rec.body ?? node),
+      visibility: "public",
+      isStatic: false,
+      returnType: rec.returnType,
+      parameters,
+      metadata: {
+        cSpecific: true,
+        recoveredFromMacroWrappedHeader: true,
+        usesPointers: rec.returnType.includes("*") || parameters.some((p) => String(p.type ?? "").includes("*")),
+        isConditional,
+      },
+    }
+    symbols.push(symbol)
+    return symbol
+  }
+
+  /**
+   * #918: the parameter payload of a degraded parameter list. Each group's
+   * declared name is the RIGHTMOST non-keyword identifier in source order
+   * (measured: `int rc` keeps `rc` from beside a `type_identifier`-looking
+   * `int`, `cmpp_dx const *dx` keeps `dx` from behind a `pointer_declarator`),
+   * and a lone identifier is an UNNAMED declaration (`(void)`, `(JniArgsEnvObj)`)
+   * — the same contract the #917 collector publishes, over the node shapes this
+   * spelling produces.
+   */
+  private collectTypedWrappedParameters(groups: Node[][]): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
+    for (const group of groups) {
+      if (!group.length) continue
+      const groupText = this.analyzeContent.slice(group[0].startIndex, group[group.length - 1].endIndex)
+      if (groupText.includes("...")) {
+        parameters.push({ name: "...", type: "variadic", modifiers: [] })
+        continue
+      }
+      const alone = group.length === 1 ? group[0] : null
+      const nameNode =
+        group.length >= 2
+          ? lastNonKeywordIdentifierIn(group)
+          : alone && alone.type === "pointer_declarator"
+            ? lastNonKeywordIdentifierIn(group)
+            : null
+      if (!nameNode) {
+        parameters.push({ name: "unknown", type: groupText.trim() || "any" })
+        continue
+      }
+      const name = nameNode.text.trim()
+      const type = this.analyzeContent.slice(group[0].startIndex, nameNode.startIndex).trim()
+      parameters.push({ name, type: type || "any" })
+    }
+    return parameters
   }
 
   private recoveredMacroTruncatedFunction(node: Node): { name: string; returnType: string } | null {
