@@ -4665,6 +4665,21 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "cpp/bare-macro-symbols",
+    language: "cpp",
+    defectClass: "symbol-fabrication",
+    description:
+      "#915 regression: re-mints the phantom symbols the declaration branch made out of a run of bare top-level macros — the pre-fix analyzer named `variable FMT_END_NAMESPACE` after the recovered `declaration` whose terminator is MISSING (and `FMT_BEGIN_EXPORT` after the run that precedes a real declaration). Caught by cpp/bare-macro-statements, whose expectSymbolCount pins 0 of each and whose control symbols (Widget + owned size_, helper, after_macros) prove the suppression did not simply drop declarations. The measured class size on fmt is 13 such symbols in a 58-file draw and 0 on nlohmann-json; this mutant restores the two shapes that fixture carries.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "FMT_END_NAMESPACE", kind: "variable", scope: "global", visibility: "private", range: { startLine: 28, startColumn: 1, endLine: 28, endColumn: 17 } },
+        { name: "FMT_BEGIN_EXPORT", kind: "variable", scope: "global", visibility: "private", range: { startLine: 19, startColumn: 1, endLine: 19, endColumn: 15 } },
+      ],
+    }),
+  },
+  {
     id: "cpp/static-fn-public",
     language: "cpp",
     defectClass: "visibility-fabrication",
