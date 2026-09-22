@@ -48,7 +48,15 @@ interface Lane {
    * that uses it). `expectDetected: null` is a NEGATIVE CONTROL — a file that uses no
    * framework must detect none, so a marker table that fires on anything is caught here.
    */
-  cases: { name: string; src: string; expectDetected: string | null; expectAbsent?: string[]; note?: string }[]
+  cases: {
+    name: string
+    src: string
+    expectDetected: string | null
+    expectAbsent?: string[]
+    /** a pattern the framework contract must carry for this trigger (pins reachability) */
+    expectPattern?: { framework: string; pattern: string }
+    note?: string
+  }[]
 }
 
 const LANES: Lane[] = [
@@ -58,6 +66,11 @@ const LANES: Lane[] = [
     cases: [
       { name: "rails-model", src: `class User < ApplicationRecord\n  has_many :posts\nend\n`, expectDetected: "Ruby on Rails" },
       { name: "rails-controller-render", src: `class UsersController < ApplicationController\n  def show\n    render :json => {}\n  end\nend\n`, expectDetected: "Ruby on Rails" },
+      // #749: `before_action` is in RAILS_MACRO_METHODS, whose branch RETURNS, so the
+      // trigger that would record the callback pattern sat after the return and could
+      // never fire. This case is the regression pin: it asserts the PATTERN, not just the
+      // detection, because the detection was reachable the whole time.
+      { name: "rails-before-action", src: `class UsersController < ApplicationController\n  before_action :authenticate\nend\n`, expectDetected: "Ruby on Rails", expectPattern: { framework: "Ruby on Rails", pattern: "Callbacks" } },
       { name: "plain-ruby", src: `class Plain\n  def go\n    1\n  end\nend\n`, expectDetected: null, expectAbsent: ["Ruby on Rails"] },
     ],
   },
@@ -251,7 +264,14 @@ async function main() {
       const detected: string[] = Array.isArray(meta.detectedFrameworks) ? meta.detectedFrameworks : []
       const findings = checkMetadata(meta).map((f) => ({ lang: lane.lang, file: `case:${c.name}`, assertion: f.id, detail: f.detail }))
       const absentHit = (c.expectAbsent ?? []).filter((a) => detected.includes(a))
-      const ok = (c.expectDetected === null ? detected.length === 0 : detected.includes(c.expectDetected)) && absentHit.length === 0
+      const patsOut: any[] = Array.isArray(meta.frameworkPatterns) ? meta.frameworkPatterns : []
+      const patternMissed =
+        c.expectPattern !== undefined &&
+        !patsOut.some((p) => p?.framework === c.expectPattern!.framework && (p?.patterns ?? []).includes(c.expectPattern!.pattern))
+      const ok =
+        (c.expectDetected === null ? detected.length === 0 : detected.includes(c.expectDetected)) &&
+        absentHit.length === 0 &&
+        !patternMissed
       // A6: the analyzer CLAIMS the capability (so it must detect from a file that uses
       // the framework). A negative control that detects something is the same defect
       // inverted, and is recorded under the same id.
@@ -262,9 +282,11 @@ async function main() {
           assertion: "A6-claim",
           detail: absentHit.length
             ? `a file that uses no such framework still reported ${JSON.stringify(absentHit)} (detection returned ${JSON.stringify(detected)})`
-            : c.expectDetected === null
-              ? `no framework is used, yet detection returned ${JSON.stringify(detected)}`
-              : `a file using ${c.expectDetected} detected ${JSON.stringify(detected)}`,
+            : patternMissed
+              ? `${c.expectPattern!.framework} was detected but its ${c.expectPattern!.pattern} pattern is missing — the trigger is unreachable or the pattern name diverged (patterns: ${JSON.stringify(patsOut)})`
+              : c.expectDetected === null
+                ? `no framework is used, yet detection returned ${JSON.stringify(detected)}`
+                : `a file using ${c.expectDetected} detected ${JSON.stringify(detected)}`,
         })
       }
       caseResults.push({ name: c.name, detected, primary: meta.framework, expected: c.expectDetected, ok, note: c.note, findings })

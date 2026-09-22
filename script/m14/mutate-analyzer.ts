@@ -6824,6 +6824,57 @@ const MUTANTS: Mutant[] = [
       }),
     }),
   },
+  // --------------------------------------------------------------------------
+  // M60.R8 (#749): the framework trigger surface. Four mutants, one per defect the
+  // round fixed, so each fix has a reverting change that some fixture must catch.
+  // --------------------------------------------------------------------------
+  {
+    id: "ruby/framework-duplicate-accumulation",
+    language: "ruby",
+    defectClass: "duplicate-emission",
+    description: "R8 (M60) regression: the detection accumulator goes back to one entry per trigger hit, which is the pre-fix observable — `metadata.detectedFrameworks!.push(...)` ran once per Rails class AND once per render/redirect_to, so a file with three models and three calls published six identical entries (measured: five on a five-model file, three on rack/test.rb). Caught by ruby/framework-surface-pins, whose metadata pin compares the whole array and expects EXACTLY one entry.",
+    transform: r => ({
+      ...r,
+      metadata: {
+        ...(r.metadata ?? {}),
+        detectedFrameworks: [...((r.metadata as any)?.detectedFrameworks ?? []), ...((r.metadata as any)?.detectedFrameworks ?? [])],
+      },
+    }),
+  },
+  {
+    id: "ruby/framework-primary-pick-dropped",
+    language: "ruby",
+    defectClass: "missing-contract-key",
+    description: "R8 (M60) regression: the analyzer detects Rails and publishes no PRIMARY PICK — `metadata.framework` absent, which is exactly what ruby did before this round. The artifact does not just lose a convenience field: every downstream consumer that keys on the primary framework reads the file as framework-less while `detectedFrameworks` says otherwise. Caught by ruby/framework-surface-pins' expectPrimaryFramework, and by the R8 runtime probe's A3 assertion.",
+    transform: r => {
+      const m: any = { ...(r.metadata ?? {}) }
+      delete m.framework
+      return { ...r, metadata: m }
+    },
+  },
+  {
+    id: "ruby/framework-name-divergence",
+    language: "ruby",
+    defectClass: "name-divergence",
+    description: "R8 (M60) regression: the pattern entry goes back to its own spelling — `framework: \"Rails\"` while `detectedFrameworks` says \"Ruby on Rails\". One framework under two names inside one analyzer, so the two published arrays cannot be joined by name. The same shape as the file-scope owner's two spellings, on the framework surface. Caught by ruby/framework-surface-pins' frameworkPatterns metadata pin and by the runtime probe's A4/A5 assertions.",
+    transform: r => ({
+      ...r,
+      metadata: {
+        ...(r.metadata ?? {}),
+        frameworkPatterns: ((r.metadata as any)?.frameworkPatterns ?? []).map((p: any) => ({ ...p, framework: "Rails" })),
+      },
+    }),
+  },
+  {
+    id: "ruby/framework-callback-trigger-unreachable",
+    language: "ruby",
+    defectClass: "dead-branch",
+    description: "R8 (M60) regression of the UNREACHABLE trigger: `before_action`/`after_action` are members of RAILS_MACRO_METHODS, whose branch returns before the framework block, so the Callbacks pattern could never be recorded. The mutant removes the pattern, which is the pre-fix observable — measured, a file containing `before_action` published `frameworkPatterns: []` in every execution. Caught by ruby/framework-surface-pins' frameworkPatterns pin, which expects the array to contain the Callbacks pattern.",
+    transform: r => ({
+      ...r,
+      metadata: { ...(r.metadata ?? {}), frameworkPatterns: [] },
+    }),
+  },
   {
     id: "ruby/callsite-line-receiver-stamp",
     language: "ruby",
