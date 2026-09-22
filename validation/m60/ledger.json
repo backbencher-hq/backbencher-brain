@@ -22,7 +22,12 @@
       "remainderIssue": 831,
       "remainderLanes": ["dart"],
       "source": "docs/m60/PLAN.md §2 'The Web remainder (family `web`)': #816 (name-resolution FP) · #818 (dart lane re-measure)",
-      "remainderLanesNote": "M60.W1's remainder names #818, a dart F5-lane deferral, alongside #816 — so dart appears in this family's REMAINDER accounting while its analyzer is not one of the family's language set here. Recorded rather than silently absorbed: dart's own review folder and analyzer are tracked by their own wave, and the closure conditions that read this language list (folders closed, analyzers committed, cells alive) must not be widened to languages this family does not own without that being a decision."
+      "remainderLanesNote": "M60.W1's remainder names #818, a dart F5-lane deferral, alongside #816 — so dart appears in this family's REMAINDER accounting while its analyzer is not one of the family's language set here. Recorded rather than silently absorbed: dart's own review folder and analyzer are tracked by their own wave, and the closure conditions that read this language list (folders closed, analyzers committed, cells alive) must not be widened to languages this family does not own without that being a decision. UPDATE 2026-09-21 (owner decision, reviews/m60-oo-family-plan.md): that decision is now made — dart is a language of the `oo` family below, which owns its review folder, analyzer and closure conditions. This family keeps only the historical #818 remainder reference and does not own dart."
+    },
+    "oo": {
+      "languages": ["csharp", "dart", "objc", "php", "python", "ruby", "swift"],
+      "source": "owner decision 2026-09-21 (reviews/m60-oo-family-plan.md): the ManagedOO family is the M14.4 wave, plans/M14-issues.json #264–#270 — csharp, dart, swift, objective-c, php, ruby, python. Spellings are the analyzer-directory names; `objc` resolves to src/ast/real-objective-c-analyzer.ts via ANALYZER_FILE_ALIAS in script/m60/family-closure.ts, because the real-<lang>-analyzer.ts convention silently found no analyzer for it.",
+      "remainderNote": "No container issue is registered for this family, deliberately. #830 and #831 already showed the circularity: a container issue whose own title names a family language is counted by this gate as that family's remainder, so the family can never close while its own container is open. The OO remainder is instead the plan doc (reviews/m60-oo-family-plan.md) plus the per-lane issues it names: #804 csharp, #812 ruby, #815/#853 objc, #827/#856 dart, #835/#869 php, #836/#838 swift, and the real defects #747/#748/#902/#913 python, #749 ruby, #753 dart."
     }
   },
   "standingRules": [
@@ -54,6 +59,11 @@
     {
       "id": "R6",
       "rule": "One line base for every line in the payload: `line_number`, `range`, `decoratorLine` and the `metadata.line` mirror are 1-based, and no analyzer may emit a mirror that is not provably so (#873; the cpp/hpp rows carry no `line_number` at all, so a wrong mirror there was the row's entire line).",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R7",
+      "rule": "No analyzer may NAME something with a placeholder literal. When a fallback has nothing truthful to say the honest state is ABSENCE, not the string \"unknown\" — a literal in a name-bearing field becomes a symbol (or an edge endpoint) that does not exist in the source (`source: owner || \"unknown\"` attributes an edge to a symbol named \"unknown\" that no file contains, and every consumer downstream can then match, count and display it). Enforced by an AST census over every analyzer (script/m60/sentinel-census.ts) against an exact-count, shrink-only register (validation/m60/symbol-sentinel-register.json): a new site, a grown site and a vanished site all fail. Owner standard 2026-09-21 (reviews/m60-oo-family-plan.md §3.7/R2): the OO family reaches zero as lane work with fixtures and mutants; the runtime half — no emitted row carries a placeholder as a name — is disclosed as outstanding in the register rather than implied by a green gate.",
       "enforcedBy": "G1"
     }
   ],

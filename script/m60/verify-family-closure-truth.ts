@@ -31,7 +31,7 @@ import path from "node:path"
 import {
   computeFamilyClosureVerdict, computeMilestoneVerdict, reviewFolderState,
   dirtyAnalyzers as dirtyAnalyzerMap, loadFamilies, familyRemaindersNamedBy,
-  loadFamilyRemainderRegistry, type FamilyConditions, type FamilyRemainderRegistry,
+  loadFamilyRemainderRegistry, foldOwed, type FamilyConditions, type FamilyRemainderRegistry,
   type IssueLike,
 } from "./family-closure"
 
@@ -84,6 +84,9 @@ function classifierSelfTest(): { cases: number; failures: string[] } {
   const reg: Record<string, FamilyRemainderRegistry> = {
     jvm: { languages: ["java", "kotlin", "scala", "groovy"], codes: [/CONV-J-1/, /M60\.J1/], remainderIssue: 830 },
     web: { languages: ["typescript", "javascript", "vue", "svelte"], codes: [/CONV-(TS|JS)-/, /M60\.W1/], remainderIssue: 831 },
+    // The oo family is in the self-test since 2026-09-21 so the cross-family
+    // isolation is asserted WITH a third family present, not assumed.
+    oo: { languages: ["csharp", "dart", "objc", "php", "python", "ruby", "swift"], codes: [/CONV-(CS|RB|PY|DART|PHP|SW|OC)-/] },
   }
   const f: string[] = []
   let cases = 0
@@ -97,7 +100,15 @@ function classifierSelfTest(): { cases: number; failures: string[] } {
   expect("a registered code is caught without a language name", named(1, "CONV-J-1 member reads are lost").jvm.length === 1)
   expect("the registered remainder issue is caught by number", named(830, "some unrelated title").jvm.length === 1)
   expect("an unrelated title opens no family", named(1, "M56.L1 Languages Substance on the Homepage").jvm.length === 0 && named(1, "M56.L1 Languages Substance on the Homepage").web.length === 0)
-  expect("a language in neither family opens neither", named(1, "dart second review wave: DT2-A/B").jvm.length === 0 && named(1, "dart second review wave: DT2-A/B").web.length === 0)
+  expect("a language in NO family opens nothing", named(1, "rust RSD7 framework detection").jvm.length === 0 && named(1, "rust RSD7 framework detection").web.length === 0 && named(1, "rust RSD7 framework detection").oo.length === 0)
+  // oo-specific positives and the isolation in the other direction: a lane the
+  // oo family owns must NOT open jvm or web, and a lane it does not own must not
+  // open oo. dart is the sharp case — it was web's `remainderLanes` in the
+  // ledger, so a naive classifier would open web for a dart title.
+  expect("a lane the oo family owns opens oo and only oo", named(1, "dart second review wave: DT2-A/B").oo.length === 1 && named(1, "dart second review wave: DT2-A/B").jvm.length === 0 && named(1, "dart second review wave: DT2-A/B").web.length === 0)
+  expect("the `objective-c` spelling matches the `objc` registry name", named(1, "M49.OC1 ObjC first review wave").oo.length === 1)
+  expect("an oo CONV code is caught without a language name", named(1, "M49-CONV: CONV-PY-1 framework detection is dead code").oo.length === 1)
+  expect("a jvm language does not open oo", named(1, "groovy grammar residual").oo.length === 0)
   return { cases, failures: f }
 }
 
@@ -215,9 +226,16 @@ function main() {
   const families: Record<string, { verdict: string; conditions: FamilyConditions; openFolders: string[]; unmoored: string[] }> = {}
   for (const [fam, langs] of Object.entries(FAMILY_LANGS)) {
     const familyOpen = langs.filter((l) => folders.open.includes(l))
+    // A family language with NO review folder appears in neither list, so the old
+    // `familyOpen.length === 0` was vacuously TRUE for it — a false green on the
+    // condition that certifies the family's review work exists at all. python is
+    // the first family language to expose it (reviews/python does not exist), so
+    // the condition now states what it means: every family language's review
+    // folder must be CLOSED, not merely "none open".
+    const familyMissing = langs.filter((l) => !folders.closed.includes(l) && !folders.open.includes(l))
     const familyUnmoored = langs.filter((l) => folders.closed.includes(l) && dirty[l] !== undefined)
     const conditions: FamilyConditions = {
-      foldersClosed: familyOpen.length === 0,
+      foldersClosed: langs.every((l) => folders.closed.includes(l)),
       analyzersCommitted: familyUnmoored.length === 0,
       cellsAlive: cells.blocked.length === 0 && cells.rulingsMissing.length === 0,
       trackerClean: !ghUnavailable && open[fam].length === 0,
@@ -227,11 +245,12 @@ function main() {
       verdict: computeFamilyClosureVerdict(conditions),
       conditions,
       openFolders: familyOpen,
+      missingFolders: familyMissing,
       unmoored: familyUnmoored,
     }
     const failing = (Object.keys(conditions) as (keyof FamilyConditions)[]).filter((k) => !conditions[k])
     check(`${fam} family: every condition green`, failing.length === 0,
-      failing.length ? `open: ${failing.join(", ")}${familyOpen.length ? ` (folders: ${familyOpen.join(", ")})` : ""}${familyUnmoored.length ? ` (dirty: ${familyUnmoored.join(", ")})` : ""}` : "")
+      failing.length ? `open: ${failing.join(", ")}${familyOpen.length ? ` (folders: ${familyOpen.join(", ")})` : ""}${familyMissing.length ? ` (no folder: ${familyMissing.join(", ")})` : ""}${familyUnmoored.length ? ` (dirty: ${familyUnmoored.join(", ")})` : ""}` : "")
   }
 
   // (a) the M49 closure gate, live. Measured ONCE and carried into the verdict:
@@ -239,9 +258,25 @@ function main() {
   const m49Live = m49ClosureGateLive()
   check("M49 closure gate passes live", m49Live, "milestone-level condition: the gate returns not-closed while any language folder is open")
 
-  // Fold record (R4), per family.
+  // Fold record (R4), per family. The owing condition is `foldOwed` — the ONE
+  // definition of the accepted D1 decision, shared with G1's R4 rather than
+  // restated here (see its header for why the trigger excludes the family's own
+  // fold-present condition). Demanding a row unconditionally would read
+  // identically for "this family has not been processed" and "this family is
+  // ready and the fold is missing", and would pressure a family to land a fold
+  // row before its waves are done.
   for (const fam of Object.keys(FAMILY_LANGS)) {
-    check(`R4 fold row present for ${fam}`, fold.present[fam], fold.detail[fam] || "no foldRecords row in validation/m49/ledger.json")
+    const c = families[fam].conditions
+    const owed = foldOwed(c, fold.present[fam])
+    check(
+      `R4 fold row present for ${fam}`,
+      !owed,
+      owed
+        ? fold.detail[fam] || "no foldRecords row in validation/m49/ledger.json"
+        : fold.present[fam]
+          ? ""
+          : `not yet owed — ${fam} is not otherwise ready: ${(Object.keys(c) as (keyof FamilyConditions)[]).filter((k) => k !== "foldPresent" && !c[k]).join(", ") || "(all other conditions green)"}`,
+    )
   }
 
   const verdict = computeMilestoneVerdict(
@@ -251,7 +286,7 @@ function main() {
 
   const result = {
     gate: "M60.X1",
-    title: "Family closure as a computed boolean (jvm + web), with the fold record",
+    title: "Family closure as a computed boolean (jvm + web + oo), with the fold record",
     at: new Date().toISOString(),
     atCommit: head,
     verdict,
