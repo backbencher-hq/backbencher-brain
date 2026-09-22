@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-21T22:08:54.430Z",
+  "snapshotAt": "2026-09-22T03:11:47.063Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 116,
+  "count": 118,
   "issues": [
     {
       "number": 134,
@@ -691,6 +691,18 @@
       "number": 913,
       "title": "python: the detector maps .pyx/.pxd to the Python grammar, so Python's primary corpus is 68.8% unparseable",
       "labels": []
+    },
+    {
+      "number": 914,
+      "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
+      "labels": []
+    },
+    {
+      "number": 916,
+      "title": "#916: a bare macro between a C type and its declarator costs the REAL symbol (7 sites on sqlite, 5 real symbols lost) — the #915 shape, where the phantom REPLACES the declaration",
+      "labels": [
+        "lang:c"
+      ]
     }
   ]
 }
