@@ -7,6 +7,40 @@ import { ASTEngine } from "./engine"
 // Identifiers whose parent nodes mean they are NOT bare method calls:
 // method/receiver names inside call nodes, def names, assignment targets,
 // hash keys, parameter lists, and class/module names.
+/**
+ * The FILE-SCOPE owner: the source an edge carries when its construct sits
+ * outside any named class/module/method.
+ *
+ * This is a DECLARED convention, not a placeholder, and it is now a single
+ * symbol for one role. Ruby's top level is a real scope (an instance of Object),
+ * so an edge written there has a truthful scope to name — unlike a
+ * "could not find out" state, which the analyzer expresses as a MISSING field
+ * (top-level methods are emitted with `ownerName: undefined`, and the store
+ * persists a missing edge source as `source_symbol_id IS NULL`, a state
+ * `src/lsp/graph_request.ts` already queries for the imports family).
+ *
+ * The file had grown TWO spellings for this one role: `"Global"` on bare calls,
+ * instance-variable reads and require edges, and `"unknown"` on the four
+ * alias/alias_method/mixin/association sites. That is the same two-sentinels-one-
+ * role defect this file already fixed once (the require edge used to say
+ * `"root"` — see the GAD2 note below), and the second spelling is what R7
+ * (M60 standing rules) exists to forbid: `"unknown"` is on the indexer's
+ * SYMBOL_NAME_DENYLIST, so it could never resolve to a symbol while still
+ * appearing in the analyzer's own evidence as if it named one.
+ *
+ * One constant, so a third spelling is now structurally impossible.
+ */
+const FILE_SCOPE_OWNER = "Global"
+
+/**
+ * Receiver node types that are VARIABLE READS: `@ivar`, `@@cvar`, `$global`.
+ * A variable names no class, so `.new` on one is a member call, never an
+ * instantiation — the same ruling RB-A made for lowercase identifier receivers
+ * (`task_class.new`). Kept as a named set so the rule reads as a rule, and so a
+ * third spelling of "unknowable receiver" cannot drift in unnoticed.
+ */
+const VARIABLE_RECEIVER_TYPES = new Set(["instance_variable", "class_variable", "global_variable"])
+
 const BARE_CALL_SKIP_PARENTS = new Set([
   "call", "command", "command_call",
   // NOTE: `method`/`singleton_method` are deliberately ABSENT — an endless
@@ -276,6 +310,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: leaf,
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
+            // #825: the base type's own node, NOT the `superclass` node — that
+            // one starts at `<`, so a wrapped `class X <\n  Base` would stamp the
+            // edge one line above the type it names (measured, not assumed).
+            line_number: this.nodeLine(this.superclassTargetNode(node)),
             metadata: {},
           })
         }
@@ -485,6 +523,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: c.text,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            // #825: the member-read node names the edge.
+            line_number: this.nodeLine(c),
             metadata: { memberRead: true },
           })
         }
@@ -505,18 +545,22 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // by the `alias` entry in BARE_CALL_SKIP_PARENTS).
       if (type === "alias") {
         const names: string[] = []
+        // The alias NAME's own node travels with its text: the edge is named by
+        // the new name, and `alias a b` writes that name on this line.
+        const nameNodes: Node[] = []
         for (let i = 0; i < node.namedChildCount && names.length < 2; i++) {
           const c = node.namedChild(i)
           if (!c) continue
-          if (c.type === "identifier") names.push(c.text)
-          else if (c.type === "simple_symbol") names.push(this.stripSymbolColon(c.text))
+          if (c.type === "identifier") { names.push(c.text); nameNodes.push(c) }
+          else if (c.type === "simple_symbol") { names.push(this.stripSymbolColon(c.text)); nameNodes.push(c) }
         }
         if (names.length === 2) {
           relationships.push({
-            source: owner || "unknown",
+            source: owner || FILE_SCOPE_OWNER,
             target: names[0],
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
+            line_number: this.nodeLine(nameNodes[0]),
             metadata: { aliasedTo: names[1], keywordAlias: true },
           })
         }
@@ -565,6 +609,16 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // constants keep the existing owner-gated behavior.
       if (type === "assignment" && (owner || this.isDynamicClassFactoryRhs(node))) {
         const left = node.childForFieldName("left")
+        // A dynamic class/module factory's LHS is a NAME for a real class, and
+        // the factory's block body executes in that class's scope — so members
+        // declared inside it belong to it. Probe (script/m14/tmp/rb-sentinel-probe.ts):
+        // `Widget = Class.new do has_many :parts end` emitted `property:parts`
+        // with NO owner and `uses:<file scope>->parts`, while the same
+        // `has_many` in `class Acct` emitted `property:widgets@Acct` and
+        // `uses:Acct->widgets`. The class-level shape is the correct one, and
+        // the factory already knows the name, so the body frames inherit it
+        // rather than falling through to the file-scope owner.
+        let factoryOwner: string | undefined
         if (left) {
           const leftType = left.type
           if (leftType === "constant") {
@@ -588,6 +642,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
                 visibility: visibility as any,
                 metadata: { definedBy: factoryKind === "Module" ? "Module.new" : "classFactory" },
               })
+              // The symbol above IS this name in this file, so the body's
+              // member edges and member symbols attribute to it.
+              factoryOwner = left.text
             } else if (owner) {
               symbols.push({
                 name: left.text,
@@ -606,7 +663,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // are still surfaced. The assignment node was not otherwise recursed.
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
+          if (child) stack.push({ node: child, owner: factoryOwner ?? owner, ownerKind, visibility, isSingleton: false })
         }
         continue
       }
@@ -624,10 +681,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           node.parent?.childForFieldName("left")?.id === node.id
         if (!isLhsOfAssign) {
           relationships.push({
-            source: owner || "Global",
+            source: owner || FILE_SCOPE_OWNER,
             target: node.text,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            // #825: the read node names the edge (top-level/DSL member read).
+            line_number: this.nodeLine(node),
             metadata: { memberRead: true },
           })
         }
@@ -663,7 +722,19 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const baseByClass = new Map<string, string>()
     for (const s of symbols) {
       if (s.kind === ASTEngine.SymbolKind.Class && s.metadata?.superClass) {
-        baseByClass.set(s.name, this.leafName(String(s.metadata.superClass)))
+        // The base must be a NAME the source writes. A dynamic superclass —
+        // `class DirectoryBody < Struct.new(:root, :path, :files)` — has no base
+        // class at all, and the extends edge already refuses it
+        // (isStaticSuperclassName). This map did not, so the overrides pass was
+        // handed the raw expression's leaf as if it were a class name:
+        //   overrides DirectoryBody.each -> "Struct.new(:root, :path, :files).each"
+        // (measured on rack/rack + rack/multipart, 3 phantom first-parent guesses
+        // on the 200-file draw). One predicate, applied in both places — the
+        // defect was invisible until the M59 line oracle gave the edge a line.
+        const superText = String(s.metadata.superClass)
+        if (this.isStaticSuperclassName(superText)) {
+          baseByClass.set(s.name, this.leafName(superText))
+        }
       }
     }
     const methodsByOwner = new Map<string, Set<string>>()
@@ -695,6 +766,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${base}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
+          // #825: a symbol-named edge carries the SYMBOL's own declaration line,
+          // so the edge moves with its symbol.
+          line_number: s.range?.startLine,
           metadata: { isOverride: true },
         })
       } else if (!inFileMethods && !context?.overrideCompanion?.get(base)) {
@@ -712,6 +786,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${base}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.5,
+          line_number: s.range?.startLine,
           metadata: { isOverride: true, reasonCode: "first-parent-guess" },
         })
       }
@@ -726,6 +801,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          line_number: s.range?.startLine,
           metadata: {},
         })
       }
@@ -982,7 +1058,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             n.parent!.namedChild(0)?.id === n.id
         if (isDefName) continue
         if (!BARE_CALL_SKIP_PARENTS.has(parentType as string) && !localNames.has(n.text)) {
-          this.pushBareCall(n.text, owner, enclosingMethod, relationships)
+          this.pushBareCall(n.text, n, owner, enclosingMethod, relationships)
         }
       }
 
@@ -1005,12 +1081,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
           n.parent?.childForFieldName("left")?.id === n.id
         if (!isLhsOfAssign) {
-          const src = enclosingMethod || owner || "Global"
+          const src = enclosingMethod || owner || FILE_SCOPE_OWNER
           relationships.push({
             source: src,
             target: n.text,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            line_number: this.nodeLine(n),
             metadata: { memberRead: true },
           })
         }
@@ -1111,6 +1188,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Extract receiver (identifier before the method name) ---
     let receiver: string | undefined
     let receiverLeaf: string | undefined
+    // The receiver NODE, not just its text: an `instantiates` edge is named by
+    // the type it constructs, and that type is written at the receiver. Bare
+    // `new` inside a class has no receiver node and falls back to the call node.
+    let receiverNode: Node | null = null
     // A receiver that is itself a call/block expression (`Class.new { }.new`)
     // is an ANONYMOUS target — RB-A uses this to suppress `.new` on it instead
     // of leaking a junk `calls:new` (rack spec_lock.rb wave).
@@ -1122,6 +1203,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child.type === "identifier" || child.type === "constant" || child.type === "scope_resolution") {
         receiver = child.text
         receiverLeaf = this.leafName(child.text)
+        receiverNode = child
+      } else if (VARIABLE_RECEIVER_TYPES.has(child.type)) {
+        // A receiver that is a VARIABLE READ (`@params_class.new`) names no
+        // class: the variable holds what was assigned to it, so `.new` on it is
+        // a member call whose class is unknowable. RB-A already ruled exactly
+        // this for lowercase identifier receivers (`task_class.new`), which
+        // never reach the instantiates branch. A variable receiver used to be
+        // classified as an expression receiver AND read as receiverless, so
+        // `@params_class.new` inside `class QueryParser` was emitted as
+        // `instantiates make_params -> QueryParser` — a name the line does not
+        // support (@params_class is a constructor PARAMETER; measured on rack
+        // query_parser.rb:203/207). The F5 oracle mirrored the same fallback, so
+        // the differential could not see it. `receiverLeaf` stays undefined on
+        // purpose: `receiver` is set so the call falls through to the member
+        // call, while no class name is claimed.
+        receiver = child.text
+        receiverNode = child
       } else {
         hasExpressionReceiver = true
       }
@@ -1164,11 +1262,16 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               // source used a hardcoded "root" while calls/uses/instan-
               // tiates at the same top level use "Global" — two sentinels
               // for one role in one file. Unified on "Global" (the pinned
-              // convention; no fixture ever pinned "root").
-              source: "Global",
+              // convention; no fixture ever pinned "root") — and now unified
+              // through FILE_SCOPE_OWNER, which is what made the SECOND
+              // divergent spelling ("unknown", four sites: alias,
+              // alias_method, mixin, association) visible at all.
+              source: FILE_SCOPE_OWNER,
               target: cleanText,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
+              // #825: the required path's string node names the edge.
+              line_number: this.nodeLine(arg),
               metadata: { requireMethod: methodName },
             })
           }
@@ -1197,10 +1300,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { requireMethod: methodName },
             })
             relationships.push({
-              source: "Global",
+              source: FILE_SCOPE_OWNER,
               target: cleanText,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.9,
+              // #825: the required path's string node names the edge.
+              line_number: this.nodeLine(arg),
               metadata: { requireMethod: methodName },
             })
           }
@@ -1228,10 +1333,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (arg && (arg.type === "constant" || arg.type === "scope_resolution")) {
             const target = this.leafName(arg.text)
             relationships.push({
-              source: owner || "unknown",
+              source: owner || FILE_SCOPE_OWNER,
               target,
               type: relType,
               confidence: 1.0,
+              // #825: the mixin CONSTANT's node names the edge.
+              line_number: this.nodeLine(arg),
               metadata: { mixinType: methodName },
             })
           }
@@ -1294,18 +1401,22 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const args = this.findChild(node, "argument_list")
       if (args) {
         const names: string[] = []
+        const argNodes: Node[] = []
         for (let i = 0; i < args.namedChildCount && names.length < 2; i++) {
           const arg = args.namedChild(i)
           if (arg && (arg.type === "simple_symbol")) {
             names.push(this.stripSymbolColon(arg.text))
+            argNodes.push(arg)
           }
         }
         if (names.length === 2) {
           relationships.push({
-            source: owner || "unknown",
+            source: owner || FILE_SCOPE_OWNER,
             target: names[0],
             type: ASTEngine.RelationshipType.Calls,
             confidence: 0.9,
+            // #825: the `:new_name` argument's node names the edge.
+            line_number: this.nodeLine(argNodes[0]),
             metadata: { aliasedTo: names[1] },
           })
         }
@@ -1332,10 +1443,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { associationType: methodName },
               })
               relationships.push({
-                source: owner || "unknown",
+                source: owner || FILE_SCOPE_OWNER,
                 target: name,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.8,
+                // #825: the association's own argument node names the edge.
+                line_number: this.nodeLine(arg),
                 metadata: { activerecordMacro: methodName },
               })
             }
@@ -1376,7 +1489,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- String interpolation: self.class inside #{...} → skip ---
     if (methodName === "class" && receiver === "self") return
 
-    const source = enclosingMethod || owner || "Global"
+    const source = enclosingMethod || owner || FILE_SCOPE_OWNER
 
     // `Class.new(...)` is a constructor expression, not an ordinary call.
     // A bare `new(...)` inside a class method constructs the owning class.
@@ -1390,8 +1503,18 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           fromSymbol: source,
           toSymbol: target,
           type: ASTEngine.RelationshipType.Instantiates,
+          // #825: the constructed TYPE names the edge — its receiver node when
+          // there is one, else the call node itself (bare `new`).
+          line_number: this.nodeLine(receiverNode ?? node),
           confidence: 0.9,
-          metadata: {},
+          // When no receiver supplied the name, the target is the ENCLOSING
+          // class: Ruby's `self.new`, `self.class.new` and a receiverless `new`
+          // all construct the class they appear in. The line is the call site
+          // (correct), but the class name is IMPLIED rather than written there,
+          // so the inference is declared instead of left to look like a written
+          // name. The M59 oracle reads this marker to classify the claim as
+          // structurally uncheckable-by-token rather than as a failed claim.
+          metadata: receiverLeaf ? {} : { resolvedTarget: "enclosing-class" },
         })
         return
       }
@@ -1415,6 +1538,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       toSymbol: qualified,
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
+      // #825: the METHOD field's node, never the call node — a call node starts
+      // at its receiver, which is the line ABOVE the callee in `a.b.c` chains.
+      line_number: this.nodeLine(methodNode),
       metadata: {},
     })
   }
@@ -1427,6 +1553,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private pushBareCall(
     name: string,
+    nameNode: Node | null,
     owner: string | undefined,
     enclosingMethod: string | undefined,
     relationships: ASTEngine.UniversalRelationship[],
@@ -1439,7 +1566,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Pseudo-constants (__FILE__, __LINE__, __method__, ...)
     if (name.startsWith("__") && name.endsWith("__")) return
 
-    const source = enclosingMethod || owner || "Global"
+    const source = enclosingMethod || owner || FILE_SCOPE_OWNER
     relationships.push({
       source,
       target: name,
@@ -1447,6 +1574,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       toSymbol: name,
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
+      // #825: the identifier's own node names the bare call.
+      line_number: this.nodeLine(nameNode),
       metadata: { bareCall: true },
     })
   }
@@ -1514,17 +1643,39 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Extract superclass from class node — pure char scan, no regex */
+  /**
+   * The node that NAMES the base type of a `class X < Base` declaration: the
+   * first named child of the `superclass` node, i.e. `Base` as written. The
+   * `superclass` node itself begins at the `<` token, which sits on the previous
+   * line whenever the base is wrapped — so it is the wrong anchor for a line.
+   */
+  private superclassTargetNode(node: Node): Node | null {
+    const superNode = this.findChild(node, "superclass")
+    if (!superNode || superNode.namedChildCount === 0) return null
+    return superNode.namedChild(0)
+  }
+
   private extractSuperclass(node: Node): string | undefined {
     const superNode = this.findChild(node, "superclass")
     if (!superNode) return undefined
 
-    const text = superNode.text
-    // Skip leading '<' and whitespace
-    let start = 0
-    while (start < text.length && (text[start] === "<" || text[start] === " " || text[start] === "\t")) {
-      start++
-    }
-    return start < text.length ? text.substring(start) : undefined
+    // Prefer the TYPE NODE's own text, trimmed. The `superclass` node includes
+    // the `<` marker and every character the source put between `<` and the
+    // name. Measured on a WRAPPED superclass (`class Widget <\n    Base`), the
+    // old strip of `<`, spaces and tabs left "\n    Base": a target carrying a
+    // newline, which is not a class name and cannot match the class it names.
+    // Two consequences, both real and both invisible until a fixture wrapped the
+    // base: the `extends`/`overrides` TARGETS disagreed with the differential's
+    // trimmed truth (a latent missing+unexplained pair), and the in-file
+    // override this declares could never be verified, so it was silently
+    // downgraded to a 0.5 first-parent guess (`metadata.superClass` carried the
+    // newline too — a payload field, not just an edge).
+    const target = this.superclassTargetNode(node)
+    if (target?.text) return target.text.trim()
+
+    // Fallback (malformed/partial trees with no named child): strip the marker.
+    const text = superNode.text.replace(/^<\s*/, "").trim()
+    return text.length > 0 ? text : undefined
   }
 
   /** Extract parameters from method node */
@@ -1691,6 +1842,30 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!superClass) return false
     const leaf = this.leafName(superClass)
     return leaf === "Base" && superClass.includes("ActionController") || leaf === "ApplicationController"
+  }
+
+  /**
+   * M59.A7 (#825): the 1-based line of the node that NAMES an edge's target.
+   *
+   * The contract is the family's, not this file's: a relationship's `line_number`
+   * is the line where the TARGET is written — the callee for a call, the read for
+   * a member use, the constructed type for an instantiation, the symbol's own
+   * declaration for contains/overrides. It is checked independently by
+   * script/m59/oracle-callsite.ts, which re-derives every edge from the tree and
+   * requires the target token to appear on the claimed line.
+   *
+   * Two shapes are traps and both were measured on the python lane first:
+   *   * a call's node starts at its RECEIVER, so `items.strip.upper` stamped the
+   *     whole call on the `items` line — hence the method field's node below,
+   *     which in this grammar IS the leaf that names the callee;
+   *   * `undefined` is a first-class answer. A node that does not exist (a dynamic
+   *     mixin, a computed callee) contributes NO line rather than a fabricated 0,
+   *     which is the rule `0 means unknown and unknown must be absent` (#820/#821)
+   *     applied to this field.
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {

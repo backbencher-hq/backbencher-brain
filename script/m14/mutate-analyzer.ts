@@ -4680,6 +4680,23 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/macro-truncated-declaration-phantoms",
+    language: "c",
+    defectClass: "symbol-fabrication",
+    description:
+      "#916 regression: re-mints the phantoms a bare macro between a type and its declarator produced — the macro itself emitted as a `variable` (`SQLITE_WSD`, `SQLITE_NOINLINE`, `SQLITE_CDECL`, `JNICALL`) with the real declaration producing nothing. Caught by c/macro-truncated-declarator-916, whose expectSymbolCount pins 0 of each macro name and whose four real symbols (sqlite3SharedCacheList, btreeLockCarefully, sqlite3IoTrace, Java_entry) play the control that stops a fix from simply dropping the construct. The same mutant shape as cpp/bare-macro-symbols, kept separate because the c and cpp analyzers recover it by different means (c reads the sibling the truncation re-parsed; cpp suppresses the recovered declaration and the real symbol was never lost).",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "SQLITE_WSD", kind: "variable", scope: "global", visibility: "private", range: { startLine: 28, startColumn: 13, endLine: 28, endColumn: 23 } },
+        { name: "SQLITE_NOINLINE", kind: "variable", scope: "global", visibility: "private", range: { startLine: 32, startColumn: 13, endLine: 32, endColumn: 28 } },
+        { name: "SQLITE_CDECL", kind: "variable", scope: "global", visibility: "public", range: { startLine: 37, startColumn: 17, endLine: 37, endColumn: 29 } },
+        { name: "JNICALL", kind: "variable", scope: "global", visibility: "public", range: { startLine: 43, startColumn: 16, endLine: 43, endColumn: 23 } },
+      ],
+    }),
+  },
+  {
     id: "cpp/static-fn-public",
     language: "cpp",
     defectClass: "visibility-fabrication",
@@ -6780,6 +6797,157 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "process", target: "authorize", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }] }),
   },
   {
+    id: "ruby/file-scope-placeholder-divergence",
+    language: "ruby",
+    defectClass: "misattribution",
+    description: "R7 (M60) regression: the four alias/alias_method/mixin/association sites go back to the SECOND spelling for the file-scope owner — `source: owner || \"unknown\"` instead of the file's pinned one. Restores the exact pre-fix observable state: a top-level construct's edge carries the literal \"unknown\" as its source. Caught by ruby/file-scope-owner-pins, which pins the file-scope owner on all four constructs and forbids the \"unknown\" spellings.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.source) === "Global" && ["calls", "implements", "extends", "uses"].includes(String(x.type))
+          ? { ...x, source: "unknown", fromSymbol: "unknown" }
+          : x),
+    }),
+  },
+  {
+    id: "ruby/factory-body-falls-to-file-scope",
+    language: "ruby",
+    defectClass: "scope-blindness",
+    description: "regresses the dynamic-class-factory attribution: `X = Class.new do ... end` bodies go back to the file-scope owner instead of the class the factory names — the member symbol loses its owner and the association/construction edges carry \"Global\" although the analyzer had already emitted `class:X`. Caught by ruby/file-scope-owner-pins (`uses:Widget->parts`, `contains:Widget->parts`, `instantiates:Widget->Class`, `parts@Widget`) and by the fixture's `Global->parts` / `Global->Class` forbids.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.name === "parts" && s.ownerName === "Widget" ? { ...s, ownerName: undefined } : s),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.source) !== "Widget") return x
+        return { ...x, source: "Global", fromSymbol: "Global" }
+      }),
+    }),
+  },
+  {
+    id: "ruby/callsite-line-receiver-stamp",
+    language: "ruby",
+    defectClass: "wrong-line-anchor",
+    description: "M59.A7 (#825) regression: every `calls` edge moves one line up — the CALL NODE's line, which for a chain wrapped one call per line is the RECEIVER's line (`helper` on 35), not the callee's. This is the pre-fix observable state exactly, and the c lane's measured twin (`call_expression` starts at the receiver). Caught by ruby/callsite-lines-825, which pins strip@36/upper@37 and forbids both on 35.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type ?? x.relationshipType) === "calls" && typeof x.line_number === "number"
+          ? { ...x, line_number: x.line_number - 1 }
+          : x),
+    }),
+  },
+  {
+    id: "ruby/extends-declaration-line",
+    language: "ruby",
+    defectClass: "wrong-line-anchor",
+    description: "M59.A7 (#825) regression: heritage edges take the DECLARING CLASS's start line instead of the base type's own node. On a wrapped superclass (`class Widget <` / `Base`) that names the `<` line, which is the `superclass` node's start — the exact anchor this round replaced. Caught by ruby/callsite-lines-825 (`extends Widget->Base` pinned at 29, forbidden at 28).",
+    transform: r => {
+      const startLine = new Map<string, number>()
+      for (const s of r.symbols ?? []) {
+        if (typeof s?.name === "string" && typeof s?.range?.startLine === "number") startLine.set(s.name, s.range.startLine)
+      }
+      if (startLine.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const t = String(x.type ?? x.relationshipType)
+          if (t !== "extends" && t !== "implements") return x
+          const ln = startLine.get(String(x.source ?? x.from ?? "?"))
+          return ln === undefined ? x : { ...x, line_number: ln }
+        }),
+      }
+    },
+  },
+  {
+    id: "ruby/superclass-whitespace-leak",
+    language: "ruby",
+    defectClass: "untrimmed-target",
+    description: "M59.A7 (#825) regression: the base text keeps the whitespace the source wrote between `<` and the name, so the `extends` target is `\"\\n    Base\"` — not the class name. The pre-fix strip removed only `<`, spaces and tabs, so a WRAPPED base leaked a newline into the target (and into the override target and `metadata.superClass`). Caught by ruby/callsite-lines-825, which forbids the newline-carrying target.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.type ?? x.relationshipType)
+        if (t !== "extends" && t !== "overrides") return x
+        const tg = String(x.target ?? x.to ?? "")
+        if (tg.length === 0 || tg.startsWith("\n")) return x
+        return { ...x, target: `\n    ${tg}` }
+      }),
+    }),
+  },
+  {
+    id: "ruby/in-file-override-downgraded",
+    language: "ruby",
+    defectClass: "evidence-downgrade",
+    description: "M59.A7 (#825) regression: an override whose base class IS declared in this file falls back to the 0.5 first-parent GUESS. That is what the whitespace leak caused (the base never matched the class it named), so a real structural override was published below the patterns.ts threshold as bare suspicion. Caught by ruby/callsite-lines-825, which requires `overrides Widget.greet->Base.greet` at confidenceMin 0.95 and forbids the 0.5 form.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type ?? x.relationshipType) === "overrides" && typeof x.confidence === "number" && x.confidence >= 0.9
+          ? { ...x, confidence: 0.5, metadata: { ...(x.metadata ?? {}), reasonCode: "first-parent-guess" } }
+          : x),
+    }),
+  },
+  {
+    id: "ruby/variable-receiver-instantiates",
+    language: "ruby",
+    defectClass: "fabricated-target",
+    description: "M59.A7 (#825) regression: a VARIABLE receiver goes back to the owner fallback, so `@factory.new` is published as `instantiates <enclosing class>` — a class name no source line supports (`@factory` holds an unknown class), and a name the R7 rule exists to forbid. The F5 truth derivation mirrored the same fallback, so the differential could not see it. Caught by ruby/callsite-lines-825: `calls assemble->new@39` must exist and `instantiates assemble->Widget@39` is forbidden.",
+    transform: r => {
+      const ownerOf = new Map<string, string>()
+      for (const s of r.symbols ?? []) {
+        if (typeof s?.name === "string" && typeof s?.ownerName === "string") ownerOf.set(s.name, s.ownerName)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (String(x.type ?? x.relationshipType) !== "calls") return x
+          if (String(x.target ?? x.to) !== "new") return x
+          const owner = ownerOf.get(String(x.source ?? x.from ?? ""))
+          if (!owner) return x
+          return { ...x, type: "instantiates", target: owner, toSymbol: owner, metadata: { ...(x.metadata ?? {}) } }
+        }),
+      }
+    },
+  },
+  {
+    id: "ruby/dynamic-superclass-overrides",
+    language: "ruby",
+    defectClass: "fabricated-target",
+    description: "M59.A7 (#825) regression: the OVERRIDES pass goes back to using the raw superclass EXPRESSION as a base class name, so `class Wide < Struct.new(:a, :b)` publishes `overrides Wide.each -> Struct.new(:a, :b).each`. The extends edge had refused this shape since the RB-C ruling; the overrides pass never got the same gate — invisible until the line round gave the edge a line and the M59 oracle convicted it. Caught by ruby/callsite-lines-825's forbids on `extends Wide` and `overrides Wide.each`.",
+    transform: r => {
+      const exprBase = new Map<string, string>()
+      for (const s of r.symbols ?? []) {
+        const sup = s?.metadata?.superClass
+        if (typeof s?.name === "string" && typeof sup === "string" && sup.includes("(")) exprBase.set(s.name, sup)
+      }
+      if (exprBase.size === 0) return r
+      const extra: any[] = []
+      for (const s of r.symbols ?? []) {
+        if (typeof s?.ownerName !== "string" || typeof s?.name !== "string") continue
+        const base = exprBase.get(s.ownerName)
+        if (!base) continue
+        extra.push({ type: "overrides", source: `${s.ownerName}.${s.name}`, target: `${base}.${s.name}`, fromSymbol: `${s.ownerName}.${s.name}`, toSymbol: `${base}.${s.name}`, confidence: 0.5, line_number: s.range?.startLine, metadata: { isOverride: true, reasonCode: "first-parent-guess" } })
+      }
+      return extra.length === 0 ? r : { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "ruby/enclosing-class-marker-dropped",
+    language: "ruby",
+    defectClass: "unstated-inference",
+    description: "M59.A7 (#825) regression: the enclosing-class instantiation keeps its (correct) line but stops DECLARING that the target was inferred, so the M59 oracle can no longer tell an implied name from a written one and must convict the claim instead of classifying it. Caught by ruby/callsite-lines-825's `meta.resolvedTarget` pin.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const m = x?.metadata
+        if (!m || m.resolvedTarget === undefined) return x
+        const { resolvedTarget: _drop, ...rest } = m
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
     id: "ruby/drop-implements-edge",
     language: "ruby",
     defectClass: "relationship-loss",
@@ -7071,6 +7239,37 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "regresses PYD5: member reads inside nested defs re-owned by the nested (non-symbol) name — run->base_name pin dies",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "run" && x.target === "base_name")) }),
+  },
+  {
+    id: "python/lines-dropped",
+    language: "python",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: python's relationships go back to carrying NO line — the exact pre-fix state (MEASURED 0 of 17,781 relationships lined on a 200-file draw of the pinned corpus, the M59 oracle reporting 0 withLine / 17,781 noLine). Caught by python/decorator-column-lines, which pins the import statement's own line (4), each wrapped import item's own line (Optional 6, List 7) and each chained call's callee leaf (strip 18, upper 19 — the receiver is written on 17).",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "python/construct-start-line",
+    language: "python",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: restores the CONSTRUCT-START line instead of the node that names the edge — an import item reports the `from ... import (` statement line (5, not 6/7) and a chained call reports its RECEIVER (17, not the leaf on 18/19). Exactly the pre-fix positions python/decorator-column-lines forbids.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.type ?? x.relationshipType ?? "")
+        const trapBearing = ["calls", "contains", "extends", "implements", "instantiates", "uses", "references", "imports", "exports", "overrides"]
+        if (trapBearing.includes(t) && typeof x.line_number === "number") {
+          return { ...x, line_number: x.line_number - 1 }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "python/decorated-start-line",
+    language: "python",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: a decorated definition's range goes back to the DECORATOR line — the pre-fix nodeToRange preferred the decorated_definition parent (whose start is the `@` line), so `decorated` claimed 23 while its name is written on 24. Simulated off the result's own decorator payload (the scala helper), so it stays faithful rather than name-hardcoded. Caught by python/decorator-column-lines' expectSymbolRanges startLine=24.",
+    transform: revertToAnnotationStartLine,
   },
   {
     id: "haskell/drop-tuple-superclass",
