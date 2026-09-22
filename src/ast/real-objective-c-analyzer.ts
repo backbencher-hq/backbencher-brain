@@ -9,6 +9,46 @@ const BARE_READ_SKIP: ReadonlySet<string> = new Set([
   "self", "super", "nil", "Nil", "NULL", "YES", "NO", "true", "false", "_cmd",
 ])
 
+// ============================================================================
+// CONV-OC-1: framework detection — the family contract (CONV-CS-2 reference,
+// swift/java siblings) over this lane's existing markers.
+// ============================================================================
+// The trigger set is UNCHANGED: UIKit/Foundation/AppKit/Cocoa, added by
+// `preproc_include` on the module name. What was missing is the published
+// contract over it. The lane published `detectedFrameworks` and a primary pick
+// and NOTHING ELSE, so `frameworkPatterns` — the key that states HOW each
+// framework was recognised — was absent from every payload, on every file
+// (measured: 7 of 7 detecting files over 153 real corpus files).
+//
+// The primary pick was also derived from the Set's insertion order, which is the
+// order the imports happen to be visited in — a property of the file's statement
+// order, not of the code's meaning. The census cannot see this (a Set is
+// deduped by construction, and `[...frameworks][0]` is a legitimate read), so the
+// declared table below is what makes the pick deterministic: on a file importing
+// both `<Foundation/Foundation.h>` and `<UIKit/UIKit.h>` the answer must not
+// depend on which `#import` was written first.
+//
+// OBJC_FRAMEWORK_ORDER is the emitted order and therefore the primary pick:
+// application frameworks most-specific first, and the base library LAST —
+// Foundation is imported by nearly every Objective-C file including every
+// framework's own headers, so "first imported wins" would report Foundation as
+// the primary framework for anything that also imports a UI framework, which is
+// the reverse of what a consumer wants. Test frameworks would sort last of all by
+// the same rule as CS_FRAMEWORK_ORDER; this lane observes none (no XCTest marker
+// was invented here to fill that slot — see the wave record).
+const OBJC_FRAMEWORK_ORDER = ["UIKit", "AppKit", "Cocoa", "Foundation"]
+
+// The pattern kind each framework is observed BY, so `frameworkPatterns` states
+// the same fact as `detectedFrameworks` rather than re-deriving it. Names shared
+// with the swift sibling (CONV-SW-3) keep the same spelling for the same reason
+// they name the same thing.
+const OBJC_FRAMEWORK_PATTERNS: Record<string, string[]> = {
+  UIKit: ["ui_framework"],
+  AppKit: ["ui_framework"],
+  Cocoa: ["app_umbrella"],
+  Foundation: ["base_library"],
+}
+
 export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -932,6 +972,33 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
       }
     }
+    // CONV-OC-1: the emitted order is the declared table, never the Set's insertion
+    // order, and the pick is the table's first entry rather than `[...frameworks][0]`.
+    // Names observed but absent from the table are appended in sorted order rather than
+    // dropped — a marker added without an order entry must degrade to a disclosed
+    // position, never to silent non-publication.
+    //
+    // Deliberately computed as local consts feeding an INLINE metadata literal, the
+    // csharp/swift shape. The first version of this fix wrapped the literal in an IIFE,
+    // which published the same object while making the source unreadable to the R8
+    // census: `collectMetadata` recognises a metadata VALUE only when it is an object
+    // literal, so the lane stopped being examined as a contract binding at all — a newly
+    // blind instrument, caught by re-running the census rather than by assuming the
+    // refactor was neutral. The two published arrays are each an expression over the
+    // frameworks Set, so the read is visible where the write is.
+    const detectedFrameworks: string[] = [...frameworks]
+    detectedFrameworks.sort((a, b) => {
+      const ra = OBJC_FRAMEWORK_ORDER.indexOf(a)
+      const rb = OBJC_FRAMEWORK_ORDER.indexOf(b)
+      if (ra === -1 && rb === -1) return a < b ? -1 : a > b ? 1 : 0
+      if (ra === -1) return 1
+      if (rb === -1) return -1
+      return ra - rb
+    })
+    const frameworkPatterns = detectedFrameworks.map((f) => ({
+      framework: f,
+      patterns: OBJC_FRAMEWORK_PATTERNS[f] ?? ["usage"],
+    }))
     return {
       language: "objective-c",
       symbols: uniqueSymbols,
@@ -939,7 +1006,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       imports,
       exports,
       errors,
-      metadata: { complexity: uniqueSymbols.length, linesOfCode: content.split("\n").length, detectedFrameworks: [...frameworks], framework: [...frameworks][0] },
+      metadata: {
+        complexity: uniqueSymbols.length,
+        linesOfCode: content.split("\n").length,
+        detectedFrameworks,
+        framework: detectedFrameworks.length > 0 ? detectedFrameworks[0] : undefined,
+        frameworkPatterns,
+      },
     }
   }
 

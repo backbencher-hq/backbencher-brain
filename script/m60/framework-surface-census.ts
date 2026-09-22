@@ -141,6 +141,12 @@ export interface SurfaceCensus {
   byShape: Record<string, number>
   byVerdict: Record<string, number>
   byLanguage: Record<string, { violations: number; safe: number; reported: number; publishesContract: boolean }>
+  /**
+   * Analyzer files that NAME a framework-contract key while publishing none the classifier
+   * can read. Not a verdict about their behaviour — a statement that they cannot be
+   * adjudicated, which the gate treats as a refusal rather than a pass.
+   */
+  unexamined: string[]
   /** How many contract-key bindings the one-hop dead-surface rule actually examined. */
   bindingsExamined: number
   sites: SurfaceSite[]
@@ -408,29 +414,42 @@ function isGuardedAppend(write: any, names: string[]): boolean {
  *     14 in kotlin). The published value is a surface only where it IS one:
  *     `X`, `[...X]`, `X[0]`, `X.map(...)`, or a ternary over those.
  */
-function publishedRefsFromValue(v: any, out: Set<string>): void {
+function publishedRefsFromValue(v: any, out: Set<string>, locals?: Map<string, any>, depth = 0): void {
   if (!v) return
   switch (v.type) {
-    case "identifier":
+    case "identifier": {
       out.add(v.text)
+      // ONE hop through a local binding, and through the SAME shape rules — this is the
+      // published value's derivation, not a sweep of the initializer's identifiers. The
+      // distinction was measured the hard way: a blanket identifier pass over local
+      // initializers produced 54 violations from 21 (groovy 9, kotlin 16, typescript 9)
+      // by convicting `pName.text`, `ASTEngine.SymbolKind` and `parameters.length` —
+      // member reads and property labels, not accumulators. Recursing here reaches
+      // `const detectedFrameworks = [...frameworks]` (objective-c, and every repaired
+      // lane's shape) and nothing else.
+      if (locals && depth === 0) {
+        const init = locals.get(v.text)
+        if (init) publishedRefsFromValue(init, out, locals, depth + 1)
+      }
       return
+    }
     case "non_null_expression":
-      return publishedRefsFromValue(unwrap(v), out)
+      return publishedRefsFromValue(unwrap(v), out, locals, depth)
     case "spread_element":
-      return publishedRefsFromValue(unwrap(v.namedChild(0)), out)
+      return publishedRefsFromValue(unwrap(v.namedChild(0)), out, locals, depth)
     case "array":
-      for (const el of v.namedChildren ?? []) publishedRefsFromValue(unwrap(el), out)
+      for (const el of v.namedChildren ?? []) publishedRefsFromValue(unwrap(el), out, locals, depth)
       return
     case "subscript_expression":
-      return publishedRefsFromValue(unwrap(v.childForFieldName("object")), out)
+      return publishedRefsFromValue(unwrap(v.childForFieldName("object")), out, locals, depth)
     case "member_expression": {
       const obj = unwrap(v.childForFieldName("object"))
       if (obj && obj.type === "identifier") out.add(obj.text)
       return
     }
     case "ternary_expression":
-      publishedRefsFromValue(unwrap(v.childForFieldName("consequence")), out)
-      return publishedRefsFromValue(unwrap(v.childForFieldName("alternative")), out)
+      publishedRefsFromValue(unwrap(v.childForFieldName("consequence")), out, locals, depth)
+      return publishedRefsFromValue(unwrap(v.childForFieldName("alternative")), out, locals, depth)
     case "call_expression": {
       // `detectedFrameworks.map(...)` — the RECEIVER is the surface; the arguments are not.
       const fn = v.childForFieldName("function")
@@ -447,6 +466,20 @@ function publishedRefsFromValue(v: any, out: Set<string>): void {
 function collectSurface(root: any): SurfaceInfo {
   const refs = new Set<string>()
   const publishedKeys = new Set<string>()
+
+  // The local bindings a published identifier may be derived from. `const detectedFrameworks
+  // = [...frameworks]` publishes the LOCAL while the walker writes the SET, and without
+  // this the accumulator of the lane that was just repaired stops being a surface at all —
+  // measured: it is exactly what CONV-OC-1 did to objective-c, and the self-test written
+  // for it ("locals feeding an inline metadata literal keep the keys AND the surface")
+  // failed on the classifier before the hop below existed.
+  const localInits = new Map<string, any>()
+  walk(root, (n: any) => {
+    if (n.type !== "variable_declarator") return
+    const name = n.childForFieldName("name")?.text
+    const v = n.childForFieldName("value")
+    if (name && v && !localInits.has(name)) localInits.set(name, unwrap(v))
+  })
 
   // A. holder form: `const metadata = { detectedFrameworks: [], frameworkPatterns: [] }`
   walk(root, (n: any) => {
@@ -472,8 +505,16 @@ function collectSurface(root: any): SurfaceInfo {
       if (p.type === "shorthand_property_identifier" || p.type === "shorthand_property_identifier_pattern") k = p.text
       if (k) publishedKeys.add(k)
       if (!k || !COLLECTION_KEYS.has(k)) continue
-      if (p.type === "pair") publishedRefsFromValue(unwrap(p.childForFieldName("value")), refs)
-      else refs.add(k)
+      if (p.type === "pair") {
+        publishedRefsFromValue(unwrap(p.childForFieldName("value")), refs, localInits)
+      } else {
+        // Shorthand (`detectedFrameworks,`) publishes the local itself, so the hop has to
+        // happen HERE as well — this is objective-c's and python's publication shape, and
+        // without it the fixed ancestor of the hop below would have been invisible.
+        refs.add(k)
+        const init = localInits.get(k)
+        if (init) publishedRefsFromValue(init, refs, localInits, 1)
+      }
     }
   }
 
@@ -637,12 +678,21 @@ function dominatingGuards(body: any): { set: string; ident: string; cond: string
 export interface FileScan {
   sites: SurfaceSite[]
   bindingsExamined: number
+  /**
+   * The contract keys this file PUBLISHES on its metadata (from the metadata object, or
+   * from `metadata.<key> = ...`). Exposed because "this lane is clean" and "this lane is
+   * not being examined" are the same number of sites, and the difference has to be
+   * checkable: the first version of the objective-c fix wrapped the metadata literal in an
+   * IIFE, which dropped the lane from adjudication entirely while every count stayed at
+   * zero. An audit can now compare this against the key names the file mentions.
+   */
+  publishedContractKeys: string[]
 }
 
 /** Scan one analyzer source. Exported so the self-tests can drive it. */
 export function scanFile(parser: any, file: string, src: string): { scan: FileScan; parseError: boolean } {
   const tree = parser.parse(src)
-  if (!tree || tree.rootNode.hasError) return { scan: { sites: [], bindingsExamined: 0 }, parseError: true }
+  if (!tree || tree.rootNode.hasError) return { scan: { sites: [], bindingsExamined: 0, publishedContractKeys: [] }, parseError: true }
   const root = tree.rootNode
   const lang = langOf(file)
   const sites: SurfaceSite[] = []
@@ -860,7 +910,14 @@ export function scanFile(parser: any, file: string, src: string): { scan: FileSc
   // and a register holding the same finding twice is noise, not evidence.
   const deduped = new Map<string, SurfaceSite>()
   for (const s of sites) deduped.set(`${s.line}\u0000${s.shape}\u0000${s.key}`, s)
-  return { scan: { sites: [...deduped.values()], bindingsExamined: surface.refs.size }, parseError: false }
+  return {
+    scan: {
+      sites: [...deduped.values()],
+      bindingsExamined: surface.refs.size,
+      publishedContractKeys: [...publishedKeysOf(root, surface.meta)].sort(),
+    },
+    parseError: false,
+  }
 }
 
 async function makeParser(): Promise<any> {
@@ -880,12 +937,29 @@ export async function census(root: string = ROOT, parser?: any): Promise<Surface
   const files = readdirSync(dir).filter((f) => /^real-.*-analyzer\.ts$/.test(f)).sort()
   const sites: SurfaceSite[] = []
   const parseErrors: string[] = []
+  const unexamined: string[] = []
   let bindingsExamined = 0
   for (const f of files) {
-    const r = scanFile(p, f, readFileSync(path.join(dir, f), "utf8"))
+    const src = readFileSync(path.join(dir, f), "utf8")
+    const r = scanFile(p, f, src)
     if (r.parseError) { parseErrors.push(f); continue }
     sites.push(...r.scan.sites)
     bindingsExamined += r.scan.bindingsExamined
+    // A file that NAMES a contract key but publishes none the classifier can read is not
+    // "clean", it is NOT EXAMINED — both print zero violations, and that is how a lane
+    // goes blind without anyone noticing. Measured, not hypothetical: an earlier version
+    // of the objective-c fix wrapped the metadata literal in an IIFE, and
+    // `collectMetadata` recognises a metadata VALUE only as an object literal, so the
+    // lane dropped out of adjudication entirely. R8 refuses to adjudicate while this list
+    // is non-empty (below), which converts a silent blind spot into a loud one.
+    //
+    // The key-name test here is TEXT-level on purpose: it is the COHORT SELECTOR (which
+    // files merit examination), not a verdict. Every verdict stays structural, which is
+    // what keeps ruby's `frameworkPatterns.push({ framework: "Rails" })` from being read
+    // as publication.
+    if (!r.scan.publishedContractKeys.length && /detectedFrameworks|frameworkPatterns|hasFrameworkIntelligence/.test(src)) {
+      unexamined.push(f)
+    }
   }
   const byShape: Record<string, number> = {}
   const byVerdict: Record<string, number> = {}
@@ -899,7 +973,7 @@ export async function census(root: string = ROOT, parser?: any): Promise<Surface
     else row.reported++
     if (s.shape !== "unclassified") row.publishesContract = true
   }
-  return { files: files.length, occurrences: sites.length, parseErrors, byShape, byVerdict, byLanguage, bindingsExamined, sites }
+  return { files: files.length, occurrences: sites.length, parseErrors, unexamined, byShape, byVerdict, byLanguage, bindingsExamined, sites }
 }
 
 // ============================================================================
@@ -909,7 +983,7 @@ export async function census(root: string = ROOT, parser?: any): Promise<Surface
 // return for that source, in any order — and a case that returns an extra shape
 // fails, so a predicate that fires on everything is caught here rather than in a
 // register nobody can read.
-const SELF_TESTS: { name: string; src: string; expect: SurfaceShape[] }[] = [
+const SELF_TESTS: { name: string; src: string; expect: SurfaceShape[]; expectKeys?: string[] }[] = [
   // --- dead surface (python #747's shape) ---
   {
     name: "a surface read into a contract key and never written is dead",
@@ -937,6 +1011,27 @@ const SELF_TESTS: { name: string; src: string; expect: SurfaceShape[] }[] = [
     name: "a Set write dedupes and is safe",
     src: `function a() {\n  const detectedFrameworks = new Set<string>()\n  detectedFrameworks.add("Laravel")\n  return { metadata: { framework: [...detectedFrameworks][0], detectedFrameworks: [...detectedFrameworks], frameworkPatterns: [] } }\n}`,
     expect: ["deduped-write"],
+    expectKeys: ["detectedFrameworks", "framework", "frameworkPatterns"],
+  },
+  {
+    // The shape that made a lane go blind: `collectMetadata` recognises a metadata VALUE
+    // only as an object literal, so an IIFE (or any helper call) publishes keys the
+    // classifier cannot read. The sites are empty either way — which is the whole problem
+    // — so the pin is on the KEYS, and the census-level `unexamined` list turns the empty
+    // result into a refusal to adjudicate instead of a clean row.
+    name: "an IIFE-wrapped metadata literal publishes no readable contract key",
+    src: `function a() {\n  const frameworks = new Set<string>()\n  frameworks.add("UIKit")\n  return { metadata: (() => ({ detectedFrameworks: [...frameworks], framework: [...frameworks][0], frameworkPatterns: [] }))() }\n}`,
+    expect: [],
+    expectKeys: [],
+  },
+  {
+    // The same publication through the shape every repaired lane uses: locals feeding an
+    // INLINE literal. The keys are read, and the accumulator stays visible through the
+    // spread, so the Set's write is still classified.
+    name: "locals feeding an inline metadata literal keep the keys AND the surface",
+    src: `function a() {\n  const frameworks = new Set<string>()\n  frameworks.add("UIKit")\n  const detectedFrameworks: string[] = [...frameworks]\n  detectedFrameworks.sort((x, y) => (x < y ? -1 : 1))\n  return { metadata: { detectedFrameworks, framework: detectedFrameworks[0], frameworkPatterns: detectedFrameworks.map((f) => ({ framework: f, patterns: [] })) } }\n}`,
+    expect: ["deduped-write"],
+    expectKeys: ["detectedFrameworks", "framework", "frameworkPatterns"],
   },
   {
     name: "an array push is the duplication class",
@@ -1045,6 +1140,15 @@ export function selfTest(parser: any): SelfTestResult {
     if (JSON.stringify(got) !== JSON.stringify(want)) {
       failures.push(`${t.name}: expected [${want.join(", ")}], got [${got.join(", ")}]`)
     }
+    // The binding half: a case may also pin WHICH contract keys the classifier read, so
+    // "this file is clean" cannot come from "this file was never examined".
+    if (t.expectKeys) {
+      const keys = scan.publishedContractKeys
+      const wanted = [...t.expectKeys].sort()
+      if (JSON.stringify(keys) !== JSON.stringify(wanted)) {
+        failures.push(`${t.name}: expected published keys [${wanted.join(", ")}], got [${keys.join(", ")}]`)
+      }
+    }
   }
   return { cases: SELF_TESTS.length, failures }
 }
@@ -1080,10 +1184,11 @@ async function main() {
           violations: violations.length,
           bindingsExamined: c.bindingsExamined,
           parseErrors: c.parseErrors,
+          unexamined: c.unexamined,
           byShape: c.byShape,
           byVerdict: c.byVerdict,
           byLanguage: c.byLanguage,
-          scope: "a file is IN SCOPE when it publishes detectedFrameworks or frameworkPatterns, or makes a capability claim; a framework-only scalar label is out of scope",
+          scope: "a file is IN SCOPE when it publishes detectedFrameworks or frameworkPatterns, or makes a capability claim; a framework-only scalar label is out of scope. `unexamined` lists files that name a contract key while publishing none the classifier can read — the gate refuses to adjudicate on those rather than reading them as clean",
           selfTests: { cases: st.cases, passed: st.cases - st.failures.length, failures: st.failures },
           sites: c.sites,
         },

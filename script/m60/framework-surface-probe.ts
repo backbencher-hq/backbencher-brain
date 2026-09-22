@@ -5,7 +5,7 @@
 // names in straight line is not a duplicate, and the same `.push` inside a walker is one
 // duplicate per node. Multiplicity is a property of the run, so it is measured here.
 //
-// Five assertions, on the metadata of every analyzed file:
+// Six assertions, on the metadata of every analyzed file:
 //
 //   A1 array       `detectedFrameworks` is present and an Array (the family contract)
 //   A2 dedupe      no entry appears twice
@@ -15,6 +15,13 @@
 //   A4 aligned     every `frameworkPatterns[i].framework` is one of `detectedFrameworks`
 //   A5 one name    no emitted framework name is a strict substring of another emitted
 //                  name (ruby publishes "Rails" and "Ruby on Rails" for one framework)
+//   A7 presence    the three keys are ONE claim, but only where each carries a fact: a
+//                  payload that DETECTED something must publish `detectedFrameworks`,
+//                  `framework` and `frameworkPatterns`. Added after objective-c's missing
+//                  `frameworkPatterns` measured clean here (153 files, 0 findings) while the
+//                  census convicted it — A4/A5 read an absent pattern array as an empty one,
+//                  so a missing key was invisible. Deliberately not per-file: see the note
+//                  on `checkPresence` for the 189-file ruby measurement that ruled that out.
 //
 // Run over two corpora, because they answer different questions:
 //   * --fixtures: one inline trigger per OO language. This is the only place the
@@ -24,8 +31,20 @@
 //   * --repos: real files from the pinned corpora. This is where duplication, alignment
 //     and single-naming are measured on code nobody wrote for the probe.
 //
-// Run: bun script/m60/framework-surface-probe.ts [--repos] [--emit] [--all]
+// AND a second, separately-reported sweep over the PUBLISHED payload (--published).
+// The analyzer sweep above measures what each analyzer EMITS. The product publishes a
+// different object: `ASTEngine.parseFile` post-processes every result through
+// `enhanceWithFrameworkIntelligence`, which merges a second detector's detections,
+// re-promotes `framework`, and appends its own pattern objects to `frameworkPatterns`.
+// The same assertions over the published metadata answer the question R8 actually
+// asks — "does this code publish a framework capability it does not have" — because
+// that is the object a consumer sees. The two sweeps are reported and counted
+// separately: a finding in one is not a finding in the other, and collapsing them would
+// make the analyzer half's clean rows hide a pipeline finding.
+//
+// Run: bun script/m60/framework-surface-probe.ts [--repos] [--emit] [--all] [--published]
 //   default: fixtures only | --repos: fixtures + corpus draw | --all: no per-repo cap
+//   --published: additionally sweep the engine-published payload over the same files
 import * as fs from "node:fs"
 import path from "node:path"
 
@@ -133,7 +152,32 @@ const LANES: Lane[] = [
   },
 ]
 
-export type AssertionId = "A1-array" | "A2-dedupe" | "A3-primary" | "A4-aligned" | "A5-one-name" | "A6-claim"
+export type AssertionId =
+  | "A1-array"
+  | "A2-dedupe"
+  | "A3-primary"
+  | "A3-default-primary"
+  | "A4-aligned"
+  | "A5-one-name"
+  | "A6-claim"
+  | "A7-presence"
+
+/**
+ * Options that let ONE assertion set read two different objects honestly.
+ *
+ * The analyzer half reads what an analyzer emits, where a primary pick beside an empty
+ * detection is a defect. The published half reads what `ASTEngine.parseFile` publishes,
+ * where the same field deliberately keeps a value when nothing was found — `"unknown"`, or
+ * a pure-language name like `"Dart"` (both documented in `framework-intelligence.ts` as
+ * promotion policy). Measured before scoping: 1,000+ real corpus files carried that
+ * documented default and the published half convicted every one of them, which is noise
+ * that hides the finding it exists for — a REAL framework name published with no detection
+ * behind it. `defaults` is the policy list itself, imported rather than re-listed.
+ */
+export interface CheckOptions {
+  published?: boolean
+  defaults?: ReadonlySet<string>
+}
 
 export interface RuntimeFinding {
   lang: string
@@ -143,13 +187,46 @@ export interface RuntimeFinding {
 }
 
 /** The contract assertions. Pure, so the probe's self-tests can drive them. */
-export function checkMetadata(meta: any): { id: AssertionId; detail: string }[] {
+export function checkMetadata(meta: any, opts: CheckOptions = {}): { id: AssertionId; detail: string }[] {
   const out: { id: AssertionId; detail: string }[] = []
   if (!meta || typeof meta !== "object") return out
   const raw = meta.detectedFrameworks
   // A1: the key, when the analyzer publishes the collection contract, must be an array.
   const claims = meta.hasFrameworkIntelligence === true
+  /**
+   * A7 — the key-set half of the contract, scoped to the EXERCISED contract: a payload that
+   * detected something must publish all three keys, because that is the case where each key
+   * carries a fact. It is a closure over `meta` so the two early exits below still reach it;
+   * a lane publishing `framework` and `frameworkPatterns` but not `detectedFrameworks` used
+   * to return before any assertion could see it.
+   *
+   * WHY NOT EVERY FILE, and this was measured rather than assumed: ruby publishes
+   * `framework` and `frameworkPatterns` only from `recordFramework`, so a file with no Rails
+   * trigger omits both keys. A strict per-file rule convicted 189 of 190 real rake/rack files
+   * for it — and the finding has no consumer-visible effect, because the published payload
+   * normalizes the key set: `enhanceWithFrameworkIntelligence` writes `framework`,
+   * `detectedFrameworks` and `frameworkPatterns` unconditionally (framework-intelligence.ts),
+   * so an omitted key and an `undefined` value are the same object downstream. The census
+   * owns unconditional key presence, statically, once per analyzer; this half owns the key
+   * set of a contract that was actually used, and counts real files. Convicting the honest
+   * empty case would inflate the register with a shape that cannot affect a consumer.
+   *
+   * Key presence is read with `in`, not by value: `framework: undefined` is the key published
+   * with an honest empty value, a different fact from never having it.
+   */
+  const checkPresence = (detectedCount: number): void => {
+    if (detectedCount === 0) return
+    const missing: string[] = []
+    if (!("detectedFrameworks" in meta)) missing.push("detectedFrameworks")
+    if (!("framework" in meta)) missing.push("framework")
+    if (!("frameworkPatterns" in meta)) missing.push("frameworkPatterns")
+    if (missing.length) {
+      out.push({ id: "A7-presence", detail: `detected ${detectedCount} framework(s) but omits the key(s) ${missing.join(", ")}` })
+    }
+  }
   if (raw !== undefined && !Array.isArray(raw)) {
+    // A structural breach dominates: reporting the key set of a payload whose collection is
+    // not a collection would be noise on top of the real finding.
     out.push({ id: "A1-array", detail: `detectedFrameworks is ${typeof raw}, not an array` })
     return out
   }
@@ -168,7 +245,17 @@ export function checkMetadata(meta: any): { id: AssertionId; detail: string }[] 
     out.push({ id: "A3-primary", detail: `detected [${det.join(", ")}] but no primary pick published` })
   }
   if (det.length === 0 && meta.framework !== undefined) {
-    out.push({ id: "A3-primary", detail: `published primary ${JSON.stringify(meta.framework)} while detecting nothing` })
+    const isDocumentedDefault = opts.published === true && opts.defaults?.has(String(meta.framework)) === true
+    if (isDocumentedDefault) {
+      // Not a finding, and not silence either: the pipeline's promotion policy keeps a
+      // primary when nothing was detected, so the honest report is the CLASSIFICATION.
+      out.push({
+        id: "A3-default-primary",
+        detail: `published primary ${JSON.stringify(meta.framework)} with no detection — a documented no-framework default, not a framework claim`,
+      })
+    } else {
+      out.push({ id: "A3-primary", detail: `published primary ${JSON.stringify(meta.framework)} while detecting nothing` })
+    }
   }
   // A4 + A5: the patterns agree with the detection, and one framework has one name.
   const pats: any[] = Array.isArray(meta.frameworkPatterns) ? meta.frameworkPatterns : []
@@ -180,6 +267,17 @@ export function checkMetadata(meta: any): { id: AssertionId; detail: string }[] 
   if (divergent.length) {
     out.push({ id: "A5-one-name", detail: `one framework under two names: ${divergent.map((d) => `${d} ⊂ ${all.find((b) => d.length < b.length && b.includes(d))}`).join(", ")}` })
   }
+  // A7: the three keys of the contract are ONE claim, so a lane that publishes any of
+  // them must publish all of them. Without this assertion a missing key is invisible to
+  // the runtime half: A3 fires when a primary pick is ABSENT beside a detection, but a
+  // lane that stops one key earlier still satisfies A4/A5 over an empty pattern array —
+  // which is exactly how objective-c's missing `frameworkPatterns` measured as clean
+  // (153 files, 0 findings) while the static census convicted it. Same rule the census
+  // applies statically (`missing-contract-key`), so the two halves now agree.
+  // Deliberately NOT applied to a lane with no framework surface at all: publishing
+  // none of the three is an absent capability, not a broken one, and convicting it
+  // would make this assertion fire on every language without framework intelligence.
+  checkPresence(det.length)
   return out
 }
 
@@ -321,6 +419,52 @@ async function main() {
     }
   }
 
+  // ---- the published half: the same files, the object consumers actually receive ----
+  let published: any[] = []
+  if (process.argv.includes("--published")) {
+    const { ASTEngine } = await import("../../src/ast/engine")
+    // The promotion policy, imported from the module that OWNS it. A second copy here
+    // would be a second policy, and the first run of this half convicted 1,000+ real
+    // files for following the real one.
+    const { FrameworkIntelligence } = await import("../../src/ast/framework-intelligence")
+    const DEFAULTS: ReadonlySet<string> = new Set([
+      ...FrameworkIntelligence.PURE_LANGUAGE_PRIMARIES,
+      ...FrameworkIntelligence.TOOLING_DEFAULTS,
+    ])
+    for (const r of results) {
+      const lane = LANES.find((l) => l.lang === r.lang)!
+      if (!doRepos) break
+      const files = filesIn(lane.repos, lane.ext, cap)
+      const findings: RuntimeFinding[] = []
+      let withDetection = 0
+      let checked = 0
+      let defaultPrimary = 0
+      for (const f of files) {
+        let src: string
+        try { src = fs.readFileSync(f, "utf8") } catch { continue }
+        if (src.length > 400_000) continue
+        let pub: any
+        try { pub = await (ASTEngine as any).parseFile(f, src, { language: lane.lang }) } catch { continue }
+        const m = pub?.metadata
+        if (!m) continue
+        checked++
+        if (Array.isArray(m.detectedFrameworks) && m.detectedFrameworks.length) withDetection++
+        for (const fd of checkMetadata(m, { published: true, defaults: DEFAULTS })) {
+          // A documented default primary is COUNTED, not convicted: the count is what
+          // makes the policy visible in the artifact instead of silently filtered away.
+          if (fd.id === "A3-default-primary") { defaultPrimary++; continue }
+          findings.push({ lang: lane.lang, file: path.relative(CORPUS, f), assertion: `P-${fd.id}`, detail: fd.detail })
+        }
+      }
+      const byAssertion: Record<string, number> = {}
+      for (const f of findings) byAssertion[f.assertion] = (byAssertion[f.assertion] ?? 0) + 1
+      published.push({ lang: r.lang, corpus: { files: checked, withDetection, defaultPrimary, findings, byAssertion } })
+      console.log(`\n=== ${r.lang} (PUBLISHED payload)`)
+      console.log(`  corpus: ${checked} file(s), ${withDetection} with detection, ${defaultPrimary} documented-default primary(s), ${findings.length} finding(s) ${JSON.stringify(byAssertion)}`)
+      for (const f of findings.slice(0, 4)) console.log(`    ${f.assertion} ${f.file}: ${f.detail}`)
+    }
+  }
+
   const totals = { files: 0, withDetection: 0, findings: 0, casesOk: 0, casesTotal: 0, claimMisses: 0 }
   for (const r of results) {
     totals.files += r.corpus.files
@@ -347,6 +491,17 @@ async function main() {
       perRepoCap: cap,
       totals,
       lanes: results,
+      published: published.length
+        ? {
+            method:
+              "the same five assertions over the metadata `ASTEngine.parseFile` PUBLISHES (the analyzer sweep above calls each analyzer directly). Assertion ids are prefixed `P-` so a published finding can never be read as an analyzer finding. This half is where a post-processing layer's effect is visible at all: `enhanceWithFrameworkIntelligence` merges a second detector, re-promotes `framework`, and appends its own pattern objects to `frameworkPatterns`.",
+            lanes: published,
+            totals: published.reduce(
+              (a, l) => ({ files: a.files + l.corpus.files, withDetection: a.withDetection + l.corpus.withDetection, findings: a.findings + l.corpus.findings.length }),
+              { files: 0, withDetection: 0, findings: 0 },
+            ),
+          }
+        : undefined,
     }, null, 2) + "\n")
     console.log(`  -> ${path.relative(ROOT, OUT)}`)
   }
@@ -356,22 +511,46 @@ async function main() {
 // Self-tests: the assertions must catch each contract breach, and must not fire on a
 // compliant metadata object. Without these the probe's silence would be unreadable.
 // ============================================================================
-const SELF_TESTS: { name: string; meta: any; expect: AssertionId[] }[] = [
+const SELF_TESTS: { name: string; meta: any; expect: AssertionId[]; opts?: CheckOptions }[] = [
+  // Each meta below is COMPLETE except for the breach it is named for, so a test cannot
+  // pass because A7-presence happened to fire in its place.
   { name: "a compliant metadata object is clean", meta: { framework: "Django", detectedFrameworks: ["Django"], frameworkPatterns: [{ framework: "Django", patterns: [] }], hasFrameworkIntelligence: true }, expect: [] },
-  { name: "duplicates are convicted", meta: { framework: "Rails", detectedFrameworks: ["Rails", "Rails"] }, expect: ["A2-dedupe"] },
-  { name: "detection with no primary pick is convicted", meta: { detectedFrameworks: ["Rails"] }, expect: ["A3-primary"] },
-  { name: "a primary pick with no detection is convicted", meta: { framework: "Rails", detectedFrameworks: [] }, expect: ["A3-primary"] },
+  { name: "duplicates are convicted", meta: { framework: "Rails", detectedFrameworks: ["Rails", "Rails"], frameworkPatterns: [{ framework: "Rails" }] }, expect: ["A2-dedupe"] },
+  // A7 fires with A3 here because the breach is the same missing key read two ways: A3 by
+  // value (nothing to pick), A7 by key set (the key was never emitted).
+  { name: "detection with no primary pick is convicted", meta: { detectedFrameworks: ["Rails"], frameworkPatterns: [{ framework: "Rails" }] }, expect: ["A3-primary", "A7-presence"] },
+  { name: "a primary pick with no detection is convicted", meta: { framework: "Rails", detectedFrameworks: [], frameworkPatterns: [] }, expect: ["A3-primary"] },
+  // The published half's scoping, all three directions pinned: a documented default is
+  // classified (not convicted), a REAL framework name with nothing behind it is still a
+  // fabrication, and the analyzer half keeps the strict reading either way.
+  { name: "published default primary is classified, not convicted", meta: { framework: "unknown", detectedFrameworks: [], frameworkPatterns: [] }, opts: { published: true, defaults: new Set(["unknown", "Dart"]) }, expect: ["A3-default-primary"] },
+  { name: "published language-default primary is classified too", meta: { framework: "Dart", detectedFrameworks: [], frameworkPatterns: [] }, opts: { published: true, defaults: new Set(["unknown", "Dart"]) }, expect: ["A3-default-primary"] },
+  { name: "published real framework with no detection behind it is still convicted", meta: { framework: "Rails", detectedFrameworks: [], frameworkPatterns: [] }, opts: { published: true, defaults: new Set(["unknown", "Dart"]) }, expect: ["A3-primary"] },
+  { name: "the analyzer half does not accept the published default", meta: { framework: "unknown", detectedFrameworks: [], frameworkPatterns: [] }, expect: ["A3-primary"] },
   { name: "a pattern naming an undetected framework is convicted", meta: { framework: "Django", detectedFrameworks: ["Django"], frameworkPatterns: [{ framework: "Flask" }] }, expect: ["A4-aligned"] },
   { name: "one framework under two names is convicted", meta: { framework: "Ruby on Rails", detectedFrameworks: ["Ruby on Rails"], frameworkPatterns: [{ framework: "Rails" }] }, expect: ["A4-aligned", "A5-one-name"] },
   { name: "a non-array detection is convicted", meta: { detectedFrameworks: "Rails" }, expect: ["A1-array"] },
   { name: "a capability claim with no collection is convicted", meta: { hasFrameworkIntelligence: true }, expect: ["A1-array"] },
   { name: "an analyzer with no framework metadata is not convicted", meta: { complexity: 3 }, expect: [] },
+  // A7 — the objective-c shape: detection and a primary pick, no frameworkPatterns. Before
+  // this assertion the probe measured 153 real objective-c files as contract-clean while
+  // the census convicted the same analyzer, which is what a missing half looks like.
+  { name: "a detection missing frameworkPatterns is convicted", meta: { framework: "UIKit", detectedFrameworks: ["UIKit"] }, expect: ["A7-presence"] },
+  { name: "a detection missing the primary key is convicted", meta: { detectedFrameworks: ["UIKit"], frameworkPatterns: [{ framework: "UIKit" }] }, expect: ["A3-primary", "A7-presence"] },
+  // The negative that keeps A7 from firing on every language without framework
+  // intelligence: no key of the contract at all is an absent capability, not a breach.
+  { name: "an analyzer publishing no contract key at all is not convicted", meta: { detected: [], complexity: 7, imports: 2 }, expect: [] },
+  // The negative that keeps A7 from firing on ruby's honest empty case (189 of 190 real
+  // files): nothing detected, so no key carries a fact, and the published payload writes all
+  // three keys anyway. Pinned here so a later reader does not "tighten" A7 back to a
+  // per-file rule and re-convict a shape with no consumer-visible effect.
+  { name: "nothing detected with a partial key set is not convicted", meta: { detectedFrameworks: [], frameworkPatterns: [] }, expect: [] },
 ]
 
 if (process.argv.includes("--self-test")) {
   let bad = 0
   for (const t of SELF_TESTS) {
-    const got = checkMetadata(t.meta).map((f) => f.id).sort()
+    const got = checkMetadata(t.meta, t.opts).map((f) => f.id).sort()
     const want = [...t.expect].sort()
     if (JSON.stringify(got) !== JSON.stringify(want)) { console.log(`FAIL ${t.name}: expected [${want}], got [${got}]`); bad++ }
   }
@@ -379,4 +558,11 @@ if (process.argv.includes("--self-test")) {
   process.exit(bad ? 2 : 0)
 }
 
-main()
+// Only sweep when this file IS the entry point. `checkMetadata` and the lane table
+// are imported by other instruments (the published-payload probe imports the
+// assertion set so the two halves cannot drift), and an unguarded `main()` made the
+// module un-importable — it parsed the corpora as a side effect of the import and
+// crashed on a parser borrowed for the wrong language.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+  main()
+}
