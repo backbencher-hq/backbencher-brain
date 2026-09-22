@@ -86,6 +86,158 @@ const C_KEYWORDS = new Set([
   "_Static_assert", "_Thread_local",
 ])
 
+// ---------------------------------------------------------------------------
+// #917 SHARED SHAPE RULE (analyzer + F5 oracle)
+//
+// The vendored C families define functions through an export macro that stands
+// where the declaration specifier belongs and makes the whole heading
+// CALL-shaped:
+//
+//   CMPP__EXPORT(int, cmpp_stream)( cmpp_input_f inF, … ){ … }
+//   JniDeclFtsXA(jobject,xUserData)(JniArgsEnvObj,jobject jFcx){ … }
+//   S3JniApi(sqlite3_value_text16(),jstring,1value_1text16)(…){ … }
+//
+// The published grammar reads that as `MACRO(ret, name)` CALLED with `(params)`,
+// so the body is left as an orphan `compound_statement` — a direct child of the
+// translation_unit, or of the ERROR / `preproc_ifdef` that swallowed the region.
+// The shape is evidence, not a heuristic: at file scope (and inside a preproc
+// block) an `expression_statement` followed by a `compound_statement` is not
+// valid C — only recovery produces it.
+//
+// These two predicates are MODULE-SCOPE and exported because the oracle must
+// apply the SAME rule (`script/m14/differential.ts` imports them): the analyzer
+// suppresses the heading's naming occurrence as a definition, and truth has to
+// suppress the same occurrence or every wrapped definition whose name is also
+// declared elsewhere surfaces as a `uses` edge the analyzer correctly refuses
+// (measured: 68 rows on the 315-file sqlite c lane). One rule, never two copies.
+// ---------------------------------------------------------------------------
+
+/** Does `node` (or a child) hold the argument list of a call-shaped heading? */
+function childOfType(node: Node, type: string): Node | null {
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i)
+    if (child && child.type === type) return child
+  }
+  return null
+}
+
+/**
+ * The text of an argument list's FIRST comma-separated argument, scanned over
+ * the list's own text with paren/bracket depth so `(sqlite3_value_text16(),
+ * jstring, …)` yields the call and `(void *, name)` yields `void *`.
+ * Returns null when the list holds a single argument (nothing to split on).
+ */
+function firstArgumentText(argListNode: Node): string | null {
+  const text = argListNode.text
+  let depth = 0
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === "(" || ch === "[") depth++
+    else if (ch === ")" || ch === "]") depth--
+    else if (ch === "," && depth === 1) {
+      const first = text.slice(1, i).trim()
+      return first || null
+    }
+  }
+  return null
+}
+
+/**
+ * #917: is this `expression_statement` a macro-wrapped function heading, and
+ * what does it declare? Returns the declared NAME, its RETURN TYPE text, the
+ * naming NODE (the occurrence the analyzer treats as a definition), the macro
+ * argument list (where the return type is read from) and the heading's own
+ * parameter `argument_list`.
+ *
+ * The declared NAME is the macro's LAST identifier argument (both spellings in
+ * the corpora put it there: `(ret, name)` and `(existing_fn(), type, name)`) and
+ * the RETURN TYPE is the text of the macro's first argument — read from the
+ * argument list's own structure plus one comma scan, never from the source line.
+ */
+export function macroWrappedHeadingShape(header: Node): {
+  name: string
+  returnType: string
+  nameNode: Node
+  macroArgs: Node
+  macroNameText: string
+  outerArgs: Node | null
+} | null {
+  if (!header || header.type !== "expression_statement") return null
+  const outer = header.namedChildCount > 0 ? header.namedChild(0) : null
+  if (!outer || outer.type !== "call_expression") return null
+  const macro = outer.childForFieldName("function") || (outer.namedChildCount > 0 ? outer.namedChild(0) : null)
+  if (!macro || macro.type !== "call_expression") return null
+  const macroName = macro.childForFieldName("function") || (macro.namedChildCount > 0 ? macro.namedChild(0) : null)
+  if (!macroName || macroName.type !== "identifier" || !macroName.text.trim()) return null
+  const macroArgs = macro.childForFieldName("arguments") || childOfType(macro, "argument_list")
+  if (!macroArgs) return null
+
+  const args = ((macroArgs as any).namedChildren ?? []).filter((c: Node | null): c is Node => !!c) as Node[]
+  const argIdentifiers = args.filter((c) => c.type === "identifier" && c.text.trim() !== "")
+  // `(ret, name)` needs a SEPARATOR: without a top-level comma in the macro's
+  // argument list there is no way to tell which argument names the function,
+  // so the shape is refused rather than guessed. The comma — not an
+  // identifier count — is the right evidence, because a pointer return type
+  // (`(char const *, cmpp_rc_cstr)`) puts its type words in a
+  // `binary_expression` and leaves a single identifier standing.
+  const returnType = firstArgumentText(macroArgs)
+  if (!returnType || argIdentifiers.length < 1) return null
+  const lastIdentIdx = (() => {
+    for (let i = args.length - 1; i >= 0; i--) {
+      if (args[i].type === "identifier" && args[i].text.trim() !== "") return i
+    }
+    return -1
+  })()
+  if (lastIdentIdx < 0) return null
+  // The C lexer cannot START an identifier with a digit, so a JNI-mangled
+  // argument (`…, jstring, 1value_1text16)`) splits into an ERROR holding the
+  // leading digits and the identifier holding the rest — adjacent, in that
+  // order (measured: sqlite3-jni.c's S3JniApi family, every mangled name).
+  // Reading only the identifier would drop the `1` and name the definition
+  // `value_1text16`, a symbol no reader can resolve. The join is gated on
+  // ADJACENCY and on the ERROR being nothing but digits, so it can only mend
+  // a name the lexer itself split.
+  let name = args[lastIdentIdx].text.trim()
+  const beforeName = lastIdentIdx > 0 ? args[lastIdentIdx - 1] : null
+  if (
+    beforeName &&
+    beforeName.isError &&
+    // A NAME FRAGMENT, not junk: the split always starts at the digit, and
+    // the lexer can hand back one or two name characters with it
+    // (`1` + `value_1text16`, `1b` + `ackup_1finish`).
+    /^[0-9][0-9A-Za-z_]*$/.test(beforeName.text) &&
+    beforeName.endIndex === args[lastIdentIdx].startIndex
+  ) {
+    name = beforeName.text + name
+  }
+  if (!name || name === macroName.text.trim() || C_KEYWORDS.has(name)) return null
+
+  const outerArgs = outer.childForFieldName("arguments") || childOfType(outer, "argument_list")
+  return {
+    name,
+    returnType,
+    nameNode: args[lastIdentIdx],
+    macroArgs,
+    macroNameText: macroName.text.trim(),
+    outerArgs,
+  }
+}
+
+/**
+ * The body of a wrapped heading — the sibling right after it. The call-shaped
+ * reading can leave a mended `;` (MISSING, taken by the heading itself) or a
+ * lone `;` token between the two, so both are stepped over; anything else
+ * between the heading and the candidate body means the shape is not this one
+ * and the heading is refused.
+ */
+export function wrappedBodyAfter(header: Node): Node | null {
+  let next: Node | null = header.nextSibling
+  for (let i = 0; next && i < 2 && (next.isMissing || next.type === ";"); i++) {
+    next = next.nextSibling
+  }
+  return next && next.type === "compound_statement" ? next : null
+}
+
 class CScopeManager {
   private stack: ScopeEntry[] = []
 
@@ -157,6 +309,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // offsets — a reused instance must not carry file A's name offsets into
     // file B's identifier dispatch.
     this.gluedDefNameOffsets.clear()
+    // #917: same hygiene for the recovered macro-wrapped definition names.
+    this.macroWrappedFunctionNames.clear()
+    this.macroWrappedHeaders.clear()
     // CGD40 (M49 W17): the line-anchor gate needs the raw file text — a
     // directive line spliced into code by parse recovery is physically a
     // '#' line even with no surviving preproc_* ancestor.
@@ -481,6 +636,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
+        case "expression_statement": {
+          // #917: a macro-wrapped HEADING. Registered here rather than at the
+          // body, because the heading is walked FIRST — the naming argument's
+          // identifier must be marked as a declaration before it is read.
+          const rec = this.recoveredMacroWrappedHeader(node)
+          if (rec) {
+            const body = wrappedBodyAfter(node)
+            if (body) {
+              this.macroWrappedHeaders.set(body.startIndex, rec)
+              if (rec.nameNode) this.gluedDefNameOffsets.add(rec.nameNode.startIndex)
+            }
+          }
+          break
+        }
         case "ERROR": {
           // #907 (M60-C, measured jq src/jv_print.c): a top-level definition that
           // parse recovery absorbs into a preceding function's body survives only as
@@ -491,6 +660,32 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "compound_statement": {
+          // #917: a MACRO-WRAPPED definition's body — the heading is
+          // CALL-shaped, so `MACRO(ret, name)(params){ body }` parsed as a call
+          // chain plus an ORPHAN compound_statement (a direct child of the
+          // translation_unit or of the ERROR / preproc_ifdef that swallowed the
+          // region). Without this branch the body got only a Block scope: no
+          // function name, its locals published as FILE-SCOPE symbols (an
+          // anonymous `enum { BufSize = … }` inside the body emitted
+          // `enum_member BufSize` and the array read of it emitted a
+          // file-scope `uses global -> BufSize` the oracle cannot derive —
+          // the single unexplained edge the whole 315-file sqlite c lane
+          // carried), and every read in the body was attributed to `global`.
+          // Measured on sqlite: 235 such definitions across `libcmpp.c` (86)
+          // and `sqlite3-jni.c` (149) had no Function scope at all.
+          //
+          // The gate is the SAME rule the oracle uses for function-scope
+          // semantics — a body is function-local, wherever recovery parked it —
+          // and `isInsideFunction` keeps it from re-scoping a body that already
+          // sits inside a real function (C has no nested definitions).
+          const wrapped = this.macroWrappedHeaders.get(node.startIndex)
+          if (wrapped && !scopeManager.isInsideFunction()) {
+            scopeManager.pushScope(ScopeKind.Function, wrapped.name, node)
+            willPushScope = true
+            this.macroWrappedFunctionNames.add(wrapped.name)
+            activeFunctionSymbol = this.extractMacroWrappedFunction(wrapped, node, content, symbols, isConditional)
+            break
+          }
           // KAD2 sweep: comparing a STORED wrapper (scope entry) to a fresh
           // `node.parent` never matched — the guard was dead and nested
           // blocks always pushed a new scope. Span comparison restores the
@@ -567,7 +762,17 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "declaration":
           {
             const currentFunction = scopeManager.getCurrentFunctionName()
-            if (currentFunction) {
+            // #917: a recovered macro-wrapped definition gets NO locals model.
+            // The mirror is exact rather than convenient: the oracle's
+            // `fnLocals` collector only runs for `function_definition` nodes,
+            // and a wrapped heading is not one, so truth collects nothing for
+            // these bodies. Registering the body's own bindings here would
+            // suppress a read the oracle still derives whenever a body local
+            // shadows a FILE-SCOPE name — a MISSING edge created by the
+            // recovery itself. The recovered function keeps its name, its
+            // scope and its reads; the shadowing model stays where both sides
+            // already agree on it (a real `function_definition`).
+            if (currentFunction && !this.macroWrappedFunctionNames.has(currentFunction)) {
               const locals = functionLocals.get(currentFunction) || new Set<string>()
               // CGD7 (M37 #601): only names actually BOUND by this declaration
               // enter locals — the old collectDeclaredIdentifiers walked the
@@ -2173,6 +2378,173 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * definition (whose declarator is a function_declarator and whose prev sibling is
    * not a truncated declaration).
    */
+  /**
+   * #917: is this `compound_statement` the BODY of a macro-wrapped definition?
+   *
+   * The vendored C families define functions through an export macro that
+   * stands where the declaration specifier belongs and makes the whole heading
+   * CALL-shaped:
+   *
+   *   CMPP__EXPORT(int, cmpp_stream)( cmpp_input_f inF, … ){ … }
+   *   JniDeclFtsXA(jobject,xUserData)(JniArgsEnvObj,jobject jFcx){ … }
+   *   S3JniApi(sqlite3_value_text16(),jstring,1value_1text16)(…){ … }
+   *
+   * The published grammar reads that as `MACRO(ret, name)` CALLED with
+   * `(params)`, so the body is left as an orphan `compound_statement` — a
+   * direct child of the translation_unit, or of the ERROR / `preproc_ifdef`
+   * that swallowed the region. The shape is evidence, not a heuristic: at file
+   * scope (and inside a preproc block) an `expression_statement` followed by a
+   * `compound_statement` is not valid C — only recovery produces it — and C has
+   * no nested definitions, which is what `isInsideFunction` additionally keeps
+   * honest at the call site.
+   *
+   * The declared NAME is the macro's LAST argument (both spellings in the
+   * corpora put it there: `(ret, name)` and `(existing_fn(), type, name)`) and
+   * the RETURN TYPE is the text of the macro's first argument — read from the
+   * argument list's own structure plus one comma scan, never from the source
+   * line.
+   */
+  private recoveredMacroWrappedHeader(header: Node): {
+    name: string
+    returnType: string
+    header: Node
+    nameNode: Node | null
+    parameters: ASTEngine.Parameter[]
+  } | null {
+    // The SHAPE (including every refusal — no comma, macro-named, keyword) is
+    // the exported module-scope rule the oracle shares; only the parameter
+    // payload is analyzer-side (it reads `this.analyzeContent`).
+    const shape = macroWrappedHeadingShape(header)
+    if (!shape) return null
+    return {
+      name: shape.name,
+      returnType: shape.returnType,
+      header,
+      nameNode: shape.nameNode,
+      parameters: this.collectWrappedHeaderParameters(shape.outerArgs),
+    }
+  }
+
+  /**
+   * Parameter payload for a recovered macro-wrapped heading. The heading's
+   * second parenthesised group is an `argument_list`, not a `parameter_list`,
+   * so the measured shapes are what the collector follows: a named parameter is
+   * `identifier(type) ERROR(identifier(name))` or `identifier(type)
+   * identifier(name)`, and a lone identifier is an unnamed parameter.
+   */
+  private collectWrappedHeaderParameters(paramArgList: Node | null): ASTEngine.Parameter[] {
+    const parameters: ASTEngine.Parameter[] = []
+    if (!paramArgList) return parameters
+    // Split on the list's own `,` TOKENS (nested parens live inside child
+    // nodes, so every top-level comma is a direct child), and read each
+    // group's text from the source span — joining child texts would glue
+    // `cmpp_ssize_t` and `nIn` into one word.
+    const groups: Node[][] = []
+    let cur: Node[] = []
+    for (let i = 0; i < paramArgList.childCount; i++) {
+      const c = paramArgList.child(i)
+      if (!c) continue
+      if (c.type === ",") {
+        if (cur.length) groups.push(cur)
+        cur = []
+        continue
+      }
+      if (c.isNamed) cur.push(c)
+    }
+    if (cur.length) groups.push(cur)
+
+    // The RIGHTMOST identifier in SOURCE order — a `binary_expression` that
+    // swallowed a pointer parameter (`unsigned char const **p`) holds its type
+    // words and the declared name together, and the name is written last.
+    // Children are pushed in reverse so the stack pops left-to-right.
+    const lastIdentifierIn = (node: Node): Node | null => {
+      let found: Node | null = null
+      const st: Node[] = [node]
+      while (st.length) {
+        const n = st.pop()!
+        if (n.type === "identifier" && n.text.trim()) found = n
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const ch = n.namedChild(i)
+          if (ch) st.push(ch)
+        }
+      }
+      return found
+    }
+
+    for (const group of groups) {
+      const groupText = this.analyzeContent.slice(group[0].startIndex, group[group.length - 1].endIndex)
+      if (groupText.includes("...")) {
+        parameters.push({ name: "...", type: "variadic", modifiers: [] })
+        continue
+      }
+      const last = group[group.length - 1]
+      // A named parameter arrives as `identifier(type) ERROR(identifier(name))`
+      // (value types) or as one `binary_expression` that swallowed the pointer
+      // (`cmpp_dx *dx`); a lone `identifier` is an UNNAMED declaration like
+      // `JniArgsEnvObj` or `void` — the analyzer's clean path calls that
+      // `unknown`, and so does this one.
+      const nameNode = last.isError
+        ? (last.namedChildCount > 0 && last.namedChild(0)?.type === "identifier" ? last.namedChild(0) : null)
+        : last.type === "binary_expression"
+          ? lastIdentifierIn(last)
+          : group.length >= 2 && last.type === "identifier"
+            ? last
+            : null
+      if (!nameNode) {
+        parameters.push({ name: "unknown", type: groupText.trim() || "any" })
+        continue
+      }
+      const name = nameNode.text.trim()
+      const type = groupText.slice(0, nameNode.startIndex - group[0].startIndex).trim()
+      parameters.push({ name, type: type || "any" })
+    }
+    return parameters
+  }
+
+  /**
+   * Emit the definition a wrapped heading names. Without this the file lost the
+   * function entirely (`cmpp_stream`, `cmpp_outputer_cleanup` and 147 JNI
+   * entries were not symbols at all — the only mention of some names was a
+   * `#define`-adjacent Constant elsewhere in the file).
+   */
+  private extractMacroWrappedFunction(
+    rec: { name: string; returnType: string; header: Node; nameNode: Node | null; parameters: ASTEngine.Parameter[] },
+    body: Node,
+    content: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    isConditional: boolean,
+  ): ASTEngine.UniversalSymbol | null {
+    const bodyRange = this.recoverFunctionRange(body, content)
+    const headerRange = this.nodeToRange(rec.header)
+    const symbol: ASTEngine.UniversalSymbol = {
+      name: rec.name,
+      kind: ASTEngine.SymbolKind.Function,
+      // The definition STARTS at its heading: the body range supplies the end
+      // (the matching brace), the heading supplies the start line/column, so a
+      // reader that jumps to the symbol lands on the macro-decorated header.
+      range: {
+        ...bodyRange,
+        startLine: headerRange.startLine,
+        startColumn: headerRange.startColumn,
+        startIndex: headerRange.startIndex,
+      },
+      scope: "global",
+      complexity: this.functionComplexity(body),
+      visibility: "public",
+      isStatic: false,
+      returnType: rec.returnType,
+      parameters: rec.parameters,
+      metadata: {
+        cSpecific: true,
+        recoveredFromMacroWrappedHeader: true,
+        usesPointers: rec.parameters.some((p) => String(p.type ?? "").includes("*")),
+        isConditional,
+      },
+    }
+    symbols.push(symbol)
+    return symbol
+  }
+
   private recoveredMacroTruncatedFunction(node: Node): { name: string; returnType: string } | null {
     if (node.type !== "function_definition") return null
     const prev = node.previousSibling
@@ -2246,6 +2618,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return names
   }
 
+  // #917: the names of macro-wrapped definitions recovered THIS file
+  // (`MACRO(ret, name)(params){…}`). Two reasons it must be per-file state:
+  // (1) the `declaration` branch must NOT register their body locals — see the
+  // gate there; (2) a reused analyzer instance must not carry file A's names
+  // into file B (the HC5 lesson the two fields below both carry).
+  private macroWrappedFunctionNames = new Set<string>()
+
   // CGD19 PERF memo: per-ERROR-span verdict (last glued function-header
   // position, or -1 when the span holds no glued header). Keyed by the
   // span's startIndex; lives for the lifetime of one analyze() call.
@@ -2260,7 +2639,27 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   // table's `uses winRead` / `uses winWrite` pair. This set is what tells the
   // two apart, and it is filled before those identifiers are walked because the
   // ERROR node is processed before its children are pushed.
+  //
+  // #917 extends the SAME contract to the other recovery that mints a
+  // definition: the macro-wrapped heading's naming argument. Its identifier is
+  // a declaration too, and leaving it readable made the result ORDER-DEPENDENT
+  // in a way F5 caught — `JniDeclFtsTok(jint,xTokenize)` on sqlite3-jni.c:6033
+  // was silent only while no symbol named `xTokenize` existed, so the moment
+  // the recovery emitted the definition at L6027 the LATER heading's own name
+  // resolved and fabricated `uses global -> xTokenize` (a pair truth cannot
+  // derive). Registering the offset with the heading removes the order from the
+  // rule. One set, one gate, one meaning: a recovered definition's name is a
+  // declaration, never a read.
   private gluedDefNameOffsets = new Set<number>()
+
+  // #917: the recovered heading for each wrapped BODY (keyed by the body's
+  // startIndex), filled when the heading is walked and consumed when the body
+  // is entered. The heading's own case runs BEFORE its children are pushed, so
+  // the name offset above is registered before that identifier is read.
+  private macroWrappedHeaders = new Map<
+    number,
+    { name: string; returnType: string; header: Node; nameNode: Node | null; parameters: ASTEngine.Parameter[] }
+  >()
 
   // CGD19 (M37 #601): positional ERROR-span discriminator for VARIABLE
   // declarations. The innermost ERROR ancestor containing `node` is scanned
