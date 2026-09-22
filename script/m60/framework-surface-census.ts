@@ -95,6 +95,7 @@ const TERMINATORS = new Set(["return_statement", "throw_statement", "continue_st
 export type SurfaceShape =
   | "dead-surface"
   | "append-write"
+  | "deduped-guard"
   | "deduped-write"
   | "replace-write"
   | "name-divergence"
@@ -104,6 +105,22 @@ export type SurfaceShape =
   | "unclassified"
 
 export type SurfaceVerdict = "violation" | "safe" | "reported"
+
+/** Function/class bodies: a guard inside one cannot dominate, or protect, code outside it. */
+const FN_SCOPE = new Set([
+  "arrow_function", "function_declaration", "function_expression", "function",
+  "generator_function", "generator_function_declaration", "method_definition",
+  "class_declaration", "class_body", "abstract_class_declaration",
+])
+
+/** Walk a subtree, pruning nested function bodies. */
+function walkNoFn(node: any, cb: (n: any) => void): void {
+  cb(node)
+  for (const c of node.children ?? []) {
+    if (FN_SCOPE.has(c.type)) continue
+    walkNoFn(c, cb)
+  }
+}
 
 export interface SurfaceSite {
   file: string
@@ -262,6 +279,13 @@ interface SurfaceInfo {
   publishedKeys: Set<string>
   /** the metadata objects, so the file-level block reads the SAME scope */
   meta: MetadataModel
+  /**
+   * Local aliases of a surface: `const detected = (metadata.detectedFrameworks ??= [])`.
+   * Without these, a write through the alias is invisible, and — worse — a GUARDED write
+   * through one reads as an unguarded bare push. That is not hypothetical: it is exactly
+   * what the ruby fix exposed, where a deduping push was reported as the duplication class.
+   */
+  aliases: Map<string, string>
 }
 const COLLECTION_KEYS = new Set(["detectedFrameworks", "frameworkPatterns"])
 
@@ -321,12 +345,53 @@ function publishedKeysOf(root: any, meta: MetadataModel): Set<string> {
     }
   }
   walk(root, (n: any) => {
-    if (n.type !== "assignment_expression") return
+    // `metadata.framework = x` publishes; so does `metadata.detectedFrameworks ??= []`.
+    // The augmented form was missed at first, which made a fix that publishes the
+    // primary pick through `??=` still read as a missing contract key.
+    if (n.type !== "assignment_expression" && n.type !== "augmented_assignment_expression") return
     const m = member(n.childForFieldName("left"))
     if (!m) return
     if (meta.holders.has(cleanPath(m.objText))) take(m.prop)
   })
   return keys
+}
+
+/**
+ * Is this append guarded by an absence test on the same accumulator and the same value?
+ *
+ * `if (!detected.includes(name)) detected.push(name)` cannot write a duplicate, and the
+ * census must say so or it reports a shape that is no longer the defect. Bounded to the
+ * nearest enclosing `if` inside the same function, and to a test that names BOTH the
+ * accumulator and the pushed value, so an unrelated guard elsewhere cannot launder a
+ * bare push into a safe shape.
+ */
+function isGuardedAppend(write: any, names: string[]): boolean {
+  if (write.node.type !== "call_expression") return false
+  const fn = member(write.node.childForFieldName("function"))
+  if (!fn || (fn.prop !== "push" && fn.prop !== "unshift")) return false
+  const arg = write.node.childForFieldName("arguments")?.namedChild(0)
+  if (!arg) return false
+  const argText = norm(unwrap(arg)?.text ?? "")
+  if (!argText) return false
+  // Bounded to the nearest enclosing `if` inside the same function or block — a guard
+  // outside the block that contains the write does not protect it.
+  let anc = write.node
+  while (anc.parent) {
+    if (FN_SCOPE.has(anc.parent.type) || anc.parent.type === "statement_block") break
+    anc = anc.parent
+    if (anc.type !== "if_statement") continue
+    const cond = norm(unwrap(anc.childForFieldName("condition"))?.text ?? "")
+    const testsThisPair = names.some(
+      (n) => cond.includes(`${n}.includes(${argText})`) || cond.includes(`${n}.indexOf(${argText})`) || cond.includes(`${n}.has(${argText})`),
+    )
+    // An absence test over a predicate — `if (!patterns.some((p) => p.framework === name))`
+    // — dedupes just as surely as `.includes`, and the argument is inside the predicate
+    // rather than beside the receiver, so the pair test above cannot see it.
+    const testsAbsence = names.some((n) => cond.includes(`!${n}.some(`) || cond.includes(`!${n}.every(`))
+    if (!testsThisPair && !testsAbsence) continue
+    if (cond.includes("!") || cond.includes("=== -1") || cond.includes("< 0") || cond.includes("== null")) return true
+  }
+  return false
 }
 
 /**
@@ -412,36 +477,65 @@ function collectSurface(root: any): SurfaceInfo {
     }
   }
 
-  return { refs, publishesContract: [...publishedKeys].some((k) => CONTRACT_KEYS.has(k)), publishedKeys, meta }
+  // C. alias bindings — a local that IS a surface.
+  const aliases = new Map<string, string>()
+  walk(root, (n: any) => {
+    if (n.type !== "variable_declarator") return
+    const name = n.childForFieldName("name")?.text
+    const v = n.childForFieldName("value")
+    if (!name || !v) return
+    let inner = unwrap(v)
+    if (inner && (inner.type === "assignment_expression" || inner.type === "augmented_assignment_expression")) {
+      inner = unwrap(inner.childForFieldName("left"))
+    }
+    const m = member(inner)
+    if (!m) return
+    const path = cleanPath(`${m.objText}.${m.prop}`)
+    if (refs.has(path)) aliases.set(name, path)
+  })
+
+  return { refs, publishesContract: [...publishedKeys].some((k) => CONTRACT_KEYS.has(k)), publishedKeys, meta, aliases }
+}
+
+/** The surface a receiver text refers to — directly, or through a local alias. */
+function refOf(objText: string, aliases: Map<string, string>): string {
+  const t = cleanPath(objText)
+  return aliases.get(t) ?? t
 }
 
 /** Every write into a surface ref, as the node that performs it. */
-function writesInto(root: any, ref: string): any[] {
+function writesInto(root: any, ref: string, aliases: Map<string, string>): any[] {
   const out: any[] = []
   walk(root, (n: any) => {
     if (n.type === "call_expression") {
       const fn = member(n.childForFieldName("function"))
-      if (fn && cleanPath(fn.objText) === ref && (APPEND_OPS.has(fn.prop) || DEDUPE_OPS.has(fn.prop))) out.push(n)
+      if (fn && refOf(fn.objText, aliases) === ref && (APPEND_OPS.has(fn.prop) || DEDUPE_OPS.has(fn.prop))) out.push(n)
       return
     }
     if (n.type === "assignment_expression" || n.type === "augmented_assignment_expression") {
-      const left = n.childForFieldName("left")
-      if (left && cleanPath(norm(unwrap(left)?.text ?? "")) === ref) out.push(n)
+      const m = member(n.childForFieldName("left"))
+      if (m && refOf(`${m.objText}.${m.prop}`, aliases) === ref) out.push(n)
     }
   })
   return out
 }
 
 /** The write operator applied by a write node. */
-function writeOpOf(node: any, ref: string): "append" | "dedupe" | "replace" | null {
+function writeOpOf(node: any, ref: string, aliases: Map<string, string>): "append" | "dedupe" | "replace" | null {
   if (node.type === "call_expression") {
     const fn = member(node.childForFieldName("function"))
-    if (!fn || cleanPath(fn.objText) !== ref) return null
+    if (!fn || refOf(fn.objText, aliases) !== ref) return null
     if (APPEND_OPS.has(fn.prop)) return "append"
     if (DEDUPE_OPS.has(fn.prop)) return "dedupe"
     return null
   }
-  if (node.type === "augmented_assignment_expression") return "append"
+  if (node.type === "augmented_assignment_expression") {
+    // `??= []` fills an absent accumulator, it does not accumulate: an initialiser cannot
+    // write a duplicate. Only `+=` appends. Treating every augmented assignment as an
+    // append made `(metadata.detectedFrameworks ??= [])` read as the duplication class.
+    const op = (node.children ?? []).find((c: any) => !c.isNamed)?.text
+    return op === "+=" ? "append" : "replace"
+  }
   if (node.type === "assignment_expression") return "replace"
   return null
 }
@@ -560,8 +654,8 @@ export function scanFile(parser: any, file: string, src: string): { scan: FileSc
   const containers = collectContainers(root)
   const allWrites: { ref: string; node: any; op: "append" | "dedupe" | "replace" }[] = []
   for (const ref of surface.refs) {
-    for (const w of writesInto(root, ref)) {
-      const op = writeOpOf(w, ref)
+    for (const w of writesInto(root, ref, surface.aliases)) {
+      const op = writeOpOf(w, ref, surface.aliases)
       if (op) allWrites.push({ ref, node: w, op })
     }
   }
@@ -600,8 +694,13 @@ export function scanFile(parser: any, file: string, src: string): { scan: FileSc
   // walker invoked per class (measured: five identical entries on a five-model file).
   // The static shape is a reported risk; the runtime half measures the multiplicity.
   for (const w of allWrites) {
-    const shape: SurfaceShape = w.op === "append" ? "append-write" : w.op === "dedupe" ? "deduped-write" : "replace-write"
-    add(w.node, shape, w.op === "append" ? "reported" : "safe", w.ref)
+    if (w.op === "append") {
+      const names = [w.ref, ...[...surface.aliases].filter(([, r]) => r === w.ref).map(([n]) => n)]
+      const guarded = isGuardedAppend(w, names)
+      add(w.node, guarded ? "deduped-guard" : "append-write", guarded ? "safe" : "reported", w.ref)
+      continue
+    }
+    add(w.node, w.op === "dedupe" ? "deduped-write" : "replace-write", "safe", w.ref)
   }
 
   // ---- framework-name literals: divergence (one framework, two names) ----
@@ -645,18 +744,6 @@ export function scanFile(parser: any, file: string, src: string): { scan: FileSc
   //     `if (leaf === "ToString" || ...)` — a DIFFERENT variable (`leaf` is derived from
   //     `call` by a split/pop). 5 false sites. The implication only holds for the
   //     identifier the guard actually tested.
-  const FN_SCOPE = new Set([
-    "arrow_function", "function_declaration", "function_expression", "function",
-    "generator_function", "generator_function_declaration", "method_definition",
-    "class_declaration", "class_body", "abstract_class_declaration",
-  ])
-  const walkNoFn = (node: any, cb: (n: any) => void) => {
-    cb(node)
-    for (const c of node.children ?? []) {
-      if (FN_SCOPE.has(c.type)) continue
-      walkNoFn(c, cb)
-    }
-  }
   /** `IDENT === "lit"` / `"lit" === IDENT` in a condition, with the identifier named. */
   const literalComparisons = (cond: any): { ident: string; lit: string }[] => {
     const out: { ident: string; lit: string }[] = []
@@ -855,6 +942,36 @@ const SELF_TESTS: { name: string; src: string; expect: SurfaceShape[] }[] = [
     name: "an array push is the duplication class",
     src: `function a() {\n  const detectedFrameworks: string[] = []\n  detectedFrameworks.push("Ruby on Rails")\n  return { metadata: { framework: detectedFrameworks[0], detectedFrameworks, frameworkPatterns: [] } }\n}`,
     expect: ["append-write"],
+  },
+  {
+    name: "a push guarded by an absence test on the same value cannot duplicate",
+    src: `function a() {\n  const detectedFrameworks: string[] = []\n  const name = "Ruby on Rails"\n  if (!detectedFrameworks.includes(name)) detectedFrameworks.push(name)\n  return { metadata: { framework: detectedFrameworks[0], detectedFrameworks, frameworkPatterns: [] } }\n}`,
+    expect: ["deduped-guard"],
+  },
+  {
+    name: "a guard on a DIFFERENT value does not launder the push",
+    src: `function a() {\n  const detectedFrameworks: string[] = []\n  const other = "x"\n  if (!detectedFrameworks.includes(other)) detectedFrameworks.push("Ruby on Rails")\n  return { metadata: { framework: detectedFrameworks[0], detectedFrameworks, frameworkPatterns: [] } }\n}`,
+    expect: ["append-write"],
+  },
+  {
+    name: "a write through a local alias of the surface is the surface's write",
+    src: `function a() {\n  const metadata: any = { detectedFrameworks: [], frameworkPatterns: [], framework: undefined }\n  const detected = metadata.detectedFrameworks\n  detected.push("Ruby on Rails")\n  return { metadata }\n}`,
+    expect: ["append-write"],
+  },
+  {
+    name: "a write through an alias, guarded on that alias, is deduped",
+    src: `function a() {\n  const metadata: any = { detectedFrameworks: [], frameworkPatterns: [], framework: undefined }\n  const detected = metadata.detectedFrameworks\n  const name = "Ruby on Rails"\n  if (!detected.includes(name)) detected.push(name)\n  return { metadata }\n}`,
+    expect: ["deduped-guard"],
+  },
+  {
+    name: "an absence test over a predicate is a dedupe guard",
+    src: `function a() {\n  const metadata: any = { detectedFrameworks: [], frameworkPatterns: [], framework: undefined }\n  const patterns = metadata.frameworkPatterns\n  if (!patterns.some((p: any) => p.framework === "Rails")) patterns.push({ framework: "Rails" })\n  return { metadata }\n}`,
+    expect: ["deduped-guard"],
+  },
+  {
+    name: "a holder member assigned through ??= publishes the key",
+    src: `function a(metadata: any) {\n  metadata.framework ??= "Django"\n  metadata.detectedFrameworks = ["Django"]\n  metadata.frameworkPatterns = []\n  return { metadata }\n}`,
+    expect: [],
   },
   // --- name divergence ---
   {

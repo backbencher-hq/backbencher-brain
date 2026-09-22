@@ -33,6 +33,16 @@ import { ASTEngine } from "./engine"
 const FILE_SCOPE_OWNER = "Global"
 
 /**
+ * The one name this analyzer publishes Rails under (#749).
+ *
+ * It used to be two: `detectedFrameworks` was pushed `"Ruby on Rails"` while
+ * `frameworkPatterns` was pushed `"Rails"`, so the two published arrays could not be
+ * joined by name and any consumer keying on the framework string saw two frameworks.
+ * Same defect as the file-scope owner's two spellings, on a different surface.
+ */
+const RAILS_FRAMEWORK = "Ruby on Rails"
+
+/**
  * Receiver node types that are VARIABLE READS: `@ivar`, `@@cvar`, `$global`.
  * A variable names no class, so `.new` on one is a member call, never an
  * instantiation — the same ruling RB-A made for lowercase identifier receivers
@@ -279,7 +289,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isRailsController = this.isRailsControllerName(superClass)
 
         if (isRailsModel || isRailsController) {
-          metadata.detectedFrameworks!.push("Ruby on Rails")
+          this.recordFramework(metadata, RAILS_FRAMEWORK)
         }
 
         const sym: ASTEngine.UniversalSymbol = {
@@ -1424,6 +1434,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
+    // --- Framework detection (#749) ---
+    //
+    // This MUST run BEFORE the RAILS_MACRO_METHODS branch below, because that branch
+    // RETURNS. `before_action` is a member of that set (alongside has_many, scope,
+    // validates, attr_reader, the callbacks), so the `before_action`/`after_action`
+    // trigger that used to sit after the return was unreachable in every execution:
+    // measured, a file containing `before_action` published `frameworkPatterns: []`,
+    // always. The R8 census's dominated-trigger shape is what found it — a guard on a
+    // literal that is a member of a set an earlier guard already returned on.
+    if (methodName === "redirect_to" || methodName === "render" ||
+        methodName === "before_action" || methodName === "after_action") {
+      this.recordFramework(metadata, RAILS_FRAMEWORK)
+    }
+    if (methodName === "before_action" || methodName === "after_action") {
+      this.recordFramework(metadata, RAILS_FRAMEWORK, "Callbacks")
+    }
+
     // --- has_many / belongs_to / has_one / has_and_belongs_to_many ---
     if (RAILS_MACRO_METHODS.has(methodName)) {
       if (["has_many", "belongs_to", "has_one", "has_and_belongs_to_many"].includes(methodName)) {
@@ -1473,14 +1500,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // All RAILS_MACRO_METHODS: no call relationship emitted
       return
-    }
-
-    // --- Framework detection ---
-    if (methodName === "redirect_to" || methodName === "render") {
-      metadata.detectedFrameworks!.push("Ruby on Rails")
-    }
-    if (methodName === "before_action" || methodName === "after_action") {
-      metadata.frameworkPatterns!.push({ framework: "Rails", patterns: ["Callbacks"] })
     }
 
     // --- Skip builtins ---
@@ -1804,6 +1823,25 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Strip leading ': ' from symbol text — pure char scan */
+  /**
+   * Record a detected framework EXACTLY ONCE, and publish the primary pick (#749).
+   *
+   * Both accumulators are arrays published into the graph, and every caller runs once
+   * per class and once per call, so a bare `.push` published one entry per trigger hit:
+   * measured, `["Ruby on Rails", "Ruby on Rails", …]` five times on a five-model file
+   * and three times on `rack/test.rb`. `metadata.framework` — the contract's
+   * deterministic primary pick — was published for nothing at all, so every file that
+   * DID detect Rails read as framework-less downstream.
+   */
+  private recordFramework(metadata: Partial<ASTEngine.FileMetadata>, name: string, pattern?: string): void {
+    const detected = (metadata.detectedFrameworks ??= [])
+    if (!detected.includes(name)) detected.push(name)
+    metadata.framework ??= name
+    if (!pattern) return
+    const patterns = (metadata.frameworkPatterns ??= [])
+    if (!patterns.some((p) => p.framework === name)) patterns.push({ framework: name, patterns: [pattern] })
+  }
+
   private stripSymbolColon(text: string): string {
     let start = 0
     while (start < text.length && text[start] === ":") start++
