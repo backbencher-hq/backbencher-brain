@@ -627,19 +627,43 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      ctx.imports.push({
-        module: moduleName || "<unknown>",
+      // M60.R7 paydown (python lane, 2026-09-22): this published
+      // `module: moduleName || "<unknown>"` — a placeholder literal standing in for
+      // a module name, which is R7's class (a name-bearing field holding something
+      // that is not a name: the pipeline can match, count and display a module
+      // called `<unknown>` that no file declares). MEASURED UNREACHABLE before
+      // changing it, because an unreachable fallback and a live one are different
+      // findings and only the probe can tell them apart
+      // (script/m14/tmp/py-module-unknown-probe.ts, 19 shapes): EVERY parse that
+      // yields an `import_from_statement` hands this handler a named child for the
+      // module — the module itself on well-formed input (`from a.b import c`), the
+      // imported ITEM on damaged input (`from import c` -> `c`, the item taken as
+      // the module) — and the shapes that would leave `moduleName` empty (`from`,
+      // `from . import`, `from (`) produce NO import_from_statement node at all, so
+      // the handler never runs. Same class as the php lane's two unreachable
+      // markers, and the same treatment: the honest form is ABSENCE.
+      //
+      // The row is still published when there is no module (the imported NAMES are
+      // real names in the source, and dropping the row would lose an observation
+      // the file does make), but `module` is then omitted rather than invented, and
+      // no relationship is emitted — an import edge's target is `module:item`, so
+      // with no module it would name nothing.
+      const importRow: ASTEngine.ImportInfo = {
         items,
         isDefaultImport: false,
         isNamespaceImport: false,
         isNamespace: true,
         range: this.nodeToRange(node),
-      })
+      }
+      if (moduleName.length > 0) importRow.module = moduleName
+      ctx.imports.push(importRow)
       this.noteFramework(ctx, moduleName)
-      for (const item of itemNodes) {
-        this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
-          pythonSpecific: true,
-        }, this.nodeLine(item.node))
+      if (moduleName.length > 0) {
+        for (const item of itemNodes) {
+          this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
+            pythonSpecific: true,
+          }, this.nodeLine(item.node))
+        }
       }
     }
   }

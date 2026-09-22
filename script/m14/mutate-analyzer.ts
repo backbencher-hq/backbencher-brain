@@ -7834,6 +7834,138 @@ const MUTANTS: Mutant[] = [
       return s
     }) }),
   },
+  // --------------------------------------------------------------------------
+  // M59.A7 (#825): the csharp lane's line round. Four mutants, one per defect
+  // class the round's own measurements exposed — the pre-fix state (no line at
+  // all), the construct-start line (receiver / `new` / `:` / wrapped head), the
+  // containment edge claiming the DECLARATION's start line, and a synthesised
+  // name claiming an enclosing declaration's line. All four are caught by
+  // csharp/callsite-lines-825.
+  // --------------------------------------------------------------------------
+  {
+    id: "csharp/lines-dropped",
+    language: "csharp",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: csharp's relationships go back to carrying NO line — the exact pre-fix state (MEASURED: 23,924 relationships, 0 withLine, on a 200-file draw of the pinned corpus, the M59 oracle reading 0/23,924). Caught by csharp/callsite-lines-825, which pins every edge type's line.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "csharp/construct-start-line",
+    language: "csharp",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: every lined edge goes back one line — the CONSTRUCT's start instead of the node that names the target (a callee's receiver, `new` before the constructed type, the `:` before a wrapped `base()`, the attribute or return type before a wrapped name). Exactly the positions csharp/callsite-lines-825 forbids.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.type ?? x.relationshipType ?? "")
+        const trapBearing = ["calls", "contains", "extends", "implements", "instantiates", "uses", "references", "overrides"]
+        if (trapBearing.includes(t) && typeof x.line_number === "number") {
+          return { ...x, line_number: x.line_number - 1 }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "csharp/contains-declaration-start",
+    language: "csharp",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression, the class this round MEASURED on the corpus: a `contains` edge claims the target SYMBOL's range start, which for an attributed or wrapped declaration is a line the member's name is not written on (653 of 23,924 relationships — 100% of the round's inconsistent set). Simulated off the result's own symbol table (owner+name), so it stays faithful rather than name-hardcoded.",
+    transform: r => {
+      const startOf = new Map<string, number>()
+      for (const s of r.symbols ?? []) {
+        const owner = s.ownerName ?? s.scope
+        const ln = s.range?.startLine
+        if (owner && typeof s.name === "string" && typeof ln === "number") startOf.set(`${owner}\u0000${s.name}`, ln)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const from = x.source ?? x.from ?? x.fromSymbol
+          const target = x.target ?? x.to ?? x.toSymbol
+          const ln = startOf.get(`${from}\u0000${target}`)
+          return typeof ln === "number" ? { ...x, line_number: ln } : x
+        }),
+      }
+    },
+  },
+  {
+    id: "csharp/synthesized-name-claims-line",
+    language: "csharp",
+    defectClass: "line-attribution",
+    description: "M59.A7 (#825) regression: the SYNTHESISED member names go back to claiming a line. `constructor` and `Finalize` are written nowhere in the source (a constructor is written `ClassName(...)`, a destructor `~ClassName()`), so the only honest state is no line — MEASURED: 366 such claims on a 200-file draw, which the M59 oracle can classify only as uncheckable. Caught by csharp/callsite-lines-825's `line_number: null` pins and its forbid entries for the declaration lines.",
+    transform: r => {
+      const startOf = new Map<string, number>()
+      for (const s of r.symbols ?? []) {
+        const owner = s.ownerName ?? s.scope
+        const ln = s.range?.startLine
+        if (owner && typeof s.name === "string" && typeof ln === "number") startOf.set(`${owner}\u0000${s.name}`, ln)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const from = x.source ?? x.from ?? x.fromSymbol
+          const target = String(x.target ?? x.to ?? x.toSymbol ?? "")
+          if (target !== "constructor" && target !== "Finalize") return x
+          const ln = startOf.get(`${from}\u0000${target}`)
+          return typeof ln === "number" ? { ...x, line_number: ln } : x
+        }),
+      }
+    },
+  },
+  // --------------------------------------------------------------------------
+  // M60.R7 (csharp lane): the parameter-honesty pair. Four mutants, one per way a
+  // name-bearing field can hold something that is not a name — the varargs
+  // parameter dropped entirely, the placeholder literal `"unknown"` in a type
+  // field, the parameter's OWN NAME surviving as its type, and the blank name the
+  // grammar's recovery invites. All four are caught by csharp/param-type-honesty.
+  // --------------------------------------------------------------------------
+  {
+    id: "csharp/varargs-parameter-dropped",
+    language: "csharp",
+    defectClass: "payload-loss",
+    description: "M60.R7 (csharp lane) regression: a `params T[] name` parameter is dropped again — the exact pre-fix state, because the grammar does not wrap the params form in a `parameter` node and the old loop read named `parameter` children only. Simulated by removing array-typed parameters, which is WIDER than the defect by construction: the published output cannot tell a `params` parameter from an ordinary array parameter (the node type is gone), so the mutant also hits `int[] data` — which is why the fixture pins that control, and why the fixture is the only place that fails both ways.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (Array.isArray(s.parameters) && s.parameters.some((p: any) => typeof p?.type === "string" && p.type.endsWith("[]"))
+        ? { ...s, parameters: s.parameters.filter((p: any) => !(typeof p?.type === "string" && p.type.endsWith("[]"))) }
+        : s)),
+    }),
+  },
+  {
+    id: "csharp/unknown-parameter-type",
+    language: "csharp",
+    defectClass: "placeholder-literal",
+    description: "M60.R7 (csharp lane) regression: an unresolvable parameter type publishes the literal `\"unknown\"` again — the register's csharp entry (`pType = … || \"unknown\"`). Caught by csharp/param-type-honesty's forbidParameters types.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (Array.isArray(s.parameters) && s.parameters.some((p: any) => p?.type === undefined)
+        ? { ...s, parameters: s.parameters.map((p: any) => (p?.type === undefined ? { ...p, type: "unknown" } : p)) }
+        : s)),
+    }),
+  },
+  {
+    id: "csharp/parameter-name-as-type",
+    language: "csharp",
+    defectClass: "placeholder-literal",
+    description: "M60.R7 (csharp lane) regression: `extractTypeString`'s last-resort scan lands on the parameter's OWN NAME again and the name is published as the type (`void M(int a, b)` -> type `\"b\"`, MEASURED). Caught by csharp/param-type-honesty's forbidParameters types for both positions.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (Array.isArray(s.parameters) && s.parameters.some((p: any) => p?.type === undefined && typeof p?.name === "string" && p.name.length > 0)
+        ? { ...s, parameters: s.parameters.map((p: any) => (p?.type === undefined && typeof p?.name === "string" && p.name.length > 0 ? { ...p, type: p.name } : p)) }
+        : s)),
+    }),
+  },
+  {
+    id: "csharp/blank-parameter-name",
+    language: "csharp",
+    defectClass: "placeholder-literal",
+    description: "M60.R7 (csharp lane) regression: the empty-name guard around the params branch is removed, so the grammar's recovery identifier (which the tree writes EMPTY — measured with script/m14/tmp/cs-param-noname-tree.ts) is published as a parameter with a blank name. Scoped by symbol name because the shape has no output-level signature of its own: an empty list is indistinguishable from a symbol whose list never existed, so NamelessParams is the only observable anchor. Caught by csharp/param-type-honesty's forbidParameters names entry for the blank name.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.name === "NamelessParams" ? { ...s, parameters: [{ name: "" }] } : s)),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

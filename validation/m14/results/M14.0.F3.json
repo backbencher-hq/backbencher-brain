@@ -56,43 +56,43 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "3/4 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-python",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "7/7 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
     {
       "description": "zig adversarial fixtures",
-      "detail": "2/2 fixtures pass",
+      "detail": "3/3 fixtures pass",
       "id": "fixtures-zig",
       "status": "pass"
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "9/9 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -104,13 +104,13 @@
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "6/6 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
@@ -122,7 +122,7 @@
     },
     {
       "description": "ruby adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-ruby",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "1a3a91b09303c7da0521262f24205729c076cdd5",
-  "committedAt": "2026-09-21T16:22:45-04:00",
+  "commit": "957bc89138e054dbc9376b0f71a99499d48d1a7a",
+  "committedAt": "2026-09-22T17:45:23-04:00",
   "data": {
     "details": [
       {
@@ -2412,6 +2412,16 @@
         "problems": []
       },
       {
+        "fixture": "c/macro-truncated-declarator-916",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "c/macro-wrapped-heading-917",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/malloc-instantiates-noise",
         "ok": true,
         "problems": []
@@ -2432,6 +2442,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/bare-macro-statements",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/bare-value-reads",
         "ok": true,
         "problems": []
@@ -2443,6 +2458,11 @@
       },
       {
         "fixture": "cpp/ctor-and-overload-regressions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/macro-decorated-specifier",
         "ok": true,
         "problems": []
       },
@@ -2463,6 +2483,11 @@
       },
       {
         "fixture": "cpp/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/preproc-has-include",
         "ok": true,
         "problems": []
       },
@@ -2488,6 +2513,11 @@
       },
       {
         "fixture": "rust/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/callsite-lines-825",
         "ok": true,
         "problems": []
       },
@@ -2548,19 +2578,16 @@
       },
       {
         "fixture": "python/decorator-column-lines",
-        "ok": false,
-        "problems": [
-          "expected decorated range startLine=24; got 23 (full: {\"startLine\":23,\"startColumn\":1,\"endLine\":25,\"endColumn\":13,\"startIndex\":373,\"endIndex\":425})",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"os:*\",\"line_number\":4}; got: imports[decorator-column-lines->os:*]@1; imports[decorator-column-lines->typing:Optional]@1; imports[decorator-column-lines->typing:List]@1; calls[plain->helper]@0.9; calls[chained->upper]@0.9; calls[chained->strip]@0.9",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"typing:Optional\",\"line_number\":6}; got: imports[decorator-column-lines->os:*]@1; imports[decorator-column-lines->typing:Optional]@1; imports[decorator-column-lines->typing:List]@1; calls[plain->helper]@0.9; calls[chained->upper]@0.9; calls[chained->strip]@0.9",
-          "expected relationship not found: {\"type\":\"imports\",\"target\":\"typing:List\",\"line_number\":7}; got: imports[decorator-column-lines->os:*]@1; imports[decorator-column-lines->typing:Optional]@1; imports[decorator-column-lines->typing:List]@1; calls[plain->helper]@0.9; calls[chained->upper]@0.9; calls[chained->strip]@0.9",
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"plain\",\"target\":\"helper\",\"line_number\":12}; got: imports[decorator-column-lines->os:*]@1; imports[decorator-column-lines->typing:Optional]@1; imports[decorator-column-lines->typing:List]@1; calls[plain->helper]@0.9; calls[chained->upper]@0.9; calls[chained->strip]@0.9",
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"chained\",\"target\":\"strip\",\"line_number\":18}; got: imports[decorator-column-lines->os:*]@1; imports[decorator-column-lines->typing:Optional]@1; imports[decorator-column-lines->typing:List]@1; calls[plain->helper]@0.9; calls[chained->upper]@0.9; calls[chained->strip]@0.9",
-          "expected relationship not found: {\"type\":\"calls\",\"from\":\"chained\",\"target\":\"upper\",\"line_number\":19}; got: imports[decorator-column-lines->os:*]@1; imports[decorator-column-lines->typing:Optional]@1; imports[decorator-column-lines->typing:List]@1; calls[plain->helper]@0.9; calls[chained->upper]@0.9; calls[chained->strip]@0.9"
-        ]
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "python/external-override",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/framework-surface-pins",
         "ok": true,
         "problems": []
       },
@@ -2576,6 +2603,11 @@
       },
       {
         "fixture": "go/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/callsite-lines-825",
         "ok": true,
         "problems": []
       },
@@ -2620,7 +2652,17 @@
         "problems": []
       },
       {
+        "fixture": "zig/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "csharp/bare-value-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/callsite-lines-825",
         "ok": true,
         "problems": []
       },
@@ -2641,6 +2683,16 @@
       },
       {
         "fixture": "csharp/framework-none",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/literal-callee-recovery",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/param-type-honesty",
         "ok": true,
         "problems": []
       },
@@ -2700,6 +2752,11 @@
         "problems": []
       },
       {
+        "fixture": "swift/framework-surface-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/inheritance-conformance-fixes",
         "ok": true,
         "problems": []
@@ -2741,6 +2798,11 @@
       },
       {
         "fixture": "objc/edges-and-patterns",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "objc/framework-surface-pins",
         "ok": true,
         "problems": []
       },
@@ -2800,7 +2862,22 @@
         "problems": []
       },
       {
+        "fixture": "ruby/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "ruby/external-override",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "ruby/file-scope-owner-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "ruby/framework-surface-pins",
         "ok": true,
         "problems": []
       },
@@ -3259,7 +3336,7 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 13
+        "pass": 15
       },
       "clojure": {
         "fail": 0,
@@ -3267,11 +3344,11 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 10
+        "pass": 13
       },
       "csharp": {
         "fail": 0,
-        "pass": 6
+        "pass": 9
       },
       "dart": {
         "fail": 0,
@@ -3287,7 +3364,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 7
+        "pass": 8
       },
       "groovy": {
         "fail": 0,
@@ -3311,23 +3388,23 @@
       },
       "objc": {
         "fail": 0,
-        "pass": 6
+        "pass": 7
       },
       "php": {
         "fail": 0,
         "pass": 7
       },
       "python": {
-        "fail": 1,
-        "pass": 3
-      },
-      "ruby": {
         "fail": 0,
         "pass": 5
       },
+      "ruby": {
+        "fail": 0,
+        "pass": 8
+      },
       "rust": {
         "fail": 0,
-        "pass": 13
+        "pass": 14
       },
       "scala": {
         "fail": 0,
@@ -3339,7 +3416,7 @@
       },
       "swift": {
         "fail": 0,
-        "pass": 10
+        "pass": 11
       },
       "typescript": {
         "fail": 0,
@@ -3355,7 +3432,7 @@
       },
       "zig": {
         "fail": 0,
-        "pass": 2
+        "pass": 3
       }
     }
   },
@@ -3372,9 +3449,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-21T20:23:10.760Z",
-  "regeneratedAtCommit": "1a3a91b09303c7da0521262f24205729c076cdd5",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-09-22T22:46:10.253Z",
+  "regeneratedAtCommit": "957bc89138e054dbc9376b0f71a99499d48d1a7a",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }

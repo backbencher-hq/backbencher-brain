@@ -500,7 +500,7 @@ function main() {
   const sentinelRegister = readJsonOrNull(SENTINEL_REGISTER)
   const sentinel = sentinelRegisterDetail(readJsonOrNull(SENTINEL_CENSUS), sentinelRegister)
   check("R7 live: every placeholder-literal site is registered, none added, none silently gone",
-    sentinel.startsWith("R7:"), sentinel)
+    registerAdjudicated(sentinel, "R7"), sentinel)
 
   // ---- R7 negatives: the register comparison must discriminate -------------
   const SITE = (over: any = {}) => ({
@@ -536,11 +536,30 @@ function main() {
     Boolean(sentinelRegister && (sentinelRegister.baseline?.violations ?? 0) > 0 && (sentinelRegister.entries ?? []).length > 0))
   negative("R7 negative: the census is not vacuous (it found sites, and classified more than one shape)",
     (() => { const c = readJsonOrNull(SENTINEL_CENSUS); return Boolean(c && c.occurrences > 0 && Object.keys(c.byShape ?? {}).length > 1) })())
+  // The LIVE predicate itself, which is a different claim from any negative above:
+  // every finding message below starts with `R7: ` too, so a prefix test accepted a
+  // conviction. Measured live on 2026-09-22 — a new site landed in the c lane
+  // (`real-c-analyzer.ts:2494`) and G1 stayed green with 49 violations and an
+  // unregistered site in the census. Each conviction shape is fed to the predicate
+  // that the live check calls, so a predicate that cannot fail fails here.
+  const r7Live = (detail: string) => registerAdjudicated(detail, "R7")
+  negative("R7 negative (live predicate): the adjudicated reading is accepted",
+    r7Live(sentinelRegisterDetail(CEN([SITE()]), REG)))
+  negative("R7 negative (live predicate): an unregistered site is NOT accepted as a verdict",
+    !r7Live(sentinelRegisterDetail(CEN([SITE(), SITE({ statement: `target: owner || "unknown"` })]), REG)))
+  negative("R7 negative (live predicate): a grown site is NOT accepted as a verdict",
+    !r7Live(sentinelRegisterDetail(CEN([SITE(), SITE()]), REG)))
+  negative("R7 negative (live predicate): a vanished site is NOT accepted as a verdict",
+    !r7Live(sentinelRegisterDetail(CEN([]), REG)))
+  negative("R7 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
+    !r7Live(sentinelRegisterDetail(null, REG)))
+  negative("R7 negative (live predicate): a conviction is not accepted because it shares the prefix",
+    sentinelRegisterDetail(CEN([SITE(), SITE()]), REG).startsWith("R7:") && !r7Live(sentinelRegisterDetail(CEN([SITE(), SITE()]), REG)))
 
   // ---- R8 live: no analyzer publishes a framework capability it does not have ----
   const fwRegister = readJsonOrNull(FRAMEWORK_REGISTER)
   const fw = frameworkRegisterDetail(readJsonOrNull(FRAMEWORK_CENSUS), fwRegister)
-  check("R8 live: every framework-surface site is registered, none added, none silently gone", fw.startsWith("R8:"), fw)
+  check("R8 live: every framework-surface site is registered, none added, none silently gone", registerAdjudicated(fw, "R8"), fw)
 
   // ---- R8 negatives: the comparison, and the OO target, must both discriminate ----
   const FSITE = (over: any = {}) => ({
@@ -593,6 +612,18 @@ function main() {
     (() => { const c = readJsonOrNull(FRAMEWORK_CENSUS); return Boolean(c && c.occurrences > 0 && Object.keys(c.byShape ?? {}).length > 1) })())
   negative("R8 negative: the OO target is recorded, so a lane cannot quietly become exempt",
     Number(fwRegister?.ooTarget?.violations ?? -1) >= 0)
+  // R8's live predicate, for the same reason as R7's above: every R8 finding message
+  // begins with `R8: `, so the prefix test could not tell a clean register from a
+  // violated one. The predicate is the same single copy both rules use.
+  const r8Live = (detail: string) => registerAdjudicated(detail, "R8")
+  negative("R8 negative (live predicate): the adjudicated reading is accepted",
+    r8Live(frameworkRegisterDetail(FCEN([FSITE()]), FREG)))
+  negative("R8 negative (live predicate): an unregistered site is NOT accepted as a verdict",
+    !r8Live(frameworkRegisterDetail(FCEN([FSITE(), FSITE({ key: "ctx.other" })]), FREG)))
+  negative("R8 negative (live predicate): a vanished site is NOT accepted as a verdict",
+    !r8Live(frameworkRegisterDetail(FCEN([]), FREG)))
+  negative("R8 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
+    !r8Live(frameworkRegisterDetail(null, FREG)))
 
   finish(head)
 }
@@ -708,6 +739,30 @@ export function frameworkRegisterDetail(census: any, register: any): string {
   const other = (census.sites ?? []).length - liveViolations
   const ooNote = liveOo > 0 ? `; OO target ${ooTarget}, ${liveOo} still to repay (ruby #749, python #747, swift/objc contract keys)` : "; OO target met"
   return `R8: ${liveViolations} framework-surface violation site(s) in ${census.files ?? "?"} analyzers, ${other} adjudicated reported/safe site(s); all ${entries.length} register entries match exactly (baseline ${base}${ooNote})`
+}
+
+/**
+ * The VERDICT of a register reading — never its prefix.
+ *
+ * R7 and R8 report every finding in the same channel as their clean reading and every
+ * message in it begins `R7: ` / `R8: `, so the original live checks
+ * (`detail.startsWith("R7:")`) were true for a conviction as well as for a clean
+ * register, and the two rules could only ever fail on a refusal to adjudicate. Measured
+ * live on 2026-09-22: a new placeholder site landed in the c lane
+ * (`real-c-analyzer.ts:2494`, `parameters.push({ name: "unknown", ... })`) and G1 stayed
+ * green while its own census listed the site as unregistered. A rule that cannot fail is
+ * decoration — the same standard the self-tests below apply to every classifier.
+ *
+ * The predicate is an ALLOWLIST of the adjudicated phrasing rather than a blacklist of
+ * the finding phrasings, because the two failure modes are not symmetric: a blacklist
+ * fails OPEN — a new kind of conviction whose wording is not on the list would read as a
+ * clean register — while this fails CLOSED, since a message that is not the adjudicated
+ * one is not accepted as a verdict no matter how it is worded. The phrase is the one
+ * only the adjudicated branch writes (`all N register entries match exactly`), and it is
+ * shared by both rules through one copy so the two can never drift apart.
+ */
+export function registerAdjudicated(detail: string, rule: "R7" | "R8"): boolean {
+  return detail.startsWith(`${rule}: `) && detail.includes("register entries match exactly")
 }
 
 /** Pure, so the negatives below can drive it with synthetic census/register pairs. */
