@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-21T19:29:14.256Z",
+  "generatedAt": "2026-09-22T00:04:10.608Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
   "totalRegexUsages": 27,
@@ -301,7 +301,7 @@
       "usages": [
         {
           "file": "real-rust-analyzer.ts",
-          "line": 643,
+          "line": 678,
           "column": 13,
           "source": "/\\b(Serialize|Deserialize)\\b/",
           "operation": "test",
@@ -312,7 +312,7 @@
         },
         {
           "file": "real-rust-analyzer.ts",
-          "line": 644,
+          "line": 679,
           "column": 13,
           "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
           "operation": "test",
@@ -363,7 +363,7 @@
       "usages": [
         {
           "file": "real-zig-analyzer.ts",
-          "line": 967,
+          "line": 1000,
           "column": 33,
           "source": "/[!*\\s\\[\\]\\{\\}]+/g",
           "operation": "replace",
