@@ -1,5 +1,5 @@
 {
-  "snapshotAt": "2026-09-22T12:04:45.464Z",
+  "snapshotAt": "2026-09-22T21:45:19.252Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
   "count": 118,
@@ -698,8 +698,8 @@
       "labels": []
     },
     {
-      "number": 917,
-      "title": "c: a macro-decorated function header (MACRO(args)(params){…}) leaves the body in a file-scope ERROR — reads attributed to global, locals leak as file-scope symbols",
+      "number": 918,
+      "title": "c: a POINTER-return macro-wrapped heading (`CMPP__EXPORT(void *, name)(…)`) is not recognized — 6 definitions in libcmpp.c",
       "labels": [
         "lang:c"
       ]
