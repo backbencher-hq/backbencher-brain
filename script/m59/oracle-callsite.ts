@@ -278,6 +278,27 @@ function isCheckable(token: string | null, target: unknown): token is string {
  *  the source writes `Self`. `-> Self` inside `impl GlobSet` names GlobSet. */
 const SELF_WORD = /\bSelf\b/
 
+/**
+ * The ENCLOSING-CLASS resolution class (ruby's analog of rust's `Self`).
+ *
+ * `self.new`, `self.class.new` and a receiverless `new` inside a class construct
+ * THAT class, so the claimed line is the correct call site while the class name
+ * is never written on it. When — and only when — the analyzer says so itself
+ * (`metadata.resolvedTarget === "enclosing-class"`, set at the one site that
+ * resolves the target from the enclosing class) the claim is classified as
+ * structurally uncheckable-by-token instead of as a failed claim.
+ *
+ * Narrowed by METADATA MARKER, never by the name string (the xml
+ * `role: "xml_namespace"` precedent). It is not a hiding place: the claimed line
+ * must itself carry the `new` call, so a claim pointing at a line that names
+ * something else still reads INCONSISTENT — asserted both ways in the resolution
+ * self-test, like every other exception in this file.
+ */
+const ENCLOSING_CLASS_NEW = /(?:^|[^\w.])(?:(?:self\.class|self)\.)?new(?:[^\w]|$)/
+function isEnclosingClassResolution(rel: any, claimedSourceLine: string): boolean {
+  return rel?.metadata?.resolvedTarget === "enclosing-class" && ENCLOSING_CLASS_NEW.test(claimedSourceLine)
+}
+
 interface FileResult {
   file: string
   language: string
@@ -479,6 +500,13 @@ async function main() {
         }
         if (tierAConsistent(lines, ln, checkToken)) {
           r.consistent++
+        } else if (isEnclosingClassResolution(rel, lines[ln - 1] ?? "")) {
+          // The target was resolved from the ENCLOSING class (see the predicate),
+          // so the claimed line carries the `new` call but not the class name.
+          r.notCheckable++
+          if (r.notCheckableSample.length < 5) {
+            r.notCheckableSample.push({ type: String(rel?.type ?? "?"), callee: token, claimedLine: ln, sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100), reason: "target resolved from the ENCLOSING class (receiverless / self-new) — the class name is not written at the call site; the line does carry the `new` call (metadata.resolvedTarget = enclosing-class)" })
+          }
         } else if (SELF_WORD.test(lines[ln - 1] ?? "")) {
           // The `Self`-resolution class, measured on the rust lane: 21 of 65,390
           // claims, every one an edge whose target was resolved from `Self`
@@ -567,6 +595,21 @@ async function main() {
   }
   const tokenOk = Object.values(tokenSelfTest).every(Boolean)
 
+  // ── RESOLUTION SELF-TEST: the enclosing-class exception must excuse ONLY the
+  // claims it describes. Both directions are asserted, on the same predicate the
+  // production path uses, so it cannot become a hiding place for a wrong line.
+  const marker = { metadata: { resolvedTarget: "enclosing-class" } }
+  const resolutionSelfTest = {
+    selfNewIsUncheckable: isEnclosingClassResolution(marker, "    builder = self.new(**options)"),
+    selfClassNewIsUncheckable: isEnclosingClassResolution(marker, "      mapped[r] = self.class.new(default_app, &b).to_app"),
+    bareNewIsUncheckable: isEnclosingClassResolution(marker, "      new(Params, param_depth_limit, **options)"),
+    // the protections that are NOT relaxed:
+    wrongLineStillFails: !isEnclosingClassResolution(marker, "      def each"),
+    unmarkedClaimIsNotExcused: !isEnclosingClassResolution({ metadata: {} }, "    builder = self.new"),
+    writtenReceiverIsNotExcused: !isEnclosingClassResolution(marker, "    builder = Builder.new"),
+  }
+  const resolutionOk = Object.values(resolutionSelfTest).every(Boolean)
+
   // ── MUTATION SELF-TEST: prove the Tier A predicate can fail ────────────────
   //
   // The mutation must be CONSTRUCTED, not guessed: this used to take the first
@@ -643,6 +686,7 @@ async function main() {
       notCheckable: "synthesised names (constructor / anonymous_* / given_N), unresolved targets, and targets the source writes as a KEYWORD (rust's `Self`, resolved to the enclosing type by the analyzer) — a THIRD state, never counted as a pass and never as a failure, and sampled per file with its reason so the class is inspectable rather than a place to hide",
       boundarySelfTest,
       tokenSelfTest,
+      resolutionSelfTest,
     },
     mutation,
     totals,
@@ -726,6 +770,7 @@ async function main() {
     )
   }
   console.log(`token self-test: ${JSON.stringify(tokenSelfTest)}`)
+  console.log(`resolution self-test: ${JSON.stringify(resolutionSelfTest)}`)
   console.log(`mutation self-test: ${mutation ? JSON.stringify(mutation) : "NOT RUN (no line-bearing relationship found)"}`)
   if (skipped.length > 0) console.log(`skipped: ${skipped.length} (see evidence json)`)
   console.log(`evidence: ${path.relative(ROOT, outFile)}`)
@@ -736,6 +781,10 @@ async function main() {
   }
   if (!tokenOk) {
     console.log("\nFAIL: the callee-token rule does not behave as recorded — measurements through it are not evidence.")
+    process.exit(1)
+  }
+  if (!resolutionOk) {
+    console.log("\nFAIL: the enclosing-class exception does not behave as recorded — it may be excusing claims it should convict.")
     process.exit(1)
   }
   if (!mutation || !mutation.caught) {

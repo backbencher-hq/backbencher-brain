@@ -2570,6 +2570,60 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
     }
     return (headerIdx as number) >= 0 && n.startIndex > (headerIdx as number)
   }
+  // #916 mirror helper — the analyzer's `macroTruncatedDeclarationIdentifier`
+  // plus the recovered-name read, so truth and analyzer share ONE rule about
+  // what a bare-macro truncation declared. A truncated declaration is a
+  // `declaration` with a MISSING token whose LAST named child descends to an
+  // ALL-CAPS identifier (`SQLITE_WSD`); the real declarator was re-parsed as the
+  // next sibling. Returns the declared name, or null when the shape is not
+  // proven — in which case neither side claims anything.
+  const macroTruncatedSiblingName = (n: any): string | null => {
+    if (n.type !== "declaration") return null
+    let missing = false
+    for (let i = 0; i < (n.childCount ?? 0); i++) if (n.child(i)?.isMissing) missing = true
+    if (!missing) return null
+    const kids = (n.namedChildren ?? []).filter((k: any) => !!k)
+    const last = kids[kids.length - 1]
+    if (!last) return null
+    // Descent mirror of getIdentifierFromDeclarator: the `declarator` field, else
+    // the first child that is neither ERROR nor MISSING (the #916-C arm — a
+    // parenthesized declarator holds the macro's ERROR beside the real one).
+    let cur: any = last
+    let guard = 0
+    while (cur && !["identifier", "field_identifier", "type_identifier"].includes(cur.type) && guard++ < 32) {
+      const byField = typeof cur.childForFieldName === "function" ? cur.childForFieldName("declarator") : null
+      if (byField) {
+        cur = byField
+        continue
+      }
+      const cs = (cur.namedChildren ?? []).filter((k: any) => !!k)
+      const clean = cs.find((k: any) => !k.isError && !k.isMissing)
+      cur = clean ?? cs[0] ?? null
+    }
+    const macro = cur?.text ?? ""
+    if (!macro || !/[A-Z]/.test(macro) || /[a-z]/.test(macro)) return null
+    const next = n.nextSibling
+    if (!next) return null
+    // Shape A/B: the declarator arrived as an expression statement, and the token
+    // after the name says whether it was a variable (`=`) or a callable (`(`).
+    // Same regex, same two arms, as the analyzer's recovery.
+    if (next.type === "expression_statement") {
+      const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*(=|\()/.exec((next.text ?? "").trim())
+      if (!m || m[1] === macro) return null
+      return m[1]
+    }
+    // Shape D: a macro-decorated DEFINITION whose return type the truncation ate
+    // — the name sits in the definition's `type` field and its `declarator` is
+    // the parameter list.
+    if (next.type === "function_definition") {
+      const t = next.childForFieldName?.("type")
+      const d = next.childForFieldName?.("declarator")
+      if (t && d && d.type === "parenthesized_declarator" && ["identifier", "field_identifier", "type_identifier"].includes(t.type)) {
+        return t.text
+      }
+    }
+    return null
+  }
   {
     const pre: any[] = [root]
     while (pre.length > 0) {
@@ -2699,6 +2753,20 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol is file-scope whatever the damaged tree's ancestors say. The
           // generic arm below keeps its gates untouched for everything else.
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
+          // #916 mirror (measured: the whole-corpus c lane's ONLY unexplained
+          // edges attributable to the landed #916 recovery were the two reads of
+          // its recovered globals — sqlite btree.c L2657/2874
+          // `GLOBAL(BtShared*,sqlite3SharedCacheList)`, notify.c L59
+          // `for(p=sqlite3BlockedList;…)`). The analyzer now recovers the real
+          // name from the SIBLING a bare-macro truncation re-parsed it into
+          // (`static BtShared *SQLITE_WSD sqlite3SharedCacheList = 0;` becomes
+          // `declaration "static BtShared *SQLITE_WSD"` + `expression_statement
+          // "sqlite3SharedCacheList = 0;"`), so every read of that name is a real
+          // `uses` edge. Truth must know the name was declared or those reads
+          // surface as fabrication — and the sibling shape is the same proof the
+          // analyzer requires, so neither side can fire without it.
+          const recoveredTruncatedName = macroTruncatedSiblingName(n)
+          if (recoveredTruncatedName) declaredNames.add(recoveredTruncatedName)
           if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
             // CGD41: a function-like macro's definition site (its NAME's parent
@@ -6064,7 +6132,17 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
         const nameNode = n.childForFieldName?.("name")
         const sup = n.childForFieldName?.("superclass")
         if (nameNode?.text) {
-          if (sup) classBases.set(nameNode.text, leafName(sup.text.replace(/^<\s*/, "")))
+          // Same static-superclass gate as the extends truth above and as the
+          // analyzer's overrides pass: `class X < Struct.new(:a)` has no base
+          // CLASS, so its method set cannot be an override set. Without the
+          // gate this map held the raw expression text as a class name — the
+          // analyzer emitted 3 phantom first-parent guesses for it on the
+          // 200-file rack draw, and this derivation silently agreed by finding
+          // no such class. One gate, both passes, so neither can drift.
+          if (sup) {
+            const cleanedSup = sup.text.replace(/^<\s*/, "").trim()
+            if (isRubyStaticSuperclassName(cleanedSup)) classBases.set(nameNode.text, leafName(cleanedSup))
+          }
           const body = n.namedChildren.find((c: any) => c.type === "body_statement")
           if (body) {
             const names = classMethods.get(nameNode.text) ?? new Set<string>()
@@ -6308,8 +6386,20 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
           // analyzer's owner fallback) and a complex receiver at TOP level has
           // no enclosing class and correctly emits nothing. The analyzer's
           // own rb-A gate suppresses its junk `calls:new` for the same shapes.
+          // A VARIABLE receiver (`@params_class.new`, `@@k.new`, `$k.new`) is the
+          // same case as a lowercase identifier receiver: the variable names no
+          // class, so the call is not a known instantiation. It used to be read
+          // as RECEIVERLESS here (the scan below only matched constant / scope_
+          // resolution / identifier), which made this oracle and the analyzer
+          // agree on `instantiates <enclosing class>` for a class the source
+          // never names — a shared blind spot, so the differential could not
+          // see it. Measured: rack query_parser.rb:203/207, where
+          // `@params_class` is a constructor PARAMETER. Both sides now fall
+          // through to the member call.
+          const RUNTIME_VARIABLE_RECEIVERS = new Set(["instance_variable", "class_variable", "global_variable"])
           let receiver: string | undefined
           let receiverIsConst = false
+          let receiverIsVariable = false
           for (let i = 0; i < n.namedChildCount; i++) {
             const child = n.namedChild(i)
             if (child && child.id === methodNode.id) break
@@ -6318,9 +6408,15 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
               receiverIsConst = true
             } else if (child && child.type === "identifier") {
               receiver = child.text
+            } else if (child && RUNTIME_VARIABLE_RECEIVERS.has(child.type)) {
+              receiver = child.text
+              receiverIsVariable = true
             }
           }
-          if (!receiver) {
+          if (receiverIsVariable) {
+            // variable receiver — analyzer emits calls:new
+            push("calls", "new")
+          } else if (!receiver) {
             if (enclosingClass) push("instantiates", leafName(enclosingClass))
           } else if (receiverIsConst) {
             push("instantiates", leafName(receiver))
