@@ -4727,6 +4727,41 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/macro-wrapped-pointer-heading-loss",
+    language: "c",
+    defectClass: "scope-blindness",
+    description:
+      "#918 regression: reverts the POINTER-return macro-wrapped heading recovery — `MACRO(ret*, name)(params){…}` loses its definition (the declarator is the PARAMETER list, so `CGD38` drops the node), and its body's calls are attributed to `global`. Caught by c/macro-wrapped-pointer-heading-918, whose expectSymbols require the five recovered definitions (cmpp_malloc, cmpp_rc_cstr, cmpp_b_borrow, cmpp_b_clear, cmpp_mrealloc), whose expectParameters pin the return type/parameter split of each spelling, whose forbidParameters keep the unnamed case at `unknown`, and whose forbidRelationships name `calls global->helperTarget` — the containment half. This is the pre-fix output measured through the production entry on that fixture (9 symbols, every pointer body's call at file scope), not a synthetic corruption.",
+    transform: r => {
+      // Only an output that actually carries a recovered pointer-return heading
+      // is mutated — otherwise EVERY fixture would grow the file-scope call
+      // rows and the mutant would be caught by collateral instead of by the
+      // defect it models.
+      const RECOVERED = ["cmpp_malloc", "cmpp_rc_cstr", "cmpp_b_borrow", "cmpp_b_clear", "cmpp_mrealloc"]
+      if (!(r.symbols ?? []).some((s: any) => RECOVERED.includes(s.name))) return r
+      const CALLERS = ["cmpp_malloc", "cmpp_rc_cstr", "cmpp_b_borrow", "cmpp_b_clear"]
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !RECOVERED.includes(s.name)),
+        relationships: [
+          ...(r.relationships ?? []).filter(
+            (x: any) =>
+              !(CALLERS.includes(x.source) && x.type === "calls" && x.target === "helperTarget") &&
+              !(["cmpp_b_borrow", "cmpp_b_clear"].includes(x.source) && x.type === "references" && x.target === "cmpp_b"),
+          ),
+          ...CALLERS.map((name: string, i: number) => ({
+            type: "calls",
+            source: "global",
+            target: "helperTarget",
+            line_number: [46, 54, 63, 70][i],
+            confidence: 1.0,
+            metadata: { relationshipType: "c_function_call", isFunctionPointer: false, derivedFrom: name },
+          })),
+        ],
+      }
+    },
+  },
+  {
     id: "cpp/static-fn-public",
     language: "cpp",
     defectClass: "visibility-fabrication",
