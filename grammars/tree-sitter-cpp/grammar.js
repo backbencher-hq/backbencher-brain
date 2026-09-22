@@ -164,6 +164,22 @@ module.exports = grammar(C, {
     ),
 
     type_specifier: $ => choice(
+      // #743 (C++ port of the C wave): a BARE identifier macro standing directly
+      // in front of the type it decorates (`FMT_API void f()`, `WINAPI struct S`).
+      //
+      // The C rule this ports is `prec(-1, seq(identifier, type_specifier))` with
+      // the FULL type_specifier inside, and that breadth is what had to change:
+      // in cpp `_scope_resolution` has an OPTIONAL scope, so `A::B` is readable as
+      // the qualified type `A::B` OR as macro `A` decorating the qualified type
+      // `::B`. Ported verbatim, that new derivation demanded a conflict
+      // declaration, and declaring it flipped runtime path selection in unrelated
+      // code — `fmt::format_to(std::back_inserter(buf), ...)` parsed as a
+      // DECLARATION of a function named `::format_to`, in a file with zero ERRORs
+      // before and after. `A::B` was never a macro decoration, so the fix is to
+      // remove the ambiguity rather than arbitrate it: restricting the decorated
+      // type to the KEYWORD-LED specifiers makes the bad derivation ungrammatical.
+      // No identifier can start any of them, so no conflict is even possible.
+      $.macro_prefixed_type_specifier,
       $.struct_specifier,
       $.union_specifier,
       $.enum_specifier,
@@ -179,6 +195,36 @@ module.exports = grammar(C, {
         $._type_identifier,
       )),
     ),
+
+    // #743 cpp port: overrides the C rule to narrow the decorated type. See the
+    // note in `type_specifier` above for the measurement that forced the
+    // narrowing — ported verbatim from C, this rule made a statement in an
+    // already-clean file parse as a declaration.
+    macro_prefixed_type_specifier: $ => prec(-1, seq(
+      alias($.identifier, $.macro_specifier),
+      $._macro_decorated_type,
+    )),
+
+    // The decorated type, restricted to the specifiers that cannot begin with an
+    // identifier. Every member is keyword-led (`struct`, `void`, `unsigned long`,
+    // `decltype(...)`), which is exactly why the `A::B` ambiguity cannot arise:
+    // after a bare identifier macro, `::` and any other identifier are simply not
+    // derivable here, so the parser never forks and no conflict is declared. The
+    // C rule can use the full `type_specifier` because C has no `::`.
+    // `prec(-1)`: `primitive_type` and `sized_type_specifier` both begin with the
+    // same tokens (`void signed` is derivable), so the two readings collide and
+    // the generator demands one be preferred. Preferring the existing
+    // `sized_type_specifier` keeps today's parse intact — the decoration is only
+    // meant to be read where nothing else parses anyway.
+    _macro_decorated_type: $ => prec(-1, choice(
+      $.struct_specifier,
+      $.union_specifier,
+      $.enum_specifier,
+      $.class_specifier,
+      $.sized_type_specifier,
+      $.primitive_type,
+      $.decltype,
+    )),
 
     type_qualifier: (_, original) => choice(
       original,
