@@ -56,9 +56,9 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "15/15 fixtures pass",
+      "detail": "15/16 fixtures pass",
       "id": "fixtures-c",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "cpp adversarial fixtures",
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "957bc89138e054dbc9376b0f71a99499d48d1a7a",
-  "committedAt": "2026-09-22T17:45:23-04:00",
+  "commit": "09b14da718a67074accd94b25dabe8c787236c89",
+  "committedAt": "2026-09-22T19:09:55-04:00",
   "data": {
     "details": [
       {
@@ -2422,6 +2422,11 @@
         "problems": []
       },
       {
+        "fixture": "c/macro-wrapped-pointer-heading-918",
+        "ok": false,
+        "reason": "missing expectation file"
+      },
+      {
         "fixture": "c/malloc-instantiates-noise",
         "ok": true,
         "problems": []
@@ -3335,7 +3340,7 @@
     ],
     "summary": {
       "c": {
-        "fail": 0,
+        "fail": 1,
         "pass": 15
       },
       "clojure": {
@@ -3449,8 +3454,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-22T22:46:10.253Z",
-  "regeneratedAtCommit": "957bc89138e054dbc9376b0f71a99499d48d1a7a",
+  "regeneratedAt": "2026-09-22T23:14:17.260Z",
+  "regeneratedAtCommit": "09b14da718a67074accd94b25dabe8c787236c89",
   "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
