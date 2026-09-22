@@ -4697,6 +4697,36 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/macro-wrapped-heading-loss",
+    language: "c",
+    defectClass: "scope-blindness",
+    description:
+      "#917 regression: reverts the macro-wrapped-heading recovery — `MACRO(ret, name)(params){…}` loses its definition entirely, its body's anonymous enum leaks as a FILE-SCOPE symbol, and its calls are attributed to `global`. Caught by c/macro-wrapped-heading-917, whose expectSymbolCount pins BufSize/anonymous_enum to 0, whose expectSymbols require the three recovered definitions (cmpp_stream, 1value_1text, cmpp_err_set), and whose forbidRelationships name `uses global->BufSize` — the single unexplained row the whole 315-file sqlite c lane carried. This is the pre-fix output measured through the production entry on that fixture, not a synthetic corruption.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []).filter(
+          (s: any) => !["cmpp_stream", "1value_1text", "cmpp_err_set"].includes(s.name),
+        ),
+        { name: "anonymous_enum", kind: "enum", scope: "global", visibility: "private", range: { startLine: 42, startColumn: 8, endLine: 42, endColumn: 33 } },
+        { name: "BufSize", kind: "enum_member", scope: "global", visibility: "private", range: { startLine: 42, startColumn: 15, endLine: 42, endColumn: 22 } },
+      ],
+      relationships: [
+        ...(r.relationships ?? []).filter(
+          (x: any) =>
+            !(
+              x.type === "calls" &&
+              ["cmpp_stream", "1value_1text", "cmpp_err_set"].includes(x.source) &&
+              x.target === "helperTarget"
+            ),
+        ),
+        { type: "uses", source: "global", target: "BufSize", confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+        { type: "contains", source: "anonymous_enum", target: "BufSize", confidence: 1.0 },
+        { type: "calls", source: "global", target: "helperTarget", confidence: 1.0, metadata: { relationshipType: "c_function_call", isFunctionPointer: false } },
+      ],
+    }),
+  },
+  {
     id: "cpp/static-fn-public",
     language: "cpp",
     defectClass: "visibility-fabrication",
