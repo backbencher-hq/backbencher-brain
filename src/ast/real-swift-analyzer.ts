@@ -95,6 +95,38 @@ const BUILTIN_BARE_CALLS = new Set([
   "type",
 ])
 
+// ============================================================================
+// CONV-SW-3 (#838/#836): framework detection — the family contract (CONV-CS-2,
+// java sibling) reached through this lane's existing markers.
+// ============================================================================
+// The trigger set is UNCHANGED: SwiftUI/Combine/UIKit/Foundation, written by the
+// import walker and by the property-wrapper handler exactly as before. What was
+// missing is the published contract over it. Before this round the lane published
+// `detectedFrameworks` and nothing else, and it built that array by iterating the
+// observation map — so its ORDER was the order triggers happened to be visited in
+// the walk, which is a property of the file's statement order rather than of the
+// code's meaning. `frameworksObj` cannot be the pick order for the same reason
+// python's import order could not be (CONV-PY-1).
+//
+// SWIFT_FRAMEWORK_ORDER is the emitted order and therefore the primary pick:
+// application frameworks most-specific first, then UIKit, and the base library
+// LAST. Foundation is imported by nearly every Swift file including every
+// framework's own headers, so "most common first" would report Foundation as the
+// primary framework for anything that imports both it and a UI framework — the
+// reverse of what a consumer wants. Test frameworks would sort last of all, by the
+// same rule as CS_FRAMEWORK_ORDER; this lane observes none yet (see the wave record
+// for why no marker was invented here to fill that slot).
+const SWIFT_FRAMEWORK_ORDER = ["SwiftUI", "Combine", "UIKit", "Foundation"]
+
+// The pattern kinds each framework is observed BY, so `frameworkPatterns` states
+// the same fact as `detectedFrameworks` rather than re-deriving it.
+const SWIFT_FRAMEWORK_PATTERNS: Record<string, string[]> = {
+  SwiftUI: ["declarative_ui"],
+  Combine: ["reactive_streams"],
+  UIKit: ["ui_framework"],
+  Foundation: ["base_library"],
+}
+
 interface OverrideTask {
   fqn: string
   methodName: string
@@ -372,9 +404,23 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const p in patternsObj) {
       metadata.patterns!.push(p)
     }
+    // CONV-SW-3: the emitted order is the declared table, never the walk order.
+    // Names observed but absent from the table are appended in sorted order rather
+    // than dropped — a marker added without an order entry must degrade to a
+    // disclosed position, never to silent non-publication.
+    const emittedFrameworks: string[] = SWIFT_FRAMEWORK_ORDER.filter((f) => frameworksObj[f] === true)
+    const unlistedFrameworks: string[] = []
     for (const f in frameworksObj) {
-      metadata.detectedFrameworks!.push(f)
+      if (frameworksObj[f] === true && SWIFT_FRAMEWORK_ORDER.indexOf(f) === -1) unlistedFrameworks.push(f)
     }
+    unlistedFrameworks.sort()
+    for (let i = 0; i < unlistedFrameworks.length; i++) emittedFrameworks.push(unlistedFrameworks[i])
+    metadata.detectedFrameworks = emittedFrameworks
+    metadata.framework = emittedFrameworks.length > 0 ? emittedFrameworks[0] : undefined
+    metadata.frameworkPatterns = emittedFrameworks.map((f) => ({
+      framework: f,
+      patterns: SWIFT_FRAMEWORK_PATTERNS[f] ?? ["usage"],
+    }))
 
     // Build symbol map for override resolution: `Owner.method` -> symbol.
     for (const s of symbols) {

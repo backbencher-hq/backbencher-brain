@@ -407,6 +407,46 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
+  },
+  {
+   "repo": "swift-nio",
+   "lang": "swift",
+   "files": 554,
+   "truth": 20467,
+   "covered": 20466,
+   "missing": 1,
+   "unexplained": 5,
+   "note": "FULL EXTENT (554 swift files, whole corpus) with the #838/#836 framework fix live. hash deccd8b0fd305b6d. RED and REPRODUCED: the 60-file canonical draw is clean, so these 6 findings had never been seen. Triaged by script/m14/tmp/sw-full-extent-triage.ts to pre-existing shapes unrelated to the framework surface (a `constructor -> constructor` self-instantiates edge, enum-case uses emitted from `root`). Most swift edges are line-less — the lane lines column is a known x — so they are identified by source text."
+  },
+  {
+   "repo": "alamofire",
+   "lang": "swift",
+   "files": 98,
+   "truth": 3548,
+   "covered": 3548,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "FULL EXTENT (98 swift files, whole corpus) with the #838/#836 framework fix live. hash 542c6628ba91cc30."
+  },
+  {
+   "repo": "afnetworking",
+   "lang": "objc",
+   "files": 49,
+   "truth": 2890,
+   "covered": 2890,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "FULL EXTENT (49/49 .m files) with CONV-OC-1 live. hash 29684f4b8391be9f. heuristic=315 are the first-parent override GUESSES the differential counts as honest suspicion, not defects."
+  },
+  {
+   "repo": "sdwebimage",
+   "lang": "objc",
+   "files": 104,
+   "truth": 6090,
+   "covered": 6090,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "FULL EXTENT (104/104 .m files) with CONV-OC-1 live. hash 74f30e2d774e4d93. heuristic=287 first-parent override guesses."
   }],
  "adjudicated": {
   "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
@@ -427,10 +467,13 @@
   "scala": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#905" },
   "cpp": { "maxSample": 73, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "c": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
-  "ruby": { "maxSample": 95, "missing": 0, "unexplained": 0, "drawsRed": 0 }
+  "ruby": { "maxSample": 95, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "swift": { "maxSample": 554, "missing": 1, "unexplained": 5, "drawsRed": 1, "issue": "swift-nio full extent — 6 pre-existing findings the canonical draw never touched; unfiled, triaged in script/m14/tmp/sw-full-extent-triage.ts" },
+  "objc": { "maxSample": 104, "missing": 0, "unexplained": 0, "drawsRed": 0 }
  },
  "closedInThisRound": {
   "#904": "java analyzer — generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
+  "#838/#836 + CONV-OC-1 (framework surface)": "swift and objective-c framework payloads — declared order tables replace walk/import order, the primary pick and frameworkPatterns are published. swift-nio FULL EXTENT (554 files) and alamofire (98) recorded here; objc BOTH corpora at full extent, afnetworking 49/49 files 2,890/2,890 truth and sdwebimage 104/104 files 6,090/6,090, MISSING=0 unexplained=0.",
   "#903 (analyzer half)": "vue/svelte SFC — `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone."
  }
 }

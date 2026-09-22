@@ -104,12 +104,18 @@ function recordShrink(): unknown[] {
     else if (now.count < e.count) reduced.push(`${e.file} ${e.shape} [${e.key}] x${e.count} -> x${now.count}`)
   }
   const grew: string[] = []
+  const added: string[] = []
   for (const [k, now] of groups) {
     const before = prevByKey.get(k)
     if (before && now.count > before.count) grew.push(`${now.file} ${now.shape} [${now.key}] x${before.count} -> x${now.count}`)
+    // ADDED is not the same as grew, and leaving it out made real growth silent: a widened
+    // classifier that finds 18 new sites reported "grew 0" because each new key was seen
+    // once before as well (never) and once now. A register whose whole discipline is
+    // "added and removed are both deliberate acts" must name the added ones.
+    if (!before) added.push(`${now.file} ${now.shape} [${now.key}] x${now.count} \`${String(now.statement).replace(/\s+/g, " ").slice(0, 80)}\``)
   }
   const prevOo = prev.ooTarget?.violations ?? 0
-  if (!removed.length && !reduced.length && !grew.length && prevOo === ooViolations.length) return prev.shrunkBy ?? []
+  if (!removed.length && !reduced.length && !grew.length && !added.length && prevOo === ooViolations.length) return prev.shrunkBy ?? []
   return [
     ...(prev.shrunkBy ?? []),
     {
@@ -118,6 +124,7 @@ function recordShrink(): unknown[] {
       removed,
       reduced,
       grew,
+      added,
       violationsBefore: prev.baseline?.violations ?? 0,
       violationsAfter: violations.length,
       ooViolationsBefore: prevOo,
@@ -140,7 +147,7 @@ const register = {
   shrinkOnly: true,    ooTarget: {
     violations: ooViolations.length,
     note:
-      "Owner standard: the seven OO lanes must reach zero, lane by lane, with a fixture and a reverting mutant each — never by editing this register. Repaid so far: ruby (#749 — the unreachable callback trigger, the Rails/Ruby on Rails divergence, the duplicate accumulator and the missing primary pick), pinned by ruby/framework-surface-pins with four caught mutants; python (#747 — the surface was initialized and never written while the capability claim was published on every file), pinned by python/framework-surface-pins with two caught mutants: the trigger surface going dead again (python/framework-surface-dead) and the emitted order following import order instead of the marker table (python/framework-import-order-pick). Outstanding: swift (no primary pick, no frameworkPatterns) and objective-c (no frameworkPatterns), which the runtime half also records as 81 findings over 248 swift corpus files. Separately, and NOT counted here because it is a static violation of nothing — php's two unreachable markers (`App\\` root, bare `TestCase`) are a detection false negative, proven by fixture and by a grammar-level probe, and are still owed.",
+      "Owner standard: the seven OO lanes must reach zero, lane by lane, with a fixture and a reverting mutant each — never by editing this register. MET as of this phase: ruby (#749 — the unreachable callback trigger, the Rails/Ruby on Rails divergence, the duplicate accumulator and the missing primary pick), pinned by ruby/framework-surface-pins with four caught mutants; python (#747 — the surface was initialized and never written while the capability claim was published on every file), pinned by python/framework-surface-pins with two caught mutants (the trigger surface going dead again, and the emitted order following import order instead of the marker table); swift (#838/#836 — no primary pick, no frameworkPatterns, 81 findings over 248 real corpus files) and objective-c (CONV-OC-1 — no frameworkPatterns, 7 findings over 7 detecting files), each pinned by its own framework-surface-pins fixture and caught mutants. NOT counted here because it is a static violation of nothing — php's two unreachable markers (`App\\` root, bare `TestCase`) are a detection false negative, proven by fixture and by a grammar-level probe, and are still owed.",
   },
   runtimeOwed: prev?.runtimeOwed,
   runtimeEvidence: prev?.runtimeEvidence,
@@ -155,7 +162,8 @@ console.log(
 )
 const last = register.shrunkBy[register.shrunkBy.length - 1]
 if (last && last.phase === phase) {
-  console.log(`  phase "${phase}": removed ${last.removed.length}, reduced ${last.reduced.length}, grew ${last.grew.length}`)
+  console.log(`  phase "${phase}": removed ${last.removed.length}, reduced ${last.reduced.length}, grew ${last.grew.length}, added ${last.added.length}`)
   for (const r of last.removed) console.log(`    removed: ${r}`)
+  for (const a of last.added) console.log(`    ADDED: ${a}`)
 }
 for (const e of ooViolations) console.log(`  OO remaining: ${e.lang} ${e.shape} [${e.key}] x${e.count}`)

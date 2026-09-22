@@ -568,6 +568,10 @@ function main() {
     frameworkRegisterDetail(FCEN([FSITE()], { selfTests: { cases: 17, passed: 16, failures: ["probe"] } }), FREG).includes("cannot adjudicate"))
   negative("R8 negative: an analyzer source that did not parse forbids adjudication",
     frameworkRegisterDetail(FCEN([FSITE()], { parseErrors: ["real-probe-analyzer.ts"] }), FREG).includes("cannot adjudicate"))
+  negative("R8 negative: a lane that names the contract but is not examined forbids adjudication",
+    frameworkRegisterDetail(FCEN([FSITE()], { unexamined: ["real-probe-analyzer.ts"] }), FREG).includes("cannot adjudicate"))
+  negative("R8 negative: an empty unexamined list does not obstruct adjudication",
+    frameworkRegisterDetail(FCEN([FSITE()], { unexamined: [] }), FREG).startsWith("R8:"))
   negative("R8 negative: an absent census forbids adjudication",
     frameworkRegisterDetail(null, FREG).includes("cannot adjudicate"))
   negative("R8 negative: an absent register forbids adjudication",
@@ -658,6 +662,14 @@ export function frameworkRegisterDetail(census: any, register: any): string {
   }
   if ((census.parseErrors ?? []).length) {
     return `R8 cannot adjudicate: analyzer source(s) did not parse, so their sites are unknown — ${(census.parseErrors ?? []).join(", ")}`
+  }
+  // A lane that goes blind reports the same zero as a lane that is clean. Measured, not
+  // hypothetical: an earlier version of the objective-c fix wrapped its metadata literal in
+  // an IIFE, which `collectMetadata` cannot read, and the whole lane dropped out of
+  // adjudication while every count stayed at zero. Refusing here converts that silent
+  // blind spot into a loud one.
+  if ((census.unexamined ?? []).length) {
+    return `R8 cannot adjudicate: ${(census.unexamined ?? []).length} analyzer(s) name a framework-contract key but publish none the classifier can read, so "no violations" would mean "not examined" — ${(census.unexamined ?? []).join(", ")}`
   }
   const keyOf = (s: any) => [s.file, s.shape, s.key ?? "-", String(s.statement ?? "").replace(/\s+/g, " ").trim()].join("\u0000")
   const live = new Map<string, { n: number; sample: any }>()
