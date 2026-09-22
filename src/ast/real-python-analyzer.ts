@@ -58,6 +58,46 @@ const DENYLISTED_SYMBOL_NAMES = new Set([
   "self", "cls", "this", "super", "None", "True", "False",
 ])
 
+/**
+ * The python framework trigger surface (#747).
+ *
+ * The context carried a `frameworks: Record<string, boolean>` field that NOTHING ever
+ * wrote, while the emitter published `hasFrameworkIntelligence: true` on every file — a
+ * capability claimed over a surface that could never fire. Measured before the fix: a
+ * minimal Django model and a minimal Flask app both detected `[]`, 0 of 187 real corpus
+ * files ever detected anything, and the R8 census reported the surface as DEAD.
+ *
+ * The markers are IMPORT ROOTS taken from the parsed AST, never text scanning, and the
+ * table is declared the way csharp's CS_FRAMEWORK_MARKERS is (CONV-CS-2, java sibling)
+ * rather than inferred from a corpus. One root per line, so a marker that stops matching
+ * is a visible deletion here and not a silent loss of detection.
+ */
+const PY_FRAMEWORK_MARKERS: Record<string, { framework: string; pattern: string }> = {
+  django: { framework: "Django", pattern: "orm" },
+  flask: { framework: "Flask", pattern: "wsgi_app" },
+  fastapi: { framework: "FastAPI", pattern: "asgi_app" },
+  starlette: { framework: "Starlette", pattern: "asgi_app" },
+  sqlalchemy: { framework: "SQLAlchemy", pattern: "orm" },
+  tornado: { framework: "Tornado", pattern: "async_web" },
+  aiohttp: { framework: "aiohttp", pattern: "async_http" },
+  celery: { framework: "Celery", pattern: "task_queue" },
+  pytest: { framework: "pytest", pattern: "testing" },
+}
+
+/** framework name -> its declared pattern kind, so the emitted array stays aligned. */
+const PY_FRAMEWORK_PATTERN: Record<string, string> = Object.fromEntries(
+  Object.values(PY_FRAMEWORK_MARKERS).map((m) => [m.framework, m.pattern]),
+)
+
+/**
+ * The emitted ORDER, and therefore the primary pick: the table's own declaration order,
+ * which is application frameworks first and test frameworks last — the same rule and the
+ * same reason as csharp's CS_FRAMEWORK_ORDER (CONV-CS-2), so a file that imports pytest
+ * BEFORE django still reports Django as its framework. Import order would make the pick
+ * depend on how the imports happen to be sorted, which is not a property of the code.
+ */
+const PY_FRAMEWORK_ORDER: string[] = Object.values(PY_FRAMEWORK_MARKERS).map((m) => m.framework)
+
 export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // Regex-free module-name derivation: last path segment minus its final
@@ -274,8 +314,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractMemberUses(rootNode, ctx)
     this.classifyEvidenceTier(ctx.relationships)
 
-    const detectedFrameworks: string[] = []
-    for (const k in ctx.frameworks) detectedFrameworks.push(k)
+    const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
     const detectedPatterns: string[] = []
     for (const p in ctx.patterns) detectedPatterns.push(p)
 
@@ -295,7 +334,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         detectedFrameworks,
         frameworkPatterns: detectedFrameworks.map((f) => ({
           framework: f,
-          patterns: [{ type: "usage", detected: true, description: `${f} usage detected` }],
+          patterns: [
+            {
+              type: PY_FRAMEWORK_PATTERN[f] ?? "usage",
+              detected: true,
+              description: `${f} usage detected`,
+            },
+          ],
         })),
         hasTypeInference: true,
         hasFrameworkIntelligence: true,
@@ -505,6 +550,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.functionSymbolIndex[`${className}::${methodName}`] = ctx.symbols.length - 1
   }
 
+  /**
+   * Record a framework from an import's ROOT module. A relative import (`from . import x`)
+   * names no package, so it is skipped rather than matched against the root `.`.
+   *
+   * The accumulator is a Record, so it dedupes by construction — the multiplicity defect
+   * the ruby lane had cannot arise here, which is why python's fix is a LIVE surface and
+   * not a dedupe.
+   */
+  private noteFramework(ctx: PythonContext, moduleName: string): void {
+    if (!moduleName || moduleName.startsWith(".")) return
+    const marker = PY_FRAMEWORK_MARKERS[moduleName.split(".")[0]]
+    if (marker) ctx.frameworks[marker.framework] = true
+  }
+
   private extractImport(node: Node, ctx: PythonContext) {
     if (node.type === "import_statement") {
       // `import os, sys` / `import numpy as np` — namespace imports.
@@ -529,6 +588,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           range: this.nodeToRange(node),
           metadata: { pythonSpecific: true, isAliased: name.type === "aliased_import" },
         })
+        this.noteFramework(ctx, moduleName)
         this.pushRel(ctx, ctx.moduleName, `${moduleName}:*`, ASTEngine.RelationshipType.Imports, 1.0, {
           pythonSpecific: true,
         }, this.nodeLine(name))
@@ -575,6 +635,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         isNamespace: true,
         range: this.nodeToRange(node),
       })
+      this.noteFramework(ctx, moduleName)
       for (const item of itemNodes) {
         this.pushRel(ctx, ctx.moduleName, `${moduleName}:${item.name === "*" ? "*" : item.name}`, ASTEngine.RelationshipType.Imports, 1.0, {
           pythonSpecific: true,
