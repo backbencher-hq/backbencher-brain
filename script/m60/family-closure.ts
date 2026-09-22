@@ -79,6 +79,25 @@ export function reviewFolderState(reviewsDir: string): { closed: string[]; open:
  * Family/process folders (web-family, systems-family, convergence) have no
  * analyzer of their own and are skipped.
  */
+/**
+ * Analyzers whose file is NOT `real-<lang>-analyzer.ts`.
+ *
+ * Found 2026-09-21 while adding the `oo` family: objc's analyzer is
+ * `src/ast/real-objective-c-analyzer.ts`, so the convention lookup in
+ * `dirtyAnalyzers` reported "no analyzer" for it — and then the rule "a closed
+ * folder's analyzer must be committed" had nothing to check on the one lane whose
+ * file is spelled differently. A rule that cannot see the file cannot fail, which
+ * is the false-green shape this module exists to remove.
+ */
+export const ANALYZER_FILE_ALIAS: Record<string, string> = {
+  objc: "real-objective-c-analyzer.ts",
+}
+
+/** The repo-relative analyzer path for a language, alias-aware. */
+export function analyzerFileFor(lang: string): string {
+  return `src/ast/${ANALYZER_FILE_ALIAS[lang] ?? `real-${lang}-analyzer.ts`}`
+}
+
 export function dirtyAnalyzers(root: string, reviewsDir: string, relPaths: string[] = ["src/ast"]): Record<string, string> {
   const out: Record<string, string> = {}
   const r = spawnSync("git", ["status", "--porcelain", "--", ...relPaths], { cwd: root, encoding: "utf8" })
@@ -89,7 +108,7 @@ export function dirtyAnalyzers(root: string, reviewsDir: string, relPaths: strin
     folders = readdirSync(reviewsDir).filter((f) => statSync(path.join(reviewsDir, f)).isDirectory())
   } catch { /* reviews dir absent */ }
   for (const lang of folders) {
-    const analyzer = `src/ast/real-${lang}-analyzer.ts`
+    const analyzer = analyzerFileFor(lang)
     if (existsSync(path.join(root, analyzer)) && dirtyFiles.includes(analyzer)) out[lang] = "analyzer"
   }
   return out
@@ -168,6 +187,11 @@ export interface FamilyRemainderRegistry {
 export const FAMILY_REMAINDER_CODES: Record<string, RegExp[]> = {
   jvm: [/CONV-J-1/, /CONV-K-1/, /CONV-S-1/, /CONV-G-1/, /M60\.J1/],
   web: [/CONV-(TS|JS|VUE|SVELTE|HTML)-/, /M60\.W1/],
+  // The M49-CONV vocabulary that actually names OO defects: CONV-PY-1, CONV-RB-1,
+  // CONV-DART-2, CONV-CS-1/2. A historical title carrying a code but no language
+  // name is still this family's remainder; the language-name rule in
+  // `remainderReason` is the primary one and covers the rest.
+  oo: [/CONV-(CS|RB|PY|DART|PHP|SW|OC)-/],
 }
 
 /**
@@ -302,6 +326,36 @@ export interface FamilyConditions {
   trackerClean: boolean
   /** R4: M49's ledger carries THIS family's fold row */
   foldPresent: boolean
+}
+
+/**
+ * WHEN the M49 fold row is owed (owner decision 2026-09-21, recorded in
+ * reviews/m60-oo-family-plan.md §3): exactly when the family's OTHER closure
+ * conditions are all true, because that is when a closure CLAIM exists for the
+ * fold to evidence.
+ *
+ * The trigger deliberately EXCLUDES `foldPresent` — the condition the fold itself
+ * satisfies. Including it would be circular: a deleted fold row would read as
+ * "work remaining", the rule would require nothing, and the gate could never fail
+ * on the case it exists for. Excluding it is strictly stronger than "a row per
+ * family": deleting jvm's or web's row still fails, because both are
+ * otherwise-ready. The rule it replaces — a fold row required for every family —
+ * is red for the whole OO program, where it is indistinguishable from a
+ * regression, and its only green shape was a placeholder row, i.e. a false
+ * closure claim written to satisfy a gate.
+ *
+ * It lives HERE, once, because it is enforced in two places (M60.X1's per-family
+ * check and M60.G1's R4) and two copies of one rule drift — the failure mode this
+ * repo has paid for repeatedly (a duplicated regex gave ruby's analyzer and its
+ * differential oracle different junk targets).
+ */
+export function foldOwed(conditions: Partial<FamilyConditions>, foldLanded: boolean): boolean {
+  const otherwiseReady =
+    conditions.foldersClosed === true &&
+    conditions.analyzersCommitted === true &&
+    conditions.cellsAlive === true &&
+    conditions.trackerClean === true
+  return otherwiseReady && !foldLanded
 }
 
 /**

@@ -1,0 +1,542 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R7",
+  "purpose": "No analyzer may NAME something with a placeholder literal. When a fallback has nothing truthful to say the honest state is ABSENCE, not the string \"unknown\" — a literal in a name-bearing field becomes a symbol (or edge endpoint) that does not exist in the source. Registered like the regex debt: entries are keyed by source statement (not line, because positions move on every edit and statements do not) with an exact count, so an added site and a deleted one are both deliberate acts.",
+  "establishedAt": "2026-09-21",
+  "baseline": {
+    "occurrences": 63,
+    "violations": 49
+  },
+  "shrinkOnly": true,
+  "ooTarget": {
+    "violations": 0,
+    "note": "Owner standard: the seven OO lanes must reach zero. The paydown is lane work with fixtures and mutants, not a register edit. R7 meanwhile makes the class un-recurrable (a new site, or a new site at a registered statement, fails the gate) and forbids a registered site from vanishing without a deliberate shrink."
+  },
+  "runtimeOwed": "STATIC ONLY SO FAR. The census proves a source site exists and what shape it has; it does not prove the site fires. The runtime half — no emitted row may carry a placeholder in a name field — must be measured over a corpus draw (the M59 oracle / M14 differential harness on the lane tokens). This field is the disclosure that it is outstanding, not a claim that it is done.",
+  "counts": {
+    "entries": 37,
+    "violations": 49
+  },
+  "entries": [
+    {
+      "file": "real-c-analyzer.ts",
+      "lang": "c",
+      "shape": "ternary-branch",
+      "key": "name",
+      "statement": "name: pDeclNode ? pDeclNode.text : \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1385
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-c-analyzer.ts",
+      "lang": "c",
+      "shape": "ternary-branch",
+      "key": "type",
+      "statement": "type: typeNode ? typeNode.text : \"unknown\"",
+      "verdict": "violation",
+      "count": 2,
+      "lines": [
+        1494,
+        1607
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "lang": "clojure",
+      "shape": "or-fallback",
+      "key": "multiName",
+      "statement": "multiName = symName(node.namedChild(1)) || \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1020
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-clojure-analyzer.ts",
+      "lang": "clojure",
+      "shape": "or-fallback",
+      "key": "name",
+      "statement": "name = symName(node.namedChild(1)) || \"unknown\"",
+      "verdict": "violation",
+      "count": 5,
+      "lines": [
+        822,
+        854,
+        886,
+        910,
+        1009
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-csharp-analyzer.ts",
+      "lang": "csharp",
+      "shape": "or-fallback",
+      "key": "pType",
+      "statement": "pType = p.childForFieldName(\"type\")?.text || this.extractTypeString(p) || \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        828
+      ],
+      "note": "FABRICATED NAME/VALUE (adjudicated 2026-09-21): a placeholder literal where a name belongs. Paydown is csharp-lane work with a fixture and a mutant."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "bare-assign",
+      "key": "forType",
+      "statement": "forType = \"Unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        963
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "bare-assign",
+      "key": "name",
+      "statement": "name = \"Unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1103
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "compare",
+      "key": null,
+      "statement": "if (defType === \"defdelegate\" && name !== \"Unknown\") { let toMod = \"\" let asName = \"\" let toLine = node.startPosition.row + 1 const dscan: Node[] = [node] while (dscan.length > 0) { const x = dscan.po",
+      "verdict": "compare",
+      "count": 1,
+      "lines": [
+        1226
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "compare",
+      "key": null,
+      "statement": "if (t && t !== \"Unknown\" && t !== protocol) this.pushRel(ctx, t, protocol, ASTEngine.RelationshipType.Implements, 1.0, {}, el.startPosition.row + 1)",
+      "verdict": "compare",
+      "count": 1,
+      "lines": [
+        1028
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "compare",
+      "key": "implName",
+      "statement": "implName = forTypeAlias && forTypeAlias !== \"Unknown\" ? forTypeAlias : (currentScope ? currentScope.name : protocol)",
+      "verdict": "compare",
+      "count": 1,
+      "lines": [
+        1001
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "or-fallback",
+      "key": "name",
+      "statement": "name = actualCall.childCount > 1 ? actualCall.child(1)?.text || \"Unknown\" : \"Unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1151
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "ternary-branch",
+      "key": "forType",
+      "statement": "forType = forTypeList.length > 0 ? forTypeList[0] : \"Unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        986
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "ternary-branch",
+      "key": "name",
+      "statement": "name = actualCall.childCount > 1 ? actualCall.child(1)?.text || \"Unknown\" : \"Unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1151
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-elixir-analyzer.ts",
+      "lang": "elixir",
+      "shape": "ternary-branch",
+      "key": "protocol",
+      "statement": "protocol = aliases.length > 0 && aliases[0] ? this.resolveAlias(aliases[0].text, ctx) : \"Unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        962
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-hcl-analyzer.ts",
+      "lang": "hcl",
+      "shape": "or-fallback",
+      "key": "hclValueKind",
+      "statement": "hclValueKind: valueNode?.type ?? \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        186
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "shape": "or-fallback",
+      "key": null,
+      "statement": "((p) => p.type || \"unknown\")",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1626
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "shape": "or-fallback",
+      "key": null,
+      "statement": "sigParams += parameters[i].type || \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        536
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "shape": "or-fallback",
+      "key": "type",
+      "statement": "type: (spreadType || \"unknown\") + \"[]\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        2657
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-java-analyzer.ts",
+      "lang": "java",
+      "shape": "or-fallback",
+      "key": "typeGuess",
+      "statement": "typeGuess = stripJavaAnnotations(typeGuess).split(\"...\").join(\"[]\").trim() || \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        2684
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "bare-return",
+      "key": null,
+      "statement": "return \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        472
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-json-analyzer.ts",
+      "lang": "json",
+      "shape": "or-fallback",
+      "key": null,
+      "statement": "return version?.returnType || \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        369
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-perl-analyzer.ts",
+      "lang": "perl",
+      "shape": "bare-return",
+      "key": null,
+      "statement": "return \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        432
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-python-analyzer.ts",
+      "lang": "python",
+      "shape": "or-fallback",
+      "key": "module",
+      "statement": "module: moduleName || \"<unknown>\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        571
+      ],
+      "note": "FABRICATED NAME/VALUE (adjudicated 2026-09-21): a placeholder literal where a name belongs. Paydown is python-lane work with a fixture and a mutant."
+    },
+    {
+      "file": "real-rust-analyzer.ts",
+      "lang": "rust",
+      "shape": "ternary-branch",
+      "key": "name",
+      "statement": "name: pName ? pName.text.replace(\"&\", \"\").replace(\"mut \", \"\").trim() : (p.type === \"self_parameter\" ? \"self\" : \"unknown\")",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        1175
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "shape": "compare",
+      "key": null,
+      "statement": "if (typeName && typeName !== \"unknown\") { relationships.push({ source: sourceName, target: typeName, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, line_number: typeNode.startPosition",
+      "verdict": "compare",
+      "count": 1,
+      "lines": [
+        2386
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-scala-analyzer.ts",
+      "lang": "scala",
+      "shape": "or-fallback",
+      "key": null,
+      "statement": "(p.type || \"unknown\")",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        454
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "bare-return",
+      "key": null,
+      "statement": "return \"unknown\"",
+      "verdict": "violation",
+      "count": 2,
+      "lines": [
+        1083,
+        1091
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "compare",
+      "key": null,
+      "statement": "if (usage.type !== \"unknown\") { if (id) this.inferredTypes.set(id, usage) return usage }",
+      "verdict": "compare",
+      "count": 1,
+      "lines": [
+        839
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "compare",
+      "key": "inner",
+      "statement": "inner = info.type !== \"unknown\" ? info.type : \"void\"",
+      "verdict": "compare",
+      "count": 1,
+      "lines": [
+        2477
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "compare",
+      "key": "returnType",
+      "statement": "returnType = typeInfo.type !== \"unknown\" ? typeInfo.type : undefined",
+      "verdict": "compare",
+      "count": 2,
+      "lines": [
+        2486,
+        2852
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "or-fallback",
+      "key": "returnType",
+      "statement": "returnType: valueType || \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        3168
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "property-value",
+      "key": "source",
+      "statement": "source: \"unknown\"",
+      "verdict": "violation",
+      "count": 8,
+      "lines": [
+        851,
+        866,
+        939,
+        955,
+        958,
+        1184,
+        1253,
+        1308
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "property-value",
+      "key": "type",
+      "statement": "type: \"unknown\"",
+      "verdict": "violation",
+      "count": 10,
+      "lines": [
+        851,
+        866,
+        939,
+        955,
+        958,
+        1184,
+        1242,
+        1253,
+        1305,
+        1308
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "unclassified",
+      "key": "array",
+      "statement": "[\"string\", \"number\", \"boolean\", \"any\", \"unknown\", \"never\", \"void\", \"object\", \"symbol\", \"bigint\", \"undefined\", \"null\"]",
+      "verdict": "unclassified",
+      "count": 1,
+      "lines": [
+        2900
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-typescript-analyzer.ts",
+      "lang": "typescript",
+      "shape": "union-member",
+      "key": null,
+      "statement": ": \"explicit\" | \"inferred\" | \"unknown\"",
+      "verdict": "declared-state",
+      "count": 1,
+      "lines": [
+        809
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "lang": "yaml",
+      "shape": "bare-return",
+      "key": null,
+      "statement": "return \"unknown\"",
+      "verdict": "violation",
+      "count": 1,
+      "lines": [
+        592
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    },
+    {
+      "file": "real-yaml-analyzer.ts",
+      "lang": "yaml",
+      "shape": "compare",
+      "key": null,
+      "statement": "if (nested !== \"unknown\") return nested",
+      "verdict": "compare",
+      "count": 4,
+      "lines": [
+        549,
+        564,
+        579,
+        590
+      ],
+      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+    }
+  ],
+  "shrunkBy": [
+    {
+      "at": "2026-09-21",
+      "wave": "ruby lane, R7 paydown",
+      "removed": [
+        "real-ruby-analyzer.ts or-fallback.source x4"
+      ],
+      "violationsBefore": 53,
+      "violationsAfter": 49,
+      "evidence": "validation/m14/fixtures/ruby/file-scope-owner-pins + mutation-ruby-file-scope-placeholder-divergence (0 -> 3 failures) + mutation-ruby-factory-body-falls-to-file-scope (0 -> 1)"
+    }
+  ]
+}

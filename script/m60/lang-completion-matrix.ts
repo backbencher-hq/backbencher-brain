@@ -59,8 +59,14 @@ const canon = (l: string) => ALIAS[l.toLowerCase()] ?? l.toLowerCase()
 const FAMILIES: Record<string, string[]> = {
   jvm: ["java", "kotlin", "scala", "groovy"],
   web: ["typescript", "javascript", "vue", "svelte"],
-  oo: ["python", "ruby", "php", "dart", "csharp"],
-  systems: ["c", "cpp", "rust", "go", "zig", "swift", "objc"],
+  // ManagedOO (the M14.4 wave, plans/M14-issues.json #264–#270): swift and
+  // objc were filed under `systems` here, which contradicted the wave that
+  // actually owns them AND the family the OO plan assigns its lanes to. The
+  // systems family is c/cpp/go/rust/zig (the M37.19 #612 gate). Two artifacts
+  // disagreeing about which family a lane belongs to is how a lane gets
+  // counted twice or not at all — the seam this milestone exists to kill.
+  oo: ["python", "ruby", "php", "dart", "csharp", "swift", "objc"],
+  systems: ["c", "cpp", "rust", "go", "zig"],
   functional: ["haskell", "clojure", "elixir", "erlang", "fsharp", "clean"],
   config: ["json", "yaml", "xml", "html", "css", "sql", "graphql", "hcl", "markdown", "makefile", "bash", "powershell", "lua", "perl", "r"],
 }
@@ -151,7 +157,13 @@ if (!F5 || !F3 || !F1 || !CLAIMS || !P1 || !TRACKER) {
 const diffReport: Record<string, any> = F5.data.report
 const fixtureSummary: Record<string, { pass: number; fail: number }> = FIX?.summary ?? F3.data.summary
 const untrackedFixtureFails: Record<string, number> = FIX?.untrackedFixtureFailures ?? {}
-const grammarAudit: Record<string, any> = F1.data.languages
+// Keyed CANONICALLY, because F1 spells a language the way its analyzer file
+// does (`objective-c`) while every row here is canonicalised (`objc`). The raw
+// lookup made objc's grammar cell read `n/a` while F1 held a PASS for it — a
+// false unknown on the one dimension that decides whether a lane is ticked.
+const grammarAudit: Record<string, any> = Object.fromEntries(
+  Object.entries(F1.data.languages as Record<string, any>).map(([k, v]) => [canon(k), v]),
+)
 const P1_LANGS = new Set<string>((P1.emitCells as any[]).map(c => canon(c.lang)))
 const lineAlive = new Set<string>(
   P1.emitCells.filter((c: any) => c.field === "line_number" && c.alive).map((c: any) => canon(c.lang)),
