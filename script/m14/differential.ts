@@ -2629,6 +2629,24 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
     while (pre.length > 0) {
       const n = pre.pop()!
       if (n.text) {
+        // #916 mirror (measured: the whole-corpus c lane's ONLY unexplained
+        // edges attributable to the landed #916 recovery were the two reads of
+        // its recovered globals — sqlite btree.c L2657/2874
+        // `GLOBAL(BtShared*,sqlite3SharedCacheList)` and notify.c L59
+        // `for(p=sqlite3BlockedList;…)`). The analyzer now recovers the real name
+        // from the SIBLING a bare-macro truncation re-parsed it into
+        // (`static BtShared *SQLITE_WSD sqlite3SharedCacheList = 0;` becomes
+        // `declaration "static BtShared *SQLITE_WSD"` + `expression_statement
+        // "sqlite3SharedCacheList = 0;"`), so every read of that name is a real
+        // `uses` edge. Truth must know the name was declared or those reads
+        // surface as fabrication — and the sibling shape is the same proof the
+        // analyzer requires, so neither side can fire without it.
+        // NOTE: this arm must sit OUTSIDE the type/identifier chain below — a
+        // truncated declaration is a `declaration` node, which no branch of that
+        // chain visits (first attempt put it in the identifier branch and it
+        // silently never ran; the lane still reported both edges unexplained).
+        const recoveredTruncatedName = macroTruncatedSiblingName(n)
+        if (recoveredTruncatedName) declaredNames.add(recoveredTruncatedName)
         if (n.type === "struct_specifier" || n.type === "union_specifier") {
           // CGD14b: type declarations mirror the ANALYZER — extractStruct has
           // no ERROR gate (only extractDeclaration does). os_win.c's structs
@@ -2753,20 +2771,6 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol is file-scope whatever the damaged tree's ancestors say. The
           // generic arm below keeps its gates untouched for everything else.
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
-          // #916 mirror (measured: the whole-corpus c lane's ONLY unexplained
-          // edges attributable to the landed #916 recovery were the two reads of
-          // its recovered globals — sqlite btree.c L2657/2874
-          // `GLOBAL(BtShared*,sqlite3SharedCacheList)`, notify.c L59
-          // `for(p=sqlite3BlockedList;…)`). The analyzer now recovers the real
-          // name from the SIBLING a bare-macro truncation re-parsed it into
-          // (`static BtShared *SQLITE_WSD sqlite3SharedCacheList = 0;` becomes
-          // `declaration "static BtShared *SQLITE_WSD"` + `expression_statement
-          // "sqlite3SharedCacheList = 0;"`), so every read of that name is a real
-          // `uses` edge. Truth must know the name was declared or those reads
-          // surface as fabrication — and the sibling shape is the same proof the
-          // analyzer requires, so neither side can fire without it.
-          const recoveredTruncatedName = macroTruncatedSiblingName(n)
-          if (recoveredTruncatedName) declaredNames.add(recoveredTruncatedName)
           if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
             // CGD41: a function-like macro's definition site (its NAME's parent
