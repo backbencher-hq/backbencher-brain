@@ -114,9 +114,23 @@ function trackerHits(lang: string, snapshot: any): number[] {
   // existing issue keeps matching by title, and no `lang:` label existed before
   // this rule, so no other lane's cell moves.
   const labelled = `lang:${c}`
+  // M60 (measured 2026-09-22, the #916 close-out): a label is the STRUCTURED claim
+  // and is AUTHORITATIVE when present. Additive title matching still mis-files an
+  // issue whose title happens to name another lane's corpus: #916 is a c-only
+  // defect, and because its title reads "… 7 sites on **sqlite** …" the `sql` cell
+  // inherited it (`sql: ["sql"]` matches "sqlite") while the c lane it actually
+  // blocks was reading #743 alone. So an issue carrying any `lang:*` label matches
+  // by label ONLY; an issue carrying none keeps the legacy title-alias path, which
+  // is every one of the pre-existing issues — so no other lane's cell moves.
+  const labelLangs = (i: any) =>
+    ((i.labels ?? []) as string[]).filter(l => l.startsWith("lang:")).map(l => canon(l.slice(5)))
   return snapshot.issues
     .filter((i: any) => !(i.number in CROSS_CUTTING))
-    .filter((i: any) => aliases.some(a => i.title.toLowerCase().includes(a)) || (i.labels ?? []).includes(labelled))
+    .filter((i: any) => {
+      const langs = labelLangs(i)
+      if (langs.length > 0) return langs.includes(c)
+      return aliases.some(a => i.title.toLowerCase().includes(a))
+    })
     .map((i: any) => i.number)
     .sort((a: number, b: number) => a - b)
 }
