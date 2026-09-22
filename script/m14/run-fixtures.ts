@@ -355,6 +355,24 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           problems.push(`forbidden ${want.symbol} parameter ${JSON.stringify(wp)} present; got: ${JSON.stringify(actual.map((p: any) => p.name))}`)
         }
       }
+      // Negative twin of expectParameters' TYPE half, added by the csharp lane's
+      // R7 paydown (2026-09-22) because the class it pins has no other channel:
+      // a value in a parameter's `type` field that is not a type. Two measured
+      // shapes — the placeholder literal (`|| "unknown"`) and the parameter's OWN
+      // NAME leaking through a last-resort type scan on a damaged list
+      // (`void M(int a, b)` -> type `"b"`) — are both "the field holds something
+      // that is not what the field claims", and an expect-only matcher cannot see
+      // either: `expectParameters` skips a key the want does not mention, so a
+      // reverted `|| "unknown"` passes every pin. A blank name (`{ name: "" }`,
+      // which the grammar's recovery invites by inserting an empty `identifier`
+      // child) is the same shape in the NAME field and is pinned through `names`.
+      // Family-wide on purpose: any lane can now forbid a placeholder type, which
+      // is where a bug found in one analyzer catches its siblings.
+      for (const wp of want.types ?? []) {
+        if (actual.some((p: any) => p.type === wp)) {
+          problems.push(`forbidden ${want.symbol} parameter type ${JSON.stringify(wp)} present; got: ${JSON.stringify(actual.map((p: any) => ({ name: p.name, type: p.type })))}`)
+        }
+      }
     }
     for (const want of exp.expectVisibility ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
