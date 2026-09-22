@@ -36,5 +36,17 @@ tool-mode-corpus.json.fresh
 # local wasm; only the hand-written grammar sources (grammar.js, package.json,
 # tree-sitter.json, README, scanner.h) are tracked. The wasm the product loads
 # is the one committed under wasm/, which is the artifact the evidence names.
-grammars/tree-sitter-*/src/
+# NOTE: the pattern excludes the CONTENTS of src/, not the directory, because
+# git cannot re-include a file whose parent directory is excluded -- the
+# scanner.c negation below is inert if this reads `src/`.
+grammars/tree-sitter-*/src/*
 grammars/tree-sitter-*/tree-sitter-*.wasm
+# ...EXCEPT hand-written external scanners, which are SOURCE, not build output.
+# The set of grammar source files that must be tracked for a rebuild is named in
+# the comment above as "grammar.js, package.json, tree-sitter.json, README,
+# scanner.h" -- and `scanner.h` covers the headers an in-tree scanner dir holds.
+# tree-sitter-cpp's external scanner is `src/scanner.c`, so the blanket `src/`
+# ignore silently dropped the one file its grammar cannot be rebuilt without.
+# Found while vendoring tree-sitter-cpp for #743: the ignore list named the
+# scanner by its C++-in-fsharp-style filename instead of by its role.
+!grammars/tree-sitter-cpp/src/scanner.c
