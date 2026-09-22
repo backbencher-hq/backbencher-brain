@@ -7322,6 +7322,39 @@ const MUTANTS: Mutant[] = [
     description: "M59.A7 (#825) regression: a decorated definition's range goes back to the DECORATOR line — the pre-fix nodeToRange preferred the decorated_definition parent (whose start is the `@` line), so `decorated` claimed 23 while its name is written on 24. Simulated off the result's own decorator payload (the scala helper), so it stays faithful rather than name-hardcoded. Caught by python/decorator-column-lines' expectSymbolRanges startLine=24.",
     transform: revertToAnnotationStartLine,
   },
+  // --------------------------------------------------------------------------
+  // M60.R8 (#747): the python framework trigger surface. Before this round the
+  // analyzer claimed `hasFrameworkIntelligence: true` on every file while the
+  // context's `frameworks` record was written NOWHERE.
+  // --------------------------------------------------------------------------
+  {
+    id: "python/framework-surface-dead",
+    language: "python",
+    defectClass: "dead-capability-claim",
+    description: "R8 (M60) regression: the trigger surface goes back to DEAD — detection returns an empty array while the analyzer still claims `hasFrameworkIntelligence: true`, which is the pre-fix observable measured on a real Django model and a real Flask app (both `[]`) and on 0 of 187 corpus files. Caught by python/framework-surface-pins, whose metadata pin expects [Django, Flask, pytest].",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [], framework: undefined, frameworkPatterns: [] } }),
+  },
+  {
+    id: "python/framework-import-order-pick",
+    language: "python",
+    defectClass: "nondeterministic-primary-pick",
+    description: "R8 (M60) regression: the emitted array follows IMPORT order instead of the marker table, so a file that imports pytest before django reports pytest as its primary framework. The contract puts application frameworks first and test frameworks last (csharp's CS_FRAMEWORK_ORDER rule, CONV-CS-2), because import order is a property of how a file is sorted rather than of the code. Caught by python/framework-surface-pins, which imports pytest FIRST and pins [Django, Flask, pytest] plus a Django primary pick.",
+    transform: r => {
+      const det: string[] = (r.metadata as any)?.detectedFrameworks ?? []
+      const reversed = [...det].reverse()
+      const pats: any[] = (r.metadata as any)?.frameworkPatterns ?? []
+      const byName = new Map(pats.map((p: any) => [p.framework, p]))
+      return {
+        ...r,
+        metadata: {
+          ...(r.metadata ?? {}),
+          detectedFrameworks: reversed,
+          framework: reversed[0],
+          frameworkPatterns: reversed.map((f) => byName.get(f)).filter(Boolean),
+        },
+      }
+    },
+  },
   {
     id: "haskell/drop-tuple-superclass",
     language: "haskell",
