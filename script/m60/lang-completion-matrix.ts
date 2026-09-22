@@ -95,10 +95,22 @@ const CROSS_CUTTING: Record<number, string> = {
 delete CROSS_CUTTING[612]
 
 function trackerHits(lang: string, snapshot: any): number[] {
-  const aliases = TRACKER_ALIASES[canon(lang)] ?? [lang]
+  const c = canon(lang)
+  const aliases = TRACKER_ALIASES[c] ?? [lang]
+  // A `lang:<language>` label is the STRUCTURED form of the same claim, and it
+  // exists because the title-substring rule silently drops issues whose wording
+  // does not happen to carry a recognized alias: #916 is a c-only defect (a bare
+  // macro between a C type and its declarator costs the REAL symbol) and its title
+  // carries no token from `TRACKER_ALIASES.c`, so the c cell read only #743 and
+  // would have gone green with #916 still open. The token that WOULD have matched,
+  // `cpp/c`, is exactly wrong here — it also matches cpp's `cpp` alias and would
+  // have reddened a lane the issue does not touch. The label is additive: every
+  // existing issue keeps matching by title, and no `lang:` label existed before
+  // this rule, so no other lane's cell moves.
+  const labelled = `lang:${c}`
   return snapshot.issues
     .filter((i: any) => !(i.number in CROSS_CUTTING))
-    .filter((i: any) => aliases.some(a => i.title.toLowerCase().includes(a)))
+    .filter((i: any) => aliases.some(a => i.title.toLowerCase().includes(a)) || (i.labels ?? []).includes(labelled))
     .map((i: any) => i.number)
     .sort((a: number, b: number) => a - b)
 }
