@@ -960,6 +960,53 @@ export namespace FrameworkIntelligence {
     return Array.from(seen.values())
   }
 
+  /**
+   * Bring published pattern entries onto the published detection list. (M60.R8, CONV-OC-1)
+   *
+   * `frameworkPatterns[i].framework` is a claim ABOUT a detection, so it has to name one:
+   * the family contract (real-csharp-analyzer.ts CONV-CS-2) is three keys that agree, and a
+   * consumer that joins the two arrays by name is entitled to find every pattern's
+   * framework in the list. The merge violated that in two measured ways, both on real
+   * corpus files (70 of them, which no instrument had seen because the published half was
+   * convicting 1,207 files for the no-detection default instead):
+   *
+   *   * SPELLING — the detector appends its own slug (`swiftui`) beside the analyzer's
+   *     display name (`SwiftUI`), because the alias map that canonicalises the detection
+   *     list was never applied to the appended pattern objects. Canonicalising through the
+   *     same map and then matching case-insensitively onto the published spelling fixes it.
+   *   * NOT A FRAMEWORK — dart's lane emits the SDK name `Dart` in both arrays, and the
+   *     detection filter below removes it (a language is not a framework), leaving the
+   *     patterns naming a framework the published list no longer carries. Such an entry is
+   *     dropped rather than relabelled: relabelling would invent a claim about a framework
+   *     that was not detected, and the pattern NAMES are still published in
+   *     `metadata.patterns`, so no observation is lost.
+   *
+   * Returned as a pure function so it can be tested on its own — the probe drives it
+   * directly, and a behaviour this load-bearing should not be reachable only through
+   * `parseFile` on a real corpus file.
+   */
+  export function alignFrameworkPatterns<T extends { framework?: unknown }>(
+    patterns: readonly T[],
+    detections: readonly string[],
+  ): T[] {
+    // Published spelling per lowercased name — the detection list is already canonical.
+    const displayOf = new Map<string, string>()
+    for (const d of detections) {
+      const n = String(d || "").trim()
+      if (n && !displayOf.has(n.toLowerCase())) displayOf.set(n.toLowerCase(), n)
+    }
+    const out: T[] = []
+    for (const p of patterns) {
+      const raw = typeof p?.framework === "string" ? (p.framework as string) : ""
+      if (!raw) continue
+      const canonical = FRAMEWORK_ALIASES[raw.toLowerCase()] ?? raw
+      const display = displayOf.get(canonical.toLowerCase()) ?? displayOf.get(raw.toLowerCase())
+      if (!display) continue
+      out.push(display === raw ? p : ({ ...(p as object), framework: display } as T))
+    }
+    return out
+  }
+
   // Integration function to enhance analyzer results
   export function enhanceWithFrameworkIntelligence(
     result: Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata?: Partial<ASTEngine.FileMetadata> },
@@ -1021,7 +1068,8 @@ export namespace FrameworkIntelligence {
       ...prev,
       framework: primaryFramework,
       detectedFrameworks: mergedDetections,
-      frameworkPatterns: pats,
+      // Aligned with the list this same object publishes, so the three keys are one claim.
+      frameworkPatterns: alignFrameworkPatterns(pats, mergedDetections),
       architecturalInsights: analysis.insights,
       architecturalScore: analysis.architecturalScore,
       codeQuality: analysis.architecturalScore >= 80 ? "excellent" :
