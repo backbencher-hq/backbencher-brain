@@ -545,6 +545,29 @@ const SELF_TESTS: { name: string; meta: any; expect: AssertionId[]; opts?: Check
   // three keys anyway. Pinned here so a later reader does not "tighten" A7 back to a
   // per-file rule and re-convict a shape with no consumer-visible effect.
   { name: "nothing detected with a partial key set is not convicted", meta: { detectedFrameworks: [], frameworkPatterns: [] }, expect: [] },
+  // A4's real-world spellings, both measured on corpus files: the detector's slug beside the
+  // analyzer's display name (swift, 2 files), and a framework the published detection list
+  // has filtered out (dart, 68 files).
+  { name: "a slug/display spelling pair is convicted", meta: { framework: "SwiftUI", detectedFrameworks: ["SwiftUI"], frameworkPatterns: [{ framework: "swiftui" }] }, expect: ["A4-aligned"] },
+  { name: "a pattern naming a filtered-out detection is convicted", meta: { framework: "Flutter", detectedFrameworks: ["Flutter"], frameworkPatterns: [{ framework: "Dart" }] }, expect: ["A4-aligned"] },
+]
+
+/**
+ * `alignFrameworkPatterns` — the PIPELINE half of A4, driven directly.
+ *
+ * It is a pure function in `framework-intelligence.ts` precisely so it can be tested here
+ * rather than only through `parseFile` on a real corpus file: the two spellings and the
+ * filtered-out detection it repairs were each measured on corpus files (swift 2, dart 68),
+ * and the entries it must NOT touch are the ones every other lane publishes.
+ */
+const ALIGN_TESTS: { name: string; pats: any[]; det: string[]; expect: any[] }[] = [
+  { name: "a detector slug is rewritten onto the published spelling", pats: [{ framework: "swiftui", patterns: ["declarative"] }], det: ["SwiftUI"], expect: [{ framework: "SwiftUI", patterns: ["declarative"] }] },
+  { name: "an already-aligned entry is kept", pats: [{ framework: "Django", patterns: [] }], det: ["Django"], expect: [{ framework: "Django", patterns: [] }] },
+  { name: "an aliased slug is canonicalised and then matched", pats: [{ framework: "gorilla_mux" }], det: ["gorilla"], expect: [{ framework: "gorilla" }] },
+  { name: "an entry naming a filtered-out detection is dropped", pats: [{ framework: "Dart", patterns: ["async"] }], det: ["Flutter"], expect: [] },
+  { name: "an entry naming an undetected framework is dropped, never relabelled", pats: [{ framework: "Rails" }], det: ["Django"], expect: [] },
+  { name: "an entry with no framework name is dropped", pats: [{ patterns: ["x"] }], det: ["Django"], expect: [] },
+  { name: "a mixed list keeps exactly the aligned entries, in order", pats: [{ framework: "Flutter" }, { framework: "Dart" }, { framework: "swiftui" }], det: ["Flutter", "SwiftUI"], expect: [{ framework: "Flutter" }, { framework: "SwiftUI" }] },
 ]
 
 if (process.argv.includes("--self-test")) {
@@ -554,7 +577,14 @@ if (process.argv.includes("--self-test")) {
     const want = [...t.expect].sort()
     if (JSON.stringify(got) !== JSON.stringify(want)) { console.log(`FAIL ${t.name}: expected [${want}], got [${got}]`); bad++ }
   }
-  console.log(`runtime-probe self-tests: ${SELF_TESTS.length - bad}/${SELF_TESTS.length} passed`)
+  const { FrameworkIntelligence } = await import("../../src/ast/framework-intelligence")
+  for (const t of ALIGN_TESTS) {
+    const got = JSON.stringify(FrameworkIntelligence.alignFrameworkPatterns(t.pats, t.det))
+    const want = JSON.stringify(t.expect)
+    if (got !== want) { console.log(`FAIL ${t.name}: expected ${want}, got ${got}`); bad++ }
+  }
+  const total = SELF_TESTS.length + ALIGN_TESTS.length
+  console.log(`runtime-probe self-tests: ${total - bad}/${total} passed (${SELF_TESTS.length} assertions, ${ALIGN_TESTS.length} alignment)`)
   process.exit(bad ? 2 : 0)
 }
 
