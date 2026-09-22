@@ -1,5 +1,5 @@
 {
- "at": "2026-09-20T21:10:00.000000Z",
+ "at": "2026-09-21T00:00:00.000000Z",
  "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
  "draws": [
   {
@@ -205,6 +205,26 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
+  },
+  {
+   "repo": "rake",
+   "lang": "ruby",
+   "files": 95,
+   "truth": 1872,
+   "covered": 1872,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, i.e. the whole ruby corpus in the lane's first pinned repo (deeper than the canonical 60-file draw). POST-FIX: measured with the line round, the variable-receiver ruling and the static-superclass gate live, so this draw exercises all three on real code. hash 0fbb6654cea56068, heuristic 728 (first-parent override guesses, the disclosed class — the differential counts heuristic distrust as honest suspicion, not fabrication)."
+  },
+  {
+   "repo": "rack",
+   "lang": "ruby",
+   "files": 94,
+   "truth": 2482,
+   "covered": 2482,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus in the lane's second pinned repo. POST-FIX, and it is the corpus that CONTAINS the measured defect sites this round fixed (`@params_class.new` in query_parser.rb, `self.class.new` in headers.rb, the `Struct.new(...)` bases in directory.rb/multipart), so the clean row is evidence about the fixes rather than about code that lacks the shapes. hash e763e8da76c183e7, heuristic 112."
   }],
  "current": [
   {
@@ -367,6 +387,26 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
+  },
+  {
+   "repo": "rake",
+   "lang": "ruby",
+   "files": 95,
+   "truth": 1872,
+   "covered": 1872,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, whole corpus. POST-FIX (line round + variable-receiver ruling + static-superclass gate). hash 0fbb6654cea56068."
+  },
+  {
+   "repo": "rack",
+   "lang": "ruby",
+   "files": 94,
+   "truth": 2482,
+   "covered": 2482,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
   }],
  "adjudicated": {
   "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
@@ -386,7 +426,8 @@
   "kotlin": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
   "scala": { "maxSample": 200, "missing": 1, "unexplained": 0, "drawsRed": 0, "issue": "#905" },
   "cpp": { "maxSample": 73, "missing": 0, "unexplained": 0, "drawsRed": 0 },
-  "c": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 }
+  "c": { "maxSample": 200, "missing": 0, "unexplained": 0, "drawsRed": 0 },
+  "ruby": { "maxSample": 95, "missing": 0, "unexplained": 0, "drawsRed": 0 }
  },
  "closedInThisRound": {
   "#904": "java analyzer — generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
