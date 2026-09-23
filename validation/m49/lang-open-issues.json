@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T19:24:54.565Z",
+  "snapshotAt": "2026-09-23T22:10:53.989Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 118,
+  "count": 117,
   "issues": [
     {
       "number": 134,
@@ -477,9 +477,7 @@
     {
       "number": 825,
       "title": "M59.A7 — Analyzer lane: emit the call-site line per language (handoff)",
-      "labels": [
-        "lang:cpp"
-      ]
+      "labels": []
     },
     {
       "number": 826,
@@ -701,14 +699,6 @@
       "title": "M60 name surface: a quoted identifier's quoting syntax is published as part of the name (kotlin/scala/zig), and payloads and expressions are published as names (swift/haskell/elixir/cpp/scala)",
       "labels": [
         "bug"
-      ]
-    },
-    {
-      "number": 925,
-      "title": "M60-CONV: cpp/c — the bare macro-statement class (`expression_statement > MISSING \";\"`, 2849 sites / 99 files on nlohmann-json) needs a grammar wave with recovery re-derived in the same commit",
-      "labels": [
-        "lang:c",
-        "lang:cpp"
       ]
     }
   ]
