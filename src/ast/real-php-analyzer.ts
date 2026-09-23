@@ -97,6 +97,215 @@ const PHP_MAGIC_CONSTANTS: ReadonlySet<string> = new Set([
   "__DIR__", "__FILE__", "__LINE__", "__FUNCTION__", "__CLASS__",
   "__METHOD__", "__NAMESPACE__", "__TRAIT__",
 ])
+/**
+ * R9 (#835) — the declared-type reference graph: a declaration that WRITES a type name
+ * depends on the type it names.
+ *
+ * php was one of the lanes that emitted NOTHING for this class while ten siblings had it
+ * (rust's R13 header calls it a family standard; measured 2026-09-22 by
+ * script/m60/declared-type-refs-census.ts under M60's rule R9). The class was invisible
+ * to every gate the lane had, because an absent capability emits no edge for a per-edge
+ * oracle to adjudicate — see reviews/m60-csharp-declared-type-graph.md for the full
+ * shape of that argument, and this function's header for php's own conventions.
+ *
+ * PHP's positions, from the tree dump (script/m14/tmp/php-dt-tree.ts), NOT from the
+ * grammar's documentation:
+ *
+ *     property_declaration.type              `private Dep $f;`  (incl. static, readonly)
+ *     method_declaration.return_type         `function m(): Dep`
+ *     function_definition.return_type        a top-level `function m(): Dep`
+ *     simple_parameter.type                  `function m(Dep $a)`
+ *     variadic_parameter.type                `function m(Dep ...$rest)`
+ *     property_promotion_parameter.type      `__construct(private Dep $f)`
+ *
+ * and the wrappers `optional_type` (`?Dep`), `union_type` (`Dep|Other`) and
+ * `intersection_type` (`Dep&IShape`) descend to their members, because each member is a
+ * dependency. `named_type` carries the name; its `qualified_name` form publishes its
+ * LEAF (`\App\Lib\Dep` -> `Dep`), which is what every other php edge keys on.
+ *
+ * THREE RULES INHERITED FROM THIS LANE, not invented here:
+ *
+ *   source     a property's dependency belongs to the enclosing TYPE; a parameter's /
+ *              return's to the enclosing CALLABLE — the same attribution the csharp
+ *              round measured off java/kotlin/python and pinned. A promoted parameter is
+ *              a PARAMETER (that is the position it is written in).
+ *   marker     `declared_type`, except a return type, which the family publishes as
+ *              `return_type` (java/kotlin/python/typescript all do).
+ *   relative   `self` / `static` resolve to the ENCLOSING CLASS and `parent` to its
+ *              declared base — this lane's own probe-verified `new self()` rule, reused
+ *              rather than re-derived. MEASURED, not assumed: the first prototype passed
+ *              the attribution source instead and published `copy -> copy` for
+ *              `function copy(): self`. An unresolvable `parent` emits NOTHING, exactly
+ *              as the `new parent()` path does — a wrong edge is worse than no edge.
+ *
+ * SILENT: `primitive_type` (`int`, `string`, `void`, `mixed`, ...) — the grammar tags
+ * them, so no name test is needed (the exclusion java gets from its primitive_type node).
+ *
+ * BOUNDARIES, DISCLOSED: typed class constants (PHP 8.3 `const Dep X = ...`), `@var` /
+ * `@return` docblock annotations (not syntax), closure/arrow-function return types whose
+ * enclosing callable has no name in the file, and `catch (Dep $e)` clause types. Each is a
+ * real position; each is unwritten rather than silently approximated.
+ *
+ * ONE COPY, TWO CONSUMERS: the analyzer emits these edges and the differential oracle
+ * derives its truth from this SAME function (a rule the truth does not share is a rule
+ * that can drift, and the depth draws would read every new edge as analyzer-only).
+ */
+export interface PhpDeclaredTypeRef {
+  source: string
+  target: string
+  /** The M59.A7 (#825) line: where the TARGET name is written. */
+  line: number | null
+  relationshipType: "declared_type" | "return_type"
+  declaredOn: string
+}
+
+/** The relative types php resolves against the enclosing class (never real symbols). */
+const PHP_RELATIVE_TYPES = new Set(["self", "static", "parent"])
+
+/** Declarations a member's dependency is attributed to. */
+const PHP_TYPE_DECLARATIONS = new Set([
+  "class_declaration", "interface_declaration", "trait_declaration", "enum_declaration",
+])
+
+/** Callables a parameter's / return's dependency is attributed to. */
+const PHP_CALLABLE_DECLARATIONS = new Set([
+  "method_declaration", "function_definition", "anonymous_function", "arrow_function",
+])
+
+/** The leaf `name` node of a written type — the token that writes the published name. */
+function phpDeclaredTypeLeafNode(n: Node | null | undefined): Node | null {
+  if (!n) return null
+  if (n.type === "name") return n
+  const nm = n.childForFieldName("name")
+  if (nm) return phpDeclaredTypeLeafNode(nm)
+  // qualified_name(namespace_name(...), name): the trailing name is the leaf.
+  for (let i = n.namedChildCount - 1; i >= 0; i--) {
+    const c = phpDeclaredTypeLeafNode(n.namedChild(i))
+    if (c) return c
+  }
+  return null
+}
+
+/**
+ * R9 (#835): the declared-type reference graph of one parsed php file.
+ *
+ * `resolveParent` supplies the enclosing class's DECLARED base, or undefined when it is
+ * not resolvable in this file. The analyzer passes its own `baseByClass`; the oracle
+ * passes a map built from the analyzer's class symbols (`metadata.baseClass`), so both
+ * sides resolve `parent` from the same published fact rather than from two base rules.
+ */
+export function phpDeclaredTypeRefs(
+  root: Node,
+  resolveParent?: (ownerType: string) => string | undefined,
+): PhpDeclaredTypeRef[] {
+  const out: PhpDeclaredTypeRef[] = []
+  const emitted = new Set<string>()
+
+  const enclosing = (from: Node, kinds: Set<string>): string => {
+    let cur: Node | null = from.parent
+    while (cur) {
+      if (kinds.has(cur.type)) {
+        const nm = cur.childForFieldName("name")?.text
+        if (nm) return nm
+      }
+      cur = cur.parent
+    }
+    return ""
+  }
+
+  /**
+   * Every NAMED type written inside one declared type, in source order.
+   *
+   * `ownerType` is the enclosing CLASS — the resolution of a relative type, which is a
+   * different thing from the attribution source (measured: conflating them published
+   * `copy -> copy` for `function copy(): self`).
+   */
+  const leaves = (typeRoot: Node | null | undefined, ownerType: string): { node: Node; target: string }[] => {
+    const acc: { node: Node; target: string }[] = []
+    const walk = (n: Node | null | undefined): void => {
+      if (!n) return
+      if (n.type === "primitive_type") return
+      if (n.type === "named_type") {
+        const leaf = phpDeclaredTypeLeafNode(n)
+        const text = String(leaf?.text ?? "").trim()
+        if (!leaf || !text) return
+        if (PHP_RELATIVE_TYPES.has(text)) {
+          if (text === "parent") {
+            const base = ownerType ? resolveParent?.(ownerType) : undefined
+            if (base) acc.push({ node: leaf, target: base })
+            return
+          }
+          if (ownerType) acc.push({ node: leaf, target: ownerType })
+          return
+        }
+        acc.push({ node: leaf, target: text })
+        return
+      }
+      // Wrappers (optional_type / union_type / intersection_type) and any other
+      // container: each member is a dependency of its own.
+      for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
+    }
+    walk(typeRoot)
+    return acc
+  }
+
+  const push = (
+    source: string,
+    typeRoot: Node | null | undefined,
+    ownerType: string,
+    relationshipType: "declared_type" | "return_type",
+    declaredOn: string,
+  ): void => {
+    if (!source || !typeRoot) return
+    for (const leaf of leaves(typeRoot, ownerType)) {
+      const line = leaf.node.startPosition.row + 1
+      const key = `${source}\u0000${leaf.target}\u0000${line}`
+      if (emitted.has(key)) continue
+      emitted.add(key)
+      out.push({ source, target: leaf.target, line, relationshipType, declaredOn })
+    }
+  }
+
+  const stack: Node[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const ownerType = enclosing(n, PHP_TYPE_DECLARATIONS)
+    switch (n.type) {
+      case "property_declaration":
+        push(ownerType, n.childForFieldName("type"), ownerType, "declared_type", "property_declaration")
+        break
+      case "method_declaration":
+      case "function_definition":
+        push(
+          n.childForFieldName("name")?.text ?? ownerType,
+          n.childForFieldName("return_type"),
+          ownerType,
+          "return_type",
+          "return_type",
+        )
+        break
+      case "simple_parameter":
+      case "variadic_parameter":
+      case "property_promotion_parameter":
+        push(
+          enclosing(n, PHP_CALLABLE_DECLARATIONS),
+          n.childForFieldName("type"),
+          ownerType,
+          "declared_type",
+          // A promoted parameter is written in a parameter list, so it is a parameter
+          // position; the property it also declares is reported by its own node type.
+          n.type === "property_promotion_parameter" ? "property_promotion_parameter" : "parameter",
+        )
+        break
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
 export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // class name -> declared base class (leaf name), populated as class
   // declarations are encountered; consumed by processObjectCreation to
@@ -408,7 +617,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         const body = node.childForFieldName("body")
         if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
-        this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope)
+        this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
         continue
       }
 
@@ -425,7 +635,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!owner) {
           const body = node.childForFieldName("body")
           if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, undefined, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
-          this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope)
+          this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, undefined, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+          this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
           continue
         }
         const modifiers = this.extractModifiers(node)
@@ -462,7 +673,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (methodName.startsWith("__")) patterns.add("Magic Methods")
         const body = node.childForFieldName("body")
         if (body) this.walkBody(body, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
-        this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope)
+        this.walkCallableHeader(node, symbols, relationships, imports, owner, ns, methodName, detectedFrameworks, patterns, { file: fileScope, funcValues, constValues })
+        this.pushNonBodyChildren(node, stack, owner, ownerKind, ns, scope, true)
         continue
       }
 
@@ -733,9 +945,27 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const lhs = parent ? parent.namedChild(0) : null
         const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
         if (!isWrite) {
+          // M60 php round — a member READ names a member only when the name
+          // field is a STATIC `name` node. The old gate was a proxy
+          // (`!member.text.startsWith("$")`) and a proxy is exactly what the
+          // dynamic spellings break: `$postParams->$param` (phpmyadmin
+          // src/Http/ServerRequest.php:233) emitted NOTHING while the oracle
+          // published the raw field text as a target (`uses -> $param` — a
+          // spelling no other edge in this lane can produce), and
+          // `$box->{'quoted'}` / `$box->{1}` published a STRING/INTEGER
+          // LITERAL as a symbol name on BOTH sides, so no mirror could ever
+          // show it (measured: script/m14/tmp/php-dynamic-member-shapes.ts).
+          //
+          // The braces ARE in the tree (probe: `$o->NAME` is `variable_name,
+          // ~->, name`; `$o->{NAME}` is `variable_name, ~->, ~{, name, ~}`), so
+          // the two shapes are distinguishable: a
+          // braced field is a DYNAMIC selection — the property is chosen at
+          // run time, the static graph holds no member symbol for it, and the
+          // field's own expression reads (a `$var`, a file const, an inner
+          // `$this->x`) are emitted by the ordinary rules for those nodes.
           const nameNode = n.childForFieldName("name")
-          const member = nameNode ?? (n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null)
-          if (member && member.text && !member.text.startsWith("$")) {
+          const member = nameNode && nameNode.type === "name" && !this.isBracedMemberName(n) ? nameNode : null
+          if (member && member.text) {
             relationships.push({
               source: inFunction || "global",
               target: member.text,
@@ -894,7 +1124,20 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     patterns: Set<string>,
   ): void {
     const nameNode = node.childForFieldName("function")
-    const callName = nameNode?.text
+    if (!nameNode) return
+    // A FULLY-QUALIFIED call spells its name with a leading backslash
+    // (`\is_file(...)`, `\spl_autoload_register(...)` — phpunit's bootstrap and
+    // test-helper files). Taking the raw text broke both halves of this rule
+    // at once: `PHP_BUILTINS` holds BARE names, so `has("\\is_file")` is false
+    // and a builtin escaped the filter, and the edge published a target no
+    // other relationship in this lane can spell — `calls delete_directory ->
+    // \is_file` (targets are bare names everywhere else: `leafName` in
+    // processObjectCreation, the `name` field in the scoped/member calls).
+    // Measured on phpunit FULL EXTENT (2,907 files, 2026-09-22): 12 such
+    // edges, 10 of them builtins the filter should have dropped. The oracle's
+    // rule is leaf-then-builtin (`leafName(fn.text)` then `PHP_BUILTINS`), so
+    // this is the analyzer side converging on the rule both sides state.
+    const callName = this.leafName(nameNode.text)
     if (!callName) return
     if (callName === "add_action" || callName === "add_filter") {
       detectedFrameworks.add("WordPress")
@@ -1077,16 +1320,75 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     ownerKind: string | undefined,
     ns: string | undefined,
     scope: PhpValueScope,
+    callableHeader = false,
   ): void {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
+      // `attribute_list` and `formal_parameters` are NOT descended here for a
+      // callable: they are owned by walkCallableHeader, which runs the BODY
+      // walker over them (see its header for why). The branch is still live for
+      // class/interface/trait/enum declarations, where truth's inBody is false
+      // and the extracted walk's subset is the correct semantics.
       if (c.type === "attribute_list" || c.type === "formal_parameters") {
+        if (callableHeader) continue
         for (let j = c.namedChildCount - 1; j >= 0; j--) {
           const g = c.namedChild(j)
           if (g) stack.push({ node: g, owner, ownerKind, ns, inFunction: undefined, scope })
         }
       }
+    }
+  }
+
+  /**
+   * A NAMED callable's declaration header — its parameter list and its
+   * attribute list — is walked with the BODY walker.
+   *
+   * Why: the differential oracle gates its read rules on `inBody`, and that
+   * boundary is the callable's whole SUBTREE, not just its body. Both the
+   * parameter list and the attribute list sit inside it, so truth reads them
+   * with the full rule set (a parameter DEFAULT and an attribute ARGUMENT are
+   * expressions evaluated at call time — the same category as the field
+   * default / const initializer this lane already reads). The extracted walk
+   * visits those positions with a SUBSET of its read rules (file-const `name`
+   * reads and variable reads only — no class-constant, static-property or
+   * member branch), so `= self::DEFAULT` and `#[Spec(self::NAME)]` in a method
+   * header emitted nothing while truth derived an edge.
+   *
+   * Measured, not assumed: phpunit FULL EXTENT (2,907 files, 2026-09-22) —
+   * `Result::from(..., int $shellExitCode = self::SUCCESS)` was the lane's only
+   * non-`calls` MISSING edge, and the fixture php/header-reads reports the
+   * attribute-argument half as `oracle-only -> NAME` before this walk.
+   *
+   * walkBody is REUSED, never re-implemented: it already excludes the DECLARING
+   * positions by ptype (`simple_parameter`, `variadic_parameter`,
+   * `property_promotion_parameter` — mirrored exactly by the oracle), so walking
+   * these subtrees emits the defaults'/arguments' reads and nothing else. Its
+   * frame seed collects the declaration's own params, which is the frame the
+   * oracle gives these nodes too. Source attribution is the enclosing callable,
+   * as in the body.
+   *
+   * The boundary is deliberate and pinned by the fixture: the SAME attribute on
+   * a CLASS is outside any callable, truth's inBody is false there, and it stays
+   * on the extracted subset (no read).
+   */
+  private walkCallableHeader(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    owner: string | undefined,
+    ns: string | undefined,
+    fnName: string | undefined,
+    detectedFrameworks: Set<string>,
+    patterns: Set<string>,
+    scopeCtx: { file: PhpValueScope; funcValues: Set<string>; constValues: Set<string> },
+  ): void {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type !== "formal_parameters" && c.type !== "attribute_list") continue
+      this.walkBody(c, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, scopeCtx)
     }
   }
 
@@ -1410,8 +1712,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const txt = n.text
     if (!txt || PHP_MAGIC_CONSTANTS.has(txt)) return
     const ptype = parent?.type ?? ""
+    // M60: the member-access exclusion covers the STATIC member-NAME position
+    // (a name there names a member, not a value). A BRACED field is the dynamic
+    // form — an expression context, where a bare name IS a value: in
+    // `$o->{$CONST}` the constant selects the property, so it is read. Same
+    // exception as the member rule above, same `{` token test, mirrored in the
+    // oracle.
+    const dynamicMemberField = !!parent &&
+      (ptype === "member_access_expression" || ptype === "nullsafe_member_access_expression") &&
+      this.isBracedMemberName(parent)
     if (
-      ptype === "member_access_expression" || ptype === "nullsafe_member_access_expression" ||
+      (!dynamicMemberField && (ptype === "member_access_expression" || ptype === "nullsafe_member_access_expression")) ||
       ptype === "class_constant_access_expression" ||
       ptype === "function_call_expression" || ptype === "scoped_call_expression" ||
       ptype === "member_call_expression" || ptype === "nullsafe_member_call_expression" ||
@@ -1722,6 +2033,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return leaf
   }
 
+  /**
+   * M60 php round: is this member access written in the BRACED dynamic form
+   * (`$o->{$x}`, `$o->{'lit'}`, `$o->{CONST}`)? The pinned grammar keeps the
+   * braces as ANONYMOUS `{`/`}` tokens around the name field, which is the only
+   * thing distinguishing `$o->NAME` (a static member name) from `$o->{NAME}` (a
+   * dynamic selection whose value happens to be a constant) — both carry a
+   * `name` node. Pure AST, never source text. Mirrored exactly by the oracle's
+   * phpIsBracedMember. 
+   */
+  private isBracedMemberName(n: Node): boolean {
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c && !c.isNamed && c.type === "{") return true
+    }
+    return false
+  }
+
   /** Strip surrounding single/double quotes — pure char scan. */
   private cleanString(text: string): string {
     if (text.length >= 2) {
@@ -1781,6 +2109,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // evidenceClass values). structural (grammar clauses, conf 1.0) |
     // usage_contextual (calls, member reads, conf >= 0.85) | import_based
     // (import directives) | inferred (confidence < 1 non-call edges).
+    // R9 (#835): the declared-type reference graph — family standard, mirrors
+    // go/c/rust/java/kotlin (see phpDeclaredTypeRefs' header for php's positions, the
+    // inherited conventions and the disclosed boundaries). Emitted BEFORE
+    // classifyEvidenceTier so these edges carry an evidence class like every other
+    // reference edge, and from the SAME function the differential oracle derives its
+    // truth from. `parent` resolves through this lane's own baseByClass.
+    for (const ref of phpDeclaredTypeRefs(rootNode, (owner) => this.baseByClass.get(owner))) {
+      relationships.push({
+        source: ref.source,
+        target: ref.target,
+        type: ASTEngine.RelationshipType.References,
+        confidence: 0.9,
+        ...(ref.line ? { line_number: ref.line } : {}),
+        metadata: { relationshipType: ref.relationshipType, declaredOn: ref.declaredOn },
+      })
+    }
+
     this.classifyEvidenceTier(relationships)
     const frameworks = [...detectedFrameworks]
     const patternList = [...patterns]
