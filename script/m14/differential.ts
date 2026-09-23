@@ -1609,13 +1609,13 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
               const t = cur.type
               if (t === "field_expression") {
                 const f = cur.childForFieldName?.("field") ?? cur.namedChild(cur.namedChildCount - 1)
-                if (!f) return cur.text
+                if (!f) return ""
                 cur = f
                 continue
               }
               if (t === "template_function" || t === "template_method") {
                 const base = cur.namedChild(0)
-                if (!base) return cur.text
+                if (!base) return ""
                 cur = base
                 continue
               }
@@ -1627,7 +1627,7 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
                   cur = inner
                   continue
                 }
-                return cur.text
+                return ""
               }
               if (t === "qualified_identifier" && cur.namedChildCount >= 1) {
                 cur = cur.namedChild(cur.namedChildCount - 1)
@@ -1637,13 +1637,18 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
                 cur = cur.namedChild(0)
                 continue
               }
+              // #924 mirror: a descent that ends anywhere but a NAME-BEARING
+              // node found no named callee — the analyzer emits nothing, so
+              // truth must derive nothing (a lambda callee, an element call, a
+              // compound literal, an assignment, a mis-nested binary
+              // expression: all source text, never a name).
               if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
                   t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
                 return cur.text
               }
-              return cur.text
+              return ""
             }
-            return cur?.text ?? ""
+            return ""
           }
           if (fn) target = calleeLeaf(fn)
           // CPPD13 mirror: functor-temporary invocation — the callee is itself

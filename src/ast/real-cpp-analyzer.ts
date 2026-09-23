@@ -1568,6 +1568,22 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // one line early, and a receiver span (a call inside a template
           // argument) further off. This returns the NODE, not its text, so the
           // edge's `line_number` and its `target` cannot name different nodes.
+          // #924 (cpp's third name-surface class): the descent ends on a
+          // NAME-BEARING node or there is no named callee at all. The old code
+          // returned whatever the descent stopped on, so a callee the grammar
+          // does not name published its SOURCE TEXT as the target — an IIFE
+          // (`[](UInt m) { … }(4)`, whose `function` field IS the
+          // lambda_expression), an element call (`arr[i]()`), a compound
+          // literal, an assignment, a concatenated string, an update/ unary
+          // expression, a mis-nested binary expression, an ERROR region — 184
+          // such call sites over the two pinned corpora, measured
+          // (script/m14/tmp/c924-calls-ws.ts). `null` here means "this call has
+          // no named callee", which is the SAME ruling CPPD13 already applies
+          // to functor temporaries and pointer-to-member invocations: a call
+          // whose callee is only knowable at runtime emits no edge.
+          const NAME_BEARING = (t: string): boolean =>
+            t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
+            t === "operator_name" || t === "destructor_name" || t === "namespace_identifier"
           const calleeLeafNode = (n: any): any => {
             let cur = n
             let guard = 0
@@ -1575,13 +1591,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               const t = cur.type
               if (t === "field_expression") {
                 const f = cur.childForFieldName("field") ?? cur.namedChild(cur.namedChildCount - 1)
-                if (!f) return cur
+                if (!f) return null
                 cur = f
                 continue
               }
               if (t === "template_function" || t === "template_method") {
                 const base = cur.namedChild(0)
-                if (!base) return cur
+                if (!base) return null
                 cur = base
                 continue
               }
@@ -1594,7 +1610,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                   cur = inner
                   continue
                 }
-                return cur
+                return null
               }
               if (t === "qualified_identifier" && cur.namedChildCount >= 1) {
                 cur = cur.namedChild(cur.namedChildCount - 1)
@@ -1604,13 +1620,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 cur = cur.namedChild(0)
                 continue
               }
-              if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
-                  t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
-                return cur
-              }
-              return cur
+              return NAME_BEARING(t) ? cur : null
             }
-            return cur
+            return null
           }
           const calleeLeaf = (n: any): string => calleeLeafNode(n)?.text ?? ""
           // The naming node of the call edge — the SAME leaf whose text becomes
@@ -1642,13 +1654,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // as a junk target. Pointer-to-member recovery (`->*` in decltype
           // soup) is the same shape: no named callee.
           const calleeIsTempCall = funcNode.type === "call_expression"
+          // #924: the descent found no name-bearing node (see `calleeLeafNode`).
+          const calleeIsUnnamed = calleeSite === null
           // CPPD13 tail (gmock.h L1872): `(std::declval<Class*>()->*pmf)()` —
           // a pointer-to-MEMBER invocation. The callee is only knowable at
           // runtime (like C function pointers), and the pinned grammar
           // ERROR-recovers the shape (fn.hasError). A mangled callee has no
           // trustworthy leaf — emit nothing.
           const calleeIsError = !!funcNode.hasError
-          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsError) {
+          if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError) {
             relationships.push({
               source,
               target: targetName,
