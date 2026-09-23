@@ -558,7 +558,22 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             const decl = this.findChild(p, (n) => n.type === "variable_declarator")
             pName = decl ? this.findChild(decl, (n) => n.type === "identifier") : null
           }
-          const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type")
+          // `scoped_type_identifier` is the node a QUALIFIED type is written as
+          // (`Outer.Criterion`, `java.util.Map.Entry`) — probe-verified against
+          // the pinned grammar. Omitting it here dropped the WRITTEN type from
+          // the payload: the parameter read `undefined` while its declaration
+          // named the type, and the override signature that identity is keyed on
+          // (`sigCompatible`-style matching, pass-1 exact-signature BFS) lost the
+          // distinction between two overloads that differ only in a qualified
+          // parameter type. Measured before the fix (600-file grails-core
+          // sample, script/m60/groovy-parameter-payload-census.ts): 8 of 33
+          // joined written-qualified slots recorded no type; every other type
+          // node in this lane ALREADY accepts a scoped type (the record-component
+          // extractor above, the instantiation type at the object-creation site,
+          // and baseTypeName's own doctrine that a scoped type keeps its full
+          // dotted text "matching the Java analyzer convention"), so this is the
+          // one extractor that disagreed with its own lane.
+          const pType = this.findChild(p, (n) => n.type === "type_identifier" || n.type === "integral_type" || n.type === "floating_point_type" || n.type === "boolean_type" || n.type === "void_type" || n.type === "generic_type" || n.type === "array_type" || n.type === "scoped_type_identifier")
           parameters.push({
             name: pName?.text ?? "anonymous",
             type: pType ? this.baseTypeName(pType) + (isSpread ? "[]" : "") : undefined,
@@ -1197,13 +1212,42 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // edge can carry the line the type is named on rather than the line the
     // enclosing declaration (or type expression) opened on.
     type NamedNode = { name: string; node: Node }
+    // M60 R10 follow-up: a NAME, not a text slice. Every target this collector
+    // publishes is a NODE'S TEXT, and error recovery can weld a type node across
+    // statements: measured on grails-scaffolding's AsyncController template,
+    // `import static org.springframework.http.HttpStatus.*` followed by another
+    // import becomes ONE scoped_type_identifier whose text is
+    // `org.springframework.http.HttpStatus.*` + newline + the next import
+    // statement, with an ERROR node inside it. Publishing that text names a
+    // string that appears nowhere in the source as a type (and it is a
+    // POST-change regression: the pre-fix collectors never reached the node, so
+    // no such edge existed). A type name is dots and identifier characters ON
+    // ONE LINE; anything else is refused, and the branch below stops rather than
+    // descending, because the segments of a malformed scoped node are exactly
+    // the fabrication the scoped-type-references fixture forbids.
+    const isPlainTypeName = (t: string): boolean => {
+      if (t.length === 0) return false
+      for (let i = 0; i < t.length; i++) {
+        const c = t.charCodeAt(i)
+        const ok =
+          (c >= 97 && c <= 122) || // a-z
+          (c >= 65 && c <= 90) || // A-Z
+          (c >= 48 && c <= 57) || // 0-9
+          c === 95 || // _
+          c === 36 || // $ (a legal groovy/java identifier character)
+          c === 46 // .
+        if (!ok) return false
+      }
+      return true
+    }
     const collectTypeNames = (n: Node, out: NamedNode[]): void => {
       if (n.type === "type_identifier") {
         // `def` is the dynamic-type keyword; `as` is how the grammar lexes
         // the keyword inside its mis-parsed dangling as-expression
         // (`= [] as Set` becomes local_variable_declaration(as, Set)).
-        // Both are type_identifier TOKENS but never types.
-        if (n.text !== "def" && n.text !== "as" && !out.some((o) => o.name === n.text)) out.push({ name: n.text, node: n })
+        // Both are type_identifier TOKENS but never types. The plain-name
+        // predicate covers the same ground for a token authored by recovery.
+        if (n.text !== "def" && n.text !== "as" && isPlainTypeName(n.text) && !out.some((o) => o.name === n.text)) out.push({ name: n.text, node: n })
         return
       }
       if (n.type === "record_pattern") {
@@ -1218,6 +1262,29 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const c = n.namedChild(i)
           if (c) collectTypeNames(c, out)
         }
+        return
+      }
+      if (n.type === "scoped_type_identifier") {
+        // A QUALIFIED type is ONE type written with its qualifier:
+        // `Outer.Criterion` is a single declared-type dependency, and this
+        // lane's own convention is that the full dotted text IS the name
+        // (baseTypeName: "the FULL dotted text is the type name — matching the
+        // Java analyzer convention"; java emits `java.util.Map.Entry` for the
+        // same shape). Measured before this branch existed
+        // (script/m14/tmp/groovy-scoped-type-ref-probe.ts): descending emitted
+        // each segment as its own type — `Outer.Criterion` became `Outer` +
+        // `Criterion`, and a corpus name like `java.util.Map.Entry` would name
+        // `java` and `util`, package segments that are not types at all (the
+        // doctrine collectTypeNodes already documents for the heritage path).
+        // Type ARGUMENTS are still their own types, so they are collected.
+        // A scoped_type_identifier is by construction qualified (it always
+        // contains a `.`), so the type_identifier keyword guards do not apply
+        // here.
+        const text = n.text
+        if (!isPlainTypeName(text)) return
+        if (!out.some((o) => o.name === text)) out.push({ name: text, node: n })
+        const args = this.findChild(n, (c) => c.type === "type_arguments")
+        if (args) collectTypeNames(args, out)
         return
       }
       if (TYPE_STOP.has(n.type)) return
@@ -1357,11 +1424,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // clause, but NOT "type_identifier" (it ends in "identifier") —
           // that case stays explicit. ("prototype" matches either way, same
           // as before — the predicate is unchanged, only the spelling.)
+          //
+          // R10 follow-up: `scoped_type_identifier` ends in "identifier" too,
+          // so the same reasoning admits it explicitly. Measured before the
+          // fix (script/m14/tmp/groovy-scoped-type-ref-probe.ts): `Outer.Criterion
+          // qualifiedField` emitted NO declared_type edge while `Criterion
+          // leafField` emitted one, so the qualified half of every declared-type
+          // position was simply absent from the graph. Admitted as a COMPLETE
+          // type, never descended into — its nested type_identifiers are
+          // package/class segments, the rule collectTypeNodes already documents.
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c || TYPE_STOP.has(c.type)) continue
-            if (c.type.endsWith("type") || c.type === "type_identifier") roots.push(c)
+            if (c.type.endsWith("type") || c.type === "type_identifier" || c.type === "scoped_type_identifier") roots.push(c)
           }
           if (roots.length) emit(n, roots, n.type)
           break
@@ -1454,13 +1530,17 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the type — the old `else break` stopped there, so `public String
           // greet()` / `static void main` lost their return-type ref (probe-
           // verified). Non-type, non-modifier children still terminate.
+          // R10 follow-up: a `scoped_type_identifier` return type (`Outer.Criterion
+          // qualifiedReturn()`) ends in "identifier", so `endsWith("_type")`
+          // misses it and the return-type reference disappears — measured on the
+          // same probe that found the field/local half of this gap.
           const roots: Node[] = []
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c) continue
             if (c.type === "identifier") break
             if (c.type === "modifiers") continue
-            if (c.type.endsWith("_type") || c.type === "type_identifier") roots.push(c)
+            if (c.type.endsWith("_type") || c.type === "type_identifier" || c.type === "scoped_type_identifier") roots.push(c)
             else break
           }
           if (roots.length) emit(n, roots, "return_type", "return_type")
