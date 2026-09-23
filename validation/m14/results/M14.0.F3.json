@@ -62,7 +62,7 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "17/17 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -92,7 +92,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "14/14 fixtures pass",
+      "detail": "15/15 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "fdbf069f5e0b9e69277f942b370e9b043c2beba9",
-  "committedAt": "2026-09-23T16:55:17-04:00",
+  "commit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
+  "committedAt": "2026-09-23T17:47:16-04:00",
   "data": {
     "details": [
       {
@@ -2487,6 +2487,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/call-target-name-surface-924",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/callsite-lines-825",
         "ok": true,
         "problems": []
@@ -2543,6 +2548,11 @@
       },
       {
         "fixture": "cpp/preproc-has-include",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/qualified-declarator-name-924",
         "ok": true,
         "problems": []
       },
@@ -2743,6 +2753,11 @@
       },
       {
         "fixture": "csharp/framework-none",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/interface-member-implementation",
         "ok": true,
         "problems": []
       },
@@ -3449,11 +3464,11 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 17
+        "pass": 19
       },
       "csharp": {
         "fail": 0,
-        "pass": 14
+        "pass": 15
       },
       "dart": {
         "fail": 0,
@@ -3554,8 +3569,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-23T20:59:21.319Z",
-  "regeneratedAtCommit": "fdbf069f5e0b9e69277f942b370e9b043c2beba9",
+  "regeneratedAt": "2026-09-23T22:03:49.845Z",
+  "regeneratedAtCommit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

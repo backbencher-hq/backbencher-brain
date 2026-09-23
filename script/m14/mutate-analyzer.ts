@@ -6063,6 +6063,66 @@ export const MUTANTS: Mutant[] = [
       return added.length ? { ...r, relationships: [...(r.relationships ?? []), ...added] } : r
     },
   },
+  // C923 (#923): the member-level interface-implementation contract, a mutant PAIR. A fixture is
+  // only evidence if it can fail, and one mutant per direction proves it: the revert (the pre-fix
+  // lane published no member-level edge at all) and the over-reach the rule exists to refuse
+  // (name matching without the type actually conforming). The revert is a deletion because the
+  // pre-fix state IS emptiness — the post-fix result records nothing about what it never emitted.
+  {
+    id: "csharp/interface-member-contract-dropped",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "C923 (#923) regression: the member-level interface-implementation contract disappears (pre-fix state: no `overrides Owner.member -> Iface.member` for the implicit form, the explicit form, an interface chain, or an event) — caught by csharp/interface-member-implementation, whose 20 pinned edges echo every form.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => x?.metadata?.relationshipType !== "interface_member_implementation",
+      ),
+    }),
+  },
+  {
+    id: "csharp/interface-member-conforming-dropped",
+    language: "csharp",
+    defectClass: "relationship-noise",
+    description: "C923 (#923) over-reach: the contract stops requiring the type to conform — every member whose NAME an in-file interface declares gets an edge, derived from the analyzer's own result (interface symbols + their contains members), so `Unrelated.GetName -> IThing.GetName` and `Hidden.GetName -> IThing.GetName` reappear. Caught by csharp/interface-member-implementation's forbidRelationships entries.",
+    transform: (r: any) => {
+      const ifaceNames = new Set<string>(
+        (r.symbols ?? [])
+          .filter((s: any) => s?.kind === "interface" && typeof s.name === "string")
+          .map((s: any) => String(s.name)),
+      )
+      const contract = new Map<string, { iface: string; member: string }>()
+      for (const rel of r.relationships ?? []) {
+        if (rel?.type !== "contains" || !ifaceNames.has(String(rel.source))) continue
+        contract.set(`${rel.source}.${rel.target}`, { iface: String(rel.source), member: String(rel.target) })
+      }
+      if (contract.size === 0) return r
+      const existing = new Set<string>(
+        (r.relationships ?? []).map((x: any) => `${x.source}|${x.target}`),
+      )
+      const added: any[] = []
+      for (const rel of r.relationships ?? []) {
+        if (rel?.type !== "contains" || ifaceNames.has(String(rel.source))) continue
+        // Match by member NAME across every in-file interface (the pre-refusal behavior); the
+        // contract map is keyed by owner so this is an O(interfaces) scan per member, never a
+        // rebuild of the analyzer's own resolution.
+        for (const c of contract.values()) {
+          if (c.member !== String(rel.target)) continue
+          const key = `${rel.source}.${rel.target}|${c.iface}.${c.member}`
+          if (existing.has(key)) continue
+          existing.add(key)
+          added.push({
+            source: `${rel.source}.${rel.target}`,
+            target: `${c.iface}.${c.member}`,
+            type: "overrides",
+            confidence: 1.0,
+            metadata: { relationshipType: "interface_member_implementation", mutant: "conforming-requirement-dropped" },
+          })
+        }
+      }
+      return added.length ? { ...r, relationships: [...(r.relationships ?? []), ...added] } : r
+    },
+  },
   {
     id: "csharp/reemit-initializer-designator-reads",
     language: "csharp",
