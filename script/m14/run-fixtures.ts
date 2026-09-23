@@ -203,7 +203,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // transform to its result (without this, vue/svelte mutants could
       // never be caught — the suite would silently accept defects).
       if (overrideAnalyzer && typeof (overrideAnalyzer as any).transform === "function") {
-        result = (overrideAnalyzer as any).transform(result)
+        result = (overrideAnalyzer as any).transform(result, content)
       }
     } else {
       result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`)
