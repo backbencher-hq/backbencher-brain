@@ -285,6 +285,16 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
+  },
+  {
+   "repo": "powershell",
+   "lang": "csharp",
+   "files": 200,
+   "truth": 5134,
+   "covered": 5134,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
   }
  ],
  "current": [
@@ -557,6 +567,16 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
+  },
+  {
+   "repo": "powershell",
+   "lang": "csharp",
+   "files": 200,
+   "truth": 5134,
+   "covered": 5134,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
   }
  ],
  "adjudicated": {
