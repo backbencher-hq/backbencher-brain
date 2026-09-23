@@ -2680,7 +2680,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             ? last
             : null
       if (!nameNode) {
-        parameters.push({ name: "unknown", type: groupText.trim() || "any" })
+        // An unnamed parameter (`void`, `JniArgsEnvObj`) is named NOTHING — R7: the
+        // honest state is absence, never the literal "unknown", which would become a
+        // parameter name that does not exist in the source. The TYPE is still known
+        // and stays; only the name field is empty.
+        parameters.push({ name: "", type: groupText.trim() || "any" })
         continue
       }
       const name = nameNode.text.trim()
@@ -2822,7 +2826,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             ? lastNonKeywordIdentifierIn(group)
             : null
       if (!nameNode) {
-        parameters.push({ name: "unknown", type: groupText.trim() || "any" })
+        // Unnamed parameter: absence, not a placeholder literal (R7) — see the note in
+        // `collectWrappedHeaderParameters`.
+        parameters.push({ name: "", type: groupText.trim() || "any" })
         continue
       }
       const name = nameNode.text.trim()
