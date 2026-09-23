@@ -156,7 +156,11 @@ function isAlphanumericChar(c: string): boolean {
 }
 
 /** Every file whose extension routes to the lane, in a bounded recursive walk. */
-function filesFor(lang: string, repo: string, cap: number): string[] {
+// EXPORTED 2026-09-23 (M60, inverse-shape census): ONE draw rule for the family. The
+// unscanned-shape census needs the same corpus file set as this census, and a second copy of
+// "sorted, then every k-th file" would be free to drift — the drift class this program has
+// paid for repeatedly. Consumers import this instead of re-implementing it.
+export function filesFor(lang: string, repo: string, cap: number): string[] {
   const cfg = LANGS[lang]
   if (!cfg) return []
   const dir = path.join(CORPUS_ROOT, repo)
