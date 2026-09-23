@@ -306,6 +306,139 @@ export function phpDeclaredTypeRefs(
   return out
 }
 
+/**
+ * PHP include/require path resolution — ONE rule, TWO consumers: the analyzer's
+ * `emitInclude` and the differential oracle's truth both call this function, so
+ * a change here moves both sides together instead of leaving one side to
+ * disagree (the failure mode that turns a capability fix into an
+ * "analyzer-only edge" finding).
+ *
+ * A path is emitted ONLY when it is statically known. The pre-R10 rule read the
+ * raw text of any `binary_expression`, so a concatenation with a runtime part
+ * published a reconstructed EXPRESSION as both the import module and a
+ * `references` target:
+ *
+ *     include $this->baseDir . 'revision-info.php';   // phpmyadmin src/Git.php:97
+ *     target = "$this->baseDir.'revision-info.php'"
+ *
+ * That spelling carries `$`, `->`, `.` and a quote — no php symbol can ever be
+ * named that way, so the edge can never resolve — and because the oracle derived
+ * its truth from the same rule, BOTH sides emitted it and no per-edge gate could
+ * see it (R10's target-spelling census is what did). `__DIR__ . '/helpers.php'`
+ * is unaffected: its operands are all static, so it keeps the exact shape the
+ * lane has always published (the concatenation's text, whitespace-collapsed) —
+ * this rule narrows WHICH concatenations are paths, not how a path is spelled.
+ *
+ * Shapes below are probe-verified against the pinned grammar (binary_expression:
+ * two named operands with the concat operator as an anonymous child between
+ * them; `"{$a}/x.php"` is an `encapsed_string` carrying a `variable_name`).
+ */
+export function phpStaticIncludePath(node: Node): string | undefined {
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const child = node.namedChild(i)
+    if (!child) continue
+    if (!PHP_PATH_SHAPES.has(child.type)) continue
+    return phpStaticPathValue(child)
+  }
+  return undefined
+}
+
+/**
+ * PHP callable-name resolution — ONE rule, TWO consumers (the analyzer's
+ * `processFunctionCall` and the differential oracle's truth).
+ *
+ * A `calls` edge's target is the name of a CALLEE, so it only exists when the
+ * callee is spelled as a name. `$callable()` names nothing: `$callable` is a
+ * runtime VALUE, and the pre-R10 rule read the callee node's raw text anyway, so
+ * the lane published `calls -> $callable` (phpmyadmin tests, `$controller($request)`
+ * in LicenseControllerTest.php:23) — a target no php symbol can ever be named,
+ * emitted IDENTICALLY by the oracle because its truth came from the same shape.
+ * The value the call evaluates IS read, and that read is the variable pass's
+ * (`uses -> callable`); publishing it as a callee name fabricated a name and lost
+ * the honest edge at the same time.
+ *
+ * Measured over 400 real php files (phpunit/src, phpmyadmin/src + tests): 1,047
+ * `name` callees, and `variable_name` the ONLY non-name shape that reaches this
+ * rule (1 site) — so this narrows a fabrication, not a capability.
+ */
+export function phpStaticCallableName(fn: Node | null | undefined): string | undefined {
+  if (!fn) return undefined
+  if (fn.type !== "name" && fn.type !== "qualified_name") return undefined
+  return phpLeafNameText(fn.text) || undefined
+}
+
+/** The last namespace segment of a possibly-qualified php name. */
+export function phpLeafNameText(name: string): string {
+  const idx = name.lastIndexOf("\\")
+  return idx >= 0 ? name.substring(idx + 1) : name
+}
+
+const PHP_PATH_SHAPES: ReadonlySet<string> = new Set([
+  "string",
+  "encapsed_string",
+  "binary_expression",
+  "name",
+  "qualified_name",
+])
+
+/** The static VALUE of a path-shaped node, or undefined when it is not static. */
+function phpStaticPathValue(n: Node): string | undefined {
+  switch (n.type) {
+    case "string":
+      return phpCleanStringText(n.text)
+    case "encapsed_string":
+      // Interpolation is dynamic: `include "{$a}/dyn.php"` has no fixed path.
+      return phpHasInterpolation(n) ? undefined : phpCleanStringText(n.text)
+    case "name":
+    case "qualified_name":
+      // `__DIR__`, `__FILE__` and a defined path constant are static by
+      // definition; the lane has always published them as written.
+      return n.text
+    case "binary_expression": {
+      const operands: Node[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) operands.push(c)
+      }
+      if (operands.length !== 2) return undefined
+      const between = n.text.slice(operands[0].endIndex - n.startIndex, operands[1].startIndex - n.startIndex).trim()
+      // Only `.` composes a path. Any other operator is not a concatenation.
+      if (between !== ".") return undefined
+      if (phpStaticPathValue(operands[0]) === undefined || phpStaticPathValue(operands[1]) === undefined) return undefined
+      return phpCollapseWhitespaceText(n.text)
+    }
+    default:
+      return undefined
+  }
+}
+
+function phpHasInterpolation(n: Node): boolean {
+  if (n.type === "variable_name" || n.type === "dynamic_variable_name") return true
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c && phpHasInterpolation(c)) return true
+  }
+  return false
+}
+
+function phpCleanStringText(text: string): string {
+  if (text.length >= 2) {
+    const first = text.charCodeAt(0)
+    const last = text.charCodeAt(text.length - 1)
+    if ((first === 34 && last === 34) || (first === 39 && last === 39)) return text.substring(1, text.length - 1)
+  }
+  return text
+}
+
+function phpCollapseWhitespaceText(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c !== " " && c !== "\t" && c !== "\n" && c !== "\r") out += c
+  }
+  return out
+}
+
 export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // class name -> declared base class (leaf name), populated as class
   // declarations are encountered; consumed by processObjectCreation to
@@ -1137,7 +1270,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // edges, 10 of them builtins the filter should have dropped. The oracle's
     // rule is leaf-then-builtin (`leafName(fn.text)` then `PHP_BUILTINS`), so
     // this is the analyzer side converging on the rule both sides state.
-    const callName = this.leafName(nameNode.text)
+    // R10 (#835): a callee that is not spelled as a name has no callee NAME.
+    // The value is still read (`uses -> callable`, the variable pass owns it),
+    // so this drops a fabricated symbol and keeps the honest edge.
+    const callName = phpStaticCallableName(nameNode)
     if (!callName) return
     if (callName === "add_action" || callName === "add_filter") {
       detectedFrameworks.add("WordPress")
@@ -1587,21 +1723,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractIncludePath(node: Node): string | undefined {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (!child) continue
-      if (child.type === "encapsed_string" || child.type === "string") {
-        return this.cleanString(child.text)
-      }
-      if (child.type === "binary_expression") {
-        // __DIR__ . '/helpers.php' → rebuild without whitespace
-        return this.collapseWhitespace(child.text)
-      }
-      if (child.type === "name" || child.type === "qualified_name") {
-        return child.text
-      }
-    }
-    return undefined
+    // R10 (#835): the static-path rule lives at module level because the
+    // differential oracle calls the SAME function — a path the analyzer
+    // refuses to fabricate must be refused on the truth side too, or the
+    // narrowing reads as "analyzer lost 12 edges" in the next draw.
+    return phpStaticIncludePath(node)
   }
 
   private findChildByType(node: Node, type: string): Node | null {
