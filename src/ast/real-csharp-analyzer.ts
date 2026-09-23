@@ -109,6 +109,13 @@ export function csharpTypeNameText(text: string): string {
 const CSHARP_DECLARED_TYPE_NODES = new Set([
   "identifier", "generic_name", "qualified_name", "predefined_type",
   "array_type", "pointer_type", "nullable_type", "ref_type", "tuple_type",
+  // C2a: a `global::`-qualified name with a SINGLE segment is an `alias_qualified_name` — the
+  // grammar only wraps it in a `qualified_name` when the path has a dot after the qualifier. The
+  // set's two consumers are the return-type and indexer-type fallback scans, so without this the
+  // declared-type graph lost the dependency for exactly the qualified spelling it exists to
+  // normalise (measured: `public global::Root RetAlias()` published NO `return_type` ref while
+  // `public Root RetPlain()` published one — script/m14/tmp/cs-alias-position-battery3.ts).
+  "alias_qualified_name",
 ])
 
 /** The declaration node types this analyzer turns into SYMBOLS whose name is a
@@ -250,7 +257,14 @@ export function csharpResolveTargetTypedNew(nodeLike: any, memberTypes?: Map<str
 }
 
 export function csharpTargetFromDeclaredType(typeText: string, isElement: boolean): string {
-  let t = typeText.trim()
+  // C2a: a declared type written `global::A.B` denotes the SAME type as `A.B`, and the
+  // lane publishes the full dotted path, so the qualifier comes off here — the point where
+  // a declared type becomes a construction TARGET. Measured by
+  // `script/m14/tmp/cs-alias-position-battery.ts`: `System.Text.StringBuilder b = new()` and
+  // `global::System.Text.StringBuilder b = new()` published two spellings of one type
+  // (the qualifier survived because this path cleans through csharpCleanTypeLeaf, which
+  // keeps qualified paths verbatim by contract).
+  let t = csharpTypeSpelling(typeText).trim()
   if (t === "var") return ""
   // Outer nullable marker (`List<int>?`, `T?`) is not part of the construction
   // target.
@@ -373,7 +387,12 @@ export function csharpUsingDirectiveTarget(
     }
     return null
   }
-  const nameNode = firstNamed((n: any) => n.type === "identifier" || n.type === "qualified_name")
+  // C2a: `alias_qualified_name` is the node a `global::`-qualified name with a SINGLE segment
+  // gets (the grammar only wraps it in a `qualified_name` when a dot follows the qualifier).
+  // Omitting it made `using global::System;` publish NOTHING — no import, no references edge,
+  // no `imports` payload — while `using System;` published all three (measured:
+  // script/m14/tmp/cs-alias-position-battery4.ts).
+  const nameNode = firstNamed((n: any) => n.type === "identifier" || n.type === "qualified_name" || n.type === "alias_qualified_name")
   if (!nameNode) return null
   let eq: any = null
   for (let i = 0; i < node.childCount; i++) {
@@ -388,8 +407,16 @@ export function csharpUsingDirectiveTarget(
       if (c && c.startIndex >= eq.endIndex) { targetAfterEq = c; break }
     }
   }
-  const targetNode = targetAfterEq ?? firstNamed((n: any) => n.type === "qualified_name") ?? nameNode
-  const module = csharpTypeNameText(String(targetNode?.text ?? ""))
+  const targetNode =
+    targetAfterEq ??
+    firstNamed((n: any) => n.type === "qualified_name" || n.type === "alias_qualified_name") ??
+    nameNode
+  // C2a: `using X = global::A.B;` / `using static global::A.B;` denote the same module as the
+  // unqualified twins, and the twin publishes the full dotted path (measured side by side in
+  // `script/m14/tmp/cs-alias-position-battery.ts`), so the qualifier is removed here — the one
+  // point where a using directive's text becomes a module name. Shared with the oracle by
+  // construction: the differential's csharp truth calls THIS function.
+  const module = csharpTypeNameText(csharpTypeSpelling(String(targetNode?.text ?? "")))
   if (!module) return null
   return {
     module,
@@ -478,6 +505,49 @@ const CSHARP_TYPE_DECLARATIONS = new Set([
   "class_declaration", "struct_declaration", "interface_declaration",
   "record_declaration", "enum_declaration",
 ])
+
+/**
+ * How csharp spells a type name where a name becomes an edge TARGET.
+ *
+ * The lane's contract is the FULL dotted path (`new System.Text.StringBuilder()` publishes
+ * `System.Text.StringBuilder`, not `StringBuilder`), so a `global::`-qualified name must
+ * publish the same path WITHOUT the qualifier. Otherwise one type has two spellings in the
+ * graph depending on whether a source file happened to write the qualifier, which is the
+ * exact class R10 exists to catch. Measured, not assumed —
+ * `script/m14/tmp/cs-alias-qualifier-census.ts` over BOTH pinned corpora (all 76 files
+ * containing `::`, 71,984 relationships): **51 targets carried the qualifier — 49
+ * `instantiates`, 2 `extends`, 0 in any other position**; the side-by-side probe
+ * (`script/m14/tmp/cs-alias-rule-probe.ts`) shows the unqualified twin publishing the same
+ * path, which is what makes these two spellings one symbol.
+ *
+ * Grammar note: tree-sitter-c_sharp nests the alias INSIDE the qualified name —
+ * `qualified_name text="global::System.Text.StringBuilder"` containing
+ * `alias_qualified_name text="global::System"` — so the qualifier arrives as TEXT at the
+ * publication site and has to be removed there; no node type distinguishes it.
+ *
+ * Char scan, not a regex (R1/R2, and the php/ruby precedent from this same program).
+ * ONLY `global` is stripped: any other alias head (`Alias::X`) names a namespace bound by
+ * a using-alias and cannot be dropped without resolving that binding, so it is published
+ * as written — a ruled boundary with its measurement (that shape does not occur in either
+ * pinned corpus), not an assumption.
+ */
+export function csharpTypeSpelling(text: string): string {
+  const GLOBAL = "global"
+  if (text.length <= GLOBAL.length + 2) return text
+  for (let i = 0; i < GLOBAL.length; i++) {
+    if (text.charCodeAt(i) !== GLOBAL.charCodeAt(i)) return text
+  }
+  const isWs = (c: number) => c === 32 || c === 9 || c === 10 || c === 13
+  let i = GLOBAL.length
+  while (i < text.length && isWs(text.charCodeAt(i))) i++
+  // `::` — colon is char code 58.
+  if (text.charCodeAt(i) !== 58 || text.charCodeAt(i + 1) !== 58) return text
+  i += 2
+  while (i < text.length && isWs(text.charCodeAt(i))) i++
+  // Never return the empty string: a bare `global::` with nothing after it is malformed,
+  // and publishing "" as a target is worse than publishing the text as written.
+  return i < text.length ? text.slice(i) : text
+}
 
 /**
  * The kind of a type declaration the PINNED grammar produces.
@@ -842,7 +912,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // was a dead branch (grammar drift) and is removed.
       if (type === "using_directive") {
         const nameNode =
-          this.findChild(node, (n) => n.type === "identifier" || n.type === "qualified_name")
+          this.findChild(node, (n) =>
+            n.type === "identifier" || n.type === "qualified_name" || n.type === "alias_qualified_name",
+          )
         if (nameNode) {
           // CSD7 (re-review 2026-09-04): alias usings (`using A = B.C;`) parse
           // with the alias identifier BEFORE the target, so the old
@@ -1302,8 +1374,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const convTargetNode = type === "conversion_operator_declaration" ? node.childForFieldName("type") : null
         const modifierKeyword = this.anonymousChildNode(node, "implicit") ?? this.anonymousChildNode(node, "explicit")
         const checkedKeyword = this.anonymousChildNode(node, "checked")
+        // C2a: the conversion target is a TYPE NAME in a symbol name, so the alias qualifier
+        // is not part of it — measured side by side in
+        // `script/m14/tmp/cs-alias-position-battery2.ts`: `implicit operator PlainBase` and
+        // `implicit operator global::Probe.PlainBase` published two names for one operator
+        // shape (the qualified one was the only position that survived cleanTypeName, because
+        // a symbol name never passes through it).
         const opName = modifierKeyword
-          ? `${modifierKeyword.type}${convTargetNode ? ` ${csharpTypeNameText(convTargetNode.text)}` : ""}`
+          ? `${modifierKeyword.type}${convTargetNode ? ` ${csharpTypeNameText(csharpTypeSpelling(convTargetNode.text))}` : ""}`
           : opField
             ? `operator ${checkedKeyword ? "checked " : ""}${opField.text}`
             : "operator"
@@ -1624,7 +1702,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "object_creation_expression") {
         const typeNode = this.findChild(node, (n) =>
-          n.type === "identifier" || n.type === "generic_name" || n.type === "qualified_name" || n.type === "predefined_type",
+          n.type === "identifier" || n.type === "generic_name" || n.type === "qualified_name" ||
+          n.type === "predefined_type" ||
+          // C2a: `new global::Root()` — single-segment alias shape. Without this the edge was
+          // not merely mis-spelled, it was ABSENT (measured: `new Root()` published
+          // `instantiates -> Root` while `new global::Root()` published nothing).
+          n.type === "alias_qualified_name",
         )
         if (typeNode) {
           const source = parentContext?.rawName || "global"
@@ -3269,9 +3352,12 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private cleanTypeName(text: string): string {
-    // Strip generic arguments and nullable/array suffixes for identity.
-    const lt = text.indexOf("<")
-    const base = lt > 0 ? text.slice(0, lt) : text
+    // Strip generic arguments and nullable/array suffixes for identity, and the alias
+    // qualifier (one definition, `csharpTypeSpelling`, shared with the differential
+    // oracle's mirror).
+    const spelled = csharpTypeSpelling(text)
+    const lt = spelled.indexOf("<")
+    const base = lt > 0 ? spelled.slice(0, lt) : spelled
     const q = base.indexOf("?")
     return (q > 0 ? base.slice(0, q) : base).trim()
   }
@@ -3306,8 +3392,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < list.namedChildCount; i++) {
         const attr = list.namedChild(i)
         if (attr && attr.type === "attribute") {
-          const nameNode = this.findChild(attr, (n) => n.type === "identifier" || n.type === "qualified_name")
-          if (nameNode) attrs.push(nameNode.text)
+          // C2a: the name of an attribute is a type name, so it takes the same two rules as
+          // every other one — `alias_qualified_name` is a name node too (omitting it dropped
+          // `[global::Root]` from the decorator list entirely: measured, the qualified class
+          // published `decorators: []` while its plain twin published `["Root"]`), and the
+          // qualifier is not part of the name it publishes.
+          const nameNode = this.findChild(attr, (n) =>
+            n.type === "identifier" || n.type === "qualified_name" || n.type === "alias_qualified_name")
+          if (nameNode) attrs.push(csharpTypeSpelling(nameNode.text))
         }
       }
     }

@@ -5578,6 +5578,89 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    // C2a (2026-09-23). Four mutants for one class: the alias qualifier `global::` is not part
+    // of a name. Each is the SYMPTOM of one way the rule can be wrong — the pre-fix spelling,
+    // the plausible over-collapse, the plausible over-reach, and the silent position — because
+    // the mutation gate's job is to prove the fixture notices, and for spelling rules the
+    // negative pins are the only thing that can catch the over-collapse.
+    id: "csharp/alias-qualifier-kept",
+    language: "csharp",
+    defectClass: "target-spelling",
+    description: "C2a revert: publishes the pre-fix spelling — the qualifier kept on the target, the symbol name, and the decorator payload. The manifest is the set of names this class strips (measured: 49 instantiates + 2 extends + 95 decorator rows in the two pinned corpora, plus the positions the corpora cannot reach). csharp/qualified-type-spelling catches it in every position, and the spacing-carrying input is re-published verbatim exactly as the pre-fix analyzer published it.",
+    transform: r => {
+      const KEEP = ["System.Text.StringBuilder", "System.Math", "System", "Probe.Base", "Probe.PlainQualified", "System.Serializable", "Root"]
+      // The pre-fix analyzer published the INPUT's own text, so a spaced input
+      // (`new global :: System.Text.StringBuilder()`, the fixture's line 74) came back with its
+      // spacing — reproduced here by line, because the result alone cannot know the input.
+      const requalify = (t: string, line: number | undefined) =>
+        KEEP.includes(t) ? `global::${t}` : t === "System.Text.StringBuilder" && line === 74 ? "global :: System.Text.StringBuilder" : t
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => ({ ...x, target: requalify(String(x.target ?? ""), x.line_number) })),
+        symbols: (r.symbols ?? []).map((s: any) => {
+          const nm = String(s.name ?? "")
+          const hit = KEEP.find(k => nm.endsWith(k))
+          return {
+            ...s,
+            name: hit ? `${nm.slice(0, nm.length - hit.length)}global::${hit}` : s.name,
+            decorators: (s.decorators ?? []).map((d: string) => {
+          const dh = KEEP.find(k => String(d).endsWith(k))
+          return dh ? `${String(d).slice(0, String(d).length - dh.length)}global::${dh}` : d
+        }),
+          }
+        }),
+        imports: (r.imports ?? []).map((i: any) => (KEEP.includes(String(i.module)) ? { ...i, module: `global::${i.module}` } : i)),
+      }
+    },
+  },
+  {
+    id: "csharp/alias-qualifier-collapsed-to-leaf",
+    language: "csharp",
+    defectClass: "target-spelling",
+    description: "C2a plausible WRONG fix: removes the qualifier by keeping only the LAST SEGMENT (`System.Text.StringBuilder` -> `StringBuilder`). Every positive assertion in csharp/qualified-type-spelling still holds — the twins agree, nothing carries `::` — so ONLY the negative pins catch it, which is why they exist (the lane's contract for a qualified target is the full dotted path; the R9 declared-type rows are leaves by their own separate convention).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        if (x.type === "instantiates" || x.type === "extends" || x.type === "implements") {
+          return { ...x, target: t.split(".").pop() ?? t }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "csharp/alias-strip-any-qualifier",
+    language: "csharp",
+    defectClass: "target-fabrication",
+    description: "C2a plausible WRONG fix in the other direction: strips EVERY alias qualifier instead of only `global`, so an `extern alias` binding (`Sql::Data`) is rewritten to a namespace the source never wrote. Caught only by the ruled-boundary pin in csharp/qualified-type-spelling (the `Sql::Data` assert plus the `Data` forbid).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.target ?? "")
+        const i = t.indexOf("::")
+        return i > 0 ? { ...x, target: t.slice(i + 2) } : x
+      }),
+    }),
+  },
+  {
+    id: "csharp/alias-node-omitted",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "C2a coverage revert: the three positions whose hardcoded node lists omitted `alias_qualified_name` publish NO edge at all for a single-segment alias-qualified name (explicit `new global::Root()`, a method return type, an indexer's return type) — a lost dependency rather than a wrong spelling. The corpora contain 0 single-segment `global::` shapes, so the fixture is the only instrument that can hold this.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        const src = String(x.source ?? "")
+        const tgt = String(x.target ?? "")
+        if (tgt === "Root" && (x.type === "instantiates" || x.type === "references")) {
+          return !(src === "New" || src === "Ret" || src === "GlobalShapes")
+        }
+        return true
+      }),
+    }),
+  },
+  {
     id: "csharp/using-alias-as-module",
     language: "csharp",
     defectClass: "relationship-fabrication",

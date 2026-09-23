@@ -9,7 +9,10 @@
  *   expectSymbols / expectRelationships : each entry must match >=1 actual item.
  *       An entry matches when EVERY specified constraint field matches
  *       (unspecified fields are wildcards). Extra actual items are fine.
- *   forbidSymbols / forbidRelationships : NO actual item may match the entry.
+ *   forbidSymbols / forbidRelationships / forbidDecorators : NO actual item may match the entry.
+ *       forbidDecorators takes { symbol?, contains } — the negative half of the decorator
+ *       payload, added by the C2a alias-qualifier round because a `contains` assertion on a
+ *       decorator cannot fail when the wrong spelling CONTAINS the right one.
  *   Relationship constraints: type, from, target, confidenceMin, confidenceMax,
  *       meta.<key> (e.g. "meta.relationshipType": "implements").
  *   Symbol constraints: name, kind.
@@ -465,6 +468,29 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       const decs: string[] = sym?.decorators ?? []
       if (!decs.some((d) => d.includes(want.contains))) {
         problems.push(`expected ${want.symbol} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
+      }
+    }
+    for (const want of exp.forbidDecorators ?? []) {
+      // The NEGATIVE half of the decorator payload (C2a, 2026-09-23). `expectDecorators`
+      // could not hold the alias-qualifier rule: the pre-fix spelling
+      // `global::System.Serializable` CONTAINS the post-fix spelling
+      // `System.Serializable`, so a `contains` assertion is satisfied by both and can never
+      // fail on the revert. The class it was blind to was measured on real code — 95
+      // decorator rows in the two pinned csharp corpora carried the qualifier — so the
+      // payload needed a gate that can say no.
+      //
+      // Semantics mirror forbidSymbols/forbidRelationships: { symbol?, contains } — every
+      // decorator of every symbol (or of the named symbol when given) must NOT include
+      // `contains`. Unspecified fields are wildcards; `comment`/`note` are documentation.
+      const scope = want.symbol
+        ? symbols.filter((s: any) => s.name === want.symbol)
+        : symbols
+      for (const s of scope) {
+        for (const d of (s.decorators ?? []) as string[]) {
+          if (String(d).includes(want.contains)) {
+            problems.push(`forbidden decorator present on ${s.name}: ${JSON.stringify(d)} (entry contains "${want.contains}")`)
+          }
+        }
       }
     }
     for (const want of exp.expectPrimaryFramework ?? []) {
