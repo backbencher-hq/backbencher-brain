@@ -2572,6 +2572,30 @@ const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "cpp/contains-line-at-declaration-start",
+    language: "cpp",
+    defectClass: "line-attribution",
+    description:
+      "#921 (M60-C) regression: a containment edge goes back to the child symbol's RANGE start — the line the whole DECLARATION starts on, which for a wrapped return type, a wrapped member type, a class-scope typedef or an anonymous aggregate member is NOT the line the NAME is written on (`void NORETURN` then `CheckFailed(const char *file, …)`, `struct { … } options;` with the name on the closing line). This is the pre-fix output exactly: measured over 393 files of the four pinned corpora, the change moves 42 `contains` rows and NOTHING else (symbols, every other edge type and every relationship identity byte-identical). Caught by cpp/contains-name-line-921, whose four forbid entries name the declaration-start line of each shape (14/22/26/31) while its controls (`Widget`, `take`, `bits`) stay green either way — so the mutant cannot be 'caught' by a rule that drifted on ordinary one-line declarations. The C lane deliberately has NO twin mutant: its member extractor ranges a field at its declarator, so the pre-fix behaviour is byte-identical there and the mutant would SURVIVE (recorded in the c fixture's rationale).",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      const start = new Map<string, number>()
+      for (const s of r.symbols ?? []) {
+        if (s && typeof s.name === "string" && s.range && !start.has(s.name)) start.set(s.name, s.range.startLine)
+      }
+      let touched = 0
+      const out = rels.map((x: any) => {
+        if (!x || x.type !== "contains") return x
+        const line = start.get(String(x.target))
+        if (typeof line !== "number" || line === x.line_number) return x
+        touched++
+        return { ...x, line_number: line }
+      })
+      if (touched === 0) return r
+      return { ...r, relationships: out }
+    },
+  },
+  {
     id: "vue/delegated-line-not-shifted",
     language: "vue",
     defectClass: "line-attribution",
