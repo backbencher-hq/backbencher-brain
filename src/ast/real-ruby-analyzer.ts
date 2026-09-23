@@ -30,6 +30,17 @@ import { ASTEngine } from "./engine"
  *
  * One constant, so a third spelling is now structurally impossible.
  */
+/**
+ * ASCII whitespace by character code — R1 ("no regex") as a scan. Used by the
+ * superclass-marker fallback, whose leading-marker-plus-whitespace pattern was
+ * this analyzer's only regular expression; the caller trims afterwards, so any
+ * non-ASCII whitespace the loop does not match is still removed from the leading
+ * position.
+ */
+function isAsciiWhitespace(code: number): boolean {
+  return code === 32 || code === 9 || code === 10 || code === 13 || code === 12 || code === 11
+}
+
 const FILE_SCOPE_OWNER = "Global"
 
 /**
@@ -1692,8 +1703,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const target = this.superclassTargetNode(node)
     if (target?.text) return target.text.trim()
 
+
     // Fallback (malformed/partial trees with no named child): strip the marker.
-    const text = superNode.text.replace(/^<\s*/, "").trim()
+    // R1 ("no regex") as a char scan: drop the leading `<`, then leading
+    // whitespace. Written out because this was the ruby ANALYZER's only regular
+    // expression and §3.7-R1 of reviews/m60-oo-family-plan.md claimed the other
+    // OO lanes carried none — a claim the analyzer census refutes (php and ruby,
+    // one each). The `\s` class is ASCII here by construction: the grammar's
+    // whitespace between `<` and a class name is space/tab/newline/CR.
+    // EXACTLY one leading `<` (the expression's `^<`), then whitespace: a loop
+    // that stripped every leading `<` was this rewrite's first attempt and the R1
+    // probe caught the divergence on `<<Foo` — the regex left it `"<Foo"` and the
+    // loop returned `"Foo"`. Kept as a single conditional so the rewrite states the
+    // same rule the expression did.
+    const rawText = superNode.text
+    let i = rawText.charCodeAt(0) === 60 ? 1 : 0
+    while (i < rawText.length && isAsciiWhitespace(rawText.charCodeAt(i))) i++
+    const text = rawText.substring(i).trim()
     return text.length > 0 ? text : undefined
   }
 

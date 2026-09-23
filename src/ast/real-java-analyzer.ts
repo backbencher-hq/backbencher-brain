@@ -142,7 +142,7 @@ function inArray(arr: any[], val: any): boolean {
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { findDeclaringParent } from "./override-context"
+import { findDeclaringParent, localEdgeLabel } from "./override-context"
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -1504,26 +1504,6 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null;
     }
   
-  /**
-   * The two-segment edge label (family convention: `Owner.member`). The
-   * previous shape — split at the FIRST "(" and take the last two dot
-   * segments — silently truncates any fqn whose PATH contains a method
-   * segment, because a method segment carries its own parameter list: measured
-   * on `tests/untried/pos/t3943/Outer_1.java`, whose anonymous-class method fqn
-   * is `Child.getInner().anonymous_Inner.foo(String)`, so splitting at the
-   * first "(" yielded `Child.getInner` as the SOURCE of an override edge whose
-   * true source is `anonymous_Inner.foo`. Take the last two segments and strip
-   * the parameter list from the last one only — identical to the old result on
-   * every path that has no paren-bearing segment.
-   */
-  private edgeLocalName(fqn: string): string {
-    const segs = fqn.split('.')
-    const last = segs[segs.length - 1].split('(')[0]
-    if (segs.length < 2) return last
-    const prev = segs[segs.length - 2].split('(')[0]
-    return prev ? `${prev}.${last}` : last
-  }
-
   private resolveOverrides(
     tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; arity: number; explicit?: boolean; line: number }[],
     classHierarchy: Map<string, string[]>,
@@ -1678,8 +1658,17 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (targetFqn) {
-        const localSource = this.edgeLocalName(task.fqn)
-        const localTarget = this.edgeLocalName(targetFqn)
+        // `Owner.method`, with the signature deleted rather than cut: see
+        // localEdgeLabel's doctrine. This call site's own history is the reason
+        // the rule is shared — the split-at-first-"(" shape it replaced
+        // truncated a paren-bearing owner chain (`Child.getInner().
+        // anonymous_Inner.foo(String)` -> `Child.getInner`, a WRONG name), and
+        // the split-the-last-two-segments shape that fixed that one re-broke
+        // on a parameter list carrying a dot (a QUALIFIED or GENERIC parameter
+        // type -> `handle.Criterion,…boolean)`, not a name). Neither single cut
+        // is right in both directions; deleting balanced groups first is.
+        const localSource = localEdgeLabel(task.fqn)
+        const localTarget = localEdgeLabel(targetFqn)
 
         relationships.push({
           source: localSource,

@@ -5849,12 +5849,12 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     }
     return saw
   }
-  // Mirror RealPhpAnalyzer.extractIncludePath (probe-verified shapes).
-  const cleanString = (t: string): string => {
-    const m = t.match(/^['"](.*)['"]$/s)
-    return m ? m[1] : t
-  }
-  const collapseWhitespace = (t: string): string => t.replace(/\s+/g, "")
+  // R10 (#835): the include-path rule and the callee-name rule are NO LONGER
+  // mirrored here — both sides call the analyzer's own functions
+  // (`phpStaticIncludePath`, `phpStaticCallableName`), so a hand-written copy
+  // cannot drift from the rule it claims to state. The old locals
+  // (`cleanString`/`collapseWhitespace`) were deleted with the copies: dead code
+  // standing next to a comment about agreement is how a mirror grows back.
   // PHP-O2 (first review): verified in-file overrides. The analyzer emits
   // overrides[B.foo->A.foo] @0.95 when the in-file base declares the same
   // method; the oracle derived nothing, so every verified pair was an

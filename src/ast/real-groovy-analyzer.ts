@@ -17,7 +17,7 @@
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { findDeclaringParent } from "./override-context"
+import { findDeclaringParent, localEdgeLabel } from "./override-context"
 
 interface Scope {
   node: Node
@@ -1140,8 +1140,13 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (targetFqn) {
-        const localSource = task.fqn.split("(")[0].split(".").slice(-2).join(".")
-        const localTarget = targetFqn.split("(")[0].split(".").slice(-2).join(".")
+        // R10 sibling sweep: this was `split("(")[0].split(".").slice(-2)` —
+        // immune to a dotted parameter list, but it cuts at the FIRST "(" and
+        // so silently truncates a paren-bearing OWNER chain (a nested/anonymous
+        // type reached through a call) to a wrong-but-name-shaped label. 
+        // localEdgeLabel is the shared rule both directions agree on.
+        const localSource = localEdgeLabel(task.fqn)
+        const localTarget = localEdgeLabel(targetFqn)
         // A symbol cannot override ITSELF. The guard is on the EMITTED labels
         // (so it covers every resolution tier) rather than on the declaring
         // FQN, because the collision that produces a self-edge here is a
