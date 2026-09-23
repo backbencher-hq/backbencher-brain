@@ -39,7 +39,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { macroDeclaredBody, qualifiedDeclaratorLeaf } from "../../src/ast/real-cpp-analyzer"
+import { CPP_BUILTIN_TYPE_KEYWORDS, macroDeclaredBody, qualifiedDeclaratorLeaf } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -1644,6 +1644,10 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
               // expression: all source text, never a name).
               if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
                   t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
+                // #924 mirror: a builtin TYPE keyword is not a function name —
+                // the grammar classifies `unsigned(x)` as an `identifier`
+                // callee, and the analyzer refuses it, so truth must too.
+                if (t === "identifier" && CPP_BUILTIN_TYPE_KEYWORDS.has(cur.text)) return ""
                 return cur.text
               }
               return ""

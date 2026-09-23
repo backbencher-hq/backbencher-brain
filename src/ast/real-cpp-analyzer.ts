@@ -135,6 +135,19 @@ function joinHeadingLines(text: string): string {
 }
 
 /**
+ * #924: C++ keywords that name a BUILTIN TYPE. As in the C lane
+ * (`C_SPECIFIER_KEYWORDS`), a callee spelled with one of these is a functional
+ * cast, never a call: the language has no identifier by that name, so publishing
+ * a `calls` edge to it is a fabrication no consumer can resolve. Contextual
+ * keywords are deliberately ABSENT — `final`, `override`, `import` and friends
+ * are legal identifiers and remain callable.
+ */
+export const CPP_BUILTIN_TYPE_KEYWORDS: Set<string> = new Set([
+  "void", "bool", "char", "char8_t", "char16_t", "char32_t", "wchar_t",
+  "short", "int", "long", "float", "double", "signed", "unsigned", "auto",
+])
+
+/**
  * #924: the NAME and the OWNER of a `qualified_identifier` standing as a
  * declarator's own name. The grammar splits two very different shapes into the
  * SAME node, and the separator token is what tells them apart:
@@ -1620,7 +1633,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 cur = cur.namedChild(0)
                 continue
               }
-              return NAME_BEARING(t) ? cur : null
+              if (!NAME_BEARING(t)) return null
+              // #924: a BUILTIN TYPE keyword can never be a function name, so a
+              // callee spelled that way is a functional CAST the grammar
+              // classified as an `identifier` instead of a `primitive_type`
+              // (`unsigned(x)`, `short(x)`, `long(x)`; 17 sites over the two
+              // pinned corpora after the name-bearing rule landed). This is the
+              // same discipline the C lane has always applied
+              // (`C_KEYWORDS`/`C_SPECIFIER_KEYWORDS` at extraction) — the cpp
+              // lane simply never had the list. Only TYPE keywords are in it:
+              // contextual keywords (`final`, `override`, `import`) are legal
+              // identifiers and stay callable.
+              if (t === "identifier" && CPP_BUILTIN_TYPE_KEYWORDS.has(cur.text)) return null
+              return cur
             }
             return null
           }
