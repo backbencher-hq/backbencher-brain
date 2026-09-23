@@ -483,7 +483,15 @@ interface Mutant {
   language: string
   defectClass: string
   description: string
-  transform: (result: any) => any
+  // `source` is the analyzed file's text (the analyzer's own result carries no
+  // rawContent — only the engine's parseFile adds it). A defect class whose
+  // pre-fix output was derived from the SOURCE TEXT in a way the post-fix
+  // result no longer records cannot be reverted from the result alone; passing
+  // the source keeps such a mutant faithful instead of forcing a hardcoded
+  // string that would silently stop matching (the failure mode that left
+  // swift/drop-container-subscript-uses surviving). Optional: every existing
+  // mutant is unaffected.
+  transform: (result: any, source?: string) => any
 }
 
 function normRel(r: any) { return { ...r, type: r.type ?? r.relationshipType } }
@@ -2593,6 +2601,38 @@ const MUTANTS: Mutant[] = [
       })
       if (touched === 0) return r
       return { ...r, relationships: out }
+    },
+  },
+  {
+    id: "cpp/include-name-comment-glue",
+    language: "cpp",
+    defectClass: "name-surface",
+    description:
+      "#924 (M60, the cpp row of the R10 name-surface class) regression: the include name goes back to a slice of the WHOLE preproc_include text (`text.slice(indexOf('include') + 7)`, stripped of < > \" '), so every trailing comment is glued into the module and the include_dependency target — `#include <vector> // vector` publishes `vector // vector`. Faithful by construction: the pre-fix string is re-derived from the result's own `rawContent` directive line, not hardcoded, so it stays valid on any fixture. The same revert also returns the system-ness fields to the pre-fix expression (`startsWith('<')` evaluated on the STRIPPED name, i.e. false for every include). Caught by cpp/include-name-924, which pins the clean module/target plus isSystemInclude/isSystem and forbids the glued forms and the macro-composed one; measured pre-fix impact on the two pinned cpp corpora is 876 published names across 438 include sites.",
+    transform: (r: any, source?: string) => {
+      const text: string = typeof source === "string" ? source : (typeof r.rawContent === "string" ? r.rawContent : "")
+      const strip = (s: string) => { let o = ""; for (const c of s) if (c !== "<" && c !== ">" && c !== '"' && c !== "'") o += c; return o }
+      const remap = new Map<string, string>()
+      for (const line of text.split("\n")) {
+        const i = line.indexOf("include")
+        if (i === -1 || !/^\s*#\s*include\b/.test(line)) continue
+        const oldRaw = strip(line.slice(i + "include".length)).trim()
+        const first = oldRaw.split(/\s+/)[0]
+        if (first) remap.set(first, oldRaw)
+      }
+      if (remap.size === 0) return r
+      const imports = (r.imports ?? []).map((imp: any) => {
+        const glued = remap.get(String(imp?.module))
+        if (!glued || !imp?.metadata?.isIncludeDependency) return imp
+        return { ...imp, module: glued, metadata: { ...imp.metadata, isSystemInclude: false } }
+      })
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        if (x?.metadata?.relationshipType !== "include_dependency") return x
+        const glued = remap.get(String(x.target))
+        if (!glued) return x
+        return { ...x, target: glued, metadata: { ...x.metadata, isSystem: false } }
+      })
+      return { ...r, imports, relationships }
     },
   },
   {
@@ -8556,7 +8596,10 @@ async function main() {
     const base = await clean(m.language)
     const real = await realAnalyzer(m.language)
     const mutant = {
-      analyze: async (...args: any[]) => m.transform(await real.analyze(...args)),
+      // args are (rootNode, content, filePath) on the non-SFC path: hand the
+      // transform the source too, so a source-derived revert stays faithful.
+      analyze: async (...args: any[]) =>
+        m.transform(await real.analyze(...args), typeof args[1] === "string" ? args[1] : undefined),
       // SFC languages (vue/svelte) run through engine parseFile in runLang;
       // runLang applies this transform to the parseFile result so mutants are
       // exercised on the real production path.

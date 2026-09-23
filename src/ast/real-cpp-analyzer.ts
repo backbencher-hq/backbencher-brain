@@ -804,13 +804,40 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // { source, imported, isTypeOnly } produced no module, so C++
         // #include imports were NEVER persisted to brain_import (caught by
         // the systems-cluster e2e gate M14.0.F9, 2026-08-29). Align with c.
-        const includePath = stripIncludeChars(text.slice(text.indexOf("include") + "include".length)).trim()
-        imports.push({
-          module: includePath,
-          items: ["*"],
-          range: this.nodeToRange(node),
-          metadata: { isSystemInclude: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
-        })
+        // #924: the include's NAME is the `path` node's own text (`<vector>` /
+        // `"Service.h"`), never a slice of the whole directive. The legacy
+        // slice ran from the `include` keyword to the node's end, so EVERY
+        // trailing comment rode along — `#include <vector> // vector`
+        // published the module/target `vector // vector`, a string that is
+        // not a name and cannot resolve. Measured on the two pinned cpp
+        // corpora: 876 such names across fmt + nlohmann-json. Mirrors the C
+        // lane's `getIncludePath` contract exactly, including the
+        // literal-only rule (a macro-composed argument parses as a
+        // call_expression under the same field and is not a resolvable
+        // header name — C-D2).
+        let pathNode = node.childForFieldName("path")
+        if (pathNode && pathNode.type !== "string_literal" && pathNode.type !== "system_lib_string") pathNode = null
+        if (!pathNode) {
+          pathNode = this.findChild(node, "string_literal") ?? this.findChild(node, "system_lib_string")
+        }
+        const rawPath = (pathNode?.text ?? "").trim()
+        const includePath = pathNode ? stripIncludeChars(rawPath).trim() : ""
+        // The system-ness is a property of the WRITTEN form (`<...>` vs
+        // `"..."`) — read it from the raw path node, never from the stripped
+        // name, where `stripIncludeChars` has already deleted the `<`. The
+        // legacy expression was `includePath.startsWith("<")` on the
+        // stripped string and could therefore never be true: every system
+        // include was reported as a local one. Mirrors the C lane, which
+        // computes `isSystem` from the raw node text.
+        const isSystem = rawPath.startsWith("<")
+        if (includePath) {
+          imports.push({
+            module: includePath,
+            items: ["*"],
+            range: this.nodeToRange(node),
+            metadata: { isSystemInclude: isSystem, isImport: true, isIncludeDependency: true },
+          })
+        }
         // depends: #include = compile-time dependency (includePath computed above)
         if (includePath) {
           // #419 family contract: include edges carry the SAME metadata shape
@@ -827,10 +854,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             // source construct and its WRITTEN NAME is the path token — take
             // that node's line, not the directive's (a multi-line include puts
             // the path last).
-            line_number: this.nodeLine(
-              this.findChild(node, "string_literal") ?? this.findChild(node, "system_lib_string") ?? node,
-            ),
-            metadata: { relationshipType: "include_dependency", isSystem: includePath.startsWith("<"), isImport: true, isIncludeDependency: true },
+            line_number: this.nodeLine(pathNode ?? node),
+            metadata: { relationshipType: "include_dependency", isSystem, isImport: true, isIncludeDependency: true },
           })
         }
 
