@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T22:10:53.989Z",
+  "snapshotAt": "2026-09-23T22:37:58.982Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 117,
+  "count": 116,
   "issues": [
     {
       "number": 134,
@@ -683,13 +683,6 @@
     {
       "number": 922,
       "title": "M60 csharp: the `global::` alias is published as part of the type name in six positions, and three single-segment positions publish NOTHING",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 923,
-      "title": "M60 csharp: there is no member-level implements contract — an explicit interface member publishes the bare name with no owner, and so does the implicit form",
       "labels": [
         "bug"
       ]
