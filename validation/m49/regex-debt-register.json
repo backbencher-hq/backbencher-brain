@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 18 established 2026-09-08). Rows are keyed by (file, source); `line` is re-anchored to HEAD by M49.G6, and each row's note history records every shift it has survived.",
-  "baselineTotal": 18,
+  "baselineTotal": 16,
   "establishedAt": "2026-09-08",
   "entries": [
     {
@@ -19,22 +19,6 @@
       "operation": "split",
       "classification": "needs_review",
       "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained]"
-    },
-    {
-      "file": "real-csharp-analyzer.ts",
-      "line": 740,
-      "source": "/\\boperator\\s+(implicit|explicit)\\s+([\\w.<>]+)/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
-    },
-    {
-      "file": "real-csharp-analyzer.ts",
-      "line": 741,
-      "source": "/\\boperator\\s+(checked\\s+)?([^\\s(]+)/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [csharp first review: line shifted by CS-R1/CS-B insertions; regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
@@ -164,6 +148,12 @@
       "wave": "M49.R2-freshness",
       "removed": 1,
       "note": "real-javascript-analyzer.ts `/^@/` replaced by a startsWith slice (both same-source census entries - needs_review and normalization - disappeared with the literal at 38a4fc12); the row named nothing and was removed rather than re-anchored."
+    },
+    {
+      "wave": "M60.R1 (csharp lane)",
+      "removed": 2,
+      "note": "Both `no AST path` rows for the operator/conversion-operator name synthesis, removed 2026-09-22 after the grammar probe DISPROVED the claim: `operator_declaration` exposes the token in the FIELD `operator` (checked as an anonymous sibling) and `conversion_operator_declaration` exposes the target in the FIELD `type` with implicit/explicit as an anonymous child. The conversion pattern was additionally DEAD (it expected `operator implicit`, the wrong token order, so every conversion operator fell through to the generic fallback and `implicit operator int` collided with `explicit operator int` on one type). baselineTotal 18 -> 16 (the third csharp usage, the `using`-alias one, was classified normalization and so lives in the census but not in this register).",
+      "evidence": "validation/m14/fixtures/csharp/using-alias-and-operators (lane 10/10) + mutation-csharp-alias-published-as-module, mutation-csharp-conversion-operator-collapsed, mutation-csharp-truncated-conversion-target, mutation-csharp-operator-name-lost-field; probes script/m14/tmp/{cs-using-tree-probe,cs-using-alias-probe,cs-operator-grammar-probe,cs-op-check}.ts; census regenerated from HEAD blobs (script/m14/tmp/regex-census-at-head.ts) per the W6 rule"
     }
   ]
 }
