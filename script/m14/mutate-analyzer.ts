@@ -2679,7 +2679,7 @@ export const MUTANTS: Mutant[] = [
         const sub = /([A-Za-z_][A-Za-z0-9_]*\s*\[[^\]]*\])\s*\(/.exec(line)
         if (sub) push(sub[1].trim())
         // a functional cast to a builtin type
-        const cast = /\b(int|char|size_t|uint32_t|uint64_t|bool|double|float)\s*\(/.exec(line)
+        const cast = /\b(int|char|size_t|uint32_t|uint64_t|bool|double|float|unsigned|short|long)\s*\(/.exec(line)
         if (cast) push(cast[1])
       }
       if (extra.length === 0) return r
