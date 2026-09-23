@@ -45,6 +45,8 @@ const FRAMEWORK_CENSUS = path.join(ROOT, "validation/m60/results/framework-surfa
 const FRAMEWORK_REGISTER = path.join(ROOT, "validation/m60/framework-surface-register.json")
 const DECLARED_TYPE_CENSUS = path.join(ROOT, "validation/m60/results/declared-type-refs.json")
 const DECLARED_TYPE_REGISTER = path.join(ROOT, "validation/m60/declared-type-register.json")
+const TARGET_SPELLING_CENSUS = path.join(ROOT, "validation/m60/results/target-spelling.json")
+const TARGET_SPELLING_REGISTER = path.join(ROOT, "validation/m60/target-spelling-register.json")
 /** The seven OO lanes — the owner standard's zero target (lang names as the census emits them). */
 export const OO_LANES = ["csharp", "dart", "objective-c", "php", "python", "ruby", "swift"]
 const REVIEWS = path.join(ROOT, "reviews")
@@ -747,6 +749,124 @@ function main() {
   negative("R9 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
     !r9Live(declaredTypeRegisterDetail(null, DREG)))
 
+  // ---- R10 live: every relationship target is spelled like a symbol -----------
+  // The class this rule measures is the one the differential oracle STRUCTURALLY
+  // cannot see: its truth comes from the same rules the analyzer runs, so when both
+  // sides fabricate the same spelling they AGREE, and every per-edge gate — the M59
+  // line contract, the depth draws, the fixtures — reads clean. Built 2026-09-23
+  // after php's `$o->{'lit'}` published a string literal as a member name on BOTH
+  // sides (phpmyadmin). The convicting classes need no calibration (no language
+  // names a symbol `'lit'`, `2`, or something with a space or a `(`, `)`, `;`, `{`,
+  // `}`, `,`); the REPORTED class is calibrated against each lane's own symbol
+  // alphabet, because qualified names legitimately carry `.`, `:`, `/`, `@`, `$`,
+  // `?`, `!`, `-` (21 of 24 lanes carry one, so convicting it would launder every
+  // real finding along with the conventions).
+  const tsRegister = readJsonOrNull(TARGET_SPELLING_REGISTER)
+  const ts = targetSpellingDetail(readJsonOrNull(TARGET_SPELLING_CENSUS), tsRegister)
+  check("R10 live: every lane's target spelling matches the register exactly (convictions and separator vocabulary)",
+    registerAdjudicated(ts, "R10"), ts)
+
+  // ---- R10 negatives: the comparison, the classes and the OO target must all discriminate ----
+  const TS_LANE = (over: any = {}) => ({
+    lang: "rust", verdict: "clean", byClass: {}, separatorTriples: [], unruledTriples: [],
+    separatorAdjudicable: true, convictions: {}, ...over,
+  })
+  const TS_ENTRY = (over: any = {}) => ({
+    verdict: "clean", family: "other", convictions: {}, separatorTriples: [], rulings: {}, note: "", ...over,
+  })
+  // The accepted case needs TWO distinct verdicts, because the predicate refuses a
+  // single-answer census (a classifier that returns one verdict for every lane is
+  // broken, not a family). `go` is the second verdict and is neither OO nor convicted.
+  const TSREG = {
+    baseline: { lanes: 3 },
+    ooTarget: { convictedLanes: 1, unruledSeparatorLanes: 1 },
+    lanes: {
+      rust: TS_ENTRY(),
+      php: TS_ENTRY({ verdict: "fabricated-spellings", family: "oo", convictions: { literal: 1 }, separatorTriples: ["uses|."], rulings: { "uses|.": null } }),
+      go: TS_ENTRY({ verdict: "unruled-separators", separatorTriples: ["imports|."], rulings: { "imports|.": null } }),
+    },
+  }
+  const TSCEN = (rows: any[]) => ({ lanes: rows.length, clean: rows.filter((r) => r.verdict === "clean").map((r) => r.lang), rows })
+  const PHP_CONVICTED = () => TS_LANE({ lang: "php", verdict: "fabricated-spellings", byClass: { literal: 1 }, separatorTriples: ["uses|."], unruledTriples: ["uses|."] })
+  const GO_OWED = () => TS_LANE({ lang: "go", verdict: "unruled-separators", separatorTriples: ["imports|."], unruledTriples: ["imports|."] })
+  const BASE = () => [TS_LANE(), PHP_CONVICTED(), GO_OWED()]
+  negative("R10 negative: a lane matching the register is accepted",
+    targetSpellingDetail(TSCEN(BASE()), TSREG).startsWith("R10:"))
+  negative("R10 negative: a lane with a NEW conviction is convicted (the alarm)",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "csharp", verdict: "fabricated-spellings", byClass: { whitespace: 2 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo" }) } },
+    ).includes("drifted"))
+  negative("R10 negative: a conviction PAID DOWN without re-writing the register is convicted (a finding may not disappear by a rule change alone)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "php", verdict: "clean", separatorTriples: ["uses|."], unruledTriples: ["uses|."] }), GO_OWED()]),
+      TSREG,
+    ).includes("drifted"))
+  negative("R10 negative: a NEW separator triple is convicted (a lane that starts emitting a spelling nobody ruled)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "php", verdict: "unruled-separators", separatorTriples: ["uses|.", "calls|#"], unruledTriples: ["calls|#"] }), GO_OWED()]),
+      TSREG,
+    ).includes("drifted"))
+  negative("R10 negative: a VANISHED separator triple is convicted (the register may only shrink deliberately)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "php", verdict: "clean", separatorTriples: [], unruledTriples: [] }), GO_OWED()]),
+      TSREG,
+    ).includes("drifted"))
+  negative("R10 negative: a ruling recorded for a triple the lane no longer emits is convicted (a stale ruling must not sit there)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "php", verdict: "clean", separatorTriples: [], unruledTriples: [] }), GO_OWED()]),
+      { ...TSREG, lanes: { ...TSREG.lanes, php: TS_ENTRY({ family: "oo", rulings: { "uses|.": "a reason" } }) } },
+    ).includes("ruling"))
+  negative("R10 negative: an unregistered lane is convicted (a lane's spelling vocabulary must be recorded before it is judged)",
+    targetSpellingDetail(TSCEN([...BASE(), TS_LANE({ lang: "dart" })]), TSREG).includes("unregistered"))
+  negative("R10 negative: a registered lane that appears in no census row is convicted",
+    targetSpellingDetail(TSCEN([TS_LANE(), GO_OWED()]), TSREG).includes("no census row"))
+  negative("R10 negative: an unmatched census row (no byClass record) forbids adjudication — an absent measurement is not a clean one",
+    targetSpellingDetail(TSCEN([{ lang: "rust", verdict: "clean" }]), TSREG).includes("cannot adjudicate"))
+  negative("R10 negative: an absent census forbids adjudication",
+    targetSpellingDetail(null, TSREG).includes("cannot adjudicate"))
+  negative("R10 negative: an absent register forbids adjudication",
+    targetSpellingDetail(TSCEN(BASE()), null).includes("cannot adjudicate"))
+  negative("R10 negative: a census with a single verdict everywhere cannot adjudicate (a classifier that returns one answer is broken, not a family)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "php" })]),
+      { ...TSREG, lanes: { rust: TS_ENTRY(), php: TS_ENTRY() }, ooTarget: { convictedLanes: 0, unruledSeparatorLanes: 0 } },
+    ).includes("cannot adjudicate"))
+  negative("R10 negative: OO conviction debt above the recorded target is convicted",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "dart", verdict: "fabricated-spellings", byClass: { whitespace: 1 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, dart: TS_ENTRY({ family: "oo", convictions: { whitespace: 1 } }) } },
+    ).includes("target"))
+  negative("R10 negative: an OO lane whose separator vocabulary is UNRULED counts as ruling debt, and rising above the target is convicted",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "ruby", verdict: "unruled-separators", separatorTriples: ["uses|@"], unruledTriples: ["uses|@"] })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, ruby: TS_ENTRY({ family: "oo", separatorTriples: ["uses|@"], rulings: { "uses|@": null } }) } },
+    ).includes("target"))
+  negative("R10 negative: a RULED separator is not ruling debt (the ruling is what clears it)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "ruby", verdict: "clean", separatorTriples: ["uses|@"], unruledTriples: [] }), GO_OWED()]),
+      { ...TSREG, lanes: { rust: TS_ENTRY(), go: TS_ENTRY({ verdict: "unruled-separators", separatorTriples: ["imports|."], rulings: { "imports|.": null } }), ruby: TS_ENTRY({ family: "oo", separatorTriples: ["uses|@"], rulings: { "uses|@": "documented ivar convention" } }) }, ooTarget: { convictedLanes: 1, unruledSeparatorLanes: 1 } },
+    ).startsWith("R10:"))
+  negative("R10 negative: a lane whose symbol alphabet could not adjudicate is not counted as ruling debt (a thin draw must not convict)",
+    targetSpellingDetail(
+      TSCEN([TS_LANE(), TS_LANE({ lang: "svelte", verdict: "underdetermined", separatorAdjudicable: false, separatorTriples: ["imports|("], unruledTriples: ["imports|("] }), GO_OWED()]),
+      { ...TSREG, lanes: { ...TSREG.lanes, svelte: TS_ENTRY({ family: "oo", separatorTriples: ["imports|("], rulings: { "imports|(": null } }) } },
+    ).startsWith("R10:"))
+  negative("R10 negative: the register is not vacuous (this tree HAS lanes with convictions and unruled separators)",
+    Boolean(tsRegister && Object.values(tsRegister.lanes ?? {}).some((l: any) => Object.keys(l.convictions ?? {}).length > 0) &&
+      Object.values(tsRegister.lanes ?? {}).some((l: any) => Object.values(l.rulings ?? {}).some((v) => v === null))))
+  negative("R10 negative: the census is not vacuous (it measured lanes and found more than one verdict)",
+    (() => { const c = readJsonOrNull(TARGET_SPELLING_CENSUS); const v = new Set((c?.rows ?? []).map((r: any) => r.verdict)); return Boolean(c && (c.rows ?? []).length > 5 && v.size > 1) })())
+  negative("R10 negative: the OO target is recorded, so a lane cannot quietly become exempt",
+    Number(tsRegister?.ooTarget?.convictedLanes ?? -1) >= 0 && Number(tsRegister?.ooTarget?.unruledSeparatorLanes ?? -1) >= 0)
+  const r10Live = (detail: string) => registerAdjudicated(detail, "R10")
+  negative("R10 negative (live predicate): the adjudicated reading is accepted",
+    r10Live(targetSpellingDetail(TSCEN(BASE()), TSREG)))
+  negative("R10 negative (live predicate): a drifted lane is NOT accepted as a verdict",
+    !r10Live(targetSpellingDetail(TSCEN([TS_LANE(), TS_LANE({ lang: "php", verdict: "clean", separatorTriples: ["uses|."], unruledTriples: ["uses|."] }), GO_OWED()]), TSREG)))
+  negative("R10 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
+    !r10Live(targetSpellingDetail(null, TSREG)))
+
   finish(head)
 }
 
@@ -896,6 +1016,144 @@ export function declaredTypeRegisterDetail(census: any, register: any): string {
     `R9: ${present.length} of ${rows.length} lanes emit the declared-type graph under the family marker` +
     (other.length ? `, ${other.length} under a divergent marker (${other.map((r) => `${r.lang}:${(r.otherMarkers ?? []).join("|")}`).join(", ")})` : "") +
     `; ${rows.length - present.length - other.length} lane(s) owe it, ${ooDebt.length} of them in the OO family; all ${entries.length} register entries match exactly (OO target ${target})`
+  )
+}
+
+/**
+ * R10: a relationship target must be spelled the way the lane spells its own symbols.
+ *
+ * The differential oracle is the family's strongest instrument and it is structurally
+ * blind to this class: its truth is derived from the same rules the analyzer runs, so
+ * when both sides fabricate the same spelling they AGREE. php's `$o->{'lit'}` published
+ * the string literal `'lit'` as a member name on BOTH sides (and `$o->{2}` an integer),
+ * phpmyadmin's `include $this->baseDir . 'revision-info.php'` published a whole
+ * expression as a path on both sides, and both were invisible to every per-edge gate
+ * AND to the M59 line oracle, which confirms the token appears on the claimed line
+ * because the quotes and digits really are written there.
+ *
+ * Two tiers, and the split is the whole design:
+ *   * CONVICTING — `literal` (the whole target is a quoted string or a bare number),
+ *     `whitespace` (a space/tab/newline), `delimiter` (`;`, `(`, `)`, `{`, `}`, `,`).
+ *     No language in the family can declare such a symbol, so these need no
+ *     calibration and cannot false-positive. They are also confined to SYMBOL-target
+ *     relationship types: an `imports`/`exports` target is a module PATH, and a path
+ *     may legitimately contain grouping punctuation — svelte's SvelteKit route groups
+ *     are real directories named `(app)`.
+ *   * REPORTED — `separator`: a non-alphanumeric character absent from the lane's own
+ *     symbol alphabet. Qualified names legitimately carry `.`, `:`, `/`, `@`, `$`,
+ *     `?`, `!`, `-` (`io:format`, `clojure.string/join`, `UIKit/UIKit.h`, `@version`,
+ *     `Class.member`), 21 of 24 lanes carry one, so convicting this tier would have
+ *     laundered every real finding along with the conventions. Its (type, char)
+ *     vocabulary is RECORDED and RULED in the register instead, and a lane that starts
+ *     emitting a spelling nobody ruled drifts the register and fails.
+ *
+ * Refusals, each a way the census could accuse falsely: an absent census/register; a
+ * census whose rows carry no `byClass` record (an absent measurement is not a clean
+ * one); a census where every lane reads the same verdict (a broken classifier, not a
+ * family). A lane under the census's MIN_SYMBOLS distinct names cannot have its
+ * SEPARATOR class adjudicated and is counted as neither ruling debt nor innocence —
+ * the convicting tier still applies to it in full, which is why a thin draw no longer
+ * masks a lane's convictions.
+ *
+ * Convictions: an unregistered lane; a registered lane in no census row; a conviction
+ * counted that the register does not record (a NEW fabricated surface anywhere in the
+ * family); a conviction that DISAPPEARED without the register being re-written; a
+ * separator triple added or vanished; a ruling recorded for a triple the lane no longer
+ * emits; and OO debt — convicted OO lanes, or OO lanes with unruled separator
+ * vocabulary — above the recorded target.
+ *
+ * Pure, so the negatives above can drive it with synthetic census/register pairs.
+ */
+export const TARGET_SPELLING_OO_LANES = ["csharp", "dart", "objc", "php", "python", "ruby", "swift"]
+
+export function targetSpellingDetail(census: any, register: any): string {
+  if (!register) return "R10 cannot adjudicate: validation/m60/target-spelling-register.json is absent"
+  if (!census) return "R10 cannot adjudicate: validation/m60/results/target-spelling.json is absent — run bun script/m60/target-spelling-census.ts"
+  const rows: any[] = census.rows ?? []
+  if (!Array.isArray(rows) || rows.length === 0) return "R10 cannot adjudicate: the census carries no lane rows"
+  const lanes: Record<string, any> = register.lanes ?? {}
+  if (Object.keys(lanes).length === 0) return "R10 cannot adjudicate: the register records no lanes"
+  const unmeasured = rows.filter((r) => r.verdict === "no-corpus")
+  if (unmeasured.length) {
+    return `R10 cannot adjudicate: ${unmeasured.length} lane(s) had no corpus files, so their spelling vocabulary is unknown — ${unmeasured.map((r) => String(r.lang)).slice(0, 4).join(", ")}`
+  }
+  const schemaBroken = rows.filter((r) => !r.byClass || !Array.isArray(r.separatorTriples))
+  if (schemaBroken.length) {
+    return `R10 cannot adjudicate: ${schemaBroken.length} census row(s) record no byClass / separatorTriples — an absent measurement is not a clean one (${schemaBroken.map((r) => String(r.lang)).slice(0, 4).join(", ")})`
+  }
+  const verdicts = new Set(rows.map((r) => String(r.verdict)))
+  if (verdicts.size < 2) {
+    return "R10 cannot adjudicate: every lane reads the same verdict, so the classifier is not discriminating — a single-answer census cannot convict a family contract"
+  }
+  const rowBy = new Map(rows.map((r) => [String(r.lang), r]))
+  const unregistered = rows.filter((r) => !lanes[String(r.lang)]).map((r) => String(r.lang))
+  if (unregistered.length) {
+    return `R10: ${unregistered.length} unregistered lane(s) — a lane's target-spelling vocabulary must be recorded before it is judged: ${unregistered.slice(0, 4).join(", ")}`
+  }
+  const disappeared = Object.keys(lanes).filter((l) => !rowBy.has(l))
+  if (disappeared.length) {
+    return `R10: ${disappeared.length} registered lane(s) appear in no census row — ${disappeared.slice(0, 4).join(", ")}`
+  }
+  const problems: string[] = []
+  const sorted = (a: string[]) => JSON.stringify([...a].sort())
+  for (const [lang, entry] of Object.entries(lanes)) {
+    const row = rowBy.get(lang)!
+    const gotConv = JSON.stringify(row.byClass ?? {})
+    const wantConv = JSON.stringify(entry.convictions ?? {})
+    if (gotConv !== wantConv) {
+      const got = Object.keys(row.byClass ?? {}).length
+      const want = Object.keys(entry.convictions ?? {}).length
+      if (got > want) problems.push(`${lang} drifted: ${got} conviction class(es) measured vs ${want} recorded — ${JSON.stringify(row.byClass)}`)
+      else problems.push(`${lang} drifted: convictions ${gotConv} measured vs ${wantConv} recorded — a finding may only be paid down by re-writing the register`)
+      continue
+    }
+    const gotTriples = sorted(row.separatorTriples ?? [])
+    const wantTriples = sorted(entry.separatorTriples ?? [])
+    if (gotTriples !== wantTriples) {
+      const measured = new Set<string>(row.separatorTriples ?? [])
+      const recorded = new Set<string>(entry.separatorTriples ?? [])
+      const added = [...measured].filter((t) => !recorded.has(t))
+      const gone = [...recorded].filter((t) => !measured.has(t))
+      problems.push(
+        `${lang} drifted: separator vocabulary ` +
+          (added.length ? `gained ${added.join(",")}` : "") + (added.length && gone.length ? " and " : "") + (gone.length ? `lost ${gone.join(",")}` : ""),
+      )
+      continue
+    }
+    const staleRuling = Object.keys(entry.rulings ?? {}).filter((tr) => !(row.separatorTriples ?? []).includes(tr))
+    if (staleRuling.length) {
+      problems.push(`${lang} drifted: ruling recorded for a triple the lane no longer emits — ${staleRuling.join(",")}`)
+    }
+  }
+  if (problems.length) {
+    return `R10: ${problems.length} lane(s) drifted from the register — ${problems.slice(0, 3).join(" | ")}`
+  }
+  // OO debt: the owner standard's zero target. Convictions always count; a lane whose
+  // draw could not adjudicate the separator class has no ruling debt to pay, because its
+  // vocabulary was never measured against an alphabet.
+  const ooConvicted = TARGET_SPELLING_OO_LANES.filter((l) => Object.keys(lanes[l]?.convictions ?? {}).length > 0)
+  const ooUnruled = TARGET_SPELLING_OO_LANES.filter((l) => {
+    const row = rowBy.get(l)
+    if (!row || row.separatorAdjudicable === false) return false
+    return Object.values(lanes[l]?.rulings ?? {}).some((v) => v === null)
+  })
+  const targetConvicted = Number(register.ooTarget?.convictedLanes ?? -1)
+  const targetUnruled = Number(register.ooTarget?.unruledSeparatorLanes ?? -1)
+  if (targetConvicted < 0 || targetUnruled < 0) {
+    return "R10 cannot adjudicate: the register records no OO target, so OO debt could rise unobserved"
+  }
+  if (ooConvicted.length > targetConvicted) {
+    return `R10: OO lanes with a target-spelling conviction rose to ${ooConvicted.length} from the recorded target ${targetConvicted} — ${ooConvicted.join(", ")}`
+  }
+  if (ooUnruled.length > targetUnruled) {
+    return `R10: OO lanes with UNRULED separator vocabulary rose to ${ooUnruled.length} from the recorded target ${targetUnruled} — ${ooUnruled.join(", ")}`
+  }
+  const convicted = Object.keys(lanes).filter((l) => Object.keys(lanes[l].convictions ?? {}).length > 0)
+  const ruled = Object.keys(lanes).filter((l) => Object.keys(lanes[l].rulings ?? {}).length > 0)
+  return (
+    `R10: all ${Object.keys(lanes).length} register entries match exactly (${verdicts.size} distinct verdicts measured); ` +
+    `${(census.clean ?? []).length} lane(s) clean, ${convicted.length} carry a provable fabricated spelling (${convicted.join(", ")}), ` +
+    `${ruled.length} have ruled separator conventions; OO debt ${ooConvicted.length}/${targetConvicted} convicted and ${ooUnruled.length}/${targetUnruled} unruled`
   )
 }
 

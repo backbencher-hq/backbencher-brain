@@ -1,13 +1,13 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-23T02:21:38.926Z",
-  "atCommit": "ee9b8b282e803664151c43e600510feab1228fd2",
-  "passed": 115,
+  "at": "2026-09-23T09:31:06.228Z",
+  "atCommit": "b07d9eb5099853fee8e7362797a373633a2929b7",
+  "passed": 138,
   "failed": 1,
-  "negatives": 93,
+  "negatives": 115,
   "failures": [
-    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at 149bf5c9cdb2abf5e939055aee4f335acb579904, HEAD is ee9b8b282e803664151c43e600510feab1228fd2"
+    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at 149bf5c9cdb2abf5e939055aee4f335acb579904, HEAD is b07d9eb5099853fee8e7362797a373633a2929b7"
   ],
   "verdict": "FAIL",
   "machinery": {

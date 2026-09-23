@@ -28,7 +28,7 @@ import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
-import { phpDeclaredTypeRefs } from "../../src/ast/real-php-analyzer"
+import { phpDeclaredTypeRefs, phpStaticIncludePath, phpStaticCallableName } from "../../src/ast/real-php-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
 // one rule for both sides, never a re-implementation (see isWrappedHeadingName).
 import { macroWrappedHeadingShape, wrappedBodyAfter } from "../../src/ast/real-c-analyzer"
@@ -5915,16 +5915,12 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       }
     }
   }
-  const extractPhpIncludePath = (node: any): string | undefined => {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (!child) continue
-      if (child.type === "encapsed_string" || child.type === "string") return cleanString(child.text)
-      if (child.type === "binary_expression") return collapseWhitespace(child.text)
-      if (child.type === "name" || child.type === "qualified_name") return child.text
-    }
-    return undefined
-  }
+  // R10 (#835): the analyzer's OWN static-path rule, not a mirror of it. The
+  // previous local copy reproduced the defect faithfully (both sides published
+  // `$this->baseDir.'revision-info.php'` as a path, so the differential agreed
+  // and could see nothing), and a hand-written mirror is how a narrowing on one
+  // side becomes phantom "missing in analyzer" edges on the other.
+  const extractPhpIncludePath = (node: any): string | undefined => phpStaticIncludePath(node)
 
   // PHP2 mirror: persistent value-scope frames (file prescan + per-scope
   // binds). Mirrors the analyzer's fileScope/universals/collectors exactly.
@@ -6024,9 +6020,12 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       if (p) push("references", p)
     }
     if (t === "function_call_expression") {
-      const fn = n.childForFieldName?.("function") ?? n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
-      if (fn) {
-        const target = leafName(fn.text)
+      // R10 (#835): the analyzer's OWN callee rule, not a mirror. A variable
+      // callee (`$callable()`) has no callee NAME; both sides previously derived
+      // `calls -> $callable` from the same raw text, so the differential agreed
+      // and could not see it.
+      const target = phpStaticCallableName(n.childForFieldName?.("function"))
+      if (target) {
         // M37.13 mirror: the analyzer's processFunctionCall returns EARLY for
         // the WordPress hook registrars (framework detection only, no calls
         // edge). Without this mirror the oracle fabricated calls:add_action/
