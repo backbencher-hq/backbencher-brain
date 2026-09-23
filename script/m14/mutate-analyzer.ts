@@ -4594,6 +4594,16 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "c/call-shaped-declarator-loss",
+    language: "c",
+    defectClass: "symbol-loss",
+    description: "#912 (M60-C) regression: the recovery stops accepting the CALL-shaped declarator — a definition header whose own type words recovery absorbed into the ERROR, so the header now reads as a call (`static block gen_last_1(void) {`, real site jq src/builtin.c:2067, inside the macro-driven table's desync). This reproduces the pre-fix state exactly: the symbol is absent (measured pre-fix: `gen_last_1` nowhere in jq's catalog, while the heading's own `calls global -> gen_last_1` read is emitted both before and after). Caught by c/call-shaped-declarator-912, which pins the symbol WITH its recovery metadata (`glueNameShape: call-declarator`), and by the fixture's controls, which fail if the mutant is widened into accepting them.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.recoveredFromGlue === true && s.metadata?.glueNameShape === "call-declarator")),
+    }),
+  },
+  {
     id: "c/glue-wrapped-declarator-dropped",
     language: "c",
     defectClass: "symbol-loss",

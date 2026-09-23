@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T09:10:17.105Z",
+  "snapshotAt": "2026-09-23T17:35:40.582Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 117,
+  "count": 116,
   "issues": [
     {
       "number": 134,
@@ -673,24 +673,9 @@
       ]
     },
     {
-      "number": 909,
-      "title": "M12 perf evidence: c-complexity.json records a 10x-inflated number with no load disclosure",
-      "labels": [
-        "bug",
-        "lang:c"
-      ]
-    },
-    {
       "number": 911,
       "title": "M60.P1 recorded an emission no commit contains (erlang line_number); P1 had no commit frame at all",
       "labels": []
-    },
-    {
-      "number": 912,
-      "title": "M60-C: the #907 residue — 1 call-shaped macro-driven definition site and 38 flex-generated aliases with no source location",
-      "labels": [
-        "lang:c"
-      ]
     },
     {
       "number": 913,
@@ -701,6 +686,14 @@
       "number": 914,
       "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
       "labels": []
+    },
+    {
+      "number": 921,
+      "title": "M60 c/cpp: a `contains` edge takes the child declaration START, so 166 landed rows name a line where the child name is not written (last M59 Tier A residue)",
+      "labels": [
+        "lang:c",
+        "lang:cpp"
+      ]
     }
   ]
 }

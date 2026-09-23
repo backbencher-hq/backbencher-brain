@@ -259,6 +259,24 @@ function tierAConsistent(lines: string[], line: number, token: string): boolean 
 // (`typedef struct { … } Foo;` has no name token for the aggregate), and the c
 // lane spells the same thing `anonymous_struct`/`anonymous_union`. No file writes
 // `anonymous`, so no line can be its site — a checkability fact, not an excuse.
+// M59 dev instrument (opt-in, OFF in every gated run): the artifact keeps only
+// 5 inconsistent rows per file, which is enough to pin a class and not enough to
+// COUNT one. `BB_M59_INCONSISTENT_DUMP=<path>` writes every row instead — the
+// verdict, the totals and the artifact are untouched, so this cannot change a
+// gate's result. Added while classifying the c/cpp residue (#825's remaining
+// languages): the question "which class is the 682?" cannot be answered from a
+// 3-per-file sample without guessing.
+const INCONSISTENT_DUMP = process.env.BB_M59_INCONSISTENT_DUMP
+const inconsistentRows: Array<{
+  lang: string
+  file: string
+  type: string
+  target: string
+  token: string
+  claimedLine: number
+  sourceLine: string
+}> = []
+
 const SYNTHETIC_NAME = /^(constructor|anonymous|anonymous_object|anonymous_[\w$]+|given_\d+|component\d+|default)$/
 const UNKNOWN_TARGETS = new Set(["?", "<unknown>", "<anonymous>", ""])
 
@@ -476,6 +494,17 @@ async function main() {
               sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100),
             })
           }
+          if (INCONSISTENT_DUMP) {
+            inconsistentRows.push({
+              lang,
+              file: path.relative(CORPUS, f),
+              type: String(rel?.type ?? "?") + "(phantom-target-claims-line)",
+              target: String(rel?.target ?? rel?.to ?? ""),
+              token: String(rel?.target ?? rel?.to ?? ""),
+              claimedLine: ln,
+              sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100),
+            })
+          }
           continue
         }
         const token = calleeToken(rel, relType)
@@ -526,6 +555,17 @@ async function main() {
             r.inconsistentSample.push({
               type: String(rel?.type ?? "?"),
               callee: token,
+              claimedLine: ln,
+              sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100),
+            })
+          }
+          if (INCONSISTENT_DUMP) {
+            inconsistentRows.push({
+              lang,
+              file: path.relative(CORPUS, f),
+              type: String(rel?.type ?? "?"),
+              target: String(rel?.target ?? rel?.to ?? ""),
+              token,
               claimedLine: ln,
               sourceLine: (lines[ln - 1] ?? "").trim().slice(0, 100),
             })
@@ -774,6 +814,10 @@ async function main() {
   console.log(`mutation self-test: ${mutation ? JSON.stringify(mutation) : "NOT RUN (no line-bearing relationship found)"}`)
   if (skipped.length > 0) console.log(`skipped: ${skipped.length} (see evidence json)`)
   console.log(`evidence: ${path.relative(ROOT, outFile)}`)
+  if (INCONSISTENT_DUMP) {
+    writeFileSync(INCONSISTENT_DUMP, JSON.stringify(inconsistentRows, null, 1) + "\n")
+    console.log(`inconsistent rows dumped (dev instrument): ${inconsistentRows.length} -> ${INCONSISTENT_DUMP}`)
+  }
 
   if (!boundaryOk) {
     console.log("\nFAIL: the Tier A boundary predicate does not behave as recorded — measurements through it are not evidence.")
