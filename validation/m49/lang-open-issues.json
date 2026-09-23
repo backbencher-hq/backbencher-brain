@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T18:08:22.516Z",
+  "snapshotAt": "2026-09-23T19:24:54.565Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 115,
+  "count": 118,
   "issues": [
     {
       "number": 134,
@@ -355,11 +355,6 @@
       "labels": []
     },
     {
-      "number": 743,
-      "title": "M49-CONV: CONV-CPPC-1 cpp/c — parse-success 27%/56% on corpus; F5 parity blind to grammar loss",
-      "labels": []
-    },
-    {
       "number": 747,
       "title": "M49-CONV: CONV-PY-1 python — framework detection is dead code (ctx.frameworks never written)",
       "labels": []
@@ -686,6 +681,35 @@
       "number": 914,
       "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
       "labels": []
+    },
+    {
+      "number": 922,
+      "title": "M60 csharp: the `global::` alias is published as part of the type name in six positions, and three single-segment positions publish NOTHING",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 923,
+      "title": "M60 csharp: there is no member-level implements contract — an explicit interface member publishes the bare name with no owner, and so does the implicit form",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 924,
+      "title": "M60 name surface: a quoted identifier's quoting syntax is published as part of the name (kotlin/scala/zig), and payloads and expressions are published as names (swift/haskell/elixir/cpp/scala)",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 925,
+      "title": "M60-CONV: cpp/c — the bare macro-statement class (`expression_statement > MISSING \";\"`, 2849 sites / 99 files on nlohmann-json) needs a grammar wave with recovery re-derived in the same commit",
+      "labels": [
+        "lang:c",
+        "lang:cpp"
+      ]
     }
   ]
 }

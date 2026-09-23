@@ -202,7 +202,120 @@ function alphabetOf(names: string[]): Map<string, number> {
   return counts
 }
 
+// ---------------------------------------------------------------- the whitespace split
+//
+// The `whitespace` class was convicted on a rationale stated in this file and in the
+// register: "no identifier in any of these languages may contain whitespace". The
+// artifact refutes it, and the refutation is the same kind the `separator` class already
+// went through (that one was convicted by a first draft and the measurement took it back:
+// 21 of 24 lanes carried it). Measured per target against the lane's OWN published symbol
+// names (`script/m14/tmp/r10-whitespace-split-probe.ts`), a whitespace target is one of:
+//
+//   operatorMember    the whole target, or its last dotted segment, is `operator` +
+//                     whitespace + a token. csharp `operator ==`, dart `operator ?`,
+//                     swift `operator <`. This is the C2b question and it is a NAMING
+//                     question, not a spelling one: the lane's own symbol is spelled
+//                     that way and the containment edge agrees with it.
+//   payloadSigil      the target begins with `@`: a decorator/annotation payload or a
+//                     sigil-quoted identifier published as if it were a name (swift's
+//                     `@available(*, deprecated, …)`, zig's `@"zls env"`). The
+//                     payload is not a name in any language here; who owns that
+//                     depends on whether the lane publishes it as a SYMBOL or a target.
+//   matchesOwnSymbol  the string is one of the names this lane itself publishes. The
+//                     lane is SELF-CONSISTENT: whatever the string is, it is the lane's
+//                     answer on both sides, so a per-edge gate (and the differential,
+//                     whose truth comes from the same rules) cannot adjudicate it. This
+//                     is where scala's and groovy's backtick/quoted method names live
+//                     (legal: the language declares identifiers containing whitespace),
+//                     AND where the lanes whose published NAME carries the quoting syntax
+//                     live (kotlin's name is literally `` `test char column read and write` ``, zig's is
+//                     `@"zls env"`), AND where a lane that publishes an EXPRESSION as a
+//                     name lands (haskell `M1 i c`, scala `A, B`). Those three need
+//                     different owners, so this subclass is ROUTED, not excused.
+//   sourceText        the string is not a name this lane declares at all — a comment, a
+//                     call expression, a type expression. This is the genuine R10
+//                     target-spelling conviction, and it is the only subclass R10 owns.
+//
+// Nothing here is decided by a regex over the target: the operator test is a character
+// scan, and the self-consistency test is set membership against the lane's own artifact.
+type WhitespaceSubclass = "operatorMember" | "payloadSigil" | "matchesOwnSymbol" | "sourceText"
+
+function classifyWhitespace(target: string, ownSymbolNames: Set<string>): WhitespaceSubclass {
+  const lastDot = target.lastIndexOf(".")
+  const last = lastDot >= 0 ? target.slice(lastDot + 1) : target
+  const KEYWORD = "operator"
+  if (
+    last.length > KEYWORD.length + 1 &&
+    last.slice(0, KEYWORD.length) === KEYWORD &&
+    (last.charAt(KEYWORD.length) === " " || last.charAt(KEYWORD.length) === "\t")
+  ) {
+    return "operatorMember"
+  }
+  if (target.charAt(0) === "@") return "payloadSigil"
+  if (ownSymbolNames.has(target)) return "matchesOwnSymbol"
+  return "sourceText"
+}
+
+/** The split's own gate. A pure function nobody tests is a claim, not an instrument. */
+function whitespaceSplitSelfTest(): { passed: number; failed: string[] } {
+  const own = new Set([
+    "operator ==",
+    "test entity with trait property",
+    "`popAll preserves iteration order`",
+    "@\"zls env\"",
+    "M1 i c",
+  ])
+  const cases: Array<[string, WhitespaceSubclass]> = [
+    // the operator form, and: only when it is the whole last segment
+    ["operator ==", "operatorMember"],
+    ["operator !=", "operatorMember"],
+    ["HttpHeaders.operator ?", "operatorMember"],
+    // negatives: `operatorial x` merely starts with those letters; the bare keyword is
+    // not an operator member (there is no token after it)
+    ["operatorial x", "sourceText"],
+    ["operator", "sourceText"],
+    // payloads and sigils
+    ['@available(*, deprecated, message: "Cannot be thrown")', "payloadSigil"],
+    ['@"zls env"', "payloadSigil"],
+    // self-consistency, in all three of its meanings
+    ["test entity with trait property", "matchesOwnSymbol"],
+    ["`popAll preserves iteration order`", "matchesOwnSymbol"],
+    ["M1 i c", "matchesOwnSymbol"],
+    // the real conviction: a string the lane never declares
+    ["functional  // std::reference_wrapper", "sourceText"],
+    ["getMap(f)", "sourceText"],
+    ['# 7..13 is the range', "sourceText"],
+    // and the control that keeps the class from being laundered: the SAME string is
+    // sourceText in a lane that does not declare it, matchesOwnSymbol in one that does
+    ["test entity with trait property", "matchesOwnSymbol"],
+  ]
+  const failed: string[] = []
+  let passed = 0
+  for (const [target, want] of cases) {
+    const got = classifyWhitespace(target, own)
+    if (got === want) passed++
+    else failed.push(`${JSON.stringify(target)}: wanted ${want}, got ${got}`)
+  }
+  if (classifyWhitespace("test entity with trait property", new Set()) !== "sourceText") {
+    failed.push("control: the same string is not sourceText for a lane that does not declare it")
+  } else passed++
+  return { passed, failed }
+}
+
 async function main() {
+  // The split's gate, run before anything is measured: a classifier that cannot fail is not
+  // an instrument, and an artifact emitted by a broken one is worse than no artifact.
+  const split = whitespaceSplitSelfTest()
+  console.log(`whitespace split self-test: ${split.passed} passed, ${split.failed.length} failed`)
+  for (const f of split.failed) console.log(`  FAIL ${f}`)
+  if (process.argv.includes("--self-test")) {
+    process.exit(split.failed.length ? 1 : 0)
+  }
+  if (split.failed.length) {
+    console.error("whitespace split self-test FAILED — refusing to write an artifact classified by it")
+    process.exit(1)
+  }
+
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
   const lanes = Object.keys(LANGS).filter((l) => LANGS[l].analyzerFile && (!ONLY_LANE || l === ONLY_LANE))
@@ -257,7 +370,8 @@ async function main() {
     }
 
     const alphabet = alphabetOf(symNames)
-    const distinctSymbols = new Set(symNames).size
+    const symNameSet = new Set(symNames)
+    const distinctSymbols = symNameSet.size
 
     // Class 1: the WHOLE target is a quoted string or a bare number. Written as
     // character tests rather than a regex over the target: the question is what
@@ -276,7 +390,7 @@ async function main() {
     // Provably impossible in any of the 19 languages' identifiers. Brackets are
     // deliberately NOT here: ruby's own method `Hash.[]` is spelled with them.
     const DELIMITERS = ";(){},"
-    const anomalies: Array<{ target: string; type: string; chars: string[]; klass: string; file: string }> = []
+    const anomalies: Array<{ target: string; type: string; chars: string[]; klass: string; file: string; subclass?: string }> = []
     // Every (lang, type, char) triple the lane's targets actually exercise, so the
     // register can be adjudicated exactly rather than by eyeballing samples.
     const separatorTriples: Array<{ target: string; type: string; chars: string[]; file: string }> = []
@@ -302,13 +416,30 @@ async function main() {
       const symbolish = t.type !== "imports" && t.type !== "exports"
       const spaces = symbolish ? chars.filter((c) => c === " " || c === "\t" || c === "\n" || c === "\r") : []
       const delims = symbolish ? chars.filter((c) => DELIMITERS.includes(c)) : []
-      if (spaces.length > 0) anomalies.push({ target: t.target, type: t.type, chars: spaces, klass: "whitespace", file: t.file })
+      if (spaces.length > 0) {
+        anomalies.push({
+          target: t.target,
+          type: t.type,
+          chars: spaces,
+          klass: "whitespace",
+          file: t.file,
+          subclass: classifyWhitespace(t.target, symNameSet),
+        })
+      }
       if (delims.length > 0) anomalies.push({ target: t.target, type: t.type, chars: delims, klass: "delimiter", file: t.file })
       if (spaces.length > 0 || delims.length > 0) continue
       // The reported class: a non-alphanumeric character none of the lane's OWN
       // symbol names uses. Legitimate in qualified names, so reported only.
       const missing = chars.filter((c) => !alphabet.has(c) && !isAlphanumericChar(c))
       if (missing.length > 0) separatorTriples.push({ target: t.target, type: t.type, chars: missing, file: t.file })
+    }
+
+    // DEBUG (temporary): the classifier's own inputs at the moment it ran, so a row that
+    // cannot be reproduced in isolation can be explained by state rather than guessed at.
+    if (process.argv.includes("--debug-alphabet")) {
+      console.log(
+        `  DBG ${lang.padEnd(10)} alphabetSize=${alphabet.size} symNames=${symNames.length} hasDot=${alphabet.has(".")} targets=${targets.length} sepPushes=${separatorTriples.length} distinctTargets=${new Set(targets.map((t) => t.target)).size}`,
+      )
     }
 
     // The (type, char) pairs the draw exercised, and the ones the register has not
@@ -356,6 +487,19 @@ async function main() {
         acc[a.klass] = (acc[a.klass] ?? 0) + 1
         return acc
       }, {}),
+      // The whitespace class SPLIT by the mechanism that decides its owner, so the
+      // register can pin the split exactly and a lane cannot move a target from
+      // `sourceText` to `matchesOwnSymbol` without the gate noticing.
+      whitespaceSubclasses: anomalies
+        .filter((a) => a.klass === "whitespace")
+        .reduce((acc: Record<string, number>, a) => {
+          acc[a.subclass ?? "?"] = (acc[a.subclass ?? "?"] ?? 0) + 1
+          return acc
+        }, {}),
+      whitespaceSamples: anomalies
+        .filter((a) => a.klass === "whitespace")
+        .slice(0, 8)
+        .map((a) => ({ subclass: a.subclass, type: a.type, target: a.target.slice(0, 80), file: a.file })),
       emptyTargetCount: emptyTargets.length,
       separatorEdges: separatorTriples.length,
       separatorTriples: triples,
@@ -380,7 +524,11 @@ async function main() {
     console.log(
       `${verdict.padEnd(21)} ${lang.padEnd(11)} syms=${String(distinctSymbols).padStart(5)} rels=${String(relationships).padStart(6)} anomalies=${String(anomalies.length).padStart(4)}${Object.keys(klassCounts).length ? ` ${JSON.stringify(klassCounts)}` : ""} sep=${String(separatorTriples.length).padStart(5)} unruled=${unruledTriples.length ? unruledTriples.join(",") : "-"}${byChar ? ` chars=[${byChar}]` : ""} draws=${draws.map((d) => `${d.repo}:${d.files.length}`).join("+")}`,
     )
-    for (const a of anomalies.slice(0, 6)) console.log(`    ANOMALY ${a.klass} ${a.type} target=${JSON.stringify(a.target)} chars=${JSON.stringify(a.chars)} @ ${a.file}`)
+    for (const a of anomalies.slice(0, 6)) {
+      console.log(
+        `    ANOMALY ${a.klass}${a.subclass ? `/${a.subclass}` : ""} ${a.type} target=${JSON.stringify(a.target)} chars=${JSON.stringify(a.chars)} @ ${a.file}`,
+      )
+    }
   }
 
   const payload = {

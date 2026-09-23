@@ -100,7 +100,7 @@ const CROSS_CUTTING: Record<number, string> = {
 // 612 is genuinely their closure gate, so it stays language-scoped.
 delete CROSS_CUTTING[612]
 
-function trackerHits(lang: string, snapshot: any): number[] {
+export function trackerHits(lang: string, snapshot: any): number[] {
   const c = canon(lang)
   const aliases = TRACKER_ALIASES[c] ?? [lang]
   // A `lang:<language>` label is the STRUCTURED form of the same claim, and it
@@ -133,6 +133,55 @@ function trackerHits(lang: string, snapshot: any): number[] {
     })
     .map((i: any) => i.number)
     .sort((a: number, b: number) => a - b)
+}
+
+// The exclusion table's own gate. A hand-written exclusion map with no test is the
+// "gate that cannot fail" class this milestone keeps finding: adding issue 804 to it
+// would turn a lane's own open work green, and nothing here would notice. So the
+// discrimination is asserted, in both directions, on synthetic snapshots.
+function trackerSelfTest(): { passed: number; failed: string[] } {
+  const snap = (issues: any[]) => ({ snapshotAt: "selftest", count: issues.length, issues })
+  const ISSUE = (number: number, title: string, labels: string[] = []) => ({ number, title, labels })
+  const failed: string[] = []
+  let passed = 0
+  const check = (name: string, cond: boolean) => (cond ? passed++ : failed.push(name))
+  const hits = (lang: string, issues: any[]) => trackerHits(lang, snap(issues)).join(",")
+
+  // The namesake exclusion, and that it is SCOPED: a milestone-wide issue does not name
+  // any lane, while a lane's own issue still does.
+  const NAMESAKE = ISSUE(593, "M37: Dual-lens backfill of the 18 gated-done analyzers (read + census, csharp/haskell method)")
+  check("namesake: #593 does not name csharp", !hits("csharp", [NAMESAKE]).includes("593"))
+  check("namesake: #593 does not name haskell", !hits("haskell", [NAMESAKE]).includes("593"))
+  check("namesake: the exclusion is not a blanket silence — a lane's OWN issue still matches",
+    hits("csharp", [ISSUE(804, "M49.CS1 C# first review wave")]) === "804")
+  check("namesake: an unrelated lane is not caught by a csharp-titled issue",
+    hits("php", [ISSUE(804, "M49.CS1 C# first review wave")]) === "")
+  // The label is the STRUCTURED claim and is authoritative when present.
+  check("label authority: a lang:php label wins over a title that says csharp",
+    hits("php", [ISSUE(9001, "M60 csharp: mislabelled", ["lang:php"])]) === "9001")
+  check("label authority: that same issue does NOT match csharp",
+    hits("csharp", [ISSUE(9001, "M60 csharp: mislabelled", ["lang:php"])]) === "")
+  // Every exclusion carries a reason, and the table may not grow silently: an
+  // exclusion is the strongest possible edit to this cell.
+  const reasons = Object.entries(CROSS_CUTTING)
+  check("exclusion hygiene: every exclusion states a reason",
+    reasons.every(([, r]) => typeof r === "string" && r.length >= 40))
+  check("exclusion hygiene: the table's size is pinned (a new exclusion needs a deliberate edit here)",
+    reasons.length <= 3)
+  check("exclusion hygiene: no exclusion is enumerated for a nonexistent issue id",
+    reasons.every(([n]) => Number.isFinite(Number(n))))
+  return { passed, failed }
+}
+
+const trackerSelf = trackerSelfTest()
+if (trackerSelf.failed.length) {
+  console.error(`tracker self-test FAILED (${trackerSelf.passed} passed, ${trackerSelf.failed.length} failed):`)
+  for (const f of trackerSelf.failed) console.error(`  ${f}`)
+  process.exit(1)
+}
+if (process.argv.includes("--self-test")) {
+  console.log(`tracker self-test: ${trackerSelf.passed} passed, 0 failed`)
+  process.exit(0)
 }
 
 // ---------------------------------------------------------------- the join
