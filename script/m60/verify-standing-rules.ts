@@ -797,6 +797,27 @@ function main() {
       TSCEN([...BASE(), TS_LANE({ lang: "csharp", verdict: "fabricated-spellings", byClass: { whitespace: 2 } })]),
       { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo" }) } },
     ).includes("drifted"))
+  negative("R10 negative: an UNSPLIT whitespace conviction forbids adjudication (a conviction whose owner is unknown cannot be routed)",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "csharp", verdict: "fabricated-spellings", byClass: { whitespace: 2 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo", convictions: { whitespace: 2 } }) } },
+    ).includes("cannot adjudicate"))
+  negative("R10 negative: a target MOVED out of the subclass R10 owns is convicted even though the class counts are identical",
+    targetSpellingDetail(
+      TSCEN([
+        ...BASE(),
+        TS_LANE({ lang: "csharp", verdict: "fabricated-spellings", byClass: { whitespace: 2 }, whitespaceSubclasses: { sourceText: 1, matchesOwnSymbol: 1 } }),
+      ]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo", convictions: { whitespace: 2 }, convictionSubclasses: { sourceText: 2 } }) } },
+    ).includes("reclassified"))
+  negative("R10 negative: the same split on both sides is accepted",
+    targetSpellingDetail(
+      TSCEN([
+        ...BASE(),
+        TS_LANE({ lang: "csharp", verdict: "fabricated-spellings", byClass: { whitespace: 2 }, whitespaceSubclasses: { sourceText: 2 } }),
+      ]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo", convictions: { whitespace: 2 }, convictionSubclasses: { sourceText: 2 } }) } },
+    ).startsWith("R10:"))
   negative("R10 negative: a conviction PAID DOWN without re-writing the register is convicted (a finding may not disappear by a rule change alone)",
     targetSpellingDetail(
       TSCEN([TS_LANE(), TS_LANE({ lang: "php", verdict: "clean", separatorTriples: ["uses|."], unruledTriples: ["uses|."] }), GO_OWED()]),
@@ -832,10 +853,15 @@ function main() {
       TSCEN([TS_LANE(), TS_LANE({ lang: "php" })]),
       { ...TSREG, lanes: { rust: TS_ENTRY(), php: TS_ENTRY() }, ooTarget: { convictedLanes: 0, unruledSeparatorLanes: 0 } },
     ).includes("cannot adjudicate"))
+  // This fixture pins the split deliberately: since the split landed, a lane CANNOT
+  // carry a whitespace conviction without naming its owner (the writer never emits one,
+  // and an unsplit pair is refused — the negative above). The subject here is the OO
+  // debt arithmetic, so the conviction is written in the only shape the writer can now
+  // produce; the debt mechanism itself is unchanged.
   negative("R10 negative: OO conviction debt above the recorded target is convicted",
     targetSpellingDetail(
-      TSCEN([...BASE(), TS_LANE({ lang: "dart", verdict: "fabricated-spellings", byClass: { whitespace: 1 } })]),
-      { ...TSREG, lanes: { ...TSREG.lanes, dart: TS_ENTRY({ family: "oo", convictions: { whitespace: 1 } }) } },
+      TSCEN([...BASE(), TS_LANE({ lang: "dart", verdict: "fabricated-spellings", byClass: { whitespace: 1 }, whitespaceSubclasses: { sourceText: 1 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, dart: TS_ENTRY({ family: "oo", convictions: { whitespace: 1 }, convictionSubclasses: { sourceText: 1 } }) } },
     ).includes("target"))
   negative("R10 negative: an OO lane whose separator vocabulary is UNRULED counts as ruling debt, and rising above the target is convicted",
     targetSpellingDetail(
@@ -1085,6 +1111,22 @@ export function targetSpellingDetail(census: any, register: any): string {
   if (verdicts.size < 2) {
     return "R10 cannot adjudicate: every lane reads the same verdict, so the classifier is not discriminating — a single-answer census cannot convict a family contract"
   }
+  // A conviction the census does not SPLIT cannot be routed to its owner, and the
+  // `whitespace` class is exactly that case: the rationale it was first convicted on
+  // ("no identifier in these languages contains whitespace") was refuted by the
+  // lanes' own artifacts, so the class is only actionable once each conviction says
+  // WHICH of the four mechanisms produced it.
+  //
+  // WHERE THIS CHECK SITS IS PART OF THE RULE, and the first version of it was wrong:
+  // run before the drift comparison (as it was), a lane whose conviction count MOVED
+  // reported "cannot adjudicate", which is the weaker answer to a stronger fact. A
+  // count that differs from the register is provable WITHOUT routing — the drift needs
+  // no owner — so it is reported first; the refusal is for the case where the counts
+  // agree and the missing split is the only thing standing between the pair and a
+  // verdict. Both states fail the gate (a refusal is not a verdict — see the live
+  // predicate's own negative), but they must not be interchangeable: the alarm has to
+  // name the drift it measured.
+  const unsplit = rows.filter((r) => (r.byClass?.whitespace ?? 0) > 0 && !(r as any).whitespaceSubclasses)
   const rowBy = new Map(rows.map((r) => [String(r.lang), r]))
   const unregistered = rows.filter((r) => !lanes[String(r.lang)]).map((r) => String(r.lang))
   if (unregistered.length) {
@@ -1107,6 +1149,16 @@ export function targetSpellingDetail(census: any, register: any): string {
       else problems.push(`${lang} drifted: convictions ${gotConv} measured vs ${wantConv} recorded — a finding may only be paid down by re-writing the register`)
       continue
     }
+    // The split, pinned exactly: a lane may not move a target out of the one subclass
+    // R10 owns (`sourceText`) by reclassifying it.
+    const gotSub = JSON.stringify((row as any).whitespaceSubclasses ?? {})
+    const wantSub = JSON.stringify(entry.convictionSubclasses ?? {})
+    if (gotSub !== wantSub) {
+      problems.push(
+        `${lang} drifted: whitespace sub-classes ${gotSub} measured vs ${wantSub} recorded — a target may not be reclassified without re-writing the register`,
+      )
+      continue
+    }
     const gotTriples = sorted(row.separatorTriples ?? [])
     const wantTriples = sorted(entry.separatorTriples ?? [])
     if (gotTriples !== wantTriples) {
@@ -1127,6 +1179,11 @@ export function targetSpellingDetail(census: any, register: any): string {
   }
   if (problems.length) {
     return `R10: ${problems.length} lane(s) drifted from the register — ${problems.slice(0, 3).join(" | ")}`
+  }
+  // Nothing drifted, so an unsplit conviction is now the only thing that can stop a
+  // verdict: refuse rather than read clean (see the ordering note above).
+  if (unsplit.length) {
+    return `R10 cannot adjudicate: ${unsplit.length} lane(s) convict the whitespace class and record no sub-class split — an unsplit conviction cannot be routed to its owner (${unsplit.map((r) => String(r.lang)).slice(0, 4).join(", ")})`
   }
   // OO debt: the owner standard's zero target. Convictions always count; a lane whose
   // draw could not adjudicate the separator class has no ruling debt to pay, because its

@@ -48,17 +48,26 @@ for (const row of census.rows) {
   for (const tr of separatorTriples) if (!(tr in rulings)) rulings[tr] = null
   for (const tr of Object.keys(rulings)) if (!separatorTriples.includes(tr)) delete rulings[tr]
   const note = old?.note ?? ""
+  // The whitespace class, split by the mechanism that decides its OWNER. Pinned
+  // exactly like the convictions: a lane cannot move a target from `sourceText`
+  // (the one subclass R10 owns) to `matchesOwnSymbol` without this failing until
+  // the writer is re-run deliberately.
+  const subclasses: Record<string, number> = row.whitespaceSubclasses ?? {}
   if (old) {
     const oldConv = JSON.stringify(old.convictions ?? {})
     if (oldConv !== JSON.stringify(convictions)) changed.push(`${lang}: convictions ${oldConv} -> ${JSON.stringify(convictions)}`)
     const oldSep = JSON.stringify([...(old.separatorTriples ?? [])].sort())
     if (oldSep !== JSON.stringify([...separatorTriples].sort())) changed.push(`${lang}: separator triples ${oldSep} -> ${JSON.stringify([...separatorTriples].sort())}`)
+    const oldSub = JSON.stringify(old.convictionSubclasses ?? {})
+    if (oldSub !== JSON.stringify(subclasses)) changed.push(`${lang}: whitespace sub-classes ${oldSub} -> ${JSON.stringify(subclasses)}`)
   }
   lanes[lang] = {
     verdict: row.verdict,
     family: OO.has(lang) ? "oo" : "other",
     convictions,
     convictionSamples: (row.anomalies ?? []).slice(0, 8).map((a: any) => ({ klass: a.klass, type: a.type, target: String(a.target).slice(0, 80) })),
+    convictionSubclasses: subclasses,
+    convictionSubclassSamples: row.whitespaceSamples ?? [],
     separatorTriples,
     rulings,
     note,
@@ -83,7 +92,8 @@ const payload = {
   contract: {
     convicting: {
       literal: "the WHOLE target is a quoted string or a bare number — no language in the family declares such a symbol; needs no calibration and cannot false-positive",
-      whitespace: "the target contains a space, tab or newline — no identifier in these languages contains whitespace",
+      whitespace:
+        "the target contains a space, tab or newline. CONVICTING, but SPLIT BY OWNER before it is acted on, because the rationale this class was first convicted on ('no identifier in any of these languages may contain whitespace') is REFUTED by the artifact — the same way the first draft of `separator` was refuted, and the retraction is recorded rather than quietly dropped. Measured (script/m14/tmp/r10-whitespace-split-probe.ts, on the real corpus files the artifact names): scala and groovy DO declare identifiers containing whitespace (scala's `` `popAll preserves iteration order` `` and groovy's `test entity with trait property` are quoted method names) and their lanes publish the very same string as a SYMBOL name, so the target is honest. `whitespaceSubclasses` on every lane pins the split exactly, and each subclass routes: `operatorMember` (the whole last dotted segment is `operator` + whitespace + a token) is the C2b member-NAMING question and not a spelling one — csharp's `operator ==` is its own symbol's name and the containment edge agrees; `payloadSigil` (the target begins with `@`) is a decorator/annotation payload or a sigil-quoted identifier published as if it were a name; `matchesOwnSymbol` means the lane is SELF-CONSISTENT — the string is one of the names that lane itself publishes, so no per-edge gate can adjudicate it (this holds for the honest quoted names AND for the lanes whose published name carries the quoting syntax, kotlin's `` `test char column read and write` `` and zig's `@\"zls env\"`, AND for a lane that publishes an EXPRESSION as a name, haskell's `M1 i c` and scala's `A, B` — three different owners, which is why it is routed and not excused); `sourceText` (the string is not a name the lane declares at all — a comment, a call expression, a type expression) is the only subclass R10 itself owns. Every subclass count is compared EXACTLY by the gate, so a target cannot be reclassified without re-running this writer. The routed halves are cited where they are owned: every lane whose split carries `matchesOwnSymbol` or `payloadSigil` counts now cites #924 (`M60 name surface`), and #924's definition of done requires exactly that citation, so a routed conviction is a handoff rather than an excuse.",
       delimiter: "the target contains `;`, `(`, `)`, `{`, `}` or `,` — statement and grouping syntax, never part of a name",
     },
     reported: {
