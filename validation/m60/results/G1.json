@@ -1,15 +1,13 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-23T22:10:14.302Z",
-  "atCommit": "af857c94892c436fdec7f13ef27f8f0d6247cbf8",
-  "passed": 145,
-  "failed": 1,
+  "at": "2026-09-23T22:49:28.347Z",
+  "atCommit": "202424d2b85f60e15f88fc64e948e0a9ed815da1",
+  "passed": 146,
+  "failed": 0,
   "negatives": 122,
-  "failures": [
-    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at fdbf069f5e0b9e69277f942b370e9b043c2beba9, HEAD is af857c94892c436fdec7f13ef27f8f0d6247cbf8"
-  ],
-  "verdict": "FAIL",
+  "failures": [],
+  "verdict": "PASS",
   "machinery": {
     "R1": "undocumentedOpenMilestones() — GitHub milestones vs docs/",
     "R2": "computeFamilyClosure(blocked, open) — pure, negative-tested; live application in verify-family-closure-truth.ts",
