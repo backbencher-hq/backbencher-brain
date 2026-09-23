@@ -2640,6 +2640,53 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "cpp/call-target-source-text",
+    language: "cpp",
+    defectClass: "name-surface",
+    description:
+      "#924 (M60, cpp's third name-surface class) regression: a callee the grammar does not NAME publishes its SOURCE TEXT as the call target — the pre-fix behavior of the callee descent, which returned whatever node it stopped on. Re-derived from the result's own source line (a lambda immediately invoked at the head of a call, an element call `fns[0](…)`, a parenthesized callee, and a functional CAST spelled as a builtin type), attributed to the innermost symbol whose range contains the line, which is what the analyzer's `parentContext.name` is. Caught by cpp/call-target-name-surface-924, which forbids the source-text shapes by exact target and by `targetEndsWith`, and pins the class-type/template constructions that must still emit. Measured pre-fix impact on the two pinned cpp corpora: 322 `calls` edges, of which 224 carried whitespace targets and 143 spelled a functional cast (`calls -> int`).",
+    transform: (r: any, source?: string) => {
+      const text: string = typeof source === "string" ? source : (typeof r.rawContent === "string" ? r.rawContent : "")
+      if (!text) return r
+      const syms = (r.symbols ?? []).filter((s: any) => s.range && typeof s.range.startLine === "number" && typeof s.range.endLine === "number")
+      const ownerAt = (line: number): string | null => {
+        let best: any = null
+        for (const s of syms) {
+          if (s.range.startLine <= line && line <= s.range.endLine) {
+            if (!best || (s.range.endLine - s.range.startLine) < (best.range.endLine - best.range.startLine)) best = s
+          }
+        }
+        return best ? String(best.name) : null
+      }
+      const lines = text.split("\n")
+      const extra: any[] = []
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        const ln = i + 1
+        const owner = ownerAt(ln)
+        if (!owner) continue
+        const push = (target: string): void => {
+          if (!target) return
+          extra.push({ source: owner, target, type: "calls", confidence: 1.0, line_number: ln, metadata: { line: ln, qualified: target } })
+        }
+        // an immediately-invoked lambda: `[](…) { … }(…)` on one line
+        const lam = /\[[^\]]*\]\s*\([^)]*\)\s*\{/.exec(line)
+        if (lam) {
+          const close = line.indexOf("}", lam.index + lam[0].length)
+          if (close > 0 && line.slice(close + 1).trimStart().startsWith("(")) push(line.slice(lam.index, close + 1))
+        }
+        // an element call: `name[…]…(…)`
+        const sub = /([A-Za-z_][A-Za-z0-9_]*\s*\[[^\]]*\])\s*\(/.exec(line)
+        if (sub) push(sub[1].trim())
+        // a functional cast to a builtin type
+        const cast = /\b(int|char|size_t|uint32_t|uint64_t|bool|double|float)\s*\(/.exec(line)
+        if (cast) push(cast[1])
+      }
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
     id: "cpp/qualified-declarator-name-glue",
     language: "cpp",
     defectClass: "name-surface",
