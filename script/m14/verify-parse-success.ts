@@ -54,6 +54,9 @@
  *   bun script/m14/verify-parse-success.ts --sample 400         # cap each lane (the default)
  *   bun script/m14/verify-parse-success.ts --update-baseline    # re-pin floors
  *   bun script/m14/verify-parse-success.ts --baseline <path>    # floor file to read
+ *   bun script/m14/verify-parse-success.ts --selftest           # prove every branch of
+ *                                                              # the comparison can fire
+ *                                                              # (one real lane, no writes)
  *
  * Evidence: validation/m14/results/M14.0.F10.json
  * Baseline: validation/m14/parse-success-baseline.json
@@ -86,6 +89,11 @@ const BASELINE_PATH = argValue("--baseline") ?? path.join(ROOT, "validation/m14/
 const SCOPED_LANG = argValue("--lang")
 const SCOPED_REPO = argValue("--repo")
 const UPDATE_BASELINE = hasArg("--update-baseline")
+// --selftest: prove the comparison can fail, on a REAL measurement, before the
+// gate is trusted inside the battery. A gate whose only observed state is "pass"
+// is decoration (the class M60's G-gates keep paying for), so this runs the same
+// predicate the battery runs, against mutated floors.
+const SELFTEST = hasArg("--selftest")
 // Defaults to a cap of 400 files per lane. Full extent is available (`--sample 0`)
 // and is the honest census, but it is not the gate's job: grails-core alone does
 // not finish a full Java parse inside ten minutes, and a gate nobody runs is not a
@@ -361,9 +369,145 @@ async function measureLane(lane: Lane, outPath: string) {
   )
 }
 
+// ------------------------------------------------------------------ verdicts
+//
+// The comparison lives here, once, because the self-test has to exercise THE
+// predicate the battery runs rather than a copy of it (a self-test of a copy
+// proves the copy works).
+
+function verdictFor(
+  row: any,
+  pinned: any | undefined,
+  updateBaseline: boolean,
+): { verdict: string; failed: boolean; improved: boolean } {
+  if (!pinned) {
+    return { verdict: updateBaseline ? "pinned" : "unpinned", failed: false, improved: false }
+  }
+  if (pinned.sampleDigest !== row.sampleDigest) {
+    return { verdict: "sample-moved", failed: false, improved: false }
+  }
+  if (row.eitherPct > pinned.eitherPct + EPS || (pinned.eitherPct === 0 && row.eitherFiles > 0)) {
+    return { verdict: "FAIL", failed: true, improved: false }
+  }
+  if (row.eitherPct < pinned.eitherPct - EPS) {
+    return { verdict: "pass-improved", failed: false, improved: true }
+  }
+  return { verdict: "pass", failed: false, improved: false }
+}
+
+/** fail → 1, needs-repin → 2, everything else → 0. A moved sample is NOT a pass. */
+function exitCodeFor(verdict: string): number {
+  return verdict === "fail" ? 1 : verdict === "needs-repin" ? 2 : 0
+}
+
 // -------------------------------------------------------------------- parent
 
+/**
+ * `--selftest`: measure ONE lane for real, then drive the gate's own comparison
+ * through every branch it claims to implement. Fails loudly when a branch cannot
+ * be reached — a lane with no failures cannot exercise the regression direction,
+ * and saying so is the point (a self-test that quietly proves half the predicate
+ * is the failure mode this repository keeps finding).
+ *
+ * Writes nothing: no evidence, no baseline.
+ */
+async function runSelfTest(): Promise<void> {
+  const lang = SCOPED_LANG ?? "c"
+  const repo = SCOPED_REPO ?? "jq"
+  const lane = laneList().find((l) => l.lang === lang && l.repo === repo)
+  if (!lane) {
+    console.error(`F10 selftest: no lane ${repo}:${lang} in the sweep's map`)
+    process.exit(2)
+  }
+
+  const work = mkdtempSync(path.join(tmpdir(), "bb-f10-selftest-"))
+  const outPath = path.join(work, "row.json")
+  const r = spawnSync(
+    process.execPath,
+    [
+      process.argv[1],
+      "--child-lang",
+      lane.lang,
+      "--child-repo",
+      lane.repo,
+      "--child-out",
+      outPath,
+      ...(SAMPLE_LIMIT > 0 ? ["--sample", String(SAMPLE_LIMIT)] : []),
+    ],
+    { stdio: ["ignore", "ignore", "inherit"], cwd: ROOT, env: process.env },
+  )
+  if (r.status !== 0 || !existsSync(outPath)) {
+    console.error(`F10 selftest: the measurement child failed (rc=${r.status}) — nothing was proven`)
+    process.exit(1)
+  }
+  const row = JSON.parse(readFileSync(outPath, "utf8"))
+  rmSync(work, { recursive: true, force: true })
+
+  const bad: string[] = []
+  const want = (label: string, got: unknown, expect: unknown) => {
+    if (got !== expect) bad.push(`${label}: expected ${String(expect)}, got ${String(got)}`)
+  }
+  const base = { sampleDigest: row.sampleDigest, eitherPct: row.eitherPct }
+
+  console.log(`\nM14.0.F10 — self-test on the real measurement of ${lane.key}`)
+  console.log(`  measured: ${row.files} files, ${row.eitherPct}% carry an ERROR node or a MISSING token`)
+
+  // Non-vacuity: a 0-file lane is the silent zero this gate exists to refuse, and
+  // a lane with NO failures cannot exercise the regression direction at all.
+  if (!(row.files > 0)) bad.push("the lane measured 0 files — the gate has nothing to watch")
+  if (!(row.eitherFiles > 0)) {
+    bad.push(
+      `the lane (${lane.key}) has no damaged file, so the FAIL direction cannot be exercised — pick a lane with a rate`,
+    )
+  }
+
+  // The predicate's five branches, on the measured row.
+  want("floor equal to the measurement passes", verdictFor(row, base, false).verdict, "pass")
+  want(
+    "floor above the measurement reports pass-improved",
+    verdictFor(row, { ...base, eitherPct: row.eitherPct + 10 }, false).verdict,
+    "pass-improved",
+  )
+  want(
+    "floor below the measurement FAILS (the regression direction)",
+    verdictFor(row, { ...base, eitherPct: Math.max(0, row.eitherPct - 10) }, false).verdict,
+    "FAIL",
+  )
+  want(
+    "a floor pinned at 0% with any damage FAILS (the hard 0% rule of #742/#743)",
+    verdictFor(row, { ...base, eitherPct: 0 }, false).verdict,
+    "FAIL",
+  )
+  want(
+    "a CLEAN lane against a 0% floor still passes (the false-positive direction)",
+    verdictFor({ ...row, eitherPct: 0, eitherFiles: 0 }, { ...base, eitherPct: 0 }, false).verdict,
+    "pass",
+  )
+  want(
+    "a moved sample is NOT a pass",
+    verdictFor(row, { ...base, sampleDigest: "0000000000000000" }, false).verdict,
+    "sample-moved",
+  )
+  want("an unpinned lane reports unpinned", verdictFor(row, undefined, false).verdict, "unpinned")
+  want("an unpinned lane under --update-baseline reports pinned", verdictFor(row, undefined, true).verdict, "pinned")
+
+  // The exit mapping, which is what a battery actually reads.
+  want("exit code for fail", exitCodeFor("fail"), 1)
+  want("exit code for needs-repin", exitCodeFor("needs-repin"), 2)
+  want("exit code for pass", exitCodeFor("pass"), 0)
+  want("exit code for pass-improved", exitCodeFor("pass-improved"), 0)
+
+  if (bad.length) {
+    console.error(`\nSELFTEST FAIL — ${bad.length} branch(es) do not behave as claimed:`)
+    for (const b of bad) console.error(`  - ${b}`)
+    process.exit(1)
+  }
+  console.log("\nSELFTEST PASS — every branch of the comparison is reachable and behaves as claimed")
+  process.exit(0)
+}
+
 async function main() {
+  if (SELFTEST) return await runSelfTest()
   if (CHILD_LANG && CHILD_REPO && CHILD_OUT) {
     const lane = laneList().find((l) => l.lang === CHILD_LANG && l.repo === CHILD_REPO)
     if (!lane) throw new Error(`unknown lane ${CHILD_REPO}:${CHILD_LANG}`)
@@ -423,15 +567,11 @@ async function main() {
       continue
     }
     const pinned = baseline.lanes[row.lane]
-    if (!pinned) row.verdict = UPDATE_BASELINE ? "pinned" : "unpinned"
-    else if (pinned.sampleDigest !== row.sampleDigest) row.verdict = "sample-moved"
-    else if (row.eitherPct > pinned.eitherPct + EPS || (pinned.eitherPct === 0 && row.eitherFiles > 0)) {
-      row.verdict = "FAIL"
-      failures++
-    } else if (row.eitherPct < pinned.eitherPct - EPS) {
-      row.verdict = "pass-improved"
-      improved++
-    } else row.verdict = "pass"
+    // The comparison is `verdictFor` — the same function the self-test drives.
+    const v = verdictFor(row, pinned, UPDATE_BASELINE)
+    row.verdict = v.verdict
+    if (v.failed) failures++
+    if (v.improved) improved++
     row.pinnedEitherPct = pinned?.eitherPct ?? null
 
     const fmt = (n: number) => `${n} (${row.files ? ((100 * n) / row.files).toFixed(1) : "0.0"}%)`
@@ -562,7 +702,7 @@ async function main() {
   if (verdict === "needs-repin") {
     console.log("\nexit 2: at least one lane could not be compared (sample moved). Re-pin with --update-baseline once the corpus is stable.")
   }
-  process.exit(verdict === "fail" ? 1 : verdict === "needs-repin" ? 2 : 0)
+  process.exit(exitCodeFor(verdict))
 }
 
 main()
