@@ -345,6 +345,26 @@
    "missing": 0,
    "unexplained": 0,
    "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
+  },
+  {
+   "repo": "phpunit",
+   "lang": "php",
+   "files": 2907,
+   "truth": 29046,
+   "covered": 29046,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
+  },
+  {
+   "repo": "phpmyadmin",
+   "lang": "php",
+   "files": 1232,
+   "truth": 42377,
+   "covered": 42377,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
   }
  ],
  "current": [
@@ -647,6 +667,26 @@
    "missing": 0,
    "unexplained": 0,
    "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
+  },
+  {
+   "repo": "phpunit",
+   "lang": "php",
+   "files": 2907,
+   "truth": 29046,
+   "covered": 29046,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
+  },
+  {
+   "repo": "phpmyadmin",
+   "lang": "php",
+   "files": 1232,
+   "truth": 42377,
+   "covered": 42377,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
   }
  ],
  "adjudicated": {
@@ -754,7 +794,7 @@
    "unexplained": 0,
    "drawsRed": 2,
    "issue": "#835 (php lane)",
-   "note": "Two full-extent draws, both 100% coverage with 0 fabrication AFTER the round's fixes; both were RED before it (phpunit MISSING=2/unexplained=13, phpmyadmin MISSING=4) and both keep their pre-fix hash, so they are same-files before/afters rather than fresh samplings."
+   "note": "Two full-extent draws, both 100% coverage with 0 fabrication after the R10 round's two fixes, both keeping the pre-fix hash (same files). The round's red draws were phpunit MISSING=2/unexplained=13 in the previous round and, for R10, phpmyadmin MISSING=4 then 0/0 — the R10 defects were found by the target-spelling census (script/m60/target-spelling-census.ts), which is the instrument that can see a spelling BOTH sides fabricate."
   }
  },
  "closedInThisRound": {
@@ -762,6 +802,7 @@
   "#838/#836 + CONV-OC-1 (framework surface)": "swift and objective-c framework payloads — declared order tables replace walk/import order, the primary pick and frameworkPatterns are published. swift-nio FULL EXTENT (554 files) and alamofire (98) recorded here; objc BOTH corpora at full extent, afnetworking 49/49 files 2,890/2,890 truth and sdwebimage 104/104 files 6,090/6,090, MISSING=0 unexplained=0.",
   "#903 (analyzer half)": "vue/svelte SFC — `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone.",
   "#825 (csharp lane) — line round + the literal-callee fabrication": "Every csharp relationship now carries the line of the node that NAMES its target (12 emit sites), pinned by csharp/callsite-lines-825 and four reverting mutants; the M59 oracle reads 23,924 relationships with 0 INCONSISTENT on a 200-file draw. The round's own measurement exposed two further classes, both fixed: (1) a `contains` edge claiming the DECLARATION's start line, which for an attributed or wrapped declaration is a line the member's name is not written on (653 of 23,924 on the draw, 100% of the round's inconsistent set) — now stamped from the name node, with a synthesised name (a constructor named `constructor`, a destructor named `Finalize`) taking NO line; (2) a wrapped qualified name carrying its LAYOUT into the target and claiming the name's first line — the ruby D3 class, found here by probing the shape (script/m14/tmp/cs-wrapped-qualified.ts). Separately, the 900-file depth draw found the literal-callee fabrication (`calls … -> false`), fixed structurally and pinned by csharp/literal-callee-recovery.",
-  "#835 (php lane) — declared-type graph, fully-qualified calls, and the callable-header read boundary": "Three defects, all found by measurement. (1) The R9 declared-type graph the lane owed was implemented (phpDeclaredTypeRefs, shared by the analyzer and the differential oracle so the class is comparable), pinned by php/declared-type-graph; its own first measurement corrected `function copy(): self`, which had published the METHOD's name as its type. (2) A fully-qualified call took its callee from RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other edge can spell: phpunit FULL EXTENT, 12 such edges, 10 of them builtins. (3) The oracle gates reads on `inBody`, whose boundary is the callable SUBTREE — the parameter list and the attribute list included — while the analyzer's extracted walk visited those positions with a SUBSET of its read rules: phpunit's only non-`calls` MISSING edge was `Result::from(..., int $shellExitCode = self::SUCCESS)`. Re-drawing after (3) exposed a fourth class the mirror could never show: `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as symbol names identically on BOTH sides, while `$postParams->$param` had the analyzer silent and the oracle emitting `uses -> $param` (phpmyadmin MISSING=4). One rule now states it on both sides: a member read names a member only when the name is a static `name` node (the anonymous `{` token discriminates, probe-verified), and a braced field's own expression reads come from the ordinary rules."
+  "#835 (php lane) — declared-type graph, fully-qualified calls, and the callable-header read boundary": "Three defects, all found by measurement. (1) The R9 declared-type graph the lane owed was implemented (phpDeclaredTypeRefs, shared by the analyzer and the differential oracle so the class is comparable), pinned by php/declared-type-graph; its own first measurement corrected `function copy(): self`, which had published the METHOD's name as its type. (2) A fully-qualified call took its callee from RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other edge can spell: phpunit FULL EXTENT, 12 such edges, 10 of them builtins. (3) The oracle gates reads on `inBody`, whose boundary is the callable SUBTREE — the parameter list and the attribute list included — while the analyzer's extracted walk visited those positions with a SUBSET of its read rules: phpunit's only non-`calls` MISSING edge was `Result::from(..., int $shellExitCode = self::SUCCESS)`. Re-drawing after (3) exposed a fourth class the mirror could never show: `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as symbol names identically on BOTH sides, while `$postParams->$param` had the analyzer silent and the oracle emitting `uses -> $param` (phpmyadmin MISSING=4). One rule now states it on both sides: a member read names a member only when the name is a static `name` node (the anonymous `{` token discriminates, probe-verified), and a braced field's own expression reads come from the ordinary rules.",
+  "#835 (php lane) — R10: the target-spelling contract (include paths and callable names)": "R10's first pass found two live php defects that no per-edge gate could see, because the differential oracle derived the same truth from the same rules and therefore AGREED with the analyzer. (1) `extractIncludePath` returned the RAW TEXT of any `binary_expression`, so `include $this->baseDir . 'revision-info.php'` (phpmyadmin src/Git.php:551) published a reconstructed EXPRESSION as the import module and as a `references` target — a spelling carrying `$`, `->`, `.` and a quote that no php symbol can be named. A path is now emitted only when EVERY operand is statically known (string, `__DIR__`/`__FILE__`/name constant, interpolated strings refused, only `.` composing), and the rule lives at module level (`phpStaticIncludePath`) so the oracle imports the analyzer's own function instead of mirroring it. (2) `processFunctionCall` took the callee node's raw text, so `$callable()` published `calls -> $callable` / `calls -> $controller` (LicenseControllerTest.php:23) — a VALUE callee published as a callee NAME. `phpStaticCallableName` now requires a name-shaped callee (probe: over 400 real files, 1,047 `name` callees and `variable_name` the ONLY non-name shape reaching the rule), and the value's read survives as the variable pass's `uses` edge. Pinned by php/include-paths (6 static paths expected, 4 pre-fix spellings forbidden — the forbids transcribed from a replay of the OLD rule, script/m14/tmp/php-include-prefix-rule.ts) and php/dynamic-callee (the honest `uses -> handler` expected AND `calls -> handler` forbidden, so the fix must move the edge, not lose it); both defects have reverting mutants, all 40 php mutants caught. phpunit FULL EXTENT 2,907/2,907 and phpmyadmin FULL EXTENT 1,232/1,232 both 100% covered, 0 MISSING, 0 unexplained, both on the pre-fix hash."
  }
 }

@@ -7008,6 +7008,39 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "touch", target: "$param", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true } }, { type: "uses", source: "touch", target: "'quoted'", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true } }] }),
   },
   {
+    id: "php/dynamic-include-path-as-expression",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description:
+      "R10 (#835) regression: the include path goes back to the RAW TEXT of any binary_expression, so a concatenation with a runtime operand publishes a reconstructed EXPRESSION as a module path and a `references` target. Reinstates the exact pre-fix observables the fixture replays with script/m14/tmp/php-include-prefix-rule.ts (`$this->baseDir.'/revision-info.php'`, `$dir.'/x.php'`, `{$dir}/interpolated.php`, `__DIR__.$suffix`) — spellings carrying `$`, `->`, `.` and a quote that no php symbol can be named, emitted IDENTICALLY by the oracle because its truth came from the same rule. Caught by php/include-paths, whose forbidImports and forbidRelationships name every one of them.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "references", source: "global", target: "$this->baseDir.'/revision-info.php'", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, includeType: "include" } },
+        { type: "references", source: "global", target: "$dir.'/x.php'", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, includeType: "include" } },
+        { type: "references", source: "global", target: "{$dir}/interpolated.php", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, includeType: "include" } },
+        { type: "references", source: "global", target: "__DIR__.$suffix", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, includeType: "include" } },
+      ],
+      imports: [
+        ...(r.imports ?? []),
+        { module: "$this->baseDir.'/revision-info.php'", items: ["*"], isDefaultImport: true, metadata: { phpSpecific: true, includeType: "include" } },
+        { module: "$dir.'/x.php'", items: ["*"], isDefaultImport: true, metadata: { phpSpecific: true, includeType: "include" } },
+      ],
+    }),
+  },
+  {
+    id: "php/dynamic-callee-as-calls-target",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description:
+      "R10 (#835) regression: a call's target goes back to the callee node's raw text, so a VALUE callee publishes a callee NAME (`calls -> handler` for `$handler()`; measured in phpmyadmin tests as `calls -> $controller`). The oracle derived the same truth from the same shape, so both sides agreed and no per-edge gate could see it. Caught by php/dynamic-callee, whose forbidRelationships names the spelling while its expects require the honest `uses -> handler` read to survive — the fix must move the edge, not lose it.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { type: "calls", source: "dispatch", target: "handler", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }],
+    }),
+  },
+  {
     id: "php/static-member-read-lost-to-braces",
     language: "php",
     defectClass: "relationship-loss",
