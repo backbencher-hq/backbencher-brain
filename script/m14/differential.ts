@@ -27,7 +27,7 @@ import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
-import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew } from "../../src/ast/real-csharp-analyzer"
+import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText } from "../../src/ast/real-csharp-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
 // one rule for both sides, never a re-implementation (see isWrappedHeadingName).
 import { macroWrappedHeadingShape, wrappedBodyAfter } from "../../src/ast/real-c-analyzer"
@@ -3266,7 +3266,12 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
   const leafOf = (t: string): string => {
     // generic_name: IComparer<Circle> -> IComparer; qualified: A.B.C -> C
     const lt = t.indexOf("<")
-    return lastSegment(lt >= 0 ? t.slice(0, lt) : t)
+    const base = lt >= 0 ? t.slice(0, lt) : t
+    // M59.A7 (#825, lockstep): the analyzer canonicalises a WRAPPED qualified
+    // base's whitespace (csharpTypeNameText), so the truth must clean the same
+    // way — otherwise the two sides compare different strings for one
+    // declaration. Shared from the analyzer, never a second copy (CSD14).
+    return lastSegment(csharpTypeNameText(base))
   }
   // Receiver wrappers the analyzer suppresses (isCSharpBuiltin: Console
   // output, Environment/GC/Debug/Trace noise). Deliberately NOT `string`/
