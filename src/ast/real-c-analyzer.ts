@@ -142,6 +142,166 @@ function firstArgumentText(argListNode: Node): string | null {
   return null
 }
 
+// #912 (M60-C): the words a C DECLARATION may put in front of a declarator —
+// storage classes, type qualifiers and type keywords. Used as the specifier
+// evidence for the CALL-shaped declarator arrival (`static block gen_last_1(
+// void) {`), where the damaged region's own tail has to prove that what
+// follows it is a declaration and not a macro invocation.
+//
+// RESERVED WORDS ONLY, deliberately, and it is MEASURED rather than cautious: a
+// typedef alias would also be spelled like a specifier, but an identifier that
+// merely LOOKS like a type can be a macro name — and a macro NAME is exactly
+// what this class otherwise hands back. Gating the arrival on the looser #907
+// header test instead (any identifier token since the previous `;`, `{` or `}`,
+// which is what admits the bare-identifier arrival) admits **33 macro DEFINITIONS
+// in sqlite** — `#define osCloseHandle ((BOOL(WINAPI*)(HANDLE))aSyscall[1].pCurrent)`,
+// whose replacement text reads as a call and whose next table entry supplies the
+// `{`, while the directive's own `#define osCloseHandle` supplies the "type"
+// token. That run published `osCloseHandle`, `osCreateFileMappingW`,
+// `osLoadLibraryW` … as functions (+33 symbols, +4 resolved `uses` edges) —
+// fabrications, not recoveries. A keyword cannot be a macro name in valid C, so
+// keyword-only is the fabrication-resistant spelling of this evidence; with it,
+// sqlite's 357 files are byte-identical before and after.
+const C_SPECIFIER_KEYWORDS = new Set([
+  "static", "extern", "auto", "register", "typedef", "inline",
+  "_Noreturn", "_Thread_local", "const", "volatile", "restrict", "_Atomic",
+  "void", "char", "short", "int", "long", "float", "double", "signed",
+  "unsigned", "_Bool", "_Complex", "struct", "union", "enum",
+])
+
+/**
+ * #912 (M60-C): the declaration-specifier run the damaged region keeps in front
+ * of a CALL-shaped declarator (the CALL node itself), or null when there is
+ * none.
+ *
+ * Shape (`jq/src/builtin.c:2067`, where the macro-driven initializer list
+ * swallowed the table's own `};`):
+ *
+ *   ERROR { `}` `;` #undef… `identifier:static` `identifier:block`
+ *           (call_expression `gen_last_1(void)`) }  `<body> {…}`
+ *
+ * Walks the call's siblings BACKWARD and collects the contiguous run of bare
+ * `identifier` tokens directly before it (comments skipped). The run ends at
+ * the first sibling of any other type — `;`, `{`, `}`, `(`, a call, a
+ * directive — and at an identifier that is the OPERAND of a preprocessor
+ * directive (`#undef LIBM_DA` lives as a SIBLING of the directive token):
+ * directive text is not declaration material. The run is capped at three
+ * tokens, the longest specifier sequence the measured shapes use.
+ *
+ * The run must hold at least one RESERVED declaration word
+ * (`C_SPECIFIER_KEYWORDS`) — see that constant for the measured reason a looser
+ * evidence test fabricates macro names instead of recovering functions.
+ *
+ * A second candidate for this gate was measured and refused: the #907 header
+ * test (`declarationHeaderPresent`), which the bare-identifier arrival uses. On
+ * the two C corpora it agrees with this predicate on every site of the class it
+ * was compared over and disagrees on a class the comparison could not see — the
+ * `#define` replacement texts above, 33 of them in sqlite — so it is strictly
+ * the wrong evidence here, and this predicate is not a duplication of it but a
+ * different question: "does the DAMAGED REGION ITSELF carry declaration words
+ * for this name", not "is there any identifier since the last terminator".
+ */
+export function declarationSpecifierRunBefore(call: Node): Node[] | null {
+  // The caller passes the CALL-shaped declarator itself, never its callee: the
+  // callee's siblings live INSIDE the call (its own argument list), so the
+  // specifier run can only be read from the call's position in the damaged
+  // region (measured — reading from the callee returns null at the very site
+  // this rule exists for, because the callee is the call's first child).
+  const run: Node[] = []
+  let s: Node | null = call.previousSibling
+  while (s && run.length < 3) {
+    if (s.type === "comment") {
+      s = s.previousSibling
+      continue
+    }
+    if (s.type !== "identifier") break
+    if (s.previousSibling?.type === "preproc_directive") break
+    run.push(s)
+    s = s.previousSibling
+  }
+  if (run.length === 0) return null
+  for (const id of run) {
+    if (C_SPECIFIER_KEYWORDS.has(id.text.trim())) return run
+  }
+  return null
+}
+
+/**
+ * Strips `/* … *\/` and `//` comments, replacing each with a space so tokens on
+ * either side stay separated.
+ */
+function stripComments(text: string): string {
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    const ch = text[i]
+    if (ch === "/" && text[i + 1] === "*") {
+      const end = text.indexOf("*/", i + 2)
+      if (end === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += " "
+      i = end + 2
+      continue
+    }
+    if (ch === "/" && text[i + 1] === "/") {
+      const nl = text.indexOf("\n", i)
+      out += " "
+      if (nl === -1) break
+      i = nl
+      continue
+    }
+    out += ch
+    i++
+  }
+  return out
+}
+
+/**
+ * Does the text carry an identifier-shaped token at all — any ASCII letter or
+ * underscore (the `[A-Za-z_]\w*` test's exact meaning: the `\w*` tail may be
+ * empty, so one such character is the whole condition).
+ */
+function hasIdentifierToken(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_") return true
+  }
+  return false
+}
+
+/**
+ * #907/#912 (M60-C): is there a declaration header — a return type and/or
+ * storage class — between the previous statement terminator and this name?
+ * The evidence is a single identifier token in the window since the last `;`,
+ * `{` or `}` (comments stripped, whitespace does not count).
+ *
+ * This is the ONE rule that decides whether a name recovery left behind is a
+ * DEFINITION rather than a mere CALL. Its three measured positive cases are
+ * `void yyerror(`, `decNumber * decNumberNormalize(`, and `static block
+ * gen_last_1(` — and the case it exists to refuse is a macro invocation with a
+ * block (`FOREACH(item) {`), which has nothing but the macro's own name in the
+ * header.
+ *
+ * Exported because the oracle imports it (`script/m14/differential.ts`, the
+ * #916 contract: one rule, never two copies). The analyzer's two arrivals for a
+ * recovery-glued header — the BARE identifier and the CALL-shaped declarator
+ * (`static block gen_last_1(void) {`, jq src/builtin.c:2067) — are admitted on
+ * exactly this evidence and nothing else, so the mirror must apply exactly this
+ * test or the two sides drift into a MISSING edge.
+ */
+export function declarationHeaderPresent(content: string, nameStart: number): boolean {
+  const from = Math.max(0, nameStart - 400)
+  const window = content.slice(from, nameStart)
+  let cut = -1
+  for (const ch of [";", "{", "}"]) {
+    const at = window.lastIndexOf(ch)
+    if (at > cut) cut = at
+  }
+  return hasIdentifierToken(stripComments(window.slice(cut + 1)))
+}
+
 /**
  * #917: is this `expression_statement` a macro-wrapped function heading, and
  * what does it declare? Returns the declared NAME, its RETURN TYPE text, the
@@ -3587,7 +3747,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           recoveredFromGlue: true,
           glueArrival: insideBody ? "body" : "file-scope",
           glueWrapped: wrapped,
-          glueNameShape: rangeNode.type === "function_declarator" ? "declarator" : "bare-identifier",
+          glueNameShape:
+            rangeNode.type === "function_declarator"
+              ? "declarator"
+              : rangeNode.type === "call_expression"
+                ? "call-declarator"
+                : "bare-identifier",
         },
       })
     }
@@ -3595,15 +3760,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * #907: the identifiers a glued definition header can expose, unwrapping the
-   * declarator forms the damaged tree actually produces. Two measured arrivals:
+   * declarator forms the damaged tree actually produces. Three measured arrivals:
    *   ERROR > function_declarator                       (jv.c `jv_number`)
    *   ERROR > pointer_declarator > function_declarator  (util.c `strptime`,
    *                                                      jv_dtoa.c `jvp_dtoa`)
+   *   ERROR > call_expression > identifier               (#912: builtin.c
+   *                                                      `static block gen_last_1(void)`)
    * Only the ERROR's own children are visited, and only through declarator
    * wrappers — a `function_declarator` nested in a struct or an argument list is
    * NOT a file-scope definition header and is deliberately unreachable here.
    */
-  private gluedDeclaratorNames(error: Node, content: string): Array<{ id: Node; wrapped: boolean; rangeNode: Node }> {
+  private gluedDeclaratorNames(
+    error: Node,
+    content: string,
+  ): Array<{ id: Node; wrapped: boolean; rangeNode: Node }> {
     const found: Array<{ id: Node; wrapped: boolean; rangeNode: Node }> = []
     const unwrap = (n: Node, depth: number, wrapped: boolean): void => {
       if (depth > 3) return
@@ -3632,6 +3802,36 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       ) {
         const inner = n.childForFieldName("declarator")
         if (inner) unwrap(inner, depth + 1, true)
+      }
+      // #912 (M60-C): the CALL-shaped declarator. When recovery absorbs the
+      // declaration's TYPE words into the ERROR and leaves the declarator
+      // behind, the damaged tree writes the definition header as a CALL —
+      // jq `src/builtin.c:2067`, inside the macro-driven initializer list that
+      // swallowed the table's own `};`:
+      //
+      //   ERROR { `}` `;` #undef… `identifier:static` `identifier:block`
+      //           (call_expression `gen_last_1(void)`) }  `<body> {…}`
+      //
+      // The declared NAME is the call's own callee, and the caller's brace test
+      // (`definitionBodyFollows`: the argument list must END at the body's `{`)
+      // still applies. The discriminator that separates this from a macro
+      // INVOCATION with a block — the entire ground on which this shape was
+      // refused in #907 — is the declaration-specifier run the region keeps in
+      // front of the call (`declarationSpecifierRunBefore` above): reserved
+      // specifier words, read from the damaged tree's own tail, which
+      // `FOREACH(item) {` cannot present and which `#define osCloseHandle ((BOOL…`
+      // cannot present either (see that predicate for the 33 fabricated sqlite
+      // functions the looser #907 header test produces here).
+      //
+      // The argument list is required to exist: without it there is no
+      // parameter list for `definitionBodyFollows` to resolve.
+      if (n.type === "call_expression") {
+        const callee = n.childForFieldName("function") ?? (n.namedChildCount > 0 ? n.namedChild(0) : null)
+        const args = n.childForFieldName("arguments") ?? childOfType(n, "argument_list")
+        if (callee && callee.type === "identifier" && args && declarationSpecifierRunBefore(n) !== null) {
+          found.push({ id: callee, wrapped, rangeNode: n })
+        }
+        return
       }
     }
     for (let i = 0; i < error.namedChildCount; i++) {
@@ -3677,54 +3877,6 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Replace `/* ... *\/` and `// ...` comments with a single space, the same
-   * rewrite the two `.replace()` calls performed: a block comment is non-greedy
-   * and may span lines, a line comment ends at (but does not consume) the
-   * newline, and an UNTERMINATED block comment is left verbatim because the
-   * original pattern could not match it either.
-   */
-  private static stripComments(text: string): string {
-    let out = ""
-    let i = 0
-    while (i < text.length) {
-      const ch = text[i]
-      if (ch === "/" && text[i + 1] === "*") {
-        const end = text.indexOf("*/", i + 2)
-        if (end === -1) {
-          out += text.slice(i)
-          break
-        }
-        out += " "
-        i = end + 2
-        continue
-      }
-      if (ch === "/" && text[i + 1] === "/") {
-        const nl = text.indexOf("\n", i)
-        out += " "
-        if (nl === -1) break
-        i = nl
-        continue
-      }
-      out += ch
-      i++
-    }
-    return out
-  }
-
-  /**
-   * Does the text carry an identifier-shaped token at all — any ASCII letter or
-   * underscore (the `[A-Za-z_]\w*` test's exact meaning: the `\w*` tail may be
-   * empty, so one such character is the whole condition).
-   */
-  private static hasIdentifierToken(text: string): boolean {
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i]
-      if ((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch === "_") return true
-    }
-    return false
-  }
-
-  /**
    * Does the text carry the keyword `static` as a WHOLE word — the `\bstatic\b`
    * test, walked so the census stays free of a new regex literal.
    */
@@ -3766,25 +3918,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * #907: is there a declaration header — a return type and/or storage class —
-   * between the previous statement terminator and this name? This is the guard
-   * that lets a bare `identifier` be read as a definition without swallowing mere
-   * CALLS, which arrive in exactly the same AST shape. Comments are stripped and
-   * whitespace does not count, so a macro invocation at the start of a line
-   * (`FOREACH(item) {`, nothing but the name before it) yields an empty header and
-   * is refused, while `void yyerror(`, `decNumber * decNumberNormalize(`, and
-   * `static block gen_last_1(` all keep a type token.
+   * #907/#912: the shared declaration-header test — see
+   * `declarationHeaderPresent`. Kept as a method because every call site in
+   * this file already has the node and the source text in hand.
    */
   private declarationHeaderBefore(id: Node, content: string): boolean {
-    const from = Math.max(0, id.startIndex - 400)
-    const window = content.slice(from, id.startIndex)
-    let cut = -1
-    for (const ch of [";", "{", "}"]) {
-      const at = window.lastIndexOf(ch)
-      if (at > cut) cut = at
-    }
-    const header = RealCAnalyzer.stripComments(window.slice(cut + 1))
-    return RealCAnalyzer.hasIdentifierToken(header)
+    return declarationHeaderPresent(content, id.startIndex)
   }
 
   /**
