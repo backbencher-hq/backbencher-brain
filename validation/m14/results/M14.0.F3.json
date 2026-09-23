@@ -56,9 +56,9 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "15/16 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-c",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
@@ -92,7 +92,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "9/9 fixtures pass",
+      "detail": "10/10 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "09b14da718a67074accd94b25dabe8c787236c89",
-  "committedAt": "2026-09-22T19:09:55-04:00",
+  "commit": "52cc5b09a48ed498871c0575a856bfb91a6e8d09",
+  "committedAt": "2026-09-22T19:58:11-04:00",
   "data": {
     "details": [
       {
@@ -2423,8 +2423,8 @@
       },
       {
         "fixture": "c/macro-wrapped-pointer-heading-918",
-        "ok": false,
-        "reason": "missing expectation file"
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "c/malloc-instantiates-noise",
@@ -2703,6 +2703,11 @@
       },
       {
         "fixture": "csharp/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/using-alias-and-operators",
         "ok": true,
         "problems": []
       },
@@ -3340,8 +3345,8 @@
     ],
     "summary": {
       "c": {
-        "fail": 1,
-        "pass": 15
+        "fail": 0,
+        "pass": 16
       },
       "clojure": {
         "fail": 0,
@@ -3353,7 +3358,7 @@
       },
       "csharp": {
         "fail": 0,
-        "pass": 9
+        "pass": 10
       },
       "dart": {
         "fail": 0,
@@ -3454,8 +3459,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-22T23:14:17.260Z",
-  "regeneratedAtCommit": "09b14da718a67074accd94b25dabe8c787236c89",
+  "regeneratedAt": "2026-09-23T00:00:38.597Z",
+  "regeneratedAtCommit": "52cc5b09a48ed498871c0575a856bfb91a6e8d09",
   "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

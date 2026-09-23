@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-22T00:04:10.608Z",
+  "generatedAt": "2026-09-23T00:03:45.652Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
-  "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
+  "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification. REGENERATED FROM HEAD BLOBS (not the working tree) by script/m14/tmp/regex-census-at-head.ts, because M49.R2 compares this artifact against scanHeadAnalyzers(): a census carrying uncommitted regexes from another lane's dirty file would read as STALE.",
   "totalRegexUsages": 27,
   "analyzersScanned": 41,
   "byClassification": {
-    "needs_review": 18,
-    "normalization": 9
+    "normalization": 11,
+    "needs_review": 16
   },
   "byReceiverCategory": {
-    "identifier": 15,
-    "node_text": 9,
+    "node_text": 11,
+    "identifier": 13,
     "other": 3
   },
   "perFile": [
@@ -201,40 +201,29 @@
       ]
     },
     {
-      "file": "real-csharp-analyzer.ts",
-      "count": 3,
+      "file": "real-c-analyzer.ts",
+      "count": 2,
       "usages": [
         {
-          "file": "real-csharp-analyzer.ts",
-          "line": 343,
-          "column": 30,
-          "source": "/using\\s+([\\w.]+)\\s*=/",
+          "file": "real-c-analyzer.ts",
+          "line": 208,
+          "column": 5,
+          "source": "/^[0-9][0-9A-Za-z_]*$/",
           "operation": "test",
-          "receiver": "node.text",
+          "receiver": "beforeName.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
           "justification": ""
         },
         {
-          "file": "real-csharp-analyzer.ts",
-          "line": 740,
-          "column": 27,
-          "source": "/\\boperator\\s+(implicit|explicit)\\s+([\\w.<>]+)/",
+          "file": "real-c-analyzer.ts",
+          "line": 2490,
+          "column": 21,
+          "source": "/^([A-Za-z_][A-Za-z0-9_]*)\\s*(=|\\()/",
           "operation": "test",
-          "receiver": "opText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-csharp-analyzer.ts",
-          "line": 741,
-          "column": 44,
-          "source": "/\\boperator\\s+(checked\\s+)?([^\\s(]+)/",
-          "operation": "test",
-          "receiver": "opText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
+          "receiver": "next.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
           "justification": ""
         }
       ]
@@ -353,6 +342,23 @@
           "receiver": "raw",
           "receiverCategory": "identifier",
           "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-ruby-analyzer.ts",
+          "line": 1696,
+          "column": 41,
+          "source": "/^<\\s*/",
+          "operation": "replace",
+          "receiver": "superNode.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
           "justification": ""
         }
       ]
