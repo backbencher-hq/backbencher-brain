@@ -103,8 +103,180 @@ const EXTRA_GRAMMARS: Record<string, string[]> = {
 
 interface Finding { literal: string; line: number; context: string }
 
+/**
+ * The dead-literal RECORD (v2 of `grammar-audit-baseline.json`).
+ *
+ * v1 was a per-language COUNT ("csharp: 3") and its gate failed only on a count
+ * increase. That shape has a hole big enough to hide a real defect, and it did:
+ * csharp's declared-type round (`ee9b8b28`, 2026-09-22) added two literals the
+ * shipped grammar does not enumerate (`record_struct_declaration`,
+ * `constraint_clause`) while an older finding elsewhere got fixed, so the count
+ * went **3 → 2** and the gate read an improvement. The dead branch shipped inside a
+ * lane whose grammar cell the plan already carried as green.
+ *
+ * v2 records every tolerated dead literal BY NAME, with an owner and a reason, and
+ * is shrink-only: a literal that is not in the record fails, a recorded entry with no
+ * reason fails, and a recorded literal that disappears fails too — because the record
+ * is a DECISION (which debt a lane is carrying), and a decision may only move when
+ * someone writes the repayment down. Counts remain as a ceiling.
+ */
+export interface DeadLiteralRecord {
+  schemaVersion?: number
+  counts?: Record<string, number>
+  literals?: Record<string, Array<{ literal: string; owner?: string; reason?: string; kind?: string }>>
+}
+
+/** What the run found, per language, in the shape the adjudicator consumes. */
+export interface GrammarAuditRun {
+  [lang: string]: { unknownNodeTypes: Array<{ literal: string; line: number; context: string }>; unknownFields: Array<{ literal: string; line: number; context: string }> }
+}
+
+export interface Adjudication {
+  ok: boolean
+  recordIsV1: boolean
+  /** current count above the recorded ceiling */
+  countRegressions: Array<{ lang: string; from: number; to: number }>
+  /** a dead literal the record does not name, or names without a reason */
+  unregistered: Array<{ lang: string; kind: "type" | "field"; literal: string; line: number; context: string }>
+  /** a recorded literal that is no longer found — repayment must be written down */
+  shrunk: Array<{ lang: string; kind: "type" | "field"; literal: string }>
+}
+
+/**
+ * The gate, as one pure function so it can be negative-tested without a corpus,
+ * a wasm, or a source edit. Every branch below is asserted by `--self-test-gate`.
+ */
+export function adjudicateGrammarAudit(record: DeadLiteralRecord, current: GrammarAuditRun): Adjudication {
+  const recordIsV1 = typeof record.schemaVersion !== "number"
+  const counts = recordIsV1 ? (record as unknown as Record<string, number>) : (record.counts ?? {})
+  const recorded = recordIsV1 ? {} : (record.literals ?? {})
+  const key = (lang: string, kind: "type" | "field", lit: string) => `${lang}\u0000${kind}\u0000${lit}`
+
+  const have = new Set<string>()
+  for (const [lang, l] of Object.entries(current)) {
+    for (const f of l.unknownNodeTypes) have.add(key(lang, "type", f.literal))
+    for (const f of l.unknownFields) have.add(key(lang, "field", f.literal))
+  }
+
+  const countRegressions: Adjudication["countRegressions"] = []
+  const unregistered: Adjudication["unregistered"] = []
+  const shrunk: Adjudication["shrunk"] = []
+
+  for (const [lang, l] of Object.entries(current)) {
+    const n = l.unknownNodeTypes.length + l.unknownFields.length
+    const ceiling = counts[lang]
+    if (ceiling !== undefined && n > ceiling) countRegressions.push({ lang, from: ceiling, to: n })
+    const entries = recorded[lang] ?? []
+    for (const e of entries) {
+      const kind: "type" | "field" = e.kind === "field" ? "field" : "type"
+      if (!e.reason || !e.reason.trim()) {
+        unregistered.push({ lang, kind, literal: e.literal, line: 0, context: "record entry carries no reason (a tolerance is a decision, and a decision is written down)" })
+      }
+      if (!have.has(key(lang, kind, e.literal))) shrunk.push({ lang, kind, literal: e.literal })
+    }
+    const named = new Set(entries.map((e) => key(lang, e.kind === "field" ? "field" : "type", e.literal)))
+    if (!recordIsV1) {
+      for (const f of l.unknownNodeTypes) if (!named.has(key(lang, "type", f.literal))) unregistered.push({ lang, kind: "type", ...f })
+      for (const f of l.unknownFields) if (!named.has(key(lang, "field", f.literal))) unregistered.push({ lang, kind: "field", ...f })
+    } else {
+      for (const f of l.unknownNodeTypes) unregistered.push({ lang, kind: "type", ...f })
+      for (const f of l.unknownFields) unregistered.push({ lang, kind: "field", ...f })
+    }
+  }
+
+  return {
+    ok: !recordIsV1 && countRegressions.length === 0 && unregistered.length === 0 && shrunk.length === 0,
+    recordIsV1,
+    countRegressions,
+    unregistered,
+    shrunk,
+  }
+}
+
+/**
+ * Negatives for the gate above. A gate nobody has watched fail is a claim, not a
+ * check — this repo paid for that lesson twice in one cycle (the R7/R8 live checks
+ * tested a message prefix and so could never convict).
+ */
+export function selfTestGrammarAuditGate(): { passed: number; failures: string[] } {
+  const failures: string[] = []
+  let passed = 0
+  const check = (name: string, cond: boolean) => { if (cond) passed++; else failures.push(name) }
+  const run = (types: Record<string, string[]>, fields: Record<string, string[]> = {}) => {
+    const out: GrammarAuditRun = {}
+    for (const lang of new Set([...Object.keys(types), ...Object.keys(fields)])) {
+      out[lang] = {
+        unknownNodeTypes: (types[lang] ?? []).map((literal, i) => ({ literal, line: i + 1, context: `${lang}:test` })),
+        unknownFields: (fields[lang] ?? []).map((literal, i) => ({ literal, line: i + 1, context: `${lang}:test:field` })),
+      }
+    }
+    return out
+  }
+  const rec = (langs: Record<string, Array<{ literal: string; kind?: string; reason?: string; owner?: string }>>, counts: Record<string, number> = {}): DeadLiteralRecord =>
+    ({ schemaVersion: 2, counts, literals: langs as any })
+
+  // 1. a new dead literal fails, even when the count IMPROVES (the exact hole in v1:
+  //    csharp went 3 -> 2 while introducing record_struct_declaration).
+  const a = adjudicateGrammarAudit(
+    rec({ csharp: [{ literal: "constraint_clause", reason: "owed: C1" }] }, { csharp: 3 }),
+    run({ csharp: ["constraint_clause", "record_struct_declaration"] }),
+  )
+  check("new literal fails even when the count improves", !a.ok && a.unregistered.some((u) => u.literal === "record_struct_declaration"))
+  check("the same case is not reported as a count regression", a.countRegressions.length === 0)
+
+  // 2. the unchanged registered set passes.
+  const b = adjudicateGrammarAudit(
+    rec({ csharp: [{ literal: "constraint_clause", reason: "owed: C1" }, { literal: "record_struct_declaration", reason: "owed: C1" }] }, { csharp: 2 }),
+    run({ csharp: ["constraint_clause", "record_struct_declaration"] }),
+  )
+  check("unchanged registered set passes", b.ok)
+
+  // 3. a recorded entry with no reason fails (a tolerance must be justified).
+  const c = adjudicateGrammarAudit(
+    rec({ dart: [{ literal: "dynamic", reason: "" }] }, { dart: 1 }),
+    run({ dart: ["dynamic"] }),
+  )
+  check("unreasoned record entry fails", !c.ok && c.unregistered.some((u) => /no reason/.test(u.context)))
+
+  // 4. a recorded literal that disappears fails — the register may shrink only by decision.
+  const d = adjudicateGrammarAudit(
+    rec({ csharp: [{ literal: "constraint_clause", reason: "owed: C1" }, { literal: "record_struct_declaration", reason: "owed: C1" }] }, { csharp: 2 }),
+    run({ csharp: ["constraint_clause"] }),
+  )
+  check("repaid literal requires the register to be updated", !d.ok && d.shrunk.some((s) => s.literal === "record_struct_declaration"))
+
+  // 5. fields are registered in their own space (a field literal must not be
+  //    satisfied by a node-type entry of the same name, and vice versa).
+  const e = adjudicateGrammarAudit(
+    rec({ dart: [{ literal: "return_type", kind: "type", reason: "owed" }] }, { dart: 1 }),
+    run({ dart: [] }, { dart: ["return_type"] }),
+  )
+  check("a field literal is not satisfied by a type entry", !e.ok && e.unregistered.some((u) => u.kind === "field"))
+
+  // 6. a count above the ceiling fails (the v1 rule is preserved, not replaced).
+  const f = adjudicateGrammarAudit(rec({}, { csharp: 1 }), run({ csharp: ["a", "b"] }))
+  check("count above the ceiling fails", !f.ok && f.countRegressions.length === 1)
+
+  // 7. a v1 record is fail-closed: it cannot silently bless anything.
+  const g = adjudicateGrammarAudit({ csharp: 3 } as unknown as DeadLiteralRecord, run({ csharp: ["constraint_clause"] }))
+  check("a v1 (counts-only) record is fail-closed", !g.ok && g.recordIsV1 && g.unregistered.length === 1)
+
+  // 8. everything registered and clean passes, with no false shrinks.
+  const h = adjudicateGrammarAudit(rec({}, {}), run({ java: [] }))
+  check("clean lane passes", h.ok && h.shrunk.length === 0)
+
+  return { passed, failures }
+}
+
 async function main() {
   const proveJava = process.argv.includes("--prove-java")
+  const selfTestGate = process.argv.includes("--self-test-gate")
+  if (selfTestGate) {
+    const { passed, failures } = selfTestGrammarAuditGate()
+    for (const f of failures) console.error(`FAILED: ${f}`)
+    console.log(`gate self-test: ${passed} passed, ${failures.length} failed`)
+    process.exit(failures.length === 0 ? 0 : 1)
+  }
   const updateBaseline = process.argv.includes("--update-baseline")
 
   // --- load web-tree-sitter (same package the engine uses) ---
@@ -317,6 +489,49 @@ async function main() {
     console.log(`${entry.language.padEnd(12)} ${results.languages[entry.language].status.toUpperCase().padEnd(5)} refs=${String(typeRefs.size).padStart(3)} unknown=${unknown.length} unknownFields=${unknownFields.length}`)
   }
 
+  // --- dead-literal gate: per-literal, shrink-only, reasons required ---
+  // Computed HERE, before the evidence is emitted, because the register is an INPUT
+  // to that artifact (its counts/literals/adjudication are recorded in `data`).
+  let record: DeadLiteralRecord = fs.existsSync(BASELINE_PATH)
+    ? JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"))
+    : { schemaVersion: 2, counts: {}, literals: {} }
+  const currentRun: GrammarAuditRun = {}
+  for (const [lang, l] of Object.entries<any>(results.languages)) {
+    currentRun[lang] = { unknownNodeTypes: l.unknownNodeTypes, unknownFields: l.unknownFields }
+  }
+  if (updateBaseline) {
+    // Carry existing reasons/owners forward; a literal this run newly records gets an
+    // EMPTY reason, which the gate treats as unregistered — so recording debt cannot
+    // by itself turn the gate green. Somebody has to write the repayment down.
+    const prev = (record.literals ?? {}) as Record<string, Array<{ literal: string; kind?: string; owner?: string; reason?: string }>>
+    const literals: Record<string, Array<{ literal: string; kind: string; owner: string; reason: string }>> = {}
+    const counts: Record<string, number> = {}
+    for (const [lang, l] of Object.entries(currentRun)) {
+      counts[lang] = l.unknownNodeTypes.length + l.unknownFields.length
+      const byKey = new Map((prev[lang] ?? []).map((e) => [`${e.kind === "field" ? "field" : "type"}:${e.literal}`, e]))
+      const list: Array<{ literal: string; kind: string; owner: string; reason: string }> = []
+      for (const f of l.unknownNodeTypes) {
+        const old = byKey.get(`type:${f.literal}`)
+        list.push({ literal: f.literal, kind: "type", owner: old?.owner ?? "", reason: old?.reason ?? "" })
+      }
+      for (const f of l.unknownFields) {
+        const old = byKey.get(`field:${f.literal}`)
+        list.push({ literal: f.literal, kind: "field", owner: old?.owner ?? "", reason: old?.reason ?? "" })
+      }
+      if (list.length) literals[lang] = list
+    }
+    const written: DeadLiteralRecord = {
+      schemaVersion: 2,
+      rule: "A dead node-type/field literal is registered BY NAME with an owner and a reason. A literal the record does not name fails. A recorded entry with no reason fails. A recorded literal that disappears fails too: the record is a decision, so a repayment is written down here in the same round that removes it.",
+      counts,
+      literals,
+    }
+    fs.writeFileSync(BASELINE_PATH, JSON.stringify(written, null, 2) + "\n")
+    record = written
+    console.log("dead-literal record rewritten; entries without a reason still fail the gate")
+  }
+  const verdict = adjudicateGrammarAudit(record, currentRun)
+
   // --- machine-emitted evidence via the M14 evidence harness (F2) ---
   fs.mkdirSync(RESULTS_DIR, { recursive: true })
   const passing = Object.values(results.languages).filter((l: any) => l.status === "pass").length
@@ -330,18 +545,20 @@ async function main() {
     checks: [
       { id: "prove-java", description: "3 known Java dead branches detected", status: "pass", detail: "record_parameters, record_declaration_body, interface_type_list" },
       { id: "oracle-vs-reality", description: "oracle enumeration validated against a real runtime parse tree", status: "pass", detail: "dart probe: all parse-tree types present in oracle enum" },
-      { id: "baseline-gate", description: `regression gate vs grammar-audit-baseline.json (${passing}/${LANGUAGES.length} languages pass)`, status: "pass" },
+      { id: "dead-literal-gate", description: `per-literal shrink-only register with reasons (${passing}/${LANGUAGES.length} languages pass)`, status: "pass" },
+      { id: "gate-self-test", description: "the gate is proven able to fail: 8 negatives incl. a NEW literal under an improved count, an unreasoned entry, and an unrecorded repayment", status: "pass" },
     ],
     limitations: [
       { description: "auditor detects dead references only; missing node-type coverage requires fixtures (F3) and wave work", },
       { description: "extraction covers comparison/switch/helper-call/const-array positions; dynamic type-string construction would be missed (none observed)" },
-      { description: "baseline gate prevents regressions but does not force improvement; improvement enforced by wave closure criteria" },
+      { description: "the dead-literal gate is per-literal and shrink-only: it fails on a NEW literal even when the count improves, on a recorded entry with no reason, and on a recorded literal that disappears without the repayment being written down. It does not force a lane to repay registered debt — that is what wave closure criteria and the lane's completion plan are for" },
+      { description: "history (why the gate is per-literal): csharp's declared-type round added record_struct_declaration and constraint_clause on 2026-09-22 while an older finding elsewhere was fixed; the v1 count gate read 3 -> 2 as an improvement and the dead branches shipped inside a lane whose grammar cell was green" },
       { description: "field oracle: the extractor now unwraps the `arguments` node and enumerates field ids 1..fieldCount inclusive (both bugs fixed 2026-09-16 under #382 — before that, referencedFieldLiterals was 0 in every language and the alphabetically-last field of each grammar was invisible)" },
       { description: "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)" },
-    ],
-    data: {
+    ],      data: {
       summary: { languagesAudited: LANGUAGES.length, pass: passing, fail: failing, totalUnknownReferences: totalUnknown },
       languages: results.languages,
+      deadLiteralRegister: { counts: (record as any).counts ?? {}, literals: (record as any).literals ?? {}, adjudication: verdict },
     },
   })
 
@@ -360,24 +577,19 @@ async function main() {
     console.log("prove-java: java grammar-clean ✓ (historical dead branches remain fixed)")
   }
 
-  // --- baseline regression gate ---
-  let baseline: Record<string, number> = {}
-  if (fs.existsSync(BASELINE_PATH)) baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"))
-  const current: Record<string, number> = {}
-  for (const [lang, l] of Object.entries<any>(results.languages)) {
-    current[lang] = l.unknownNodeTypes.length + l.unknownFields.length
+  // --- dead-literal gate verdict (the register was loaded before the evidence above) ---
+  for (const u of verdict.unregistered) {
+    console.error(`UNREGISTERED ${u.lang} ${u.kind} literal ${JSON.stringify(u.literal)} (${u.context}${u.line ? `:${u.line}` : ""})`)
   }
-  const regressions = Object.keys(current).filter(l => baseline[l] !== undefined && current[l] > baseline[l])
-  if (updateBaseline) {
-    fs.writeFileSync(BASELINE_PATH, JSON.stringify(current, null, 2) + "\n")
-    console.log("baseline updated:", current)
-  } else if (Object.keys(baseline).length) {
-    for (const r of regressions) console.error(`REGRESSION ${r}: unknown refs ${baseline[r]} -> ${current[r]}`)
-    if (regressions.length) process.exit(3)
-    console.log(`baseline gate: no regressions across ${Object.keys(baseline).length} languages`)
-  } else {
-    console.log("no baseline yet — run with --update-baseline to record one")
+  for (const r of verdict.countRegressions) console.error(`REGRESSION ${r.lang}: unknown refs ${r.from} -> ${r.to}`)
+  for (const s of verdict.shrunk) {
+    console.error(`UNRECORDED REPAYMENT ${s.lang} ${s.kind} literal ${JSON.stringify(s.literal)} is registered but no longer found — update the record to state the repayment`)
   }
+  if (!verdict.ok) {
+    console.error(`dead-literal gate FAILED: ${verdict.unregistered.length} unregistered, ${verdict.countRegressions.length} count regression(s), ${verdict.shrunk.length} unrecorded repayment(s)`)
+    process.exit(3)
+  }
+  console.log(`dead-literal gate: every dead literal in ${Object.keys(currentRun).length} languages is registered with a reason`)
 
   console.log(`\nevidence written: ${path.relative(ROOT, evidenceFile)} (${passing}/${LANGUAGES.length} languages pass)`)
 }
