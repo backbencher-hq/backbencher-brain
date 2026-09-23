@@ -642,4 +642,9 @@ async function main() {
   console.log(`wrote ${path.relative(ROOT, OUT)}`)
 }
 
-main()
+// Entry guarded: `filesFor` (the shared draw rule) is imported by the family's other
+// instruments (unscanned-shape-census, c923-interface-member-census), and an unguarded call
+// made every such import run all 24 lanes and REWRITE this census's committed artifact from
+// whatever tree happened to be checked out. Entry points in this repo use `import.meta.main`
+// (script/m13/verify-evidence.ts, src/cli/index.ts).
+if (import.meta.main) main()

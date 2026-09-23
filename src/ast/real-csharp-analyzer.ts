@@ -312,6 +312,28 @@ interface OverrideTask {
   line?: number
 }
 
+/**
+ * C923 (#923): one member declaration that may satisfy an interface member.
+ *
+ * C# needs NO keyword to satisfy an interface, so the `override`-modifier machinery above
+ * cannot see either form — `class C : IFoo { public void M() {} }` (implicit) and
+ * `class C : IFoo { void IFoo.M() {} }` (explicit) both publish no member-level edge at all.
+ * Tasks are collected during the walk and resolved AFTER it, because C# lets an interface be
+ * declared below its implementor (the same reason `OverrideTask` is a deferred pass).
+ */
+interface InterfaceImplTask {
+  /** The declaring member's local edge label (`Owner.member`) — see `localEdgeLabel`. */
+  fqn: string
+  /** The declaring type's FQN: the key `classHierarchy` records bases under. */
+  ownerFqn: string
+  memberName: string
+  /** The interface the declaration WRITES (`void IFoo.M()`), else null (implicit form). */
+  explicitIface: string | null
+  /** The name node's line (the member contract's site convention, M59.A7); `undefined` is an
+   *  honest no-line, never a fabricated 0. */
+  line?: number
+}
+
 interface StackItem {
   node: Node
   parentContext?: Scope
@@ -833,6 +855,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
     const overrideTasks: OverrideTask[] = []
+    // C923 (#923): member-level interface implementation. `interfaceTasks` holds the
+    // IMPLEMENTING declarations, `interfaceMembers` the CONTRACT each in-file interface declares
+    // (keyed by both its FQN and its local name, so a base list written either way resolves).
+    const interfaceTasks: InterfaceImplTask[] = []
+    const interfaceMembers = new Map<string, Set<string>>()
+    // C923 (#923): the member names each in-file CLASS declares, so the implicit resolution can
+    // stop at a base class that already fills the interface slot (C#: a derived member hidden
+    // with `new` — or redeclared without it — does NOT become the interface implementation; the
+    // base class's member already is. Continuing through it would publish a fabricated edge).
+    const classMembers = new Map<string, Set<string>>()
     // In-file declared type name -> kind. Built in a pre-pass so base-list
     // kind resolution works regardless of declaration order (C# allows a
     // class to implement an interface declared later in the same file).
@@ -1168,6 +1200,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         classHierarchy.set(fullName, parents)
+        // C923 (#923): ALSO key the raw name. A base list writes the type as the source spells it
+        // (`class C : IThingEx`), while this map is keyed by FQN — so an INTERFACE's own base list
+        // (`interface IThingEx : IThing`) was unreachable from its implementors, and the member
+        // contract could not see the chained contract at all (measured on the C923 fixture:
+        // `Chain.GetName -> IThing.GetName` was missing while `Chain.Extra` was present).
+        // Set only when free, so a bare name can never shadow a real FQN key.
+        if (rawName !== fullName && !classHierarchy.has(rawName)) classHierarchy.set(rawName, parents)
 
         // Generic type parameters (no symbols — suppressed like Java)
         const typeParamsNode = this.findChild(node, "type_parameter_list")
@@ -1337,6 +1376,18 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const child = varDecl.namedChild(i)
             if (child && child.type === "variable_declarator") {
               const name = this.childText(child, "identifier") || "anonymous"
+              // C923 (#923): a field-like event satisfies an interface event by the same rule.
+              this.collectMemberContract(
+                node,
+                name,
+                parentContext,
+                parentContext ? parentContext.fqn : "",
+                parentContext ? `${parentContext.rawName}.${name}` : name,
+                interfaceTasks,
+                interfaceMembers,
+                classMembers,
+                this.findChild(child, (n) => n.type === "identifier") ?? undefined,
+              )
               symbols.push({
                 name,
                 kind: ASTEngine.SymbolKind.Event,
@@ -1406,6 +1457,18 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const typeNode = this.findChild(
           node,
           (n) => n.type === "qualified_name" || ((n.type === "identifier" || n.type === "generic_name") && n.id !== nameNode?.id),
+        )
+        // C923 (#923): the ACCESSOR-form event is also a member the contract covers — and it is
+        // the only form that can carry an explicit interface specifier in C#.
+        this.collectMemberContract(
+          node,
+          name,
+          parentContext,
+          parentContext ? parentContext.fqn : "",
+          parentContext ? `${parentContext.rawName}.${name}` : name,
+          interfaceTasks,
+          interfaceMembers,
+          classMembers,
         )
         symbols.push({
           name,
@@ -1577,6 +1640,8 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         symbols.push(sym)
         symbolMap.set(fqn, sym)
         symbolMap.set(localOwnerPrefix, sym)
+
+        this.collectMemberContract(node, name, parentContext, ownerFqn, localOwnerPrefix, interfaceTasks, interfaceMembers, classMembers)
 
         if (this.hasModifier(node, "override")) {
           overrideTasks.push({
@@ -1776,6 +1841,20 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           complexity: this.calculateCyclomaticComplexity(node),
           metadata: { hasGet, hasSet, hasInit, isAutoProperty, dataType },
         })
+        // C923 (#923): a property satisfies an interface property by the same rule a method
+        // does, and the census measured the property form as 21% of all explicit interface
+        // members (75 of 352) and 29% of the resolvable implicit ones (145 of 503) — a
+        // methods-only contract would leave them permanently unwitnessed.
+        this.collectMemberContract(
+          node,
+          name,
+          parentContext,
+          parentContext ? parentContext.fqn : "",
+          parentContext ? `${parentContext.rawName}.${name}` : name,
+          interfaceTasks,
+          interfaceMembers,
+          classMembers,
+        )
         // Push a property/indexer scope so calls inside a getter/setter/accessor
         // body attribute to the property (csharp #264 Station-6: setter bodies
         // like `this.NotifyPropertyChanged(...)` were dropped because the
@@ -1834,6 +1913,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // cross-file companion (interface-over-superclass), then deterministic
     // first-parent fallback. Mirrors Java/Kotlin/Scala/Groovy semantics.
     this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion)
+    // C923 (#923): the member-level implements contract — explicit always (the interface is
+    // written in the source), implicit only where the contract is KNOWN (in-file always; a
+    // cross-file interface only when the caller supplies the member companion, the family's
+    // sanctioned index). No branch guesses an unknown external interface's member set.
+    this.resolveInterfaceImplementations(interfaceTasks, classHierarchy, interfaceMembers, classMembers, relationships)
 
     // Rewrite using-directive reference sources from "root" to the file's
     // primary type (first top-level type declared). Top-level types live
@@ -2245,6 +2329,170 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const child = n.namedChild(i)
         if (child) stack.push(child)
       }
+    }
+  }
+
+  /**
+   * C923 (#923): record one member declaration for the interface-implementation contract — or,
+   * when the declaration IS the interface's, record the CONTRACT it declares.
+   *
+   * The contract side is indexed under BOTH the interface's FQN and its local name, because a
+   * base-list entry is written either way (`class C : IFoo` / `class C : Ns.IFoo`), and the
+   * resolution below looks the ancestor up by the name the base list actually wrote.
+   */
+  private collectMemberContract(
+    node: Node,
+    name: string,
+    parentContext: Scope | undefined,
+    ownerFqn: string,
+    localLabel: string,
+    tasks: InterfaceImplTask[],
+    members: Map<string, Set<string>>,
+    classMembers: Map<string, Set<string>>,
+    lineNode?: Node,
+  ): void {
+    if (!parentContext) return
+    const kind = parentContext.kind
+    if (
+      kind !== ASTEngine.SymbolKind.Class &&
+      kind !== ASTEngine.SymbolKind.Struct &&
+      kind !== ASTEngine.SymbolKind.Interface
+    ) {
+      return
+    }
+    if (parentContext.isInterface) {
+      for (const key of [parentContext.fqn, parentContext.rawName]) {
+        if (!key) continue
+        let set = members.get(key)
+        if (!set) {
+          set = new Set<string>()
+          members.set(key, set)
+        }
+        set.add(name)
+      }
+      return
+    }
+    for (const key of [parentContext.fqn, parentContext.rawName]) {
+      if (!key) continue
+      let set = classMembers.get(key)
+      if (!set) {
+        set = new Set<string>()
+        classMembers.set(key, set)
+      }
+      set.add(name)
+    }
+    tasks.push({
+      fqn: localLabel,
+      ownerFqn,
+      memberName: name,
+      explicitIface: this.explicitInterfaceName(node),
+      // M59.A7: the NAME node's line. A field-like event writes its name on a
+      // `variable_declarator`, not on the declaration's `name` field, so the caller passes that
+      // node — otherwise the edge is stamped with an honest-but-avoidable no-line.
+      line: this.nodeLine(lineNode ?? this.declarationNameNode(node)),
+    })
+  }
+
+  /**
+   * The interface an explicit interface member writes (`void IFoo.M()` → `IFoo`). The trailing
+   * `.` is punctuation, not part of the name, so it is cut by a linear scan (no regex).
+   */
+  private explicitInterfaceName(node: Node): string | null {
+    const spec = this.findChild(node, (n) => n.type === "explicit_interface_specifier")
+    if (!spec) return null
+    const cleaned = this.cleanTypeName(spec.text)
+    let end = cleaned.length
+    while (end > 0) {
+      const c = cleaned.charCodeAt(end - 1)
+      if (c === 46 || c === 32 || c === 9 || c === 10 || c === 13) end--
+      else break
+    }
+    const name = cleaned.slice(0, end)
+    return name.length > 0 ? name : null
+  }
+
+  /**
+   * C923 (#923): the member-level implements contract, mirroring the family's five-lane
+   * precedent (`overrides M -> I.m`, measured in java, kotlin, typescript, dart and python).
+   *
+   *   explicit (`void IFoo.M()`): ALWAYS. The interface is written in the declaration, so the
+   *     edge is derivable from the tree alone at any scope — measured on csharp's two pinned
+   *     corpora, 215 of 352 explicit members name an interface the corpus text never declares,
+   *     so requiring resolution would drop 61% of a class that needs none.
+   *   implicit (a member that satisfies a base-list interface): only where the member set of
+   *     that interface is KNOWN, which is the case exactly when the interface is declared in
+   *     this file. An interface the analyzer cannot see stays an honest no-edge (measured in the
+   *     full extent: 273 member declarations whose contract lives in another file, and 2,107
+   *     types whose bases are not in the corpus text at all — both disclosed, neither guessed).
+   *
+   * No caller context is consulted, deliberately: a rule that changes with an optional companion
+   * would be a rule a fixture cannot pin (fixtures pass no context), and the family's own doctrine
+   * is that nothing ships unverified. The cross-file extension is measured and registered as an
+   * open scope limit instead (issue #923).
+   *
+   * First ancestor in declaration order that both IS an interface and declares the member wins —
+   * the family's rule for a name-keyed target (cf. findDeclaringParent).
+   */
+  private resolveInterfaceImplementations(
+    tasks: InterfaceImplTask[],
+    classHierarchy: Map<string, string[]>,
+    interfaceMembers: Map<string, Set<string>>,
+    classMembers: Map<string, Set<string>>,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    if (tasks.length === 0) return
+    // `interfaceMembers` holds ONLY interfaces declared in this file (both raw and FQN keys),
+    // so membership IS the known-contract test — no kind lookup is needed, and an external
+    // interface cannot reach this branch even by name collision.
+    const declaresMember = (iface: string, member: string): boolean =>
+      interfaceMembers.get(iface)?.has(member) === true
+
+    // One member, one edge: an overload set cannot publish the same (source, target) twice.
+    const emitted = new Set<string>()
+    for (const task of tasks) {
+      let target: string | null = null
+      if (task.explicitIface) {
+        target = `${task.explicitIface}.${task.memberName}`
+      } else if (task.ownerFqn) {
+        const queue: string[] = [...(classHierarchy.get(task.ownerFqn) ?? [])]
+        const seen = new Set<string>()
+        while (queue.length > 0) {
+          const parent = queue.shift()!
+          if (seen.has(parent)) continue
+          seen.add(parent)
+          if (declaresMember(parent, task.memberName)) {
+            target = `${parent}.${task.memberName}`
+            break
+          }
+          // A base CLASS that declares the same member already owns the interface slot
+          // (C# interface mapping binds to the most-derived *implementation*, and a member
+          // redeclared over it is a hide/re-implementation, which this rule deliberately does
+          // not claim — an incompleteness recorded on #923, never a fabrication).
+          if (classMembers.get(parent)?.has(task.memberName)) continue
+          for (const next of classHierarchy.get(parent) ?? []) {
+            if (!seen.has(next)) queue.push(next)
+          }
+        }
+      }
+      if (!target) continue
+      const source = localEdgeLabel(task.fqn)
+      const label = localEdgeLabel(target)
+      if (!source || !label) continue
+      const key = `${source}|${label}`
+      if (emitted.has(key)) continue
+      emitted.add(key)
+      relationships.push({
+        source,
+        target: label,
+        type: ASTEngine.RelationshipType.Overrides,
+        confidence: 1.0,
+        line_number: task.line,
+        metadata: {
+          relationshipType: "interface_member_implementation",
+          isCSharpInterfaceImpl: true,
+          explicitInterfaceMember: task.explicitIface != null,
+        },
+      })
     }
   }
 

@@ -705,4 +705,8 @@ async function main() {
   process.exit(exitCodeFor(verdict))
 }
 
-main()
+// Entry guarded (C923 sweep): an unguarded call makes every future IMPORT of F10 run the whole
+// corpus parse sweep — and `process.exit` inside it would kill the importing process. Measured
+// live on the sibling target-spelling-census.ts. `import.meta.main` is this repo's entry-point
+// idiom (script/m13/verify-evidence.ts, src/cli/index.ts).
+if (import.meta.main) main()
