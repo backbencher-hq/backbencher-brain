@@ -39,7 +39,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { macroDeclaredBody } from "../../src/ast/real-cpp-analyzer"
+import { macroDeclaredBody, qualifiedDeclaratorLeaf } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -1781,19 +1781,19 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
           if (ptr) decl = (ptr.namedChildren ?? []).find((c: any) => c.type === "function_declarator")
         }
         const qid = decl?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
-        const nm = qid ? qid.namedChild(qid.namedChildCount - 1)?.text : decl?.namedChildren?.find((c: any) => c.type === "identifier" || c.type === "field_identifier")?.text
+        // #924 MIRROR: a qualifier is an OWNER only when a real `::` token joins
+        // it to the name; the phantom join is the grammar's record of a return
+        // type it could not place (`FMT_API std::system_error vwindows_error`).
+        // The analyzer reads the same exported rule, not a copy of it.
+        const qparts = qid ? qualifiedDeclaratorLeaf(qid) : null
+        const nm = qparts ? qparts.nameNode.text : decl?.namedChildren?.find((c: any) => c.type === "identifier" || c.type === "field_identifier")?.text
         // CP7 mirror: nested qualification (`Outer::Inner::m`) nests
         // RIGHT-leaning as qid[ns Outer, qid[ns Inner, m]] — the owning
         // scope is the INNERMOST qualifier (`Inner`, matching the
         // analyzer's descended scope and the member registry keys).
         // Descend to the deepest qualifier, then take the first scope-ish
         // child (namespace/type/identifier/template).
-        let scopeQid: any = qid ?? null
-        while (scopeQid) {
-          const last = scopeQid.namedChild(scopeQid.namedChildCount - 1)
-          if (last && last.type === "qualified_identifier") scopeQid = last
-          else break
-        }
+        const scopeQid: any = qparts?.scopeQid ?? null
         const scNode = scopeQid ? scopeQid.namedChildren?.find((c: any) => c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier" || c.type === "template_type") : null
         const sc = cleanScope(scNode)
         // CP2 mirror: macro-function shapes (`TEST(a, b) {...}` — ALL-CAPS
@@ -2091,14 +2091,9 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
       {
         const q2 = decl?.namedChildren?.find((c: any) => c.type === "qualified_identifier")
         if (q2) {
-          // CP7 mirror: descend to the innermost qualifier (same rule as
-          // the pre-pass flush and the analyzer's getFunctionDetails).
-          let sq: any = q2
-          while (sq) {
-            const last = sq.namedChild(sq.namedChildCount - 1)
-            if (last && last.type === "qualified_identifier") sq = last
-            else break
-          }
+          // CP7 + #924 mirror: deepest qualifier, and ONLY when the join is a
+          // real `::` (same exported rule the analyzer reads).
+          const sq: any = qualifiedDeclaratorLeaf(q2)?.scopeQid ?? null
           const scNode2 = sq?.namedChildren?.find((c: any) => c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier" || c.type === "template_type")
           fnCls = cleanScope(scNode2)
         }

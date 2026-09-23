@@ -2640,6 +2640,78 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "cpp/qualified-declarator-name-glue",
+    language: "cpp",
+    defectClass: "name-surface",
+    description:
+      "#924 (M60, cpp's second name-surface class) regression: the qualified-declarator read goes back to the OUTER qid's last named segment, so a return type the grammar could not place and rejoined to the name by whitespace is published as part of the NAME, and its tail as the OWNER — `FMT_API std::system_error vwindows_error(...)` becomes name `system_error vwindows_error` owned by a class `system_error`. Faithful by construction: the glued form is re-derived from the result's own source line (the type token run that ends at the name), and a prefix ending in a real `::` is left alone, which is exactly what the pre-fix code did for genuine qualified declarators. Caught by cpp/qualified-declarator-name-924, which pins the bare names, the real owners, and forbids the glued names and the phantom owners; measured pre-fix impact on the two pinned cpp corpora is 33 whitespace names plus 152 symbols owned by a class that does not exist.",
+    transform: (r: any, source?: string) => {
+      const text: string = typeof source === "string" ? source : (typeof r.rawContent === "string" ? r.rawContent : "")
+      if (!text) return r
+      const lines = text.split("\n")
+      // For each published name, find the declaration on its own line and read
+      // the token run immediately before it: if that run ends in `::` the join
+      // was real and the pre-fix code read the bare name (leave it alone);
+      // otherwise the run's last token is the tail of a misplaced return type,
+      // which is what the pre-fix code glued onto the name and took as owner.
+      // The pre-fix read was the OUTER qid's last named segment, and that node is a
+      // qid only when the grammar produced one — which is exactly the shape a macro
+      // standing before the return type forces. Reproduce it from the source the
+      // same way, token-wise:
+      //   `A::B::m(`    2+ qualifier segments -> name `B::m`, owner `B`
+      //   `T A::m(`     qualified type        -> name `<T-tail> m`, owner `<T-tail>`
+      //   `MACRO T m(`  macro + single type    -> name unchanged, owner `T` (the
+      //                                          qid had two named children, so the
+      //                                          name read landed on the identifier)
+      //   `void m(`     no macro, no qualifier -> unchanged (the grammar needs none)
+      const glue = new Map<string, { name: string; owner: string }>()
+      const names = new Set<string>()
+      for (const s of r.symbols ?? []) {
+        const n = String(s.name ?? "")
+        if (n && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n)) names.add(n)
+      }
+      const isMacroToken = (t: string): boolean => /^[A-Z][A-Z0-9_]*_?$/.test(t) && /[A-Z]/.test(t)
+      for (const line of lines) {
+        if (line.trimStart().startsWith("#")) continue
+        for (const n of names) {
+          const at = line.indexOf(n + "(")
+          if (at < 0) continue
+          let i = at - 1
+          while (i >= 0 && /[\w:<>,.*&\s]/.test(line[i])) i--
+          const run = line.slice(i + 1, at)
+          const trimmed = run.trimEnd()
+          if (!trimmed) continue
+          const tokens = trimmed.split(/\s+/)
+          if (trimmed.endsWith("::")) {
+            const segs = tokens.slice(-1)[0].split("::").filter(Boolean)
+            if (segs.length >= 2) glue.set(n, { name: `${segs.slice(-2).join("::")}`, owner: segs[segs.length - 2] })
+            continue
+          }
+          const tailRaw = tokens[tokens.length - 1]
+          const tail = tailRaw.split("::").filter(Boolean).pop()!.replace(/^[*&]+/, "")
+          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tail)) continue
+          if (tailRaw.includes("::")) glue.set(n, { name: `${tail} ${n}`, owner: tail })
+          else if (tokens.slice(0, -1).some(isMacroToken)) glue.set(n, { name: n, owner: tail })
+        }
+      }
+      if (glue.size === 0) return r
+      const symbols = (r.symbols ?? []).map((s: any) => {
+        const g = glue.get(String(s.name ?? ""))
+        if (!g) return s
+        return { ...s, name: g.name, ownerName: g.owner, owner: g.owner }
+      })
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        // BOTH endpoints carry the published name (the pre-fix analyzer wrote the
+        // edge's source from the symbol's own name), so both move together.
+        const g = glue.get(String(x.target ?? ""))
+        const gs = glue.get(String(x.source ?? x.from ?? x.fromSymbol ?? ""))
+        if (!g && !gs) return x
+        return { ...x, ...(g ? { target: g.name } : {}), ...(gs ? { source: gs.name } : {}) }
+      })
+      return { ...r, symbols, relationships }
+    },
+  },
+  {
     id: "vue/delegated-line-not-shifted",
     language: "vue",
     defectClass: "line-attribution",
@@ -4916,8 +4988,8 @@ export const MUTANTS: Mutant[] = [
     id: "cpp/nested-scope-silence",
     language: "cpp",
     defectClass: "relationship-loss",
-    description: "CP7 second-review regression: nested qualification scopes to the outer segment — bare member reads in Outer::Inner::m go silent (bare-value-reads expects uses Inner::step->n)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "Inner::step" && normRel(x).target === "n")) }),
+    description: "CP7 second-review regression: nested qualification scopes to the outer segment — bare member reads in Outer::Inner::m go silent (bare-value-reads expects uses step->n). NOTE (#924): the edge's source was spelled `Inner::step` until the lane's name read was fixed — that qualified spelling WAS this defect leaking into the name, so the filter names the method `step` and the fixture's pin moved with it; the mutant's behaviour (the read goes silent) is unchanged.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "step" && normRel(x).target === "n")) }),
   },
   {
     id: "cpp/structured-binding-reads",
