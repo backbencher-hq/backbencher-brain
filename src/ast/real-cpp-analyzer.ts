@@ -779,7 +779,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility: parentContext?.visibility || "public",
             ownerName: parentContext?.name,
             ownerKind: parentContext?.kind,
-            metadata: { isTypeAlias: true, isUsingDeclaration: true },
+            // #921: the type NAME's own line (a wrapped alias writes it below).
+            metadata: { isTypeAlias: true, isUsingDeclaration: true, nameLine: this.nodeLine(nameNode) },
           })
         }
       } else if (type === "type_definition" || node.text.startsWith("typedef")) {
@@ -792,7 +793,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility: parentContext?.visibility || "public",
             ownerName: parentContext?.name,
             ownerKind: parentContext?.kind,
-            metadata: { isTypeAlias: true },
+            metadata: { isTypeAlias: true, nameLine: this.nodeLine(typeId) },
           })
         }
       } else if (type === "preproc_include") {
@@ -998,6 +999,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             isCppClass: true,
             isTemplate,
             baseClasses,
+            // #921: the class NAME's own line (`template <…>` puts it below).
+            nameLine: this.nameLine(node),
           },
         }
         symbols.push(sym)
@@ -1047,6 +1050,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           pushedScope = true
         }
       } else if (type === "enum_specifier") {
+        const enumNameNode = node.childForFieldName("name") || this.findChild(node, "type_identifier")
         const name = this.childText(node, "type_identifier") || "anonymous"
         let isEnumClass = false
         for (let i = 0; i < node.childCount; i++) {
@@ -1064,7 +1068,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           visibility: parentContext?.visibility || "public",
           ownerName: parentContext?.name,
           ownerKind: parentContext?.kind,
-          metadata: { isCppEnum: true, isEnumClass, isScopedEnum: isEnumClass },
+          metadata: { isCppEnum: true, isEnumClass, isScopedEnum: isEnumClass, nameLine: this.nodeLine(enumNameNode) },
         })
         newContext = {
           node,
@@ -1099,7 +1103,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         let isVirtual = this.hasDirectModifier(node, "virtual") || this.hasDirectModifier(node, "override")
 
         if (funcDetails) {
-          const { name: funcName, scope: explicitScope, isDestructor, isOperator } = funcDetails
+          const { name: funcName, scope: explicitScope, isDestructor, isOperator, nameNode: funcNameNode } = funcDetails
 
           // CP2: macro-function shapes (`TEST(a, b) {...}`) declare no real
           // function — `TEST` is not a name in the source — BUT the body is
@@ -1234,6 +1238,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               isConstructor,
               isDestructor,
               isOperatorOverload: isOperator,
+              // #921 (M60): the line the declared NAME is written on. A wrapped
+              // return type puts it below the declaration's start
+              // (`void NORETURN` then `CheckFailed(const char *file, …)`), and the
+              // containment edge this symbol may own has to name THAT line — the
+              // rule every other relationship type already follows. Absent when
+              // the tree gives no name node (the containment edge then falls back
+              // to the symbol range, which is the pre-#921 behaviour).
+              nameLine: this.nodeLine(funcNameNode),
             },
           }
           // Override tracking. The OLD code stored registries on `this`
@@ -1376,12 +1388,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                   isConstexpr,
                   isStatic,
                   isConst,
+                  // #921: the declared NAME's own line — `struct { … } options;`
+                  // and a wrapped type both write it below the declaration start.
+                  nameLine: this.nodeLine(idNode),
                 },
               })
             }
           }
         }
       } else if (type === "enumerator") {
+        const enumeratorNameNode = node.childForFieldName("name") || this.findChild(node, "identifier")
         const name = this.childText(node, "identifier")
         if (name) {
           // CP1: function-local enumerators bind locals too (shadow
@@ -1401,7 +1417,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             visibility: "public",
             ownerName: parentContext?.name,
             ownerKind: parentContext?.kind,
-            metadata: { isCppEnumMember: true },
+            metadata: { isCppEnumMember: true, nameLine: this.nodeLine(enumeratorNameNode) },
           })
         }
       } else if (type === "field_expression") {
@@ -1830,9 +1846,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
-          // M59.A7 (#825), the C lane's rule: a contains edge takes the CHILD's
-          // own line, so it can never disagree with the symbol range it mirrors.
-          line_number: s.range?.startLine,
+          // M59.A7 (#825) + #921 (M60): a contains edge takes the CHILD's line,
+          // and "the child's line" means the line that NAMES it — the rule every
+          // other relationship type already follows (`nameLine`) and the rule the
+          // M59 Tier A oracle checks. The symbol's RANGE still starts at its whole
+          // declaration node (search, edit anchors and the M73 line base read
+          // that), so the two are no longer forced to agree: a wrapped return
+          // type used to put the edge on the declaration's first line, where the
+          // name is not written (`void NORETURN` then `CheckFailed(…)`).
+          line_number: (s.metadata as any)?.nameLine ?? s.range?.startLine,
           metadata: {},
         })
       }
@@ -2223,9 +2245,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * #921 (M60): `nameNode` is the node whose text IS the declared name (the
+   * qualified form returns its LAST named child, the constructor/destructor and
+   * operator spellings included). The containment edge needs the line that
+   * NAMES the child — a wrapped return type puts the name one or more lines
+   * below the declaration's start (`void NORETURN` then `CheckFailed(…)`).
+   */
   private getFunctionDetails(
     node: Node,
-  ): { name: string; scope?: string; isDestructor: boolean; isOperator: boolean } | null {
+  ): { name: string; scope?: string; isDestructor: boolean; isOperator: boolean; nameNode: Node } | null {
     let decl = this.findChild(node, "function_declarator")
     if (!decl) {
       const ptr = this.findChild(node, "pointer_declarator") || this.findChild(node, "reference_declarator")
@@ -2242,6 +2271,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.findChild(decl, "qualified_identifier")
 
     if (!nameNode) return null
+    // #921: the node the returned name was READ FROM, kept so the caller can ask
+    // the tree (not a text search) where the name is written.
+    let namedNode: Node = nameNode
 
     let name = nameNode.text
     let scope: string | undefined = undefined
@@ -2298,13 +2330,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (actualNameNode) {
         name = actualNameNode.text
+        namedNode = actualNameNode
         if (scopeNode) scope = scopeNode.text
         if (actualNameNode.type === "destructor_name" || name.startsWith("~")) isDestructor = true
         if (actualNameNode.type === "operator_name" || name.startsWith("operator")) isOperator = true
       }
     }
 
-    return { name, scope, isDestructor, isOperator }
+    return { name, scope, isDestructor, isOperator, nameNode: namedNode }
   }
 
   // ≡ /^[A-Za-z_]\w*$/ (zero-regex helper, M49 closure wave) — full-string

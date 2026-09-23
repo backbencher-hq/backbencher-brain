@@ -1756,11 +1756,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: s.name,
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1.0,
-        // M59.A7 (#825): a contains edge moves WITH its symbol — the child's own
-        // declaration line, so the edge and the symbol range can never disagree
-        // (the JVM lesson). Measured: 0/7,974 sqlite+jq symbols carry a name that
-        // is absent from this line, so the contract's name-on-line rule holds.
-        line_number: s.range?.startLine,
+        // M59.A7 (#825) + #921 (M60): a contains edge moves WITH its symbol, but
+        // "the child's line" is the line that NAMES it (the rule every other
+        // relationship type follows, and the rule the M59 Tier A oracle checks),
+        // while the symbol's RANGE stays the whole declaration node — search, edit
+        // anchors and the M73 line base read that. The two were the same thing
+        // only because a member's declaration usually starts on its name's line.
+        line_number: (s.metadata as any)?.nameLine ?? s.range?.startLine,
         metadata: {},
       })
     }
@@ -2102,7 +2104,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ownerName: structName,
                   ownerKind: ASTEngine.SymbolKind.Type,
                   visibility: "public",
-                  metadata: { isStructField: true, cSpecific: true, isConditional },
+                  // #921 (M60): the line that NAMES the field, not the declaration's
+                  // start — a wrapped member type (`unsigned long long` then the
+                  // name) writes the name below it, and this symbol's containment
+                  // edge has to name THAT line.
+                  metadata: { isStructField: true, cSpecific: true, isConditional, nameLine: this.nodeLine(declNode) },
                 })
               }
             }
@@ -2215,7 +2221,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ownerName: unionName,
                   ownerKind: ASTEngine.SymbolKind.Type,
                   visibility: "public",
-                  metadata: { isUnionField: true, cSpecific: true, isConditional },
+                  metadata: { isUnionField: true, cSpecific: true, isConditional, nameLine: this.nodeLine(declNode) },
                 })
               }
             }
@@ -2292,7 +2298,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               ownerName: enumName,
               ownerKind: ASTEngine.SymbolKind.Enum,
               visibility: "public",
-              metadata: { isEnumValue: true, cSpecific: true, isConditional },
+              metadata: { isEnumValue: true, cSpecific: true, isConditional, nameLine: this.nodeLine(enumNameNode) },
             })
           }
         }
