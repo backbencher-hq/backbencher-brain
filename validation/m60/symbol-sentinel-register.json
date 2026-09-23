@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M60",
   "rule": "R7",
-  "purpose": "No analyzer may NAME something with a placeholder literal. When a fallback has nothing truthful to say the honest state is ABSENCE, not the string \"unknown\" — a literal in a name-bearing field becomes a symbol (or edge endpoint) that does not exist in the source. Registered like the regex debt: entries are keyed by source statement (not line, because positions move on every edit and statements do not) with an exact count, so an added site and a deleted one are both deliberate acts.",
+  "purpose": "No analyzer may NAME something with a placeholder literal. When a fallback has nothing truthful to say the honest state is ABSENCE, not the string \"unknown\" \u2014 a literal in a name-bearing field becomes a symbol (or edge endpoint) that does not exist in the source. Registered like the regex debt: entries are keyed by source statement (not line, because positions move on every edit and statements do not) with an exact count, so an added site and a deleted one are both deliberate acts.",
   "establishedAt": "2026-09-21",
   "baseline": {
     "occurrences": 62,
@@ -13,7 +13,7 @@
     "violations": 0,
     "note": "Owner standard: the seven OO lanes must reach zero. The paydown is lane work with fixtures and mutants, not a register edit. R7 meanwhile makes the class un-recurrable (a new site, or a new site at a registered statement, fails the gate) and forbids a registered site from vanishing without a deliberate shrink."
   },
-  "runtimeOwed": "STATIC ONLY SO FAR. The census proves a source site exists and what shape it has; it does not prove the site fires. The runtime half — no emitted row may carry a placeholder in a name field — must be measured over a corpus draw (the M59 oracle / M14 differential harness on the lane tokens). This field is the disclosure that it is outstanding, not a claim that it is done.",
+  "runtimeOwed": "STATIC ONLY SO FAR, and the gap is now measured lane by lane rather than disclosed in the abstract. The census proves a source site exists and what shape it has; it does not prove the site fires, and it does not prove that no EMITTED row carries a placeholder. script/m14/tmp/cs-placeholder-runtime-probe.ts walks every emitted name-bearing field (symbol name, ownerName, parameter name, relationship source/target, import module) over a real corpus draw and convicts a value only when the FILE DOES NOT WRITE IT \u2014 the first two runs convicting 154 `Null` and 22 `Unknown`/`Anonymous` values were all real members of powershell and fsharp, which is why a value-only runtime rule is not trustworthy. Measured: csharp 0 fabricated names over 300 files (powershell 150 + fsharp 150), so this lane's `|| \"anonymous\"` fallbacks (15 sites) never fire on real code. The other lanes are still static-only, and each needs its own draw before the class can be called closed at runtime.",
   "counts": {
     "entries": 35,
     "violations": 47
@@ -30,7 +30,7 @@
       "lines": [
         1385
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-c-analyzer.ts",
@@ -44,7 +44,7 @@
         1494,
         1607
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-clojure-analyzer.ts",
@@ -57,7 +57,7 @@
       "lines": [
         1020
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-clojure-analyzer.ts",
@@ -74,7 +74,7 @@
         910,
         1009
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -87,7 +87,7 @@
       "lines": [
         963
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -100,7 +100,7 @@
       "lines": [
         1103
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -113,7 +113,7 @@
       "lines": [
         1226
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -126,7 +126,7 @@
       "lines": [
         1028
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -139,7 +139,7 @@
       "lines": [
         1001
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -152,7 +152,7 @@
       "lines": [
         1151
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -165,7 +165,7 @@
       "lines": [
         986
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -178,7 +178,7 @@
       "lines": [
         1151
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-elixir-analyzer.ts",
@@ -191,7 +191,7 @@
       "lines": [
         962
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-hcl-analyzer.ts",
@@ -204,7 +204,7 @@
       "lines": [
         186
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-java-analyzer.ts",
@@ -217,7 +217,7 @@
       "lines": [
         1626
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-java-analyzer.ts",
@@ -230,7 +230,7 @@
       "lines": [
         536
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-java-analyzer.ts",
@@ -243,7 +243,7 @@
       "lines": [
         2657
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-java-analyzer.ts",
@@ -256,7 +256,7 @@
       "lines": [
         2684
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-json-analyzer.ts",
@@ -269,7 +269,7 @@
       "lines": [
         472
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-json-analyzer.ts",
@@ -282,7 +282,7 @@
       "lines": [
         369
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-perl-analyzer.ts",
@@ -295,7 +295,7 @@
       "lines": [
         432
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-rust-analyzer.ts",
@@ -308,7 +308,7 @@
       "lines": [
         1175
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-scala-analyzer.ts",
@@ -321,7 +321,7 @@
       "lines": [
         2386
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-scala-analyzer.ts",
@@ -334,7 +334,7 @@
       "lines": [
         454
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -348,7 +348,7 @@
         1083,
         1091
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -361,7 +361,7 @@
       "lines": [
         839
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -374,7 +374,7 @@
       "lines": [
         2477
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -388,7 +388,7 @@
         2486,
         2852
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -401,7 +401,7 @@
       "lines": [
         3168
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -421,7 +421,7 @@
         1253,
         1308
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -443,7 +443,7 @@
         1305,
         1308
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -456,7 +456,7 @@
       "lines": [
         2900
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-typescript-analyzer.ts",
@@ -469,7 +469,7 @@
       "lines": [
         809
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-yaml-analyzer.ts",
@@ -482,7 +482,7 @@
       "lines": [
         592
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
       "file": "real-yaml-analyzer.ts",
@@ -498,7 +498,7 @@
         579,
         590
       ],
-      "note": "baseline snapshot 2026-09-21 — per-site adjudication owed by the owning lane (not this wave)."
+      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     }
   ],
   "shrunkBy": [
@@ -520,8 +520,8 @@
       ],
       "violationsBefore": 49,
       "violationsAfter": 48,
-      "note": "The removal is real but the LIVE census count did not move, because a NEW site landed in the c lane in the same window (real-c-analyzer.ts:2494, `parameters.push({ name: \"unknown\", … })`, arriving with the c lane's #917 commits). The gate convicts it by KEY rather than by count — which is exactly why both halves exist: the count test alone would have seen 49 -> 49 and called it unchanged.",
-      "evidence": "validation/m14/fixtures/csharp/param-type-honesty (lane 9/9) + mutation-csharp-unknown-parameter-type (0 -> 1 failure) + mutation-csharp-parameter-name-as-type (0 -> 1) + mutation-csharp-varargs-parameter-dropped (0 -> 1) + mutation-csharp-blank-parameter-name (0 -> 1), each caught by that fixture alone. The site's two reachable arms were measured first (script/m14/tmp/cs-param-type-probe.ts: `void M(int a, b)` published type `\"b\"` — the parameter's own NAME — and 0 of 12,946 parameters over a 400-file powershell draw ever reached either arm on well-formed code), and the fix's own new code was measured the same way (script/m14/tmp/cs-param-noname-tree.ts: `void M(params int[])` published `{ name: \"\" }`, a blank from the grammar's recovery identifier)."
+      "note": "The removal is real but the LIVE census count did not move, because a NEW site landed in the c lane in the same window (real-c-analyzer.ts:2494, `parameters.push({ name: \"unknown\", \u2026 })`, arriving with the c lane's #917 commits). The gate convicts it by KEY rather than by count \u2014 which is exactly why both halves exist: the count test alone would have seen 49 -> 49 and called it unchanged.",
+      "evidence": "validation/m14/fixtures/csharp/param-type-honesty (lane 9/9) + mutation-csharp-unknown-parameter-type (0 -> 1 failure) + mutation-csharp-parameter-name-as-type (0 -> 1) + mutation-csharp-varargs-parameter-dropped (0 -> 1) + mutation-csharp-blank-parameter-name (0 -> 1), each caught by that fixture alone. The site's two reachable arms were measured first (script/m14/tmp/cs-param-type-probe.ts: `void M(int a, b)` published type `\"b\"` \u2014 the parameter's own NAME \u2014 and 0 of 12,946 parameters over a 400-file powershell draw ever reached either arm on well-formed code), and the fix's own new code was measured the same way (script/m14/tmp/cs-param-noname-tree.ts: `void M(params int[])` published `{ name: \"\" }`, a blank from the grammar's recovery identifier)."
     },
     {
       "at": "2026-09-22",
@@ -531,7 +531,27 @@
       ],
       "violationsBefore": 48,
       "violationsAfter": 47,
-      "evidence": "PROVEN UNREACHABLE rather than fixed blind, because the two are different findings: script/m14/tmp/py-module-unknown-probe.ts drives 19 shapes through the analyzer and shows that every parse yielding an `import_from_statement` hands the handler a named child for the module (the module on well-formed input, the imported ITEM on damaged input — `from import c` publishes module `c`), while every shape that would leave `moduleName` empty (`from`, `from . import`, `from (`) produces no import_from_statement node at all. The fallback had no reachable state behind it, so it is now an absence: the import row is still published (its items are real names) with `module` omitted, and the `module:item` relationship — which needs a module to have a target — is emitted only when there is one. No fixture can reach it and no mutant can inject it, so the probe IS the evidence; the same treatment the php lane's two unreachable markers got."
+      "evidence": "PROVEN UNREACHABLE rather than fixed blind, because the two are different findings: script/m14/tmp/py-module-unknown-probe.ts drives 19 shapes through the analyzer and shows that every parse yielding an `import_from_statement` hands the handler a named child for the module (the module on well-formed input, the imported ITEM on damaged input \u2014 `from import c` publishes module `c`), while every shape that would leave `moduleName` empty (`from`, `from . import`, `from (`) produces no import_from_statement node at all. The fallback had no reachable state behind it, so it is now an absence: the import row is still published (its items are real names) with `module` omitted, and the `module:item` relationship \u2014 which needs a module to have a target \u2014 is emitted only when there is one. No fixture can reach it and no mutant can inject it, so the probe IS the evidence; the same treatment the php lane's two unreachable markers got."
     }
-  ]
+  ],
+  "runtimeMeasured": {
+    "csharp": {
+      "at": "2026-09-22",
+      "probe": "script/m14/tmp/cs-placeholder-runtime-probe.ts",
+      "corpora": [
+        "powershell (150 files, capped)",
+        "fsharp (150 files, capped)"
+      ],
+      "fieldsChecked": [
+        "symbol.name",
+        "symbol.ownerName",
+        "parameter.name",
+        "relationship.source",
+        "relationship.target",
+        "import.module"
+      ],
+      "fabricatedNames": 0,
+      "note": "Every name-shaped literal the lane emitted (`Unknown`, `Anonymous`, `Null`) is written in the file that emitted it. The 15 `|| \"anonymous\"` fallbacks in the analyzer are therefore damaged-tree paths, not live fabrications \u2014 the measurement the owner decision about widening the marker rule needed."
+    }
+  }
 }
