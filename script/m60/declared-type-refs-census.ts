@@ -190,7 +190,12 @@ async function main() {
   }
   mkdirSync(path.dirname(OUT), { recursive: true })
   writeFileSync(OUT, JSON.stringify(payload, null, 2) + "\n")
-  console.log(`\n${payload.present}/${payload.lanes} present; absent: ${payload.absent.join(", ") || "none"}; not-exercised: ${payload.notExercised.join(", ") || "none"}; errored: ${payload.errored.join(", ") || "none"}`)
+  // The summary printed `undefined` here until 2026-09-22: it read a `present`
+  // field the payload never had, so the one line a reader scans for the verdict
+  // showed nothing. The count is derived from the same field the register's
+  // baseline uses.
+  const presentTotal = payload.presentDeclaredType + payload.presentOtherMarker.length
+  console.log(`\n${presentTotal}/${payload.lanes} present (${payload.presentDeclaredType} declared_type${payload.presentOtherMarker.length ? ` + ${payload.presentOtherMarker.join(",")} under another marker` : ""}); absent: ${payload.absent.join(", ") || "none"}; not-exercised: ${payload.notExercised.join(", ") || "none"}; errored: ${payload.errored.join(", ") || "none"}`)
   console.log(`wrote ${path.relative(ROOT, OUT)}`)
 }
 
