@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T00:53:27.080Z",
+  "snapshotAt": "2026-09-23T09:10:17.105Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 118,
+  "count": 117,
   "issues": [
     {
       "number": 134,
@@ -701,13 +701,6 @@
       "number": 914,
       "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
       "labels": []
-    },
-    {
-      "number": 919,
-      "title": "cpp: a CALL-shaped macro heading (`TEST(a, b) { … }`) publishes its body's reads at `global` — 186 sites, 84 of them at file scope",
-      "labels": [
-        "lang:cpp"
-      ]
     }
   ]
 }
