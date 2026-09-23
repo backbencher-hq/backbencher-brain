@@ -1066,12 +1066,27 @@ export namespace ASTEngine {
     // === UNIVERSAL C/C++ AST ILLUSION FIX ===
     // Strip compiler extensions & common macro keywords by replacing them with exact spaces.
     // This preserves exact byte bounds and line numbers for Tree-sitter across ANY C/C++ codebase (Linux, Redis, etc.)
+    //
+    // #920 (M60-C, found by the M59 Tier A oracle on the zig corpus): the two
+    // MULTI-LINE patterns below are the only ones that can span a newline, and
+    // blanking them with `" ".repeat(len)` kept the BYTE count while DESTROYING
+    // every newline inside the match — so each `__attribute__(( … ))` written
+    // across lines removed one (or more) rows from the text the parser sees, and
+    // every node AFTER it was stamped one (or more) lines too small. Measured, and
+    // it is not a rounding error: `zig/lib/libc/wasi/libc-bottom-half/sources/
+    // __wasilibc_real.c` lost 138 rows, 76 of zig's 14,032 C/C++ files lose at
+    // least one, and on the M59 120-file c/cpp sample 783 landed relationships
+    // carried a line that does not even contain the name they claim (98 in c,
+    // 682 in cpp — 1.28% / 3.52%, the whole of the oracle's INCONSISTENT column).
+    // Blanking to spaces EXCEPT newlines keeps the byte offsets identical (the
+    // safety primitives' masking contract) AND keeps `startPosition.row` honest.
+    const blankKeepingNewlines = (match: string): string => match.replace(/[^\n]/g, " ")
     if (language === "c" || language === "cpp") {
       content = content
         // Match __attribute__((...)) across multiple lines
-        .replace(/__attribute__\s*\(\([\s\S]*?\)\)/g, (match) => " ".repeat(match.length))
+        .replace(/__attribute__\s*\(\([\s\S]*?\)\)/g, blankKeepingNewlines)
         // Match MSVC __declspec(...)
-        .replace(/__declspec\s*\([\s\S]*?\)/g, (match) => " ".repeat(match.length))
+        .replace(/__declspec\s*\([\s\S]*?\)/g, blankKeepingNewlines)
         // Standard universal compiler directives
         .replace(/__restrict__/g, "            ")
         .replace(/__restrict/g, "          ")

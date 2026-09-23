@@ -31,7 +31,12 @@ import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNa
 import { phpDeclaredTypeRefs, phpStaticIncludePath, phpStaticCallableName } from "../../src/ast/real-php-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
 // one rule for both sides, never a re-implementation (see isWrappedHeadingName).
-import { macroWrappedHeadingShape, wrappedBodyAfter } from "../../src/ast/real-c-analyzer"
+import {
+  macroWrappedHeadingShape,
+  wrappedBodyAfter,
+  declarationHeaderPresent,
+  declarationSpecifierRunBefore,
+} from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
 import { macroDeclaredBody } from "../../src/ast/real-cpp-analyzer"
@@ -2434,11 +2439,23 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
     }
     // Arrival 2: the name IS the ERROR's direct child (decNumber.c, where the
     // return type and the declarator node are both gone).
-    const bare = !declarator && n.parent?.type === "ERROR"
-    if (!declarator && !bare) return false
+    // Arrival 3 (#912): the CALL-shaped declarator — recovery absorbed the TYPE
+    // words into the ERROR and the definition header now reads as a call
+    // (`static block gen_last_1(void)`, jq src/builtin.c:2067). It is admitted on
+    // STRICTER evidence than arrival 2 (`bare` below): the damaged region's own
+    // tail must carry a reserved declaration word just before the call. A macro
+    // INVOCATION with a block (`FOREACH(item) {`) has none, and neither has a
+    // `#define` replacement text (`#define osCloseHandle ((BOOL…`), so the shapes
+    // #912 was originally refused over stay refused on both sides.
+    const callArrival =
+      !declarator && n.parent?.type === "call_expression" && n.parent.childForFieldName("function")?.startIndex === n.startIndex
+        ? n.parent
+        : null
+    const bare = !declarator && !callArrival && n.parent?.type === "ERROR"
+    if (!declarator && !bare && !callArrival) return false
     // A `declaration`/`function_definition` wrapper on the way to the ERROR
     // means an ordinary prototype the analyzer's own pre-pass already catalogs.
-    let w: any = declarator ? declarator.parent : n.parent
+    let w: any = declarator ? declarator.parent : callArrival ? callArrival.parent : n.parent
     let sawError = false
     while (w) {
       if (w.type === "declaration" || w.type === "function_definition") return false
@@ -2479,21 +2496,19 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
       }
       mac = mac.parent
     }
-    // (c) a BARE identifier declares only with a type/storage header before it;
-    // a call has the identical shape (`FOREACH(item) {`).
-    if (bare) {
-      const from = Math.max(0, n.startIndex - 400)
-      const win = src.slice(from, n.startIndex)
-      let cut = -1
-      for (const ch of [";", "{", "}"]) {
-        const at = win.lastIndexOf(ch)
-        if (at > cut) cut = at
-      }
-      const header = win.slice(cut + 1)
-        .replace(/\/\*[\s\S]*?\*\//g, " ")
-        .replace(/\/\/[^\n]*/g, " ")
-      if (!/[A-Za-z_]\w*/.test(header)) return false
-    }
+    // (c1) a CALL-shaped declarator (#912) rests on the analyzer's OWN exported
+    // predicate — `declarationSpecifierRunBefore` — rather than on a copy of it:
+    // the run of reserved declaration words the damaged region keeps in front of
+    // the call (`static block gen_last_1(`). A macro invocation cannot present
+    // it, which is what keeps the two sides refusing the same shapes; and the
+    // looser header test would ADMIT `#define osCloseHandle ((BOOL…` (33 of them
+    // in sqlite), so it is not used here on either side.
+    if (callArrival && declarationSpecifierRunBefore(callArrival) === null) return false
+    // (c2) a BARE identifier declares only with a type/storage header before it.
+    // #912 made that rule an export (`declarationHeaderPresent`) so this side can
+    // stop holding its own regex copy of it: one rule, two consumers, and a
+    // change to it can no longer land on one side only.
+    if (bare && !declarationHeaderPresent(src, n.startIndex)) return false
     return true
   }
   // #917 MIRROR — and it is the SAME CODE, not a copy: the shape rule is
