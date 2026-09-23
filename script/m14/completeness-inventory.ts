@@ -91,14 +91,23 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-c-analyzer.md"],
     differentialCheck: "differential-c",
     perfKey: "jq:c",
-    // C-D4 (Holy C wave, 2026-09-05, pinned @60/lang): the four generated
-    // amalgamation files (jimsh0.c, libcmpp.c, sqlite3-jni.c, sqlite3-wasm.c)
-    // and the C-D2 no-macro-expansion boundary leave jq:c at 4 missing / 28
-    // unexplained — the honest floor. sqlite:c (home) carries 9/105 from the
-    // same classes. No real C corpus reaches 0/0 (macro-mangle artifacts are
-    // everywhere), so section E validates against this documented residual
-    // instead of the clean 0/0 milestone.
-    floorResidual: { missing: 4, unexplained: 28, ruling: "C-D4" },
+    // C-D4 (Holy C wave, 2026-09-05, pinned @60/lang) recorded the residual its
+    // wave could not reach: jq:c 4 missing / 28 unexplained, sqlite:c 9/105, all
+    // of it in the four GENERATED amalgamation files (jimsh0.c, libcmpp.c,
+    // sqlite3-jni.c, sqlite3-wasm.c) behind the C-D2 no-macro-expansion
+    // boundary. THAT RESIDUAL IS NOW CLOSED and the ruling is re-pinned
+    // (2026-09-23) to the clean milestone, which is what section E enforces:
+    // both pinned rows read 0 missing / 0 unexplained (validation/m14/
+    // differential-baseline.json — jq:c sampleSetHash 2b743b65d0eac283, sqlite:c
+    // ef6794727cd236d8), independently confirmed the same day by the M14.0.F5 lane
+    // probes through the production entry (jq:c 45 files tree-truth 2930/2930
+    // MISSING=0 unexplained=0 heuristic=0; sqlite:c 60 files 5863/5863, both 0).
+    // The waves that closed it are named in C-D4's own record. Re-pinning is the
+    // gate's documented path — "a future fix that lowers the residual must update
+    // both, the ledger stays truthful" — and it makes the floor STRICTER, not
+    // looser: any regression now fails instead of fitting under a documented
+    // allowance that no longer describes the code.
+    floorResidual: { missing: 0, unexplained: 0, ruling: "C-D4" },
     requiredKinds: ["uses", "references", "exports", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "c/complexity-and-payloads" },
