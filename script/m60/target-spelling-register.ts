@@ -53,6 +53,16 @@ for (const row of census.rows) {
   // (the one subclass R10 owns) to `matchesOwnSymbol` without this failing until
   // the writer is re-run deliberately.
   const subclasses: Record<string, number> = row.whitespaceSubclasses ?? {}
+  // C2b: the RULED half of the split (measured, not convicted) and the hand-written
+  // reason for each ruled sub-class — preserved by key like `rulings`, and required:
+  // a ruled sub-class with no written reason fails the gate.
+  const ruled: Record<string, number> = row.whitespaceRuled ?? {}
+  const subclassRulings: Record<string, string | null> = old?.subclassRulings ?? {}
+  for (const k of Object.keys(ruled)) if (!(k in subclassRulings)) subclassRulings[k] = null
+  if (old) {
+    const oldRuled = JSON.stringify(old.whitespaceRuled ?? {})
+    if (oldRuled !== JSON.stringify(ruled)) changed.push(`${lang}: whitespace RULED counts ${oldRuled} -> ${JSON.stringify(ruled)}`)
+  }
   if (old) {
     const oldConv = JSON.stringify(old.convictions ?? {})
     if (oldConv !== JSON.stringify(convictions)) changed.push(`${lang}: convictions ${oldConv} -> ${JSON.stringify(convictions)}`)
@@ -68,6 +78,9 @@ for (const row of census.rows) {
     convictionSamples: (row.anomalies ?? []).slice(0, 8).map((a: any) => ({ klass: a.klass, type: a.type, target: String(a.target).slice(0, 80) })),
     convictionSubclasses: subclasses,
     convictionSubclassSamples: row.whitespaceSamples ?? [],
+    whitespaceRuled: ruled,
+    whitespaceRuledSamples: row.whitespaceRuledSamples ?? [],
+    subclassRulings,
     separatorTriples,
     rulings,
     note,
@@ -95,6 +108,8 @@ const payload = {
       whitespace:
         "the target contains a space, tab or newline. CONVICTING, but SPLIT BY OWNER before it is acted on, because the rationale this class was first convicted on ('no identifier in any of these languages may contain whitespace') is REFUTED by the artifact — the same way the first draft of `separator` was refuted, and the retraction is recorded rather than quietly dropped. Measured (script/m14/tmp/r10-whitespace-split-probe.ts, on the real corpus files the artifact names): scala and groovy DO declare identifiers containing whitespace (scala's `` `popAll preserves iteration order` `` and groovy's `test entity with trait property` are quoted method names) and their lanes publish the very same string as a SYMBOL name, so the target is honest. `whitespaceSubclasses` on every lane pins the split exactly, and each subclass routes: `operatorMember` (the whole last dotted segment is `operator` + whitespace + a token) is the C2b member-NAMING question and not a spelling one — csharp's `operator ==` is its own symbol's name and the containment edge agrees; `payloadSigil` (the target begins with `@`) is a decorator/annotation payload or a sigil-quoted identifier published as if it were a name; `matchesOwnSymbol` means the lane is SELF-CONSISTENT — the string is one of the names that lane itself publishes, so no per-edge gate can adjudicate it (this holds for the honest quoted names AND for the lanes whose published name carries the quoting syntax, kotlin's `` `test char column read and write` `` and zig's `@\"zls env\"`, AND for a lane that publishes an EXPRESSION as a name, haskell's `M1 i c` and scala's `A, B` — three different owners, which is why it is routed and not excused); `sourceText` (the string is not a name the lane declares at all — a comment, a call expression, a type expression) is the only subclass R10 itself owns. Every subclass count is compared EXACTLY by the gate, so a target cannot be reclassified without re-running this writer. The routed halves are cited where they are owned: every lane whose split carries `matchesOwnSymbol` or `payloadSigil` counts now cites #924 (`M60 name surface`), and #924's definition of done requires exactly that citation, so a routed conviction is a handoff rather than an excuse.",
       delimiter: "the target contains `;`, `(`, `)`, `{`, `}` or `,` — statement and grouping syntax, never part of a name",
+      whitespaceRuled_operatorMember:
+        "RULED 2026-09-23 (owner decision, C2b): a whitespace-bearing OPERATOR MEMBER name (`operator ==`, `operator ?`, `operator <`, `operator()`, `implicit Box<Plain>`) is a NAMING CONVENTION of the lane's contract, not a fabrication, so it is measured and pinned but NOT convicted. The ruling is evidence-backed: (1) it is exactly what the declaration writes — the grammar spells an operator declaration `operator` + whitespace + the token, and the lane's containment edge agrees; (2) the lane already publishes a whitespace-bearing operator name BY DESIGN — csharp's conversion operators are `implicit Box<Plain>` (pinned in qualified-type-spelling.expectation.json, `implicit int` in payload-and-complexity) and using-alias-and-operators.expectation.json states in its own rationale that 'every ordinary operator keeps its exact pre-R1 spelling (`operator +`, `operator checked +`, `operator ==`, `implicit int`), because the whole lane's expectations name these symbols' — convicting one half of the convention would contradict the half that is pinned and mutated; (3) 'referenceable' was never the test — no source in these languages references an operator member by name (operators are invoked, `a == b`, never named), so it does not distinguish a convention from a fabrication here. The ruled counts remain pinned in `whitespaceRuled` and inside `whitespaceSubclasses`, so a lane emitting a new operator-member shape fails the gate until the register is rewritten, and every ruled sub-class must carry a WRITTEN REASON in `subclassRulings` — an unreasoned ruling fails exactly as an unruled separator triple does. The class's other three mechanisms keep their convictions.",
     },
     reported: {
       separator:

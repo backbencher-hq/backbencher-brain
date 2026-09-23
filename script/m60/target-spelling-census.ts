@@ -256,6 +256,44 @@ function classifyWhitespace(target: string, ownSymbolNames: Set<string>): Whites
   return "sourceText"
 }
 
+// C2b — the operator-member NAMING RULING (owner decision, 2026-09-23).
+//
+// A whitespace-bearing operator member name (`operator ==`, `implicit Box<Plain>`,
+// `operator ?`, `operator <`) is a NAMING CONVENTION of the lane's contract, not a
+// fabricated spelling, so it is RULED rather than convicted. Why the ruling went this
+// way, measured rather than argued:
+//
+//   1. It is exactly what the declaration writes. The grammar spells an operator
+//      declaration `operator` + whitespace + the token, so the published name is
+//      source-faithful, and the lane's own containment edge agrees with it.
+//   2. The lane ALREADY publishes a whitespace-bearing operator name by design.
+//      csharp's conversion operators are named `implicit Box<Plain>` — pinned in
+//      validation/m14/fixtures/csharp/qualified-type-spelling.expectation.json and
+//      `implicit int` in payload-and-complexity — and
+//      using-alias-and-operators.expectation.json states the contract in its own
+//      rationale: "every ordinary operator keeps its exact pre-R1 spelling
+//      (`operator +`, `operator checked +`, `operator ==`, `implicit int`), because the
+//      whole lane's expectations name these symbols". Convicting one half of that
+//      convention would contradict the other half, which is pinned and mutated.
+//   3. "Referenceable" was never the operative test. No source in these languages
+//      references an operator member by name — operators are invoked
+//      (`a == b`), never named — so the argument this class was first convicted on
+//      ("a name containing whitespace can never be referenced by source") does not
+//      distinguish a convention from a fabrication here.
+//
+// What the ruling does NOT do: stop measuring it. A ruled sub-class is still counted
+// in `whitespaceSubclasses` and in `whitespaceRuled`, so the surface is pinned exactly
+// (a lane that starts emitting a new operator-member shape fails the gate until the
+// register is re-written), and every ruled sub-class must carry a WRITTEN REASON in the
+// register — an unreasoned ruling fails, exactly like an unruled separator triple.
+// The class's other three mechanisms keep their convictions.
+const RULED_WHITESPACE_SUBCLASSES = new Set<WhitespaceSubclass>(["operatorMember"])
+
+/** A whitespace target is CONVICTED unless its mechanism has been ruled a convention. */
+function isConvictedWhitespace(sub: WhitespaceSubclass): boolean {
+  return !RULED_WHITESPACE_SUBCLASSES.has(sub)
+}
+
 /** The split's own gate. A pure function nobody tests is a claim, not an instrument. */
 function whitespaceSplitSelfTest(): { passed: number; failed: string[] } {
   const own = new Set([
@@ -299,6 +337,19 @@ function whitespaceSplitSelfTest(): { passed: number; failed: string[] } {
   if (classifyWhitespace("test entity with trait property", new Set()) !== "sourceText") {
     failed.push("control: the same string is not sourceText for a lane that does not declare it")
   } else passed++
+  // C2b: the ruling must exempt the CONVENTION and nothing else. A ruling that leaked
+  // into another mechanism would launder a real fabrication, so the exemption is
+  // asserted in both directions.
+  const rulingCases: Array<[WhitespaceSubclass, boolean]> = [
+    ["operatorMember", false],
+    ["payloadSigil", true],
+    ["matchesOwnSymbol", true],
+    ["sourceText", true],
+  ]
+  for (const [sub, convicted] of rulingCases) {
+    if (isConvictedWhitespace(sub) === convicted) passed++
+    else failed.push(`ruling: ${sub} should be ${convicted ? "convicted" : "ruled (exempt)"}`)
+  }
   return { passed, failed }
 }
 
@@ -391,6 +442,9 @@ async function main() {
     // deliberately NOT here: ruby's own method `Hash.[]` is spelled with them.
     const DELIMITERS = ";(){},"
     const anomalies: Array<{ target: string; type: string; chars: string[]; klass: string; file: string; subclass?: string }> = []
+    // C2b: whitespace targets whose mechanism is a RULED convention — measured and
+    // pinned exactly like the convicted ones, but not counted as a conviction.
+    const ruledWhitespace: Array<{ target: string; type: string; chars: string[]; klass: string; file: string; subclass?: string }> = []
     // Every (lang, type, char) triple the lane's targets actually exercise, so the
     // register can be adjudicated exactly rather than by eyeballing samples.
     const separatorTriples: Array<{ target: string; type: string; chars: string[]; file: string }> = []
@@ -417,14 +471,12 @@ async function main() {
       const spaces = symbolish ? chars.filter((c) => c === " " || c === "\t" || c === "\n" || c === "\r") : []
       const delims = symbolish ? chars.filter((c) => DELIMITERS.includes(c)) : []
       if (spaces.length > 0) {
-        anomalies.push({
-          target: t.target,
-          type: t.type,
-          chars: spaces,
-          klass: "whitespace",
-          file: t.file,
-          subclass: classifyWhitespace(t.target, symNameSet),
-        })
+        const sub = classifyWhitespace(t.target, symNameSet)
+        const anomaly = { target: t.target, type: t.type, chars: spaces, klass: "whitespace", file: t.file, subclass: sub }
+        // C2b: a RULED sub-class is measured and pinned but not convicted (see the
+        // ruling block above the classifier). Everything else convicts as before.
+        if (isConvictedWhitespace(sub)) anomalies.push(anomaly)
+        else ruledWhitespace.push(anomaly)
       }
       if (delims.length > 0) anomalies.push({ target: t.target, type: t.type, chars: delims, klass: "delimiter", file: t.file })
       if (spaces.length > 0 || delims.length > 0) continue
@@ -490,14 +542,24 @@ async function main() {
       // The whitespace class SPLIT by the mechanism that decides its owner, so the
       // register can pin the split exactly and a lane cannot move a target from
       // `sourceText` to `matchesOwnSymbol` without the gate noticing.
-      whitespaceSubclasses: anomalies
+      // The split covers EVERY whitespace target, convicted or ruled, so the surface
+      // stays pinned exactly; `whitespaceRuled` names the ruled half and
+      // `byClass.whitespace` (above) counts only the convictions.
+      whitespaceSubclasses: [...anomalies, ...ruledWhitespace]
         .filter((a) => a.klass === "whitespace")
         .reduce((acc: Record<string, number>, a) => {
           acc[a.subclass ?? "?"] = (acc[a.subclass ?? "?"] ?? 0) + 1
           return acc
         }, {}),
+      whitespaceRuled: ruledWhitespace.reduce((acc: Record<string, number>, a) => {
+        acc[a.subclass ?? "?"] = (acc[a.subclass ?? "?"] ?? 0) + 1
+        return acc
+      }, {}),
       whitespaceSamples: anomalies
         .filter((a) => a.klass === "whitespace")
+        .slice(0, 8)
+        .map((a) => ({ subclass: a.subclass, type: a.type, target: a.target.slice(0, 80), file: a.file })),
+      whitespaceRuledSamples: ruledWhitespace
         .slice(0, 8)
         .map((a) => ({ subclass: a.subclass, type: a.type, target: a.target.slice(0, 80), file: a.file })),
       emptyTargetCount: emptyTargets.length,
