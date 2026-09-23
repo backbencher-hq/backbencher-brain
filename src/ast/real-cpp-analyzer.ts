@@ -134,6 +134,56 @@ function joinHeadingLines(text: string): string {
   return out.trim()
 }
 
+/**
+ * #924: the NAME and the OWNER of a `qualified_identifier` standing as a
+ * declarator's own name. The grammar splits two very different shapes into the
+ * SAME node, and the separator token is what tells them apart:
+ *
+ *   `void MyClass::method(int)`
+ *     qid[ns MyClass, `::`, identifier method]                  REAL join
+ *   `FMT_API std::system_error vwindows_error(int)`
+ *     qid[ns std, `::`, qid[ns system_error, ``, identifier vwindows_error]]
+ *                                                      PHANTOM join ("")
+ *
+ * With a macro standing before the return type, the grammar cannot place the
+ * type and rejoins it to the name as extra qualifier segments — separated by
+ * whitespace only, which is why the qid's separator slot carries a `::` token
+ * with EMPTY text. A real scope join always carries the token itself.
+ *
+ * Reading the outer qid's last segment as the name (the old rule) published
+ * `system_error vwindows_error` — a name no consumer can resolve — and read
+ * `system_error` as the owning SCOPE, putting the function in a class that
+ * does not exist. 33 such names across the two pinned cpp corpora, plus 5
+ * genuine qualified declarators (`SocketWriter::MakeConnection`) whose name
+ * kept its owner inline.
+ *
+ * The rule is exported so the F5 oracle reads the SAME evidence rather than a
+ * copy of it (#916's lesson; see `macroDeclaredBody`).
+ */
+export function qualifiedDeclaratorLeaf(qid: Node): { nameNode: Node; scopeQid: Node | null } | null {
+  // Nested qualification nests RIGHT-leaning (qid[ns Outer, qid[ns Inner, m]]),
+  // so the name leaf is the last named child of the DEEPEST qid.
+  let leaf: Node = qid
+  while (true) {
+    const last = leaf.namedChild(leaf.namedChildCount - 1)
+    if (last && last.type === "qualified_identifier") leaf = last
+    else break
+  }
+  const nameNode = leaf.namedChild(leaf.namedChildCount - 1)
+  if (!nameNode) return null
+  // A qualifier is a real OWNER only when the token joining it to the name
+  // exists. The phantom join is the grammar's own record of the misplaced type.
+  let realJoin = false
+  for (let i = 0; i < leaf.childCount; i++) {
+    const c = leaf.child(i)
+    if (c && !c.isNamed && c.type === "::") {
+      realJoin = c.text === "::"
+      break
+    }
+  }
+  return { nameNode, scopeQid: realJoin ? leaf : null }
+}
+
 export function macroInvocationText(content: string, nameStart: number): string | null {
   const CAP = 4000
   let i = nameStart
@@ -2306,29 +2356,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     let isOperator = nameNode.type === "operator_name" || name.startsWith("operator")
 
     if (nameNode.type === "qualified_identifier") {
-      // `ConsoleLogger::log` parses as qualified_identifier[namespace_identifier,
-      // identifier]. The scope is the FIRST named child (namespace/type/class),
-      // the method name is the LAST named child. Checking `identifier` before
-      // `namespace_identifier` wrongly grabs the method name as the scope
-      // (constructor:log in log) — so inspect in the right order.
-      const actualNameNode = nameNode.namedChild(nameNode.namedChildCount - 1)
-      // CP7 (second review): nested qualification (`Outer::Inner::m`)
-      // nests RIGHT-leaning as qid[ns Outer, qid[ns Inner, m]] — the owning
-      // scope is the INNERMOST qualifier (`Inner`). The old code read the
-      // outermost qualifier's full text (`Outer`, and the oracle took the
-      // outermost segment too), so neither side matched the `Inner`-keyed
-      // member registry and bare member reads in nested out-of-line bodies
-      // stayed silent on both sides. Descend to the deepest qualifier,
-      // then read its scope child with the same rules as below. (The
-      // method NAME computation above is untouched.)
-      let scopeQid: Node = nameNode
-      while (true) {
-        const last = scopeQid.namedChild(scopeQid.namedChildCount - 1)
-        if (last && last.type === "qualified_identifier") scopeQid = last
-        else break
-      }
+      // #924: the name is the deepest qualifier's LAST segment, and a segment
+      // above it is an OWNER only when a real `::` token joins them — a
+      // misplaced return type rejoined to the name by the grammar is neither a
+      // name nor a scope. See `qualifiedDeclaratorLeaf`.
+      const parts = qualifiedDeclaratorLeaf(nameNode)
+      const actualNameNode = parts?.nameNode ?? nameNode.namedChild(nameNode.namedChildCount - 1)
+      const scopeQid: Node | null = parts?.scopeQid ?? null
       let scopeNode: Node | null = null
-      for (let i = 0; i < scopeQid.namedChildCount - 1; i++) {
+      for (let i = 0; scopeQid && i < scopeQid.namedChildCount - 1; i++) {
         const c = scopeQid.namedChild(i)
         if (c && (c.type === "namespace_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
           scopeNode = c
@@ -2348,7 +2384,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Defensive fallback (unreachable after the descent above — the
       // deepest qualifier's first child is always a scope leaf): keep the
       // scope empty rather than guessing.
-      const firstChild = scopeQid.namedChild(0)
+      const firstChild = scopeQid?.namedChild(0)
       if (!scopeNode && firstChild && firstChild.type === "qualified_identifier") {
         scopeNode = firstChild
       }
