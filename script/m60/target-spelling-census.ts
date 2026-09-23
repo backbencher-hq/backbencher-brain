@@ -120,9 +120,13 @@ const REGISTER: Record<string, { rulings?: Rulings }> = fs.existsSync(REGISTER_P
   ? JSON.parse(fs.readFileSync(REGISTER_PATH, "utf8")).lanes ?? {}
   : {}
 
-const SAMPLE = Number(arg("--sample") ?? 40)
+const DEFAULT_SAMPLE = 40
+const SAMPLE = Number(arg("--sample") ?? DEFAULT_SAMPLE)
 const SECOND_SAMPLE = Math.max(1, Math.floor(SAMPLE * 0.6))
 const ONLY_LANE = arg("--lane")
+// Dev-scoped runs may dump their own JSON here; the canonical artifact is only
+// ever written by a full run (see the guard at the write site).
+const OUT_ARG = arg("--out")
 
 // A lane whose own symbols number fewer than this many DISTINCT names has not
 // exercised its alphabet enough to be adjudicated. Reporting that as
@@ -393,6 +397,28 @@ async function main() {
     noCorpus: rows.filter((r) => r.verdict === "no-corpus").map((r) => r.lang),
     fabricated: rows.filter((r) => r.verdict === "fabricated-spellings").map((r) => r.lang),
     rows,
+  }
+  // M60 R10 follow-up (measured the hard way): a `--lane`/`--sample` run is
+  // DEV-SCOPED and must NEVER overwrite the canonical 24-lane artifact. It did:
+  // `--lane groovy` replaced validation/m60/results/target-spelling.json with a
+  // one-row file (8,764 deletions), which would have silently shrunk R10's claim
+  // to the lane the author happened to be looking at while the gate still read
+  // the (now one-lane) artifact as green. This is the same guard the M14
+  // differential carries for its own artifact (M61 #886), for the same reason: a
+  // scoped run is for inspecting a lane, and writing it here replaces the
+  // milestone's claim with a smaller one. The scoped result is PRINTED in full
+  // and offered through --out for a temp file; only a full, unfiltered run writes
+  // the canonical path.
+  const scoped = !!ONLY_LANE || SAMPLE !== DEFAULT_SAMPLE
+  if (scoped) {
+    console.log(
+      `\nDEV-SCOPED run (${ONLY_LANE ? `--lane ${ONLY_LANE}` : ""}${ONLY_LANE && SAMPLE !== DEFAULT_SAMPLE ? " " : ""}${SAMPLE !== DEFAULT_SAMPLE ? `--sample ${SAMPLE}` : ""}) — the canonical ${path.relative(ROOT, OUT)} was NOT touched: it belongs to a full ${DEFAULT_SAMPLE}-file-per-draw, all-lane run, and a scoped run would replace that claim with a smaller one.`,
+    )
+    if (OUT_ARG) {
+      fs.writeFileSync(OUT_ARG, JSON.stringify(payload, null, 2) + "\n")
+      console.log(`dev-scoped rows written to ${OUT_ARG} (canonical artifact untouched)`)
+    }
+    return
   }
   fs.mkdirSync(path.dirname(OUT), { recursive: true })
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2) + "\n")

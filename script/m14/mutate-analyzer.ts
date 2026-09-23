@@ -5353,6 +5353,84 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "anonymous_Runnable", isDefault: false }] }),
   },
   {
+    id: "groovy/scoped-param-type-dropped",
+    language: "groovy",
+    defectClass: "payload-corruption",
+    description: "M60 R10 follow-up regression: a QUALIFIED parameter type goes back to being dropped from the payload. `Outer.Criterion` is the grammar's `scoped_type_identifier` and the method-parameter extractor's node list did not name it, so the WRITTEN type read undefined while the declaration named it — and the override signature keyed on parameter types lost the distinction between two overloads differing only in a qualified type. Simulated from the output alone and faithfully to the pre-fix DISCRIMINATION: a type is dropped when it is dotted WITHOUT type arguments (`Outer.Criterion`), and kept when it is a generic (a `generic_type` node was already accepted, so `java.util.Map.Entry<String, Boolean>` survived pre-fix and must survive here — a blanket dotted-type drop would not be the pre-fix shape). Caught by groovy/parameters-payload, whose expectParameters names the type of every shape: interface method, implementation, constructor, spread, and the generic+qualified combination.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.parameters) || s.parameters.length === 0) return s
+        return {
+          ...s,
+          parameters: s.parameters.map((p: any) => {
+            const t = p?.type
+            if (typeof t !== "string") return p
+            if (t.indexOf(".") === -1 || t.indexOf("<") !== -1) return p
+            return { ...p, type: undefined }
+          }),
+        }
+      }),
+    }),
+  },
+  {
+    id: "groovy/scoped-type-ref-dropped",
+    language: "groovy",
+    defectClass: "relationship-loss",
+    description: "M60 R10 follow-up regression: a QUALIFIED declared type goes back to being absent from the type-usage graph. Reproduces the MEASURED pre-fix discrimination from the output alone: a type clause selected only `type_identifier` children and `scoped_type_identifier` ends in \"identifier\", so a BARE qualified type (`Outer.Criterion field`, `Outer.Criterion make(...)`, the parameter, the local, the `as`-cast) contributed NO edge at all, while a GENERIC whose base is qualified got in through the generic node and had every SEGMENT emitted as its own type (`java.util.Map.Entry<String, Boolean>` -> java, util, Map, Entry + String, Boolean). Those are this fixture's two shapes: the 1-dot base is the class-qualified bare form (silent pre-fix) and the package-qualified base is the generic form (segmented pre-fix). LIMITATION of an output-level mutant, stated rather than hidden: a 1-dot GENERIC base (`Outer.Criterion<String>`) would pre-fix have segmented rather than vanished, and this transform cannot tell it apart from the bare form — no shape in the fixture separates them. Caught by groovy/scoped-type-references: five expects vanish and the java/util/Map forbids fail.",
+    transform: r => {
+      const out: any[] = []
+      const TYPE_POSITIONS = new Set(["declared_type", "return_type", "cast_type", "throws_type"])
+      for (const x of r.relationships ?? []) {
+        const md = (x as any).metadata ?? {}
+        const t = String((x as any).target ?? (x as any).to ?? "")
+        if (!TYPE_POSITIONS.has(String(md.relationshipType)) || t.indexOf(".") === -1) { out.push(x); continue }
+        const segs = t.split(".")
+        if (segs.length <= 2) continue
+        for (const s of segs) out.push({ ...(x as any), target: s })
+      }
+      return { ...r, relationships: out }
+    },
+  },
+  {
+    id: "groovy/scoped-type-leaf-fabrication",
+    language: "groovy",
+    defectClass: "relationship-fabrication",
+    description: "M60 R10 follow-up negative twin: the PLAUSIBLE WRONG FIX. Where the pre-fix lane was SILENT on a qualified declared type, the obvious repair is to descend into the scoped node — which publishes its SEGMENTS as types, so `Outer.Criterion field` becomes `Outer` + `Criterion`, `local as Outer.Projection` becomes `Outer` + `Projection`, and a package-qualified base names `java` and `util`, which are not types at all (the rule collectTypeNodes already documents for the heritage path). That is exactly what this fixture's six forbidRelationships entries exist to catch: `Criterion`, `Projection`, `Outer`, `java`, `util`, `Map` — an expect-only matcher cannot see any of them, because in the wrong-fix state every expect above still passes.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...(r.relationships ?? []).flatMap((x: any) => {
+          const md = x.metadata ?? {}
+          const t = String(x.target ?? "")
+          if (!["declared_type", "return_type", "cast_type"].includes(String(md.relationshipType)) || t.indexOf(".") === -1) return []
+          return t.split(".").map((s) => ({ ...x, target: s }))
+        }),
+      ],
+    }),
+  },
+  {
+    id: "groovy/scoped-type-malformed-text-published",
+    language: "groovy",
+    defectClass: "relationship-fabrication",
+    description: "M60 R10 follow-up regression (my own, measured on a real corpus file): the scoped branch publishes the NODE'S TEXT without checking that the text is a name, so grammar recovery turns a text slice into a type. On groovy/scoped-type-recovery-refusal the pinned grammar welds `import static org.springframework.http.HttpStatus.*` and the following import into ONE scoped_type_identifier spanning both lines with an ERROR node inside, so the published target is that whole slice — a string that appears nowhere in the source as a name, carrying `*` and the keyword `import`. The injected value is the exact text the pinned grammar produces for this fixture's import pair (probe-verified), matching the corpus row the census caught on grails-scaffolding's AsyncController template. Caught by groovy/scoped-type-recovery-refusal's first forbid entry.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        {
+          type: "references",
+          source: "(script)",
+          target: "org.springframework.http.HttpStatus.*\nimport org.springframework.transaction.TransactionStatus",
+          confidence: 0.95,
+          line_number: 3,
+          metadata: { relationshipType: "declared_type", declaredOn: "local_variable_declaration", evidenceClass: "reference_qualified" },
+        },
+      ],
+    }),
+  },
+  {
     id: "groovy/multicatch-drop",
     language: "groovy",
     defectClass: "relationship-loss",
