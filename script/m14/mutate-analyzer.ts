@@ -5306,6 +5306,110 @@ const MUTANTS: Mutant[] = [
       !((x.metadata ?? {}).declaredOn === "catch_formal_parameter")) }),
   },
   {
+    id: "csharp/drop-declared-type-refs",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "R9 regression: drops the whole declared-type reference graph (the capability the lane was missing while ten siblings had it) — csharp/declared-type-graph catches it: 27 expected edges vanish",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !["declared_type", "return_type"].includes(String((x.metadata ?? {}).relationshipType)),
+      ),
+    }),
+  },
+  {
+    id: "csharp/declared-type-tuple-element-name",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "R9 regression: descends BOTH children of a tuple_element, so the element's NAME is published as a type (`(Dep First, int Count)` -> First, Count). The defect this fixture's own first measurement had;",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "references", source: "Holder", target: "First", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "field_declaration" } },
+        { type: "references", source: "Holder", target: "Count", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "field_declaration" } },
+      ],
+    }),
+  },
+  {
+    id: "csharp/declared-type-bound-param-emitted",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "R9 regression: emits a dependency on a name bound as a TYPE PARAMETER (`List<T>` inside a non-generic method body) — an edge to a symbol only the declaration has; the class-level and method-level spellings are both pinned",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "references", source: "Holder", target: "T", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "field_declaration" } },
+        { type: "references", source: "Generic", target: "U", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "parameter" } },
+      ],
+    }),
+  },
+  {
+    id: "csharp/declared-type-primitive-emitted",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "R9 regression: stops filtering predefined types and `var`, so `int`/`string`/`var` become dependencies (the exclusion java gets from its primitive_type node)",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "references", source: "Holder", target: "int", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "field_declaration" } },
+        { type: "references", source: "Holder", target: "string", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "field_declaration" } },
+        { type: "references", source: "Build", target: "var", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "local_declaration_statement" } },
+      ],
+    }),
+  },
+  {
+    id: "csharp/declared-type-qualified-full-path",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "R9 regression: publishes a qualified name's WHOLE path instead of its leaf (the oracle's leafOf convention) — `System.Text.StringBuilder` as one target",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "references", source: "Holder", target: "System.Text.StringBuilder", confidence: 0.9, metadata: { relationshipType: "declared_type", declaredOn: "field_declaration" } },
+      ],
+    }),
+  },
+  {
+    id: "csharp/declared-type-member-source",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description: "R9 regression: attributes a member's dependency to the MEMBER instead of the enclosing TYPE, against the contract measured off java/kotlin/python — every `Holder -> X` expectation disappears",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const rt = String((x.metadata ?? {}).relationshipType)
+        if (rt !== "declared_type" || (x.metadata ?? {}).declaredOn !== "field_declaration") return x
+        return { ...x, source: "_bare" }
+      }),
+    }),
+  },
+  {
+    id: "csharp/declared-type-return-marker",
+    language: "csharp",
+    defectClass: "payload-loss",
+    description: "R9 regression: marks a return type `declared_type` instead of the family's `return_type` (java/kotlin/python/typescript all publish return_type), so a consumer filtering for returns loses them",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md: any = x.metadata ?? {}
+        if (md.relationshipType !== "return_type") return x
+        return { ...x, metadata: { ...md, relationshipType: "declared_type" } }
+      }),
+    }),
+  },
+  {
+    id: "csharp/using-alias-as-module",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description: "R1 regression: the pre-fix alias/plain confusion — the ALIAS is published as the module (`using Alias = Plain;`), a dependency on a name the file imports no namespace from. Now reachable only through the extracted csharpUsingDirectiveTarget, which the oracle shares",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "references", source: "root", target: "Alias", confidence: 0.9, metadata: { isUsingDirective: true, isImport: true } },
+      ],
+    }),
+  },
+  {
     id: "csharp/drop-field-access-uses",
     language: "csharp",
     defectClass: "relationship-loss",

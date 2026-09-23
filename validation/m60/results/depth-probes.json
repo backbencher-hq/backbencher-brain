@@ -295,6 +295,36 @@
    "missing": 0,
    "unexplained": 0,
    "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
+  },
+  {
+   "repo": "powershell",
+   "lang": "csharp",
+   "files": 60,
+   "truth": 4379,
+   "covered": 4379,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 7 (2026-09-22) \u2014 the CANONICAL sample size, first draw with the R9 declared-type graph live (rotation 14). Truth 4,379 vs the canonical 60-file row's 4,069: the +310 are the graph itself, every one CONFIRMED (coverage 100%). analyzer-edges 2,624. hash 3d802b32f8b440b7."
+  },
+  {
+   "repo": "powershell",
+   "lang": "csharp",
+   "files": 200,
+   "truth": 14433,
+   "covered": 14433,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 8 (2026-09-22) \u2014 200 files (rotation 15, a fresh rotation) with the R9 graph live. Truth 14,433 is far above the pre-R9 rows on this corpus (5,134-5,166 at rotation 11, 4,508 at draw 1): a declared-type graph adds roughly 45 confirmed edges per file. MISSING=0, unexplained=0, heuristic=0. analyzer-edges 8,236. hash c156578cc09f905b."
+  },
+  {
+   "repo": "fsharp",
+   "lang": "csharp",
+   "files": 243,
+   "truth": 12886,
+   "covered": 12886,
+   "missing": 0,
+   "unexplained": 0,
+   "note": "draw 9 (2026-09-22) \u2014 FULL EXTENT (243/243 .cs files) with the R9 graph live, and hash 4d0e5ba230a7b27f is IDENTICAL to draws 4/5 above, so this is a strict same-files before/after: truth 4,679 -> 12,886 with 100% coverage and NO fabrication. Every one of the 8,207 new edges is confirmed by the oracle, which derives them from the analyzer's own csharpDeclaredTypeRefs (never a second implementation). analyzer-edges 8,976."
   }
  ],
  "current": [

@@ -1,14 +1,13 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-23T00:25:16.343Z",
-  "atCommit": "231a11f4f8b9e45bd5a7a987b88e0ebbc5384d28",
-  "passed": 114,
-  "failed": 2,
+  "at": "2026-09-23T01:27:07.721Z",
+  "atCommit": "2d95a13a29198ec7462c705ba113a4b4af334ee2",
+  "passed": 115,
+  "failed": 1,
   "negatives": 93,
   "failures": [
-    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at 149bf5c9cdb2abf5e939055aee4f335acb579904, HEAD is 231a11f4f8b9e45bd5a7a987b88e0ebbc5384d28",
-    "R7 live: every placeholder-literal site is registered, none added, none silently gone — R7: 1 unregistered placeholder site(s) — an analyzer names something with a literal instead of an absence: real-c-analyzer.ts:2683 property-value `name: \"unknown\"`"
+    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at 149bf5c9cdb2abf5e939055aee4f335acb579904, HEAD is 2d95a13a29198ec7462c705ba113a4b4af334ee2"
   ],
   "verdict": "FAIL",
   "machinery": {
