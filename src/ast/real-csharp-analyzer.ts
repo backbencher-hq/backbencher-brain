@@ -341,6 +341,374 @@ const CSHARP_BUILTINS = new Set([
   "ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals",
 ])
 
+/**
+ * The MODULE a `using` directive names — read from the GRAMMAR, by position, never from
+ * the directive's text.
+ *
+ * ONE implementation, two consumers: the analyzer publishes `imports.module` and a
+ * `references` edge from it, and the differential oracle derives the same target as truth.
+ * This function is that one implementation, extracted so the two sides cannot drift — the
+ * R9 round needed csharp's `references` label to become comparable (see the harness
+ * allowlist), and a truth derived from a SECOND reading of the alias/plain shapes is
+ * exactly how a lane ends up with edges the oracle cannot confirm.
+ *
+ * The shapes (M60.R1 paydown, probe script/m14/tmp/cs-using-tree-probe.ts, 8 cases):
+ *
+ *     alias form:  using [global] identifier[field=name] '=' <target> ';'
+ *     plain form:  using [global] <target> ';'          (no `name` field)
+ *
+ * so the ALIAS is the `name` field (only when an `=` follows it) and the TARGET is the
+ * first named child after the `=`, falling back to the directive's first name node. The
+ * pre-R1 text parse published the ALIAS as the module for `using Alias = Plain;` — the
+ * two positions have the same shape, so only position discriminates (CSD7).
+ */
+export function csharpUsingDirectiveTarget(
+  node: any,
+): { module: string; targetNode: any; alias: string | null } | null {
+  if (!node) return null
+  const firstNamed = (pred: (n: any) => boolean): any => {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && pred(c)) return c
+    }
+    return null
+  }
+  const nameNode = firstNamed((n: any) => n.type === "identifier" || n.type === "qualified_name")
+  if (!nameNode) return null
+  let eq: any = null
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (c && c.type === "=") { eq = c; break }
+  }
+  const aliasNode = eq ? (node.childForFieldName?.("name") ?? null) : null
+  let targetAfterEq: any = null
+  if (eq) {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.startIndex >= eq.endIndex) { targetAfterEq = c; break }
+    }
+  }
+  const targetNode = targetAfterEq ?? firstNamed((n: any) => n.type === "qualified_name") ?? nameNode
+  const module = csharpTypeNameText(String(targetNode?.text ?? ""))
+  if (!module) return null
+  return {
+    module,
+    targetNode,
+    alias: aliasNode ? csharpTypeNameText(String(aliasNode.text ?? "")) : null,
+  }
+}
+
+/**
+ * R9 (#804) — the declared-type reference graph: a declaration that WRITES a type
+ * name depends on the type it names.
+ *
+ * WHY THIS IS A FAMILY CONTRACT AND NOT A FEATURE. rust's R13 header calls it one
+ * ("family standard, mirrors go/c/zig"), and ten lanes implement it — go, rust, zig,
+ * python, typescript, java, kotlin, scala, groovy and c (under the marker
+ * `type_reference`). csharp did not, and nothing measured that: an ABSENT capability
+ * emits no edge for any per-edge oracle to adjudicate, so it read clean in the line
+ * contract, the depth draws and the fixtures alike. `reviews/csharp/master-review.md`
+ * even records it, as a "recorded gap for its own wave". It is measured now, per lane,
+ * by `script/m60/declared-type-refs-census.ts` under M60's rule R9.
+ *
+ * THE CONVENTIONS ARE INHERITED, NOT INVENTED (probe: script/m14/tmp/dt-contract-probe.ts,
+ * which read the four decisions off the lanes that already implement the graph):
+ *
+ *   source    a FIELD's / property's dependency is attributed to the enclosing TYPE
+ *             (`Holder`), a parameter's / return's / local's to the enclosing CALLABLE
+ *             (`m`) — java, kotlin and python agree on this, and it is what makes the
+ *             edge readable as "Holder depends on Dep".
+ *   marker    `declared_type`, except a return type, which java/kotlin/python/typescript
+ *             all publish as `return_type`. `declaredOn` carries the position, java's
+ *             convention, spelled in C#'s own node names.
+ *   generics  `List<Dep>` emits BOTH `List` and `Dep` (rust and java do; kotlin, python
+ *             and typescript emit only the base and so lose the dependency that
+ *             actually matters). The argument is the real dependency, so it is here.
+ *   silent    `predefined_type` (`int`, `string`, `void`) — the grammar's own tag, the
+ *             same exclusion java gets from its primitive_type; and `implicit_type`
+ *             (`var`), which the grammar gives its own node so no name test is needed.
+ *             `dynamic` / `nint` / `nuint` are language built-ins the grammar spells as
+ *             plain identifiers, so they are excluded by name.
+ *   leaf      a qualified name publishes its LEAF (`System.Text.StringBuilder` ->
+ *             `StringBuilder`, the oracle's own leafOf convention), stamped at the token
+ *             that writes it — so a wrapped `A.B\n  .C` reports C's line, not A's.
+ *   bound     a name bound as a TYPE PARAMETER by an enclosing generic declaration is not
+ *             a dependency — `class G<T> { List<T> _items; }` depends on `List`, not on `T`
+ *             (rust's R13 rule: a bare `T` edge could never resolve to a symbol, because
+ *             T exists only as a parameter). `where T : Dep` IS a real dependency and is a
+ *             disclosed boundary below rather than a half-handled position.
+ *   dedupe    per (source, target, LINE), not per (source, target): two fields of the
+ *             same type are two mentions with two lines, and collapsing them would throw
+ *             away the line the M59.A7 contract exists to check. (java keeps both too;
+ *             rust collapses — the family diverges here and this is the more truthful
+ *             reading.)
+ *
+ * BOUNDARIES, DISCLOSED. Positions NOT covered: `foreach`/`catch`/`using` declaration
+ * headers, `using Alias = T;` directives, attribute argument types, and generic
+ * CONSTRAINT clauses (`where T : Dep` — the R8 framework branch owns the where-clause
+ * shape). Each is a real dependency position; each is unwritten rather than silently
+ * approximated. A self-edge (`class Node { Node _next; }`) IS emitted, following rust's
+ * `Selfish` precedent, and the fixture pins it so it cannot be dropped by accident.
+ *
+ * ONE COPY, TWO CONSUMERS. The analyzer emits these edges and the differential oracle
+ * derives its truth from the SAME function, because a rule the truth does not share is a
+ * rule that can drift (CSD14) — and the depth draws would then read every new edge as
+ * analyzer-only.
+ */
+export interface CSharpDeclaredTypeRef {
+  source: string
+  target: string
+  /** The M59.A7 (#825) line: where the TARGET name is written. */
+  line: number | null
+  relationshipType: "declared_type" | "return_type"
+  declaredOn: string
+}
+
+/** Built-ins the grammar spells as ordinary identifiers, so no node type excludes them. */
+const CSHARP_BUILTIN_TYPE_SPELLINGS = new Set(["dynamic", "nint", "nuint", "var"])
+
+/** Callables whose name a parameter / return / local attributes its dependency to. */
+const CSHARP_CALLABLE_DECLARATIONS = new Set([
+  "method_declaration", "constructor_declaration", "delegate_declaration",
+  "operator_declaration", "conversion_operator_declaration", "local_function_statement",
+])
+
+/** The type declarations a member's dependency is attributed to. */
+const CSHARP_TYPE_DECLARATIONS = new Set([
+  "class_declaration", "struct_declaration", "interface_declaration",
+  "record_declaration", "record_struct_declaration", "enum_declaration",
+])
+
+/** The leaf NODE of a type / namespace name — the token that writes the published name. */
+function csharpTypeLeafNode(n: Node | null | undefined): Node | undefined {
+  if (!n) return undefined
+  const t = n.type
+  if (t === "identifier") return n
+  if (t === "generic_name" || t === "primary_constructor_base_type") return csharpTypeLeafNode(n.namedChild(0))
+  if (t === "qualified_name" || t === "alias_qualified_name") return csharpTypeLeafNode(n.namedChild(n.namedChildCount - 1))
+  return undefined
+}
+
+/**
+ * Every NAMED type written inside one declared type, in source order.
+ *
+ * Wrappers are descended (`array_type`, `nullable_type`, `pointer_type`, `ref_type`,
+ * `tuple_type`/`tuple_element`, `scoped_type`, function pointers); a `generic_name`
+ * yields its base AND each type argument; a `qualified_name` yields one leaf name.
+ */
+function csharpDeclaredTypeLeaves(
+  typeRoot: Node | null | undefined,
+  isBoundTypeParameter: (node: Node, name: string) => boolean,
+): { node: Node; name: string }[] {
+  const acc: { node: Node; name: string }[] = []
+  const accept = (node: Node, raw: string): void => {
+    const name = raw.trim()
+    if (!name || CSHARP_BUILTIN_TYPE_SPELLINGS.has(name)) return
+    if (isBoundTypeParameter(node, name)) return
+    acc.push({ node, name })
+  }
+  const walk = (n: Node | null | undefined): void => {
+    if (!n) return
+    const t = n.type
+    if (t === "predefined_type" || t === "implicit_type" || t === "void_keyword") return
+    if (t === "identifier") {
+      accept(n, String(n.text ?? ""))
+      return
+    }
+    if (t === "qualified_name" || t === "alias_qualified_name") {
+      const leaf = csharpTypeLeafNode(n)
+      if (leaf) accept(leaf, String(leaf.text ?? ""))
+      return
+    }
+    if (t === "generic_name" || t === "primary_constructor_base_type") {
+      walk(n.namedChild(0))
+      const args = (n.namedChildren as Node[]).find((c) => c.type === "type_argument_list")
+      if (args) for (const a of args.namedChildren as Node[]) walk(a)
+      return
+    }
+    if (t === "tuple_element") {
+      // A tuple element holds a TYPE child AND a NAME child (`(Dep First, int Count)`):
+      // descending into both publishes the element's name as a type — the CSD14
+      // fabrication class, caught here by this fixture's own measurement.
+      walk(n.childForFieldName("type") ?? n.namedChild(0))
+      return
+    }
+    for (const c of n.namedChildren as Node[]) walk(c)
+  }
+  walk(typeRoot)
+  return acc
+}
+
+/**
+ * R9 (#804): the declared-type reference graph of one parsed C# file.
+ *
+ * Called by the analyzer (which emits these as `references` edges, stamped
+ * `declared_type` / `return_type`) and by the differential oracle (which derives its
+ * truth from the same list). Positions, source naming, the two markers, the leaf rule
+ * and the dedupe key are all documented on this section's header.
+ */
+export function csharpDeclaredTypeRefs(root: Node): CSharpDeclaredTypeRef[] {
+  const out: CSharpDeclaredTypeRef[] = []
+  const emitted = new Set<string>()
+
+  /**
+   * Is this name a TYPE PARAMETER bound by an enclosing generic declaration?
+   *
+   * Climbed from the mention through EVERY enclosing declaration that can bind type
+   * parameters, reading each `type_parameter_list` — rust's `genericParamsOf` idea,
+   * widened to match C#'s lexical binding: `class G<T> { List<T> x; void m() { List<T> y; } }`
+   * depends on List in both places, and `T` is a parameter of G, so an edge to it would
+   * name a symbol only that declaration has. A method's own `<U>` is read the same way,
+   * which is why the fixture pins both spellings.
+   */
+  const isBoundTypeParameter = (from: Node, name: string): boolean => {
+    let cur: Node | null = from
+    while (cur) {
+      if (
+        cur.type === "class_declaration" || cur.type === "struct_declaration" ||
+        cur.type === "interface_declaration" || cur.type === "record_declaration" ||
+        cur.type === "record_struct_declaration" || cur.type === "method_declaration" ||
+        cur.type === "delegate_declaration" || cur.type === "local_function_statement" ||
+        cur.type === "operator_declaration" || cur.type === "conversion_operator_declaration"
+      ) {
+        const tp = cur.childForFieldName("type_parameters") ??
+          (cur.namedChildren as Node[]).find((c) => c.type === "type_parameter_list")
+        if (tp) {
+          const w: Node[] = [tp]
+          while (w.length > 0) {
+            const m = w.pop()!
+            if ((m.type === "type_parameter" || m.type === "identifier") && m.text.trim() === name) return true
+            for (const c of m.namedChildren as Node[]) w.push(c)
+          }
+        }
+        // NO break: C# type parameters are LEXICALLY scoped, so every enclosing
+        // generic declaration binds its own parameters. Stopping at the first item
+        // (rust's shape) missed the case this fixture's own measurement caught — a
+        // class-level `T` used inside a non-generic method body, which reads
+        // `List<T>` and would otherwise publish a dependency on `T`.
+      }
+      cur = cur.parent
+    }
+    return false
+  }
+
+  const enclosing = (from: Node, kinds: Set<string>): string => {
+    let cur: Node | null = from.parent
+    while (cur) {
+      if (kinds.has(cur.type)) {
+        const nm = cur.childForFieldName("name")?.text
+        if (nm) return nm
+        // A nameless callable (an indexer) still owns its declarations; the
+        // enclosing TYPE is the honest attribution rather than an empty source.
+      }
+      cur = cur.parent
+    }
+    return ""
+  }
+
+  const push = (
+    source: string,
+    typeNode: Node | null | undefined,
+    relationshipType: "declared_type" | "return_type",
+    declaredOn: string,
+  ): void => {
+    if (!source || !typeNode) return
+    for (const leaf of csharpDeclaredTypeLeaves(typeNode, isBoundTypeParameter)) {
+      const line = leaf.node.startPosition.row + 1
+      const key = `${source}\u0000${leaf.name}\u0000${line}`
+      if (emitted.has(key)) continue
+      emitted.add(key)
+      out.push({ source, target: leaf.name, line, relationshipType, declaredOn })
+    }
+  }
+
+  /** The node that CARRIES a declaration's written type — the `type` field when the
+   *  grammar gives one (parameters, properties, indexers, variable declarations), else
+   *  the first type-ish child (a `field_declaration` holds a `variable_declaration`, and
+   *  a method's return type is a bare child). */
+  const typeRootOf = (n: Node | null | undefined): Node | null => {
+    if (!n) return null
+    const tf = n.childForFieldName("type")
+    if (tf) return tf
+    if (n.type === "field_declaration" || n.type === "event_field_declaration") {
+      const vd = (n.namedChildren as Node[]).find((c) => c.type === "variable_declaration")
+      return vd ? typeRootOf(vd) : null
+    }
+    return null
+  }
+
+  /** A callable's return type: the `type` field when the grammar has one, else the
+   *  first type-ish child that is not the declaration's own NAME (the method return
+   *  type is a bare `identifier` child, and treating the name as a type is exactly
+   *  the CSD14 self-target fabrication). */
+  const returnTypeNode = (n: Node): Node | null => {
+    const tf = n.childForFieldName("type")
+    if (tf) return tf
+    const nameChild = n.childForFieldName("name")
+    for (const c of n.namedChildren as Node[]) {
+      if (
+        c.type === "modifier" || c.type === "attribute_list" || c.type === "parameter_list" ||
+        c.type === "type_parameter_list" || c.type === "block" || c.type === "arrow_expression_clause" ||
+        c.type === "where_clause" || c.type === "constructor_initializer" || c.type === "constraint_clause"
+      ) continue
+      if (nameChild && c.startIndex === nameChild.startIndex && c.endIndex === nameChild.endIndex) continue
+      if (CSHARP_DECLARED_TYPE_NODES.has(c.type)) return c
+    }
+    return null
+  }
+
+  const stack: Node[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    switch (n.type) {
+      case "field_declaration":
+      case "event_field_declaration": {
+        const vd = (n.namedChildren as Node[]).find((c) => c.type === "variable_declaration")
+        push(enclosing(n, CSHARP_TYPE_DECLARATIONS), typeRootOf(vd), "declared_type", n.type)
+        break
+      }
+      case "property_declaration":
+      case "indexer_declaration":
+      case "event_declaration": {
+        push(enclosing(n, CSHARP_TYPE_DECLARATIONS), typeRootOf(n), "declared_type", n.type)
+        break
+      }
+      case "method_declaration":
+      case "delegate_declaration":
+      case "operator_declaration":
+      case "conversion_operator_declaration": {
+        // The return type belongs to the callable itself (java/kotlin/python all
+        // attribute it to `m`), so the owner is the declaration, falling back to
+        // the enclosing type for a nameless one.
+        const owner = n.childForFieldName("name")?.text ?? enclosing(n, CSHARP_TYPE_DECLARATIONS)
+        push(owner, returnTypeNode(n), "return_type", "return_type")
+        break
+      }
+      case "parameter": {
+        push(enclosing(n, CSHARP_CALLABLE_DECLARATIONS), typeRootOf(n), "declared_type", "parameter")
+        break
+      }
+      case "variable_declaration": {
+        // A LOCAL declaration. Fields and event fields are the parents' business, so
+        // only the local_declaration_statement form is claimed here; a bare
+        // variable_declaration elsewhere (a `for` initializer, a `using`) is a
+        // disclosed boundary rather than a half-handled position.
+        if (n.parent?.type === "local_declaration_statement") {
+          push(
+            enclosing(n, CSHARP_CALLABLE_DECLARATIONS),
+            typeRootOf(n),
+            "declared_type",
+            "local_declaration_statement",
+          )
+        }
+        break
+      }
+    }
+    for (const c of n.namedChildren as Node[]) stack.push(c)
+  }
+  return out
+}
+
 export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -460,19 +828,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // NOWHERE in the payload and the dependency edge pointing at a name the
           // file never imports a namespace from. Position is the only honest
           // discriminator, and the tree already has it.
-          const eqChild = this.anonymousChildNode(node, "=")
-          const aliasNode = eqChild ? node.childForFieldName("name") : null
-          const targetAfterEq = eqChild
-            ? this.firstNamedChildAfter(node, eqChild)
-            : null
-          const nameNode2 =
-            targetAfterEq ??
-            this.findChild(node, (n) => n.type === "qualified_name") ??
-            nameNode
-          // M59.A7 (#825): the canonical name, never the layout — a wrapped
-          // qualified name (`using System\n  .Collections;`) carries a newline in
-          // its raw text, which is not a module name (the ruby D3 class).
-          const text = csharpTypeNameText(nameNode2.text)
+          // The alias/target shapes are read by ONE extracted function, because the
+          // differential oracle now derives the same target as truth (R9: csharp's
+          // `references` label is comparable, so the using references must be
+          // confirmable) — a second reading here would be free to drift from it.
+          const usingTarget = csharpUsingDirectiveTarget(node)
+          if (!usingTarget) continue
+          const { module: text, targetNode: nameNode2, alias: usingAlias } = usingTarget
           imports.push({
             module: text,
             source: text,
@@ -498,7 +860,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
               isUsingDirective: true,
               isImport: true,
-              ...(aliasNode ? { isUsingAlias: true, usingAlias: csharpTypeNameText(aliasNode.text) } : {}),
+              ...(usingAlias ? { isUsingAlias: true, usingAlias } : {}),
             },
           })
         }
@@ -1431,6 +1793,23 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // silent. `uses` is uncompared for csharp, so fixtures + mutants gate
     // this surface (no oracle change).
     this.analyzeCSharpBareIdentifierUses(rootNode, relationships, symbols, classHierarchy)
+
+    // R9 (#804): the declared-type reference graph — family standard, mirrors
+    // go/c/rust/java/kotlin (see csharpDeclaredTypeRefs' header for the inherited
+    // conventions and the disclosed boundaries). Emitted BEFORE
+    // classifyEvidenceTier so these edges carry an evidence class like every other
+    // reference edge (`reference_qualified`), and from the SAME function the
+    // differential oracle derives its truth from.
+    for (const ref of csharpDeclaredTypeRefs(rootNode)) {
+      relationships.push({
+        source: ref.source,
+        target: ref.target,
+        type: ASTEngine.RelationshipType.References,
+        confidence: 0.9,
+        ...(ref.line ? { line_number: ref.line } : {}),
+        metadata: { relationshipType: ref.relationshipType, declaredOn: ref.declaredOn },
+      })
+    }
 
     this.classifyEvidenceTier(relationships)
 
@@ -3281,17 +3660,10 @@ function csharpUsingDirectivePath(text: string): string | undefined {
  * primary_constructor_base_type -> its inner type; qualified_name /
  * alias_qualified_name -> their rightmost member.
  */
+// The leaf rule has ONE implementation (csharpTypeLeafNode, above the class); this
+// name-only view delegates to it so the R9 declared-type walk and the base-list /
+// framework detection can never disagree about which token a type name's leaf is.
 function csharpTypeLeafName(n: Node): string | undefined {
-  if (!n) return undefined
-  const t = n.type
-  if (t === "identifier") return n.text
-  if (t === "generic_name" || t === "primary_constructor_base_type") {
-    const first = n.namedChild(0)
-    return first ? csharpTypeLeafName(first) : undefined
-  }
-  if (t === "qualified_name" || t === "alias_qualified_name") {
-    const last = n.namedChild(n.namedChildCount - 1)
-    return last ? csharpTypeLeafName(last) : undefined
-  }
-  return undefined
+  const leaf = csharpTypeLeafNode(n)
+  return leaf ? leaf.text : undefined
 }

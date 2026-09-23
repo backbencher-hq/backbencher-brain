@@ -27,7 +27,7 @@ import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
-import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText } from "../../src/ast/real-csharp-analyzer"
+import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
 // one rule for both sides, never a re-implementation (see isWrappedHeadingName).
 import { macroWrappedHeadingShape, wrappedBodyAfter } from "../../src/ast/real-c-analyzer"
@@ -3258,6 +3258,50 @@ function csharpCleanTypeName(text: string): string {
 // as targets — the exact fabrication class this shared helper eliminates.
 function csharpImplicitNewType(node: any, memberTypes?: Map<string, string>): string | null {
   return csharpResolveTargetTypedNew(node, memberTypes)
+}
+
+/**
+ * R9 (#804): the declared-type reference graph, as TRUTH.
+ *
+ * Derived from the analyzer's own `csharpDeclaredTypeRefs` — deliberately not a second
+ * implementation. A truth that re-implements the rule can disagree with it in silence
+ * (the reason CSD14 exists), and here the failure mode is specific: the analyzer's new
+ * `references` edges would surface in every depth draw as ANALYZER-ONLY, and the fix
+ * would look like a widening of the oracle rather than the lockstep it is.
+ *
+ * The label is `references` (the edge type both sides publish); the marker and the
+ * declared position are analyzer-side metadata the differential does not compare.
+ */
+export function deriveCSharpDeclaredTypeEdges(root: any): { label: string; from: string; target: string }[] {
+  return csharpDeclaredTypeRefs(root).map((ref) => ({ label: "references", from: ref.source, target: ref.target }))
+}
+
+/**
+ * R9 (#804): the `references` edge every `using` directive publishes, as truth.
+ *
+ * Needed the moment csharp's `references` label became COMPARABLE (see the harness
+ * allowlist): the lane's using-directive references are `references` edges, so without
+ * this truth they would all read as fabrication. The target comes from the analyzer's own
+ * `csharpUsingDirectiveTarget` — the alias/plain shapes have the SAME textual shape and
+ * only tree POSITION tells them apart (CSD7), so re-deriving it here would be a second
+ * reading free to disagree.
+ */
+export function deriveCSharpUsingReferences(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "using_directive") {
+      const t = csharpUsingDirectiveTarget(n)
+      if (t && !seen.has(t.module)) {
+        seen.add(t.module)
+        out.push({ label: "references", from: "root", target: t.module })
+      }
+    }
+    for (const c of n.namedChildren ?? []) stack.push(c)
+  }
+  return out
 }
 
 export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { label: string; from: string; target: string }[] {
@@ -11126,6 +11170,18 @@ async function main() {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
           ;(truth as any[]).push(e)
         }
+        // R9 (#804): declared-type references — the analyzer emits them, so the
+        // truth must derive them from the same rule or every depth draw reads the
+        // new edges as analyzer-only (the dart #752 / swift #754 precedent).
+        for (const e of deriveCSharpDeclaredTypeEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // The lane's OTHER `references` class — using directives — is truth too, now
+        // that the label is compared (the harness allowlist): without it every using
+        // reference would be reported as fabrication.
+        for (const e of deriveCSharpUsingReferences(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "dart") {
         for (const e of deriveDartEdges(root)) {
@@ -11306,7 +11362,11 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []), ...(lang === "csharp" ? ["calls"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" ? ["references"] : [])].includes(r.label))
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+        // (using directives, and now the declared-type graph) had truth that the
+        // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
+        // the mirror image of the #910 gap recorded below, and the same root cause.
+        ...(lang === "csharp" ? ["calls", "references"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
