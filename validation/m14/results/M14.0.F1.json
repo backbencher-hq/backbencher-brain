@@ -13,14 +13,14 @@
       "status": "pass"
     },
     {
-      "description": "regression gate vs grammar-audit-baseline.json (31/41 languages pass)",
+      "description": "regression gate vs grammar-audit-baseline.json (30/41 languages pass)",
       "id": "baseline-gate",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "a3ce114f98ec6bef7bb0fa3c9a252d54d672908a",
-  "committedAt": "2026-09-22T19:17:49-04:00",
+  "commit": "b8f2a6f20aac17f0890556a6f9e7aab3d164e673",
+  "committedAt": "2026-09-22T22:26:51-04:00",
   "data": {
     "languages": {
       "bash": {
@@ -111,8 +111,8 @@
         "oracleFieldCount": 50,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 495,
-        "referencedFieldLiterals": 7,
-        "referencedTypeLiterals": 63,
+        "referencedFieldLiterals": 8,
+        "referencedTypeLiterals": 65,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -130,11 +130,22 @@
         "oracleFieldCount": 26,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
-        "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 72,
-        "status": "pass",
+        "referencedFieldLiterals": 7,
+        "referencedTypeLiterals": 89,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-csharp-analyzer.ts:comparison",
+            "line": 570,
+            "literal": "record_struct_declaration"
+          },
+          {
+            "context": "real-csharp-analyzer.ts:comparison",
+            "line": 652,
+            "literal": "constraint_clause"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-c_sharp.wasm"
@@ -625,7 +636,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 41,
+        "referencedTypeLiterals": 45,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1070,10 +1081,10 @@
       }
     },
     "summary": {
-      "fail": 10,
+      "fail": 11,
       "languagesAudited": 41,
-      "pass": 31,
-      "totalUnknownReferences": 32
+      "pass": 30,
+      "totalUnknownReferences": 34
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1098,8 +1109,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-22T23:49:33.397Z",
-  "regeneratedAtCommit": "a3ce114f98ec6bef7bb0fa3c9a252d54d672908a",
+  "regeneratedAt": "2026-09-23T09:06:20.800Z",
+  "regeneratedAtCommit": "b8f2a6f20aac17f0890556a6f9e7aab3d164e673",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
