@@ -5531,6 +5531,19 @@ const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "csharp/record-struct-as-class",
+    language: "csharp",
+    defectClass: "symbol-identity-corruption",
+    description: "GRAPH-AUDIT regression (F1 dead literal): reverts the kind rule to `stringIncludes(type, \"struct\")`, which cannot be true for a `record_declaration` — the node type the pinned grammar actually produces for `record struct` — so every record struct is published as a class with isStruct/isValueType false. Reverting EVERY record directly (the rule, not the fixture's names) is what makes this a faithful revert: csharp/record-struct-kind catches it (3 struct symbols become class, incl. the body and generic forms), and the two controls in the same fixture (PlainStruct, RecClass) prove the mutant is not caught by a blanket 'everything is a class'.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "struct" && (s.metadata ?? {}).isRecord === true
+          ? { ...s, kind: "class", metadata: { ...(s.metadata ?? {}), isStruct: false, isValueType: false } }
+          : s),
+    }),
+  },
+  {
     id: "csharp/using-alias-as-module",
     language: "csharp",
     defectClass: "relationship-fabrication",
