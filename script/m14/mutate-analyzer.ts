@@ -3551,6 +3551,40 @@ const MUTANTS: Mutant[] = [
       !(String(x.type) === "overrides" && (x.source === "VarSub.foo" || x.source === "ArrSub.bar"))) }),
   },
   {
+    id: "java/override-label-parameter-list",
+    language: "java",
+    defectClass: "payload-corruption",
+    description: "M60 R10 regression: restores the pre-fix override-KEY derivation (`${ownerFqn}.${name}${signature}` split on '.', last two segments, cut each at '('), so a parameter TYPE written with a dot is split as a qualifier and the label stops being a name (`handle.Criterion,StringBuilder,boolean)`) or loses its method (`Map.Entry<String, Boolean>)`). Rebuilt GENERICALLY from the result's own symbol table: the signature is the emitting rule's own input, taken from the method symbol's recorded parameter types, and the last-two-segment split then reproduces the pre-fix bytes exactly — so it stays valid on any fixture and cannot silently stop matching. override-key-parameter-lists forbids the three mangled spellings",
+    transform: r => {
+      const sigByLabel = new Map<string, string>()
+      for (const s of r.symbols ?? []) {
+        if (String(s.kind) !== "method" || !Array.isArray(s.parameters) || !s.ownerName) continue
+        sigByLabel.set(`${s.ownerName}.${s.name}`, `(${s.parameters.map((p: any) => p.type ?? "unknown").join(",")})`)
+      }
+      // the superseded rule, verbatim
+      const oldLabel = (fqn: string): string => {
+        const segs = fqn.split(".")
+        const last = segs[segs.length - 1].split("(")[0]
+        if (segs.length < 2) return last
+        const prev = segs[segs.length - 2].split("(")[0]
+        return prev ? `${prev}.${last}` : last
+      }
+      return { ...r, relationships: (r.relationships ?? []).map((x: any) => {
+        const t = String(x.type ?? x.relationshipType ?? "")
+        if (t !== "overrides") return x
+        const rewrite = (label: string) => {
+          const sig = sigByLabel.get(label)
+          if (!sig) return label
+          // the leading segments the real fqn also carried cannot change the
+          // last-two result, so `${label}${sig}` is the emitting rule's input
+          // for every purpose this rule has.
+          return oldLabel(`${label}${sig}`)
+        }
+        return { ...x, source: rewrite(String(x.source)), target: rewrite(String(x.target)) }
+      }) }
+    },
+  },
+  {
     id: "java/member-export-restore",
     language: "java",
     defectClass: "payload-corruption",
@@ -7028,6 +7062,34 @@ const MUTANTS: Mutant[] = [
         { module: "$dir.'/x.php'", items: ["*"], isDefaultImport: true, metadata: { phpSpecific: true, includeType: "include" } },
       ],
     }),
+  },
+  {
+    id: "php/static-concat-as-source-text",
+    language: "php",
+    defectClass: "payload-corruption",
+    description: "R10 follow-up regression: a FULLY STATIC include path goes back to the source text of the concatenation instead of the composition of its operands, so the quote and the `.` operator re-enter the target (`__DIR__/helpers.php` -> `__DIR__.'/helpers.php'`). This is the half the earlier include-path fix did NOT cover: it decided staticness correctly and then rendered the node's text, which both sides agreed on, so no per-edge gate could see it — it took the R10 spelling census (phpunit bootstrap.php, `<file>:<no line>` `references -> \"__DIR__.'/src/DeprecatedClass.php'\"`, unruled separator vocabulary in an OO lane) to catch it. Reproduced from the output alone: any php path target whose first segment is a bare constant is rewritten to the quoted form, which is exactly the pre-fix bytes. Caught by php/include-paths (three forbidImports/forbidRelationships rows) and php/payload-and-complexity.",
+    transform: r => {
+      const reText = (s: string): string => {
+        const slash = s.indexOf("/")
+        if (slash <= 0) return s
+        const head = s.slice(0, slash)
+        for (let i = 0; i < head.length; i++) {
+          const c = head.charCodeAt(i)
+          const word = (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95
+          if (!word) return s
+        }
+        return `${head}.'${s.slice(slash)}'`
+      }
+      return {
+        ...r,
+        imports: (r.imports ?? []).map((i: any) => ({ ...i, module: reText(String(i.module ?? "")) })),
+        relationships: (r.relationships ?? []).map((x: any) =>
+          String(x.type ?? x.relationshipType ?? "") === "references"
+            ? { ...x, target: reText(String(x.target ?? "")) }
+            : x,
+        ),
+      }
+    },
   },
   {
     id: "php/dynamic-callee-as-calls-target",

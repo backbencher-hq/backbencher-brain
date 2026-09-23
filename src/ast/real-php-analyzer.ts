@@ -373,6 +373,22 @@ export function phpLeafNameText(name: string): string {
   return idx >= 0 ? name.substring(idx + 1) : name
 }
 
+/**
+ * Drop every leading namespace separator — R1 ("no regex") as a char scan.
+ *
+ * This was the php ANALYZER's only regular expression (`raw.replace(/^\\+/, "")`,
+ * authored 2026-09-07 and carried here for 16 days while reviews/m60-oo-family-plan.md
+ * §3.7-R1 claimed "the other OO lanes carry none" — a claim the R1 section's own
+ * standard is supposed to keep true, and which a census of the analyzers refutes:
+ * this lane and ruby each carried exactly one). Character-code 92 is `\\`, so the
+ * rule is a prefix scan and needs no engine.
+ */
+export function phpStripLeadingBackslashes(raw: string): string {
+  let i = 0
+  while (i < raw.length && raw.charCodeAt(i) === 92) i++
+  return raw.substring(i)
+}
+
 const PHP_PATH_SHAPES: ReadonlySet<string> = new Set([
   "string",
   "encapsed_string",
@@ -404,8 +420,21 @@ function phpStaticPathValue(n: Node): string | undefined {
       const between = n.text.slice(operands[0].endIndex - n.startIndex, operands[1].startIndex - n.startIndex).trim()
       // Only `.` composes a path. Any other operator is not a concatenation.
       if (between !== ".") return undefined
-      if (phpStaticPathValue(operands[0]) === undefined || phpStaticPathValue(operands[1]) === undefined) return undefined
-      return phpCollapseWhitespaceText(n.text)
+      const left = phpStaticPathValue(operands[0])
+      const right = phpStaticPathValue(operands[1])
+      if (left === undefined || right === undefined) return undefined
+      // The path is the CONCATENATION OF THE OPERANDS' VALUES, not the source
+      // text of the concatenation. The R10 census (script/m60/target-spelling-
+      // census.ts) caught the difference on phpunit's autoloaders: returning
+      // `n.text` published `__DIR__.'/src/DeprecatedClass.php'` as a `references`
+      // target — the operator, the quotes and the magic constant's spelling, in
+      // a string no symbol can be named and which both sides agreed on, so no
+      // gate could see it. Both operands are static by the test above, so their
+      // values compose exactly: `__DIR__` + `/src/DeprecatedClass.php`. The
+      // decision (is this path static?) was always right; only the rendering was
+      // wrong, which is why this narrows a fabrication without dropping a single
+      // include edge.
+      return left + right
     }
     default:
       return undefined
@@ -428,15 +457,6 @@ function phpCleanStringText(text: string): string {
     if ((first === 34 && last === 34) || (first === 39 && last === 39)) return text.substring(1, text.length - 1)
   }
   return text
-}
-
-function phpCollapseWhitespaceText(text: string): string {
-  let out = ""
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i]
-    if (c !== " " && c !== "\t" && c !== "\n" && c !== "\r") out += c
-  }
-  return out
 }
 
 export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -2154,7 +2174,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   private heritageTarget(raw: string, ownName: string): string {
     const leaf = this.leafName(raw)
     if (raw.includes("\\") && leaf === ownName) {
-      return raw.replace(/^\\+/, "")
+      return phpStripLeadingBackslashes(raw)
     }
     return leaf
   }
