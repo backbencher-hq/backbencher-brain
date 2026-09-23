@@ -32,13 +32,13 @@
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "45/45 fixtures pass",
+      "detail": "46/46 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "68/68 fixtures pass",
+      "detail": "71/71 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -56,7 +56,7 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "17/17 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
@@ -92,7 +92,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "13/13 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "b8f2a6f20aac17f0890556a6f9e7aab3d164e673",
-  "committedAt": "2026-09-22T22:26:51-04:00",
+  "commit": "1cf8cd034d25886888a77234d9dd148ae57adb1b",
+  "committedAt": "2026-09-23T07:43:41-04:00",
   "data": {
     "details": [
       {
@@ -1482,6 +1482,11 @@
         "problems": []
       },
       {
+        "fixture": "java/override-key-parameter-lists",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/overrides",
         "ok": true,
         "problems": []
@@ -1797,6 +1802,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/override-key-parameter-lists",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/overrides",
         "ok": true,
         "problems": []
@@ -1843,6 +1853,16 @@
       },
       {
         "fixture": "groovy/safe-nav-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/scoped-type-recovery-refusal",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/scoped-type-references",
         "ok": true,
         "problems": []
       },
@@ -2372,6 +2392,11 @@
         "problems": []
       },
       {
+        "fixture": "c/call-shaped-declarator-912",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/callsite-lines-825",
         "ok": true,
         "problems": []
@@ -2707,12 +2732,22 @@
         "problems": []
       },
       {
+        "fixture": "csharp/override-key-parameter-lists",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "csharp/param-type-honesty",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "csharp/payload-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/record-struct-kind",
         "ok": true,
         "problems": []
       },
@@ -3381,7 +3416,7 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 16
+        "pass": 17
       },
       "clojure": {
         "fail": 0,
@@ -3393,7 +3428,7 @@
       },
       "csharp": {
         "fail": 0,
-        "pass": 11
+        "pass": 13
       },
       "dart": {
         "fail": 0,
@@ -3413,7 +3448,7 @@
       },
       "groovy": {
         "fail": 0,
-        "pass": 68
+        "pass": 71
       },
       "haskell": {
         "fail": 0,
@@ -3421,7 +3456,7 @@
       },
       "java": {
         "fail": 0,
-        "pass": 45
+        "pass": 46
       },
       "javascript": {
         "fail": 0,
@@ -3494,8 +3529,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-23T09:06:03.679Z",
-  "regeneratedAtCommit": "b8f2a6f20aac17f0890556a6f9e7aab3d164e673",
+  "regeneratedAt": "2026-09-23T16:49:12.641Z",
+  "regeneratedAtCommit": "1cf8cd034d25886888a77234d9dd148ae57adb1b",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

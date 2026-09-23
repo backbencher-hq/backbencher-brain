@@ -123,7 +123,7 @@ const CSHARP_DECLARED_TYPE_NODES = new Set([
 const CSHARP_SYMBOL_DECLARATIONS = new Set([
   "namespace_declaration", "file_scoped_namespace_declaration",
   "class_declaration", "struct_declaration", "interface_declaration",
-  "record_declaration", "record_struct_declaration", "enum_declaration",
+  "record_declaration", "enum_declaration",
   "enum_member_declaration", "delegate_declaration", "event_declaration",
   "operator_declaration", "conversion_operator_declaration",
   "method_declaration", "constructor_declaration",
@@ -476,8 +476,46 @@ const CSHARP_CALLABLE_DECLARATIONS = new Set([
 /** The type declarations a member's dependency is attributed to. */
 const CSHARP_TYPE_DECLARATIONS = new Set([
   "class_declaration", "struct_declaration", "interface_declaration",
-  "record_declaration", "record_struct_declaration", "enum_declaration",
+  "record_declaration", "enum_declaration",
 ])
+
+/**
+ * The kind of a type declaration the PINNED grammar produces.
+ *
+ * The grammar spells BOTH `record class Foo` and `record struct Foo` as
+ * `record_declaration`: enumerating wasm/tree-sitter-c_sharp.wasm yields 533 node
+ * types and **no `record_struct_declaration`** (the F1 audit convicts the spellings
+ * that assumed otherwise, and this rule is the repayment). The two forms differ by
+ * an UNNAMED TOKEN child — `*record("record") *class("class")` versus
+ * `*record("record") *struct("struct")` (probe: script/m14/tmp/cs-record-struct-probe.ts)
+ * — so the token decides. Neither the node type can answer this, nor the node's TEXT:
+ * searching text would also fire on a member named `structThing`, which is the same
+ * shape of mistake in the other direction.
+ *
+ * One definition, two callers (the symbol pass and the typeKinds pass), so the two
+ * cannot drift apart.
+ */
+function csharpTypeDeclarationKind(node: Node): ASTEngine.SymbolKind | null {
+  switch (node.type) {
+    case "class_declaration":
+      return ASTEngine.SymbolKind.Class
+    case "record_declaration": {
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i)
+        if (c && !c.isNamed && c.type === "struct") return ASTEngine.SymbolKind.Struct
+      }
+      return ASTEngine.SymbolKind.Class
+    }
+    case "struct_declaration":
+      return ASTEngine.SymbolKind.Struct
+    case "interface_declaration":
+      return ASTEngine.SymbolKind.Interface
+    case "enum_declaration":
+      return ASTEngine.SymbolKind.Enum
+    default:
+      return null
+  }
+}
 
 /** The leaf NODE of a type / namespace name — the token that writes the published name. */
 function csharpTypeLeafNode(n: Node | null | undefined): Node | undefined {
@@ -567,7 +605,7 @@ export function csharpDeclaredTypeRefs(root: Node): CSharpDeclaredTypeRef[] {
       if (
         cur.type === "class_declaration" || cur.type === "struct_declaration" ||
         cur.type === "interface_declaration" || cur.type === "record_declaration" ||
-        cur.type === "record_struct_declaration" || cur.type === "method_declaration" ||
+        cur.type === "method_declaration" ||
         cur.type === "delegate_declaration" || cur.type === "local_function_statement" ||
         cur.type === "operator_declaration" || cur.type === "conversion_operator_declaration"
       ) {
@@ -649,7 +687,7 @@ export function csharpDeclaredTypeRefs(root: Node): CSharpDeclaredTypeRef[] {
       if (
         c.type === "modifier" || c.type === "attribute_list" || c.type === "parameter_list" ||
         c.type === "type_parameter_list" || c.type === "block" || c.type === "arrow_expression_clause" ||
-        c.type === "where_clause" || c.type === "constructor_initializer" || c.type === "constraint_clause"
+        c.type === "where_clause" || c.type === "constructor_initializer" || c.type === "type_parameter_constraints_clause"
       ) continue
       if (nameChild && c.startIndex === nameChild.startIndex && c.endIndex === nameChild.endIndex) continue
       if (CSHARP_DECLARED_TYPE_NODES.has(c.type)) return c
@@ -942,18 +980,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         type === "class_declaration" ||
         type === "struct_declaration" ||
         type === "interface_declaration" ||
-        type === "record_declaration" ||
-        type === "record_struct_declaration"
+        type === "record_declaration"
       ) {
         let rawName = node.childForFieldName("name")?.text || this.childText(node, "identifier") || "anonymous"
 
         const fullName = this.buildFullName(scopeStack, rawName)
         const isInterface = type === "interface_declaration"
-        const kind = isInterface
-          ? ASTEngine.SymbolKind.Interface
-          : stringIncludes(type, "struct")
-            ? ASTEngine.SymbolKind.Struct
-            : ASTEngine.SymbolKind.Class
+        const kind = csharpTypeDeclarationKind(node) ?? ASTEngine.SymbolKind.Class
 
         const visibility = this.extractVisibility(node)
         typeKinds.set(rawName, kind)
@@ -2113,7 +2146,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (
         t === "class_declaration" || t === "struct_declaration" ||
         t === "interface_declaration" || t === "record_declaration" ||
-        t === "record_struct_declaration" || t === "enum_declaration"
+        t === "enum_declaration"
       ) {
         const name = n.childForFieldName("name")?.text || this.childText(n, "identifier")
         if (name) {
@@ -2121,9 +2154,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             ? ASTEngine.SymbolKind.Interface
             : t === "enum_declaration"
               ? ASTEngine.SymbolKind.Enum
-              : stringIncludes(t, "struct")
-                ? ASTEngine.SymbolKind.Struct
-                : ASTEngine.SymbolKind.Class
+              : csharpTypeDeclarationKind(n) ?? ASTEngine.SymbolKind.Class
           typeKinds.set(name, kind)
         }
       }
@@ -2417,7 +2448,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (
           t === "class_declaration" || t === "struct_declaration" ||
           t === "interface_declaration" || t === "record_declaration" ||
-          t === "record_struct_declaration" || t === "enum_declaration"
+          t === "enum_declaration"
         ) return "member"
         cur = cur.parent
       }
@@ -2546,8 +2577,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (
         t === "class_declaration" || t === "struct_declaration" ||
-        t === "interface_declaration" || t === "record_declaration" ||
-        t === "record_struct_declaration"
+        t === "interface_declaration" || t === "record_declaration"
       ) {
         // Class scope: resolution context + primary-constructor params.
         // Record positionals are NOT bound (they coincide with properties —
@@ -2556,7 +2586,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const frame: Frame = { names: new Set<string>(), cls: null }
         const nm = node.childForFieldName("name")?.text ?? firstIdent(node)?.text ?? null
         if (nm) frame.cls = nm
-        if (t !== "record_declaration" && t !== "record_struct_declaration") {
+        if (t !== "record_declaration") {
           for (let i = 0; i < node.namedChildCount; i++) {
             const c = node.namedChild(i)
             if (c && c.type === "parameter_list") {
@@ -2932,7 +2962,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         t === "local_function_statement" || t === "lambda_expression" ||
         t === "class_declaration" || t === "struct_declaration" ||
         t === "interface_declaration" || t === "record_declaration" ||
-        t === "record_struct_declaration" || t === "enum_declaration"
+        t === "enum_declaration"
       ) return false
       cur = cur.parent
     }
@@ -3070,7 +3100,6 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "struct_declaration":
       case "interface_declaration":
       case "record_declaration":
-      case "record_struct_declaration":
       case "enum_declaration":
       case "delegate_declaration":
       case "method_declaration":
