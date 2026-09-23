@@ -205,8 +205,26 @@ where the differential compares the edge):
 - **CSD5**: accessor-form `event` declarations emitted NO symbol.
 - **CSD6**: dead no-op statement (`system.linq` check that did nothing) —
   reading-only catch.
+- **CSD16 (M60 C2a)**: the decorator payload is a published field with a
+  spelling contract, and until this round the fixture runner could not assert it
+  negatively — `expectDecorators` checks `contains`, and the wrong spelling
+  (`global::System.Serializable`) contains the right one (`System.Serializable`).
+  `forbidDecorators` now exists for that half of the contract.
 - **CSD7**: alias usings (`using Aliased = System.Text;`) captured the ALIAS
   as the module — now the qualified target, with alias metadata.
+- **CSD15 (M60 C2a)**: the **alias qualifier is not part of a name**. `global::A.B`
+  and `A.B` denote one type, and this analyzer publishes the full dotted path, so
+  the qualifier is removed wherever a name is published — target, symbol name, or
+  attribute. Six positions carried it on real code or under one: creation and
+  heritage (the 51 corpus rows that convicted the class), the using directive's
+  module, the target-typed `new()` target, a conversion operator's own name, and
+  the attribute/decorator payload (95 corpus rows). A second half of the same
+  class published **nothing**: a `global::`-qualified name with a SINGLE segment
+  is `alias_qualified_name`, a node four hardcoded lists omitted, which silently
+  dropped the edge for `new global::Root()`, a method return type, an indexer's
+  return type, a plain `using global::System;` and `[global::Root]`. Only `global`
+  is stripped: any other head (`Sql::Data`) names a binding this analyzer does not
+  resolve and is published as written.
 - **CSD8**: constructor initializers (`: base(42)` / `: this()`, 120 in
   corpus) emitted nothing; now calls edges, oracle-mirrored.
 - **CSD9**: primary-constructor bases leaked raw argument text as

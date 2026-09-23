@@ -56,13 +56,13 @@
     },
     {
       "description": "c adversarial fixtures",
-      "detail": "17/17 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-c",
       "status": "pass"
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "15/15 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -92,9 +92,9 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "13/14 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-csharp",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "dart adversarial fixtures",
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "29b80c38032905c2251216a013762d7c1567b727",
-  "committedAt": "2026-09-23T13:37:56-04:00",
+  "commit": "b09db086f98b9a120a25d0f75653f63b8c49510e",
+  "committedAt": "2026-09-23T14:07:35-04:00",
   "data": {
     "details": [
       {
@@ -2412,6 +2412,11 @@
         "problems": []
       },
       {
+        "fixture": "c/contains-name-line-921",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "c/declaration-identity",
         "ok": true,
         "problems": []
@@ -2483,6 +2488,11 @@
       },
       {
         "fixture": "cpp/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/contains-name-line-921",
         "ok": true,
         "problems": []
       },
@@ -2753,8 +2763,8 @@
       },
       {
         "fixture": "csharp/qualified-type-spelling",
-        "ok": false,
-        "reason": "missing expectation file"
+        "ok": true,
+        "problems": []
       },
       {
         "fixture": "csharp/record-struct-kind",
@@ -3426,7 +3436,7 @@
     "summary": {
       "c": {
         "fail": 0,
-        "pass": 17
+        "pass": 18
       },
       "clojure": {
         "fail": 0,
@@ -3434,11 +3444,11 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 15
+        "pass": 16
       },
       "csharp": {
-        "fail": 1,
-        "pass": 13
+        "fail": 0,
+        "pass": 14
       },
       "dart": {
         "fail": 0,
@@ -3539,8 +3549,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-23T17:38:33.596Z",
-  "regeneratedAtCommit": "29b80c38032905c2251216a013762d7c1567b727",
+  "regeneratedAt": "2026-09-23T18:09:09.133Z",
+  "regeneratedAtCommit": "b09db086f98b9a120a25d0f75653f63b8c49510e",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

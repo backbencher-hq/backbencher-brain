@@ -3480,8 +3480,13 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         }
       }
     } else if (n.type === "object_creation_expression") {
+      // C2a mirror: `alias_qualified_name` is the node the pinned grammar gives a
+      // `global::`-qualified name with a single segment, which the analyzer now reads in this
+      // position too (the same node set on both sides — a truth that omits a shape the analyzer
+      // publishes is a fabricated UNEXPLAINED, and a truth that reads a shape the analyzer
+      // drops is a fabricated MISSING).
       const typeNode =
-        n.namedChildren.find((c: any) => c.type === "generic_name" || c.type === "identifier" || c.type === "qualified_name" || c.type === "predefined_type") ??
+        n.namedChildren.find((c: any) => c.type === "generic_name" || c.type === "identifier" || c.type === "qualified_name" || c.type === "predefined_type" || c.type === "alias_qualified_name") ??
         n.namedChildren.find((c: any) => c.type === "type_argument_list")
       if (typeNode) {
         const t = leafOf(typeNode.text)
