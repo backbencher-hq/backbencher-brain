@@ -769,10 +769,11 @@ function main() {
   // ---- R10 negatives: the comparison, the classes and the OO target must all discriminate ----
   const TS_LANE = (over: any = {}) => ({
     lang: "rust", verdict: "clean", byClass: {}, separatorTriples: [], unruledTriples: [],
-    separatorAdjudicable: true, convictions: {}, ...over,
+    separatorAdjudicable: true, convictions: {}, whitespaceRuled: {}, ...over,
   })
   const TS_ENTRY = (over: any = {}) => ({
-    verdict: "clean", family: "other", convictions: {}, separatorTriples: [], rulings: {}, note: "", ...over,
+    verdict: "clean", family: "other", convictions: {}, separatorTriples: [], rulings: {},
+    whitespaceRuled: {}, subclassRulings: {}, note: "", ...over,
   })
   // The accepted case needs TWO distinct verdicts, because the predicate refuses a
   // single-answer census (a classifier that returns one verdict for every lane is
@@ -873,6 +874,26 @@ function main() {
       TSCEN([TS_LANE(), TS_LANE({ lang: "ruby", verdict: "clean", separatorTriples: ["uses|@"], unruledTriples: [] }), GO_OWED()]),
       { ...TSREG, lanes: { rust: TS_ENTRY(), go: TS_ENTRY({ verdict: "unruled-separators", separatorTriples: ["imports|."], rulings: { "imports|.": null } }), ruby: TS_ENTRY({ family: "oo", separatorTriples: ["uses|@"], rulings: { "uses|@": "documented ivar convention" } }) }, ooTarget: { convictedLanes: 1, unruledSeparatorLanes: 1 } },
     ).startsWith("R10:"))
+  // C2b's three: a ruled surface that MOVED, a ruling with no reason, and a reasoned
+  // ruling that is accepted — the ruling is a route, not a hole.
+  negative("R10 negative: a RULED sub-class whose count MOVED is convicted even though every conviction count is identical",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "csharp", verdict: "unruled-separators", whitespaceRuled: { operatorMember: 3 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo", whitespaceRuled: { operatorMember: 2 }, subclassRulings: { operatorMember: "a reason" } }) } },
+    ).includes("drifted"))
+  negative("R10 negative: a RULED sub-class with NO written reason forbids adjudication (a rule without a reason hides the finding it excuses)",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "csharp", verdict: "unruled-separators", whitespaceRuled: { operatorMember: 2 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo", whitespaceRuled: { operatorMember: 2 }, subclassRulings: { operatorMember: null } }) } },
+    ).includes("cannot adjudicate"))
+  negative("R10 negative: a RULED sub-class WITH a reason and a matching count is ACCEPTED (the ruling is a route, not a hole)",
+    targetSpellingDetail(
+      TSCEN([...BASE(), TS_LANE({ lang: "csharp", verdict: "unruled-separators", whitespaceRuled: { operatorMember: 2 } })]),
+      { ...TSREG, lanes: { ...TSREG.lanes, csharp: TS_ENTRY({ family: "oo", whitespaceRuled: { operatorMember: 2 }, subclassRulings: { operatorMember: "naming convention, C2b" } }) } },
+    ).startsWith("R10:"))
+  negative("R10 negative: C2b's ruling is exercised in this tree (a ruled sub-class carrying a written reason for a non-zero count), so the route is not vacuous",
+    Object.entries(tsRegister?.lanes ?? {}).some(([, l]: any) =>
+      Object.entries(l.whitespaceRuled ?? {}).some(([s, n]) => Number(n) > 0 && typeof l.subclassRulings?.[s] === "string" && l.subclassRulings[s].length > 0)))
   negative("R10 negative: a lane whose symbol alphabet could not adjudicate is not counted as ruling debt (a thin draw must not convict)",
     targetSpellingDetail(
       TSCEN([TS_LANE(), TS_LANE({ lang: "svelte", verdict: "underdetermined", separatorAdjudicable: false, separatorTriples: ["imports|("], unruledTriples: ["imports|("] }), GO_OWED()]),
@@ -1159,6 +1180,16 @@ export function targetSpellingDetail(census: any, register: any): string {
       )
       continue
     }
+    // C2b: the RULED half of the whitespace split is pinned exactly too, so a lane
+    // cannot slip a new operator-member shape in under the ruling.
+    const gotRuled = JSON.stringify((row as any).whitespaceRuled ?? {})
+    const wantRuled = JSON.stringify(entry.whitespaceRuled ?? {})
+    if (gotRuled !== wantRuled) {
+      problems.push(
+        `${lang} drifted: RULED whitespace counts ${gotRuled} measured vs ${wantRuled} recorded — a ruled convention is still a pinned surface`,
+      )
+      continue
+    }
     const gotTriples = sorted(row.separatorTriples ?? [])
     const wantTriples = sorted(entry.separatorTriples ?? [])
     if (gotTriples !== wantTriples) {
@@ -1184,6 +1215,19 @@ export function targetSpellingDetail(census: any, register: any): string {
   // verdict: refuse rather than read clean (see the ordering note above).
   if (unsplit.length) {
     return `R10 cannot adjudicate: ${unsplit.length} lane(s) convict the whitespace class and record no sub-class split — an unsplit conviction cannot be routed to its owner (${unsplit.map((r) => String(r.lang)).slice(0, 4).join(", ")})`
+  }
+  // C2b: a RULED sub-class must carry a written reason. An unreasoned ruling is a hole
+  // wearing a ruling's clothes — the same failure mode as an unruled separator triple,
+  // and the reason is what makes the exemption auditable later.
+  const unreasoned: string[] = []
+  for (const [lang, entry] of Object.entries(lanes)) {
+    for (const [sub, n] of Object.entries(((entry as any).whitespaceRuled ?? {}) as Record<string, unknown>)) {
+      const reason = (entry as any).subclassRulings?.[sub]
+      if (Number(n) > 0 && !(typeof reason === "string" && reason.length > 0)) unreasoned.push(`${lang}.${sub}`)
+    }
+  }
+  if (unreasoned.length) {
+    return `R10 cannot adjudicate: ${unreasoned.length} ruled whitespace sub-class(es) carry no written reason — a rule without a reason is a way to hide a finding (${unreasoned.slice(0, 3).join(", ")})`
   }
   // OO debt: the owner standard's zero target. Convictions always count; a lane whose
   // draw could not adjudicate the separator class has no ruling debt to pay, because its
