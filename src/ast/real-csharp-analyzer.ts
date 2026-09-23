@@ -272,7 +272,7 @@ export function csharpTargetFromDeclaredType(typeText: string, isElement: boolea
   // Direct assignment: the declared type itself (generic base for `List<int>`).
   return csharpCleanTypeLeaf(t)
 }
-import { findDeclaringParent } from "./override-context"
+import { findDeclaringParent, localEdgeLabel } from "./override-context"
 
 interface Scope {
   node: Node
@@ -2185,8 +2185,11 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (targetFqn) {
-        const localSource = task.fqn.split("(")[0].split(".").slice(-2).join(".")
-        const localTarget = targetFqn.split("(")[0].split(".").slice(-2).join(".")
+        // R10 sibling sweep: was `split("(")[0].split(".").slice(-2)` —
+        // immune to a dotted parameter list, but it cuts at the FIRST "(" and
+        // so silently truncates a paren-bearing OWNER chain to a wrong label.
+        const localSource = localEdgeLabel(task.fqn)
+        const localTarget = localEdgeLabel(targetFqn)
         relationships.push({
           source: localSource,
           target: localTarget,

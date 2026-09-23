@@ -82,6 +82,60 @@ export function buildOverrideCompanion(symbols: readonly any[]): OverrideCompani
 export type TypeHierarchyFn = (typeName: string) => readonly string[]
 
 /**
+ * The local `Owner.method` label for an override edge whose endpoints are FQNs.
+ *
+ * An override endpoint is built as `${ownerFqn}.${name}${signature}` — the
+ * SIGNATURE (a parameter list) is part of the string, and the owner chain is
+ * inside it too, so the input is NOT a plain dotted path. A naive
+ * `split('.')` therefore splits the parameter list as if its dots were
+ * qualifier boundaries. Measured on grails-core (R10 register, java): an
+ * anonymous `LinkedHashMap` subclass and a wall of anonymous classes overriding
+ * `handle(PersistentEntity, Query.Criterion, …)` each published a key that is
+ * not a name at all —
+ *
+ *   `handle.Criterion,StringBuilder,StringBuilder,String,int,List,
+ *    ConversionService,boolean,boolean)`          (qualified parameter type)
+ *   `removeEldestEntry.Entry<String, Boolean>)`     (generic parameter type)
+ *
+ * where the honest keys are `…QueryBuilder$1.handle` and
+ * `LinkedHashMap.removeEldestEntry`.
+ *
+ * Removing the parameter list FIRST is not sufficient either. `split("(")[0]`
+ * is immune to the split above, but the owner chain can itself carry a call:
+ * for `Child.getInner().anonymous_Inner.foo(String)` it yields `Child.getInner`
+ * — still a name, but the WRONG one, and silently so. So the ordering matters
+ * in both directions and neither single cut is right.
+ *
+ * The rule that is right on both, and is what all three lanes that localize an
+ * edge key through an FQN now call: delete every BALANCED parenthesised group,
+ * then split on dots and keep the last two segments. A group is *deleted*, not
+ * replaced, so a qualifier boundary is never invented and a real one is never
+ * lost — `a().b` → `a.b`, `X.foo(String)` → `X.foo`, `X.foo(Map.Entry)` →
+ * `X.foo`, and `Child.getInner().anonymous_Inner.foo(String)` →
+ * `anonymous_Inner.foo`.
+ */
+export function localEdgeLabel(fqn: string): string {
+  let cleaned = ""
+  let depth = 0
+  for (let i = 0; i < fqn.length; i++) {
+    const c = fqn.charCodeAt(i)
+    if (c === 40) depth++ // '('
+    else if (c === 41) {
+      if (depth > 0) depth-- // ')'
+    } else if (depth === 0) cleaned += fqn[i]
+  }
+  // Empty segments are dropped, not carried: a malformed fqn (`Foo.`, `a..b`,
+  // a partial tree) must not be able to emit a label with an empty half, and on
+  // well-formed input the filter is a no-op. The R10 spelling census is the
+  // standing guard that no lane's labels are ever non-name-shaped again.
+  const segs = cleaned.split(".").filter((s) => s.length > 0)
+  if (segs.length === 0) return ""
+  const last = segs[segs.length - 1]
+  if (segs.length < 2) return last
+  return `${segs[segs.length - 2]}.${last}`
+}
+
+/**
  * Find the first ancestor (breadth-first, declaration order) that actually
  * declares `methodName`. Returns null when no ancestor declares it.
  */

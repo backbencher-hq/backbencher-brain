@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-23T00:03:45.652Z",
+  "generatedAt": "2026-09-23T09:44:00.406Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
-  "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification. REGENERATED FROM HEAD BLOBS (not the working tree) by script/m14/tmp/regex-census-at-head.ts, because M49.R2 compares this artifact against scanHeadAnalyzers(): a census carrying uncommitted regexes from another lane's dirty file would read as STALE.",
-  "totalRegexUsages": 27,
+  "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
+  "totalRegexUsages": 25,
   "analyzersScanned": 41,
   "byClassification": {
-    "normalization": 11,
-    "needs_review": 16
+    "normalization": 10,
+    "needs_review": 15
   },
   "byReceiverCategory": {
-    "node_text": 11,
-    "identifier": 13,
+    "node_text": 10,
+    "identifier": 12,
     "other": 3
   },
   "perFile": [
@@ -234,7 +234,7 @@
       "usages": [
         {
           "file": "real-cpp-analyzer.ts",
-          "line": 797,
+          "line": 962,
           "column": 43,
           "source": "/::|\\s+/",
           "operation": "split",
@@ -245,7 +245,7 @@
         },
         {
           "file": "real-cpp-analyzer.ts",
-          "line": 819,
+          "line": 984,
           "column": 35,
           "source": "/::|\\s+/",
           "operation": "split",
@@ -325,40 +325,6 @@
           "receiver": "hName",
           "receiverCategory": "identifier",
           "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-php-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-php-analyzer.ts",
-          "line": 1720,
-          "column": 26,
-          "source": "/^\\\\+/",
-          "operation": "replace",
-          "receiver": "raw",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-ruby-analyzer.ts",
-      "count": 1,
-      "usages": [
-        {
-          "file": "real-ruby-analyzer.ts",
-          "line": 1696,
-          "column": 41,
-          "source": "/^<\\s*/",
-          "operation": "replace",
-          "receiver": "superNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
           "justification": ""
         }
       ]

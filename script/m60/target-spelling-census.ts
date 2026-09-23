@@ -130,6 +130,27 @@ const ONLY_LANE = arg("--lane")
 // the measurement, not the lane, is what fell short.
 const MIN_SYMBOLS = 250
 
+// Walk guards by name, not by pattern (R1's "no regex" applied to this
+// instrument too): a directory whose name starts with `.`, or is a known build
+// output, never holds the lane's source.
+const SKIP_DIRS = new Set(["node_modules", "build", "target", "vendor", "dist", "out"])
+
+/**
+ * Is this character a letter or a digit (the class the `unseenAlnum` filter uses)?
+ *
+ * BY CHARACTER CODE, not regex. Everything outside ASCII is treated as
+ * ALPHANUMERIC, which is the CONSERVATIVE direction: a non-ASCII identifier
+ * character can then never be reported as an unseen separator, so the census can
+ * only under-report on a corpus that spells symbols with non-ASCII letters —
+ * disclosed rather than hidden, and the safe way round for an instrument whose
+ * job is to convict.
+ */
+function isAlphanumericChar(c: string): boolean {
+  const code = c.charCodeAt(0)
+  if (code > 127) return true
+  return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95
+}
+
 /** Every file whose extension routes to the lane, in a bounded recursive walk. */
 function filesFor(lang: string, repo: string, cap: number): string[] {
   const cfg = LANGS[lang]
@@ -149,7 +170,7 @@ function filesFor(lang: string, repo: string, cap: number): string[] {
     for (const e of entries) {
       const p = path.join(d, e.name)
       if (e.isDirectory()) {
-        if (!/^(\.|node_modules|build|target|vendor)/.test(e.name)) scan(p)
+        if (!SKIP_DIRS.has(e.name) && !e.name.startsWith(".")) scan(p)
       } else if (exts.some((x) => e.name.endsWith(x))) out.push(p)
     }
   }
@@ -278,7 +299,7 @@ async function main() {
       if (spaces.length > 0 || delims.length > 0) continue
       // The reported class: a non-alphanumeric character none of the lane's OWN
       // symbol names uses. Legitimate in qualified names, so reported only.
-      const missing = chars.filter((c) => !alphabet.has(c) && !/[\p{L}\p{N}]/u.test(c))
+      const missing = chars.filter((c) => !alphabet.has(c) && !isAlphanumericChar(c))
       if (missing.length > 0) separatorTriples.push({ target: t.target, type: t.type, chars: missing, file: t.file })
     }
 
