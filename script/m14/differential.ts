@@ -28,9 +28,13 @@ import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
+import { phpDeclaredTypeRefs } from "../../src/ast/real-php-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
 // one rule for both sides, never a re-implementation (see isWrappedHeadingName).
 import { macroWrappedHeadingShape, wrappedBodyAfter } from "../../src/ast/real-c-analyzer"
+// #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
+// the same reason — one rule, two sides (see the cpp oracle's mirror).
+import { macroDeclaredBody } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -1838,6 +1842,16 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns, inFn: true, inClass }) }
         continue
+      } else if (t === "compound_statement" && macroDeclaredBody(n)) {
+        // #919 MIRROR (and it is the analyzer's own rule, imported — never a
+        // re-implementation): a macro-declared body is a FUNCTION body, so its
+        // declarations are execution artifacts and must not enter the
+        // file-scope value roster. Without this arm truth kept believing
+        // `j`/`it` were file-scope values in nlohmann-json's tests while the
+        // fixed analyzer suppressed the reads they shadow — the exact #916
+        // shape of drift (truth deriving the phantom, the analyzer refusing it).
+        for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns, inFn: true, inClass }) }
+        continue
       } else if (!inFn && (t === "declaration" || t === "field_declaration")) {
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
@@ -2087,6 +2101,24 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
       cur = { kind: "function", name: "", locals, cls: fnCls }
       scopeStack.push(cur)
       stack.push({ n, ctx: cur, exit: true })
+    } else if (t === "compound_statement" && macroDeclaredBody(n) && !scopeStack.some((s) => s.kind === "function")) {
+      // #919 MIRROR: the analyzer opens a Function scope for a macro-declared
+      // body (the heading text is the owner it publishes); truth must open the
+      // same scope for the two things the scope decides — body locals bind
+      // (shadow suppression) and the body's declarations stop being file-scope
+      // values. Gated on the same context rule (`no enclosing function`):
+      // inside a real function a call statement followed by a block is valid
+      // C++ and the enclosing function already owns the reads. The scope NAME
+      // is not compared (truth's edges carry the `(expr)` source on both
+      // sides of the fix), so it mirrors the analyzer for readers only.
+      const rec = macroDeclaredBody(n)!
+      // The MACRO NAME names the scope here: names are not compared (truth's
+      // edges carry the `(expr)` source on both sides of this fix), and the
+      // published heading TEXT lives in the analyzer's output only, so truth
+      // needs no source text at all.
+      cur = { kind: "function", name: rec.macroName, locals: new Set<string>(), cls: null }
+      scopeStack.push(cur)
+      stack.push({ n, ctx: cur, exit: true })
     } else if (t === "identifier") {
       const p = n.parent
       let isBinding = false
@@ -2153,11 +2185,15 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
         if (up && !crossedParams) selfName = true
         if (!selfName) {
           const fn = [...scopeStack].reverse().find((s) => s.kind === "function")
+        // #919 MIRROR: a macro-declared body is a function body too (it has no
+        // `function_definition`, which is the only reason the analyzer's
+        // binding rule had to learn the same arm).
         let inFnBody = false
         let cur2: any = n.parent
         while (cur2) {
           if (cur2.type === "function_definition") { inFnBody = true; break }
           if (cur2.type === "class_specifier" || cur2.type === "struct_specifier") break
+          if (macroDeclaredBody(cur2)) { inFnBody = true; break }
           cur2 = cur2.parent
         }
         if (fn && inFnBody) fn.locals.add(n.text)
@@ -5503,6 +5539,33 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+/**
+ * R9 (#835): php's declared-type reference graph, as TRUTH.
+ *
+ * Derived from the analyzer's own `phpDeclaredTypeRefs` — deliberately not a second
+ * implementation (CSD14's rule, and the csharp round's measured lesson: a truth that
+ * re-implements the rule surfaces every new edge as analyzer-only).
+ *
+ * `parent` needs the enclosing class's declared base, and the analyzer PUBLISHES that on
+ * its class symbols (`metadata.baseClass`), so the map is built from the analyzer's own
+ * payload rather than from a second reading of the base clause.
+ */
+export function derivePhpDeclaredTypeEdges(
+  root: any,
+  symbols: any[],
+): { label: string; from: string; target: string }[] {
+  const baseByClass = new Map<string, string>()
+  for (const s of symbols ?? []) {
+    const base = s?.metadata?.baseClass
+    if (s?.name && base) baseByClass.set(String(s.name), String(base))
+  }
+  return phpDeclaredTypeRefs(root, (owner) => baseByClass.get(owner)).map((ref) => ({
+    label: "references",
+    from: ref.source,
+    target: ref.target,
+  }))
+}
+
 export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -5518,6 +5581,17 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
   // PHP2 mirror helpers: bare-name extraction, bind-site test, scope
   // collectors. Mirror the analyzer's variableBareName / isPhpBindSite /
   // collectPhpScopeBinds exactly (same shapes, same order).
+  // M60 mirror: the BRACED dynamic member form (`$o->{$x}`) is distinguishable
+  // from the static form (`$o->x`) only by the anonymous `{` token the pinned
+  // grammar keeps around the name field. Mirrors RealPhpAnalyzer
+  // .isBracedMemberName exactly.
+  const phpIsBracedMember = (n: any): boolean => {
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c && !c.isNamed && c.type === "{") return true
+    }
+    return false
+  }
   const phpBareName = (n: any): string => {
     const nameChild = n.namedChildren.find((c: any) => c.type === "name")
     if (nameChild) return nameChild.text
@@ -6003,11 +6077,22 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       // Member READS only: assignment/augmented-assignment LHS is a write.
       // PHP-A mirror: call receivers ARE reads (the old isCallReceiver gate
       // is dropped on both sides — `$this->dep` in `$this->dep->run()`).
+      //
+      // M60: the read is the STATIC member NAME only. Pushing the raw name
+      // field's text published non-symbols as targets — `uses -> $param` for
+      // `$postParams->$param` (phpmyadmin ServerRequest.php:233; the analyzer
+      // emitted nothing, so the lane read MISSING there), and `uses -> 'lit'` /
+      // `uses -> 2` for `$o->{'lit'}` / `$o->{2}` on BOTH sides, which no mirror
+      // can see by construction. A braced field is a dynamic selection: the
+      // braces are anonymous tokens in the pinned grammar (`$o->NAME` is
+      // `variable_name, ~->, name`; `$o->{NAME}` is `variable_name, ~->, ~{,
+      // name, ~}`), so `{` is the discriminator, and the field's own expression
+      // reads are emitted by the ordinary rules for those nodes.
       const lhs = parent ? parent.namedChild(0) : null
       const isWrite = parent && (parent.type === "assignment_expression" || parent.type === "augmented_assignment_expression") && lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
       if (!isWrite) {
         const nameNode = n.childForFieldName?.("name")
-        if (nameNode) push("uses", nameNode.text)
+        if (nameNode && nameNode.type === "name" && !phpIsBracedMember(n)) push("uses", nameNode.text)
       }
     }
     // PHP-H mirror: static property reads (`C::$total`, `self::$x`) with
@@ -6142,8 +6227,15 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
           const first = parent.namedChild(0)
           isDecl = !!first && first.startIndex === n.startIndex && first.endIndex === n.endIndex
         }
+        // M60: the member-access exclusion covers the STATIC member-NAME
+        // position. In a BRACED field the name is a value expression
+        // (`$o->{$CONST}` selects the property BY that constant), so it reads —
+        // the same exception the member rule above takes, with the same test.
+        const dynamicMemberField = !!parent &&
+          (ptype === "member_access_expression" || ptype === "nullsafe_member_access_expression") &&
+          phpIsBracedMember(parent)
         if (
-          ptype !== "member_access_expression" && ptype !== "nullsafe_member_access_expression" &&
+          (dynamicMemberField || (ptype !== "member_access_expression" && ptype !== "nullsafe_member_access_expression")) &&
           ptype !== "class_constant_access_expression" &&
           !calleePos && !isDecl && !isLabel && !inNs &&
           phpConstValues.has(txt)
@@ -11212,6 +11304,12 @@ async function main() {
       }
       if (lang === "php") {
         for (const e of derivePhpEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // R9 (#835): declared-type references — the analyzer emits them, so the truth
+        // must derive them from the same rule or every depth draw reads the new edges
+        // as analyzer-only.
+        for (const e of derivePhpDeclaredTypeEdges(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
       }

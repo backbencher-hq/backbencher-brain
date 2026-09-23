@@ -1692,6 +1692,27 @@ const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "Mem3Like", kind: "function", scope: "global", visibility: "public" }] }),
   },
   {
+    id: "cpp/macro-declared-body-loss",
+    language: "cpp",
+    defectClass: "scope-blindness",
+    description:
+      "#919 regression: reverts the macro-declared-body recovery in BOTH spellings — the heading symbol disappears and every edge the recovered body owned goes back to `global`. The expression_statement spelling (`TEST_CASE(\"x\") {…}`) was the pre-fix state measured on the two cpp corpora as 3,003 bodies sourcing 27k edges at `global` while 5,680 body locals published as file-scope symbols; the function_definition spelling (`TEST(a, b) {…}`, CP2) sourced 93. Caught by cpp/macro-declared-body-919, which pins the two heading symbols, forbids the body locals as symbols AND as exports, and forbids `uses file_value from global` / `calls real_fn from global` — the exact pre-fix edges. This is the pre-fix output, not a synthetic corruption.",
+    transform: r => {
+      const macroNames = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => (s.metadata ?? {}).expandedFrom === "macro-heading")
+          .map((s: any) => s.name),
+      )
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => (s.metadata ?? {}).expandedFrom !== "macro-heading"),
+        relationships: (r.relationships ?? []).map((x: any) =>
+          macroNames.has(String(x.source)) ? { ...x, source: "global" } : x,
+        ),
+      }
+    },
+  },
+  {
     id: "cpp/drop-virtual-overrides",
     language: "cpp",
     defectClass: "relationship-loss",
@@ -6964,6 +6985,34 @@ const MUTANTS: Mutant[] = [
     defectClass: "relationship-fabrication",
     description: "PHP2-D regression: the member side of call receivers reads again (`$gw->authorize()` emits uses->authorize) — php payload-and-complexity authorize forbid dies",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "process", target: "authorize", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }] }),
+  },
+  {
+    id: "php/qualified-builtin-call-raw-text",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "M60 (2026-09-22) regression: the callee's RAW text is used again, so `PHP_BUILTINS` (bare names) stops filtering a fully-qualified builtin and `\\is_file('/tmp/x')` fabricates a call to a symbol literally named `\\is_file`. Caught by php/header-reads, whose forbidRelationships names both spellings — this mutant is that defect's revert.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "global", target: "\\is_file", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }] }),
+  },
+  {
+    id: "php/qualified-call-target-unflattened",
+    language: "php",
+    defectClass: "payload-corruption",
+    description: "M60 regression, the OTHER half of the same site: the call target keeps its qualification instead of collapsing to the leaf (`\\spl_autoload_register` instead of `spl_autoload_register`), so a call edge names a spelling no other edge in the lane produces and the oracle's bare target reads MISSING. Caught by php/header-reads.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "global", target: "\\spl_autoload_register", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }] }),
+  },
+  {
+    id: "php/dynamic-member-name-as-symbol",
+    language: "php",
+    defectClass: "relationship-fabrication",
+    description: "M60 regression: the member-read gate goes back to the raw name-field text. Reinstates the exact pre-fix observables — a `$`-prefixed target (`uses -> $param` for `$o->$param`) that the analyzer never emitted, and string/integer LITERALS published as symbol names (`uses -> 'quoted'`, which both sides produced identically and so no mirror could report). Caught by php/dynamic-member-reads, whose forbids name every spelling; the second half is the reason that fixture exists at all.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "touch", target: "$param", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true } }, { type: "uses", source: "touch", target: "'quoted'", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true, isMemberRead: true } }] }),
+  },
+  {
+    id: "php/static-member-read-lost-to-braces",
+    language: "php",
+    defectClass: "relationship-loss",
+    description: "M60 regression, the conservative direction: the brace test over-applies and a STATIC member read is dropped (`$this->plain` treated as dynamic). php/dynamic-member-reads expects `uses touch -> plain` with meta.isMemberRead, so the pin dies — the fix must not silence the static form while removing the dynamic one.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "touch" && x.target === "plain")) }),
   },
   {
     id: "ruby/file-scope-placeholder-divergence",
