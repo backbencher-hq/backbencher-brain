@@ -28,6 +28,158 @@ function stripAccessSpecifier(text: string): string {
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+/**
+ * #919: a MACRO-DECLARED BODY — a call-shaped macro standing as the whole
+ * heading of a block, where the pinned cpp grammar read the heading as an
+ * `expression_statement` whose terminator is MISSING and left the block as a
+ * SIBLING `compound_statement`:
+ *
+ *   TEST(format_test, enum) { EXPECT_EQ(fmt::format("{}", foo), "0"); }
+ *   TEST_CASE("iterator class") { SECTION("copy assignment") { … } }
+ *   JSON_INTERNAL_CATCH (out_of_range&) { … }
+ *
+ * The cpp sibling of #917 (the c lane's macro-wrapped heading). Because no
+ * `function_definition` exists, the body was inside NO function scope: its
+ * locals published as FILE-SCOPE symbols (`variable j`, `variable it` in
+ * nlohmann-json's tests, 1,890 of them across 14 files) and every read in the
+ * body was attributed to `global` (7,402 edges).
+ *
+ * The SHAPE is evidence, not a heuristic: a call-shaped statement at namespace
+ * scope is not valid C++, and the MISSING terminator is the grammar's own
+ * record of the recovery — a real `;` never produces this node. Both arms are
+ * required (the missing terminator AND a sibling block), and the rule is
+ * exported so the F5 oracle walks the same evidence rather than a copy of it
+ * (#916's lesson: leaving truth behind converts the recovery into fabrication).
+ *
+ * The caller owns the CONTEXT gate (`enclosingFunctionScope() === null`), which
+ * is what keeps the shape honest where it is legal code: inside a function body
+ * a call statement followed by a block IS valid C++, and there the enclosing
+ * function already owns the reads.
+ */
+export function macroDeclaredBody(body: Node): {
+  heading: Node
+  macroName: string
+  nameNode: Node
+} | null {
+  if (!body || body.type !== "compound_statement") return null
+  // Step back over the recovery's own separators (the same two siblings the c
+  // lane's `wrappedBodyAfter` steps over), then require the heading shape.
+  let heading: Node | null = body.previousSibling
+  for (let i = 0; heading && i < 2 && (heading.isMissing || heading.type === ";"); i++) {
+    heading = heading.previousSibling
+  }
+  if (!heading || heading.type !== "expression_statement") return null
+  let missing = false
+  for (let i = 0; i < heading.childCount; i++) {
+    const c = heading.child(i)
+    if (c && c.isMissing) { missing = true; break }
+  }
+  if (!missing) return null
+  const call = heading.namedChild(0)
+  if (!call || call.type !== "call_expression") return null
+  const macro = call.childForFieldName("function")
+  if (!macro || macro.type !== "identifier") return null
+  const macroName = macro.text.trim()
+  if (!macroName) return null
+  return { heading, macroName, nameNode: macro }
+}
+
+/**
+ * #919: the text the source WRITES for a macro invocation — from the macro's
+ * name to the close of its own top-level paren group.
+ *
+ * Structural slicing is not enough here, and that is measured, not assumed:
+ * where recovery swallows the body (and the next heading) into an argument list,
+ * `arguments.endIndex` runs far past the heading — nlohmann's
+ * `unit-serialization.cpp` has a `TEST_CASE_TEMPLATE(...)` statement spanning
+ * lines 169..186 whose real body is left as a SIBLING at 187, so a slice to the
+ * argument list's end publishes the body as the definition's NAME. Matching the
+ * paren group instead yields exactly what the source writes:
+ * `TEST_CASE_TEMPLATE("serialization for extreme integer values", T, int32_t,
+ * uint32_t, int64_t, uint64_t)`.
+ *
+ * The scan skips string/char literals and comments (either can carry parens),
+ * is bounded, and REFUSES (null) when the group never closes, when a `{`/`}`/`;`
+ * appears before the opening paren (the invocation is not there at all), or when
+ * the cap is hit — a heading that cannot be read is never published damaged.
+ */
+// Character classes as code-point comparisons, not regexes: the M49.R2 census
+// keeps every regex in the analyzers accounted for, and an identifier test is
+// not worth an entry (the project's direction is fewer text rules, not more).
+function isIdentifierChar(code: number): boolean {
+  return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95
+}
+
+/**
+ * #919: join a multi-line heading into ONE name without touching in-line
+ * spacing. Only a line break (with the horizontal whitespace around it) becomes
+ * a single space, so a single-line heading is returned byte-for-byte and a
+ * string literal inside it (`TEST_CASE("a  b")`) keeps its own text exactly.
+ */
+function joinHeadingLines(text: string): string {
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    const c = text[i]
+    if (c === "\n") {
+      while (out.length > 0 && (out[out.length - 1] === " " || out[out.length - 1] === "\t" || out[out.length - 1] === "\r")) out = out.slice(0, -1)
+      out += " "
+      i++
+      while (i < text.length && (text[i] === " " || text[i] === "\t" || text[i] === "\r")) i++
+      continue
+    }
+    out += c
+    i++
+  }
+  return out.trim()
+}
+
+export function macroInvocationText(content: string, nameStart: number): string | null {
+  const CAP = 4000
+  let i = nameStart
+  while (i < content.length && isIdentifierChar(content.charCodeAt(i))) i++
+  const end = Math.min(content.length, i + CAP)
+  let open = -1
+  while (i < end) {
+    const c = content[i]
+    if (c === "(") { open = i; break }
+    if (c === "/" && content[i + 1] === "/") { const nl = content.indexOf("\n", i); if (nl < 0) return null; i = nl + 1; continue }
+    if (c === "/" && content[i + 1] === "*") { const cl = content.indexOf("*/", i); if (cl < 0) return null; i = cl + 2; continue }
+    if (c === "{" || c === "}" || c === ";") return null
+    i++
+  }
+  if (open < 0) return null
+  let depth = 0
+  for (let k = open; k < end; k++) {
+    const c = content[k]
+    if (c === '"' || c === "'") {
+      k++
+      while (k < end) {
+        if (content[k] === "\\") { k += 2; continue }
+        if (content[k] === c) break
+        k++
+      }
+      continue
+    }
+    if (c === "/" && content[k + 1] === "/") { const nl = content.indexOf("\n", k); if (nl < 0) return null; k = nl; continue }
+    if (c === "/" && content[k + 1] === "*") { const cl = content.indexOf("*/", k); if (cl < 0) return null; k = cl + 1; continue }
+    if (c === "(") depth++
+    else if (c === ")") {
+      depth--
+      if (depth === 0) {
+        // LINE JOINS ONLY: a heading written across several lines becomes one
+        // name (`TEST_CASE_TEMPLATE("checking forward-iterators", T, // NOLINT(…)\n
+        // std::string, …)`), while a single-line heading stays verbatim —
+        // in-line spacing is preserved, so a literal inside the heading
+        // (`TEST_CASE("a  b")`) keeps its own text exactly.
+        const text = joinHeadingLines(content.slice(nameStart, k + 1))
+        return text || null
+      }
+    }
+  }
+  return null
+}
+
 export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -152,6 +304,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (det.scope) pendingQualified.push({ name: det.name, scope: det.scope })
             else if (!inFn) addValue(det.name, ns, inClass)
           }
+          for (let i = n.namedChildCount - 1; i >= 0; i--) {
+            const c = n.namedChild(i)
+            if (c) pre.push({ n: c, ns, inFn: true, inClass })
+          }
+          continue
+        } else if (t === "compound_statement" && macroDeclaredBody(n)) {
+          // #919: a macro-declared body is a FUNCTION body (the analyzed
+          // sibling of the `function_definition` branch above). Every
+          // declaration inside it is function-local (execution artifact), so
+          // the file-scope value roster must not learn its locals — that
+          // roster is what resolved the phantom `uses -> j`/`it` edges in
+          // nlohmann-json's tests and made the analyzer and truth agree on a
+          // wrong answer. Mirrored on the oracle side from the same rule.
           for (let i = n.namedChildCount - 1; i >= 0; i--) {
             const c = n.namedChild(i)
             if (c) pre.push({ n: c, ns, inFn: true, inClass })
@@ -837,6 +1002,50 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(sym)
         newContext.symbolRef = sym
+      } else if (type === "compound_statement" && enclosingFunctionScope() === null && macroDeclaredBody(node)) {
+        // #919: the body of a macro-declared heading (see `macroDeclaredBody`).
+        // Publishing the definition the heading WRITES — the heading text
+        // itself, never an invented identifier (`TEST(format_test, enum)`
+        // generates `format_test_enum_Test::TestBody()`, which appears nowhere
+        // in the source) — is what the graph needs: it gives the body's reads a
+        // real owner instead of `global`, and it is flagged in metadata so no
+        // consumer can mistake it for a hand-written function. The context gate
+        // on the left is the whole safety story: inside a real (or recovered)
+        // function scope a call statement followed by a block is valid C++ and
+        // the enclosing function already owns those reads.
+        const rec = macroDeclaredBody(node)!
+        const headingText = macroInvocationText(content, rec.nameNode.startIndex)
+        // A heading that cannot be read (unbalanced group, a hard token before
+        // the paren, the cap) is REFUSED: the block is walked as before — no
+        // scope, no symbol — rather than published under a damaged name.
+        if (headingText) {
+          const sym: ASTEngine.UniversalSymbol = {
+            name: headingText,
+            kind: ASTEngine.SymbolKind.Function,
+            range: this.nodeToRange(rec.heading),
+            visibility: "public",
+            metadata: {
+              isCppFunction: false,
+              expandedFrom: "macro-heading",
+              macroName: rec.macroName,
+              headingText,
+            },
+          }
+          symbols.push(sym)
+          newContext = {
+            node,
+            name: headingText,
+            kind: ASTEngine.SymbolKind.Function,
+            visibility: "public",
+            isTemplate: false,
+            isAbstract: false,
+            friends: [],
+            symbolRef: sym,
+            locals: new Set<string>(),
+          }
+          scopeStack.push(newContext)
+          pushedScope = true
+        }
       } else if (type === "enum_specifier") {
         const name = this.childText(node, "type_identifier") || "anonymous"
         let isEnumClass = false
@@ -893,23 +1102,51 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           const { name: funcName, scope: explicitScope, isDestructor, isOperator } = funcDetails
 
           // CP2: macro-function shapes (`TEST(a, b) {...}`) declare no real
-          // function — emit no symbol — BUT the body is real code whose
-          // locals must bind (shadowing) and whose nested declarations must
-          // NOT leak as file-scope symbols. Push an anonymous function scope
-          // (no symbolRef, empty name → relationship sources fall back to
-          // "global", matching the oracle which scopes these bodies as
-          // plain functions). Without the scope, TEST-body locals minted as
-          // file-scope Variables AND shadow-suppression failed (phantom
-          // uses to same-named globals: `copy`, `file`).
+          // function — `TEST` is not a name in the source — BUT the body is
+          // real code whose locals must bind (shadowing) and whose nested
+          // declarations must NOT leak as file-scope symbols. Without the
+          // scope, TEST-body locals minted as file-scope Variables AND
+          // shadow-suppression failed (phantom uses to same-named globals:
+          // `copy`, `file`).
+          //
+          // #919: this is the SECOND spelling of a macro-DECLARED BODY (the
+          // first is `macroDeclaredBody`, where the grammar leaves the block as
+          // a sibling). Both are bodies written by a macro heading, and both
+          // used to source their reads at `global`; both are now scoped and
+          // published by the SAME policy — the heading text as the name,
+          // flagged `expandedFrom: macro-heading` (see macroDeclaredBody's doc
+          // for why naming is the product decision). The heading text here runs
+          // from the node's start to the end of its parameter list, which is
+          // exactly what the source writes; a shape with NO body (gmock's
+          // decorator fragments) keeps the anonymous scope, because there is no
+          // heading to read.
           if (!isDestructor && this.isMacroFunctionShape(node, funcName)) {
+            const macroHeading = this.macroHeadingText(node, content, funcName)
+            let sym: ASTEngine.UniversalSymbol | null = null
+            if (macroHeading) {
+              sym = {
+                name: macroHeading,
+                kind: ASTEngine.SymbolKind.Function,
+                range: this.nodeToRange(node),
+                visibility: "public",
+                metadata: {
+                  isCppFunction: false,
+                  expandedFrom: "macro-heading",
+                  macroName: funcName,
+                  headingText: macroHeading,
+                },
+              }
+              symbols.push(sym)
+            }
             newContext = {
               node,
-              name: "",
+              name: macroHeading ?? "",
               kind: ASTEngine.SymbolKind.Function,
               visibility: "public",
               isTemplate: false,
               isAbstract: false,
               friends: [],
+              ...(sym ? { symbolRef: sym } : {}),
               locals: new Set<string>(),
             }
             scopeStack.push(newContext)
@@ -1152,15 +1389,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // variable declarations).
           const fnScope = enclosingFunctionScope()
           if (fnScope && scopeStack.length > 0) {
-            let inFnBody = false
-            let cur2: Node | null = node.parent
-            while (cur2) {
-              if (cur2.type === "function_definition") { inFnBody = true; break }
-              if (cur2.type === "class_specifier" || cur2.type === "struct_specifier" ||
-                  cur2.type === "union_specifier") break
-              cur2 = cur2.parent
-            }
-            if (inFnBody) {
+            if (this.insideFunctionBody(node.parent)) {
               if (!fnScope.locals) fnScope.locals = new Set<string>()
               fnScope.locals.add(name)
             }
@@ -1444,15 +1673,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (self-shadow would eat same-named overload reads; oracle parity).
           const fnScope = enclosingFunctionScope()
           if (fnScope) {
-            let inFnBody = false
-            let cur2: Node | null = p
-            while (cur2) {
-              if (cur2.type === "function_definition") { inFnBody = true; break }
-              if (cur2.type === "class_specifier" || cur2.type === "struct_specifier" ||
-                  cur2.type === "union_specifier") break
-              cur2 = cur2.parent
-            }
-            if (inFnBody) {
+            if (this.insideFunctionBody(p)) {
               if (!fnScope.locals) fnScope.locals = new Set<string>()
               fnScope.locals.add(node.text)
             }
@@ -1525,7 +1746,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!sym.ownerName && !sym.ownerKind) {
         // File-scope: global namespace
         const isPrivate = sym.visibility === "private" || sym.isStatic
-        if (!isPrivate && !sym.name.startsWith("anonymous") && !seenExportNames.has(sym.name)) {
+        // #919: a macro-declared body's heading is the file's test/block
+        // heading, not an exported API — the generated function has internal
+        // linkage in every macro that writes this shape (gtest's TEST, doctest's
+        // TEST_CASE, fmt's own macros), so it is not an export.
+        const isMacroExpansion = sym.metadata?.expandedFrom === "macro-heading"
+        if (!isPrivate && !isMacroExpansion && !sym.name.startsWith("anonymous") && !seenExportNames.has(sym.name)) {
           seenExportNames.add(sym.name)
           exports.push({
             name: sym.name,
@@ -1652,6 +1878,60 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
   // node. Real functions always type their params (`void f()`/`f(void)`
   // have empty/void lists and are kept); ALL-CAPS real functions with
   // typed params (`WINAPI Foo(int)`) are kept.
+  // #919: the heading TEXT of a `function_definition`-spelled macro body — from
+  // the node's start to the end of its parameter list, i.e. exactly the text the
+  // source writes before the block (`TEST(my_case, keeps_its_locals)`). Returns
+  // null when the shape has no body (a decorator fragment such as gmock's
+  // `GTEST_LOCK_EXCLUDED_(g_gmock_mutex) = 0;`), because then there is no
+  // heading/body pair at all.
+  private macroHeadingText(node: Node, content: string, funcName: string): string | null {
+    if (!node.childForFieldName("body")) return null
+    const decl = this.findChild(node, "function_declarator")
+    if (!decl) return null
+    // The heading starts at the MACRO'S NAME, never at the node's start: the
+    // grammar's recovery can swallow a preceding statement into this
+    // `function_definition`'s specifier region (measured: `FMT_END_NAMESPACE\n\n
+    // TEST(args_test, custom_format) {…}` makes the node start at the earlier
+    // macro line), and the node may equally swallow LATER code into its
+    // argument list. The name identifier is the declarator's own leftmost
+    // identifier — the same occurrence `getFunctionDetails` named — and the text
+    // runs to the close of that name's own paren group (see
+    // `macroInvocationText` for why structural slicing cannot do this).
+    let nameNode: Node | null = null
+    {
+      let cur: Node | null = decl
+      while (cur) {
+        if ((cur.type === "identifier" || cur.type === "field_identifier") && cur.text === funcName) { nameNode = cur; break }
+        let next: Node | null = null
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type.endsWith("declarator") || c.type === "identifier" || c.type === "field_identifier")) { next = c; break }
+        }
+        cur = next
+      }
+    }
+    if (!nameNode) return null
+    return macroInvocationText(content, nameNode.startIndex)
+  }
+
+  // #919: is this node inside a function BODY? Two shapes qualify — a
+  // `function_definition`, and the body of a macro-declared heading (which has
+  // no `function_definition` at all: see `macroDeclaredBody`). A class/struct/
+  // union boundary ends the search, exactly as the inline walk did before this
+  // was factored out: a declaration inside a nested class belongs to that class,
+  // not to the enclosing function whose locals we are collecting.
+  private insideFunctionBody(node: Node | null): boolean {
+    let cur: Node | null = node
+    while (cur) {
+      if (cur.type === "function_definition") return true
+      if (cur.type === "class_specifier" || cur.type === "struct_specifier" ||
+          cur.type === "union_specifier") return false
+      if (macroDeclaredBody(cur)) return true
+      cur = cur.parent
+    }
+    return false
+  }
+
   private isMacroFunctionShape(node: Node, funcName: string): boolean {
     if (!this.isAllCapsName(funcName)) return false
     const decl = this.findChild(node, "function_declarator")

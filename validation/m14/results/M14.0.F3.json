@@ -62,7 +62,7 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "13/13 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -92,7 +92,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -116,7 +116,7 @@
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "7/7 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
@@ -152,8 +152,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "52cc5b09a48ed498871c0575a856bfb91a6e8d09",
-  "committedAt": "2026-09-22T19:58:11-04:00",
+  "commit": "b8f2a6f20aac17f0890556a6f9e7aab3d164e673",
+  "committedAt": "2026-09-22T22:26:51-04:00",
   "data": {
     "details": [
       {
@@ -2467,6 +2467,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/macro-declared-body-919",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/macro-decorated-specifier",
         "ok": true,
         "problems": []
@@ -2682,6 +2687,11 @@
         "problems": []
       },
       {
+        "fixture": "csharp/declared-type-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "csharp/framework-detection",
         "ok": true,
         "problems": []
@@ -2842,7 +2852,32 @@
         "problems": []
       },
       {
+        "fixture": "php/declared-type-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/dynamic-callee",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/dynamic-member-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/external-override",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/header-reads",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/include-paths",
         "ok": true,
         "problems": []
       },
@@ -3354,11 +3389,11 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 13
+        "pass": 14
       },
       "csharp": {
         "fail": 0,
-        "pass": 10
+        "pass": 11
       },
       "dart": {
         "fail": 0,
@@ -3402,7 +3437,7 @@
       },
       "php": {
         "fail": 0,
-        "pass": 7
+        "pass": 12
       },
       "python": {
         "fail": 0,
@@ -3459,9 +3494,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-23T00:00:38.597Z",
-  "regeneratedAtCommit": "52cc5b09a48ed498871c0575a856bfb91a6e8d09",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-09-23T09:06:03.679Z",
+  "regeneratedAtCommit": "b8f2a6f20aac17f0890556a6f9e7aab3d164e673",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }
