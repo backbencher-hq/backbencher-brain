@@ -43,6 +43,8 @@ const SENTINEL_CENSUS = path.join(ROOT, "validation/m60/results/symbol-sentinels
 const SENTINEL_REGISTER = path.join(ROOT, "validation/m60/symbol-sentinel-register.json")
 const FRAMEWORK_CENSUS = path.join(ROOT, "validation/m60/results/framework-surfaces.json")
 const FRAMEWORK_REGISTER = path.join(ROOT, "validation/m60/framework-surface-register.json")
+const DECLARED_TYPE_CENSUS = path.join(ROOT, "validation/m60/results/declared-type-refs.json")
+const DECLARED_TYPE_REGISTER = path.join(ROOT, "validation/m60/declared-type-register.json")
 /** The seven OO lanes — the owner standard's zero target (lang names as the census emits them). */
 export const OO_LANES = ["csharp", "dart", "objective-c", "php", "python", "ruby", "swift"]
 const REVIEWS = path.join(ROOT, "reviews")
@@ -625,6 +627,126 @@ function main() {
   negative("R8 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
     !r8Live(frameworkRegisterDetail(null, FREG)))
 
+  // ---- R9 live: the family's declared-type graph, per lane --------------------
+  // The class this rule measures is the one a per-edge oracle structurally cannot
+  // see: an ABSENT capability emits nothing to adjudicate. Built 2026-09-22 after
+  // csharp's declared-type graph turned out to be missing while ten sibling lanes
+  // had it — recorded in reviews/csharp/master-review.md as a "recorded gap for its
+  // own wave", and invisible to every gate the lane had.
+  const dtRegister = readJsonOrNull(DECLARED_TYPE_REGISTER)
+  const dt = declaredTypeRegisterDetail(readJsonOrNull(DECLARED_TYPE_CENSUS), dtRegister)
+  check("R9 live: every lane's declared-type reading matches the register exactly",
+    registerAdjudicated(dt, "R9"), dt)
+
+  // ---- R9 negatives: the comparison, and the OO target, must both discriminate ----
+  // Every fixture carries a CALIBRATION lane (rust, whose capability no one disputes),
+  // because the rule refuses to adjudicate an uncalibrated measurement: without it, a
+  // fixture that omitted rust would be convicted for the wrong reason and the negative
+  // would pass while testing nothing.
+  const RUST_PRESENT = () => ({
+    lang: "rust", verdict: "present-declared_type", control: true, declaredEdges: 2, typeRefs: 2,
+    markers: ["declared_type"], otherMarkers: [], targets: ["Dep"], relationships: 4, symbols: 2,
+  })
+  const RUST_ENTRY = { lang: "rust", family: "systems", reading: "present-declared_type", ruling: "family-standard" }
+  const DROW = (over: any = {}) => ({
+    lang: "php", verdict: "absent", control: true, declaredEdges: 0, typeRefs: 0,
+    markers: [], otherMarkers: [], targets: [], relationships: 3, symbols: 2, ...over,
+  })
+  const OWED = (lang: string) => ({ lang, family: "oo", reading: "absent", ruling: "owed" })
+  const PRESENT = (lang: string) => ({ lang, family: "oo", reading: "present-declared_type", ruling: "family-standard" })
+  const PRESENT_ROW = (lang: string) => DROW({ lang, verdict: "present-declared_type", declaredEdges: 1, typeRefs: 1, markers: ["declared_type"] })
+  const DREG = {
+    baseline: { lanes: 2, presentDeclaredType: 1, presentOtherMarker: 0, absent: 1 },
+    ooTarget: { absent: 1 },
+    lanes: [RUST_ENTRY, OWED("php")],
+  }
+  const DCEN = (rows: any[], over: any = {}) => ({
+    lanes: rows.length,
+    presentDeclaredType: rows.filter((r) => r.verdict === "present-declared_type").length,
+    presentOtherMarker: rows.filter((r) => r.verdict === "present-other-marker").map((r) => r.lang),
+    absent: rows.filter((r) => r.verdict === "absent").map((r) => r.lang),
+    notExercised: rows.filter((r) => r.verdict === "not-exercised").map((r) => r.lang),
+    errored: rows.filter((r) => r.verdict === "error").map((r) => r.lang),
+    rows, ...over,
+  })
+  negative("R9 negative: a registered lane matching the register is accepted",
+    declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW()]), DREG).startsWith("R9:"))
+  negative("R9 negative: an unregistered lane is convicted (the capability must be recorded before it is judged)",
+    declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW(), DROW({ lang: "dart" })]), DREG).includes("unregistered"))
+  negative("R9 negative: a lane that REGRESSES from emitting the graph to emitting nothing is convicted",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), DROW({ lang: "php", verdict: "absent" })]),
+      { ...DREG, lanes: [RUST_ENTRY, PRESENT("php")], ooTarget: { absent: 0 } },
+    ).includes("REGRESSED"))
+  negative("R9 negative: a lane that CLOSES its gap while the register still records it owed is convicted (flip the register deliberately)",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), PRESENT_ROW("php")]),
+      DREG,
+    ).includes("still records it as owed"))
+  negative("R9 negative: a lane registered to emit under the family marker that emits under another is convicted",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), DROW({ verdict: "present-other-marker", typeRefs: 1, otherMarkers: ["type_reference"] })]),
+      { ...DREG, lanes: [RUST_ENTRY, PRESENT("php")], ooTarget: { absent: 0 } },
+    ).includes("type_reference"))
+  negative("R9 negative: an UNCALIBRATED census cannot adjudicate (not one lane present means the measurement is broken, not that 19 lanes are guilty)",
+    declaredTypeRegisterDetail(DCEN([DROW(), DROW({ lang: "cpp" })]),
+      { ...DREG, lanes: [
+        OWED("php"),
+        { lang: "cpp", family: "systems", reading: "absent", ruling: "owed" }] }).includes("cannot adjudicate"))
+  negative("R9 negative: a census that records no holder-symbol control cannot convict anyone",
+    declaredTypeRegisterDetail(
+      DCEN([{ ...RUST_PRESENT(), control: undefined }, DROW({ lang: "dart" })]),
+      { ...DREG, lanes: [RUST_ENTRY, OWED("php"), OWED("dart")], ooTarget: { absent: 2 } },
+    ).includes("cannot adjudicate"))
+  negative("R9 negative: the TARGET state (every lane present, register flipped) is accepted, not refused as vacuous",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), PRESENT_ROW("php"), PRESENT_ROW("dart")]),
+      { ...DREG, ooTarget: { absent: 0 }, lanes: [RUST_ENTRY, PRESENT("php"), PRESENT("dart")] },
+    ).startsWith("R9:"))
+  negative("R9 negative: a lane whose snippet never reached the holder symbol forbids adjudication (zero would mean not-exercised, not absent)",
+    declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW({ verdict: "not-exercised", control: false })]), DREG).includes("cannot adjudicate"))
+  negative("R9 negative: a lane whose analyzer errored forbids adjudication",
+    declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW({ verdict: "error", error: "probe" })]), DREG).includes("cannot adjudicate"))
+  negative("R9 negative: an absent census forbids adjudication",
+    declaredTypeRegisterDetail(null, DREG).includes("cannot adjudicate"))
+  negative("R9 negative: an absent register forbids adjudication",
+    declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW()]), null).includes("cannot adjudicate"))
+  negative("R9 negative: a registered lane that appears in no census row is convicted",
+    declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW()]),
+      { ...DREG, lanes: [RUST_ENTRY, OWED("php"), OWED("dart")], ooTarget: { absent: 2 } }).includes("no census row"))
+  negative("R9 negative: an OO lane's debt rising above the recorded target is convicted even when every lane matches its register entry",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), DROW({ lang: "php" }), DROW({ lang: "dart" })]),
+      { ...DREG, ooTarget: { absent: 1 }, lanes: [RUST_ENTRY, OWED("php"), OWED("dart")] },
+    ).includes("target"))
+  negative("R9 negative: an exempt-dynamic lane does not count against the OO target (ruby is ruled, not owed)",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), DROW({ lang: "ruby" })]),
+      { ...DREG, ooTarget: { absent: 0 }, lanes: [RUST_ENTRY, { lang: "ruby", family: "oo", reading: "absent", ruling: "exempt-dynamic" }], baseline: { lanes: 2, presentDeclaredType: 1, presentOtherMarker: 0, absent: 1 } },
+    ).startsWith("R9:"))
+  negative("R9 negative: a non-OO lane does not count against the OO target",
+    declaredTypeRegisterDetail(
+      DCEN([RUST_PRESENT(), DROW({ lang: "cpp" })]),
+      { ...DREG, ooTarget: { absent: 0 }, lanes: [RUST_ENTRY, { lang: "cpp", family: "systems", reading: "absent", ruling: "owed" }] },
+    ).startsWith("R9:"))
+  negative("R9 negative: the register is not vacuous (this tree HAS lanes registered, and not all of them present)",
+    Boolean(dtRegister && (dtRegister.lanes ?? []).some((l: any) => l.reading !== "present-declared_type")))
+  negative("R9 negative: the census is not vacuous (it measured lanes and found more than one reading)",
+    (() => { const c = readJsonOrNull(DECLARED_TYPE_CENSUS); const v = new Set((c?.rows ?? []).map((r: any) => r.verdict)); return Boolean(c && (c.rows ?? []).length > 5 && v.size > 1) })())
+  negative("R9 negative: the OO target is recorded, so a lane cannot quietly become exempt",
+    Number(dtRegister?.ooTarget?.absent ?? -1) >= 0)
+  // R9's live predicate, for the same reason as R7's and R8's above.
+  const r9Live = (detail: string) => registerAdjudicated(detail, "R9")
+  negative("R9 negative (live predicate): the adjudicated reading is accepted",
+    r9Live(declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW()]), DREG)))
+  negative("R9 negative (live predicate): an unregistered lane is NOT accepted as a verdict",
+    !r9Live(declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW(), DROW({ lang: "dart" })]), DREG)))
+  negative("R9 negative (live predicate): a regressed lane is NOT accepted as a verdict",
+    !r9Live(declaredTypeRegisterDetail(DCEN([RUST_PRESENT(), DROW()]),
+      { ...DREG, lanes: [RUST_ENTRY, PRESENT("php")], ooTarget: { absent: 0 } })))
+  negative("R9 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
+    !r9Live(declaredTypeRegisterDetail(null, DREG)))
+
   finish(head)
 }
 
@@ -661,6 +783,120 @@ function main() {
 // that the debt was paid.
 function readJsonOrNull(p: string): any {
   try { return JSON.parse(readFileSync(p, "utf8")) } catch { return null }
+}
+
+/** The seven OO lanes, in the CENSUS's spelling (the register keys on lanes the
+ *  census emits — a rule that names lanes the measurement cannot produce would
+ *  silently exempt the whole family). */
+export const DECLARED_TYPE_OO_LANES = ["csharp", "dart", "objc", "php", "python", "ruby", "swift"]
+
+/**
+ * R9: the family's declared-type reference graph, measured per lane.
+ *
+ * The class this rule measures is the one a per-edge oracle structurally cannot see.
+ * Every other gate in this repo asks whether an edge that EXISTS is right; a lane that
+ * never emits a whole class of edge emits nothing to adjudicate, so it reads clean in
+ * all of them. csharp's declared-type graph was absent while ten sibling lanes had it
+ * and it survived an entire review wave — reviews/csharp/master-review.md even records
+ * it, as a "recorded gap for its own wave", which is what a gap looks like when nothing
+ * measures it.
+ *
+ * Three things this refuses to adjudicate on, each one a way the census could accuse
+ * falsely, and each one measured rather than imagined:
+ *   * a lane whose analyzer ERRORED — unknown, not absent;
+ *   * a lane whose snippet never produced the holder SYMBOL — the control. Without it a
+ *     snippet the grammar rejects (a malformed F# `type`, a PowerShell class) would read
+ *     as a missing capability, which is the accusation this rule exists to make and the
+ *     one it must never make wrongly;
+ *   * a WINDOW-ONLY census — if every lane reads present, nothing was measured absent
+ *     and the rule would pass vacuously.
+ *
+ * Convictions: an unregistered lane; a lane that regressed from emitting the graph to
+ * emitting nothing; a lane that CLOSED its gap while the register still records it owed
+ * (the register is the record of a decision, so it may only be flipped deliberately —
+ * the same principle as the shrink-only registers above); a lane registered to emit
+ * under the family marker that emits under another (a labelling divergence, which is a
+ * smaller finding than a missing capability and therefore reported in its own terms); a
+ * registered lane that appears in no census row; and OO debt above the recorded target.
+ *
+ * Pure, so the negatives above can drive it with synthetic census/register pairs.
+ */
+export function declaredTypeRegisterDetail(census: any, register: any): string {
+  if (!register) return "R9 cannot adjudicate: validation/m60/declared-type-register.json is absent"
+  if (!census) return "R9 cannot adjudicate: validation/m60/results/declared-type-refs.json is absent — run bun script/m60/declared-type-refs-census.ts"
+  const rows: any[] = census.rows ?? []
+  if (!Array.isArray(rows) || rows.length === 0) return "R9 cannot adjudicate: the census carries no lane rows"
+  const entries: any[] = register.lanes ?? []
+  if (entries.length === 0) return "R9 cannot adjudicate: the register records no lanes"
+  const errored = rows.filter((r) => r.verdict === "error")
+  if (errored.length) {
+    return `R9 cannot adjudicate: ${errored.length} lane(s) failed to run, so their capability is unknown — ${errored.map((r) => `${r.lang} (${String(r.error ?? "?").slice(0, 80)})`).join(", ")}`
+  }
+  const unexercised = rows.filter((r) => r.verdict === "not-exercised")
+  if (unexercised.length) {
+    return `R9 cannot adjudicate: ${unexercised.length} lane(s)' snippet never declared the holder symbol, so zero declared-type edges would mean "not exercised" rather than "absent" — ${unexercised.map((r) => r.lang).join(", ")}`
+  }
+  // Fail-closed on a broken MEASUREMENT, not on a healthy one: rust, go, java and
+  // python are calibration lanes whose capability is not in question, so a census in
+  // which not one lane reads present is a broken measurement reading as 19 convictions.
+  // (The eventual TARGET state — every lane present — is not vacuity and must not be
+  // refused here; the register's own non-vacuity negative pins that.)
+  const present = rows.filter((r) => r.verdict === "present-declared_type")
+  if (present.length === 0) {
+    return "R9 cannot adjudicate: no lane reads present, so the census is uncalibrated — a measurement in which every lane is absent cannot convict a family contract"
+  }
+  // The control is what makes an `absent` verdict an accusation rather than an
+  // artifact: without it, a snippet the grammar rejects is indistinguishable from a
+  // missing capability. A census that does not RECORD the control cannot be used to
+  // convict anyone, whatever it says.
+  const uncontrolled = rows.filter((r) => typeof r.control !== "boolean")
+  if (uncontrolled.length) {
+    return `R9 cannot adjudicate: ${uncontrolled.length} census row(s) record no holder-symbol control, so a snippet that never parsed is indistinguishable from a missing capability — ${uncontrolled.map((r) => String(r.lang)).slice(0, 4).join(", ")}`
+  }
+  const rowBy = new Map(rows.map((r) => [String(r.lang), r]))
+  const registered = new Set(entries.map((e: any) => String(e.lang)))
+  const unregistered = rows.filter((r) => !registered.has(String(r.lang))).map((r) => String(r.lang))
+  if (unregistered.length) {
+    return `R9: ${unregistered.length} unregistered lane(s) — a lane's declared-type capability must be recorded before it can be judged: ${unregistered.slice(0, 4).join(", ")}`
+  }
+  const disappeared = entries.filter((e: any) => !rowBy.has(String(e.lang))).map((e: any) => String(e.lang))
+  if (disappeared.length) {
+    return `R9: ${disappeared.length} registered lane(s) appear in no census row — ${disappeared.slice(0, 4).join(", ")}`
+  }
+  const problems: string[] = []
+  for (const e of entries) {
+    if (e.ruling === "exempt-dynamic") continue
+    const r = rowBy.get(String(e.lang))!
+    const want = String(e.reading ?? "")
+    const got = String(r.verdict)
+    if (got === want) continue
+    if (want === "present-declared_type" && got === "absent") {
+      problems.push(`${e.lang} REGRESSED: registered as emitting the declared-type graph, now emits nothing`)
+    } else if (want === "present-declared_type" && got === "present-other-marker") {
+      problems.push(`${e.lang} emits its declared-type references under marker(s) ${(r.otherMarkers ?? []).join("|") || "(none)"} while the register expects the family marker "declared_type"`)
+    } else if (want === "absent" && got === "present-declared_type") {
+      problems.push(`${e.lang} now emits the graph but the register still records it as owed — flip the register deliberately`)
+    } else {
+      problems.push(`${e.lang} reads ${got}, the register records ${want}`)
+    }
+  }
+  if (problems.length) {
+    return `R9: ${problems.length} lane(s) drifted from the register — ${problems.slice(0, 3).join(" | ")}`
+  }
+  const ooDebt = entries.filter(
+    (e: any) => DECLARED_TYPE_OO_LANES.includes(String(e.lang)) && e.ruling !== "exempt-dynamic" && String(e.reading) !== "present-declared_type",
+  )
+  const target = Number(register.ooTarget?.absent ?? -1)
+  if (target < 0) return "R9 cannot adjudicate: the register records no OO target, so OO debt could rise unobserved"
+  if (ooDebt.length > target) {
+    return `R9: OO lanes owing the family's declared-type graph rose to ${ooDebt.length} from the recorded target ${target} — ${ooDebt.map((e: any) => e.lang).join(", ")}`
+  }
+  const other = rows.filter((r) => r.verdict === "present-other-marker")
+  return (
+    `R9: ${present.length} of ${rows.length} lanes emit the declared-type graph under the family marker` +
+    (other.length ? `, ${other.length} under a divergent marker (${other.map((r) => `${r.lang}:${(r.otherMarkers ?? []).join("|")}`).join(", ")})` : "") +
+    `; ${rows.length - present.length - other.length} lane(s) owe it, ${ooDebt.length} of them in the OO family; all ${entries.length} register entries match exactly (OO target ${target})`
+  )
 }
 
 /**
@@ -761,7 +997,7 @@ export function frameworkRegisterDetail(census: any, register: any): string {
  * only the adjudicated branch writes (`all N register entries match exactly`), and it is
  * shared by both rules through one copy so the two can never drift apart.
  */
-export function registerAdjudicated(detail: string, rule: "R7" | "R8"): boolean {
+export function registerAdjudicated(detail: string, rule: "R7" | "R8" | "R9"): boolean {
   return detail.startsWith(`${rule}: `) && detail.includes("register entries match exactly")
 }
 
@@ -829,6 +1065,7 @@ function finish(head: string) {
     R6: "lineBaseViolations(sources) — every metadata.line writer must be provably 1-based, directly or through a same-file helper whose every return is provably 1-based or an absence (static, fail-closed), negative-tested; live application in verify-standing-rules.ts itself",
     R7: "sentinelRegisterDetail(census, register) — every placeholder-literal site in every analyzer is registered by source statement with an exact count; a new site, a grown site and a vanished site all fail (static, exact-count shrink-only), negative-tested. Census: script/m60/sentinel-census.ts (AST classification, self-tested). Runtime half disclosed as outstanding in the register",
     R8: "frameworkRegisterDetail(census, register) — every framework-surface site is registered exactly, the class may only shrink, and the seven OO lanes' violations are additionally capped by the recorded OO target so a lane cannot be absorbed into the global baseline; a new site, a grown site, a vanished site, an absent artifact and a failed self-test all fail (static, exact-count shrink-only), 14 negatives. Census: script/m60/framework-surface-census.ts (17 self-tests). Runtime half: script/m60/framework-surface-probe.ts over fixtures and real corpora",
+    R9: "declaredTypeRegisterDetail(census, register) — the family's declared-type reference graph (references + metadata.relationshipType 'declared_type', rust R13's family standard) measured per lane at RUNTIME by driving each lane's real analyzer, with a holder-symbol control so a bad snippet can never read as a missing capability; an unregistered lane, a regressed lane, a lane that closes its gap without flipping the register, a lane emitting under a divergent marker, a not-exercised or errored lane, an absent artifact, and OO debt above the recorded target all fail, 21 negatives. Census: script/m60/declared-type-refs-census.ts",
     },
   }
   writeFileSync(OUT, JSON.stringify(result, null, 2) + "\n")
