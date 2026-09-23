@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T22:37:58.982Z",
+  "snapshotAt": "2026-09-23T22:47:21.036Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 116,
+  "count": 114,
   "issues": [
     {
       "number": 134,
@@ -450,11 +450,6 @@
       "labels": []
     },
     {
-      "number": 804,
-      "title": "M49.CS1 C# first review wave: process reviews/csharp CS-R1/CS-B1-CS-B5 under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 805,
       "title": "`script/m13/verify-patterns-docs.ts` — RED (foreign conviction, analyzer lane)",
       "labels": []
@@ -679,13 +674,6 @@
       "number": 914,
       "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
       "labels": []
-    },
-    {
-      "number": 922,
-      "title": "M60 csharp: the `global::` alias is published as part of the type name in six positions, and three single-segment positions publish NOTHING",
-      "labels": [
-        "bug"
-      ]
     },
     {
       "number": 924,
