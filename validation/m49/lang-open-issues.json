@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T17:35:40.582Z",
+  "snapshotAt": "2026-09-23T18:08:22.516Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 116,
+  "count": 115,
   "issues": [
     {
       "number": 134,
@@ -686,14 +686,6 @@
       "number": 914,
       "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
       "labels": []
-    },
-    {
-      "number": 921,
-      "title": "M60 c/cpp: a `contains` edge takes the child declaration START, so 166 landed rows name a line where the child name is not written (last M59 Tier A residue)",
-      "labels": [
-        "lang:c",
-        "lang:cpp"
-      ]
     }
   ]
 }
