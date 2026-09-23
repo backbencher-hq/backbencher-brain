@@ -809,7 +809,11 @@ function reattributeAnonBodyCall(outerName: string) {
   })
 }
 
-const MUTANTS: Mutant[] = [
+// Exported for M49.CS1's verification pack (#804), which evaluates a claim's OWN
+// pin against the mutant the canonical suite runs — so the pack and the suite
+// cannot drift apart. Importing this module does NOT run the suite: main() is
+// guarded at the bottom.
+export const MUTANTS: Mutant[] = [
   {
     id: "clojure/emit-quote-forms",
     language: "clojure",
@@ -5877,12 +5881,68 @@ const MUTANTS: Mutant[] = [
     id: "csharp/file-type-exported",
     language: "csharp",
     defectClass: "export-fabrication",
-    description: "CS-B4 regression: file-scoped types export as public API again (bare-value-reads pins Hidden private + forbids its export)",
-    transform: r => ({
-      ...r,
-      symbols: (r.symbols ?? []).map((s: any) => (s.name === "Hidden" ? { ...s, visibility: "public" } : s)),
-      exports: [...(r.exports ?? []), { name: "Hidden", kind: "class" }],
-    }),
+    description: "CS-B4 regression: file-scoped types export as public API again (bare-value-reads pins Hidden private + forbids its export). Derived from the SOURCE, not from the fixture's name: the pre-fix result records nothing about which types were `file`-scoped, and the first version of this mutant injected an export named `Hidden` into EVERY file — its revert landed in all 14 csharp fixtures instead of the one that pins the claim (found by the #804 pack, which requires a mutant's revert to be attributable to the pin it is supposed to convict).",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const names = [...source.matchAll(/(?:^|[^\w])file\s+(?:class|record|struct|interface|enum)\s+([A-Za-z_]\w*)/g)].map((m) => m[1])
+      if (!names.length) return r
+      const fileScoped = new Set(names)
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => (fileScoped.has(s.name) ? { ...s, visibility: "public" } : s)),
+        exports: [...(r.exports ?? []), ...names.map((n) => ({ name: n, kind: "class" }))],
+      }
+    },
+  },
+  // M49.CS1 (#804), the pack's finding: CS-B5 was FIXTURE-PINNED but had NO
+  // reverting mutant, so nothing proved its fixture could fail. The fix is a
+  // bounded climb in the invocation branch (a `constant_pattern` /
+  // `is_pattern_expression` ancestor before any statement/declaration/block/
+  // method-ish/lambda/query/invocation boundary means pattern position, and the
+  // invocation is skipped). Reverting it re-emits `calls` for the pattern head —
+  // and the post-fix result records NOTHING about what was suppressed, so the
+  // revert is derived from the SOURCE (this is exactly the case the Mutant
+  // interface's `source` argument exists for): every `is <Type>(` head is
+  // re-attributed to the innermost symbol whose range contains it, which is the
+  // pre-fix behavior rather than a fixture-name filter that would silently stop
+  // matching when the fixture changes.
+  {
+    id: "csharp/positional-pattern-call-fabrication",
+    language: "csharp",
+    defectClass: "relationship-noise",
+    description: "CS-B5 regression: a pattern-position invocation calls again (`o is Point(1, y)` publishes `calls Pos->Point`) — the bounded constant_pattern/is_pattern_expression climb reverted, derived from the source. Caught by csharp/bare-value-reads' forbidRelationships for `calls Pos->Point` (and the family's oracle mirror on the calls label).",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const heads: { type: string; line: number }[] = []
+      const re = /(?:^|[^\w.$])is\s+([A-Za-z_]\w*)\s*\(/g
+      let m: RegExpExecArray | null
+      while ((m = re.exec(source)) !== null) {
+        heads.push({ type: m[1], line: source.slice(0, m.index).split("\n").length })
+      }
+      if (!heads.length) return r
+      const owners = (r.symbols ?? []).filter(
+        (s: any) =>
+          typeof s.name === "string" &&
+          typeof s.range?.startLine === "number" &&
+          (s.kind === "method" || s.kind === "constructor" || s.kind === "property" || s.kind === "function"),
+      )
+      const added: any[] = []
+      for (const h of heads) {
+        const inside = owners.filter(
+          (s: any) => s.range.startLine <= h.line && (typeof s.range.endLine !== "number" || h.line <= s.range.endLine),
+        )
+        if (!inside.length) continue
+        const owner = inside.sort((a: any, b: any) => b.range.startLine - a.range.startLine)[0]
+        added.push({
+          source: owner.name,
+          target: h.type,
+          type: "calls",
+          confidence: 0.9,
+          metadata: { csharpCallExpression: "invocation_expression", revertedClimb: "constant_pattern" },
+        })
+      }
+      return added.length ? { ...r, relationships: [...(r.relationships ?? []), ...added] } : r
+    },
   },
   {
     id: "csharp/reemit-initializer-designator-reads",
@@ -8644,4 +8704,6 @@ async function main() {
   console.log(`\nall ${selected.length} mutants caught - the gates can fail${mutantFilter ? ` (BB_MUTANT_ONLY="${mutantFilter}" filtered ${MUTANTS.length} -> ${selected.length})` : ""}`)
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+if (process.argv[1]?.endsWith("mutate-analyzer.ts")) {
+  main().catch(e => { console.error(e); process.exit(1) })
+}
