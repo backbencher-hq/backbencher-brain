@@ -8001,6 +8001,66 @@ const MUTANTS: Mutant[] = [
       symbols: (r.symbols ?? []).map((s: any) => (s.name === "NamelessParams" ? { ...s, parameters: [{ name: "" }] } : s)),
     }),
   },
+  // --------------------------------------------------------------------------
+  // M60.R1 (csharp lane): the three regex survivors, one mutant per defect the
+  // probes found behind them. All four are caught by
+  // csharp/using-alias-and-operators (and, for the conversion operator, by
+  // csharp/payload-and-complexity's corrected pin).
+  // --------------------------------------------------------------------------
+  {
+    id: "csharp/alias-published-as-module",
+    language: "csharp",
+    defectClass: "import-fabrication",
+    description: "M60.R1 regression: the using-alias form publishes the ALIAS as the imported module again (`using Alias = Plain;` -> module/target `Alias`, with the real target named nowhere) — the pre-R1 behavior, measured with script/m14/tmp/cs-using-alias-probe.ts. Caught by csharp/using-alias-and-operators' forbidRelationships on both alias spellings.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const alias = (x.metadata ?? {}).usingAlias
+        return typeof alias === "string" && (x.metadata ?? {}).isUsingAlias ? { ...x, target: alias } : x
+      }),
+    }),
+  },
+  {
+    id: "csharp/conversion-operator-collapsed",
+    language: "csharp",
+    defectClass: "name-collision",
+    description: "M60.R1 regression: conversion operators go back to the DEAD-BRANCH name `operator <target>` (the old pattern expected `operator implicit …`, the wrong token order, so it never matched real C# and the implicit/explicit twins — two distinct members — collided). Simulated off the result's own symbols: an operator whose name starts with `implicit `/`explicit ` is rewritten to `operator <target>`. Caught by csharp/using-alias-and-operators (expects both twins AND forbids the collapsed name) and by csharp/payload-and-complexity's corrected `implicit int` pin.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!(s.metadata ?? {}).isOperatorOverload || typeof s.name !== "string") return s
+        const m = /^(implicit|explicit)\s+(.+)$/.exec(s.name)
+        return m ? { ...s, name: `operator ${m[2]}` } : s
+      }),
+    }),
+  },
+  {
+    id: "csharp/truncated-conversion-target",
+    language: "csharp",
+    defectClass: "name-truncation",
+    description: "M60.R1 regression: a conversion target goes back to being TRUNCATED at the first space — the old regex class `[^\\s(]+` stopped there, so `implicit operator Box < Plain > (…)` published `implicit Box`. Caught by csharp/using-alias-and-operators' expectSymbols (`implicit Box<Plain>`) and its forbidSymbols entry for the truncated spelling.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!(s.metadata ?? {}).isConversionOperator || typeof s.name !== "string") return s
+        const sp = s.name.indexOf(" ")
+        if (sp < 0) return s
+        const rest = s.name.slice(sp + 1)
+        const cut = rest.search(/[\s<\[]/)
+        return cut >= 0 ? { ...s, name: s.name.slice(0, sp + 1) + rest.slice(0, cut) } : s
+      }),
+    }),
+  },
+  {
+    id: "csharp/checked-operator-collapsed",
+    language: "csharp",
+    defectClass: "name-collision",
+    description: "M60.R1 regression: the `checked` operator goes back to colliding with its unchecked twin (`operator checked +` -> `operator +`) — the shape the old regex handled only by luck, through a text capture of a token that is a grammar FIELD now. Caught by csharp/using-alias-and-operators, which pins both spellings on one type.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (typeof s.name === "string" && s.name.startsWith("operator checked ") ? { ...s, name: `operator ${s.name.slice("operator checked ".length)}` } : s)),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

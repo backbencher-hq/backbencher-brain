@@ -55,7 +55,18 @@ export function csharpCleanTypeLeaf(text: string): string {
 
 /**
  * The CANONICAL text of a type / namespace name: whitespace runs collapse to one
- * space, spaces next to a `.` are removed, and the result is trimmed.
+ * space, spaces next to a NAME SEPARATOR (`.`, `<`, `>`, `,`, `[`, `]`) are
+ * removed, and the result is trimmed.
+ *
+ * Why the separators and not only `.`: the function's contract is "the name, never
+ * the layout", and C# allows whitespace around every one of them — `C < T >`, the
+ * conversion target the old operator regex did not merely mis-space but TRUNCATED
+ * (`implicit C` for `implicit operator C<T>(...)`, measured with
+ * script/m14/tmp/cs-op-check.ts), and `int [ ]`. Including the whole separator set
+ * here rather than a second cleaning rule at the operator site is deliberate: one
+ * definition of "the canonical name" is what keeps the analyzer and the
+ * differential's truth derivation in lockstep, and two cleaning rules would be free
+ * to disagree about the same name.
  *
  * C# lets a qualified name WRAP (the grammar allows whitespace between the `.`
  * and the next identifier, or before the dot), and the target of a relationship
@@ -68,6 +79,10 @@ export function csharpCleanTypeLeaf(text: string): string {
  * derivation, so the two sides clean identically (lockstep, CSD14's rule).
  * Zero-regex char scan (R2).
  */
+function isCSharpNameSeparator(ch: string | undefined): boolean {
+  return ch === "." || ch === "<" || ch === ">" || ch === "," || ch === "[" || ch === "]"
+}
+
 export function csharpTypeNameText(text: string): string {
   const out: string[] = []
   let pendingSpace = false
@@ -79,7 +94,8 @@ export function csharpTypeNameText(text: string): string {
     }
     if (pendingSpace) {
       const last = out[out.length - 1]
-      if (last !== "." && ch !== ".") out.push(" ")
+      // A separator cannot carry meaning, so no space survives on either side of it.
+      if (!isCSharpNameSeparator(last) && !isCSharpNameSeparator(ch)) out.push(" ")
       pendingSpace = false
     }
     out.push(ch)
@@ -423,18 +439,40 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.findChild(node, (n) => n.type === "identifier" || n.type === "qualified_name")
         if (nameNode) {
           // CSD7 (re-review 2026-09-04): alias usings (`using A = B.C;`) parse
-          // with the alias identifier BEFORE the target qualified_name, so the
-          // old first-identifier match captured the ALIAS as the module. Prefer
-          // the qualified_name target; fall back to identifier (plain usings
-          // have no qualified child only when they are a single identifier).
+          // with the alias identifier BEFORE the target, so the old
+          // first-identifier match captured the ALIAS as the module. Prefer the
+          // qualified_name target; fall back to identifier (plain usings have no
+          // qualified child only when they are a single identifier).
           // `global::X.Y` is captured raw (honest full path).
+          //
+          // M60.R1 paydown (csharp lane, 2026-09-22): the target and the alias are
+          // now read from the GRAMMAR, not from the directive's text. The tree
+          // (probe: script/m14/tmp/cs-using-tree-probe.ts, 8 shapes) is
+          //   alias form:  using [global] identifier[field=name] '=' <target> ';'
+          //   plain form:  using [global] <target> ';'          (no `name` field)
+          // so the ALIAS is the `name` field and the TARGET is the first named
+          // child AFTER the anonymous `=`. The old `/using\s+([\w.]+)\s*=/` was
+          // not only a regex: it was also WRONG in both directions, measured with
+          // script/m14/tmp/cs-using-alias-probe.ts — best-vs-target extraction
+          // cannot be repaired textually, because the two positions are the same
+          // shape. `using Alias = Plain;` (bare-identifier target) published
+          // `module: "Alias"`: the ALIAS as the module, with the real target named
+          // NOWHERE in the payload and the dependency edge pointing at a name the
+          // file never imports a namespace from. Position is the only honest
+          // discriminator, and the tree already has it.
+          const eqChild = this.anonymousChildNode(node, "=")
+          const aliasNode = eqChild ? node.childForFieldName("name") : null
+          const targetAfterEq = eqChild
+            ? this.firstNamedChildAfter(node, eqChild)
+            : null
           const nameNode2 =
-            this.findChild(node, (n) => n.type === "qualified_name") || nameNode
+            targetAfterEq ??
+            this.findChild(node, (n) => n.type === "qualified_name") ??
+            nameNode
           // M59.A7 (#825): the canonical name, never the layout — a wrapped
           // qualified name (`using System\n  .Collections;`) carries a newline in
           // its raw text, which is not a module name (the ruby D3 class).
           const text = csharpTypeNameText(nameNode2.text)
-          const aliasMatch = /using\s+([\w.]+)\s*=/.exec(node.text)
           imports.push({
             module: text,
             source: text,
@@ -460,7 +498,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
               isUsingDirective: true,
               isImport: true,
-              ...(aliasMatch ? { isUsingAlias: true, usingAlias: aliasMatch[1] } : {}),
+              ...(aliasNode ? { isUsingAlias: true, usingAlias: csharpTypeNameText(aliasNode.text) } : {}),
             },
           })
         }
@@ -848,18 +886,31 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "operator_declaration" || type === "conversion_operator_declaration") {
         // CSD3 (re-review 2026-09-04): every overload collapsed into a symbol
         // literally named "operator" — `operator +` and `operator ==` were
-        // indistinguishable (haskell/ruby name operators by identity). The
-        // operator token is an ANONYMOUS grammar child, so it is extracted
-        // from the declaration text. Conversion ops are named by their
-        // implicit/explicit target type. Per-symbol complexity added (was
-        // always missing here).
-        const opText = node.text
-        const convMatch = /\boperator\s+(implicit|explicit)\s+([\w.<>]+)/.exec(opText)
-        const opMatch = convMatch ? null : /\boperator\s+(checked\s+)?([^\s(]+)/.exec(opText)
-        const opName = convMatch
-          ? `${convMatch[1]} ${convMatch[2]}`
-          : opMatch
-            ? `operator ${opMatch[1] ? `${opMatch[1].trim()} ` : ""}${opMatch[2]}`
+        // indistinguishable (haskell/ruby name operators by identity). Per-symbol
+        // complexity added (was always missing here).
+        //
+        // M60.R1 paydown (csharp lane, 2026-09-22): the identity is read from the
+        // GRAMMAR now, not from the declaration text. Probe
+        // (script/m14/tmp/cs-operator-grammar-probe.ts, 7 shapes): an
+        // `operator_declaration` carries the operator token as an ANONYMOUS child
+        // with the FIELD `operator` (`+`, `==`, `true`, `=>`), with `checked` as a
+        // separate anonymous sibling; a `conversion_operator_declaration` carries
+        // the target in the FIELD `type` and `implicit`/`explicit` as an anonymous
+        // child. So `no AST path` — the claim the regex was carrying — was FALSE:
+        // both rails exist. The regexes were also structurally wrong in a way text
+        // cannot fix (`[^\s(]+` stops at the first `(`, so any target written with
+        // a SPACE before the parenthesis is truncated). The field text is used
+        // verbatim, so the published names are unchanged for every shape the old
+        // regex got right — pinned by the pre-existing operator fixture entries and
+        // the operator-name-collapse mutant.
+        const opField = node.childForFieldName("operator")
+        const convTargetNode = type === "conversion_operator_declaration" ? node.childForFieldName("type") : null
+        const modifierKeyword = this.anonymousChildNode(node, "implicit") ?? this.anonymousChildNode(node, "explicit")
+        const checkedKeyword = this.anonymousChildNode(node, "checked")
+        const opName = modifierKeyword
+          ? `${modifierKeyword.type}${convTargetNode ? ` ${csharpTypeNameText(convTargetNode.text)}` : ""}`
+          : opField
+            ? `operator ${checkedKeyword ? "checked " : ""}${opField.text}`
             : "operator"
         const visibility = this.extractVisibility(node)
         symbols.push({
@@ -2893,6 +2944,33 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
       if (child && (child.type === "base" || child.type === "this")) return child
+    }
+    return null
+  }
+
+  /**
+   * The FIRST anonymous child whose text is `text` — an operator or punctuation
+   * token, which `findChild` (named children only) cannot see.
+   *
+   * Added for the M60.R1 paydown: a using directive's alias form is the only
+   * shape that contains an `=`, and position (not text) is what tells the ALIAS
+   * from the TARGET — see the using_directive branch. Returns the NODE, so the
+   * caller can then ask for the child after it as well as its presence.
+   */
+  private anonymousChildNode(node: Node, text: string): Node | null {
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i)
+      if (child && child.type === text) return child
+    }
+    return null
+  }
+
+  /** The first NAMED child that starts after `after` ends — the target of an
+   *  alias using, which the grammar writes after the `=`. */
+  private firstNamedChildAfter(node: Node, after: Node): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && child.startIndex >= after.endIndex) return child
     }
     return null
   }
