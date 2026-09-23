@@ -199,4 +199,8 @@ async function main() {
   console.log(`wrote ${path.relative(ROOT, OUT)}`)
 }
 
-main()
+// Entry guarded (C923 sweep): an unguarded call makes every future IMPORT of this instrument
+// run a full census and rewrite its committed artifact from whatever tree is checked out —
+// measured live on the sibling target-spelling-census.ts. `import.meta.main` is this repo's
+// entry-point idiom (script/m13/verify-evidence.ts, src/cli/index.ts).
+if (import.meta.main) main()

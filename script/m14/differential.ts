@@ -3398,6 +3398,54 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
   // assignment-form target-typed new() resolution (same pre-pass shape as
   // RealCSharpAnalyzer.collectMemberTypes).
   const memberTypes = new Map<string, string>()
+  // C923 (#923) mirror: the member-level interface-implementation contract. The analyzer
+  // publishes `overrides Owner.member -> Iface.member` for an EXPLICIT interface member always,
+  // and for an IMPLICIT one only where the interface's member set is known (an interface declared
+  // in this file — see resolveInterfaceImplementations). The oracle must derive the identical
+  // class or the two sides disagree the moment this label is ever compared; the analyzer's
+  // shipped rule is per-file by construction, so the truth is too, with no corpus companion.
+  //
+  // The blind spot this creates is DISCLOSED rather than hidden: `overrides` is already excluded
+  // from csharp's corpus comparison (pre-existing, unchanged by this round), so the class's
+  // independent evidence is the tree-vs-lane reconciliation in
+  // script/m60/verify-c923-interface-members.ts plus its fixture and reverting mutant — not this
+  // oracle, which now mirrors the rule it would have to adjudicate.
+  const ifaceMemberNames = new Map<string, Set<string>>()
+  const classMemberNames = new Map<string, Set<string>>()
+  const typeBaseLeaves = new Map<string, string[]>()
+  const CSHARP_IFACE_MEMBER_DECLS = new Set(["method_declaration", "property_declaration", "event_declaration", "event_field_declaration", "indexer_declaration"])
+  /**
+   * Every member a type declaration declares, descended through EVERY intermediate node except
+   * nested type declarations: a member inside `#if`/`#region` sits under a `preproc_if`, and
+   * powershell's ConsoleHost.cs is that shape — reading only the direct children of
+   * `declaration_list` made four explicit interface properties invisible to this oracle.
+   * An indexer carries no `name` field; the analyzer publishes its symbol as `this`, so the truth
+   * spells it the same way.
+   */
+  const csharpMemberNodes = (decl: any): any[] => {
+    const out: any[] = []
+    const q: any[] = (decl.namedChildren ?? []).slice()
+    while (q.length > 0) {
+      const m = q.pop()!
+      if (m !== decl && /^(class|interface|struct|record|enum)_declaration$/.test(m.type)) continue
+      if (CSHARP_IFACE_MEMBER_DECLS.has(m.type)) { out.push(m); continue }
+      for (const c of m.namedChildren ?? []) q.push(c)
+    }
+    return out
+  }
+  const csharpMemberName = (m: any): string | undefined => {
+    const direct = m.childForFieldName?.("name")?.text
+    if (typeof direct === "string" && direct.length > 0) return direct
+    if (m.type === "indexer_declaration") return "this"
+    // A field-like event writes its name on the `variable_declarator`, never on a `name` field.
+    if (m.type === "event_field_declaration") {
+      const vd = (m.namedChildren ?? []).find((c: any) => c.type === "variable_declaration")
+      const decl = (vd?.namedChildren ?? []).find((c: any) => c.type === "variable_declarator")
+      const id = (decl?.namedChildren ?? []).find((c: any) => c.type === "identifier")
+      if (id && typeof id.text === "string" && id.text.length > 0) return id.text
+    }
+    return undefined
+  }
   {
     const pre: any[] = [root]
     while (pre.length) {
@@ -3405,6 +3453,38 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       if (/^(class|interface|struct|record)_declaration$/.test(t.type)) {
         const nm = t.childForFieldName?.("name")?.text
         if (nm) declKinds.set(nm, t.type.startsWith("interface") ? "interface" : t.type.includes("struct") ? "struct" : "class")
+        if (nm && t.type === "interface_declaration") {
+          let set = ifaceMemberNames.get(nm)
+          if (!set) { set = new Set<string>(); ifaceMemberNames.set(nm, set) }
+          for (const m of csharpMemberNodes(t)) {
+            const mn = csharpMemberName(m)
+            if (mn) set.add(mn)
+          }
+        }
+        // The CLASS side of the contract: a base class that declares a member already fills
+        // that interface slot, so the implicit walk stops there (the analyzer's rule).
+        if (nm && t.type !== "interface_declaration") {
+          let cset = classMemberNames.get(nm)
+          if (!cset) { cset = new Set<string>(); classMemberNames.set(nm, cset) }
+          for (const m of csharpMemberNodes(t)) {
+            const mn = csharpMemberName(m)
+            if (mn) cset.add(mn)
+          }
+        }
+        if (nm) {
+          const bl = t.namedChildren.find((c: any) => c.type === "base_list")
+          const bases: string[] = []
+          for (const b of bl?.namedChildren ?? []) {
+            if (!b || b.type === "argument_list") continue
+            // primary_constructor_base_type (a record's / class's primary base) writes its type
+            // name as an identifier child; the analyzer's own shape (CSD9).
+            const tn = b.type === "primary_constructor_base_type"
+              ? (b.namedChildren ?? []).find((c: any) => c.type === "identifier" || c.type === "generic_name")
+              : b
+            if (tn && typeof tn.text === "string") bases.push(leafOf(tn.text))
+          }
+          if (!typeBaseLeaves.has(nm)) typeBaseLeaves.set(nm, bases)
+        }
       }
       if (t.type === "field_declaration" || t.type === "property_declaration") {
         const isField = t.type === "field_declaration"
@@ -3442,6 +3522,48 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       const nameNode = n.childForFieldName?.("name")
       const nm = nameNode?.text
       const baseList = n.namedChildren.find((c: any) => c.type === "base_list")
+      // C923 (#923): the member-level implements truth, derived for EVERY type declaration
+      // (not only the ones with a base list — an explicit interface member whose class omits the
+      // interface is invalid C#, but a truth that silently skipped the shape would hide exactly
+      // the defect this round exists to catch).
+      if (nm && n.type !== "interface_declaration") {
+        const declaredBases = typeBaseLeaves.get(nm) ?? []
+        for (const m of csharpMemberNodes(n)) {
+          const mn = csharpMemberName(m)
+          if (!mn) continue
+          const spec = (m.namedChildren ?? []).find((c: any) => c.type === "explicit_interface_specifier")
+          let target: string | null = null
+          if (spec && typeof spec.text === "string") {
+            const raw = spec.text
+            let end = raw.length
+            while (end > 0) {
+              const ch = raw.charCodeAt(end - 1)
+              if (ch === 46 || ch === 32 || ch === 9 || ch === 10 || ch === 13) end--
+              else break
+            }
+            const iface = leafOf(raw.slice(0, end))
+            if (iface) target = `${iface}.${mn}`
+          } else if (declaredBases.length > 0) {
+            // BFS in declaration order over IN-FILE declared bases (the shipped rule).
+            const queue: string[] = [...declaredBases]
+            const visited = new Set<string>()
+            while (queue.length > 0) {
+              const parent = queue.shift()!
+              if (visited.has(parent)) continue
+              visited.add(parent)
+              if (ifaceMemberNames.get(parent)?.has(mn)) { target = `${parent}.${mn}`; break }
+              if (classMemberNames.get(parent)?.has(mn)) continue
+              for (const b of typeBaseLeaves.get(parent) ?? []) if (!visited.has(b)) queue.push(b)
+            }
+          }
+          if (!target) continue
+          const key = `implmem:${nm}.${mn}->${target}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            edges.push({ label: "overrides", from: `${nm}.${mn}`, target })
+          }
+        }
+      }
       if (nm && baseList) {
         const baseTypes: string[] = []; for (const b of baseList.namedChildren) if (b) baseTypes.push(leafOf(b.text))
         const isInterfaceDecl = n.type === "interface_declaration"
@@ -11283,6 +11405,16 @@ async function main() {
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
+          // C923 (#923): the truth now DERIVES the member-level interface contract, but
+          // `overrides` is excluded from csharp's comparison on the ANALYZER side too (the
+          // harness allowlist below), so pushing it here would read every one of those TRUE
+          // edges as MISSING — the mirror image of the #910/fabricated-MISSING class this file
+          // already documents twice. The exclusion is applied on BOTH sides, one place each, and
+          // the class's independent evidence is script/m60/verify-c923-interface-members.ts
+          // (tree-derivation vs oracle vs lane, both corpora in full extent) plus its fixture and
+          // its two mutants. A round that starts comparing `overrides` for csharp must remove
+          // this line and the analyzer-side entry TOGETHER, or the pair desyncs silently.
+          if (e.label === "overrides") continue
           ;(truth as any[]).push(e)
         }
         // R9 (#804): declared-type references — the analyzer emits them, so the

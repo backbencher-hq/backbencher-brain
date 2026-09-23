@@ -366,4 +366,8 @@ function main() {
   process.exit(failed === 0 ? 0 : 1)
 }
 
-main()
+// Entry guarded (C923 sweep): an unguarded call makes every future IMPORT of this verifier run
+// the whole closure computation and rewrite X1 from whatever tree is checked out — measured
+// live on the sibling target-spelling-census.ts. `import.meta.main` is this repo's entry-point
+// idiom (script/m13/verify-evidence.ts, src/cli/index.ts).
+if (import.meta.main) main()
