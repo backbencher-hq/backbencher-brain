@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (31/41 languages pass)",
+      "description": "per-literal shrink-only register with reasons (32/41 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "fdbf069f5e0b9e69277f942b370e9b043c2beba9",
-  "committedAt": "2026-09-23T16:55:17-04:00",
+  "commit": "892e17647d0a623159e54ecd7d2b37272b7886e6",
+  "committedAt": "2026-09-24T19:14:33-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -43,7 +43,7 @@
         "cpp": 0,
         "csharp": 0,
         "css": 4,
-        "dart": 2,
+        "dart": 0,
         "elixir": 0,
         "erlang": 2,
         "fsharp": 0,
@@ -111,20 +111,6 @@
             "literal": "variable_name",
             "owner": "css lane",
             "reason": "real-css-analyzer.ts:756. Not enumerated by the pinned tree-sitter-css wasm (the grammar has no `variable_name` node type). Count unchanged from the v1 baseline of 2026-08-23 (4). Repayment: read the grammar's real node for a custom property, then fix or delete."
-          }
-        ],
-        "dart": [
-          {
-            "kind": "type",
-            "literal": "dynamic",
-            "owner": "dart lane (OO)",
-            "reason": "real-dart-analyzer.ts:453, a `.type ===` guard. The pinned tree-sitter-dart wasm does not enumerate `dynamic` as a node type (it is a type KEYWORD, and the lane's type-name spellings live on other nodes). The lane's count fell 28 -> 2 since the v1 baseline of 2026-08-23, so this is the residue of a partially repaid set, not a new regression. Repayment: dart's own F1 round — its grammar cell is red today."
-          },
-          {
-            "kind": "field",
-            "literal": "return_type",
-            "owner": "dart lane (OO)",
-            "reason": "real-dart-analyzer.ts:2205, read via childForFieldName against a grammar that exposes no `return_type` field, so the read returns null and the branch is unreachable. The lane's count fell 28 -> 2 since the v1 baseline of 2026-08-23. Repayment: find the grammar's real field for a function's return type (or drop the read) — measured, not guessed."
           }
         ],
         "erlang": [
@@ -383,7 +369,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 495,
         "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 67,
+        "referencedTypeLiterals": 68,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -402,7 +388,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
         "referencedFieldLiterals": 7,
-        "referencedTypeLiterals": 90,
+        "referencedTypeLiterals": 91,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -460,23 +446,11 @@
         "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
-        "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 81,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-dart-analyzer.ts:field-call:childForFieldName",
-            "line": 2205,
-            "literal": "return_type"
-          }
-        ],
-        "unknownNodeTypes": [
-          {
-            "context": "real-dart-analyzer.ts:comparison",
-            "line": 453,
-            "literal": "dynamic"
-          }
-        ],
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 80,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-dart.wasm"
@@ -934,7 +908,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 266,
         "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 61,
+        "referencedTypeLiterals": 62,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -997,7 +971,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
         "referencedFieldLiterals": 15,
-        "referencedTypeLiterals": 79,
+        "referencedTypeLiterals": 80,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1341,10 +1315,10 @@
       }
     },
     "summary": {
-      "fail": 10,
+      "fail": 9,
       "languagesAudited": 41,
-      "pass": 31,
-      "totalUnknownReferences": 32
+      "pass": 32,
+      "totalUnknownReferences": 30
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1372,8 +1346,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-23T20:58:59.990Z",
-  "regeneratedAtCommit": "fdbf069f5e0b9e69277f942b370e9b043c2beba9",
+  "regeneratedAt": "2026-09-24T23:29:51.373Z",
+  "regeneratedAtCommit": "892e17647d0a623159e54ecd7d2b37272b7886e6",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

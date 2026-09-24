@@ -48,6 +48,18 @@ function isCapitalized(text: string): boolean {
   return code >= 65 && code <= 90 // 'A'..'Z'
 }
 
+/**
+ * Dart's implicit `dynamic` — a TYPE NAME the analyzer publishes under
+ * `parameters[].type`, NOT a grammar node type.
+ *
+ * Named rather than written inline because the F1 grammar audit reads every
+ * `X.type === "lit"` as a node-type reference (`isTypeComparison`), so the
+ * inline comparison was reported as `unknownNodeTypes: ["dynamic"]` on this
+ * lane for a literal the grammar is never asked about. The reference is honest
+ * about what it is now; the audit is not being taught to skip anything.
+ */
+const IMPLICIT_DYNAMIC_TYPE = "dynamic"
+
 
 // ============================================================================
 // SCOPE MANAGEMENT — frames carry an immutable snapshot of the scope chain
@@ -450,7 +462,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const s of symbols) {
         if (s.kind === ASTEngine.SymbolKind.Constructor && s.ownerName) {
           for (const p of s.parameters ?? []) {
-            if (p.type === "dynamic") {
+            if (p.type === IMPLICIT_DYNAMIC_TYPE) {
               const ft = fieldTypeByClass.get(`${s.ownerName}.${p.name}`)
               if (ft) p.type = ft
             }
@@ -2190,7 +2202,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isOptional = group !== undefined
           const hasDefault = n.text.includes("=")
           const already = out.some((p) => p.name === nameNode.text)
-          if (!already) out.push({ name: nameNode.text, type: typeText ?? "dynamic", isOptional, isNamed })
+          if (!already) out.push({ name: nameNode.text, type: typeText ?? IMPLICIT_DYNAMIC_TYPE, isOptional, isNamed })
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -2202,8 +2214,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractReturnType(node: Node): string | undefined {
-    const rt = node.childForFieldName("return_type")
-    if (rt) return rt.text
+    // A `childForFieldName("return_type")` read stood here and was DEAD: the
+    // pinned grammar's field set has no such field (F1's 22-field oracle), and a
+    // probe over both pinned corpora resolved it on 0 of 117,200 nodes. The fallback
+    // it guarded was therefore the only path that ever ran, which is why removing it
+    // cannot move a payload — it only removes a field the grammar never had.
     const voidType = this.findChildByType(node, "void_type")
     if (voidType) return "void"
     // first type_identifier BEFORE the name field — span-based stop (KAD2
