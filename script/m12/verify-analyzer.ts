@@ -88,6 +88,19 @@ function relationshipFacts(relationships: any[], fileBase: string): ObservedFact
     const source = r.source ?? r.sourceId ?? r.fromSymbol ?? r.from ?? ""
     const target = r.target ?? r.targetId ?? r.toSymbol ?? r.to ?? ""
     if (!source || !target) continue
+    // The observed fact carries the analyzer's OWN claim strength: an edge at or
+    // above the differential's 0.7 threshold is a claim (state "resolved"), one
+    // below it is emitted-but-not-claimed (state "unknown" — the python
+    // first-parent-guess overrides carry 0.5 + reasonCode by ruling, M37.10).
+    // compareFacts pairs an expectedState:"unknown" truth fact with an observed
+    // "unknown" as correctlyClassifiedUnknown, so a ruled guess can live in the
+    // ground truth without the harness demanding its target, and a wave that
+    // STOPS emitting the guess still fails via missingClassifications — the pin
+    // survives in both directions. Before this, every sub-threshold edge was
+    // recorded as a full claim, so a truth that honestly declined to assert the
+    // target read as a false positive against the analyzer's own honesty.
+    const conf = typeof r.confidence === "number" ? r.confidence : 1
+    const state = conf < 0.7 ? "unknown" : "resolved"
     facts.push({
       id: `rel:${fileBase}:${type}:${source}:${target}`,
       layer: "relationships",
@@ -96,7 +109,7 @@ function relationshipFacts(relationships: any[], fileBase: string): ObservedFact
       sourceId: typeof source === "string" ? source : undefined,
       targetId: typeof target === "string" ? target : undefined,
       attributes: { type },
-      state: "resolved",
+      state,
     })
   }
   return facts
