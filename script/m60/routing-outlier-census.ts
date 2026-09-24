@@ -83,13 +83,21 @@ export const LANE_ROUTER_ID: Record<string, string> = { objc: "objective-c" }
 export type Relation = "same-language" | "other-format" | "ambiguous-sniff"
 
 /**
+ * `retired: true` records a format the ruling DECIDED not to route at all (the #913
+ * class-wide ruling, 2026-09-24). A retired extension keeps its `other-format` ruling —
+ * the format still is not the language — but the router is now expected to return null
+ * for it, and a bucket for it must not appear in the artifact. If one reappears, the
+ * conviction rule fires unchanged: the census does not exempt what the registry once
+ * refused to route.
+
+/**
  * The declared relation of every extension this census can measure. `lang` is
  * the language the router sends the extension to (`null` for `unmeasured`
  * entries, which are declared to keep the suspect list visible). The `note` is
  * the ruling: it says WHY the format is or is not the routed language, so a
  * reader can disagree with a ruling instead of guessing at an unwritten one.
  */
-export const EXTENSION_RELATION: Record<string, { relation: Relation; lang: string; note: string }> = {
+export const EXTENSION_RELATION: Record<string, { relation: Relation; lang: string; note: string; retired?: boolean }> = {
   // ---- measured by F10 (every bucket must be declared; see main) ----------
   c: { relation: "same-language", lang: "c", note: "the language itself" },
   h: { relation: "ambiguous-sniff", lang: "c", note: "shared header: content decides C/C++/Objective-C (detectLanguageFromPath's .h sniff); the harness passes the head, so the row's language is the sniffed one" },
@@ -107,7 +115,7 @@ export const EXTENSION_RELATION: Record<string, { relation: Relation; lang: stri
   sc: { relation: "same-language", lang: "scala", note: "Scala script spelling; measured 0/1" },
   groovy: { relation: "same-language", lang: "groovy", note: "the language itself" },
   gradle: { relation: "same-language", lang: "groovy", note: "RULED same-language at #850: a Gradle build script IS Groovy source (the DSL is Groovy), so its measured 34.8 %/60 % divergence is the Groovy grammar's residual (#841), not a routing defect. Reported as a rate divergence, never convicted" },
-  gsp: { relation: "other-format", lang: "groovy", note: "Groovy Server Page: an HTML document with ${}/<g:...> tags and <%--%> comments, not Groovy source. Routed to the Groovy grammar by EXTENSION_LANGUAGE; measured 39/39 = 100 % ERROR. Same class as #913, unfiled at the time of this census" },
+  gsp: { relation: "other-format", lang: "groovy", retired: true, note: "Groovy Server Page: an HTML document with ${}/<g:...> tags and <%--%> comments, not Groovy source. Was routed to the Groovy grammar; measured 39/39 = 100 % ERROR. RETIRED BY THE #913 CLASS-WIDE RULING (2026-09-24): no longer routed, and filed as its own issue — the sibling instance this census is what found" },
   ts: { relation: "same-language", lang: "typescript", note: "the language itself" },
   js: { relation: "same-language", lang: "javascript", note: "the language itself" },
   vue: { relation: "same-language", lang: "vue", note: "the language itself" },
@@ -120,8 +128,8 @@ export const EXTENSION_RELATION: Record<string, { relation: Relation; lang: stri
   php: { relation: "same-language", lang: "php", note: "the language itself" },
   rb: { relation: "same-language", lang: "ruby", note: "the language itself" },
   py: { relation: "same-language", lang: "python", note: "the language itself; measured 2.3 % on cython, 0 % on requests — the grammar is fine on Python" },
-  pyx: { relation: "other-format", lang: "python", note: "Cython source (`cdef`/`cpdef`/`cimport`/buffer syntax): NOT Python. Routed to the Python grammar; measured 231/270 = 85.6 % ERROR. Finding #913" },
-  pxd: { relation: "other-format", lang: "python", note: "Cython declaration file: a third grammar again (declarations, `cdef extern from`). Routed to the Python grammar; measured 42/44 = 95.5 % ERROR. Finding #913" },
+  pyx: { relation: "other-format", lang: "python", retired: true, note: "Cython source (`cdef`/`cpdef`/`cimport`/buffer syntax): NOT Python. Was routed to the Python grammar; measured 231/270 = 85.6 % ERROR. RETIRED BY THE #913 RULING (2026-09-24): no longer routed, so nothing claims to have analyzed it" },
+  pxd: { relation: "other-format", lang: "python", retired: true, note: "Cython declaration file: a third grammar again (declarations, `cdef extern from`). Was routed to the Python grammar; measured 42/44 = 95.5 % ERROR. RETIRED BY THE #913 RULING (2026-09-24): no longer routed" },
   hs: { relation: "same-language", lang: "haskell", note: "the language itself" },
   lhs: { relation: "other-format", lang: "haskell", note: "literate Haskell: prose interleaved with Bird-track (>) or \\begin{code} blocks, not Haskell source. Routed to the Haskell grammar; measured 2/2 = 100 % ERROR, below the sample floor — reported, cannot convict" },
   ex: { relation: "same-language", lang: "elixir", note: "the language itself" },
@@ -149,9 +157,15 @@ export const EXTENSION_RELATION: Record<string, { relation: Relation; lang: stri
  * the finding — that is a disclosure, not an exemption.
  */
 export const BASELINE: { lang: string; ext: string; issue: number | null; note: string }[] = [
-  { lang: "python", ext: "pyx", issue: 913, note: "Cython routed to the Python grammar (231/270 = 85.6 % ERROR)" },
-  { lang: "python", ext: "pxd", issue: 913, note: "Cython declarations routed to the Python grammar (42/44 = 95.5 % ERROR)" },
-  { lang: "groovy", ext: "gsp", issue: null, note: "GSP templates routed to the Groovy grammar (39/39 = 100 % ERROR) — unfiled when this census was written; the census is its first record" },
+  // EMPTY BY RULING, not by silence. The three findings this census opened with —
+  // python .pyx (231/270), python .pxd (42/44) and groovy .gsp (39/39) — were retired
+  // on 2026-09-24: EXTENSION_LANGUAGE no longer routes any of them, so a clean
+  // re-emission carries no bucket for them and the finding set is empty. The census is
+  // two-sided on purpose, so emptying this list is the recorded act: if a bucket for a
+  // retired extension EVER reappears at an outlier rate it is a NEW finding and exits 1,
+  // and if a retired extension is still measured as a finding the entry must come back
+  // with its ruling. Deleting an entry without the registry change that justifies it
+  // fails the same way (see selftest cases 8-10 and 12-14).
 ]
 
 /** Sample floor, absolute gap and multiple below which a bucket cannot convict. */
@@ -206,38 +220,68 @@ export function classifyBucket(lang: string, ext: string, b: Bucket, canonical: 
   return clears ? { kind: "divergence", finding } : { kind: "none" }
 }
 
-/** The finding set vs the declared baseline — the only thing that gates. */
-export function computeDrift(findings: { lang: string; ext: string }[]): { newFindings: string[]; vanishedFindings: string[]; drift: boolean } {
+/**
+ * The finding set vs a baseline — the only thing that gates, in both directions.
+ *
+ * `driftAgainst` takes the baseline as an argument so the Vanish direction stays
+ * testable while the live baseline is empty (emptied by the #913 ruling): a gate whose
+ * refusals cannot be exercised is a gate that has not been tried.
+ */
+export function driftAgainst(findings: { lang: string; ext: string }[], baseline: { lang: string; ext: string }[]): { newFindings: string[]; vanishedFindings: string[]; drift: boolean } {
   const found = new Set(findings.map(key))
-  const base = new Set(BASELINE.map(key))
+  const base = new Set(baseline.map(key))
   const newFindings = [...found].filter((k) => !base.has(k)).sort()
   const vanishedFindings = [...base].filter((k) => !found.has(k)).sort()
   return { newFindings, vanishedFindings, drift: newFindings.length > 0 || vanishedFindings.length > 0 }
 }
 
-export function classifyLane(row: LaneRow, router: (p: string) => string | null) {
+export function computeDrift(findings: { lang: string; ext: string }[]) {
+  return driftAgainst(findings, BASELINE)
+}
+
+export type RouterDisagreement = { ext: string; lang: string; routed: string | null; expected: string | null }
+
+/**
+ * Every routing claim in the relation table, checked against the LIVE registry — over
+ * the WHOLE table, not only the extensions the artifact happens to sample.
+ *
+ * That distinction is the point. A per-bucket check can only see extensions that were
+ * measured, so an extension the registry stopped routing simply disappears from the
+ * artifact and is never questioned again — which is how `.gsp` stayed routed for a
+ * whole wave after #850 touched the same line. A retired extension is expected to route
+ * NOWHERE (the ruling's entire content is that the pipeline stops claiming it), and an
+ * unmeasured-but-declared one is expected to route where its declaration says.
+ */
+export function routerDisagreements(router: (p: string) => string | null): RouterDisagreement[] {
+  const out: RouterDisagreement[] = []
+  for (const [ext, d] of Object.entries(EXTENSION_RELATION)) {
+    if (d.relation === "ambiguous-sniff") continue // only the content sniff knows a header's language
+    const expected = d.retired ? null : LANE_ROUTER_ID[d.lang] ?? d.lang
+    const routed = router(`probe.${ext}`) ?? null
+    if (routed !== expected) out.push({ ext, lang: d.lang, routed, expected })
+  }
+  return out
+}
+
+export function classifyLane(row: LaneRow) {
   const lang = String(row.lang)
-  const expected = LANE_ROUTER_ID[lang] ?? lang
   const buckets = Object.entries(row.exts ?? {})
   const { canonical, canonicalFiles } = canonicalRate(row)
   const findings: Finding[] = []
   const divergences: Finding[] = []
   const belowFloor: Finding[] = []
   const undeclared: { lane: string; ext: string; files: number }[] = []
-  const routerDisagreements: { lane: string; ext: string; routed: string; expected: string }[] = []
   for (const [ext, b] of buckets) {
     const decl = EXTENSION_RELATION[ext]
     if (!decl) { undeclared.push({ lane: row.lane, ext, files: b.files }); continue }
-    if (decl.relation !== "ambiguous-sniff") {
-      const routed = router(`probe.${ext}`)
-      if (routed !== expected) routerDisagreements.push({ lane: row.lane, ext, routed: String(routed), expected })
-    }
+    // A retired extension that reappears in the artifact is convicted by the same rule
+    // as any other: retirement is a ruling about routing, not an exemption from evidence.
     const { kind, finding } = classifyBucket(lang, ext, b, canonical)
     if (kind === "finding" && finding) findings.push(finding)
     else if (kind === "divergence" && finding) divergences.push(finding)
     else if (kind === "below-floor" && finding) belowFloor.push(finding)
   }
-  return { findings, divergences, belowFloor, undeclared, routerDisagreements, canonical, canonicalFiles, pooled: canonicalFiles > 0 }
+  return { findings, divergences, belowFloor, undeclared, canonical, canonicalFiles, pooled: canonicalFiles > 0 }
 }
 
 async function main() {
@@ -257,17 +301,19 @@ async function main() {
   const rateDivergences: Finding[] = []
   const belowFloor: Finding[] = []
   const undeclared: { lane: string; ext: string; files: number }[] = []
-  const routerDisagreements: { lane: string; ext: string; routed: string; expected: string }[] = []
   const measured: Record<string, { lane: string; lang: string; files: number; errorFiles: number; rate: number; relation: Relation | "(undeclared)" }> = {}
   const lanes: any[] = []
 
+  // The routing claims are checked ONCE, over the whole declared table — a bucket the
+  // artifact no longer samples cannot be the thing that keeps the registry honest.
+  const routerMismatches = routerDisagreements((p) => detectLanguageFromPath(p) as string | null)
+
   for (const row of rows as LaneRow[]) {
-    const c = classifyLane(row, (p) => detectLanguageFromPath(p) as string | null)
+    const c = classifyLane(row)
     findings.push(...c.findings)
     rateDivergences.push(...c.divergences)
     belowFloor.push(...c.belowFloor)
     undeclared.push(...c.undeclared)
-    routerDisagreements.push(...c.routerDisagreements)
     for (const [ext, b] of Object.entries(row.exts ?? {})) {
       measured[`${row.lang}.${ext}`] = {
         lane: row.lane, lang: String(row.lang), files: b.files, errorFiles: b.errorFiles,
@@ -279,10 +325,14 @@ async function main() {
   }
 
   const { newFindings, vanishedFindings: vanished, drift } = computeDrift(findings)
-  // Declared suspects with no F10 sample at all: unknown, not clean.
+  // Declared suspects with no F10 sample at all: unknown, not clean. Retired
+  // extensions are excluded — their absence is the ruling working, not a gap.
   const unmeasuredRows = Object.entries(EXTENSION_RELATION)
-    .filter(([ext, d]) => d.relation === "other-format" && !Object.keys(measured).some((k) => k.endsWith(`.${ext}`)))
+    .filter(([ext, d]) => d.relation === "other-format" && !d.retired && !Object.keys(measured).some((k) => k.endsWith(`.${ext}`)))
     .map(([ext, d]) => ({ ext, lang: d.lang, note: d.note }))
+  const retiredRows = Object.entries(EXTENSION_RELATION)
+    .filter(([, d]) => d.retired)
+    .map(([ext, d]) => ({ ext, lang: d.lang, measured: Object.keys(measured).some((k) => k.endsWith(`.${ext}`)) }))
 
   const payload = {
     schemaVersion: 1,
@@ -306,7 +356,7 @@ async function main() {
     vanishedFindings: vanished,
     drift,
     undeclaredExtensions: undeclared,
-    routerDisagreements,
+    routerDisagreements: routerMismatches,
     rateDivergences: {
       note: "Declared `same-language` (the format IS the routed language) yet far above the lane's canonical rate: a GRAMMAR gap, not a routing defect. Reported so the number is visible and never convicted here.",
       rows: rateDivergences,
@@ -318,6 +368,10 @@ async function main() {
     unmeasured: {
       note: "Declared other-format with no F10 lane sampling the extension: unknown, not clean. No rate exists, so nothing is claimed about it.",
       rows: unmeasuredRows,
+    },
+    retired: {
+      note: "Ruled (2026-09-24): the format is real but no pinned grammar can represent it, so the registry does not route it and nothing claims to have analyzed it. `measured: true` would mean the artifact still carries a bucket for a retired extension — a finding, not a retirement.",
+      rows: retiredRows,
     },
     measured,
     laneCanonicals: lanes,
@@ -337,14 +391,15 @@ async function main() {
   for (const f of rateDivergences) console.log(`  rate-divergence ${f.lang}.${f.ext.padEnd(5)} ${f.errorFiles}/${f.files} = ${f.rate}%  vs canonical ${f.canonical}%  (${f.ratio}x, +${f.gap}pts) — same-language, grammar gap not routing`)
   for (const f of belowFloor) console.log(`  below-floor     ${f.lang}.${f.ext.padEnd(5)} ${f.errorFiles}/${f.files} = ${f.rate}% (< ${MIN_FILES} files, no conviction)`)
   for (const u of unmeasuredRows) console.log(`  unmeasured      ${u.lang}.${u.ext.padEnd(5)} declared other-format, no F10 lane samples it`)
+  for (const r of retiredRows) console.log(`  retired         ${r.lang}.${r.ext.padEnd(5)} ruled unroutable${r.measured ? " — STILL MEASURED, it reappeared" : " (not routed, not measured)"}`)
   for (const u of undeclared) console.log(`  UNDECLARED      ${u.lane} .${u.ext} (${u.files} files) — declare it in EXTENSION_RELATION`)
-  for (const r of routerDisagreements) console.log(`  ROUTER-MISMATCH ${r.lane} .${r.ext} routes to ${r.routed}, declaration expects ${r.expected}`)
+  for (const r of routerMismatches) console.log(`  ROUTER-MISMATCH .${r.ext} routes to ${r.routed}, declaration expects ${r.expected} (${r.lang})`)
   if (drift) {
     for (const k of newFindings) console.log(`  NEW FINDING     ${k} — not on the baseline`)
     for (const k of vanished) console.log(`  VANISHED        ${k} — baseline entry no longer a finding; update BASELINE with the ruling`)
   }
   console.log(`wrote ${path.relative(ROOT, OUT)}`)
-  process.exit(drift || undeclared.length > 0 || routerDisagreements.length > 0 ? 1 : 0)
+  process.exit(drift || undeclared.length > 0 || routerMismatches.length > 0 ? 1 : 0)
 }
 
 // Entry guarded (C923 sweep): an unguarded call would make every future IMPORT of
