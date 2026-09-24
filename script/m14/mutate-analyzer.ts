@@ -7634,6 +7634,20 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "php/lines-dropped",
+    language: "php",
+    defectClass: "line-loss",
+    description:
+      "#929 regression: the R6/M59.A7 line base is reverted — every relationship loses the line of the node that NAMES it, which is exactly what php looked like at HEAD (2,123 of 2,418 corpus edges with no line_number, MEASURED) while the completion matrix's `lines` cell read PASS. THAT is why this mutant matters: the cell's check is `alive` (is the field written anywhere), so one surviving label satisfies it, and the differential matches on (label, from, target) and never on the line — so no instrument in the suite could see the revert. Caught by php/line-contract, which pins one line per label, and only by it: php's twelve earlier fixtures pinned the line on two labels in total, both `references`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const { line_number, ...rest } = x
+        return rest
+      }),
+    }),
+  },
+  {
     id: "php/static-member-read-lost-to-braces",
     language: "php",
     defectClass: "relationship-loss",
