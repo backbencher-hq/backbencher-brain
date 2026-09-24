@@ -7206,11 +7206,106 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
     classMethods.set(cls, set)
   }
 
+  // #748 (M49 dup-key family ruling, Option A): python binds the LAST
+  // definition of a name in one container scope, so an EARLIER same-name def
+  // is a PHANTOM whose body can never run. The oracle derives from BOTH bodies
+  // today (it walks every function_definition), and the analyzer's fix drops
+  // the shadowed one — so the rule has to be expressed on THIS side in the same
+  // commit, or every phantom-body edge would surface as MISSING. Container
+  // identity is the scope NODE (module / class_definition), and "symbol-level"
+  // is the analyzer's published scope model: a class opens a container and
+  // clears the function scope, a def inside a def is not a symbol (PYD5) and
+  // so cannot be a phantom. Measured before the change: 0 duplicate-name
+  // scopes across both pinned corpora (cython 475 + requests 37 files).
+  // Identity is a BYTE RANGE, never the node object or the class name: the
+  // wrappers are per-access (so a Set<Node> membership silently never holds),
+  // and container identity must be the scope node so two same-named classes
+  // stay distinct containers.
+  //
+  // A DECLARATION CHAIN is not a rebinding: `@overload` stubs and property
+  // accessors (`@property` / `@x.setter` / `@x.getter` / `@x.deleter`) coexist
+  // by design and the family ruling keeps them. MEASURED on the pinned corpora:
+  // 21 of 25 duplicate-name scopes are chains, 4 are genuine rebindings.
+  const chainLeaf = new Set(["overload", "property", "setter", "getter", "deleter"])
+  const decoratorLeaf = (d: any): string | undefined => {
+    const inner = d.namedChild(0)
+    if (!inner) return undefined
+    if (inner.type === "identifier") return inner.text
+    if (inner.type === "call") return decoratorLeaf(inner.namedChild(0))
+    const last = inner.namedChild(inner.namedChildCount - 1)
+    return last?.text
+  }
+  const isDeclarationChain = (defs: any[], name: string): boolean => {
+    for (const d of defs) {
+      const parent = d.parent
+      if (!parent || parent.type !== "decorated_definition") continue
+      for (let i = 0; i < parent.namedChildCount; i++) {
+        const c = parent.namedChild(i)
+        if (!c || c.type !== "decorator") continue
+        const leaf = decoratorLeaf(c)
+        if (leaf && chainLeaf.has(leaf)) return true
+        if (c.text.replace(/^@/, "").trim().startsWith(`${name}.`)) return true
+      }
+    }
+    return false
+  }
+  const phantoms = new Set<string>()
+  {
+    const nodeKey = (n: any): string => `${n.startIndex}:${n.endIndex}`
+    const containerKey = (n: any): string => `${n.type}:${n.startIndex}:${n.endIndex}`
+    const byContainer = new Map<string, Map<string, { key: string; node: any }[]>>()
+    const frames: { n: any; container: string; inFn: boolean }[] = [{ n: root, container: containerKey(root), inFn: false }]
+    while (frames.length > 0) {
+      const { n, container, inFn } = frames.pop()!
+      let nextContainer = container
+      let nextInFn = inFn
+      if (n.type === "class_definition" || n.type === "module") {
+        nextContainer = containerKey(n)
+        nextInFn = false
+      } else if (n.type === "function_definition") {
+        if (!inFn) {
+          const name = n.namedChildren.find((c: any) => c.type === "identifier")?.text
+          if (name) {
+            const m = byContainer.get(container) ?? new Map<string, { key: string; node: any }[]>()
+            m.set(name, [...(m.get(name) ?? []), { key: nodeKey(n), node: n }])
+            byContainer.set(container, m)
+          }
+        }
+        nextInFn = true
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) frames.push({ n: c, container: nextContainer, inFn: nextInFn })
+      }
+    }
+    // ALTERNATIVES ARE NOT SHADOWS: same-name defs in different branches are
+    // both live, so only a rebinding INSIDE one statement block is a phantom.
+    const blockKey = (n: any): string => {
+      for (let p: any = n.parent; p; p = p.parent) {
+        if (p.type === "block") return `${p.type}:${p.startIndex}:${p.endIndex}`
+      }
+      return ""
+    }
+    for (const m of byContainer.values())
+      for (const [name, defs] of m) {
+        if (isDeclarationChain(defs.map((d) => d.node), name)) continue
+        for (let i = 0; i < defs.length - 1; i++) {
+          const later = defs.slice(i + 1).some((d) => blockKey(d.node) === blockKey(defs[i].node))
+          if (later) phantoms.add(defs[i].key)
+        }
+      }
+  }
+  const isPhantom = (n: any): boolean => phantoms.has(`${n.startIndex}:${n.endIndex}`)
+
   // Pass 2: structural edge derivation (mirrors RealPythonAnalyzer).
   const stack: any[] = [{ n: root, parent: null, inFn: undefined as string | undefined }]
   while (stack.length > 0) {
     const { n, parent, inFn } = stack.pop()!
     const t = n.type
+    // The shadowed earlier definition — see the phantom pre-pass above. Its
+    // subtree is not walked, so it contributes no edge, exactly like the walk
+    // it mirrors.
+    if (isPhantom(n)) continue
     // PYD5: rebind the owner ONLY when entering a symbol-level def (inFn is
     // still undefined). A def inside a def is NOT a symbol — the calls
     // contract attributes its body to the ENCLOSING function, so its member
