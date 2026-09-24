@@ -8200,6 +8200,40 @@ export const MUTANTS: Mutant[] = [
     },
   },
   // --------------------------------------------------------------------------
+  // M60 (#902 + its base-position sibling): the allowlist rule, in both positions.
+  // --------------------------------------------------------------------------
+  {
+    id: "python/callee-shape-fallthrough",
+    language: "python",
+    defectClass: "fabrication",
+    description:
+      "#902 regression: `callLeafName` goes back to the `namedChild(0)` fallthrough for any callee shape it does not list, so a parenthesised CONDITIONAL callee names its `if` branch (`calls conditional -> f`), a parameterless LAMBDA names its body (`calls lam -> f`), and a parameterised LAMBDA names its PARAMETER (`calls lam_param -> y`) — calls the source never writes, all refused by the differential's oracle, and all three MEASURED on the full cython draw (475 files: withstat_py.py:218, extra_walrus.py:136 naming `y_global`, extra_walrus.py:151 naming `z`, seq_mul.py:159 naming `n`). The injected set is exactly what the fallback produced on the fixture: a conditional_expression's first named child is its consequence, a lambda's is its `parameters` node whose first named child is the parameter, and a parameterless lambda's is its body. Caught by python/callee-shapes' three forbid pins.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "conditional", target: "f", fromSymbol: "conditional", toSymbol: "f", type: "calls", relationshipType: "calls", confidence: 1.0, metadata: { pythonSpecific: true } },
+        { source: "lam", target: "f", fromSymbol: "lam", toSymbol: "f", type: "calls", relationshipType: "calls", confidence: 1.0, metadata: { pythonSpecific: true } },
+        { source: "lam_param", target: "y", fromSymbol: "lam_param", toSymbol: "y", type: "calls", relationshipType: "calls", confidence: 1.0, metadata: { pythonSpecific: true } },
+      ],
+    }),
+  },
+  {
+    id: "python/base-shape-fallthrough",
+    language: "python",
+    defectClass: "fabrication",
+    description:
+      "#902's sibling in the BASE position: `baseClassLeaf` goes back to the `namedChild(0)` fallthrough, so a base written as a CALL names the FACTORY FUNCTION as the parent class (`extends Computed -> factory`) — measured on cython:python as `extends T -> namedtuple` at Tools/dataclass_test_data/test_dataclasses.py:1637, the one UNEXPLAINED edge the #902 fix exposed. The same fallback also restores PYD6's keyword fabrication (`extends Keyword -> total`, the pre-fix blanket descent over a `total=False` argument). Caught by python/base-shapes' two forbid pins.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "Computed", target: "factory", fromSymbol: "Computed", toSymbol: "factory", type: "extends", relationshipType: "extends", confidence: 1.0, metadata: { pythonSpecific: true } },
+        { source: "Keyword", target: "total", fromSymbol: "Keyword", toSymbol: "total", type: "extends", relationshipType: "extends", confidence: 1.0, metadata: { pythonSpecific: true } },
+      ],
+    }),
+  },
+  // --------------------------------------------------------------------------
   // M60.R8 (#838/#836): the swift framework trigger surface. Three mutants: the
   // order regression (the pre-fix observable), and the two contract keys the lane
   // did not publish at all before this round.

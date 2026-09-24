@@ -1099,23 +1099,48 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     return node.startPosition.row + 1
   }
 
-  /** The node that names a call's callee — callLeafName's node twin. */
+  /** The node that names a call's callee — callLeafName's node twin (same shapes). */
   private callLeafNode(node: Node | null | undefined): Node | null {
     if (!node) return null
     if (node.type === "identifier") return node
     if (node.type === "attribute") {
       return node.namedChild(node.namedChildCount - 1) ?? null
     }
-    if (node.type === "call") return this.callLeafNode(node.namedChild(0))
-    // Same boundaries callLeafName documents: a computed/subscript callee and
-    // a string callee name nothing, so there is no node to attribute.
-    if (node.type === "subscript" || node.type === "string") return null
-    return this.callLeafNode(node.namedChild(0))
+    if (node.type === "parenthesized_expression") {
+      return this.callLeafNode(node.namedChild(0))
+    }
+    // Anything else names nothing, so there is no node to attribute the edge to.
+    // A missing line is honest; a line taken from a branch the call does not
+    // necessarily take is not (which is why this follows callLeafName exactly).
+    return null
   }
 
+  /**
+   * The name a base-list entry carries — and NOTHING when it carries none.
+   *
+   * The same list of static-name shapes as callLeafName, one position over (this
+   * is #902's sibling, found by the differential the moment the call walk stopped
+   * lying — the python lane's next UNEXPLAINED edge):
+   *   identifier   `Base`            → Base
+   *   subscript    `Base[T]`         → Base   (the generic HEAD, not its arguments)
+   *   attribute    `mod.Base`        → Base   (the leaf, PYD1)
+   * and every other shape names NOTHING. The one that matters is a CALL base:
+   *   call         `class T(namedtuple('Tbase', 'a')):`
+   * inherits from the class that call RETURNS — an anonymous type — so naming
+   * `namedtuple` was a category error (a function is not a class, and T does not
+   * inherit from it). The differential's oracle names only the three shapes above,
+   * so naming the factory was the single edge it could not explain (measured on
+   * cython:python: `extends T -> namedtuple`, Tools/dataclass_test_data/
+   * test_dataclasses.py:1637). MEASURED on the two pinned corpora (cython +
+   * requests, 513 files, 1937 base-list entries), the shapes are identifier 1762,
+   * attribute 130, keyword_argument 24 (skipped before this call, PYD6), subscript
+   * 20, call 1 — so this list removes exactly ONE fabricated edge corpus-wide and
+   * changes nothing else.
+   * The previous body's last resort was `namedChild(0)` for any unlisted shape,
+   * which is how the call case silently named its callee; the fallback was the
+   * defect, exactly as it was in callLeafName.
+   */
   private baseClassLeaf(node: Node): string | undefined {
-    // identifier → text; subscript `Generic[T]` → first named child leaf;
-    // attribute `a.b` → last named child leaf.
     if (node.type === "identifier") return node.text
     if (node.type === "subscript") {
       const first = node.namedChild(0)
@@ -1125,32 +1150,49 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const last = node.namedChild(node.namedChildCount - 1)
       return last ? last.text : undefined
     }
-    // Generic[T] may wrap in a generic_type or dotted_name — descend to leaf.
-    const first = node.namedChild(0)
-    if (first) return this.baseClassLeaf(first)
     return undefined
   }
 
+  /**
+   * The name a call's callee carries — and NOTHING when it carries none.
+   *
+   * The rule is a list of shapes that name their callee statically:
+   *   identifier            `f(...)`            → f
+   *   attribute             `o.m(...)`          → m (the leaf, PYD1)
+   *   parenthesized         `(f)(...)`          → unwrap, judge the inside
+   * and every other shape names NOTHING:
+   *   subscript             `FACTORIES[k](x)`   (PYD1: the callee is the dict's
+   *                                               value, not the dict)
+   *   conditional           `(f if c else g)()` — the callee is whichever branch
+   *                                               the condition selects; naming the
+   *                                               `if` branch was a fabrication and
+   *                                               the differential's oracle refuses
+   *                                               it, giving one UNEXPLAINED edge on
+   *                                               cython:python (#902)
+   *   lambda                `(lambda: f)()`     — the callee is the lambda; `f` is
+   *                                               its BODY, so naming it fabricated a
+   *                                               call that the source never writes
+   *   call                  `f()()`             — the callee is the RESULT of `f()`;
+   *                                               the inner call emits `calls f` on
+   *                                               its own node, so descending here
+   *                                               duplicated a true edge onto a false
+   *                                               one (same target, wrong site)
+   *   string                `"f"(...)`
+   * The previous body fell through to `namedChild(0)` for anything unlisted, which
+   * silently turned ALL FOUR of the above into a name — the fallback was the defect.
+   * Grouping is the one wrapper that is genuinely transparent, so it unwraps.
+   */
   private callLeafName(node: Node): string | undefined {
     if (node.type === "identifier") return node.text
     if (node.type === "attribute") {
       const last = node.namedChild(node.namedChildCount - 1)
       return last ? last.text : undefined
     }
-    if (node.type === "call") {
-      const fn = node.namedChild(0)
-      return fn ? this.callLeafName(fn) : undefined
+    if (node.type === "parenthesized_expression") {
+      const inner = node.namedChild(0)
+      return inner ? this.callLeafName(inner) : undefined
     }
-    // Computed/dynamic member calls (PYD1): `FACTORIES[key](x)` — the callee
-    // is a subscript whose result is called, not `FACTORIES` itself. Naming
-    // the dict variable as the call target was a fabrication (5 corpus
-    // hits: unop_node_classes, binop_node_classes, ...). The JS family
-    // contract skips subscript callees; python now matches. A genuine
-    // static target can still arrive via identifier/attribute paths.
-    if (node.type === "subscript") return undefined
-    if (node.type === "string") return undefined
-    const first = node.namedChild(0)
-    return first ? this.callLeafName(first) : undefined
+    return undefined
   }
 
   private extractDecorators(node: Node, ctx: PythonContext, ownerName: string): string[] {
