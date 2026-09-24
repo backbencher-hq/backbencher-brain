@@ -96,6 +96,12 @@ const CROSS_CUTTING: Record<number, string> = {
   593: "M37 dual-lens backfill: open for the languages still in its table, but java/kotlin/scala/ts/js rows are recorded ✅ done",
   612: "M37.19 systems-family joint closure gate (c/cpp/rust/go/zig) — kept language-scoped, listed here only for the record",
   864: "M14 Matrix 4 grammar provenance/pinning: matrix-wide item that names fsharp+clean as examples, not their completion gap",
+  // #930 names php because php is where the defect was PROVEN (the only lane whose cell read
+  // PASS with a whole-lane gap), but the subject is the m60 `lines` CELL WORDING: the fix
+  // re-measures all 41 lanes' cells, so it is family-sweep work by the owner's lane-by-lane
+  // standard, not php completion work. php's own half of #930 — the lane whose gap the weak
+  // wording let through — is fixed and closed (#929, cb9f846d: 18,303/19,750 unlined -> 0).
+  930: "m60 lines-cell wording: the gate asks `is line_number written anywhere` so ONE emit site satisfies it — the fix re-measures every lane's cell, so it is family work, not the named lane's completion gap",
 }
 // 612 is genuinely their closure gate, so it stays language-scoped.
 delete CROSS_CUTTING[612]
