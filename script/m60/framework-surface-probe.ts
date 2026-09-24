@@ -112,6 +112,17 @@ const LANES: Lane[] = [
       // can see it: the analyzer half is correct on its own, and the merge happens after
       // it. `expectAbsent` is the load-bearing half — the OLD slug must be GONE.
       { name: "rails-require-and-leaf", src: `require 'rails'\n\nclass User < ActiveRecord::Base\nend\n`, expectDetected: "Ruby on Rails", expectAbsent: ["rails"], viaPublished: true, note: "was the #932 duplicate: the published list read [\"Ruby on Rails\",\"rails\"]" },
+      // #749/#932-class, PUBLISHED-seam only. `detectRubyFrameworks` carried a bare
+      // `describe ` trigger beside `require 'rspec'`, and rack's test/ directory is
+      // minitest/spec: measured 36 of 190 pinned-corpus files publishing ["rspec"]
+      // with ZERO requiring rspec — the analyzer never reads `describe`, its own
+      // comments call these files minitest specs, and require-level evidence was
+      // 0 true / 36 false. The trigger could not tell rspec from minitest/spec, so
+      // it is GONE; require 'rspec' remains, and the positive control below proves
+      // the require path still fires (a negative control that lost its trigger
+      // silently would read the same as one that never had it).
+      { name: "plain-describe-minitest", src: `require_relative "helper"\n\ndescribe Rack::Static do\n  it "serves files" do\n  end\nend\n`, expectDetected: null, expectAbsent: ["rspec", "minitest"], viaPublished: true, note: "was a live false positive: rack's 36 minitest/spec files published [\"rspec\"]" },
+      { name: "rspec-require-positive", src: `require 'rspec'\n`, expectDetected: "rspec", viaPublished: true, note: "positive control: the require-level rspec trigger still fires after the bare-describe removal" },
     ],
   },
   {
