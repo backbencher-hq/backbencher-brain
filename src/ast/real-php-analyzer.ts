@@ -567,6 +567,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // heritageTarget returns the OWN name when qualification cannot
         // disambiguate (global single-segment base like \\RuntimeException):
         // emit NO extends for that unresolvable base.
+        // The node that NAMES the extends edge: the first base-clause child (#929).
+        const baseNode = baseClause?.namedChild(0) ?? null
         const rawBase = baseClause?.namedChild(0)?.text
         const baseName = baseClause ? this.heritageTarget(rawBase ?? "", className) : undefined
         const baseUnresolvable =
@@ -585,6 +587,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: ifaceName,
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
+              line_number: this.nodeLine(iface),
               metadata: { phpSpecific: true },
             })
           }
@@ -615,6 +618,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: baseName,
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
+            line_number: this.nodeLine(baseNode),
             metadata: { phpSpecific: true },
           })
           // For `new parent()` resolution: map class -> declared base class
@@ -662,6 +666,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: parentName,
               type: ASTEngine.RelationshipType.Extends,
               confidence: 1.0,
+              line_number: this.nodeLine(parent),
               metadata: { phpSpecific: true },
             })
           }
@@ -714,6 +719,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: this.heritageTarget(iface.text, enumName),
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
+              line_number: this.nodeLine(iface),
               metadata: { phpSpecific: true, isEnumImplements: true },
             })
           }
@@ -889,6 +895,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: traitName,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 1.0,
+            line_number: this.nodeLine(child),
             metadata: { phpSpecific: true, isTraitUse: true },
           })
           patterns.add("Trait Composition (Mixins)")
@@ -1022,6 +1029,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // The member's own declaration line — the node that names it is its
+          // symbol (ruby stamps its contains edges the same way).
+          line_number: s.range?.startLine,
           metadata: { isContained: true },
         })
       }
@@ -1124,6 +1134,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: member.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(member),
               metadata: { phpSpecific: true, isMemberRead: true },
             })
           }
@@ -1146,6 +1157,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: member,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(varNode),
               metadata: { phpSpecific: true, isMemberRead: true, isStaticRead: true },
             })
           }
@@ -1158,9 +1170,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // so the constant is the LAST name child (the scope `Suit`/`C` is a
         // type, never a read).
         let member: string | undefined
+        let memberNode: Node | null = null
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
-          if (c && c.type === "name") { member = c.text; break }
+          if (c && c.type === "name") { member = c.text; memberNode = c; break }
         }
         if (member && member.toLowerCase() !== "class") {
           relationships.push({
@@ -1168,6 +1181,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: member,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            line_number: this.nodeLine(memberNode),
             metadata: { phpSpecific: true, isMemberRead: true, isConstFetch: true },
           })
         }
@@ -1186,6 +1200,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: base,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(n),
               metadata: { phpSpecific: true, isSubscriptBase: true },
             })
           }
@@ -1201,6 +1216,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: base,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            line_number: this.nodeLine(n),
             metadata: { phpSpecific: true, isClosureCapture: true },
           })
         }
@@ -1215,6 +1231,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: base,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            line_number: this.nodeLine(n),
             metadata: { phpSpecific: true, isInterpolationRead: true },
           })
         }
@@ -1228,6 +1245,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: base,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            line_number: this.nodeLine(n),
             metadata: { phpSpecific: true, isInterpolationRead: true },
           })
         }
@@ -1309,6 +1327,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: callName,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(nameNode),
         metadata: { phpSpecific: true, isTearOff: true },
       })
       return
@@ -1318,6 +1337,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: callName,
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
+      line_number: this.nodeLine(nameNode),
       metadata: { phpSpecific: true },
     })
   }
@@ -1361,6 +1381,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: methodName,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(nameNode),
         metadata: { phpSpecific: true, isTearOff: true },
       })
       return
@@ -1370,6 +1391,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: methodName,
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
+      line_number: this.nodeLine(nameNode),
       metadata: { phpSpecific: true },
     })
   }
@@ -1389,6 +1411,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: methodName,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(nameNode),
         metadata: { phpSpecific: true, isTearOff: true },
       })
       return
@@ -1398,6 +1421,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: methodName,
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
+      line_number: this.nodeLine(nameNode),
       metadata: { phpSpecific: true },
     })
   }
@@ -1411,6 +1435,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // object_creation_expression has no named field for the type; the first
     // named child is the class/interface name (or relative_scope for new self).
     let target: string | undefined
+    // The node that NAMES the instantiates edge: the class name child (#929).
+    let targetNode: Node | null = null
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
@@ -1432,6 +1458,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else {
           target = this.leafName(child.text)
         }
+        targetNode = child
         break
       }
       if (child.type === "relative_scope") {
@@ -1446,6 +1473,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else {
           target = owner
         }
+        targetNode = child
         break
       }
     }
@@ -1455,6 +1483,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       target,
       type: ASTEngine.RelationshipType.Instantiates,
       confidence: 0.9,
+      line_number: this.nodeLine(targetNode),
       metadata: { phpSpecific: true, isNew: true },
     })
   }
@@ -1600,6 +1629,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${base}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.95,
+          // The overriding METHOD's own declaration line (the node that names it).
+          line_number: s.range?.startLine,
           metadata: { phpSpecific: true, isOverride: true },
         })
       } else if (!inFileMethods && !context?.overrideCompanion?.get(base)) {
@@ -1617,6 +1648,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${base}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.5,
+          line_number: s.range?.startLine,
           metadata: { phpSpecific: true, isOverride: true, reasonCode: "first-parent-guess" },
         })
       }
@@ -1738,6 +1770,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: filePath,
       type: ASTEngine.RelationshipType.References,
       confidence: 0.9,
+      line_number: this.nodeLine(node),
       metadata: { phpSpecific: true, includeType: node.type.replace("_expression", "") },
     })
   }
@@ -1748,6 +1781,32 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // refuses to fabricate must be refused on the truth side too, or the
     // narrowing reads as "analyzer lost 12 edges" in the next draw.
     return phpStaticIncludePath(node)
+  }
+
+  /**
+   * M60 #929 — the line of the node that NAMES an edge. Mirrors ruby's `nodeLine`.
+   *
+   * The family contract (M59.A7, R6) is that EVERY relationship carries the line of
+   * the node that names it: the base name for `extends`/`implements`, the trait name
+   * for a trait `uses`, the callee name for `calls`, the member name for
+   * `uses`/`contains`, the constructed class name for `instantiates`, the overriding
+   * method for `overrides`, the include path for its `references`.
+   *
+   * php carried a line on exactly ONE label — `references`, the R9 declared-type graph
+   * added 2026-09-22 — and none on the other seven. MEASURED at HEAD: 2,123 of 2,418
+   * corpus edges (87.8%) with no `line_number` at all, while the completion matrix's
+   * `lines` cell read PASS, because M60.P1's check asks whether the field is written
+   * ANYWHERE rather than whether every edge carries one. The differential cannot see
+   * it either (it matches on label/from/target, never on the line), and php's twelve
+   * fixtures never pinned a line — three instruments, one blind spot. Hence the
+   * fixture and the reverting mutant that hold this rule now.
+   *
+   * `undefined` when there is no node to ask: a missing line is honest, a fabricated
+   * 0 is the M59 defect.
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
   }
 
   private findChildByType(node: Node, type: string): Node | null {
@@ -1822,6 +1881,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: base,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(n),
         metadata: { phpSpecific: true, isLocalRead: true },
       })
     } else if (scopeCtx.funcValues.has(base)) {
@@ -1830,6 +1890,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: base,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(n),
         metadata: { phpSpecific: true, isGlobalRead: true },
       });
     } else if (PHP_SUPERGLOBALS.has(base)) {
@@ -1838,6 +1899,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: base,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(n),
         metadata: { phpSpecific: true, isGlobalRead: true },
       });
     }
@@ -1916,6 +1978,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: txt,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
+        line_number: this.nodeLine(n),
         metadata: { phpSpecific: true, isConstRead: true },
       });
     }

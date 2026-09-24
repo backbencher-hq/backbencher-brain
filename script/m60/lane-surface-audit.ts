@@ -21,10 +21,15 @@
 //
 //   L1 labels        every relationshipType the lane emits, with its count
 //   L2 line          per label: edges with no line, and edges with line 0 (the M59 defect)
-//   L3 seam keys     per label: does the edge carry `type` AND `relationshipType`;
-//                    `source`/`from`/`fromSymbol`; `target`/`to`/`toSymbol`? (the M60 P1
-//                    payload seam: a consumer reading the missing key sees NOTHING where
-//                    the edge exists)
+//   L3 seam keys     per label: does the edge carry a `type` (either the analyzer's
+//                    `type` or the store's `relationshipType`), a source
+//                    (`source`/`from`/`fromSymbol`) and a target
+//                    (`target`/`to`/`toSymbol`)? (the M60 P1 payload seam: a consumer
+//                    reading the missing key sees NOTHING where the edge exists).
+//                    NOT a raw-vs-store spelling census: the store's column alias is
+//                    where `type` becomes `relationshipType`, so requiring the store
+//                    spelling here flagged all 19,750 php edges and every lane besides —
+//                    see the correction at the check site.
 //   L4 ghosts        a published name that occurs NOWHERE in the file's own source text.
 //                    A PROXY, not a conviction: `__init__`, `constructor`, `anonymous_7`
 //                    and macro-built names are legitimately absent, so every hit is a
@@ -121,6 +126,7 @@ async function main() {
     const kinds = new Map<string, number>()
     const badNames: any[] = []
     const ghosts: any[] = []
+    const unlinedSample: Array<{ file: string; label: string; target: string; from: string; reason: string }> = []
     const parseErrors: any[] = []
     let files = 0, filesWithEdges = 0, edges = 0, symbols = 0
 
@@ -163,13 +169,56 @@ async function main() {
           // The line the edge claims: `line_number` is the store's field, `metadata.line`
           // its mirror, `line` the probe shape. Absent and 0 are DIFFERENT findings.
           const ln = r.line_number ?? r.metadata?.line ?? r.line
-          if (ln === undefined || ln === null) noLine.set(t, (noLine.get(t) ?? 0) + 1)
-          else if (ln === 0) zeroLine.set(t, (zeroLine.get(t) ?? 0) + 1)
+          if (ln === undefined || ln === null) {
+            noLine.set(t, (noLine.get(t) ?? 0) + 1)
+            // WHY an edge has no line matters, and conflating the reasons made this
+            // instrument accuse two lanes wrongly on the php round (csharp 61, kotlin 24):
+            // an edge whose TARGET is a SYNTHESIZED symbol has no naming node anywhere in
+            // the source — csharp's `containmentLine` returns undefined for exactly those
+            // (`sites.synthesized`), and M59.A7's own contract makes absence the honest
+            // answer there, since the alternative is the fabricated 0 the milestone
+            // outlawed. So the sample carries the reason a reader needs to triage: the
+            // target name, and whether any symbol of that name in this file lacks a source
+            // range (the synthesized signature). A lane read as unlined is only a finding
+            // once its samples say `range` — not `synthesized`.
+            // The decisive test is NOT whether the symbol carries a source range —
+            // csharp's synthesised constructors carry a full one (measured: `constructor`
+            // at Interop.cs 1127 with a real range) and still must NOT claim a line. The
+            // test is whether any node in this file WRITES the target's name: a constructor
+            // is named `constructor` and written `<ClassName>(...)`, a destructor is named
+            // `Finalize` and written `~ClassName`, java's phantoms are named by nothing at
+            // all. When the name is unwritten, no line in the file can BE the line of the
+            // name, so absence is the contract rather than a violation — csharp's rule is
+            // written down and measured in `collectContainmentSites` (366 constructor edges
+            // used to claim the ATTRIBUTE's line), and the oracle's own phantom rule counts
+            // a synthesised member's containment edge CLAIMING a line as the defect.
+            // So `unwritten` is exempt-by-contract and `written` is the finding class.
+            const tgtName = String(r.target ?? r.to ?? r.toSymbol ?? "")
+            const w = writtenForm(tgtName)
+            const nameWritten = w.length > 1 && src.includes(w)
+            unlinedSample.push({
+              file: path.relative(CORPUS_ROOT, file), label: t, target: tgtName,
+              from: String(r.source ?? r.from ?? r.fromSymbol ?? ""),
+              reason: nameWritten ? "written? (TRIAGE: name occurs in source)" : "unwritten (no naming node — exempt)",
+            })
+          } else if (ln === 0) zeroLine.set(t, (zeroLine.get(t) ?? 0) + 1)
           // The seam keys, per label: the P1 payload matrix measures these over samples;
           // here they are measured against every edge the lane emits on its corpora.
+          //
+          // CORRECTED 2026-09-24 (M60 #929 round), by measuring the field's own frame.
+          // It first required `relationshipType` alongside `type` and so reported
+          // `edges missing a key: <ALL edges>` on EVERY lane — php 19,750/19,750, all
+          // seven OO lanes the same shape. That was the probe's frame, not the lane's:
+          // `relationshipType` is the STORE's column alias (`relationship_type AS
+          // relationshipType`, src/lsp/graph_request.ts), and an in-memory analyzer
+          // edge carries `type` because a rename has not happened yet. An instrument
+          // that flags every edge of every lane is measuring its own assumption, and a
+          // line that can never read zero is decoration. What actually starves a
+          // consumer is an edge whose type, source or target is absent in EVERY
+          // accepted spelling; that is what is counted now, and the type half accepts
+          // either spelling because the rename is the store's job.
           const missing: string[] = []
-          if (r.type === undefined || r.type === null) missing.push("type")
-          if (r.relationshipType === undefined || r.relationshipType === null) missing.push("relationshipType")
+          if (r.type === undefined && r.relationshipType === undefined) missing.push("type")
           if (r.source === undefined && r.from === undefined && r.fromSymbol === undefined) missing.push("source")
           if (r.target === undefined && r.to === undefined && r.toSymbol === undefined) missing.push("target")
           if (missing.length) missingKey.set(t, (missingKey.get(t) ?? 0) + 1)
@@ -192,6 +241,7 @@ async function main() {
       zeroLine: Object.fromEntries([...zeroLine.entries()].sort((a, b) => b[1] - a[1])),
       missingSeamKeys: Object.fromEntries([...missingKey.entries()].sort((a, b) => b[1] - a[1])),
       kinds: Object.fromEntries([...kinds.entries()].sort((a, b) => b[1] - a[1])),
+      unlinedSample: unlinedSample.slice(0, 40), unlinedSampleCount: unlinedSample.length,
       badNames, ghosts: ghosts.slice(0, 40), ghostCount: ghosts.length,
       parseErrors: parseErrors.slice(0, 20), parseErrorCount: parseErrors.length,
     }
@@ -203,6 +253,16 @@ async function main() {
       console.log(`  kinds         ${Object.entries(row.kinds).map(([k, v]) => `${k}=${v}`).join(" ")}`)
       const noLineTotal = Object.values(row.noLine).reduce((a: number, b: any) => a + b, 0)
       console.log(`  lines         no line: ${noLineTotal} (${Object.entries(row.noLine).map(([k, v]) => `${k}=${v}`).join(" ") || "none"}) | line 0: ${Object.values(row.zeroLine).reduce((a: number, b: any) => a + b, 0)}`)
+      if (noLineTotal) {
+        // The reasons, not just the count: an edge whose target name the source never
+        // WRITES cannot carry a line and is exempt by contract (see the check site).
+        const byReason = new Map<string, number>()
+        for (const x of unlinedSample) byReason.set(x.reason, (byReason.get(x.reason) ?? 0) + 1)
+        console.log(`      why (sampled): ${[...byReason.entries()].map(([k, v]) => `${k}=${v}`).join(" ")}`)
+        const triage = unlinedSample.filter(x => x.reason.startsWith("written?"))
+        console.log(`      triage (sampled): ${triage.length} of ${unlinedSample.length} — ${triage.length === 0 ? "every sampled gap is a name the source never writes (exempt by contract)" : "the name OCCURS in the source; whether any node NAMES it there is the lane's ruling to read (a call site like GC.SuppressFinalize writes `Finalize` without naming the member)"}`)
+        for (const x of unlinedSample.slice(0, 5)) console.log(`      ${x.file} :: ${x.label} ${x.from} -> ${x.target} (${x.reason})`)
+      }
       console.log(`  seam keys     edges missing a key: ${Object.values(row.missingSeamKeys).reduce((a: number, b: any) => a + b, 0)} (${Object.entries(row.missingSeamKeys).map(([k, v]) => `${k}=${v}`).join(" ") || "none"})`)
       console.log(`  names         not a name / not in source: ${badNames.length}`)
       for (const b of badNames.slice(0, 12)) console.log(`      ${b.file} :: ${b.kind} ${b.symbol}${b.why ? ` (${b.why})` : ""}`)
