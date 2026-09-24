@@ -14,13 +14,31 @@ const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
   rs: "rust", go: "go", zig: "zig", nim: "nim",
-  java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala", groovy: "groovy", gsp: "groovy",
+  java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala", groovy: "groovy",
   // M49 W21 (#850): Gradle's Groovy DSL. `.gradle` had NO registry entry, so every
   // `build.gradle`/`settings.gradle` was rejected by detectLanguage before a grammar
   // was chosen — the largest real-world Groovy surface (454 files in grails-core alone)
   // was invisible to bb_analyze. The Kotlin DSL was already covered via `kts`.
   gradle: "groovy",
-  py: "python", pyw: "python", pyi: "python", pyx: "python", pxd: "python",
+  // M60 (#913 ruling, 2026-09-24): `.gsp` used to sit here, mapped to groovy the same
+  // way `.gradle` is — and it is not Groovy either. A Grails Server Page is an HTML
+  // document carrying `${}`/`<g:...>` tags and `<%--%>` comments; the Groovy grammar
+  // has no productions for it, and 39 of 39 sampled grails-core files parse with ERROR
+  // nodes. The class-wide ruling is "stop claiming": an extension whose format no
+  // pinned grammar can represent is NOT routed, rather than routed to a grammar that
+  // cannot represent it and then reported as covered. The census that owns the class
+  // (its evidence, its refusals and the sibling instances) is
+  // script/m60/routing-outlier-census.ts → validation/m60/results/routing-outliers.json.
+  py: "python", pyw: "python", pyi: "python",
+  // `.pyx`/`.pxd` (Cython) sat here until the same ruling. Cython is a different
+  // language — `cdef`/`cpdef`/`cimport`, buffer syntax, and the whole `.pxd`
+  // declaration grammar — and the Python grammar has no productions for it: measured
+  // `.pyx` 231/270 (85.6 %) and `.pxd` 42/44 (95.5 %) carrying ERROR nodes against
+  // `.py` 2/86 (2.3 %). The lane still reported 100 % coverage and MISSING=0 there,
+  // because F5 compares the analyzer against an oracle that walks the SAME partial
+  // tree and recovery keeps symbols flowing through the ERROR regions — which is what
+  // made a 68.8 %-unparseable corpus read as a pass. Nothing now claims to have
+  // analyzed them; if a Cython grammar is ever vendored, this is the line it changes.
   rb: "ruby", php: "php", lua: "lua", pl: "perl", pm: "perl", t: "perl", perl: "perl",
   ex: "elixir", exs: "elixir", erl: "erlang", hrl: "erlang",
   hs: "haskell", lhs: "haskell", icl: "clean", dcl: "clean", clj: "clojure", cljs: "clojure", cljc: "clojure", edn: "clojure",

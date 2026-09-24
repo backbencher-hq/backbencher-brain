@@ -25,12 +25,16 @@
 //   9 the declared baseline itself does not drift                           (no false alarm)
 //  10 a FIXED finding without a baseline ruling drifts                      (two-sided gate)
 //  11 a lane with no declared canonical bucket falls back to its own errPct (and says so)
+//  12 the #913 RULING itself: the live registry routes none of the three   (the ruling, asserted)
+//  13 a retired extension that still routes somewhere fails the census      (retirement is not silence)
+//  14 a retired extension that reappears as a bucket is still a finding      (no exemption by history)
 //
 // Run: bun script/m60/routing-outlier-selftest.ts   (exit 0 pass, 1 fail)
 import {
-  classifyLane, canonicalRate, classifyBucket, computeDrift, EXTENSION_RELATION,
-  MIN_FILES, GAP_PTS, RATIO, type LaneRow,
+  classifyLane, canonicalRate, classifyBucket, computeDrift, driftAgainst, routerDisagreements,
+  EXTENSION_RELATION, BASELINE, MIN_FILES, GAP_PTS, RATIO, type LaneRow,
 } from "./routing-outlier-census"
+import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 let passed = 0
 const failures: string[] = []
@@ -40,23 +44,39 @@ function check(label: string, got: unknown, want: unknown) {
   else failures.push(`${label} — got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`)
 }
 
-const router = (p: string) => (p.endsWith(".py") ? "python" : p.endsWith(".pyx") ? "python" : p.endsWith(".py") ? "python" : "python")
 const cython: LaneRow = { lane: "cython:python", lang: "python", exts: { py: { files: 86, errorFiles: 2 }, pyx: { files: 270, errorFiles: 231 }, pxd: { files: 44, errorFiles: 42 } } }
 const healthy: LaneRow = { lane: "x:python", lang: "python", exts: { py: { files: 86, errorFiles: 2 }, pyx: { files: 270, errorFiles: 10 } } }
 const grails: LaneRow = { lane: "grails-core:groovy", lang: "groovy", exts: { groovy: { files: 338, errorFiles: 6 }, gradle: { files: 23, errorFiles: 8 } } }
 const hledger: LaneRow = { lane: "hledger:haskell", lang: "haskell", exts: { hs: { files: 186, errorFiles: 3 }, lhs: { files: 2, errorFiles: 2 } } }
 
-check("1 clean .py beside broken .pyx convicts", classifyLane(cython, router).findings.map((f) => f.ext).sort(), ["pxd", "pyx"])
-check("2 healthy .pyx is not a finding", classifyLane(healthy, router).findings.length, 0)
+check("1 clean .py beside broken .pyx convicts", classifyLane(cython).findings.map((f) => f.ext).sort(), ["pxd", "pyx"])
+check("2 healthy .pyx is not a finding", classifyLane(healthy).findings.length, 0)
 check("3 canonical is pooled, not largest-bucket", [canonicalRate(cython).canonical, canonicalRate(cython).canonicalFiles], [2.33, 86])
-check("4 .gradle diverges 9x and does not convict", [classifyLane(grails, router).findings.length, classifyLane(grails, router).divergences.map((f) => f.ext)], [0, ["gradle"]])
-check("5 two-file bucket is below-floor, not a finding", [classifyLane(hledger, router).findings.length, classifyLane(hledger, router).belowFloor.map((f) => f.ext)], [0, ["lhs"]])
-check("6 undeclared extension is a failure", classifyLane({ lane: "new:python", lang: "python", exts: { newpyx: { files: 50, errorFiles: 50 } } }, router).undeclared.map((u) => u.ext), ["newpyx"])
-check("7 a moved registry entry fails the router cross-check", classifyLane(cython, (p) => (p.endsWith(".pyx") ? "c" : "python")).routerDisagreements.map((d) => d.ext), ["pyx"])
-check("8 a new finding drifts the baseline", computeDrift([{ lang: "python", ext: "pyx" }, { lang: "python", ext: "pxd" }, { lang: "groovy", ext: "gsp" }, { lang: "ruby", ext: "rbx" }]).newFindings, ["ruby.rbx"])
-check("9 the declared baseline does not drift", computeDrift([{ lang: "python", ext: "pyx" }, { lang: "python", ext: "pxd" }, { lang: "groovy", ext: "gsp" }]).drift, false)
-check("10 a fixed finding without a ruling drifts", computeDrift([{ lang: "python", ext: "pxd" }, { lang: "groovy", ext: "gsp" }]).vanishedFindings, ["python.pyx"])
+check("4 .gradle diverges 9x and does not convict", [classifyLane(grails).findings.length, classifyLane(grails).divergences.map((f) => f.ext)], [0, ["gradle"]])
+check("5 two-file bucket is below-floor, not a finding", [classifyLane(hledger).findings.length, classifyLane(hledger).belowFloor.map((f) => f.ext)], [0, ["lhs"]])
+check("6 undeclared extension is a failure", classifyLane({ lane: "new:python", lang: "python", exts: { newpyx: { files: 50, errorFiles: 50 } } }).undeclared.map((u) => u.ext), ["newpyx"])
+check("7 a moved registry entry fails the table check", routerDisagreements((p) => (p.endsWith(".pyx") ? "python" : detectLanguageFromPath(p))).map((d) => d.ext).sort(), ["pyx"])
+// The live baseline was emptied by the #913 ruling, so `driftAgainst` is what keeps the
+// two-sided gate exercised: an empty baseline can silence the vanish direction entirely.
+const PRE_RULING = [{ lang: "python", ext: "pyx" }, { lang: "python", ext: "pxd" }, { lang: "groovy", ext: "gsp" }]
+check("8 a new finding drifts the baseline", driftAgainst([...PRE_RULING, { lang: "ruby", ext: "rbx" }], PRE_RULING).newFindings, ["ruby.rbx"])
+check("9 the declared baseline does not drift", computeDrift([]).drift, false)
+check("9b the live baseline is empty BY RULING (the three findings retired)", BASELINE.length, 0)
+check("10 a fixed finding without a baseline ruling drifts", driftAgainst(PRE_RULING.slice(1), PRE_RULING).vanishedFindings, ["python.pyx"])
+check("10b a reappearing retired finding is a NEW finding, not a vanished one", computeDrift([{ lang: "python", ext: "pyx" }]).newFindings, ["python.pyx"])
 check("11 a lane with no canonical bucket falls back and says so", [canonicalRate({ lane: "x:newlang", lang: "newlang", errPct: 12.5, exts: { weird: { files: 30, errorFiles: 30 } } }).pooled, canonicalRate({ lane: "x:newlang", lang: "newlang", errPct: 12.5, exts: { weird: { files: 30, errorFiles: 30 } } }).canonical], [false, 12.5])
+
+// The ruling, asserted against the live registry rather than against the table: this is
+// the one case that fails if EXTENSION_LANGUAGE is edited back to routing any of them.
+const RETIRED = ["pyx", "pxd", "gsp"]
+check("12 #913: the live registry routes none of pyx/pxd/gsp", RETIRED.map((e) => detectLanguageFromPath(`probe.${e}`)), RETIRED.map(() => null))
+check("12b #913: the formats are still DECLARED other-format (retired, not forgotten)", RETIRED.map((e) => [EXTENSION_RELATION[e].relation, EXTENSION_RELATION[e].retired === true]), RETIRED.map(() => ["other-format", true]))
+// The strong form: EVERY declaration in the table — same-language, other-format,
+// unmeasured, retired — must match the live registry, so a re-added registry line fails
+// here even though the artifact would carry no bucket for it yet.
+check("12c every declared routing claim agrees with the live registry", routerDisagreements((p) => detectLanguageFromPath(p) as string | null), [])
+check("13 a retired extension that routes nowhere is not a disagreement", routerDisagreements((p) => (RETIRED.some((e) => p.endsWith(`.${e}`)) ? null : detectLanguageFromPath(p))).map((d) => d.ext), [])
+check("14 a retired extension reappearing as a bucket is still a finding", classifyLane({ lane: "cython:python", lang: "python", exts: { py: { files: 86, errorFiles: 2 }, pyx: { files: 270, errorFiles: 231 } } }).findings.map((f) => f.ext), ["pyx"])
 
 // The thresholds are load-bearing: each one must be able to refuse alone.
 check("thresholds refuse on files alone", classifyBucket("python", "pyx", { files: MIN_FILES - 1, errorFiles: MIN_FILES - 1 }, 1).kind, "below-floor")
