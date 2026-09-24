@@ -1,14 +1,13 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-24T17:42:08.631Z",
-  "atCommit": "dfefae2e752e2dbef41f424ed5eb350db5e0a685",
-  "passed": 156,
-  "failed": 2,
+  "at": "2026-09-24T18:23:49.481Z",
+  "atCommit": "85414604cdcf85d346d8497e4e2bdf3ffbb5b5fd",
+  "passed": 157,
+  "failed": 1,
   "negatives": 132,
   "failures": [
-    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at baeea005ae22476345c7ef667506737361fc18d6, HEAD is dfefae2e752e2dbef41f424ed5eb350db5e0a685",
-    "R8 live: every framework-surface site is registered, none added, none silently gone — R8: 3 unregistered framework-surface site(s) — an analyzer publishes a capability it does not have, or names one framework twice: real-csharp-analyzer.ts:1587 dominated-trigger [CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"identifier\"] `{ const child = paramList.child(i) if (!child) continue const childType = child.type if (c` | real-csharp-analyzer.ts:1587 dominated-trigger [CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"generic_name\"] `{ const child = paramList.child(i) if (!child) continue const childType = child.type if (c` | real-csharp-analyzer.ts:1587 dominated-trigger [CSHARP_DECLARED_TYPE_NODES.has(childType) ⟹ childType === \"qualified_name\"] `{ const child = paramList.child(i) if (!child) continue const childType = child.type if (c`"
+    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at baeea005ae22476345c7ef667506737361fc18d6, HEAD is 85414604cdcf85d346d8497e4e2bdf3ffbb5b5fd"
   ],
   "verdict": "FAIL",
   "machinery": {
