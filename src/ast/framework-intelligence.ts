@@ -407,8 +407,24 @@ export namespace FrameworkIntelligence {
         frameworks.add("sinatra")
       }
 
-      // Testing
-      if (content.includes("require 'rspec'") || content.includes("describe ")) {
+      // Hanami (#749 named it alongside Sinatra/RSpec as invisible entirely)
+      if (content.includes("require 'hanami'")) {
+        frameworks.add("hanami")
+      }
+
+      // Testing — require-level ONLY. The bare-`describe ` trigger that used to sit
+      // beside this was measured FALSE 36/36 on ruby's pinned corpus: rack's test/
+      // directory is minitest/spec (test/helper.rb requires
+      // 'minitest/global_expectations/autorun'; the Gemfile and gemspec carry no
+      // rspec at all), yet every one of its 36 `describe` files published
+      // ["rspec"] through the published seam — the analyzer cannot be blamed, it
+      // never reads `describe`; the trigger could not tell rspec from
+      // minitest/spec, and minitest/spec won 36–0. A detection whose corpus
+      // evidence is 0 true / 36 false is a false detector, and the fixture harness
+      // cannot see it because framework-intelligence runs only in the published
+      // seam — which is why the pin lives in framework-surface-probe.ts
+      // (ruby/plain-describe-minitest, expectAbsent) rather than an m14 fixture.
+      if (content.includes("require 'rspec'")) {
         frameworks.add("rspec")
       }
     }
