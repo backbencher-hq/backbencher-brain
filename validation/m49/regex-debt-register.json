@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 18 established 2026-09-08). Rows are keyed by (file, source); `line` is re-anchored to HEAD by M49.G6, and each row's note history records every shift it has survived.",
-  "baselineTotal": 15,
+  "baselineTotal": 13,
   "establishedAt": "2026-09-08",
   "entries": [
     {
@@ -35,22 +35,6 @@
       "operation": "replace",
       "classification": "needs_review",
       "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
-    },
-    {
-      "file": "real-rust-analyzer.ts",
-      "line": 678,
-      "source": "/\\b(Serialize|Deserialize)\\b/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained] [M59.A7 systems line round commit 76d3a09b: line shifted 643 -> 678 by the call-site line insertions; regex retained]"
-    },
-    {
-      "file": "real-rust-analyzer.ts",
-      "line": 679,
-      "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [#736 rust wave: line shifted by R1/R8 insertions; regex retained] [#736 rust second review: line shifted by D2/D3 insertions; regex retained] [rust extreme review commit 51f50bba: line shifted by R9-R14 insertions; regex retained] [M59.A7 systems line round commit 76d3a09b: line shifted 644 -> 679 by the call-site line insertions; regex retained]"
     },
     {
       "file": "real-svelte-analyzer.ts",
@@ -151,6 +135,25 @@
       "wave": "M60.R10/regex",
       "removed": 1,
       "note": "real-php-analyzer.ts `/^\\\\+/` (review-class, needs_review) replaced by `phpStripLeadingBackslashes`, a prefix scan on charCode 92 \u2014 its own register note had named that replacement since M49, so this is a designed paydown rather than a new ruling. Equivalence proved before landing by script/m14/tmp/r1-regex-removal-probe.ts over every backslash-qualified name in 1,200 real `.php` files, and php re-ran at FULL EXTENT to the same hash and counts. The SAME wave removed a `normalization`-class literal in real-ruby-analyzer.ts (`/^<\\s*/`), which is not a register row: ruby's canonical draw came back bit-identical (hash 0c505b9b4aeda127). Census 27 -> 25, review-class 18 -> 15; the policy doc's declared count and this register were both re-emitted, and R2 read 16/19 until each of the three was paid."
+    },
+    {
+      "wave": "M49.R2 2026-09-24 \u2014 rust's two name-set tests become char scans (#798)",
+      "removed": 2,
+      "removedRows": [
+        {
+          "file": "real-rust-analyzer.ts",
+          "source": "/\\b(Serialize|Deserialize)\\b/",
+          "class": null
+        },
+        {
+          "file": "real-rust-analyzer.ts",
+          "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
+          "class": null
+        }
+      ],
+      "baselineTotalBefore": 15,
+      "baselineTotalAfter": 13,
+      "note": "A row may only disappear when the source no longer holds the regex. Both removals are code fixes, not reclassifications: `/\\b(Serialize|Deserialize)\\b/` and `/\\b(Parser|Subcommand|Args|ValueEnum)\\b/` were name-set tests on a `#[derive(...)]` / clap attribute argument's TEXT, and the test only ever needed WORD-RUN MEMBERSHIP \u2014 which is what `hasBareWord` computes with a char-code scan, exactly the class of replacement the policy's rule 2 asks for (char-scan with an inline equivalence proof). The inline proof is on `hasBareWord` in the analyzer; the corpus proof is script/m14/tmp/rust-004-regex-equivalence.ts (1,481 files, 970 bodies, 0 mismatches between the two regexes and the scan). Rust is now a zero-regex lane."
     }
   ]
 }

@@ -5089,6 +5089,55 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "rust/revert-impl-target-wrapper-name",
+    language: "rust",
+    defectClass: "name-surface",
+    description:
+      "R10 regression (#798, M60 standing rule): reverts the impl-target NAME rule — the implemented type's WRAPPER text is republished as the impl symbol's name, as the `implements` edge's source and as the `Self` resolution target (`&mut ProcessBuilder`, `&'static str`, `(T, U)`, `[u8]`), i.e. source TEXT published where the contract wants a name. This is the class the M60 target-spelling census convicted rust for (6 `references` targets over 2 files: `&mut ProcessBuilder` x5, `&mut Execs` x1) and that the differential could not see because its truth derives from the same rule. Caught by impl-target-name-surface-798 (forbids the four wrapper spellings as symbols, as `implements` sources and as `references` targets; the exact pre-fix emissions are printed by script/m14/tmp/rust-798-fixture-dump.ts with BB_PRE_R10=1).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.kind !== "impl") return s
+        if (s.name === "ProcessBuilder") return { ...s, name: "&mut ProcessBuilder", ownerName: "&mut ProcessBuilder" }
+        if (s.name === "str") return { ...s, name: "&'static str", ownerName: "&'static str" }
+        if (s.name === "anonymous_impl") {
+          const back = String(s.metadata?.implementedType ?? "anonymous_impl")
+          const { implementedType, ...rest } = s.metadata ?? {}
+          void implementedType
+          return { ...s, name: back, ownerName: back, metadata: rest }
+        }
+        return s
+      }),
+      relationships: [
+        ...(r.relationships ?? [])
+          .filter((x: any) => x.type !== "references" || !["ProcessBuilder", "str"].includes(String(x.target)))
+          .map((x: any) =>
+            x.type === "implements" && ["ProcessBuilder", "str"].includes(String(x.source))
+              ? { ...x, source: x.source === "ProcessBuilder" ? "&mut ProcessBuilder" : "&'static str" }
+              : x,
+          ),
+        { source: "env", target: "&mut ProcessBuilder", type: "references", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+        { source: "into_url", target: "&'static str", type: "references", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+        { source: "to_tuple_id", target: "(T, U)", type: "references", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+        { source: "to_slice_id", target: "[u8]", type: "references", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+      ],
+    }),
+  },
+  {
+    id: "rust/reemit-self-callee-target",
+    language: "rust",
+    defectClass: "name-surface",
+    description:
+      "R10 regression (#798, M60): republishes the literal `Self` as a `calls` target — `Self(0)` names the enclosing impl type's constructor and the lane resolves `Self` everywhere else (it refuses it as a NAME on the read surface and resolves it for `instantiates` via D2), so the keyword must not survive on the call surface either. Found by the F14 name-surface gate when it was extended to rust (6 cargo rows: `Ok(Self(name))` in cargo-util-schemas/src/manifest/mod.rs, `Self(ProcessEnv)` in build-rs/src/input.rs). Caught by impl-target-name-surface-798, which forbids calls -> Self.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []).filter((x: any) => !(x.type === "calls" && x.target === "Wrap")),
+        { source: "wrap_new", target: "Self", type: "calls", confidence: 1.0, metadata: { qualified: "Self" } },
+      ],
+    }),
+  },
+  {
     id: "rust/revert-where-clause-climb",
     language: "rust",
     defectClass: "relationship-fabrication",
