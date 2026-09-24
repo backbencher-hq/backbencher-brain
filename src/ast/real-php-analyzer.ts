@@ -630,6 +630,25 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (className.endsWith("Controller")) patterns.add("MVC Architecture (Controllers)")
         if (className.endsWith("Service")) patterns.add("Service Layer Pattern")
         this.detectFramework(ns ?? "", detectedFrameworks)
+        // #931 — PHPUnit's GLOBAL-namespace base.
+        //
+        // The table's PHPUnit marker has two spellings — an import of
+        // `PHPUnit\Framework` and the bare name `TestCase` — but `detectFramework`
+        // was only ever handed a NAMESPACE, and a class in the global namespace
+        // has no namespace at all, so `class MyTest extends TestCase` (the shape a
+        // PHPUnit project writes when it does not import the framework) could
+        // never fire. MEASURED at HEAD: the probe's `phpunit-global-base` case
+        // detected [] while claiming `PHPUnit`, alongside `laravel-app-root-only`.
+        //
+        // The base CLAUSE is the node that names this relationship, and it is
+        // already resolved two lines up, so the marker's own two spellings are
+        // tested against the name the source actually writes. Deliberately only
+        // this marker: the table's substring entries (`WordPress`, `wp_`) would
+        // fire on a class merely NAMED after a framework if base names were fed
+        // through the whole table, and that is a different, unevidenced claim.
+        if (rawBase === "TestCase" || (rawBase?.includes("PHPUnit\\") ?? false)) {
+          detectedFrameworks.add("PHPUnit")
+        }
 
         const body = this.findChildByType(node, "declaration_list")
         if (body) {
@@ -2293,7 +2312,27 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private detectFramework(text: string, detectedFrameworks: Set<string>): void {
-    if (text.includes("Illuminate\\") || text === "App\\") detectedFrameworks.add("Laravel")
+    // #931 — the Laravel app root is a PREFIX, not an exact string.
+    //
+    // Laravel's own code lives under the `App\` namespace (`app/Http/Controllers`
+    // => `App\Http\Controllers`). The marker read `text === "App\\"` — an exact
+    // match on a string whose only possible producer is a namespace node whose
+    // text ENDS in a backslash, which no node's text does. MEASURED at HEAD: the
+    // probe's `laravel-app-root-only` case (`namespace App\Http\Controllers;`)
+    // detected [] while claiming `Laravel`, and so did a plain `namespace App;`;
+    // the register has carried it as a claim miss since 2026-09-22 and R8 still
+    // read MET, because a marker that cannot fire is a detector every corpus
+    // calls clean. The author's intent is visible in the literal — the `App\`
+    // root — so the exact match becomes the prefix match it was written to be.
+    //
+    // Cost measured before applying: 0 of 3,231 phpunit + 1,232 phpmyadmin + 125
+    // slim files declare any `App` namespace, so the runtime half (425 files, 0
+    // findings) cannot move, and a namespace that merely STARTS with `App\` —
+    // no other spelling can, `App` is followed by the separator — is the app
+    // root by definition. `namespace App;` alone still does NOT fire: the
+    // marker's own literal asked for the `App\` root, not for a project that
+    // happens to name one namespace `App`.
+    if (text.includes("Illuminate\\") || text.startsWith("App\\")) detectedFrameworks.add("Laravel")
     if (text.includes("Symfony\\")) detectedFrameworks.add("Symfony")
     if (text.startsWith("wp_") || text.includes("WordPress")) detectedFrameworks.add("WordPress")
     if (text.includes("Magento\\")) detectedFrameworks.add("Magento")
