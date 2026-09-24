@@ -1,808 +1,876 @@
 {
- "at": "2026-09-21T00:00:00.000000Z",
- "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
- "draws": [
-  {
-   "repo": "svelte",
-   "lang": "javascript",
-   "files": 200,
-   "truth": 1952,
-   "covered": 1952,
-   "missing": 0,
-   "unexplained": 0
+  "at": "2026-09-24T15:03:00.772Z",
+  "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
+  "draws": [
+    {
+      "repo": "svelte",
+      "lang": "javascript",
+      "files": 200,
+      "truth": 1952,
+      "covered": 1952,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "svelte",
+      "lang": "typescript",
+      "files": 84,
+      "truth": 1197,
+      "covered": 1197,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "svelte",
+      "lang": "svelte",
+      "files": 200,
+      "truth": 137,
+      "covered": 137,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "element-plus",
+      "lang": "javascript",
+      "files": 2,
+      "truth": 30,
+      "covered": 30,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "element-plus",
+      "lang": "typescript",
+      "files": 200,
+      "truth": 1000,
+      "covered": 1000,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "element-plus",
+      "lang": "vue",
+      "files": 200,
+      "truth": 1219,
+      "covered": 1213,
+      "missing": 6,
+      "unexplained": 3,
+      "note": "draw 1"
+    },
+    {
+      "repo": "element-plus",
+      "lang": "vue",
+      "files": 200,
+      "truth": 1416,
+      "covered": 1412,
+      "missing": 4,
+      "unexplained": 4,
+      "note": "draw 2 (samples captured)"
+    },
+    {
+      "repo": "lodash",
+      "lang": "javascript",
+      "files": 55,
+      "truth": 12232,
+      "covered": 12232,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "grails-core",
+      "lang": "java",
+      "files": 200,
+      "truth": 3653,
+      "covered": 3653,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "grails-core",
+      "lang": "groovy",
+      "files": 200,
+      "truth": 3852,
+      "covered": 3852,
+      "missing": 0,
+      "unexplained": 1,
+      "note": "draw 1 — the self-override leaf-name collision (FindAllByFinder.doInvokeInternal)",
+      "supersededBy": "grails-core:groovy post-fix draw (2026-09-20)"
+    },
+    {
+      "repo": "grails-core",
+      "lang": "groovy",
+      "files": 200,
+      "truth": 3351,
+      "covered": 3351,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2"
+    },
+    {
+      "repo": "Exposed",
+      "lang": "kotlin",
+      "files": 200,
+      "truth": 5111,
+      "covered": 5111,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "scala3",
+      "lang": "scala",
+      "files": 200,
+      "truth": 2105,
+      "covered": 2105,
+      "missing": 0,
+      "unexplained": 1,
+      "note": "draw 1 — the self-named extension (object Position extends Position)",
+      "supersededBy": "scala3:scala post-fix draw (2026-09-20)"
+    },
+    {
+      "repo": "scala3",
+      "lang": "scala",
+      "files": 200,
+      "truth": 2333,
+      "covered": 2333,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2"
+    },
+    {
+      "repo": "scala3",
+      "lang": "java",
+      "files": 200,
+      "truth": 342,
+      "covered": 342,
+      "missing": 0,
+      "unexplained": 0
+    },
+    {
+      "repo": "sqlite",
+      "lang": "c",
+      "files": 200,
+      "truth": 21646,
+      "covered": 21646,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (2026-09-21, #908 ruling live) — the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
+    },
+    {
+      "repo": "jq",
+      "lang": "c",
+      "files": 45,
+      "truth": 2930,
+      "covered": 2930,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2 (2026-09-21) — the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
+    },
+    {
+      "repo": "zig",
+      "lang": "c",
+      "files": 200,
+      "truth": 1599,
+      "covered": 1599,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
+    },
+    {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "files": 17,
+      "truth": 1016,
+      "covered": 1016,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0."
+    },
+    {
+      "repo": "fmt",
+      "lang": "cpp",
+      "files": 73,
+      "truth": 5372,
+      "covered": 5372,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0."
+    },
+    {
+      "repo": "sqlite",
+      "lang": "cpp",
+      "files": 42,
+      "truth": 28,
+      "covered": 28,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
+    },
+    {
+      "repo": "rake",
+      "lang": "ruby",
+      "files": 95,
+      "truth": 1872,
+      "covered": 1872,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, i.e. the whole ruby corpus in the lane's first pinned repo (deeper than the canonical 60-file draw). POST-FIX: measured with the line round, the variable-receiver ruling and the static-superclass gate live, so this draw exercises all three on real code. hash 0fbb6654cea56068, heuristic 728 (first-parent override guesses, the disclosed class — the differential counts heuristic distrust as honest suspicion, not fabrication)."
+    },
+    {
+      "repo": "rack",
+      "lang": "ruby",
+      "files": 94,
+      "truth": 2482,
+      "covered": 2482,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus in the lane's second pinned repo. POST-FIX, and it is the corpus that CONTAINS the measured defect sites this round fixed (`@params_class.new` in query_parser.rb, `self.class.new` in headers.rb, the `Struct.new(...)` bases in directory.rb/multipart), so the clean row is evidence about the fixes rather than about code that lacks the shapes. hash e763e8da76c183e7, heuristic 112."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 4508,
+      "covered": 4508,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (200 files, 3.3x the canonical 60) with the M59.A7 (#825) line round and the target-canonicalisation live. hash 7b60fe3198c44b83."
+    },
+    {
+      "repo": "fsharp",
+      "lang": "csharp",
+      "files": 243,
+      "truth": 4679,
+      "covered": 4679,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f — IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 900,
+      "truth": 25078,
+      "covered": 25078,
+      "missing": 0,
+      "unexplained": 1,
+      "note": "draw 2 (900 files, 15x canonical) — THE DRAW THAT FOUND THE LITERAL-CALLEE FABRICATION: `calls StartSSHProcess -> false` at engine/remoting/common/RunspaceConnectionInfo.cs:2331, where one missing semicolon makes the grammar's error recovery parse a boolean_literal as the callee. hash c155451109f66434. Fixed (a call's callee must be a naming node) and pinned by csharp/literal-callee-recovery.",
+      "supersededBy": "powershell:csharp post-fix 900-file draw (2026-09-22)"
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 900,
+      "truth": 25113,
+      "covered": 25113,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3 (900 files, fresh rotation — a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 5166,
+      "covered": 5166,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 4 (2026-09-22, rotation 11 — a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
+    },
+    {
+      "repo": "fsharp",
+      "lang": "csharp",
+      "files": 243,
+      "truth": 4679,
+      "covered": 4679,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 5134,
+      "covered": 5134,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 60,
+      "truth": 4379,
+      "covered": 4379,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 7 (2026-09-22) — the CANONICAL sample size, first draw with the R9 declared-type graph live (rotation 14). Truth 4,379 vs the canonical 60-file row's 4,069: the +310 are the graph itself, every one CONFIRMED (coverage 100%). analyzer-edges 2,624. hash 3d802b32f8b440b7."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 14433,
+      "covered": 14433,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 8 (2026-09-22) — 200 files (rotation 15, a fresh rotation) with the R9 graph live. Truth 14,433 is far above the pre-R9 rows on this corpus (5,134-5,166 at rotation 11, 4,508 at draw 1): a declared-type graph adds roughly 45 confirmed edges per file. MISSING=0, unexplained=0, heuristic=0. analyzer-edges 8,236. hash c156578cc09f905b."
+    },
+    {
+      "repo": "fsharp",
+      "lang": "csharp",
+      "files": 243,
+      "truth": 12886,
+      "covered": 12886,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 9 (2026-09-22) — FULL EXTENT (243/243 .cs files) with the R9 graph live, and hash 4d0e5ba230a7b27f is IDENTICAL to draws 4/5 above, so this is a strict same-files before/after: truth 4,679 -> 12,886 with 100% coverage and NO fabrication. Every one of the 8,207 new edges is confirmed by the oracle, which derives them from the analyzer's own csharpDeclaredTypeRefs (never a second implementation). analyzer-edges 8,976."
+    },
+    {
+      "repo": "phpunit",
+      "lang": "php",
+      "files": 2907,
+      "truth": 29064,
+      "covered": 29064,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (2,907/2,907 .php files — the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca — the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (−11 fabricated, +1 header read) on identical truth."
+    },
+    {
+      "repo": "phpmyadmin",
+      "lang": "php",
+      "files": 1232,
+      "truth": 42558,
+      "covered": 42558,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
+    },
+    {
+      "repo": "phpunit",
+      "lang": "php",
+      "files": 2907,
+      "truth": 29046,
+      "covered": 29046,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
+    },
+    {
+      "repo": "phpmyadmin",
+      "lang": "php",
+      "files": 1232,
+      "truth": 42377,
+      "covered": 42377,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
+    },
+    {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "files": 110,
+      "truth": 6309,
+      "covered": 6309,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (110/110 .rs — the whole pinned primary corpus; a 200 cap cannot exceed it). `uses` + `references` now COMPARED (both were outside the allowlist before #798), so truth reads 6309 vs the pre-round 4156 for the same hash. analyzer-edges 6115, heuristic 0, hash 781671e47d4a8a2d."
+    },
+    {
+      "repo": "cargo",
+      "lang": "rust",
+      "files": 200,
+      "truth": 7607,
+      "covered": 7607,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw (200 files, 3.3x the canonical 60) on the second pinned corpus. analyzer-edges 7518, heuristic 0, hash ffd275520ae61071."
+    },
+    {
+      "repo": "cargo",
+      "lang": "rust",
+      "files": 200,
+      "truth": 6315,
+      "covered": 6315,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw on a DIFFERENT rotation (truth 6315 vs 7607 — why every row records its hash). analyzer-edges 6198, heuristic 0, hash 69b8d81d7c4de43b."
+    }
+  ],
+  "current": [
+    {
+      "repo": "grails-core",
+      "lang": "groovy",
+      "files": 200,
+      "truth": 2892,
+      "covered": 2892,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "post-fix draw (2026-09-20, self-override fix live)"
+    },
+    {
+      "repo": "grails-core",
+      "lang": "java",
+      "files": 200,
+      "truth": 2803,
+      "covered": 2803,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "post-fix draw (2026-09-20)"
+    },
+    {
+      "repo": "scala3",
+      "lang": "scala",
+      "files": 200,
+      "truth": 1800,
+      "covered": 1799,
+      "missing": 1,
+      "unexplained": 0,
+      "note": "post-fix draw (2026-09-20) — the one uncovered edge is Transformation.submitWithValue -> DefaultPromise.submitWithValue, adjudicated ORACLE-side (#905: the base member is `private final def` and Scala does not inherit private members; the analyzer's refusal is correct). The self-override that this same draw previously showed is gone."
+    },
+    {
+      "repo": "scala3",
+      "lang": "java",
+      "files": 200,
+      "truth": 441,
+      "covered": 441,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3, POST-FIX — this is the draw that first reported anonymous_Inner.foo -> Inner.foo as MISSING (#904). After the generic-substitution pairing: covered 441/441."
+    },
+    {
+      "repo": "scala3",
+      "lang": "java",
+      "files": 200,
+      "truth": 283,
+      "covered": 283,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "post-fix draw (2026-09-20)"
+    },
+    {
+      "repo": "scala3",
+      "lang": "java",
+      "files": 200,
+      "truth": 345,
+      "covered": 345,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "post-fix draw (2026-09-20)"
+    },
+    {
+      "repo": "element-plus",
+      "lang": "vue",
+      "files": 200,
+      "truth": 1192,
+      "covered": 1192,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "post-fix draw 1 (2026-09-20, tsx SFC dispatch live)"
+    },
+    {
+      "repo": "element-plus",
+      "lang": "vue",
+      "files": 200,
+      "truth": 1486,
+      "covered": 1486,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "post-fix draw 2 (2026-09-20)"
+    },
+    {
+      "repo": "element-plus",
+      "lang": "vue",
+      "files": 200,
+      "truth": 1282,
+      "covered": 1276,
+      "missing": 6,
+      "unexplained": 8,
+      "note": "post-fix draw 3 — every remaining row is ORACLE-side (#906): truth derives calls to the keywords `return`/`if`/`string`/`key` from a JSX `return (` statement and an `if (el) {` condition, and does not derive real script-setup calls such as `generateColumns(10)` at line 79. The `dayjs` class that #903 opened with is GONE (the tsx grammar fix)."
+    },
+    {
+      "repo": "element-plus",
+      "lang": "vue",
+      "files": 200,
+      "truth": 1243,
+      "covered": 1241,
+      "missing": 2,
+      "unexplained": 4,
+      "note": "post-fix draw 4 — same oracle-side shapes only (`calls (expr) -> key`/`-> return`; `generateColumns -> map`/`from`; `inline-editing -> generateColumns`/`generateData`)."
+    },
+    {
+      "repo": "sqlite",
+      "lang": "c",
+      "files": 200,
+      "truth": 21646,
+      "covered": 21646,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (2026-09-21, #908 ruling live) — the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
+    },
+    {
+      "repo": "jq",
+      "lang": "c",
+      "files": 45,
+      "truth": 2930,
+      "covered": 2930,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2 (2026-09-21) — the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
+    },
+    {
+      "repo": "zig",
+      "lang": "c",
+      "files": 200,
+      "truth": 1599,
+      "covered": 1599,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
+    },
+    {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "files": 17,
+      "truth": 1016,
+      "covered": 1016,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0."
+    },
+    {
+      "repo": "fmt",
+      "lang": "cpp",
+      "files": 73,
+      "truth": 5372,
+      "covered": 5372,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0."
+    },
+    {
+      "repo": "sqlite",
+      "lang": "cpp",
+      "files": 42,
+      "truth": 28,
+      "covered": 28,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
+    },
+    {
+      "repo": "rake",
+      "lang": "ruby",
+      "files": 95,
+      "truth": 1872,
+      "covered": 1872,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, whole corpus. POST-FIX (line round + variable-receiver ruling + static-superclass gate). hash 0fbb6654cea56068."
+    },
+    {
+      "repo": "rack",
+      "lang": "ruby",
+      "files": 94,
+      "truth": 2482,
+      "covered": 2482,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
+    },
+    {
+      "repo": "swift-nio",
+      "lang": "swift",
+      "files": 554,
+      "truth": 20467,
+      "covered": 20466,
+      "missing": 1,
+      "unexplained": 5,
+      "note": "FULL EXTENT (554 swift files, whole corpus) with the #838/#836 framework fix live. hash deccd8b0fd305b6d. RED and REPRODUCED: the 60-file canonical draw is clean, so these 6 findings had never been seen. Triaged by script/m14/tmp/sw-full-extent-triage.ts to pre-existing shapes unrelated to the framework surface (a `constructor -> constructor` self-instantiates edge, enum-case uses emitted from `root`). Most swift edges are line-less — the lane lines column is a known x — so they are identified by source text."
+    },
+    {
+      "repo": "alamofire",
+      "lang": "swift",
+      "files": 98,
+      "truth": 3548,
+      "covered": 3548,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (98 swift files, whole corpus) with the #838/#836 framework fix live. hash 542c6628ba91cc30."
+    },
+    {
+      "repo": "afnetworking",
+      "lang": "objc",
+      "files": 49,
+      "truth": 2890,
+      "covered": 2890,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (49/49 .m files) with CONV-OC-1 live. hash 29684f4b8391be9f. heuristic=315 are the first-parent override GUESSES the differential counts as honest suspicion, not defects."
+    },
+    {
+      "repo": "sdwebimage",
+      "lang": "objc",
+      "files": 104,
+      "truth": 6090,
+      "covered": 6090,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (104/104 .m files) with CONV-OC-1 live. hash 74f30e2d774e4d93. heuristic=287 first-parent override guesses."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 4508,
+      "covered": 4508,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 1 (200 files, 3.3x the canonical 60) with the M59.A7 (#825) line round and the target-canonicalisation live. hash 7b60fe3198c44b83."
+    },
+    {
+      "repo": "fsharp",
+      "lang": "csharp",
+      "files": 243,
+      "truth": 4679,
+      "covered": 4679,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f — IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 900,
+      "truth": 25113,
+      "covered": 25113,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 3 (900 files, fresh rotation — a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 5166,
+      "covered": 5166,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 4 (2026-09-22, rotation 11 — a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
+    },
+    {
+      "repo": "fsharp",
+      "lang": "csharp",
+      "files": 243,
+      "truth": 4679,
+      "covered": 4679,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
+    },
+    {
+      "repo": "powershell",
+      "lang": "csharp",
+      "files": 200,
+      "truth": 5134,
+      "covered": 5134,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
+    },
+    {
+      "repo": "phpunit",
+      "lang": "php",
+      "files": 2907,
+      "truth": 29064,
+      "covered": 29064,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (2,907/2,907 .php files — the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca — the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (−11 fabricated, +1 header read) on identical truth."
+    },
+    {
+      "repo": "phpmyadmin",
+      "lang": "php",
+      "files": 1232,
+      "truth": 42558,
+      "covered": 42558,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
+    },
+    {
+      "repo": "phpunit",
+      "lang": "php",
+      "files": 2907,
+      "truth": 29046,
+      "covered": 29046,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
+    },
+    {
+      "repo": "phpmyadmin",
+      "lang": "php",
+      "files": 1232,
+      "truth": 42377,
+      "covered": 42377,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
+    },
+    {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "files": 110,
+      "truth": 6309,
+      "covered": 6309,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (110/110 .rs — the whole pinned primary corpus; a 200 cap cannot exceed it). `uses` + `references` now COMPARED (both were outside the allowlist before #798), so truth reads 6309 vs the pre-round 4156 for the same hash. analyzer-edges 6115, heuristic 0, hash 781671e47d4a8a2d."
+    },
+    {
+      "repo": "cargo",
+      "lang": "rust",
+      "files": 200,
+      "truth": 7607,
+      "covered": 7607,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw (200 files, 3.3x the canonical 60) on the second pinned corpus. analyzer-edges 7518, heuristic 0, hash ffd275520ae61071."
+    },
+    {
+      "repo": "cargo",
+      "lang": "rust",
+      "files": 200,
+      "truth": 6315,
+      "covered": 6315,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "draw on a DIFFERENT rotation (truth 6315 vs 7607 — why every row records its hash). analyzer-edges 6198, heuristic 0, hash 69b8d81d7c4de43b."
+    }
+  ],
+  "adjudicated": {
+    "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
+    "scala": "#905 — one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
+    "java": "#904 — CLOSED this round (generic substitution + edge label). 4 draws clean.",
+    "go": "#872 — long-registered; reproduced at depth.",
+    "c": "#901 — two MISSING `uses` on all-caps macro names, from the canonical sweep.",
+    "python": "#902 — one UNEXPLAINED with-statement `calls` edge at `line: 0`, from the canonical sweep.",
+    "rust": "#798 — CLEAN at depth, and the depth rows were re-measured the moment the comparison changed: `uses` and `references` were outside the rust allowlist before this round, so the first three draws measured a smaller surface (truth 4156 on the ripgrep hash that now reads 6309). All three final-bytes draws are 100% covered, MISSING=0, unexplained=0, heuristic=0."
   },
-  {
-   "repo": "svelte",
-   "lang": "typescript",
-   "files": 84,
-   "truth": 1197,
-   "covered": 1197,
-   "missing": 0,
-   "unexplained": 0
+  "worstPerLang": {
+    "javascript": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "typescript": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "svelte": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "vue": {
+      "maxSample": 200,
+      "missing": 6,
+      "unexplained": 8,
+      "drawsRed": 2,
+      "issue": "#906",
+      "oracleSide": true
+    },
+    "java": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "groovy": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "kotlin": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "scala": {
+      "maxSample": 200,
+      "missing": 1,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "issue": "#905"
+    },
+    "cpp": {
+      "maxSample": 73,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "c": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "ruby": {
+      "maxSample": 95,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "swift": {
+      "maxSample": 554,
+      "missing": 1,
+      "unexplained": 5,
+      "drawsRed": 1,
+      "issue": "swift-nio full extent — 6 pre-existing findings the canonical draw never touched; unfiled, triaged in script/m14/tmp/sw-full-extent-triage.ts"
+    },
+    "objc": {
+      "maxSample": 104,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    },
+    "csharp": {
+      "maxSample": 900,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "issue": "#825 (csharp lane) — no red draw remains",
+      "note": "The one red draw (900 files) is superseded: its single unexplained edge was the literal-callee fabrication, fixed and fixture-pinned. FIVE draws now stand, and the last two were taken with the lane's FINAL code (the line round, the target canonicalisation, the params recovery, the parameter-honesty paydown): 200 files at rotation 11 (truth 5,166, hash d314e70f6df0a577) and fsharp FULL EXTENT 243/243 (truth 4,679, hash 4d0e5ba230a7b27f, the same sample as the pre-round row so the two are a same-files before/after). Every one reads MISSING=0 / unexplained=0. powershell's FULL extent (1,275 .cs files) exceeds what one harness invocation can finish at ~0.4s/file (measured: killed at 592s, twice), so the lane's deepest recorded draws are 900 files on powershell and FULL EXTENT on fsharp."
+    },
+    "php": {
+      "maxSample": 2907,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 2,
+      "issue": "#835 (php lane)",
+      "note": "Two full-extent draws, both 100% coverage with 0 fabrication after the R10 round's two fixes, both keeping the pre-fix hash (same files). The round's red draws were phpunit MISSING=2/unexplained=13 in the previous round and, for R10, phpmyadmin MISSING=4 then 0/0 — the R10 defects were found by the target-spelling census (script/m60/target-spelling-census.ts), which is the instrument that can see a spelling BOTH sides fabricate."
+    },
+    "rust": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0
+    }
   },
-  {
-   "repo": "svelte",
-   "lang": "svelte",
-   "files": 200,
-   "truth": 137,
-   "covered": 137,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "element-plus",
-   "lang": "javascript",
-   "files": 2,
-   "truth": 30,
-   "covered": 30,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "element-plus",
-   "lang": "typescript",
-   "files": 200,
-   "truth": 1000,
-   "covered": 1000,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "element-plus",
-   "lang": "vue",
-   "files": 200,
-   "truth": 1219,
-   "covered": 1213,
-   "missing": 6,
-   "unexplained": 3,
-   "note": "draw 1"
-  },
-  {
-   "repo": "element-plus",
-   "lang": "vue",
-   "files": 200,
-   "truth": 1416,
-   "covered": 1412,
-   "missing": 4,
-   "unexplained": 4,
-   "note": "draw 2 (samples captured)"
-  },
-  {
-   "repo": "lodash",
-   "lang": "javascript",
-   "files": 55,
-   "truth": 12232,
-   "covered": 12232,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "grails-core",
-   "lang": "java",
-   "files": 200,
-   "truth": 3653,
-   "covered": 3653,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "grails-core",
-   "lang": "groovy",
-   "files": 200,
-   "truth": 3852,
-   "covered": 3852,
-   "missing": 0,
-   "unexplained": 1,
-   "note": "draw 1 — the self-override leaf-name collision (FindAllByFinder.doInvokeInternal)",
-   "supersededBy": "grails-core:groovy post-fix draw (2026-09-20)"
-  },
-  {
-   "repo": "grails-core",
-   "lang": "groovy",
-   "files": 200,
-   "truth": 3351,
-   "covered": 3351,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2"
-  },
-  {
-   "repo": "Exposed",
-   "lang": "kotlin",
-   "files": 200,
-   "truth": 5111,
-   "covered": 5111,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "scala3",
-   "lang": "scala",
-   "files": 200,
-   "truth": 2105,
-   "covered": 2105,
-   "missing": 0,
-   "unexplained": 1,
-   "note": "draw 1 — the self-named extension (object Position extends Position)",
-   "supersededBy": "scala3:scala post-fix draw (2026-09-20)"
-  },
-  {
-   "repo": "scala3",
-   "lang": "scala",
-   "files": 200,
-   "truth": 2333,
-   "covered": 2333,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2"
-  },
-  {
-   "repo": "scala3",
-   "lang": "java",
-   "files": 200,
-   "truth": 342,
-   "covered": 342,
-   "missing": 0,
-   "unexplained": 0
-  },
-  {
-   "repo": "sqlite",
-   "lang": "c",
-   "files": 200,
-   "truth": 21646,
-   "covered": 21646,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (2026-09-21, #908 ruling live) — the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
-  },
-  {
-   "repo": "jq",
-   "lang": "c",
-   "files": 45,
-   "truth": 2930,
-   "covered": 2930,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2 (2026-09-21) — the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
-  },
-  {
-   "repo": "zig",
-   "lang": "c",
-   "files": 200,
-   "truth": 1599,
-   "covered": 1599,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
-  },
-  {
-   "repo": "nlohmann-json",
-   "lang": "cpp",
-   "files": 17,
-   "truth": 1016,
-   "covered": 1016,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0."
-  },
-  {
-   "repo": "fmt",
-   "lang": "cpp",
-   "files": 73,
-   "truth": 5372,
-   "covered": 5372,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0."
-  },
-  {
-   "repo": "sqlite",
-   "lang": "cpp",
-   "files": 42,
-   "truth": 28,
-   "covered": 28,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
-  },
-  {
-   "repo": "rake",
-   "lang": "ruby",
-   "files": 95,
-   "truth": 1872,
-   "covered": 1872,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, i.e. the whole ruby corpus in the lane's first pinned repo (deeper than the canonical 60-file draw). POST-FIX: measured with the line round, the variable-receiver ruling and the static-superclass gate live, so this draw exercises all three on real code. hash 0fbb6654cea56068, heuristic 728 (first-parent override guesses, the disclosed class — the differential counts heuristic distrust as honest suspicion, not fabrication)."
-  },
-  {
-   "repo": "rack",
-   "lang": "ruby",
-   "files": 94,
-   "truth": 2482,
-   "covered": 2482,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus in the lane's second pinned repo. POST-FIX, and it is the corpus that CONTAINS the measured defect sites this round fixed (`@params_class.new` in query_parser.rb, `self.class.new` in headers.rb, the `Struct.new(...)` bases in directory.rb/multipart), so the clean row is evidence about the fixes rather than about code that lacks the shapes. hash e763e8da76c183e7, heuristic 112."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 4508,
-   "covered": 4508,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (200 files, 3.3x the canonical 60) with the M59.A7 (#825) line round and the target-canonicalisation live. hash 7b60fe3198c44b83."
-  },
-  {
-   "repo": "fsharp",
-   "lang": "csharp",
-   "files": 243,
-   "truth": 4679,
-   "covered": 4679,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f — IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 900,
-   "truth": 25078,
-   "covered": 25078,
-   "missing": 0,
-   "unexplained": 1,
-   "note": "draw 2 (900 files, 15x canonical) — THE DRAW THAT FOUND THE LITERAL-CALLEE FABRICATION: `calls StartSSHProcess -> false` at engine/remoting/common/RunspaceConnectionInfo.cs:2331, where one missing semicolon makes the grammar's error recovery parse a boolean_literal as the callee. hash c155451109f66434. Fixed (a call's callee must be a naming node) and pinned by csharp/literal-callee-recovery.",
-   "supersededBy": "powershell:csharp post-fix 900-file draw (2026-09-22)"
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 900,
-   "truth": 25113,
-   "covered": 25113,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3 (900 files, fresh rotation — a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 5166,
-   "covered": 5166,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 4 (2026-09-22, rotation 11 — a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
-  },
-  {
-   "repo": "fsharp",
-   "lang": "csharp",
-   "files": 243,
-   "truth": 4679,
-   "covered": 4679,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 5134,
-   "covered": 5134,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 60,
-   "truth": 4379,
-   "covered": 4379,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 7 (2026-09-22) — the CANONICAL sample size, first draw with the R9 declared-type graph live (rotation 14). Truth 4,379 vs the canonical 60-file row's 4,069: the +310 are the graph itself, every one CONFIRMED (coverage 100%). analyzer-edges 2,624. hash 3d802b32f8b440b7."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 14433,
-   "covered": 14433,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 8 (2026-09-22) — 200 files (rotation 15, a fresh rotation) with the R9 graph live. Truth 14,433 is far above the pre-R9 rows on this corpus (5,134-5,166 at rotation 11, 4,508 at draw 1): a declared-type graph adds roughly 45 confirmed edges per file. MISSING=0, unexplained=0, heuristic=0. analyzer-edges 8,236. hash c156578cc09f905b."
-  },
-  {
-   "repo": "fsharp",
-   "lang": "csharp",
-   "files": 243,
-   "truth": 12886,
-   "covered": 12886,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 9 (2026-09-22) — FULL EXTENT (243/243 .cs files) with the R9 graph live, and hash 4d0e5ba230a7b27f is IDENTICAL to draws 4/5 above, so this is a strict same-files before/after: truth 4,679 -> 12,886 with 100% coverage and NO fabrication. Every one of the 8,207 new edges is confirmed by the oracle, which derives them from the analyzer's own csharpDeclaredTypeRefs (never a second implementation). analyzer-edges 8,976."
-  },
-  {
-   "repo": "phpunit",
-   "lang": "php",
-   "files": 2907,
-   "truth": 29064,
-   "covered": 29064,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (2,907/2,907 .php files — the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca — the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (−11 fabricated, +1 header read) on identical truth."
-  },
-  {
-   "repo": "phpmyadmin",
-   "lang": "php",
-   "files": 1232,
-   "truth": 42558,
-   "covered": 42558,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
-  },
-  {
-   "repo": "phpunit",
-   "lang": "php",
-   "files": 2907,
-   "truth": 29046,
-   "covered": 29046,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
-  },
-  {
-   "repo": "phpmyadmin",
-   "lang": "php",
-   "files": 1232,
-   "truth": 42377,
-   "covered": 42377,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
+  "closedInThisRound": {
+    "#904": "java analyzer — generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
+    "#838/#836 + CONV-OC-1 (framework surface)": "swift and objective-c framework payloads — declared order tables replace walk/import order, the primary pick and frameworkPatterns are published. swift-nio FULL EXTENT (554 files) and alamofire (98) recorded here; objc BOTH corpora at full extent, afnetworking 49/49 files 2,890/2,890 truth and sdwebimage 104/104 files 6,090/6,090, MISSING=0 unexplained=0.",
+    "#903 (analyzer half)": "vue/svelte SFC — `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone.",
+    "#825 (csharp lane) — line round + the literal-callee fabrication": "Every csharp relationship now carries the line of the node that NAMES its target (12 emit sites), pinned by csharp/callsite-lines-825 and four reverting mutants; the M59 oracle reads 23,924 relationships with 0 INCONSISTENT on a 200-file draw. The round's own measurement exposed two further classes, both fixed: (1) a `contains` edge claiming the DECLARATION's start line, which for an attributed or wrapped declaration is a line the member's name is not written on (653 of 23,924 on the draw, 100% of the round's inconsistent set) — now stamped from the name node, with a synthesised name (a constructor named `constructor`, a destructor named `Finalize`) taking NO line; (2) a wrapped qualified name carrying its LAYOUT into the target and claiming the name's first line — the ruby D3 class, found here by probing the shape (script/m14/tmp/cs-wrapped-qualified.ts). Separately, the 900-file depth draw found the literal-callee fabrication (`calls … -> false`), fixed structurally and pinned by csharp/literal-callee-recovery.",
+    "#835 (php lane) — declared-type graph, fully-qualified calls, and the callable-header read boundary": "Three defects, all found by measurement. (1) The R9 declared-type graph the lane owed was implemented (phpDeclaredTypeRefs, shared by the analyzer and the differential oracle so the class is comparable), pinned by php/declared-type-graph; its own first measurement corrected `function copy(): self`, which had published the METHOD's name as its type. (2) A fully-qualified call took its callee from RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other edge can spell: phpunit FULL EXTENT, 12 such edges, 10 of them builtins. (3) The oracle gates reads on `inBody`, whose boundary is the callable SUBTREE — the parameter list and the attribute list included — while the analyzer's extracted walk visited those positions with a SUBSET of its read rules: phpunit's only non-`calls` MISSING edge was `Result::from(..., int $shellExitCode = self::SUCCESS)`. Re-drawing after (3) exposed a fourth class the mirror could never show: `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as symbol names identically on BOTH sides, while `$postParams->$param` had the analyzer silent and the oracle emitting `uses -> $param` (phpmyadmin MISSING=4). One rule now states it on both sides: a member read names a member only when the name is a static `name` node (the anonymous `{` token discriminates, probe-verified), and a braced field's own expression reads come from the ordinary rules.",
+    "#835 (php lane) — R10: the target-spelling contract (include paths and callable names)": "R10's first pass found two live php defects that no per-edge gate could see, because the differential oracle derived the same truth from the same rules and therefore AGREED with the analyzer. (1) `extractIncludePath` returned the RAW TEXT of any `binary_expression`, so `include $this->baseDir . 'revision-info.php'` (phpmyadmin src/Git.php:551) published a reconstructed EXPRESSION as the import module and as a `references` target — a spelling carrying `$`, `->`, `.` and a quote that no php symbol can be named. A path is now emitted only when EVERY operand is statically known (string, `__DIR__`/`__FILE__`/name constant, interpolated strings refused, only `.` composing), and the rule lives at module level (`phpStaticIncludePath`) so the oracle imports the analyzer's own function instead of mirroring it. (2) `processFunctionCall` took the callee node's raw text, so `$callable()` published `calls -> $callable` / `calls -> $controller` (LicenseControllerTest.php:23) — a VALUE callee published as a callee NAME. `phpStaticCallableName` now requires a name-shaped callee (probe: over 400 real files, 1,047 `name` callees and `variable_name` the ONLY non-name shape reaching the rule), and the value's read survives as the variable pass's `uses` edge. Pinned by php/include-paths (6 static paths expected, 4 pre-fix spellings forbidden — the forbids transcribed from a replay of the OLD rule, script/m14/tmp/php-include-prefix-rule.ts) and php/dynamic-callee (the honest `uses -> handler` expected AND `calls -> handler` forbidden, so the fix must move the edge, not lose it); both defects have reverting mutants, all 40 php mutants caught. phpunit FULL EXTENT 2,907/2,907 and phpmyadmin FULL EXTENT 1,232/1,232 both 100% covered, 0 MISSING, 0 unexplained, both on the pre-fix hash.",
+    "#798 (rust depth)": "rust's first depth evidence, and its re-measurement after the read/declared-type labels joined the comparison — 110-file full extent + two rotating 200-file cargo draws, all 0/0 (plus full-extent full-lane enumerators at 0/0 on both corpora)."
   }
- ],
- "current": [
-  {
-   "repo": "grails-core",
-   "lang": "groovy",
-   "files": 200,
-   "truth": 2892,
-   "covered": 2892,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "post-fix draw (2026-09-20, self-override fix live)"
-  },
-  {
-   "repo": "grails-core",
-   "lang": "java",
-   "files": 200,
-   "truth": 2803,
-   "covered": 2803,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "post-fix draw (2026-09-20)"
-  },
-  {
-   "repo": "scala3",
-   "lang": "scala",
-   "files": 200,
-   "truth": 1800,
-   "covered": 1799,
-   "missing": 1,
-   "unexplained": 0,
-   "note": "post-fix draw (2026-09-20) — the one uncovered edge is Transformation.submitWithValue -> DefaultPromise.submitWithValue, adjudicated ORACLE-side (#905: the base member is `private final def` and Scala does not inherit private members; the analyzer's refusal is correct). The self-override that this same draw previously showed is gone."
-  },
-  {
-   "repo": "scala3",
-   "lang": "java",
-   "files": 200,
-   "truth": 441,
-   "covered": 441,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3, POST-FIX — this is the draw that first reported anonymous_Inner.foo -> Inner.foo as MISSING (#904). After the generic-substitution pairing: covered 441/441."
-  },
-  {
-   "repo": "scala3",
-   "lang": "java",
-   "files": 200,
-   "truth": 283,
-   "covered": 283,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "post-fix draw (2026-09-20)"
-  },
-  {
-   "repo": "scala3",
-   "lang": "java",
-   "files": 200,
-   "truth": 345,
-   "covered": 345,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "post-fix draw (2026-09-20)"
-  },
-  {
-   "repo": "element-plus",
-   "lang": "vue",
-   "files": 200,
-   "truth": 1192,
-   "covered": 1192,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "post-fix draw 1 (2026-09-20, tsx SFC dispatch live)"
-  },
-  {
-   "repo": "element-plus",
-   "lang": "vue",
-   "files": 200,
-   "truth": 1486,
-   "covered": 1486,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "post-fix draw 2 (2026-09-20)"
-  },
-  {
-   "repo": "element-plus",
-   "lang": "vue",
-   "files": 200,
-   "truth": 1282,
-   "covered": 1276,
-   "missing": 6,
-   "unexplained": 8,
-   "note": "post-fix draw 3 — every remaining row is ORACLE-side (#906): truth derives calls to the keywords `return`/`if`/`string`/`key` from a JSX `return (` statement and an `if (el) {` condition, and does not derive real script-setup calls such as `generateColumns(10)` at line 79. The `dayjs` class that #903 opened with is GONE (the tsx grammar fix)."
-  },
-  {
-   "repo": "element-plus",
-   "lang": "vue",
-   "files": 200,
-   "truth": 1243,
-   "covered": 1241,
-   "missing": 2,
-   "unexplained": 4,
-   "note": "post-fix draw 4 — same oracle-side shapes only (`calls (expr) -> key`/`-> return`; `generateColumns -> map`/`from`; `inline-editing -> generateColumns`/`generateData`)."
-  },
-  {
-   "repo": "sqlite",
-   "lang": "c",
-   "files": 200,
-   "truth": 21646,
-   "covered": 21646,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (2026-09-21, #908 ruling live) — the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
-  },
-  {
-   "repo": "jq",
-   "lang": "c",
-   "files": 45,
-   "truth": 2930,
-   "covered": 2930,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2 (2026-09-21) — the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
-  },
-  {
-   "repo": "zig",
-   "lang": "c",
-   "files": 200,
-   "truth": 1599,
-   "covered": 1599,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
-  },
-  {
-   "repo": "nlohmann-json",
-   "lang": "cpp",
-   "files": 17,
-   "truth": 1016,
-   "covered": 1016,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0."
-  },
-  {
-   "repo": "fmt",
-   "lang": "cpp",
-   "files": 73,
-   "truth": 5372,
-   "covered": 5372,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0."
-  },
-  {
-   "repo": "sqlite",
-   "lang": "cpp",
-   "files": 42,
-   "truth": 28,
-   "covered": 28,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
-  },
-  {
-   "repo": "rake",
-   "lang": "ruby",
-   "files": 95,
-   "truth": 1872,
-   "covered": 1872,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, whole corpus. POST-FIX (line round + variable-receiver ruling + static-superclass gate). hash 0fbb6654cea56068."
-  },
-  {
-   "repo": "rack",
-   "lang": "ruby",
-   "files": 94,
-   "truth": 2482,
-   "covered": 2482,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
-  },
-  {
-   "repo": "swift-nio",
-   "lang": "swift",
-   "files": 554,
-   "truth": 20467,
-   "covered": 20466,
-   "missing": 1,
-   "unexplained": 5,
-   "note": "FULL EXTENT (554 swift files, whole corpus) with the #838/#836 framework fix live. hash deccd8b0fd305b6d. RED and REPRODUCED: the 60-file canonical draw is clean, so these 6 findings had never been seen. Triaged by script/m14/tmp/sw-full-extent-triage.ts to pre-existing shapes unrelated to the framework surface (a `constructor -> constructor` self-instantiates edge, enum-case uses emitted from `root`). Most swift edges are line-less — the lane lines column is a known x — so they are identified by source text."
-  },
-  {
-   "repo": "alamofire",
-   "lang": "swift",
-   "files": 98,
-   "truth": 3548,
-   "covered": 3548,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (98 swift files, whole corpus) with the #838/#836 framework fix live. hash 542c6628ba91cc30."
-  },
-  {
-   "repo": "afnetworking",
-   "lang": "objc",
-   "files": 49,
-   "truth": 2890,
-   "covered": 2890,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (49/49 .m files) with CONV-OC-1 live. hash 29684f4b8391be9f. heuristic=315 are the first-parent override GUESSES the differential counts as honest suspicion, not defects."
-  },
-  {
-   "repo": "sdwebimage",
-   "lang": "objc",
-   "files": 104,
-   "truth": 6090,
-   "covered": 6090,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (104/104 .m files) with CONV-OC-1 live. hash 74f30e2d774e4d93. heuristic=287 first-parent override guesses."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 4508,
-   "covered": 4508,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 1 (200 files, 3.3x the canonical 60) with the M59.A7 (#825) line round and the target-canonicalisation live. hash 7b60fe3198c44b83."
-  },
-  {
-   "repo": "fsharp",
-   "lang": "csharp",
-   "files": 243,
-   "truth": 4679,
-   "covered": 4679,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f — IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 900,
-   "truth": 25113,
-   "covered": 25113,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 3 (900 files, fresh rotation — a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 5166,
-   "covered": 5166,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 4 (2026-09-22, rotation 11 — a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
-  },
-  {
-   "repo": "fsharp",
-   "lang": "csharp",
-   "files": 243,
-   "truth": 4679,
-   "covered": 4679,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
-  },
-  {
-   "repo": "powershell",
-   "lang": "csharp",
-   "files": 200,
-   "truth": 5134,
-   "covered": 5134,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
-  },
-  {
-   "repo": "phpunit",
-   "lang": "php",
-   "files": 2907,
-   "truth": 29064,
-   "covered": 29064,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (2,907/2,907 .php files — the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca — the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (−11 fabricated, +1 header read) on identical truth."
-  },
-  {
-   "repo": "phpmyadmin",
-   "lang": "php",
-   "files": 1232,
-   "truth": 42558,
-   "covered": 42558,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
-  },
-  {
-   "repo": "phpunit",
-   "lang": "php",
-   "files": 2907,
-   "truth": 29046,
-   "covered": 29046,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
-  },
-  {
-   "repo": "phpmyadmin",
-   "lang": "php",
-   "files": 1232,
-   "truth": 42377,
-   "covered": 42377,
-   "missing": 0,
-   "unexplained": 0,
-   "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
-  }
- ],
- "adjudicated": {
-  "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
-  "scala": "#905 — one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
-  "java": "#904 — CLOSED this round (generic substitution + edge label). 4 draws clean.",
-  "go": "#872 — long-registered; reproduced at depth.",
-  "c": "#901 — two MISSING `uses` on all-caps macro names, from the canonical sweep.",
-  "python": "#902 — one UNEXPLAINED with-statement `calls` edge at `line: 0`, from the canonical sweep."
- },
- "worstPerLang": {
-  "javascript": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "typescript": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "svelte": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "vue": {
-   "maxSample": 200,
-   "missing": 6,
-   "unexplained": 8,
-   "drawsRed": 2,
-   "issue": "#906",
-   "oracleSide": true
-  },
-  "java": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "groovy": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "kotlin": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "scala": {
-   "maxSample": 200,
-   "missing": 1,
-   "unexplained": 0,
-   "drawsRed": 0,
-   "issue": "#905"
-  },
-  "cpp": {
-   "maxSample": 73,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "c": {
-   "maxSample": 200,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "ruby": {
-   "maxSample": 95,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "swift": {
-   "maxSample": 554,
-   "missing": 1,
-   "unexplained": 5,
-   "drawsRed": 1,
-   "issue": "swift-nio full extent — 6 pre-existing findings the canonical draw never touched; unfiled, triaged in script/m14/tmp/sw-full-extent-triage.ts"
-  },
-  "objc": {
-   "maxSample": 104,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0
-  },
-  "csharp": {
-   "maxSample": 900,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 0,
-   "issue": "#825 (csharp lane) — no red draw remains",
-   "note": "The one red draw (900 files) is superseded: its single unexplained edge was the literal-callee fabrication, fixed and fixture-pinned. FIVE draws now stand, and the last two were taken with the lane's FINAL code (the line round, the target canonicalisation, the params recovery, the parameter-honesty paydown): 200 files at rotation 11 (truth 5,166, hash d314e70f6df0a577) and fsharp FULL EXTENT 243/243 (truth 4,679, hash 4d0e5ba230a7b27f, the same sample as the pre-round row so the two are a same-files before/after). Every one reads MISSING=0 / unexplained=0. powershell's FULL extent (1,275 .cs files) exceeds what one harness invocation can finish at ~0.4s/file (measured: killed at 592s, twice), so the lane's deepest recorded draws are 900 files on powershell and FULL EXTENT on fsharp."
-  },
-  "php": {
-   "maxSample": 2907,
-   "missing": 0,
-   "unexplained": 0,
-   "drawsRed": 2,
-   "issue": "#835 (php lane)",
-   "note": "Two full-extent draws, both 100% coverage with 0 fabrication after the R10 round's two fixes, both keeping the pre-fix hash (same files). The round's red draws were phpunit MISSING=2/unexplained=13 in the previous round and, for R10, phpmyadmin MISSING=4 then 0/0 — the R10 defects were found by the target-spelling census (script/m60/target-spelling-census.ts), which is the instrument that can see a spelling BOTH sides fabricate."
-  }
- },
- "closedInThisRound": {
-  "#904": "java analyzer — generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
-  "#838/#836 + CONV-OC-1 (framework surface)": "swift and objective-c framework payloads — declared order tables replace walk/import order, the primary pick and frameworkPatterns are published. swift-nio FULL EXTENT (554 files) and alamofire (98) recorded here; objc BOTH corpora at full extent, afnetworking 49/49 files 2,890/2,890 truth and sdwebimage 104/104 files 6,090/6,090, MISSING=0 unexplained=0.",
-  "#903 (analyzer half)": "vue/svelte SFC — `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone.",
-  "#825 (csharp lane) — line round + the literal-callee fabrication": "Every csharp relationship now carries the line of the node that NAMES its target (12 emit sites), pinned by csharp/callsite-lines-825 and four reverting mutants; the M59 oracle reads 23,924 relationships with 0 INCONSISTENT on a 200-file draw. The round's own measurement exposed two further classes, both fixed: (1) a `contains` edge claiming the DECLARATION's start line, which for an attributed or wrapped declaration is a line the member's name is not written on (653 of 23,924 on the draw, 100% of the round's inconsistent set) — now stamped from the name node, with a synthesised name (a constructor named `constructor`, a destructor named `Finalize`) taking NO line; (2) a wrapped qualified name carrying its LAYOUT into the target and claiming the name's first line — the ruby D3 class, found here by probing the shape (script/m14/tmp/cs-wrapped-qualified.ts). Separately, the 900-file depth draw found the literal-callee fabrication (`calls … -> false`), fixed structurally and pinned by csharp/literal-callee-recovery.",
-  "#835 (php lane) — declared-type graph, fully-qualified calls, and the callable-header read boundary": "Three defects, all found by measurement. (1) The R9 declared-type graph the lane owed was implemented (phpDeclaredTypeRefs, shared by the analyzer and the differential oracle so the class is comparable), pinned by php/declared-type-graph; its own first measurement corrected `function copy(): self`, which had published the METHOD's name as its type. (2) A fully-qualified call took its callee from RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other edge can spell: phpunit FULL EXTENT, 12 such edges, 10 of them builtins. (3) The oracle gates reads on `inBody`, whose boundary is the callable SUBTREE — the parameter list and the attribute list included — while the analyzer's extracted walk visited those positions with a SUBSET of its read rules: phpunit's only non-`calls` MISSING edge was `Result::from(..., int $shellExitCode = self::SUCCESS)`. Re-drawing after (3) exposed a fourth class the mirror could never show: `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as symbol names identically on BOTH sides, while `$postParams->$param` had the analyzer silent and the oracle emitting `uses -> $param` (phpmyadmin MISSING=4). One rule now states it on both sides: a member read names a member only when the name is a static `name` node (the anonymous `{` token discriminates, probe-verified), and a braced field's own expression reads come from the ordinary rules.",
-  "#835 (php lane) — R10: the target-spelling contract (include paths and callable names)": "R10's first pass found two live php defects that no per-edge gate could see, because the differential oracle derived the same truth from the same rules and therefore AGREED with the analyzer. (1) `extractIncludePath` returned the RAW TEXT of any `binary_expression`, so `include $this->baseDir . 'revision-info.php'` (phpmyadmin src/Git.php:551) published a reconstructed EXPRESSION as the import module and as a `references` target — a spelling carrying `$`, `->`, `.` and a quote that no php symbol can be named. A path is now emitted only when EVERY operand is statically known (string, `__DIR__`/`__FILE__`/name constant, interpolated strings refused, only `.` composing), and the rule lives at module level (`phpStaticIncludePath`) so the oracle imports the analyzer's own function instead of mirroring it. (2) `processFunctionCall` took the callee node's raw text, so `$callable()` published `calls -> $callable` / `calls -> $controller` (LicenseControllerTest.php:23) — a VALUE callee published as a callee NAME. `phpStaticCallableName` now requires a name-shaped callee (probe: over 400 real files, 1,047 `name` callees and `variable_name` the ONLY non-name shape reaching the rule), and the value's read survives as the variable pass's `uses` edge. Pinned by php/include-paths (6 static paths expected, 4 pre-fix spellings forbidden — the forbids transcribed from a replay of the OLD rule, script/m14/tmp/php-include-prefix-rule.ts) and php/dynamic-callee (the honest `uses -> handler` expected AND `calls -> handler` forbidden, so the fix must move the edge, not lose it); both defects have reverting mutants, all 40 php mutants caught. phpunit FULL EXTENT 2,907/2,907 and phpmyadmin FULL EXTENT 1,232/1,232 both 100% covered, 0 MISSING, 0 unexplained, both on the pre-fix hash."
- }
 }
