@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-24T19:04:03.268Z",
+  "snapshotAt": "2026-09-24T19:37:38.374Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 117,
+  "count": 114,
   "issues": [
     {
       "number": 134,
@@ -365,11 +365,6 @@
       "labels": []
     },
     {
-      "number": 749,
-      "title": "M49-CONV: CONV-RB-1 ruby — framework detection limited to ActiveRecord/ActionController leaves; require-level gems invisible",
-      "labels": []
-    },
-    {
       "number": 753,
       "title": "M49-CONV: CONV-DART-2 dart — duplicate method names keep FIRST body (wrong-body class, #745 family)",
       "labels": []
@@ -452,11 +447,6 @@
     {
       "number": 811,
       "title": "`script/m13/verify-patterns-e2e-corpus.ts` — RED (foreign conviction, analyzer lane)",
-      "labels": []
-    },
-    {
-      "number": 812,
-      "title": "M49.RB1 Ruby second review wave: process reviews/ruby RB-F-RB-K under the verify-first protocol",
       "labels": []
     },
     {
@@ -689,13 +679,6 @@
     {
       "number": 930,
       "title": "m60: the `lines` cell is defined as `alive`, so ONE writer satisfies it — php passed with 92.7% of its edges unlined",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 932,
-      "title": "ruby (R8): one framework reached consumers under TWO names — the Rails/Ruby on Rails divergence #749 closed on one surface only",
       "labels": [
         "bug"
       ]
