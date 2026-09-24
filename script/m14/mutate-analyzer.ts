@@ -5089,6 +5089,33 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "rust/revert-where-clause-climb",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "R16a/R16b regression (#798, cargo full extent): reverts the where-clause climb — a bound naming a TRAIT-method-signature parameter (`function_signature_item` missing from the item list) or an OUTER impl's parameter (the climb stopping at the first enclosing item) leaks references again (where-clause-bounds-798 forbids references->F and references->N; the exact pre-fix emissions are printed by script/m14/tmp/rust-798-wherebounds.ts)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "try_borrow_with", target: "F", type: "references", confidence: 1.0, metadata: { rustSpecific: true, whereBound: true } },
+        { source: "bound", target: "N", type: "references", confidence: 1.0, metadata: { rustSpecific: true, whereBound: true } },
+      ],
+    }),
+  },
+  {
+    id: "rust/where-bound-raw-text",
+    language: "rust",
+    defectClass: "name-surface",
+    description: "R16c regression (#798): reverts the bound target's NAME leaf and republishes the pre-fix raw scoped text — `where anyhow::Error: From<E>` targets `anyhow::Error` instead of `Error`, a target no consumer can resolve (where-clause-bounds-798 forbids the raw-text and module spellings; the c/cpp #924 class)",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "parse", target: "anyhow::Error", type: "references", confidence: 1.0, metadata: { rustSpecific: true, whereBound: true } },
+      ],
+    }),
+  },
+  {
     id: "rust/drop-self-construction",
     language: "rust",
     defectClass: "relationship-loss",
@@ -5152,6 +5179,23 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "R13 extreme regression: drops the whole declared-type references graph — param/return/field/alias type mentions emit nothing (declared-type-refs expects 9 declared_type edges)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !((x.metadata ?? {}).relationshipType === "declared_type")) }),
+  },
+  {
+    id: "rust/drop-tuple-struct-field-types",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "R14 regression (#798, ripgrep full extent): reverts the tuple-struct field-type branch — a struct whose fields sit in an `ordered_field_declaration_list` (no `field_declaration` child) references none of its field types again (tuple-struct-field-types pins Wrapped->Inner, Pair->Inner/Vec, Scoped->Inner; measured 13 real missing edges over 10 ripgrep files before the fix)",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => {
+        const md = x.metadata ?? {}
+        if (md.relationshipType !== "declared_type") return true
+        // The tuple structs of tuple-struct-field-types.fixture (`Either` is a
+        // NAMED-field union and must survive — it pins that the fix did not
+        // move the already-handled named-field path).
+        return !["Wrapped", "Pair", "Scoped", "Generic"].includes(String(x.source ?? ""))
+      }),
+    }),
   },
   {
     id: "go/drop-bare-uses",
