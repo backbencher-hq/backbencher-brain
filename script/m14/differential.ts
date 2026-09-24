@@ -7362,7 +7362,30 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
               continue
             }
             if (m.type === "class_definition") continue
-            if (m.type === "assignment" || m.type === "augmented_assignment" || m.type === "named_expression") {
+            if (m.type === "assignment") {
+              // #928: a CHAINED class-attribute assignment (`a = b = c`) binds EVERY
+              // name — tree-sitter nests chains RIGHT: `x = y = z = 1` is
+              // assignment(identifier x, assignment(identifier y,
+              // assignment(identifier z, integer))). This oracle registered only
+              // namedChild(0), so a subclass `def` of any non-first chain name found no
+              // base member and 10 real overrides in Cython's PyrexTypes.py (where the
+              // chain is LINE-CONTINUATION-wrapped over four lines) read UNEXPLAINED at
+              // depth. A right-nested chain has exactly one target per level, so the
+              // targets are identifier(0) of every nested assignment; the innermost
+              // right-hand side is the value, never a target. Annotated (`x: T = v`,
+              // incl. `a: T = b = c`) has a `type` child between the name and the
+              // value — the name is still namedChild(0) and the chain, if any, nests
+              // after the type. This mirrors the analyzer's class-variable branch,
+              // which owns every name of the chain as a Property of the class.
+              let node: any = m
+              while (node?.type === "assignment") {
+                const lhs = node.namedChild(0)
+                if (lhs?.type === "identifier" && lhs.text !== "__all__") regMethod(clsName2, lhs.text)
+                node = node.namedChildren.find((k: any) => k?.type === "assignment")
+              }
+              continue
+            }
+            if (m.type === "augmented_assignment" || m.type === "named_expression") {
               const lhs = m.namedChild(0)
               if (lhs?.type === "identifier" && lhs.text !== "__all__") regMethod(clsName2, lhs.text)
               continue
