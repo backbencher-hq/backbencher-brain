@@ -107,9 +107,21 @@ const LANES: Lane[] = [
     module: "../../src/ast/real-php-analyzer", exportName: "RealPhpAnalyzer", repos: ["phpunit", "slim", "phpmyadmin"],
     cases: [
       { name: "laravel-illuminate", src: `<?php\nnamespace App\\Http\\Controllers;\n\nuse Illuminate\\Http\\Request;\n\nclass UserController extends Controller\n{\n}\n`, expectDetected: "Laravel" },
-      { name: "laravel-app-root-only", src: `<?php\nnamespace App\\Http\\Controllers;\n\nclass UserController extends Controller\n{\n}\n`, expectDetected: "Laravel", note: "measured GAP: the `App\\` root marker is compared against a trailing backslash no namespace text carries" },
+      // FIXED 2026-09-24 (#931, commit 57df923f). The note here read "measured GAP" from
+      // 2026-09-22 until the marker was repaired: `text === "App\\"` was an exact match on a
+      // namespace string ENDING in a separator, which no node's text carries, so the case
+      // MISSED while claiming Laravel — for a week, with R8 reading MET, because a marker
+      // that cannot fire is a detector every corpus calls clean. The literal's intent is now
+      // the prefix it was reaching for, and `namespace App;` alone still does NOT fire.
+      { name: "laravel-app-root-only", src: `<?php\nnamespace App\\Http\\Controllers;\n\nclass UserController extends Controller\n{\n}\n`, expectDetected: "Laravel", note: "was a measured GAP until #931 (57df923f): the `App\\` root marker compared against a trailing backslash no namespace text carries" },
       { name: "phpunit-use-statement", src: `<?php\nnamespace Tests;\n\nuse PHPUnit\\Framework\\TestCase;\n\nclass MyTest extends TestCase\n{\n}\n`, expectDetected: "PHPUnit" },
-      { name: "phpunit-global-base", src: `<?php\n\nclass MyTest extends TestCase\n{\n}\n`, expectDetected: "PHPUnit", note: "measured GAP: the bare `TestCase` marker is compared against the NAMESPACE text, which is empty here" },
+      // FIXED 2026-09-24 (#931, commit 57df923f). Same week, same shape, different wrong input:
+      // the bare `TestCase` marker was compared against the NAMESPACE — empty for a class in
+      // the global namespace — while the base CLAUSE, the node that names the relationship,
+      // was never passed to detectFramework at all. The base clause's two spellings are tested
+      // where the class is visited now; the table's substring markers are deliberately NOT fed
+      // base names, or `WordPress`/`wp_` would fire on a class merely named after a framework.
+      { name: "phpunit-global-base", src: `<?php\n\nclass MyTest extends TestCase\n{\n}\n`, expectDetected: "PHPUnit", note: "was a measured GAP until #931 (57df923f): the bare `TestCase` marker compared against the NAMESPACE text, which is empty here" },
       { name: "plain-php", src: `<?php\n\nfunction helper() { return 1; }\n`, expectDetected: null, expectAbsent: ["Laravel", "PHPUnit"] },
     ],
   },
