@@ -33,6 +33,17 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { computeFamilyClosure, loadFamilies, foldOwed } from "./family-closure"
+// R11's ruling set lives in the census MODULE — a hand-grown relation table with the #913
+// ruling recorded beside each extension — so the gate imports it instead of keeping a
+// second copy that could drift from it. Safe because that script guards its entry point
+// with `import.meta.main` (the C923 sweep's convention).
+import {
+  BASELINE as ROUTING_BASELINE,
+  EXTENSION_RELATION as ROUTING_RELATION,
+  key as routingKey,
+  routerDisagreements as liveRoutingDisagreements,
+} from "./routing-outlier-census"
+import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/G1.json")
@@ -47,6 +58,8 @@ const DECLARED_TYPE_CENSUS = path.join(ROOT, "validation/m60/results/declared-ty
 const DECLARED_TYPE_REGISTER = path.join(ROOT, "validation/m60/declared-type-register.json")
 const TARGET_SPELLING_CENSUS = path.join(ROOT, "validation/m60/results/target-spelling.json")
 const TARGET_SPELLING_REGISTER = path.join(ROOT, "validation/m60/target-spelling-register.json")
+const ROUTING_OUTLIERS = path.join(ROOT, "validation/m60/results/routing-outliers.json")
+const ROUTING_CENSUS_SCRIPT = path.join(ROOT, "script/m60/routing-outlier-census.ts")
 /** The seven OO lanes — the owner standard's zero target (lang names as the census emits them). */
 export const OO_LANES = ["csharp", "dart", "objective-c", "php", "python", "ruby", "swift"]
 const REVIEWS = path.join(ROOT, "reviews")
@@ -914,6 +927,46 @@ function main() {
   negative("R10 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
     !r10Live(targetSpellingDetail(null, TSREG)))
 
+  // ---- R11 live: no extension is routed to a grammar that cannot represent it ------
+  // The live call re-runs the census's routing check against the registry IN THIS TREE,
+  // not only against the committed artifact: an artifact is a reading at a commit, and
+  // `.gsp` survived a whole wave precisely because the reading and the registry were
+  // never compared at gate time.
+  const routingArtifact = readJsonOrNull(ROUTING_OUTLIERS)
+  const routingLive = liveRoutingDisagreements((p) => detectLanguageFromPath(p) as string | null)
+  const routingBaselineKeys = ROUTING_BASELINE.map((b) => routingKey(b))
+  const routing = routingOutlierDetail(routingArtifact, routingLive, routingBaselineKeys)
+  check("R11 live: every declared routing claim matches the live registry, and the finding set matches the ruling (no format is routed to a grammar that cannot represent it)",
+    routingAdjudicated(routing), routing)
+  check("R11 machinery: the census script that produces the artifact exists", existsSync(ROUTING_CENSUS_SCRIPT))
+
+  // ---- R11 negatives: the measurement, the ruling set and the live predicate ---------
+  const RCLEAN = (over: any = {}) => ({
+    lanes: 48, findings: [], baseline: ROUTING_BASELINE, newFindings: [], vanishedFindings: [],
+    drift: false, undeclaredExtensions: [], routerDisagreements: [], retired: { rows: [] }, ...over,
+  })
+  const r11Live = (d: string) => routingAdjudicated(d)
+  negative("R11 negative (live predicate): the adjudicated reading is accepted",
+    r11Live(routingOutlierDetail(RCLEAN(), [], routingBaselineKeys)))
+  negative("R11 negative (live predicate): a refusal to adjudicate is NOT accepted as a verdict",
+    !r11Live(routingOutlierDetail(null, [], routingBaselineKeys)))
+  negative("R11 negative: a finding set that moved off the baseline is convicted",
+    routingOutlierDetail(RCLEAN({ drift: true, newFindings: ["ruby.rbx"] }), [], routingBaselineKeys).includes("moved off the baseline"))
+  negative("R11 negative: an extension the relation table does not declare is convicted (a routing claim no ruling covers)",
+    routingOutlierDetail(RCLEAN({ undeclaredExtensions: [{ lane: "new:python", ext: "newpyx", files: 50 }] }), [], routingBaselineKeys).includes("NOT declared"))
+  negative("R11 negative: a retired extension still being measured is convicted (retirement is not silence)",
+    routingOutlierDetail(RCLEAN({ retired: { rows: [{ ext: "pyx", lang: "python", measured: true }] } }), [], routingBaselineKeys).includes("still measured"))
+  negative("R11 negative: a claim that disagrees with the live registry is convicted (a re-added EXTENSION_LANGUAGE line fails even on a clean artifact)",
+    routingOutlierDetail(RCLEAN(), [{ ext: "gsp", lang: "groovy", routed: "groovy", expected: null }], routingBaselineKeys).includes("disagree with the live registry"))
+  negative("R11 negative: a baseline edited on one side only is convicted (artifact and module must agree)",
+    routingOutlierDetail(RCLEAN({ baseline: [...ROUTING_BASELINE, { lang: "python", ext: "pyi" }] }), [], routingBaselineKeys).includes("differ"))
+  negative("R11 negative: the discriminator is not vacuous (a router that answers with one language everywhere must produce disagreements)",
+    liveRoutingDisagreements(() => "python").length > 0)
+  negative("R11 negative: the ruling set is not vacuous (the table declares formats, and at least one is a retired other-format)",
+    Object.keys(ROUTING_RELATION).length > 20 && Object.values(ROUTING_RELATION).some((d: any) => d.relation === "other-format" && d.retired === true))
+  negative("R11 negative: the census is not vacuous (it measured lanes and declared every extension it saw)",
+    Boolean(routingArtifact && routingArtifact.lanes > 20 && (routingArtifact.undeclaredExtensions ?? []).length === 0))
+
   finish(head)
 }
 
@@ -1358,6 +1411,70 @@ export function frameworkRegisterDetail(census: any, register: any): string {
  */
 export function registerAdjudicated(detail: string, rule: "R7" | "R8" | "R9"): boolean {
   return detail.startsWith(`${rule}: `) && detail.includes("register entries match exactly")
+}
+
+/**
+ * R11: no extension is routed to a grammar that cannot represent its format, and the
+ * finding set matches the ruling.
+ *
+ * The class this rule measures is the one every other instrument in the family is
+ * blind to. `detectLanguageFromPath` routes BY EXTENSION, which is right for a dialect
+ * (`.kts`, `.cljs`, `.mm`) and wrong for a format that merely lives beside a language:
+ * `.pyx`/`.pxd` are Cython, `.gsp` is a Grails Server Page, `.lhs` is literate Haskell.
+ * Handing those to the language's grammar produces the worst available outcome — the
+ * differential oracle compares the analyzer against a tree it derives from the SAME
+ * partial parse, so a 68.8 %-unparseable corpus reported 100 % coverage, MISSING=0,
+ * unexplained=0 (measured on cython:python, #913), and the parse-success gate could not
+ * separate that from a weak grammar on its own language because it reads one rate per
+ * lane. The prior question — is this extension even written in this language? — has no
+ * owner other than this rule.
+ *
+ * The DETAIL function is pure so the negatives below can drive it with synthetic
+ * artifacts; the LIVE call additionally re-runs the census's routing check against the
+ * registry in this tree, so a re-added `EXTENSION_LANGUAGE` line fails G1 even when the
+ * committed artifact still reads clean (a stale artifact is how `.gsp` survived #850).
+ */
+export function routingOutlierDetail(
+  artifact: any,
+  live: { ext: string; lang: string; routed: string | null; expected: string | null }[],
+  declaredBaseline: string[],
+): string {
+  if (!artifact) {
+    return "R11 cannot adjudicate: validation/m60/results/routing-outliers.json is absent — run bun script/m60/routing-outlier-census.ts"
+  }
+  const undeclared: any[] = artifact.undeclaredExtensions ?? []
+  if (undeclared.length) {
+    return `R11: ${undeclared.length} extension(s) in the parse-success artifact are NOT declared in the census's relation table, so a routing claim exists that no ruling covers — ${undeclared.slice(0, 4).map((u: any) => `${u.lane} .${u.ext}`).join(", ")}`
+  }
+  if (live.length) {
+    return `R11: ${live.length} declared routing claim(s) disagree with the live registry — ${live.slice(0, 4).map((d) => `.${d.ext} routes to ${d.routed ?? "nothing"}, declaration expects ${d.expected ?? "nothing"}`).join("; ")}`
+  }
+  const retiredMeasured = (artifact.retired?.rows ?? []).filter((r: any) => r.measured)
+  if (retiredMeasured.length) {
+    return `R11: ${retiredMeasured.length} retired extension(s) are still measured in the artifact — a format the ruling stopped routing reappeared, which is a NEW finding, not a retirement (${retiredMeasured.map((r: any) => `.${r.ext}`).join(", ")})`
+  }
+  const artifactBaseline = (artifact.baseline ?? []).map((b: any) => routingKey(b)).sort()
+  const moduleBaseline = [...declaredBaseline].sort()
+  if (JSON.stringify(artifactBaseline) !== JSON.stringify(moduleBaseline)) {
+    return `R11: the artifact's baseline and the census module's ruling table differ (artifact: ${artifactBaseline.join(",") || "empty"}; module: ${moduleBaseline.join(",") || "empty"}) — a baseline may only move together with its ruling`
+  }
+  const recorded: any[] = artifact.routerDisagreements ?? []
+  if (recorded.length) {
+    return `R11: the census recorded ${recorded.length} routing disagreement(s) against the registry of its own commit — ${recorded.slice(0, 4).map((d: any) => `.${d.ext}`).join(", ")}`
+  }
+  if (artifact.drift) {
+    return `R11: the finding set moved off the baseline — new: ${(artifact.newFindings ?? []).join(", ") || "(none)"}; vanished: ${(artifact.vanishedFindings ?? []).join(", ") || "(none)"}`
+  }
+  const findings: any[] = artifact.findings ?? []
+  const detail = findings.length
+    ? `${findings.length} finding(s) declared on the baseline: ${findings.map((f: any) => `${f.lang}.${f.ext} ${f.rate}%`).join(", ")}`
+    : "no open routing finding"
+  return `R11: ${artifact.lanes} lane(s) measured, every declared routing claim matches the live registry, 0 undeclared, 0 drift — ${detail}`
+}
+
+/** The verdict predicate: the adjudicated reading, not its prefix (the R7/R8 lesson). */
+export function routingAdjudicated(detail: string): boolean {
+  return detail.startsWith("R11: ") && detail.includes("every declared routing claim matches the live registry")
 }
 
 /** Pure, so the negatives below can drive it with synthetic census/register pairs. */
