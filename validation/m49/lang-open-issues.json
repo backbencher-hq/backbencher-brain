@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-24T19:37:38.374Z",
+  "snapshotAt": "2026-09-24T23:02:59.778Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 114,
+  "count": 108,
   "issues": [
     {
       "number": 134,
@@ -355,16 +355,6 @@
       "labels": []
     },
     {
-      "number": 747,
-      "title": "M49-CONV: CONV-PY-1 python — framework detection is dead code (ctx.frameworks never written)",
-      "labels": []
-    },
-    {
-      "number": 748,
-      "title": "M49-CONV: CONV-PY-2 python — duplicate def keeps BOTH symbols (runtime rebinding is last-wins)",
-      "labels": []
-    },
-    {
       "number": 753,
       "title": "M49-CONV: CONV-DART-2 dart — duplicate method names keep FIRST body (wrong-body class, #745 family)",
       "labels": []
@@ -629,20 +619,8 @@
       ]
     },
     {
-      "number": 902,
-      "title": "python: one UNEXPLAINED `calls` edge at HEAD (with-statement context manager, line 0)",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
       "number": 911,
       "title": "M60.P1 recorded an emission no commit contains (erlang line_number); P1 had no commit frame at all",
-      "labels": []
-    },
-    {
-      "number": 913,
-      "title": "python: the detector maps .pyx/.pxd to the Python grammar, so Python's primary corpus is 68.8% unparseable",
       "labels": []
     },
     {
@@ -661,20 +639,6 @@
       "number": 926,
       "title": "groovy: .gsp templates were routed to the Groovy grammar (39/39 = 100% unparseable) — the sibling of #913",
       "labels": []
-    },
-    {
-      "number": 927,
-      "title": "python: a class whose base is a CALL publishes the FACTORY FUNCTION as its parent — the base-position sibling of #902",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 928,
-      "title": "python (ORACLE-side): the differential's override oracle registers only `def`s, so 10 real overrides from class-attribute members read UNEXPLAINED at depth",
-      "labels": [
-        "bug"
-      ]
     },
     {
       "number": 930,
