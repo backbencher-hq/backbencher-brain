@@ -389,6 +389,32 @@ export function phpStripLeadingBackslashes(raw: string): string {
   return raw.substring(i)
 }
 
+/**
+ * The ORDER this lane publishes its frameworks in (#934) — the marker table's own order,
+ * application frameworks first and the test framework last.
+ *
+ * `R8`'s register states the family rule through the lane it was first fixed on: python's second
+ * caught mutant is literally "the emitted order following import order instead of the marker
+ * table"; swift's `SWIFT_FRAMEWORK_ORDER` and objc's `OBJC_FRAMEWORK_ORDER` are the same
+ * instrument; csharp's `CS_FRAMEWORK_ORDER` is the rule python's header cites.
+ *
+ * php never had a table, so it published `[...detectedFrameworks]` — a Set's INSERTION order,
+ * i.e. whichever marker fired first IN THE FILE. That is python's defect verbatim. The register
+ * never named it for php because php's framework row already carried a different debt (the two
+ * dead markers, #931), and a lane's row can only hold what someone measured. A file importing
+ * Symfony before Illuminate reported Symfony as primary; with the table it reports Laravel, and
+ * the pick stops depending on the statement layout of one file.
+ */
+const PHP_FRAMEWORK_ORDER: readonly string[] = [
+  "Laravel",
+  "Symfony",
+  "WordPress",
+  "Magento",
+  "Drupal",
+  "Doctrine",
+  "PHPUnit",
+]
+
 const PHP_PATH_SHAPES: ReadonlySet<string> = new Set([
   "string",
   "encapsed_string",
@@ -2375,7 +2401,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.classifyEvidenceTier(relationships)
-    const frameworks = [...detectedFrameworks]
+    const frameworks = PHP_FRAMEWORK_ORDER.filter((f) => detectedFrameworks.has(f)).concat(
+      [...detectedFrameworks].filter((f) => !PHP_FRAMEWORK_ORDER.includes(f)),
+    )
     const patternList = [...patterns]
     return {
       symbols,

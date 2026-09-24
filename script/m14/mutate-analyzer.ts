@@ -7727,6 +7727,18 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "php/framework-order-document",
+    language: "php",
+    defectClass: "framework-order",
+    description:
+      "R8 (#934) regression: the published framework list goes back to DETECTION order — whichever marker fires first in the file — instead of the marker table's order, so the primary pick is decided by statement layout. This is python's defect verbatim (the register records python's second caught mutant as 'the emitted order following import order instead of the marker table') and php carried it until #934. The transform reverses the published list and re-picks the primary, which for php/framework-order is EXACTLY the pre-fix reading, because that fixture's `use` statements are deliberately the inverse of the table order: reversing the table order reproduces document order. Caught by php/framework-order (array pin + primary pin) and by php/framework-surface-pins.",
+    transform: r => {
+      const meta: any = r.metadata ?? {}
+      const det: string[] = [...(meta.detectedFrameworks ?? [])].reverse()
+      return { ...r, metadata: { ...meta, detectedFrameworks: det, framework: det[0] ?? meta.framework } }
+    },
+  },
+  {
     id: "php/static-member-read-lost-to-braces",
     language: "php",
     defectClass: "relationship-loss",
