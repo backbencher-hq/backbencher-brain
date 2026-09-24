@@ -74,6 +74,19 @@ interface Lane {
     expectAbsent?: string[]
     /** a pattern the framework contract must carry for this trigger (pins reachability) */
     expectPattern?: { framework: string; pattern: string }
+    /**
+     * Route THIS case through `ASTEngine.parseFile` instead of the analyzer class
+     * directly (#932).
+     *
+     * The case half calls the analyzer, so it measures the analyzer's metadata — right
+     * for A6 (does the claimed capability fire on a minimal trigger?) and wrong for
+     * anything the engine adds or rewrites afterwards. `enhanceWithFrameworkIntelligence`
+     * unions the analyzer's list with a detector whose vocabulary is its own slug table
+     * and then canonicalises BOTH through FRAMEWORK_ALIASES, which is why a lane could
+     * publish one framework under two names in the object a consumer actually reads
+     * while every case here stayed green. A case that pins the PUBLISHED list sets this.
+     */
+    viaPublished?: boolean
     note?: string
   }[]
 }
@@ -91,6 +104,14 @@ const LANES: Lane[] = [
       // detection, because the detection was reachable the whole time.
       { name: "rails-before-action", src: `class UsersController < ApplicationController\n  before_action :authenticate\nend\n`, expectDetected: "Ruby on Rails", expectPattern: { framework: "Ruby on Rails", pattern: "Callbacks" } },
       { name: "plain-ruby", src: `class Plain\n  def go\n    1\n  end\nend\n`, expectDetected: null, expectAbsent: ["Ruby on Rails"] },
+      // #932 — one framework, ONE name, measured at the PUBLISHED seam. The analyzer
+      // publishes `"Ruby on Rails"` (RAILS_FRAMEWORK) while framework-intelligence's
+      // `detectRubyFrameworks` adds the slug `"rails"` and `canonicalizeDetections`
+      // dedupes by ALIASED lowercase — two different keys, so both landed in one payload
+      // and a consumer keying on the framework string saw two frameworks. Only this case
+      // can see it: the analyzer half is correct on its own, and the merge happens after
+      // it. `expectAbsent` is the load-bearing half — the OLD slug must be GONE.
+      { name: "rails-require-and-leaf", src: `require 'rails'\n\nclass User < ActiveRecord::Base\nend\n`, expectDetected: "Ruby on Rails", expectAbsent: ["rails"], viaPublished: true, note: "was the #932 duplicate: the published list read [\"Ruby on Rails\",\"rails\"]" },
     ],
   },
   {
@@ -362,14 +383,20 @@ async function main() {
     const mod: any = await import(lane.module)
     const Cls = mod[lane.exportName]
     if (!Cls) { console.error(`MISSING analyzer export ${lane.exportName} in ${lane.module}`); continue }
-    const analyze = async (src: string, file: string) => {
+    const analyze = async (src: string, file: string, viaPublished?: boolean) => {
+      // The published seam (#932): what a consumer reads, after the engine's
+      // framework-intelligence merge and its alias canonicalisation.
+      if (viaPublished) {
+        const { ASTEngine } = await import("../../src/ast/engine")
+        return await ASTEngine.parseFile(file, src)
+      }
       const root = parser.parse(src).rootNode
       return await new Cls().analyze(root, src, file)
     }
     // --- cases: does the capability claim predict detection from a minimal trigger? ---
     const caseResults: CaseResult[] = []
     for (const c of lane.cases) {
-      const cr: any = await analyze(c.src, `probe${lane.ext[0]}`)
+      const cr: any = await analyze(c.src, `probe${lane.ext[0]}`, c.viaPublished)
       const meta = cr?.metadata ?? {}
       const detected: string[] = Array.isArray(meta.detectedFrameworks) ? meta.detectedFrameworks : []
       const findings = checkMetadata(meta).map((f) => ({ lang: lane.lang, file: `case:${c.name}`, assertion: f.id, detail: f.detail }))

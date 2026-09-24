@@ -946,6 +946,20 @@ export namespace FrameworkIntelligence {
     "play framework": "play",
     gorilla_mux: "gorilla",
     gorillamux: "gorilla",
+    // #932 — ONE framework, ONE name. The ruby lane publishes `"Ruby on Rails"`
+    // (`RAILS_FRAMEWORK`, whose own header records that the two-spelling defect was
+    // fixed on the patterns surface) while `detectRubyFrameworks` below adds the slug
+    // `"rails"`, and `canonicalizeDetections` dedupes by ALIASED lowercase — `"rails"`
+    // and `"ruby on rails"` are different keys, so both survived into one payload and a
+    // consumer keying on the framework string saw two frameworks. MEASURED through
+    // `ASTEngine.parseFile` on `require 'rails'` + an ActiveRecord subclass: the
+    // published list read `["Ruby on Rails","rails"]`. The alias map is where this
+    // repository already puts exactly this policy (swift's `swiftui` slug, the
+    // `aspnet`/`entityframework` pairs), so the slug is canonicalised HERE rather than
+    // in the detector: the detector's vocabulary may stay a slug table ("rspec",
+    // "nunit", "linq" all live there), but the PUBLISHED list answers to one name.
+    rails: "Ruby on Rails",
+    "ruby on rails": "Ruby on Rails",
   }
 
   function canonicalizeDetections(detections: string[]): string[] {
