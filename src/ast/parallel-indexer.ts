@@ -169,7 +169,12 @@ export const ParallelIndexerConfig = {
     ".scala",
     ".sc",
     ".groovy",
-    ".gsp",
+    // `.gsp` was listed here until the M60 #913 ruling (2026-09-24): an HTML template
+    // is not Groovy source, and the registry no longer routes it. Note this Set is not
+    // read anywhere — what admits a file is `hasValidExtension` → detectLanguageFromPath
+    // below — so removing the entry is consistency, not control: a list nothing consults
+    // cannot be the thing that admits a file, and it must not disagree with the registry
+    // that does. script/m60/routing-outlier-census.ts gates the registry side.
     // === SCRIPTING & DYNAMIC ===
     ".py",
     ".pyw",
