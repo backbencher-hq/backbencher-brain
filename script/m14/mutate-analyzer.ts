@@ -7648,6 +7648,36 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "php/framework-app-root-marker-dead",
+    language: "php",
+    defectClass: "framework-false-negative",
+    description:
+      "R8 (#931) regression: the `App\\` root marker goes back to an exact match on a string no node's text carries — a namespace never ENDS in a separator — so a Laravel app whose classes live under its own root namespace detects NOTHING. MEASURED at HEAD: `namespace App\\Http\\Controllers;` detected [] while claiming Laravel, the probe's note said 'measured GAP', and the register carried it as a claim miss while R8 still read MET, because a marker that cannot fire is a detector every corpus calls clean. Caught by php/framework-app-root, whose Laravel comes from the prefix and from nowhere else (no framework import in the file), and by php/framework-surface-pins.",
+    transform: r => {
+      const drop = (f: string, res: any) => {
+        const meta: any = res.metadata ?? {}
+        const kept: string[] = (meta.detectedFrameworks ?? []).filter((x: string) => x !== f)
+        return { ...res, metadata: { ...meta, detectedFrameworks: kept, framework: meta.framework === f ? kept[0] : meta.framework } }
+      }
+      return drop("Laravel", r)
+    },
+  },
+  {
+    id: "php/framework-phpunit-base-marker-dead",
+    language: "php",
+    defectClass: "framework-false-negative",
+    description:
+      "R8 (#931) regression: PHPUnit's bare `TestCase` marker goes back to being tested against the NAMESPACE — which is empty for a global-namespace class, and is the class's own namespace anywhere else — while the base CLAUSE that names the relationship is never passed to detectFramework at all. So `class MyTest extends TestCase` detects nothing. MEASURED at HEAD: probe case phpunit-global-base detected [] while claiming PHPUnit. Caught by php/framework-surface-pins, which carries the shape; php/framework-app-root's forbidFrameworks is the negative half (nothing there extends TestCase).",
+    transform: r => {
+      const drop = (f: string, res: any) => {
+        const meta: any = res.metadata ?? {}
+        const kept: string[] = (meta.detectedFrameworks ?? []).filter((x: string) => x !== f)
+        return { ...res, metadata: { ...meta, detectedFrameworks: kept, framework: meta.framework === f ? kept[0] : meta.framework } }
+      }
+      return drop("PHPUnit", r)
+    },
+  },
+  {
     id: "php/static-member-read-lost-to-braces",
     language: "php",
     defectClass: "relationship-loss",
