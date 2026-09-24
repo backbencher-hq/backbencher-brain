@@ -35,6 +35,33 @@ function hasBareWord(hay: string, word: string): boolean {
   return false
 }
 
+// R8 (M60 standing rule, enforced by G1): the family contract is THREE metadata
+// keys — `framework` (the deterministic primary pick), `detectedFrameworks`
+// (always an array) and `frameworkPatterns` (aligned) — and rust published two
+// of them, so every consumer reading `framework` fell through to the engine's
+// `"unknown"` default (`framework-corpus.json` shows rust rows with
+// `framework: "unknown", status: "default"`). The pick is a FIXED priority
+// order over this lane's own markers, not a second detection pass: an
+// application framework outranks the runtime it runs on, which outranks the CLI
+// parser and the derive-level markers (serde is the weakest signal — it is
+// present in nearly every crate). Mirrors java's `pickJavaFramework` and golang's
+// `frameworks[0]?.name`, each lane owning its own order.
+const RUST_FRAMEWORK_PRIORITY: string[] = [
+  "actix_web", "axum", "rocket", "tokio", "clap", "serde", "thiserror", "tracing",
+]
+
+// R10 (M60 standing rule): the declared synthetic name for an impl whose
+// implemented TYPE has no nominal name — `impl ToPkgId for (T, U)`,
+// `impl Index<Match> for [u8]`. The type has no name, but the impl BLOCK is a
+// real construct that owns members and carries an `implements` edge, so it
+// still needs one; the family already spells this class this way (c's
+// `anonymous_struct` / `anonymous_union` / `anonymous_enum`, cpp's
+// `anonymous`), and it is DECLARED in the M60 registers rather than left to a
+// reader to infer. It is not a placeholder for an unknown state (R7): the
+// state is fully known — the block exists and its type is unnamed — and the
+// type's own spelling rides `metadata.implementedType`.
+const RUST_UNNAMED_IMPL = "anonymous_impl"
+
 interface RustContext {
   tree: { rootNode: Node }
   content: string
@@ -89,6 +116,14 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports: [],
       metadata: {
         language: "rust",
+        // R8 (M60 standing rule): the family contract's three keys, ALL
+        // declared here. `framework` is the deterministic primary pick and its
+        // VALUE is assigned after the walk (below), because detection happens
+        // in the attribute handler as the tree is traversed — but the key is
+        // part of what this analyzer publishes, so it is declared at
+        // construction exactly as the compliant lanes (java's
+        // `pickJavaFramework`, go's `frameworks[0]?.name`) declare theirs.
+        framework: undefined,
         detectedFrameworks: [],
         frameworkPatterns: [],
       },
@@ -225,8 +260,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // literal constructs the enclosing impl type.
         const typeNode = node.childForFieldName("name") || node.namedChild(0)
         if (typeNode && (typeNode.type === "type_identifier" || typeNode.type === "scoped_type_identifier")) {
-          let leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
-          if (leaf === "Self") leaf = this.enclosingImplType(node) ?? leaf
+          // R10/R7: an unresolvable `Self` (an impl whose implemented type has
+          // no nominal name) is ABSENCE — `?? leaf` kept the raw literal
+          // "Self" and emitted `instantiates -> "Self"`, a name no symbol has.
+          let leaf: string | null = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? typeNode.text
+          if (leaf === "Self") leaf = this.enclosingImplType(node)
           if (leaf) {
             const source = parent?.name || "global"
             ctx.relationships.push({
@@ -499,6 +537,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // File-level complexity field (family contract - was absent; only a
     // cyclomaticComplexity counter existed).
     ctx.metadata.complexity = ctx.metadata.cyclomaticComplexity ?? 1
+
+    // R8: the deterministic primary pick, made HERE rather than in the
+    // construction literal because `detectedFrameworks` is filled by the
+    // attribute handler as the tree is walked — a pick made at construction
+    // time would always read the empty initial array. Absent (not a literal)
+    // when nothing was detected, which is the same absence rule R7 enforces on
+    // names: `meta.framework` stays undefined and no consumer can match a
+    // framework the file does not use.
+    ctx.metadata.framework = RUST_FRAMEWORK_PRIORITY.find(
+      (fw) => (ctx.metadata.detectedFrameworks ?? []).includes(fw),
+    )
 
     // Declared-type reference graph (R13, rust extreme review — family
     // standard, mirrors go/c/zig; rust had ONLY where-bound references).
@@ -876,19 +925,94 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** D2 (rust second review): the `Self` type of the enclosing impl block
    *  (`Self { x }` constructs the implementing type). Trait bodies have no
-   *  impl to resolve (null → existing filtered behavior). */
+   *  impl to resolve (null → existing filtered behavior).
+   *
+   *  R10 (M60 standing rule): `Self` is the implemented TYPE, so it resolves to
+   *  that type's NOMINAL name — and when the type has no nominal name the
+   *  honest answer is ABSENCE (R7), not the impl block's synthetic name:
+   *  `Self` in `impl ToPkgId for (T, U)` is `(T, U)`, which is not
+   *  `anonymous_impl` and is not a name at all, so no edge is emitted. */
   private enclosingImplType(node: Node | null): string | null {
     let cur = node ? node.parent : null
     while (cur) {
-      if (cur.type === "impl_item") {
-        const typeNode = cur.childForFieldName("type")
-        if (!typeNode) return null
-        const leaf = this.stripGenerics(typeNode.text).split("::").filter(Boolean).pop() ?? ""
-        return leaf || null
-      }
+      if (cur.type === "impl_item") return this.implSelfTypeName(cur.childForFieldName("type"))
       cur = cur.parent
     }
     return null
+  }
+
+  /**
+   * R10 (M60 standing rule) — the NAME of the type an impl implements.
+   *
+   * An impl symbol is named after the type it implements (stable identity, see
+   * `handleImpl`), and an `&mut`/`&`/`*const`/`(...)` wrapper does not change
+   * what the type is NAMED: `&mut ProcessBuilder` is the type `ProcessBuilder`
+   * behind a reference, so those wrappers are TRANSPARENT here and the
+   * innermost nominal name is the answer. The old rule took
+   * `stripGenerics(typeNode.text)` verbatim, so for a wrapped type it published
+   * SOURCE TEXT as a name — `&mut ProcessBuilder` rode the impl SYMBOL, the
+   * `implements` edge's SOURCE and every `Self` resolution inside the block,
+   * and the M60 target-spelling census convicted it (6 `references` targets over
+   * 2 files: `&mut ProcessBuilder` x5, `&mut Execs` x1). The differential could
+   * never see it: its truth derives from the same rule, so both sides spelled
+   * the fabrication identically.
+   *
+   * A type with NO nominal name — a slice `[u8]`, a tuple `(T, U)`, a unit, a
+   * never type, a function pointer, `dyn Trait`, `<T as Trait>::Assoc` — has no
+   * name to publish, so this returns `null` and each caller decides the honest
+   * state: the SYMBOL falls back to the family's declared synthetic
+   * (`RUST_UNNAMED_IMPL`, keeping the source spelling in metadata where it is
+   * evidence rather than an identifier), and `Self` RESOLUTION falls back to
+   * ABSENCE.
+   *
+   * The two callers then read the SAME unwrapped node two different ways, and
+   * the difference is deliberate and pre-existing:
+   *
+   *   `implTypeSymbolName` keeps a path's QUALIFICATION (`impl From<X> for
+   *   std::io::Error` publishes `std::io::Error`) because the deferred
+   *   constructor resolution reads in-file SYMBOL names — flattening a foreign
+   *   `io::Error` to `Error` would make `Error::new()` inside the impl look like
+   *   a local construction. Measured: flattening it added 12 spurious
+   *   `instantiates` edges on ripgrep alone.
+   *   `implSelfTypeName` takes the LEAF (`Error`), because a `references` or
+   *   `instantiates` TARGET is a leaf by the family's leaf-target contract
+   *   (#419-B).
+   */
+  private nominalTypeNode(typeNode: Node | null): Node | null {
+    let cur: Node | null = typeNode
+    for (let guard = 0; cur && guard < 16; guard++) {
+      const t = cur.type
+      if (t === "reference_type" || t === "pointer_type" || t === "parenthesized_type") {
+        const inner = cur.childForFieldName("type") ?? cur.namedChild(cur.namedChildCount - 1)
+        if (!inner) return null
+        cur = inner
+        continue
+      }
+      break
+    }
+    if (!cur) return null
+    const t = cur.type
+    if (t === "type_identifier" || t === "primitive_type" || t === "scoped_type_identifier" || t === "generic_type") {
+      return cur
+    }
+    return null
+  }
+
+  /** The impl SYMBOL's name: the unwrapped type's own spelling, generics
+   *  stripped, path qualification PRESERVED (`std::io::Error`, `Vec`). */
+  private implTypeSymbolName(typeNode: Node | null): string | null {
+    const n = this.nominalTypeNode(typeNode)
+    if (!n) return null
+    return this.stripGenerics(n.text) || null
+  }
+
+  /** The name `Self` resolves to inside the impl: the unwrapped type's LEAF
+   *  (`Error` for `std::io::Error`), or `null` when the type has no nominal
+   *  name at all. */
+  private implSelfTypeName(typeNode: Node | null): string | null {
+    const n = this.nominalTypeNode(typeNode)
+    if (!n) return null
+    return this.stripGenerics(n.text).split("::").filter(Boolean).pop() || null
   }
 
   private createSymbol(
@@ -1097,21 +1221,35 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!typeNode) return null
 
-    const typeName = this.stripGenerics(typeNode.text)
     const traitName = traitNode ? traitNode.text : undefined
     // Impl symbols are named after the type they implement (stable identity);
     // the trait lives on the Implements relationship emitted below. Generic
     // parameter lists are stripped: `impl<T: Repository<User>> UserService<T>`
     // → `UserService`.
-    const implName = typeName
+    //
+    // R10: and the name is the type's NOMINAL name — `&mut ProcessBuilder` is
+    // the type `ProcessBuilder` behind a reference, not a name called
+    // `&mut ProcessBuilder`. A type with no nominal name at all takes the
+    // family's declared synthetic for a construct the language does not name
+    // (c's `anonymous_struct`/`anonymous_union`/`anonymous_enum`, cpp's
+    // `anonymous`), and its source spelling is kept in metadata — a NAME field
+    // may only carry a name.
+    const nominal = this.implTypeSymbolName(typeNode)
+    const implName = nominal ?? RUST_UNNAMED_IMPL
 
     // Use SymbolKind.Impl for Rust impl blocks
-    const symbol = this.createSymbol(implName, ASTEngine.SymbolKind.Impl, node, parent, { type: "impl" })
+    const symbol = this.createSymbol(
+      implName,
+      ASTEngine.SymbolKind.Impl,
+      node,
+      parent,
+      nominal ? { type: "impl" } : { type: "impl", implementedType: typeNode.text },
+    )
     ctx.symbols.push(symbol)
 
     if (traitNode && traitName) {
       ctx.relationships.push({
-        source: typeName,
+        source: implName,
         target: this.extractTraitName(traitNode),
         type: ASTEngine.RelationshipType.Implements,
         // M59.A7 (#825): the TRAIT reference's line — the site that names the
@@ -1256,10 +1394,17 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           const pName = p.childForFieldName("pattern") ||
             (p.type === "self_parameter" ? p : null)
           const pType = p.childForFieldName("type")
-          params.push({
-            name: pName ? pName.text.replace("&", "").replace("mut ", "").trim() : (p.type === "self_parameter" ? "self" : "unknown"),
-            type: pType ? pType.text : "any",
-          })
+          // R7 (M60 standing rule, enforced by G1): when a fallback has nothing
+          // truthful to say, the honest state is ABSENCE, not the string
+          // "unknown" — a literal in a name-bearing field becomes a parameter
+          // row no source contains, which every consumer downstream can then
+          // match, count and display. A self parameter's name IS `self` (the
+          // grammar's self_parameter node is its own fallback, and stripping
+          // `&`/`mut ` from its text leaves exactly that), so the only shape
+          // that can reach the absence path is a `parameter` with no pattern:
+          // an ERROR-recovered heading, which is skipped rather than named.
+          const name = pName ? pName.text.replace("&", "").replace("mut ", "").trim() : ""
+          if (name) params.push({ name, type: pType ? pType.text : "any" })
         }
       }
       if (params.length > 0) symbol.parameters = params
@@ -2037,6 +2182,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             qualified = baseNode.text
             calleeNameNode = nameNode
           }
+        } else if (baseNode.text === "Self") {
+          // R10/R7 follow-through on the turbofish form `Self::<T>(x)`.
+          const resolved = this.enclosingImplType(node)
+          if (!resolved) return
+          target = resolved
+          qualified = resolved
+          calleeNameNode = baseNode
         } else {
           target = baseNode.text
           qualified = baseNode.text
@@ -2048,9 +2200,30 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       // closure calls ((self.0)(...)) — have no static name and must not
       // fabricate a target (the differential oracle derives none either).
       if (functionNode.type === "identifier") {
-        target = functionNode.text
-        qualified = target
-        calleeNameNode = functionNode
+        // R10/R7 follow-through (found by the F14 name-surface gate when it
+        // was extended to rust): `Self(..)` calls the enclosing impl type's
+        // CONSTRUCTOR, and `Self` is a KEYWORD — never a symbol NAME. The lane
+        // already refuses it as a name on the read surface
+        // (`handleIdentifierRead` skips `self`/`Self`/`super`/`crate`) and
+        // already resolves it on the instantiates surface (D2), so publishing
+        // the literal here made `calls` the one surface where `Self` was a
+        // target — 6 rows on cargo (`Ok(Self(name))` in
+        // cargo-util-schemas/src/manifest/mod.rs, `Self(ProcessEnv)` in
+        // build-rs/src/input.rs). The callee's name is the enclosing type's,
+        // exactly as `Name(..)` is spelled; a trait default body has no impl
+        // to resolve (and no tuple struct to construct), so there the callee
+        // has NO name and the edge is omitted — absence, not the literal.
+        if (functionNode.text === "Self") {
+          const resolved = this.enclosingImplType(node)
+          if (!resolved) return
+          target = resolved
+          qualified = resolved
+          calleeNameNode = functionNode
+        } else {
+          target = functionNode.text
+          qualified = target
+          calleeNameNode = functionNode
+        }
       }
     }
 
@@ -2107,7 +2280,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (target === "new" && receiver) {
         const recvText = this.stripGenerics(receiver.text)
         let leaf = recvText.split("::").filter(Boolean).pop() ?? ""
-        if (leaf === "Self") leaf = this.enclosingImplType(node) ?? leaf
+        // R10/R7: an unresolvable `Self` constructs an unnamed type, and an
+        // unnamed type has no name — absence, never the raw literal.
+        if (leaf === "Self") leaf = this.enclosingImplType(node) ?? ""
         // ≡ /^[A-Z]/ — first char in A-Z (rust upper-camel types).
         if (leaf.length > 0 && leaf.charCodeAt(0) >= 65 && leaf.charCodeAt(0) <= 90) instTarget = leaf
       }

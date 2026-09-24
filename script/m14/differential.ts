@@ -427,6 +427,69 @@ function lastSegment(name: string): string {
   const parts = name.split(/::|\./).filter(Boolean)
   return parts[parts.length - 1] ?? name
 }
+
+// ---------------------------------------------------------------------- R10
+// rust #798: the impl-target NAME surface. Both rust oracles below need the
+// same two answers the analyzer gives (real-rust-analyzer.ts:
+// `nominalTypeNode` / `implTypeSymbolName` / `implSelfTypeName`), so they are
+// written once here rather than twice — the drift class this program keeps
+// paying for.
+//
+// WHY THEY ARE TWO ANSWERS. The OLD rule took `typeNode.text` verbatim, so
+// `impl Trait for &mut ProcessBuilder` published the source TEXT `&mut
+// ProcessBuilder` as a name — on the impl symbol, on the `implements` edge's
+// source, and (through `Self`) on every `references` target inside the block.
+// The differential is STRUCTURALLY BLIND to it because its truth derives from
+// the same rule: both sides spelled the fabrication identically and every
+// per-edge gate read green. The M60 target-spelling census convicted it instead
+// (6 `references` targets over 2 files).
+//
+// A reference/pointer/parenthesized wrapper does not change what a type is
+// NAMED, so it is transparent; a type with no nominal name at all (a slice
+// `[u8]`, a tuple `(T, U)`, a unit, a never type, a fn pointer, `dyn Trait`,
+// `<T as Trait>::Assoc`) has no name to publish and each caller takes the
+// honest state — the analyzer's declared synthetic `anonymous_impl` for the
+// impl SYMBOL, and ABSENCE for `Self` resolution.
+function rustNominalTypeNode(t: any): any {
+  let cur: any = t
+  for (let guard = 0; cur && guard < 16; guard++) {
+    const ty = cur.type
+    if (ty === "reference_type" || ty === "pointer_type" || ty === "parenthesized_type") {
+      const inner = cur.childForFieldName?.("type") ?? cur.namedChild(cur.namedChildCount - 1)
+      if (!inner) return null
+      cur = inner
+      continue
+    }
+    break
+  }
+  if (!cur) return null
+  const ty = cur.type
+  if (ty === "type_identifier" || ty === "primitive_type" || ty === "scoped_type_identifier" || ty === "generic_type") return cur
+  return null
+}
+
+/** The impl SYMBOL's name: generics stripped, path qualification PRESERVED
+ *  (`std::io::Error` stays qualified — the deferred ctor filter reads in-file
+ *  symbol names, so flattening a foreign `io::Error` to `Error` would make
+ *  `Error::new()` look like a local construction). */
+function rustImplSymbolName(t: any): string | null {
+  const n = rustNominalTypeNode(t)
+  if (!n) return null
+  const text = String(n.text ?? "")
+  const lt = text.indexOf("<")
+  return (lt >= 0 ? text.slice(0, lt) : text) || null
+}
+
+/** The name `Self` resolves to: the unwrapped type's LEAF (`Error` for
+ *  `std::io::Error`), or `null` when the type has no nominal name. */
+function rustImplSelfTypeName(t: any): string | null {
+  const n = rustNominalTypeNode(t)
+  if (!n) return null
+  const text = String(n.text ?? "")
+  const lt = text.indexOf("<")
+  const base = lt >= 0 ? text.slice(0, lt) : text
+  return base.split("::").filter(Boolean).pop() || null
+}
 function normTarget(t: string): string {
   // scala type args use square brackets; multi-line constructs can leave a
   // trailing unbalanced "[" in raw-text targets (List[ -> List)
@@ -9429,12 +9492,9 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
   const enclosingImplType = (n: any): string | null => {
     let cur: any = n ? n.parent : null
     while (cur) {
-      if (cur.type === "impl_item") {
-        const typeNode = cur.childForFieldName?.("type")
-        if (!typeNode) return null
-        const leaf = String(typeNode.text ?? "").split("<")[0].split("::").filter(Boolean).pop() ?? ""
-        return leaf || null
-      }
+      // R10 mirror: `Self` is the implemented TYPE, so it resolves to that
+      // type's nominal LEAF — and when the type has none, to ABSENCE.
+      if (cur.type === "impl_item") return rustImplSelfTypeName(cur.childForFieldName?.("type"))
       cur = cur.parent
     }
     return null
@@ -9456,8 +9516,11 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
         if (nm) declaredTypes.add(nm.text)
       } else if (n.type === "impl_item") {
+        // R10 mirror: the impl participates in the deferred ctor filter under
+        // the name the analyzer PUBLISHES for it (the type's own un-wrapped
+        // spelling, or the declared synthetic when it has no nominal name).
         const typeN = n.childForFieldName?.("type")
-        if (typeN) declaredTypes.add(typeN.text.split("<")[0].trim())
+        if (typeN) declaredTypes.add(rustImplSymbolName(typeN) ?? "anonymous_impl")
       }
       for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
     }
@@ -9466,7 +9529,14 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
   const stack: any[] = [root]
   const leafOf = (fn: any): string | undefined => {
     if (!fn) return undefined
-    if (fn.type === "identifier") return fn.text
+    if (fn.type === "identifier") {
+      // R10 mirror: `Self(..)` calls the enclosing impl type's constructor —
+      // `Self` is a KEYWORD, never a symbol name, so the callee's name is the
+      // type's; unresolvable (a trait default body) means the callee has no
+      // name and the edge is not truth either.
+      if (fn.text === "Self") return enclosingImplType(fn) ?? undefined
+      return fn.text
+    }
     // turbofish: foo::<T>() wraps the real callee - unwrap it.
     if (fn.type === "generic_function") {
       const inner = fn.childForFieldName?.("function")
@@ -9546,7 +9616,10 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         // (analyzer emits the resolved type immediately with no in-file
         // filter; unresolvable Self keeps the raw leaf on both sides).
         let t2 = rawLeaf.split("<")[0].trim()
-        if (t2 === "Self") t2 = enclosingImplType(n) ?? "Self"
+        // R10 mirror: an unresolvable `Self` literal constructs an UNNAMED
+        // type, and the analyzer now emits nothing for it (R7 absence) — the
+        // old `?? "Self"` kept a target no symbol has.
+        if (t2 === "Self") t2 = enclosingImplType(n) ?? ""
         if (/^[A-Z]/.test(t2) && !seenCalls.has("struct:" + t2)) {
           seenCalls.add("struct:" + t2)
           edges.push({ label: "instantiates", from: "(expr)", target: t2 })
@@ -9556,7 +9629,8 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
       const traitN = n.childForFieldName?.("trait")
       const typeN = n.childForFieldName?.("type")
       if (traitN && typeN) {
-        const tName = lastSegment(typeN.text.split("<")[0].trim())
+        // R10 mirror: the edge's SOURCE is the impl symbol's published name.
+        const tName = rustImplSymbolName(typeN) ?? "anonymous_impl"
         const trName = lastSegment(traitN.text.split("<")[0].trim())
         if (tName && trName) {
           edges.push({ label: "implements", from: tName, target: trName })
@@ -9947,12 +10021,9 @@ export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: st
   const enclosingImplType = (n: any): string | null => {
     let cur: any = n ? n.parent : null
     while (cur) {
-      if (cur.type === "impl_item") {
-        const typeNode = cur.childForFieldName?.("type")
-        if (!typeNode) return null
-        const leaf = String(typeNode.text ?? "").split("<")[0].split("::").filter(Boolean).pop() ?? ""
-        return leaf || null
-      }
+      // R10 mirror: `Self` is the implemented TYPE, so it resolves to that
+      // type's nominal LEAF — and when the type has none, to ABSENCE (R7).
+      if (cur.type === "impl_item") return rustImplSelfTypeName(cur.childForFieldName?.("type"))
       cur = cur.parent
     }
     return null

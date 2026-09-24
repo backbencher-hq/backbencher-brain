@@ -15,8 +15,8 @@
   },
   "runtimeOwed": "STATIC ONLY SO FAR, and the gap is now measured lane by lane rather than disclosed in the abstract. The census proves a source site exists and what shape it has; it does not prove the site fires, and it does not prove that no EMITTED row carries a placeholder. script/m14/tmp/cs-placeholder-runtime-probe.ts walks every emitted name-bearing field (symbol name, ownerName, parameter name, relationship source/target, import module) over a real corpus draw and convicts a value only when the FILE DOES NOT WRITE IT \u2014 the first two runs convicting 154 `Null` and 22 `Unknown`/`Anonymous` values were all real members of powershell and fsharp, which is why a value-only runtime rule is not trustworthy. Measured: csharp 0 fabricated names over 300 files (powershell 150 + fsharp 150), so this lane's `|| \"anonymous\"` fallbacks (15 sites) never fire on real code. The other lanes are still static-only, and each needs its own draw before the class can be called closed at runtime.",
   "counts": {
-    "entries": 35,
-    "violations": 47
+    "entries": 34,
+    "violations": 46
   },
   "entries": [
     {
@@ -298,19 +298,6 @@
       "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
     },
     {
-      "file": "real-rust-analyzer.ts",
-      "lang": "rust",
-      "shape": "ternary-branch",
-      "key": "name",
-      "statement": "name: pName ? pName.text.replace(\"&\", \"\").replace(\"mut \", \"\").trim() : (p.type === \"self_parameter\" ? \"self\" : \"unknown\")",
-      "verdict": "violation",
-      "count": 1,
-      "lines": [
-        1175
-      ],
-      "note": "baseline snapshot 2026-09-21 \u2014 per-site adjudication owed by the owning lane (not this wave)."
-    },
-    {
       "file": "real-scala-analyzer.ts",
       "lang": "scala",
       "shape": "compare",
@@ -532,6 +519,16 @@
       "violationsBefore": 48,
       "violationsAfter": 47,
       "evidence": "PROVEN UNREACHABLE rather than fixed blind, because the two are different findings: script/m14/tmp/py-module-unknown-probe.ts drives 19 shapes through the analyzer and shows that every parse yielding an `import_from_statement` hands the handler a named child for the module (the module on well-formed input, the imported ITEM on damaged input \u2014 `from import c` publishes module `c`), while every shape that would leave `moduleName` empty (`from`, `from . import`, `from (`) produces no import_from_statement node at all. The fallback had no reachable state behind it, so it is now an absence: the import row is still published (its items are real names) with `module` omitted, and the `module:item` relationship \u2014 which needs a module to have a target \u2014 is emitted only when there is one. No fixture can reach it and no mutant can inject it, so the probe IS the evidence; the same treatment the php lane's two unreachable markers got."
+    },
+    {
+      "at": "2026-09-24",
+      "wave": "rust lane, R7 paydown (#798)",
+      "removed": [
+        "real-rust-analyzer.ts ternary-branch.name x1"
+      ],
+      "violationsBefore": 47,
+      "violationsAfter": 46,
+      "evidence": "PROVEN UNREACHABLE then replaced by ABSENCE. The branch was `pName ? \u2026 : (p.type === \"self_parameter\" ? \"self\" : \"unknown\")`, and the self_parameter arm is itself unreachable too: when p.type is self_parameter, pName is the self_parameter NODE (its own fallback), so the ternary always took the first arm. The site is now `if (name) params.push({ name, \u2026 })` \u2014 a parameter with no pattern (an ERROR-recovered heading) contributes no row rather than a row no file contains. Behaviour measured unchanged rather than assumed: script/m14/tmp/rust-002-param-names.ts reads 3,633 parameters over ripgrep's 110 files and 9,444 over cargo's 1,371 before and after (unknownName 0, blankName 0, sites []). No fixture can reach the absence path and no mutant can inject it, so the probe plus the unchanged counts ARE the evidence \u2014 the same treatment the python lane's unreachable marker got. Census after: 60 occurrences / 46 violations, rust absent from the artifact entirely."
     }
   ],
   "runtimeMeasured": {
