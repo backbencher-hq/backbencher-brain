@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-23T22:47:21.036Z",
+  "snapshotAt": "2026-09-24T19:04:03.268Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 114,
+  "count": 117,
   "issues": [
     {
       "number": 134,
@@ -425,11 +425,6 @@
       "labels": []
     },
     {
-      "number": 798,
-      "title": "M49.RS1 Rust master + second review waves: process reviews/rust R1/R8/D2/D3 under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 799,
       "title": "M49.GO1 Go master review wave: process reviews/go GO1-GO8/G12 under the verify-first protocol",
       "labels": []
@@ -505,11 +500,6 @@
       "labels": []
     },
     {
-      "number": 835,
-      "title": "M49.PHP1 PHP first review wave: process reviews/php PHP-A-H/O1-O2 under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 836,
       "title": "M49.SW1 Swift ultimate review wave: process reviews/swift SW-A/B/D/E/F under the verify-first protocol",
       "labels": []
@@ -557,11 +547,6 @@
     {
       "number": 864,
       "title": "[M14 Matrix 4] Grammar provenance + version pinning for vendored/upstream wasms (fsharp, clean, all others)",
-      "labels": []
-    },
-    {
-      "number": 869,
-      "title": "M49.PHP2 PHP second review wave: bare $var/NAME value reads under the verify-first protocol",
       "labels": []
     },
     {
@@ -678,6 +663,46 @@
     {
       "number": 924,
       "title": "M60 name surface: a quoted identifier's quoting syntax is published as part of the name (kotlin/scala/zig), and payloads and expressions are published as names (swift/haskell/elixir/cpp/scala)",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 926,
+      "title": "groovy: .gsp templates were routed to the Groovy grammar (39/39 = 100% unparseable) — the sibling of #913",
+      "labels": []
+    },
+    {
+      "number": 927,
+      "title": "python: a class whose base is a CALL publishes the FACTORY FUNCTION as its parent — the base-position sibling of #902",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 928,
+      "title": "python (ORACLE-side): the differential's override oracle registers only `def`s, so 10 real overrides from class-attribute members read UNEXPLAINED at depth",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 930,
+      "title": "m60: the `lines` cell is defined as `alive`, so ONE writer satisfies it — php passed with 92.7% of its edges unlined",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 932,
+      "title": "ruby (R8): one framework reached consumers under TWO names — the Rails/Ruby on Rails divergence #749 closed on one surface only",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 933,
+      "title": "m12: six OO lanes read PASS off audits frozen in August — the analyzers have changed for five weeks since",
       "labels": [
         "bug"
       ]
