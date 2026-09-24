@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-23T09:44:00.406Z",
+  "generatedAt": "2026-09-24T15:12:57.866Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 25,
+  "totalRegexUsages": 23,
   "analyzersScanned": 41,
   "byClassification": {
     "normalization": 10,
-    "needs_review": 15
+    "needs_review": 13
   },
   "byReceiverCategory": {
     "node_text": 10,
-    "identifier": 12,
+    "identifier": 10,
     "other": 3
   },
   "perFile": [
@@ -206,7 +206,7 @@
       "usages": [
         {
           "file": "real-c-analyzer.ts",
-          "line": 208,
+          "line": 368,
           "column": 5,
           "source": "/^[0-9][0-9A-Za-z_]*$/",
           "operation": "test",
@@ -217,7 +217,7 @@
         },
         {
           "file": "real-c-analyzer.ts",
-          "line": 2490,
+          "line": 2656,
           "column": 21,
           "source": "/^([A-Za-z_][A-Za-z0-9_]*)\\s*(=|\\()/",
           "operation": "test",
@@ -234,7 +234,7 @@
       "usages": [
         {
           "file": "real-cpp-analyzer.ts",
-          "line": 962,
+          "line": 1051,
           "column": 43,
           "source": "/::|\\s+/",
           "operation": "split",
@@ -245,7 +245,7 @@
         },
         {
           "file": "real-cpp-analyzer.ts",
-          "line": 984,
+          "line": 1073,
           "column": 35,
           "source": "/::|\\s+/",
           "operation": "split",
@@ -279,34 +279,6 @@
           "operation": "replace",
           "receiver": "objText.replace(/^module\\.exports\\./, \"\")",
           "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-rust-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 678,
-          "column": 13,
-          "source": "/\\b(Serialize|Deserialize)\\b/",
-          "operation": "test",
-          "receiver": "body",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-rust-analyzer.ts",
-          "line": 679,
-          "column": 13,
-          "source": "/\\b(Parser|Subcommand|Args|ValueEnum)\\b/",
-          "operation": "test",
-          "receiver": "body",
-          "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
         }
