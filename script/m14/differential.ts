@@ -9579,6 +9579,582 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+// Rust truth: bare value reads AND field reads (`uses`). R1 mirror (rust
+// review #798): the analyzer emitted both while this oracle derived neither,
+// so rust's entire read surface sat OUTSIDE the comparison by construction —
+// a restored read rode a fixture and its mutant but no corpus lane, which is
+// the declared limitation the issue recorded (and the same gap groovy's G7
+// closed the same way).
+//
+// Same contract as the analyzer, rule for rule: file-scope VALUE resolution
+// (const/static/fn/enum-variant/struct/enum/union/type, module-scoped),
+// use-imported leaves (alias- and scoped-path-aware), declaration positions
+// (item-name rule), call callees (turbofish `generic_function` +
+// `parenthesized_expression` climb), member leaves owned by the field path,
+// qualified non-leaves, LHS writes, macro-rule bodies vs invocation args,
+// attributes, use paths, where-bounds, and shadowing via per-function
+// pattern bindings (incl. closure params, destructured/let-condition/for/
+// match-arm patterns and the uppercase path-pattern rule).
+//
+// DISCLOSED, not hidden: this is a mirror, so it cannot adjudicate the one
+// thing it shares with the analyzer — a wrong RULE reads green on both sides.
+// It catches dropouts and fabrications against the rule, which is what a
+// coverage oracle is for; the independent evidence for the rule itself stays
+// the fixtures (rust/bare-value-reads) and the six reverting mutants.
+export function deriveRustBareUses(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const owners = new Map<string, Set<string>>()
+  const useImported = new Set<string>()
+
+  const addOwner = (name: string | null, mods: string[]): void => {
+    if (!name) return
+    let s = owners.get(name)
+    if (!s) { s = new Set<string>(); owners.set(name, s) }
+    if (mods.length === 0) s.add("")
+    else for (const m of mods) s.add(m)
+  }
+  const leftmostId = (n: any): string | null => {
+    let cur: any = n
+    while (cur) {
+      if (cur.type === "identifier") return cur.text
+      cur = cur.namedChild(0)
+    }
+    return null
+  }
+  // The analyzer's useLeafNames: a bare path binds its leaf; a scoped path
+  // binds its LAST segment (only when it is a direct path or a group leaf);
+  // `as` binds the alias.
+  const useLeafNames = (node: any): string[] => {
+    const res: string[] = []
+    const walk = (n: any): void => {
+      if (!n) return
+      if (n.type === "identifier" || n.type === "type_identifier") {
+        if (n.parent && (n.parent.type === "use_declaration" || n.parent.type === "use_list")) res.push(n.text)
+        return
+      }
+      if (n.type === "scoped_identifier") {
+        const par = n.parent
+        if (par && (par.type === "use_declaration" || par.type === "use_list")) {
+          const last = n.namedChild(n.namedChildCount - 1)
+          if (last && (last.type === "identifier" || last.type === "type_identifier")) {
+            const t = last.text
+            if (t && t !== "self" && t !== "super" && t !== "crate") res.push(t)
+          }
+        }
+        return
+      }
+      if (n.type === "use_as_clause") {
+        const alias = n.childForFieldName?.("alias") || n.namedChild(n.namedChildCount - 1)
+        if (alias) res.push(alias.text)
+        return
+      }
+      if (n.type === "self") return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type !== "visibility_modifier" && c.type !== "use" && c.type !== "crate") walk(c)
+    }
+    return res
+  }
+
+  // ---- inventory: file-visible VALUES with their module scopes -----------
+  {
+    const stack: Array<{ n: any; mods: string[]; inFn: boolean; inImpl: boolean }> = [
+      { n: root, mods: [], inFn: false, inImpl: false },
+    ]
+    while (stack.length > 0) {
+      const { n, mods, inFn, inImpl } = stack.pop()!
+      const t = n.type
+      if (t === "mod_item") {
+        const nm = n.childForFieldName?.("name")?.text
+        const body = n.namedChild(n.namedChildCount - 1)
+        const hasBody = !!body && body.type === "declaration_list"
+        if (nm && hasBody) {
+          for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push({ n: n.namedChild(i), mods: [...mods, nm], inFn, inImpl })
+          continue
+        }
+      } else if (t === "function_item") {
+        if (!inImpl) {
+          const nm = n.childForFieldName?.("name")?.text
+          if (nm) addOwner(nm, mods)
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push({ n: n.namedChild(i), mods, inFn: true, inImpl })
+        continue
+      } else if (t === "impl_item" || t === "trait_item") {
+        for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push({ n: n.namedChild(i), mods, inFn, inImpl: true })
+        continue
+      } else if (!inFn && (t === "const_item" || t === "static_item")) {
+        const nm = n.childForFieldName?.("name")?.text ?? leftmostId(n)
+        if (nm && nm !== "_" && !inImpl) addOwner(nm, mods)
+        for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push({ n: n.namedChild(i), mods, inFn: true, inImpl })
+        continue
+      } else if (!inFn && !inImpl && (t === "struct_item" || t === "enum_item" || t === "union_item" || t === "type_item")) {
+        const nm = n.childForFieldName?.("name")?.text
+        if (nm) addOwner(nm, mods)
+      } else if (t === "enum_variant") {
+        const nm = n.childForFieldName?.("name")?.text ?? n.namedChild(0)?.text
+        if (nm && !inFn) addOwner(nm, mods)
+      } else if (t === "use_declaration") {
+        for (const leaf of useLeafNames(n)) {
+          if (leaf && leaf !== "self" && leaf !== "*") useImported.add(leaf)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push({ n: n.namedChild(i), mods, inFn, inImpl })
+    }
+  }
+
+  const enclosingMods = (node: any): string[] => {
+    const res: string[] = []
+    let cur: any = node ? node.parent : null
+    while (cur) {
+      if (cur.type === "mod_item") {
+        const nm = cur.childForFieldName?.("name")?.text
+        if (nm) res.unshift(nm)
+      }
+      cur = cur.parent
+    }
+    return res
+  }
+  const resolves = (nm: string, mods: string[]): boolean => {
+    const o = owners.get(nm)
+    if (!o) return useImported.has(nm)
+    if (o.has("")) return true
+    if (useImported.has(nm)) return true
+    for (const m of mods) if (o.has(m)) return true
+    return false
+  }
+
+  const collectPatternIds = (node: any, bound: Set<string>, mods: string[], isDecl: boolean): void => {
+    if (!node) return
+    if (node.type === "identifier") {
+      const nm = node.text
+      if (!nm || nm === "_" || nm.startsWith("$")) return
+      const first = nm.charCodeAt(0)
+      if (first >= 65 && first <= 90 && !isDecl && resolves(nm, mods)) return
+      bound.add(nm)
+      return
+    }
+    if (
+      node.type === "type_identifier" || node.type === "scoped_identifier" ||
+      node.type === "field_identifier" || node.type === "lifetime" ||
+      node.type === "primitive_type"
+    ) return
+    if (node.type === "tuple_struct_pattern") {
+      for (let i = 1; i < node.namedChildCount; i++) collectPatternIds(node.namedChild(i), bound, mods, isDecl)
+      return
+    }
+    for (let i = 0; i < node.namedChildCount; i++) collectPatternIds(node.namedChild(i), bound, mods, isDecl)
+  }
+
+  // ---- per-function bound-name sets (shadowing) --------------------------
+  const fnBindings = new Map<number, Set<string>>()
+  {
+    const stack: any[] = [root]
+    const fns: any[] = []
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_item") fns.push(n)
+      for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push(n.namedChild(i))
+    }
+    for (const fn of fns) {
+      const bound = new Set<string>()
+      const fnMods = enclosingMods(fn)
+      const params = fn.childForFieldName?.("parameters")
+      if (params) {
+        for (let i = 0; i < params.namedChildCount; i++) {
+          const p = params.namedChild(i)
+          if (!p || p.type === "self_parameter") continue
+          const pat = p.childForFieldName?.("pattern") ?? p
+          collectPatternIds(pat, bound, fnMods, true)
+        }
+      }
+      const body: any[] = [fn]
+      while (body.length > 0) {
+        const m = body.pop()!
+        if (m.type === "let_declaration") {
+          const pat = m.childForFieldName?.("pattern") ?? m.namedChild(0)
+          collectPatternIds(pat, bound, fnMods, true)
+        } else if (m.type === "let_condition") {
+          collectPatternIds(m.namedChild(0), bound, fnMods, false)
+        } else if (m.type === "for_expression") {
+          collectPatternIds(m.namedChild(0), bound, fnMods, true)
+        } else if (m.type === "closure_expression") {
+          for (let i = 0; i < m.namedChildCount; i++) {
+            const c = m.namedChild(i)
+            if (c && c.type === "closure_parameters") collectPatternIds(c, bound, fnMods, true)
+          }
+        } else if (m.type === "match_arm") {
+          const patField = m.childForFieldName?.("pattern")
+          if (patField) {
+            const psub: any[] = [patField]
+            while (psub.length > 0) {
+              const q = psub.pop()!
+              if (q !== patField && (q.type === "let_declaration" || q.type === "let_condition" || q.type === "for_expression")) continue
+              if (
+                q.type === "match_pattern" || q.type === "identifier" ||
+                q.type === "tuple_pattern" || q.type === "struct_pattern" ||
+                q.type === "tuple_struct_pattern" || q.type === "ref_pattern" ||
+                q.type === "or_pattern" || q.type === "slice_pattern"
+              ) collectPatternIds(q, bound, fnMods, false)
+              for (let i = q.namedChildCount - 1; i >= 0; i--) psub.push(q.namedChild(i))
+            }
+          }
+          const sub: any[] = [m]
+          while (sub.length > 0) {
+            const q = sub.pop()!
+            if (q !== m && (q.type === "let_declaration" || q.type === "let_condition" || q.type === "for_expression")) continue
+            if (
+              q.type === "tuple_pattern" || q.type === "struct_pattern" ||
+              q.type === "tuple_struct_pattern" || q.type === "ref_pattern" ||
+              q.type === "or_pattern" || q.type === "slice_pattern"
+            ) collectPatternIds(q, bound, fnMods, false)
+            for (let i = q.namedChildCount - 1; i >= 0; i--) sub.push(q.namedChild(i))
+          }
+        }
+        if (m !== fn && (m.type === "function_item" || m.type === "const_item" || m.type === "static_item")) continue
+        for (let i = m.namedChildCount - 1; i >= 0; i--) body.push(m.namedChild(i))
+      }
+      fnBindings.set(fn.startIndex, bound)
+    }
+  }
+
+  const hasAncestor = (node: any, types: string | string[], stopAt: string[] | null): boolean => {
+    const want = Array.isArray(types) ? types : [types]
+    let cur: any = node.parent
+    while (cur) {
+      if (want.includes(cur.type)) return true
+      if (stopAt) for (const s of stopAt) if (cur.type === s) return false
+      cur = cur.parent
+    }
+    return false
+  }
+  const isItemNamePosition = (node: any, parent: any): boolean => {
+    switch (parent.type) {
+      case "function_item": case "struct_item": case "enum_item":
+      case "trait_item": case "mod_item": case "type_item":
+      case "associated_type": case "static_item": case "const_item":
+      case "enum_variant": case "field_declaration": case "extern_crate_declaration":
+        break
+      default: return false
+    }
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+        return c.startIndex === node.startIndex && c.endIndex === node.endIndex
+      }
+    }
+    return false
+  }
+
+  // ---- reads -------------------------------------------------------------
+  const seen = new Set<string>()
+  const emit = (target: string): void => {
+    if (!target || seen.has(target)) return
+    seen.add(target)
+    out.push({ label: "uses", from: "global", target })
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "identifier") {
+      const name = n.text
+      const p = n.parent
+      let skip = !name || name === "_" || name === "self" || name === "Self" || name === "super" || name === "crate" || name.startsWith("$")
+      if (!skip) {
+        if (hasAncestor(n, "macro_definition", ["macro_invocation"])) skip = true
+        else if (hasAncestor(n, "attribute_item", ["function_item", "struct_item", "enum_item", "impl_item", "trait_item", "mod_item"])) skip = true
+        else if (hasAncestor(n, "use_declaration", null)) skip = true
+        else if (hasAncestor(n, "where_predicate", null)) skip = true
+      }
+      if (!skip) {
+        // callee (climbs turbofish + parenthesized wrappers)
+        let top: any = n
+        let up: any = p
+        while (up && (up.type === "generic_function" || up.type === "parenthesized_expression")) { top = up; up = up.parent }
+        if (up && up.type === "call_expression") {
+          const fnField = up.childForFieldName?.("function")
+          if (fnField && fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex) skip = true
+          const first = up.namedChild(0)
+          if (!skip && first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex) skip = true
+        }
+      }
+      if (!skip && p && p.type === "field_expression") {
+        const field = p.childForFieldName?.("field")
+        if (field && field.startIndex === n.startIndex) skip = true
+      }
+      if (!skip && p && p.type === "scoped_identifier") {
+        const last = p.namedChild(p.namedChildCount - 1)
+        if (!last || last.startIndex !== n.startIndex) skip = true
+      } else if (!skip && hasAncestor(n, "scoped_identifier", ["call_expression", "field_expression"])) {
+        skip = true
+      }
+      if (!skip && p && (p.type === "assignment_expression" || p.type === "compound_assignment_expr")) {
+        const lhs = p.namedChild(0)
+        if (lhs && lhs.startIndex === n.startIndex && lhs.endIndex >= n.endIndex) skip = true
+      }
+      if (!skip && p && isItemNamePosition(n, p)) skip = true
+      if (!skip) {
+        let fnNode: any = p
+        while (fnNode && fnNode.type !== "function_item") fnNode = fnNode.parent
+        if (fnNode) {
+          const bound = fnBindings.get(fnNode.startIndex)
+          if (bound && bound.has(name)) skip = true
+        }
+      }
+      if (!skip && resolves(name, enclosingMods(n))) emit(name)
+    } else if (n.type === "field_expression") {
+      // The analyzer's field branch: a field_identifier read is a `uses` edge
+      // unless it is the LHS of a write or the callee of a call (tuples parse
+      // as field_expression with an integer_literal field — not a symbol).
+      const field = n.childForFieldName?.("field")
+      const par = n.parent
+      let isAssignLhs = false
+      if (par && (par.type === "assignment_expression" || par.type === "compound_assignment_expr")) {
+        const left = par.namedChild(0)
+        if (left && left.startIndex === n.startIndex && left.endIndex === n.endIndex) isAssignLhs = true
+      }
+      if (
+        !isAssignLhs && field && field.type === "field_identifier" &&
+        String(field.text).trim() && par?.type !== "call_expression"
+      ) emit(field.text)
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push(n.namedChild(i))
+  }
+  return out
+}
+
+// Rust truth: declared-type `references` (R13). The analyzer published these
+// from fn params/returns, struct/union/enum field types, type aliases and
+// const/static types, while the oracle derived none of it — 2,883 edges over
+// 84 of ripgrep's 110 files sat outside the comparison. Rule for rule mirror
+// (generic-parameter exclusion incl. the enclosing-item climb, `Self` → the
+// enclosing impl type, macro-rule bodies excluded, where-bounds and
+// type-parameter lists never collected, field NAME identifiers never types).
+export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const emitted = new Set<string>()
+  const enclosingImplType = (n: any): string | null => {
+    let cur: any = n ? n.parent : null
+    while (cur) {
+      if (cur.type === "impl_item") {
+        const typeNode = cur.childForFieldName?.("type")
+        if (!typeNode) return null
+        const leaf = String(typeNode.text ?? "").split("<")[0].split("::").filter(Boolean).pop() ?? ""
+        return leaf || null
+      }
+      cur = cur.parent
+    }
+    return null
+  }
+  const genericParamsOf = (item: any): Set<string> => {
+    const res = new Set<string>()
+    let gcur: any = item
+    while (gcur) {
+      if (
+        gcur.type === "function_item" || gcur.type === "trait_item" ||
+        gcur.type === "struct_item" || gcur.type === "enum_item" ||
+        gcur.type === "type_item" || gcur.type === "impl_item"
+      ) {
+        const tp = gcur.childForFieldName?.("type_parameters")
+        if (tp) {
+          const pw: any[] = [tp]
+          while (pw.length > 0) {
+            const m = pw.pop()!
+            if (m.type === "type_identifier" || m.type === "identifier") res.add(m.text)
+            for (let k = 0; k < m.namedChildCount; k++) pw.push(m.namedChild(k))
+          }
+        }
+        break
+      }
+      gcur = gcur.parent
+    }
+    return res
+  }
+  const push = (source: string, leafNode: any, gparams: Set<string>): void => {
+    let target = leafNode.text
+    if (!target || target === "Self") {
+      const resolved = enclosingImplType(leafNode)
+      if (!resolved) return
+      target = resolved
+    }
+    if (gparams.has(target)) return
+    // Dedupe keyed by TARGET alone, i.e. by (label, target) here, because this
+    // oracle emits exactly one label. That is the file-wide TRUTH-SIDE
+    // INVARIANT every oracle in this harness keeps (see the note at the
+    // analyzer-collapse site: "The tree-truth oracles already emit UNIQUE
+    // (label,target) edges per file") and it is what the coverage match reads —
+    // the match is deliberately site-agnostic, comparing label+normTarget and
+    // never `from`. A source-scoped key was tried and reverted: it made truth
+    // carry duplicate (references, Err) rows for `fn b<..>() -> T::Err` and
+    // `fn c<..>() -> T::Err`, so treeEdgesTotal inflated 6,309 -> 8,278 on
+    // ripgrep and the lane's number stopped being comparable to its peers'
+    // (the analyzer side is collapsed to unique (label,target), so the same
+    // edge counted twice on one side and once on the other). An oracle must
+    // mirror the GATE; a synthetic probe that compares `from` as well is
+    // asking a question this comparison does not ask.
+    if (emitted.has(target)) return
+    emitted.add(target)
+    out.push({ label: "references", from: source, target })
+  }
+  // R8/R15 mirror: the generic parameters bound by EVERY enclosing generic item
+  // (the analyzer walks the whole chain — see real-rust-analyzer.ts), used to
+  // exclude locally-bound names from a where predicate.
+  const chainGenericParams = (n: any): Set<string> => {
+    const res = new Set<string>()
+    let cur: any = n ? n.parent : null
+    while (cur) {
+      if (
+        cur.type === "function_item" || cur.type === "function_signature_item" ||
+        cur.type === "trait_item" || cur.type === "struct_item" ||
+        cur.type === "enum_item" || cur.type === "type_item" || cur.type === "impl_item"
+      ) {
+        const tp = cur.childForFieldName?.("type_parameters")
+        if (tp) {
+          const pw: any[] = [tp]
+          while (pw.length > 0) {
+            const m = pw.pop()!
+            if (m.type === "type_identifier" || m.type === "identifier") res.add(m.text)
+            for (let k = 0; k < m.namedChildCount; k++) pw.push(m.namedChild(k))
+          }
+        }
+      }
+      cur = cur.parent
+    }
+    return res
+  }
+  const collectLeaves = (typeNode: any): any[] => {
+    const res: any[] = []
+    if (!typeNode) return res
+    const w: any[] = [typeNode]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m !== typeNode && (m.type === "where_clause" || m.type === "type_parameters")) continue
+      if (m.type === "type_identifier") res.push(m)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) w.push(m.namedChild(i))
+    }
+    return res
+  }
+  const fieldTypeLeaves = (owner: any, src: string, gparams: Set<string>): void => {
+    const fw: any[] = [owner]
+    while (fw.length > 0) {
+      const m = fw.pop()!
+      if (m !== owner && (m.type === "where_clause" || m.type === "type_parameters")) continue
+      if (m.type === "field_declaration") {
+        for (let i = 0; i < m.namedChildCount; i++) {
+          const c = m.namedChild(i)
+          if (c && c.type !== "field_identifier" && c.type !== "visibility_modifier" && c.type !== "attribute_item") {
+            for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+          }
+        }
+        continue
+      }
+      if (m.type === "ordered_field_declaration_list") {
+        for (let i = 0; i < m.namedChildCount; i++) {
+          const c = m.namedChild(i)
+          if (c) for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+        }
+        continue
+      }
+      for (let i = m.namedChildCount - 1; i >= 0; i--) fw.push(m.namedChild(i))
+    }
+  }
+  const walk: any[] = [root]
+  while (walk.length > 0) {
+    const n = walk.pop()!
+    const t = n.type
+    if (t === "macro_definition") continue
+    if (t === "function_item") {
+      const src = n.childForFieldName?.("name")?.text ?? "global"
+      const gparams = genericParamsOf(n)
+      const params = n.childForFieldName?.("parameters")
+      if (params) {
+        for (let i = 0; i < params.namedChildCount; i++) {
+          const p = params.namedChild(i)
+          if (!p || p.type === "self_parameter") continue
+          const ty = p.type === "parameter" ? p.childForFieldName?.("type") : null
+          for (const leaf of collectLeaves(ty)) push(src, leaf, gparams)
+        }
+      }
+      const ret = n.childForFieldName?.("return_type")
+      for (const leaf of collectLeaves(ret)) push(src, leaf, gparams)
+    } else if (t === "struct_item" || t === "union_item" || t === "enum_item") {
+      const src = n.childForFieldName?.("name")?.text ?? "global"
+      const gparams = genericParamsOf(n)
+      fieldTypeLeaves(n, src, gparams)
+    } else if (t === "type_item" || t === "associated_type") {
+      const src = n.childForFieldName?.("name")?.text ?? "global"
+      const gparams = genericParamsOf(n)
+      const nameNode = n.childForFieldName?.("name") ?? n.namedChild(0)
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (!c || c.type === "type_parameters" || c.type === "where_clause") continue
+        if (nameNode && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex) continue
+        for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+        break
+      }
+    } else if (t === "const_item" || t === "static_item") {
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm && nm !== "_") {
+        const ty = n.childForFieldName?.("type")
+        const gparams = genericParamsOf(n)
+        for (const leaf of collectLeaves(ty)) push(nm, leaf, gparams)
+      }
+    } else if (t === "where_clause") {
+      // R8/R15: the bounded side emits its TYPE LEAVES (never raw text), and a
+      // predicate whose left side names a locally-bound generic parameter — of
+      // ANY enclosing item — is not a dependency. A lifetime outlives bound
+      // (`where 'a: 's`) yields no type leaf at all, which is exactly right: a
+      // lifetime is not a symbol.
+      const gparams = chainGenericParams(n)
+      const src = n.parent?.childForFieldName?.("name")?.text ?? "global"
+      // The bounded side contributes its type NAME(S): a scoped path yields its
+      // `name` leaf (`anyhow::Error` -> Error, `T::Err` -> Err, `<T as X>::Err`
+      // -> Err — never the module prefix or the raw text), lifetimes are not
+      // types, and a name bound by ANY enclosing generic item is locally bound.
+      const boundNames = (b: any): any[] => {
+        if (!b) return []
+        if (b.type === "scoped_type_identifier" || b.type === "scoped_identifier" || b.type === "qualified_type") {
+          const nm = b.childForFieldName?.("name")
+          if (nm) return [nm]
+          const last = b.namedChild(b.namedChildCount - 1)
+          return last && (last.type === "type_identifier" || last.type === "identifier") ? [last] : []
+        }
+        const res: any[] = []
+        const w: any[] = [b]
+        while (w.length > 0) {
+          const m = w.pop()!
+          if (m.type === "lifetime") continue
+          if (m.type === "type_identifier") res.push(m)
+          for (let k = m.namedChildCount - 1; k >= 0; k--) w.push(m.namedChild(k))
+        }
+        return res
+      }
+      // Shares `emitted` with the declared-type paths above, so the two
+      // together still yield unique (label,target) per file (one label here):
+      // a bound that the declared-type pass already published is not emitted
+      // twice. The analyzer, by contrast, may push the same target from
+      // several owners — the harness collapses its side for exactly that
+      // reason, so the two are equivalent under the comparison.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const pred = n.namedChild(i)
+        if (!pred || pred.type !== "where_predicate") continue
+        for (const leaf of boundNames(pred.namedChild(0))) {
+          if (!leaf.text || gparams.has(leaf.text)) continue
+          if (emitted.has(leaf.text)) continue
+          emitted.add(leaf.text)
+          out.push({ label: "references", from: src, target: leaf.text })
+        }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) walk.push(n.namedChild(i))
+  }
+  return out
+}
+
 // Independent oracle: derive extends/implements/instantiates edges straight
 // from clause node structure — no analyzer code involved.
 export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
@@ -11380,6 +11956,19 @@ async function main() {
         for (const e of deriveRustEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // R1 (rust review #798): bare value-read + field-read `uses` truth —
+        // mirrors the analyzer's read contract rule for rule (item-name
+        // positions, callees incl. turbofish climb, member leaves, qualified
+        // non-leaves, LHS writes, macro-rule bodies vs invocation args,
+        // attributes, use paths, where-bounds, shadowing, resolvability).
+        for (const e of deriveRustBareUses(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // R13: declared-type `references` truth — the fn-param/return,
+        // field-type, alias and const/static type surface.
+        for (const e of deriveRustDeclaredTypeRefs(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "go") {
         for (const e of deriveGoEdges(root)) {
@@ -11615,7 +12204,12 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []), ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+          // exists, so the label is comparable and the corpus audits rust
+          // reads for the first time. Before this, the allowlist dropped the
+          // whole class from the ANALYZER side — the same harness gap the
+          // #910 (c imports) and G7 (groovy uses) notes below record.
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.

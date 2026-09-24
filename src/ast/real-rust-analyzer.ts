@@ -17,6 +17,24 @@ function extractRoutePath(text: string): string | null {
   return null
 }
 
+// ASCII word-run membership: exact the same thing `\b(S1|S2|...)\b` decides,
+// without a regex. JS `\b` is defined by the ASCII word class, so a manual
+// before/after char-code test is an equivalent, not an approximation — and the
+// matches here are marker NAMES in a `#[derive(...)]` body, where a substring
+// hit (`SerializeAny` for `Serialize`) must not fire.
+function hasBareWord(hay: string, word: string): boolean {
+  const isWordChar = (c: number): boolean =>
+    (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+  let i = hay.indexOf(word)
+  while (i >= 0) {
+    const before = i > 0 ? hay.charCodeAt(i - 1) : 0
+    const after = i + word.length < hay.length ? hay.charCodeAt(i + word.length) : 0
+    if (!isWordChar(before) && !isWordChar(after)) return true
+    i = hay.indexOf(word, i + 1)
+  }
+  return false
+}
+
 interface RustContext {
   tree: { rootNode: Node }
   content: string
@@ -301,13 +319,28 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         // R8 (rust review): a bare-identifier bound that names one of the
         // enclosing generic parameters (`where T: Clone`) is locally bound,
         // not a file-type reference. Real path bounds (`String: PartialEq`,
-        // fixture-pinned) still emit. Generic params collected from the
-        // nearest enclosing generic item (fn/trait/struct/enum/type/impl).
+        // fixture-pinned) still emit.
+        //
+        // R15 (rust review #798, cargo full extent) — two holes in this rule's
+        // own words ("the enclosing generic params"), both measured:
+        //   1. `function_signature_item` — a TRAIT method declaration, which has
+        //      no body — was missing from the item list, so the climb skipped
+        //      the signature and stopped at the trait, whose `type_parameters`
+        //      are the TRAIT's. A where clause on a method signature therefore
+        //      never saw the method's own parameters: `fn try_borrow_with<F,
+        //      E>(...) where F: FnOnce() -> ...;` emitted `references -> F`
+        //      for exactly the locally-bound name the rule excludes inside a
+        //      `function_item` (cargo: once.rs, paths.rs, package_id_spec.rs).
+        //   2. The climb took the FIRST enclosing item and stopped, so a bound
+        //      naming an OUTER parameter (`impl<N, E> Graph<N, E>` with
+        //      `where N: Borrow<Q>` on a method) was read as a file type. The
+        //      whole chain is walked now: every enclosing generic item binds.
         const genericParams = new Set<string>()
         let gcur: Node | null = node.parent
         while (gcur) {
           if (
-            gcur.type === "function_item" || gcur.type === "trait_item" ||
+            gcur.type === "function_item" || gcur.type === "function_signature_item" ||
+            gcur.type === "trait_item" ||
             gcur.type === "struct_item" || gcur.type === "enum_item" ||
             gcur.type === "type_item" || gcur.type === "impl_item"
           ) {
@@ -323,24 +356,59 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
                 }
               }
             }
-            break
           }
           gcur = gcur.parent
         }
+        // R15: the bounded side contributes its type NAME(S), never raw text:
+        //   `where T::Err: Display`                published `T::Err`
+        //   `where <T as FromStr>::Err: Display`   published `<T as FromStr>::Err`
+        //   `where anyhow::Error: From<E>`         published the MODULE `anyhow`
+        // — targets no consumer can resolve, the name-surface class the c/cpp
+        // #924 round closed: a target is the deepest NAME segment, a path
+        // prefix is not a type dependency, and a LIFETIME (`where 'a: 's`)
+        // is not a symbol at all, so that predicate contributes nothing.
+        // `String: PartialEq` (the fixture pin) is untouched — its left side IS
+        // one name. This is the same rule the declared-type pass applies by
+        // construction (it reads only `type_identifier` leaves).
+        const boundNames = (n: Node | null): Node[] => {
+          if (!n) return []
+          // A scoped path names one type: the `name` field is the leaf
+          // (`anyhow::Error` -> Error, `T::Err` -> Err, `<T as X>::Err` -> Err).
+          if (n.type === "scoped_type_identifier" || n.type === "scoped_identifier" || n.type === "qualified_type") {
+            const nm = n.childForFieldName("name")
+            if (nm) return [nm]
+            const last = n.namedChild(n.namedChildCount - 1)
+            return last && (last.type === "type_identifier" || last.type === "identifier") ? [last] : []
+          }
+          const out: Node[] = []
+          const w: Node[] = [n]
+          while (w.length > 0) {
+            const m = w.pop()!
+            // Lifetimes are not types: `'a` and its inner identifier
+            // contribute nothing (`&'a N` must yield N alone).
+            if (m.type === "lifetime") continue
+            if (m.type === "type_identifier") out.push(m)
+            for (let k = m.namedChildCount - 1; k >= 0; k--) {
+              const ch = m.namedChild(k)
+              if (ch) w.push(ch)
+            }
+          }
+          return out
+        }
         for (let i = 0; i < node.namedChildCount; i++) {
           const c = node.namedChild(i)
-          if (c && c.type === "where_predicate") {
-            const left = c.namedChild(0)
-            if (left && !genericParams.has(left.text)) {
-              ctx.relationships.push({
-                source: parent?.name || "global",
-                target: left.text,
-                type: ASTEngine.RelationshipType.References,
-                // M59.A7 (#825): the bound's own line.
-                ...(this.nodeLine(left) ? { line_number: this.nodeLine(left)! } : {}),
-                metadata: { rustSpecific: true, whereBound: true },
-              })
-            }
+          if (!c || c.type !== "where_predicate") continue
+          const left = c.namedChild(0)
+          for (const leaf of boundNames(left)) {
+            if (!leaf.text || genericParams.has(leaf.text)) continue
+            ctx.relationships.push({
+              source: parent?.name || "global",
+              target: leaf.text,
+              type: ASTEngine.RelationshipType.References,
+              // M59.A7 (#825): the bound's own line.
+              ...(this.nodeLine(leaf) ? { line_number: this.nodeLine(leaf)! } : {}),
+              metadata: { rustSpecific: true, whereBound: true },
+            })
           }
         }
       } else if (node.type === "lifetime") {
@@ -571,6 +639,22 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             continue
           }
+          // R14 (rust review #798, ripgrep full extent): a TUPLE struct's
+          // field types (`pub struct StandardStream(StandardStreamKind);`,
+          // `struct LiteralStrategy(fnv::HashMap<..>);`) were never collected —
+          // the named-field path below only walks `field_declaration`, and a
+          // tuple struct has none: its fields sit directly in an
+          // `ordered_field_declaration_list`, exactly like a tuple ENUM
+          // VARIANT's do (that branch already handled them). 13 sites over 10
+          // files on ripgrep alone; a tuple field declares a type just as a
+          // named one does, so the omission was an extraction gap, not a rule.
+          if (m.type === "ordered_field_declaration_list") {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c) for (const leaf of collectLeaves(c)) push(src, leaf, gparams)
+            }
+            continue
+          }
           for (let i = m.namedChildCount - 1; i >= 0; i--) {
             const c = m.namedChild(i)
             if (c) fw.push(c)
@@ -675,8 +759,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const dStart = text.indexOf("derive(")
       if (dStart >= 0) {
         const body = text.slice(dStart + 7)
-        if (/\b(Serialize|Deserialize)\b/.test(body)) detectFw("serde")
-        if (/\b(Parser|Subcommand|Args|ValueEnum)\b/.test(body)) detectFw("clap")
+        if (hasBareWord(body, "Serialize") || hasBareWord(body, "Deserialize")) detectFw("serde")
+        if (hasBareWord(body, "Parser") || hasBareWord(body, "Subcommand") ||
+            hasBareWord(body, "Args") || hasBareWord(body, "ValueEnum")) detectFw("clap")
         // thiserror is signalled by `#[derive(thiserror::Error)]` or the
         // crate-qualified path — bare `Error` is ambiguous with std-style
         // customs and must NOT imply a framework.
