@@ -1,44 +1,554 @@
 {
-  "schemaVersion": 1,
-  "truthSource": "manual_audit",
-  "source": "validation/m12/fixtures/ruby/{BaseService,Service,Negative}.rb",
-  "facts": [
-    {"id":"symbol:BaseService.rb:1:class:BaseService","layer":"ast_extraction","kind":"symbol","file":"BaseService.rb","line":1,"attributes":{"name":"BaseService","symbolKind":"class"},"evidence":{"authority":"manual_audit","reference":"class BaseService @ line 1"}},
-    {"id":"symbol:BaseService.rb:2:method:initialize","layer":"ast_extraction","kind":"symbol","file":"BaseService.rb","line":2,"attributes":{"name":"initialize","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"method BaseService.initialize @ line 2"}},
-    {"id":"symbol:BaseService.rb:6:method:save","layer":"ast_extraction","kind":"symbol","file":"BaseService.rb","line":6,"attributes":{"name":"save","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"method BaseService.save @ line 6"}},
-    {"id":"symbol:Negative.rb:1:class:Noise","layer":"ast_extraction","kind":"symbol","file":"Negative.rb","line":1,"attributes":{"name":"Noise","symbolKind":"class"},"evidence":{"authority":"manual_audit","reference":"class Noise @ line 1"}},
-    {"id":"symbol:Negative.rb:2:method:run","layer":"ast_extraction","kind":"symbol","file":"Negative.rb","line":2,"attributes":{"name":"run","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"method Noise.run @ line 2"}},
-    {"id":"symbol:Service.rb:4:module:Billing","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":4,"attributes":{"name":"Billing","symbolKind":"module"},"evidence":{"authority":"manual_audit","reference":"module Billing @ line 4"}},
-    {"id":"symbol:Service.rb:5:module:Audited","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":5,"attributes":{"name":"Audited","symbolKind":"module"},"evidence":{"authority":"manual_audit","reference":"module Billing::Audited @ line 5"}},
-    {"id":"symbol:Service.rb:6:method:audit","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":6,"attributes":{"name":"audit","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"method Audited.audit @ line 6"}},
-    {"id":"symbol:Service.rb:12:class:UserService","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":12,"attributes":{"name":"UserService","symbolKind":"class"},"evidence":{"authority":"manual_audit","reference":"class UserService < BaseService @ line 12"}},
-    {"id":"symbol:Service.rb:14:property:store","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":14,"attributes":{"name":"store","symbolKind":"property"},"evidence":{"authority":"manual_audit","reference":"attr_reader :store @ line 14"}},
-    {"id":"symbol:Service.rb:15:constant:API_PREFIX","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":15,"attributes":{"name":"API_PREFIX","symbolKind":"constant"},"evidence":{"authority":"manual_audit","reference":"constant API_PREFIX @ line 15"}},
-    {"id":"symbol:Service.rb:17:method:initialize","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":17,"attributes":{"name":"initialize","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"method UserService.initialize @ line 17"}},
-    {"id":"symbol:Service.rb:21:method:save","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":21,"attributes":{"name":"save","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"method UserService.save @ line 21"}},
-    {"id":"symbol:Service.rb:28:method:validate","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":28,"attributes":{"name":"validate","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"protected method UserService.validate @ line 28"}},
-    {"id":"symbol:Service.rb:33:method:build","layer":"ast_extraction","kind":"symbol","file":"Service.rb","line":33,"attributes":{"name":"build","symbolKind":"method"},"evidence":{"authority":"manual_audit","reference":"singleton method UserService.build @ line 33"}},
-    {"id":"rel:Negative.rb:contains:Noise:run","layer":"relationships","kind":"relationship","file":"Negative.rb","sourceId":"Noise","targetId":"run","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains Noise -> run"}},
-    {"id":"rel:BaseService.rb:calls:save:persist","layer":"relationships","kind":"relationship","file":"BaseService.rb","sourceId":"save","targetId":"persist","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"calls save -> persist"}},
-    {"id":"rel:BaseService.rb:contains:BaseService:initialize","layer":"relationships","kind":"relationship","file":"BaseService.rb","sourceId":"BaseService","targetId":"initialize","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains BaseService -> initialize"}},
-    {"id":"rel:BaseService.rb:contains:BaseService:save","layer":"relationships","kind":"relationship","file":"BaseService.rb","sourceId":"BaseService","targetId":"save","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains BaseService -> save"}},
-    {"id":"rel:Service.rb:references:root:base","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"root","targetId":"base","attributes":{"type":"references"},"evidence":{"authority":"manual_audit","reference":"require_relative base"}},
-    {"id":"rel:Service.rb:references:root:json","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"root","targetId":"json","attributes":{"type":"references"},"evidence":{"authority":"manual_audit","reference":"require json"}},
-    {"id":"rel:Service.rb:calls:audit:serialize","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"audit","targetId":"serialize","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"calls audit -> serialize"}},
-    {"id":"rel:Service.rb:extends:UserService:BaseService","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"BaseService","attributes":{"type":"extends"},"evidence":{"authority":"manual_audit","reference":"extends UserService -> BaseService"}},
-    {"id":"rel:Service.rb:implements:UserService:Audited","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"Audited","attributes":{"type":"implements"},"evidence":{"authority":"manual_audit","reference":"include Billing::Audited"}},
-    {"id":"rel:Service.rb:instantiates:save:User","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"save","targetId":"User","attributes":{"type":"instantiates"},"evidence":{"authority":"manual_audit","reference":"instantiates save -> User"}},
-    {"id":"rel:Service.rb:calls:validate:valid?","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"validate","targetId":"valid?","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"calls validate -> valid?"}},
-    {"id":"rel:Service.rb:instantiates:build:UserService","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"build","targetId":"UserService","attributes":{"type":"instantiates"},"evidence":{"authority":"manual_audit","reference":"instantiates build -> UserService"}},
-    {"id":"rel:Service.rb:overrides:UserService.initialize:BaseService.initialize","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService.initialize","targetId":"BaseService.initialize","attributes":{"type":"overrides"},"evidence":{"authority":"manual_audit","reference":"overrides UserService.initialize -> BaseService.initialize"}},
-    {"id":"rel:Service.rb:overrides:UserService.save:BaseService.save","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService.save","targetId":"BaseService.save","attributes":{"type":"overrides"},"evidence":{"authority":"manual_audit","reference":"overrides UserService.save -> BaseService.save"}},
-    {"id":"rel:Service.rb:contains:Billing:Audited","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"Billing","targetId":"Audited","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains Billing -> Audited"}},
-    {"id":"rel:Service.rb:contains:Audited:audit","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"Audited","targetId":"audit","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains Audited -> audit"}},
-    {"id":"rel:Service.rb:contains:UserService:store","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"store","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains UserService -> store"}},
-    {"id":"rel:Service.rb:contains:UserService:API_PREFIX","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"API_PREFIX","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains UserService -> API_PREFIX"}},
-    {"id":"rel:Service.rb:contains:UserService:initialize","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"initialize","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains UserService -> initialize"}},
-    {"id":"rel:Service.rb:contains:UserService:save","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"save","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"contains UserService -> save"}},
-    {"id":"rel:Service.rb:contains:UserService:validate","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"validate","attributes":{"type":"contains"}},
-    {"id":"rel:Service.rb:contains:UserService:build","layer":"relationships","kind":"relationship","file":"Service.rb","sourceId":"UserService","targetId":"build","attributes":{"type":"contains"}}
-  ]
+ "schemaVersion": 1,
+ "truthSource": "manual_audit",
+ "source": "validation/m12/fixtures/ruby/{BaseService,Service,Negative}.rb",
+ "facts": [
+  {
+   "id": "symbol:BaseService.rb:1:class:BaseService",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "BaseService.rb",
+   "line": 1,
+   "attributes": {
+    "name": "BaseService",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "class BaseService @ line 1"
+   }
+  },
+  {
+   "id": "symbol:BaseService.rb:2:method:initialize",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "BaseService.rb",
+   "line": 2,
+   "attributes": {
+    "name": "initialize",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method BaseService.initialize @ line 2"
+   }
+  },
+  {
+   "id": "symbol:BaseService.rb:6:method:save",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "BaseService.rb",
+   "line": 6,
+   "attributes": {
+    "name": "save",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method BaseService.save @ line 6"
+   }
+  },
+  {
+   "id": "symbol:Negative.rb:1:class:Noise",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.rb",
+   "line": 1,
+   "attributes": {
+    "name": "Noise",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "class Noise @ line 1"
+   }
+  },
+  {
+   "id": "symbol:Negative.rb:2:method:run",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.rb",
+   "line": 2,
+   "attributes": {
+    "name": "run",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method Noise.run @ line 2"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:4:module:Billing",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 4,
+   "attributes": {
+    "name": "Billing",
+    "symbolKind": "module"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "module Billing @ line 4"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:5:module:Audited",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 5,
+   "attributes": {
+    "name": "Audited",
+    "symbolKind": "module"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "module Billing::Audited @ line 5"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:6:method:audit",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 6,
+   "attributes": {
+    "name": "audit",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method Audited.audit @ line 6"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:12:class:UserService",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 12,
+   "attributes": {
+    "name": "UserService",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "class UserService < BaseService @ line 12"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:14:property:store",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 14,
+   "attributes": {
+    "name": "store",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "attr_reader :store @ line 14"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:15:constant:API_PREFIX",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 15,
+   "attributes": {
+    "name": "API_PREFIX",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "constant API_PREFIX @ line 15"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:17:method:initialize",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 17,
+   "attributes": {
+    "name": "initialize",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method UserService.initialize @ line 17"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:21:method:save",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 21,
+   "attributes": {
+    "name": "save",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method UserService.save @ line 21"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:28:method:validate",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 28,
+   "attributes": {
+    "name": "validate",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "protected method UserService.validate @ line 28"
+   }
+  },
+  {
+   "id": "symbol:Service.rb:33:method:build",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.rb",
+   "line": 33,
+   "attributes": {
+    "name": "build",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "singleton method UserService.build @ line 33"
+   }
+  },
+  {
+   "id": "rel:Negative.rb:contains:Noise:run",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.rb",
+   "sourceId": "Noise",
+   "targetId": "run",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Noise -> run"
+   }
+  },
+  {
+   "id": "rel:BaseService.rb:calls:save:persist",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "BaseService.rb",
+   "sourceId": "save",
+   "targetId": "persist",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls save -> persist"
+   }
+  },
+  {
+   "id": "rel:BaseService.rb:contains:BaseService:initialize",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "BaseService.rb",
+   "sourceId": "BaseService",
+   "targetId": "initialize",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains BaseService -> initialize"
+   }
+  },
+  {
+   "id": "rel:BaseService.rb:contains:BaseService:save",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "BaseService.rb",
+   "sourceId": "BaseService",
+   "targetId": "save",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains BaseService -> save"
+   }
+  },
+  {
+   "id": "rel:Service.rb:references:Global:base",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "Global",
+   "targetId": "base",
+   "attributes": {
+    "type": "references"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "require_relative base (file-scope owner renamed root->Global by d30dc1e9, GAD2)"
+   }
+  },
+  {
+   "id": "rel:Service.rb:references:Global:json",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "Global",
+   "targetId": "json",
+   "attributes": {
+    "type": "references"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "require json (file-scope owner renamed root->Global by d30dc1e9, GAD2)"
+   }
+  },
+  {
+   "id": "rel:Service.rb:calls:audit:serialize",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "audit",
+   "targetId": "serialize",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls audit -> serialize"
+   }
+  },
+  {
+   "id": "rel:Service.rb:extends:UserService:BaseService",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "BaseService",
+   "attributes": {
+    "type": "extends"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "extends UserService -> BaseService"
+   }
+  },
+  {
+   "id": "rel:Service.rb:implements:UserService:Audited",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "Audited",
+   "attributes": {
+    "type": "implements"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "include Billing::Audited"
+   }
+  },
+  {
+   "id": "rel:Service.rb:instantiates:save:User",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "save",
+   "targetId": "User",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "instantiates save -> User"
+   }
+  },
+  {
+   "id": "rel:Service.rb:calls:validate:valid?",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "validate",
+   "targetId": "valid?",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls validate -> valid?"
+   }
+  },
+  {
+   "id": "rel:Service.rb:instantiates:build:UserService",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "build",
+   "targetId": "UserService",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "instantiates build -> UserService"
+   }
+  },
+  {
+   "id": "rel:Service.rb:overrides:UserService.initialize:BaseService.initialize",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService.initialize",
+   "targetId": "BaseService.initialize",
+   "attributes": {
+    "type": "overrides"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "overrides UserService.initialize -> BaseService.initialize"
+   }
+  },
+  {
+   "id": "rel:Service.rb:overrides:UserService.save:BaseService.save",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService.save",
+   "targetId": "BaseService.save",
+   "attributes": {
+    "type": "overrides"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "overrides UserService.save -> BaseService.save"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:Billing:Audited",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "Billing",
+   "targetId": "Audited",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Billing -> Audited"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:Audited:audit",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "Audited",
+   "targetId": "audit",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Audited -> audit"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:UserService:store",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "store",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains UserService -> store"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:UserService:API_PREFIX",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "API_PREFIX",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains UserService -> API_PREFIX"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:UserService:initialize",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "initialize",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains UserService -> initialize"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:UserService:save",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "save",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains UserService -> save"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:UserService:validate",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "validate",
+   "attributes": {
+    "type": "contains"
+   }
+  },
+  {
+   "id": "rel:Service.rb:contains:UserService:build",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.rb",
+   "sourceId": "UserService",
+   "targetId": "build",
+   "attributes": {
+    "type": "contains"
+   }
+  }
+ ]
 }
