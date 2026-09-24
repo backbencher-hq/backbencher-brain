@@ -7369,16 +7369,23 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
         anc = anc.parent
       }
       if (!inDecorator) {
-      const fn = n.namedChild(0)
+      let fn = n.namedChild(0)
+      // M60 #902: the callee rule is the analyzer's own list of shapes that name
+      // their callee statically — identifier, attribute (leaf) — plus TRANSPARENT
+      // grouping, which unwraps. Everything else names nothing: a conditional
+      // callee is whichever branch the condition selects, a lambda callee is the
+      // lambda (not its body), and `f()()`'s callee is the RESULT of `f()` (the
+      // inner call emits its own edge). The analyzer descended into the first
+      // named child for every unlisted shape and published the `if` branch of a
+      // conditional as a callee; the oracle refused it, which is the single
+      // UNEXPLAINED edge this mirror now mirrors exactly.
+      while (fn && fn.type === "parenthesized_expression" && fn.namedChildCount >= 1) fn = fn.namedChild(0)
       if (fn) {
-        // Leaf of the callee: identifier -> text; attribute -> last child;
-        // subscript (computed/dynamic call FACTORIES[key](x)) -> SKIP, the
-        // analyzer does not fabricate calls to the dict variable (PYD1).
         const calleeLeaf =
           fn.type === "identifier" ? fn.text :
           fn.type === "attribute" ? fn.namedChild(fn.namedChildCount - 1)?.text :
           undefined
-        if (calleeLeaf && fn.type !== "subscript" && !isBuiltin(calleeLeaf)) {
+        if (calleeLeaf && !isBuiltin(calleeLeaf)) {
           if (isUpper(calleeLeaf) && declaredTypes.has(calleeLeaf)) push("instantiates", calleeLeaf)
           else if (!isUpper(calleeLeaf)) push("calls", calleeLeaf)
         }
