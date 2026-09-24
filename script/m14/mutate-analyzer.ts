@@ -8339,6 +8339,48 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   // --------------------------------------------------------------------------
+  // M60 (#748): the M49 dup-key family ruling (Option A) in python. The fix has
+  // four observable halves, so the transform reconstructs all four: symbols,
+  // structural edges, the two post-walk passes, and the file complexity.
+  // --------------------------------------------------------------------------
+  {
+    id: "python/dupdef-keep-both",
+    language: "python",
+    defectClass: "dead-code-in-payload",
+    description:
+      "#748 regression: a shadowed earlier `def` is published again as if it were live — a SECOND symbol for the same (container, name), its body's call graph, its member reads and declared-type references, and its cyclomatic decision points. That is the pre-fix reading, and the reason the corpus could not convict it: MEASURED 0 duplicate-name scopes across cython 475 + requests 37 files, so no differential sample ever draws one. The injected set is exactly what the keep-both analyzer produced on this fixture (module-level `top` twice at 44/49, class-body `C.foo` twice at 54/58, `calls top -> phantom_marker` at 45, `uses foo -> dead_read` at 55, `references foo -> DeadType` at 56, complexity 3 = base 1 + the live `if alt_flag` + the phantom's `if phantom_marker`). Caught by python/dupdef-last-wins on all four halves at once.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "top", kind: "function", range: { startLine: 44, startColumn: 0, endLine: 46, endColumn: 30 }, metadata: { pythonSpecific: true } },
+        { name: "foo", kind: "method", ownerName: "C", ownerKind: "class", range: { startLine: 54, startColumn: 4, endLine: 56, endColumn: 32 }, visibility: "public", metadata: { pythonSpecific: true } },
+      ],
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: "top", target: "phantom_marker", fromSymbol: "top", toSymbol: "phantom_marker", type: "calls", relationshipType: "calls", confidence: 0.9, line_number: 45, metadata: { pythonSpecific: true } },
+        { source: "foo", target: "dead_read", fromSymbol: "foo", toSymbol: "dead_read", type: "uses", relationshipType: "uses", confidence: 0.9, line_number: 55, metadata: { pythonSpecific: true, isMemberRead: true } },
+        { source: "foo", target: "DeadType", fromSymbol: "foo", toSymbol: "DeadType", type: "references", relationshipType: "references", confidence: 0.95, line_number: 56, metadata: { relationshipType: "declared_type" } },
+      ],
+      metadata: { ...(r.metadata ?? {}), complexity: 3 },
+    }),
+  },
+  {
+    id: "python/dupdef-blanket-drop",
+    language: "python",
+    defectClass: "over-application",
+    description:
+      "#748's OTHER failure mode: the rule is applied to every same-name group instead of only to a genuine rebinding, so a DECLARATION CHAIN loses its members — the `@overload` stubs (one symbol where there are three, and the surviving one is the implementation rather than the first stub) and the `@property` getter (the chain keeps 2, the blanket rule keeps 1) go away, and the getter's member read goes with them. That is not hypothetical: MEASURED range-keyed over the pinned corpora, 21 of the 25 duplicate-name scopes are chains (5 @overload groups in cython's Shadow.py, 9 in requests, 7 property-accessor chains), so the blanket reading deletes real symbols and real setter bodies corpus-wide. Caught by python/dupdef-last-wins' chain pins (count 3 and 2, the first stub's startLine, and the getter's `uses size -> _size`).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) =>
+        !(s.name === "chained" && (s.range?.startLine === 81 || s.range?.startLine === 85)) &&
+        !(s.name === "size" && s.range?.startLine === 94)),
+      relationships: (r.relationships ?? []).filter((e: any) =>
+        !(e.type === "uses" && (e.source ?? e.fromSymbol) === "size" && (e.target ?? e.toSymbol) === "_size")),
+    }),
+  },
+  // --------------------------------------------------------------------------
   // M60.R8 (#838/#836): the swift framework trigger surface. Three mutants: the
   // order regression (the pre-fix observable), and the two contract keys the lane
   // did not publish at all before this round.

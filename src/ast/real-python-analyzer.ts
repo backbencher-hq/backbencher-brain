@@ -146,6 +146,17 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     preScan(rootNode)
 
+    // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
+    // pinned): python binds the LAST definition of a name in one container
+    // scope, so an EARLIER same-name def is a PHANTOM — the runtime has
+    // already rebound that attribute by the time the module finishes
+    // executing, and the shadowed body can never run. Computed as a pre-pass
+    // because the walk reaches the phantom BEFORE it can know a winner
+    // follows; the walk then skips the whole subtree (no symbol, no body
+    // edges, no complexity), which is the family contract's "phantom body
+    // edges dropped" in the one place python can honour it — at emission.
+    const phantomDefs = this.collectPhantomDefs(rootNode)
+
     // Iterative stack traversal (no recursion, no call-stack explosions).
     // Each frame carries the node plus scope bookkeeping so class/function
     // nesting is tracked exactly (siblings never inherit a parent scope).
@@ -167,6 +178,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (node.isMissing) continue
+
+      // The shadowed earlier definition: unreachable by construction (see
+      // collectPhantomDefs). Its subtree is not walked, so it contributes no
+      // symbol, no outbound edge, and no cyclomatic decision point.
+      if (phantomDefs.has(this.phantomKey(node))) continue
 
       if (node.hasError) {
         if (node.type === "ERROR") {
@@ -310,8 +326,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // swift/objc all do — python was the only managedoo analyzer with none).
     // classifyEvidenceTier runs LAST so every edge — including declared-type
     // refs and member uses created above — leaves with an evidenceClass.
-    this.extractDeclaredTypeRefs(rootNode, ctx.relationships)
-    this.extractMemberUses(rootNode, ctx)
+    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs)
+    this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.classifyEvidenceTier(ctx.relationships)
 
     const detectedFrameworks: string[] = PY_FRAMEWORK_ORDER.filter((f) => ctx.frameworks[f])
@@ -448,6 +464,143 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+  }
+
+  /**
+   * #748: the defs a container scope has already rebound away by the time the
+   * module finishes executing — every same-name SYMBOL-LEVEL def except the
+   * LAST one in its container.
+   *
+   * Container identity is the scope NODE, not the class NAME: two classes that
+   * happen to share a name (redeclared, or in different branches) are different
+   * containers, so their members never collide — the W2/J3 identity ruling,
+   * applied to python's scope tree. "Symbol-level" is the analyzer's own scope
+   * model, mirrored exactly: a `class_definition` opens a container AND clears
+   * the function scope (so a method of a class nested in a function is a
+   * symbol, exactly as the walk registers it), while a def inside a def is not
+   * a symbol at all (PYD5) and therefore cannot be a phantom either.
+   *
+   * MEASURED before the change (range-keyed, 2026-09-24): 25 duplicate-name
+   * scopes across both pinned corpora (cython 475 + requests 37 files) — 21
+   * declaration chains and 3 BRANCH ALTERNATIVES (both kept), leaving exactly
+   * ONE genuine rebinding in the whole corpus: tests/run/class_scope.py
+   * MethodRedef.a, whose own docstring asserts this rule (`MethodRedef().a(5)`
+   * is 7 — the SECOND body wins). requests has none. The corpus delta is
+   * therefore ZERO edges on both sides, which is why the differential can never
+   * score this rule and a fixture has to hold it.
+   */
+  private collectPhantomDefs(rootNode: Node): Set<string> {
+    const phantoms = new Set<string>()
+    // Container key -> name -> def keys, in document order. Both maps are keyed
+    // by BYTE RANGE, never by node object or class name: web-tree-sitter hands
+    // out a fresh wrapper per access (so `Set<Node>` membership silently never
+    // holds — the same reason the parent gates above compare startIndex), and
+    // container identity must be the scope NODE so two same-named classes stay
+    // distinct containers.
+    const byContainer = new Map<string, Map<string, { key: string; node: Node }[]>>()
+    const containerKey = (n: Node): string => `${n.type}:${n.startIndex}:${n.endIndex}`
+    const frames: { n: Node; container: string; inFn: boolean }[] = [
+      { n: rootNode, container: containerKey(rootNode), inFn: false },
+    ]
+    while (frames.length > 0) {
+      const { n, container, inFn } = frames.pop()!
+      let nextContainer = container
+      let nextInFn = inFn
+      if (n.type === "class_definition" || n.type === "module") {
+        nextContainer = containerKey(n)
+        nextInFn = false
+      } else if (n.type === "function_definition") {
+        if (!inFn) {
+          const name = this.findChildByType(n, "identifier")?.text
+          if (name) {
+            const m = byContainer.get(container) ?? new Map<string, { key: string; node: Node }[]>()
+            m.set(name, [...(m.get(name) ?? []), { key: this.phantomKey(n), node: n }])
+            byContainer.set(container, m)
+          }
+        }
+        nextInFn = true
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) frames.push({ n: c, container: nextContainer, inFn: nextInFn })
+      }
+    }
+    // ALTERNATIVES ARE NOT SHADOWS. Two same-name defs in different branches
+    // (`if cond: def f ... else: def f ...`, `try: ... else: def f ...`) are
+    // both live — exactly one of them runs, and which one is a runtime fact the
+    // source does not settle — so neither may be dropped. MEASURED: 3 of the 4
+    // duplicate-name sites the first (block-blind) version of this rule removed
+    // from cython are this shape and NOT rebindings at all (Dependencies.py
+    // record_results under `if os.environ.get('XML_RESULTS')`, runtests.py
+    // skip_test under `try/except/else`, Pythran.py
+    // pythran_is_numpy_func_supported under `if pythran is None`), and dropping
+    // them cost 2 real edges. A rebinding is the same statement BLOCK binding a
+    // name twice; a branch body is a different block by construction.
+    const blockKey = (n: Node): string => {
+      for (let p: Node | null = n.parent; p; p = p.parent) {
+        if (p.type === "block") return `${p.type}:${p.startIndex}:${p.endIndex}`
+      }
+      return "" // module-level: the container itself is the block
+    }
+    for (const m of byContainer.values()) {
+      for (const [name, defs] of m) {
+        // A DECLARATION CHAIN is not a rebinding: type-checker overload stubs
+        // (`@overload`) and property accessors (`@property` / `@x.setter` /
+        // `@x.getter` / `@x.deleter`) coexist by design, and the family ruling
+        // keeps them (the ts/dupkey rationale: "class-body overloads and
+        // get/set pairs untouched"). MEASURED on python's pinned corpora: 21 of
+        // the 25 duplicate-name scopes are chains (5 @overload groups in
+        // cython's Shadow.py, 9 in requests, 7 accessor chains) — a blanket
+        // last-wins would delete real symbols and real setter bodies from both.
+        if (this.isDeclarationChain(defs, name)) continue
+        for (let i = 0; i < defs.length - 1; i++) {
+          const later = defs.slice(i + 1).some((d) => blockKey(d.node) === blockKey(defs[i].node))
+          if (later) phantoms.add(defs[i].key)
+        }
+      }
+    }
+    return phantoms
+  }
+
+  /**
+   * #748: does this group of same-name defs in one container form a declaration
+   * CHAIN — defs the runtime is meant to keep together — rather than a
+   * rebinding that shadows all but the last?
+   *
+   * Two markers, both read from the def's own decorators:
+   *   * a CHAIN LEAF — `overload` (including `typing.overload`), `property`,
+   *     `setter`, `getter`, `deleter`. The accessor leaves are enough without
+   *     the receiver because the only thing `@x.setter` can decorate is a
+   *     same-name def in the same container.
+   *   * a SELF-QUALIFIED decorator — `@<name>.<attr>` (`prop.setter`,
+   *     `f.register`). The general form of the same fact: the new function is
+   *     DERIVED FROM the earlier binding of that name, so the earlier one is
+   *     not shadowed at all.
+   */
+  private isDeclarationChain(defs: { key: string; node: Node }[], name: string): boolean {
+    for (const d of defs) {
+      const parent = d.node.parent
+      if (!parent || parent.type !== "decorated_definition") continue
+      for (let i = 0; i < parent.namedChildCount; i++) {
+        const c = parent.namedChild(i)
+        if (!c || c.type !== "decorator") continue
+        const leaf = this.decoratorName(c)
+        if (leaf === "overload" || leaf === "property" || leaf === "setter" || leaf === "getter" || leaf === "deleter") return true
+        if (c.text.replace(/^@/, "").trim().startsWith(`${name}.`)) return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * The phantom set's identity: a def's byte range. web-tree-sitter wrappers
+   * are per-access, so `Set<Node>` membership never holds across two reads of
+   * the same node — the range is the only stable handle (php/ruby/erl lines
+   * carry the same constraint, and the analyzer's parent gates compare ranges
+   * for the same reason).
+   */
+  private phantomKey(n: Node): string {
+    return `${n.startIndex}:${n.endIndex}`
   }
 
   private extractFunction(node: Node, ctx: PythonContext) {
@@ -844,9 +997,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Sources: the enclosing function (method scope), never `global`.
    * Pure AST — parents come from tree-sitter, never source text.
    */
-  private extractMemberUses(rootNode: Node, ctx: PythonContext): void {
+  private extractMemberUses(rootNode: Node, ctx: PythonContext, phantoms: Set<string>): void {
     const walk = (n: Node, inFn: string | undefined, parent: Node | null): void => {
       const t = n.type
+      // #748: a shadowed definition's body is never walked — its member reads
+      // belong to a body the runtime has already rebound away.
+      if (phantoms.has(this.phantomKey(n))) return
       // PYD5: rebind the owner ONLY when entering a symbol-level def (inFn is
       // still undefined). A def inside a def is NOT a symbol — the calls
       // contract attributes its body to the ENCLOSING function
@@ -905,7 +1061,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * scalar types (str/int/float/bool/bytes) are excluded from names; unions
    * (T | U), optionals, and generics descend via their children.
    */
-  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>): void {
     const emitted = new Set<string>()
     const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
 
@@ -977,6 +1133,9 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const walk = (n: Node): void => {
+      // #748: no type reference is derived from a shadowed definition's body —
+      // the oracle's flat walk skips the same subtree, so both sides agree.
+      if (phantoms.has(this.phantomKey(n))) return
       switch (n.type) {
         case "assignment": {
           emit(resolveSource(n), [typeClauseOf(n)], "declared_type")
