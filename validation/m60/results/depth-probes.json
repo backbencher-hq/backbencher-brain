@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-25T14:40:52.689Z",
+  "at": "2026-09-25T14:53:38.662Z",
   "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
@@ -608,6 +608,127 @@
       "missing": 0,
       "unexplained": 0,
       "note": "FULL EXTENT of the second corpus's swift surface: `--sample 400` over the pinned alamofire checkout reaches every .swift file it has (98), hash 542c6628ba91cc30, analyzer-edges 3,490, MISSING=0 unexplained=0. This is where #942 was measured (an enum-construction splice retiring a same-scope call to an identically named function), so the pre-fix reading and this one are the same drawn set."
+    },
+    {
+      "repo": "clojure",
+      "lang": "clojure",
+      "files": 142,
+      "truth": 5916,
+      "covered": 5916,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus at FULL EXTENT — clojure/clojure carries 142 .clj/.cljc/.cljs files, so the 200-file cap is the whole corpus, not a sample (the `[cold-pool] clojure:clojure: 142/142 fresh (rot 1, corpus 142)` line). analyzer-edges 3584, heuristic 0, hash 95a43f7f2c4cf5f4. CLEAN. Also measured on that checkout: java 190 files, tree-truth 4219, MISSING 0 (same run)."
+    },
+    {
+      "repo": "clj-kondo",
+      "lang": "clojure",
+      "files": 200,
+      "truth": 5024,
+      "covered": 5024,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16) — clj-kondo is a second, independent clojure codebase. analyzer-edges 2630, heuristic 0, hash bc2700cfffc85a67. CLEAN."
+    },
+    {
+      "repo": "elixir",
+      "lang": "elixir",
+      "files": 200,
+      "truth": 8163,
+      "covered": 8163,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, 200 of 567 files. analyzer-edges 5771, heuristic 0, hash 25c9bbbe428df233. CLEAN. Same run measured erlang 45 files (tree-truth 2439) clean — the elixir checkout carries .erl sources too."
+    },
+    {
+      "repo": "phoenix",
+      "lang": "elixir",
+      "files": 200,
+      "truth": 4744,
+      "covered": 4744,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16), the framework dialect the primary does not carry. analyzer-edges 3728, heuristic 0, hash 52b073c862a255db. CLEAN. The same run's javascript row was RED (see `adjudicated` note)."
+    },
+    {
+      "repo": "rebar3",
+      "lang": "erlang",
+      "files": 200,
+      "truth": 10692,
+      "covered": 10692,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus. analyzer-edges 5630, heuristic 0, hash 63df4a1a38b47185. CLEAN — and this is the finding worth naming: erlang's fixture lane is 0/9 RED (arity identity, line base, dedup semantics) while its differential is 0/0 on 200 files of rebar3 and 200 files of otp. The two gates disagree because they measure different things: the fixture pins SHAPES (pick/0 vs pick/1, four call sites on four lines) that these corpora exercise rarely, and the differential compares against tree-derived truth on real code. A lane is not clean because one of its gates is."
+    },
+    {
+      "repo": "otp",
+      "lang": "erlang",
+      "files": 200,
+      "truth": 15219,
+      "covered": 15219,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16) — the OTP tree itself. analyzer-edges 7407, heuristic 0, hash 561d4ea73c74a4b7. CLEAN."
+    },
+    {
+      "repo": "cabal",
+      "lang": "haskell",
+      "files": 200,
+      "truth": 2730,
+      "covered": 2730,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, rotation 1 (the canonical 60-file draw is a subset family of this). analyzer-edges 1594, heuristic 0, hash d0bce2779de89ff9. CLEAN before AND after the #872 fix — the canonical draw never sampled a list-context superclass, which is why the lane read clean while the defect was live."
+    },
+    {
+      "repo": "cabal",
+      "lang": "haskell",
+      "files": 200,
+      "truth": 2222,
+      "covered": 2222,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, a DIFFERENT 200-file rotation (truth 2222 vs 2730 — why every row records its hash), re-measured after the fix. analyzer-edges 1333, heuristic 0, hash 2b092576e28185af. CLEAN."
+    },
+    {
+      "repo": "hledger",
+      "lang": "haskell",
+      "files": 186,
+      "truth": 6107,
+      "covered": 6106,
+      "missing": 1,
+      "unexplained": 0,
+      "supersededBy": "the same draw re-measured after the #872 analyzer fix (below)",
+      "note": "THE RED DRAW. FULL EXTENT — hledger carries 186 .hs files, so the cap is the whole corpus (`186/186 fresh, rot 1, corpus 186`). analyzer-edges 3422, hash db22c7f9c7941008. MISSING 1, named: `hledger-lib/Hledger/Write/Html/HtmlCommon.hs :: extends Lines -> Spr.Lines` — `class (Spr.Lines border) => Lines border where`. Every list-context and every qualified superclass was dropped by the analyzer (#872's analyzer half never landed); the oracle derived it, which is what made it visible. PRE-FIX state, kept for the record."
+    },
+    {
+      "repo": "hledger",
+      "lang": "haskell",
+      "files": 186,
+      "truth": 6107,
+      "covered": 6107,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SAME FILE SET as the red draw above (hash db22c7f9c7941008, identical to the row it supersedes) re-measured after the fix: evaluator-edges 3423, i.e. exactly +1 edge, MISSING 1 -> 0, unexplained 0, heuristic 0. A before/after on an identical sample set with the same hash — the strongest form this evidence takes, which is why the hash is recorded per row."
+    },
+    {
+      "repo": "zig",
+      "lang": "zig",
+      "files": 200,
+      "truth": 5895,
+      "covered": 5895,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, 200 of 2947 files. analyzer-edges 5874, heuristic 0, hash 8a3d98623d9488c1. CLEAN."
+    },
+    {
+      "repo": "zls",
+      "lang": "zig",
+      "files": 89,
+      "truth": 6154,
+      "covered": 6154,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
     }
   ],
   "current": [
@@ -1060,6 +1181,116 @@
       "missing": 0,
       "unexplained": 0,
       "note": "FULL EXTENT (554/554 .swift files — the whole pinned canonical corpus). hash deccd8b0fd305b6d, analyzer-edges 20,288, coverage 100%, fabrication 0%. This is the draw that FOUND the round: on the pre-fix code the same drawn set read MISSING=1 unexplained=5 (the six findings triaged in script/m14/tmp/sw-full-extent-triage.ts), and the canonical 60-file draw — hash ea2ac2a489ca0853 — never touched any of them, because the corpus is 554 files and the canonical draw is 60. The pre-round full-extent reading was truth 20,471 / analyzer 20,293; both sides lost exactly the fabricated targets this round's two name-surface rules refuse (keyword-escaped names published WITH their backticks, tuple positions published as targets), which is why the movement is a before/after rather than a coverage loss: covered == truth at both ends."
+    },
+    {
+      "repo": "clojure",
+      "lang": "clojure",
+      "files": 142,
+      "truth": 5916,
+      "covered": 5916,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus at FULL EXTENT — clojure/clojure carries 142 .clj/.cljc/.cljs files, so the 200-file cap is the whole corpus, not a sample (the `[cold-pool] clojure:clojure: 142/142 fresh (rot 1, corpus 142)` line). analyzer-edges 3584, heuristic 0, hash 95a43f7f2c4cf5f4. CLEAN. Also measured on that checkout: java 190 files, tree-truth 4219, MISSING 0 (same run)."
+    },
+    {
+      "repo": "clj-kondo",
+      "lang": "clojure",
+      "files": 200,
+      "truth": 5024,
+      "covered": 5024,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16) — clj-kondo is a second, independent clojure codebase. analyzer-edges 2630, heuristic 0, hash bc2700cfffc85a67. CLEAN."
+    },
+    {
+      "repo": "elixir",
+      "lang": "elixir",
+      "files": 200,
+      "truth": 8163,
+      "covered": 8163,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, 200 of 567 files. analyzer-edges 5771, heuristic 0, hash 25c9bbbe428df233. CLEAN. Same run measured erlang 45 files (tree-truth 2439) clean — the elixir checkout carries .erl sources too."
+    },
+    {
+      "repo": "phoenix",
+      "lang": "elixir",
+      "files": 200,
+      "truth": 4744,
+      "covered": 4744,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16), the framework dialect the primary does not carry. analyzer-edges 3728, heuristic 0, hash 52b073c862a255db. CLEAN. The same run's javascript row was RED (see `adjudicated` note)."
+    },
+    {
+      "repo": "rebar3",
+      "lang": "erlang",
+      "files": 200,
+      "truth": 10692,
+      "covered": 10692,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus. analyzer-edges 5630, heuristic 0, hash 63df4a1a38b47185. CLEAN — and this is the finding worth naming: erlang's fixture lane is 0/9 RED (arity identity, line base, dedup semantics) while its differential is 0/0 on 200 files of rebar3 and 200 files of otp. The two gates disagree because they measure different things: the fixture pins SHAPES (pick/0 vs pick/1, four call sites on four lines) that these corpora exercise rarely, and the differential compares against tree-derived truth on real code. A lane is not clean because one of its gates is."
+    },
+    {
+      "repo": "otp",
+      "lang": "erlang",
+      "files": 200,
+      "truth": 15219,
+      "covered": 15219,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16) — the OTP tree itself. analyzer-edges 7407, heuristic 0, hash 561d4ea73c74a4b7. CLEAN."
+    },
+    {
+      "repo": "cabal",
+      "lang": "haskell",
+      "files": 200,
+      "truth": 2730,
+      "covered": 2730,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, rotation 1 (the canonical 60-file draw is a subset family of this). analyzer-edges 1594, heuristic 0, hash d0bce2779de89ff9. CLEAN before AND after the #872 fix — the canonical draw never sampled a list-context superclass, which is why the lane read clean while the defect was live."
+    },
+    {
+      "repo": "cabal",
+      "lang": "haskell",
+      "files": 200,
+      "truth": 2222,
+      "covered": 2222,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, a DIFFERENT 200-file rotation (truth 2222 vs 2730 — why every row records its hash), re-measured after the fix. analyzer-edges 1333, heuristic 0, hash 2b092576e28185af. CLEAN."
+    },
+    {
+      "repo": "hledger",
+      "lang": "haskell",
+      "files": 186,
+      "truth": 6107,
+      "covered": 6107,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SAME FILE SET as the red draw above (hash db22c7f9c7941008, identical to the row it supersedes) re-measured after the fix: evaluator-edges 3423, i.e. exactly +1 edge, MISSING 1 -> 0, unexplained 0, heuristic 0. A before/after on an identical sample set with the same hash — the strongest form this evidence takes, which is why the hash is recorded per row."
+    },
+    {
+      "repo": "zig",
+      "lang": "zig",
+      "files": 200,
+      "truth": 5895,
+      "covered": 5895,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "PRIMARY corpus, 200 of 2947 files. analyzer-edges 5874, heuristic 0, hash 8a3d98623d9488c1. CLEAN."
+    },
+    {
+      "repo": "zls",
+      "lang": "zig",
+      "files": 89,
+      "truth": 6154,
+      "covered": 6154,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
     }
   ],
   "adjudicated": {
@@ -1071,7 +1302,12 @@
     "python": "#902/#927 — CLOSED at depth: the conditional-callee `calls` edge and the factory-function `extends` edge the deeper draws found are gone, held by python/callee-shapes and python/base-shapes with two CAUGHT reverting mutants. #928 — CLOSED: the depth cell's last red, resolved ORACLE-side (5043a3cb), which cleared the full extent (unexplained 10 -> 0) and turned this cell green. Python has no open depth residual.",
     "rust": "#798 — CLEAN at depth, and the depth rows were re-measured the moment the comparison changed: `uses` and `references` were outside the rust allowlist before this round, so the first three draws measured a smaller surface (truth 4156 on the ripgrep hash that now reads 6309). All three final-bytes draws are 100% covered, MISSING=0, unexplained=0, heuristic=0.",
     "dart": "#937 — CLOSED: the truth oracle's named-constructor prescan accepted only `class_definition`, so a Dart 3 `extension type` container's named constructors were invisible to it; the analyzer (whose named-ctor set comes from SYMBOLS, where the extension type became an owner in DARTD21) was right. Full extent: 27 unexplained + 1 MISSING -> 0/0, truth 13,628 -> 13,654, analyzer-edges unmoved at 12,708. #936 — CLOSED: the cold pool keyed on the FROZEN-TREE path, so every run reported 100% fresh and re-drew files it had already measured (proxicall:dart: 5,942 pooled paths for a 2,211-file corpus under four freeze prefixes). Fixed by keying on the corpus-relative path; without it this round's chunked full extent would not have been a union at all.",
-    "swift": "#924 (swift half) + the full-extent residue — CLOSED, and closed on the analyzer side except where the ruling says otherwise. The six full-extent findings: (1) a switch-case pattern error-recovers into a call_expression whose callee is the keyword `case`, and the analyzer published a fabricated `calls` (#938); (2) the SCD1 write gate stopped at the `postfix_expression` wrapper, so a force-unwrapped member in an assignment LHS was published as a forced READ (#939) — pinned by its own fixture with BOTH halves (the unwrap the gate must not publish as a read, and the genuine read it must keep); (3) the pinned grammar cannot parse `nonisolated(unsafe)`, so a whole class header lands in an ERROR node and the container plus every member it owned was dropped (5 corpus sites, #940); (4) an unresolvable `self.init` published a dangling `calls -> init` on the truth side while the analyzer invented the enclosing symbol's OWN name as the owner (`instantiates constructor -> constructor`, #941); (5) the enum-construction splice removed \"the first calls edge with this source and leaf\", so a same-scope call to an identically named function silently lost its edge (found on alamofire at full extent, #942); (6) the NAME SURFACE — a decorated enum case published the decorator's PAYLOAD as the member name (`@available(*, deprecated, message: \"Cannot be thrown\")` for all five cases of HTTPTypes.swift), and the same re-emit removed keyword-escaped backticks (`case `continue``) and tuple positions (`pair.0`). Every one has a fixture and a reverting mutant; the name-surface half is #924, whose swift side is now paid down and recorded in the R10 register."
+    "swift": "#924 (swift half) + the full-extent residue — CLOSED, and closed on the analyzer side except where the ruling says otherwise. The six full-extent findings: (1) a switch-case pattern error-recovers into a call_expression whose callee is the keyword `case`, and the analyzer published a fabricated `calls` (#938); (2) the SCD1 write gate stopped at the `postfix_expression` wrapper, so a force-unwrapped member in an assignment LHS was published as a forced READ (#939) — pinned by its own fixture with BOTH halves (the unwrap the gate must not publish as a read, and the genuine read it must keep); (3) the pinned grammar cannot parse `nonisolated(unsafe)`, so a whole class header lands in an ERROR node and the container plus every member it owned was dropped (5 corpus sites, #940); (4) an unresolvable `self.init` published a dangling `calls -> init` on the truth side while the analyzer invented the enclosing symbol's OWN name as the owner (`instantiates constructor -> constructor`, #941); (5) the enum-construction splice removed \"the first calls edge with this source and leaf\", so a same-scope call to an identically named function silently lost its edge (found on alamofire at full extent, #942); (6) the NAME SURFACE — a decorated enum case published the decorator's PAYLOAD as the member name (`@available(*, deprecated, message: \"Cannot be thrown\")` for all five cases of HTTPTypes.swift), and the same re-emit removed keyword-escaped backticks (`case `continue``) and tuple positions (`pair.0`). Every one has a fixture and a reverting mutant; the name-surface half is #924, whose swift side is now paid down and recorded in the R10 register.",
+    "clojure": "CLEAN at depth on two corpora. The canonical 60-file draw was already clean; the deeper draws ask whether 60 files hid anything, and neither 142 files of clojure/clojure (full extent) nor 200 of clj-kondo did.",
+    "elixir": "CLEAN at depth on two corpora, including phoenix (the framework dialect the primary corpus does not carry).",
+    "erlang": "CLEAN at depth on two corpora (rebar3 200, otp 200) — and this does NOT clear the lane: erlang's fixture lane is 0/9 red, and the two gates measure different things. Named rather than averaged away.",
+    "haskell": "#872's haskell analyzer half had never landed. Found by the hledger full-extent draw (`extends Lines -> Spr.Lines` MISSING), root-caused to `processClass` still being the flat-list walk the review itself calls the PRE-fix state, fixed in this round against the oracle's own rule (constraint-tree walk, left-spine class, qualified head verbatim), and pinned by four new fixture extends plus a third mutant. cabal was clean before and after — the canonical draw never sampled the shape, which is exactly why this needed depth to see.",
+    "zig": "CLEAN at depth on two corpora (zig 200/2947 + zls at full extent)."
   },
   "worstPerLang": {
     "javascript": {
@@ -1198,6 +1434,41 @@
       "unexplained": 0,
       "drawsRed": 1,
       "note": "GREEN at FULL EXTENT, measured not assumed. dart-http: the whole 335-file corpus in one run (truth 13,654/13,654, MISSING=0, unexplained=0). proxicall: the whole 2,211-file corpus across five disjoint 500-file draws, every one 0/0, union verified 2,211/2,211 from the drawn-path log — a single-process 2,211-file run is IMPOSSIBLE on this box and fails honestly (the wasm heap dies, the parser returns empty trees, and the harness's parsed-but-empty guard refuses the 0/0 row rather than publishing a fabricated pass; reproduced twice). The one red draw is that failure, attributed and disclosed, not a lane defect. The ORACLE-side red the deep draw DID find (27 unexplained + 1 MISSING at dart-http full extent) is #937, fixed this round: truth 13,628 -> 13,654 with the analyzer unmoved."
+    },
+    "clojure": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "note": "two corpora (clojure primary at FULL EXTENT 142 files + clj-kondo 200)"
+    },
+    "elixir": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "note": "two corpora (elixir 200/567 + phoenix 200)"
+    },
+    "erlang": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "note": "two corpora (rebar3 200 + otp 200); the lane's 0/9 fixture red is a DIFFERENT gate measuring shapes these corpora rarely carry"
+    },
+    "haskell": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "note": "three rows, all post-fix clean: cabal rotation 1, a second cabal rotation, and hledger at FULL EXTENT 186 files; the hledger row's PRE-fix state was MISSING=1 (extends Lines -> Spr.Lines) and is kept superseded above"
+    },
+    "zig": {
+      "maxSample": 200,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 0,
+      "note": "two corpora (zig 200/2947 + zls at FULL EXTENT 89 files)"
     }
   },
   "closedInThisRound": {
@@ -1216,6 +1487,8 @@
     "#914 (go implements — the lane's last non-zero count)": "variadic interface parameters (which also fabricated `unimplementedDialer -> Dialer`), receiver-only implementors, alias interfaces, diamond interface embedding, and the ORACLE's name-only method-set comparison. Post-fix the lane reads 0 MISSING / 0 UNEXPLAINED on EVERY label the harness compares: go-tools full extent 1,931 files (truth 30,695) and terraform full extent 1,993 files (truth 40,913), plus kubernetes 13,488 files in four index-range chunks with `selected == read, skips 0`. Executed negative against HEAD's real code: pre-fix 5 of 8 expected edges missing and 5 forbidden pairs fabricated (2 of them by the ANALYZER); post-fix 8/8 and 0. Pins: fixture go/implements-signature-914, four go/impl-* mutants, F9-PROBE-GO-IMPL-SIGNATURE (oracleForbid), spec GO20-GO24. Record: reviews/go/fifth-review.md.",
     "#924 (swift half) — the M60 name surface": "A decorated enum case (`@available(...) case x`) put a `modifiers` node first and the member-name pick took the first NAMED child — the decorator payload — so all five cases of swift-nio's HTTPTypes.swift folded into one `contains` whose target was `@available(*, deprecated, message: \"Cannot be thrown\")`, and the declaration's line came from the decorator instead of the declaration (M59 #861 rules the opposite). Fixed to the identifier after `case`, with the range node fixed too. The same re-emit closed the two other name classes the full extent exposed: a keyword-escaped declaration published WITH its backticks (`case `continue``, `public static var `default``, `func `open``) — `stripNameQuoting()` strips exactly one surrounding pair, applied in createSymbol and navigationLeaf, mirrored in the oracle — and a tuple POSITION suffix published as a target (`pair.0`, `_key.1`, 4 rows); `navigationLeaf` no longer falls back to the whole text. Pinned by swift/attributed-enum-case plus mutants swift/attributed-case-payload-name and swift/attributed-case-range-at-decorator; the R10 register's swift row records the conviction as PAID DOWN, and its separator vocabulary (overrides|., references|.) stays UNRULED and owed rather than blessed. Full-extent name census after: 652 files, 23,212 symbols, 78,747 targets, 0 unclassified.",
     "#938/#939/#940/#941/#942 (swift depth findings)": "Five analyzer/grammar defects the canonical 60-file draw never touched, each found by taking the canonical corpus to its full 554 files: the case-pattern recovery fabricating a `calls` to the keyword `case` (#938, fixture swift/case-pattern-recovery); the write gate stopping at the postfix wrapper so a force-unwrapped LHS member read as a read (#939, fixture swift/unwrap-write-gate, both halves); the grammar's `nonisolated(unsafe)` blind spot dropping a container and its members (#940, fixture swift/error-recovery-nominal); the dangling `self.init` call plus the self-named owner (#941, fixtures swift/error-recovery-nominal + swift/init-delegation); and the enum-construction splice retiring a DIFFERENT same-scope call to an identically named function (#942, fixture swift/enum-construction-splice). Mutants: swift/case-pattern-keyword-call, swift/unwrap-inner-write-as-read, swift/unwrap-outer-write-as-read, swift/error-recovery-no-container, swift/error-recovery-self-owner-target, swift/error-recovery-dangling-init-call, swift/enum-splice-first-edge, swift/enum-splice-no-conversion — all CAUGHT.",
-    "swift line contract (M59.A7 handoff)": "Every published relationship carries the line of the NAME it names: 652 files, 78,747 edges, 0 unlined, 0 out of range, and 77,737 token-checked with 0 INCONSISTENT by script/m14/tmp/sw-line-equivalence.ts (the token checker's own self-test rejects `discount`/`other` for `count`, so it can fail). Found by the fixture dump rather than by a gate: the surviving `calls Endpoint -> method` edge claimed the CONVERTED site's line (L22) instead of the genuine call's (L29); the same round fixed `retiredLines` being GLOBAL instead of per-pool (it silently deleted unrelated lines), the import range including a preceding attribute line, and the per-emit-site stamping. Mutants swift/drop-relationship-lines and swift/line-off-by-one are CAUGHT."
+    "swift line contract (M59.A7 handoff)": "Every published relationship carries the line of the NAME it names: 652 files, 78,747 edges, 0 unlined, 0 out of range, and 77,737 token-checked with 0 INCONSISTENT by script/m14/tmp/sw-line-equivalence.ts (the token checker's own self-test rejects `discount`/`other` for `count`, so it can fail). Found by the fixture dump rather than by a gate: the surviving `calls Endpoint -> method` edge claimed the CONVERTED site's line (L22) instead of the genuine call's (L29); the same round fixed `retiredLines` being GLOBAL instead of per-pool (it silently deleted unrelated lines), the import range including a preceding attribute line, and the per-emit-site stamping. Mutants swift/drop-relationship-lines and swift/line-off-by-one are CAUGHT.",
+    "the five depth `n/a` cells with a corpus (clojure, elixir, erlang, haskell, zig)": "These five were the only lanes with a pinned corpus and an F5 row but no deeper draw — the measurable half of the matrix's 22 `depth: n/a` cells. Measured on the primary corpus and the second corpus each. Four are clean on both corpora; haskell found a live defect on the second corpus and it is fixed + pinned in this round.",
+    "#872 (haskell analyzer half)": "Recorded as FIXED + GATED in reviews/m49-hs1-superclass-constraint-tree.md, but the analyzer change was never in the tree: no commit has touched real-haskell-analyzer.ts since 2026-09-14, the oracle's own comment asserts lockstep it does not have, and both guarding mutants recorded `0 -> 0` in F4. The fixture pinned neither a tuple superclass nor the `Applied` class one mutant names. Now: analyzer walks the constraint tree, four shapes pinned (tuple, qualified, tuple-with-qualified, applied head), mutants CAUGHT, F4 survivors 8 -> 6 (all six remaining are erlang's known fixture red)."
   }
 }
