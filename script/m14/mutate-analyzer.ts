@@ -6716,6 +6716,19 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "dart/representation-field-decl-line",
+    language: "dart",
+    defectClass: "line-attribution",
+    description: "M60 line contract revert for the WRAPPED representation declaration: `contains X -> field` goes back to the DECLARATION node's start line instead of the line the field's NAME is written on (`extension type Wrapped._(` at 44, the field at 45). This is the exact ONE edge the lane's consistency probe flagged out of 32,989 on a 120-file draw over the real FFI bindings — the shape is how those bindings write all 303 of their extension types. Caught by dart/extension-type: the `contains Wrapped -> inner$` expect names line 45 and the forbid names line 44.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "contains" && x.source === "Wrapped" && x.target === "inner$"
+          ? { ...x, line_number: 44 }
+          : x),
+    }),
+  },
+  {
     id: "dart/line-zero-based",
     language: "dart",
     defectClass: "line-attribution",
