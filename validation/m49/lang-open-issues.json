@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-25T14:13:27.815Z",
+  "snapshotAt": "2026-09-25T14:44:25.848Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 110,
+  "count": 104,
   "issues": [
     {
       "number": 134,
@@ -470,18 +470,8 @@
       "labels": []
     },
     {
-      "number": 836,
-      "title": "M49.SW1 Swift ultimate review wave: process reviews/swift SW-A/B/D/E/F under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 837,
       "title": "Payload seam: brain_symbol.scope_kind is never written — declared, DDL'd, schema-typed, and silently dropped for every language",
-      "labels": []
-    },
-    {
-      "number": 838,
-      "title": "M49.SW2 Swift second review wave: process reviews/swift SW-G/SW-H under the verify-first protocol",
       "labels": []
     },
     {
@@ -619,7 +609,7 @@
     },
     {
       "number": 924,
-      "title": "M60 name surface: a quoted identifier's quoting syntax is published as part of the name (kotlin/scala/zig), and payloads and expressions are published as names (swift/haskell/elixir/cpp/scala)",
+      "title": "M60 name surface: a quoted identifier's quoting syntax is published as part of the name (kotlin/scala/zig), and payloads and expressions are published as names (haskell/elixir/cpp/scala)",
       "labels": [
         "bug"
       ]
@@ -644,36 +634,8 @@
       ]
     },
     {
-      "number": 938,
-      "title": "swift: a switch-case pattern with an associated value error-recovers into a call_expression whose callee is the keyword `case` — the analyzer publishes a fabricated `calls`",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 939,
-      "title": "swift: the SCD1 write gate stops at the `postfix_expression` wrapper, so a force-unwrapped member inside an assignment LHS is published as a forced read",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 940,
-      "title": "swift: the pinned grammar cannot parse `nonisolated(unsafe)`, so a whole class header lands in an ERROR node and the container plus every member it owns is silently dropped (5 corpus sites)",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 941,
-      "title": "swift: an unresolvable `self.init` publishes a dangling `calls -> init` on the truth side, and the analyzer invents the enclosing symbol's OWN name as the owner (`instantiates constructor -> constructor`)",
-      "labels": [
-        "bug"
-      ]
-    },
-    {
-      "number": 942,
-      "title": "swift: the enum-construction splice removes \"the first calls edge with this source and leaf\", so a same-scope call to an identically named function silently loses its edge (alamofire full extent)",
+      "number": 943,
+      "title": "M60.R8/R10 adjudicate a COMMITTED census artifact, so a dirty-derived one passes its gate forever — php's framework surface is un-adjudicated at HEAD (0 sites, 1 binding) and cpp's committed R10 row is not HEAD-true",
       "labels": [
         "bug"
       ]
