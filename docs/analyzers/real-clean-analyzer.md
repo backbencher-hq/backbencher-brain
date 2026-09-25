@@ -185,8 +185,18 @@ form is how a fixture says "this edge must NOT name a line").
 ## Verification evidence
 
 - Differential: `validation/m12/ground-truth/clean.json` (68 facts) vs
-  observed → **1.000 precision / 1.000 recall, 0 FP / 0 FN / 0 unknown**,
-  first run — `validation/m12/results/clean-differential.json`.
+  observed → **1.000 precision / 1.000 recall, 0 FP / 0 FN / 0 unknown**
+  (`validation/m12/results/clean-differential.json`, 2 fixtures, 0 parse errors).
+  Re-measured unchanged after the site-line change — the ground truth compares edge
+  labels and targets, so adding a site line to every edge moves none of the 68 facts.
+- The differential artifact is now **pinned**: it carries the `inputs` block
+  `script/m12/differential-provenance.ts` writes (62 files, digest `497d60eb003d`), so
+  `script/m12/verify-differential-freshness.ts` reads this lane **FRESH** where it read
+  `UNPINNED` ("no `inputs` block — cannot be checked, NOT covered"). Disclosed: that closure is
+  the import graph of `src/ast/engine.ts`, i.e. **every** analyzer, so the pin is anchored to the
+  tree it was taken in; a sibling lane committing its own analyzer makes this artifact read STALE
+  until it is re-emitted (`bun script/m12/verify-analyzer.ts clean`) — which is the gate working,
+  and it names the moved file rather than hiding it.
 - Corpus: clean_stdlib@6971a8a — 41 files ≥1KB → **4 grammar-error files
   (9.8%), 0 crashes**, all classified honestly: `_SystemArray.icl`/`.dcl`
   (inline `code { ... }` machine-code blocks — compiler-runtime assembly, not
