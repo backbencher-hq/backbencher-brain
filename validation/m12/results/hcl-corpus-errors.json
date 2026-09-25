@@ -43,5 +43,10 @@
   ],
   "unexpectedErrors": [],
   "passed": true,
-  "policy": "Every tracked .tf/.tfvars/.hcl file in clean terraform@2e1710bf is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Terraform's own repository intentionally ships invalid HCL under its diagnostics testdata; those files are classified (by path pattern) as intentional-invalid rather than hidden. Clean acceptance files are those with zero parse errors."
+  "policy": "Every tracked .tf/.tfvars/.hcl file in clean terraform@2e1710bf is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Terraform's own repository intentionally ships invalid HCL under its diagnostics testdata; those files are classified (by path pattern) as intentional-invalid rather than hidden. Clean acceptance files are those with zero parse errors.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.884Z",
+    "contentSha256": "6777bf3bf0dcbe3372ceed237b35f73f4f01f909190dde1369b690419309b95f"
+  }
 }

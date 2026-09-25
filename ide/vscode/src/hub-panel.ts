@@ -22,10 +22,14 @@ import type { LanguageClient } from "vscode-languageclient/node"
 
 // Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
 import { renderHubList, renderHubTree } from "../../../script/m26/graph-core"
-import { serialize, StringElement } from "./graph-panel"
+import { serialize, StringElement, applyResolutionTitle, resolvePlacementFromSettings } from "./graph-panel"
+// M55.P1 (Truth Rule 6): the reuse registry — one hub panel per symbol+file.
+import { panelKey, PanelRegistry } from "./panel-placement"
 import { buildWebviewHtml } from "../../../script/m26/webview-html"
 // M42.H6 (issue #654): the ONE protocol owner + the extension-side handler.
 import { buildBridgeScript } from "../../../src/lsp/hub_protocol"
+// Type-only import: erased at build time (thin client preserved).
+import type { MemberResolution } from "../../../src/lsp/identity"
 import { vscodeDeps, wireWebviewMessages } from "./hub-navigation"
 
 const GRAPH_METHOD = "bb/graph"
@@ -43,6 +47,11 @@ export type HubRenderOutcome =
       stateJson: string
       staleMarkup: string
       counts: { callers: number; callees: number }
+      /** M55.T1 (Truth Rule 2): present when the server rooted a MEMBER target
+       *  through its owning declaration. The panel title and the render both
+       *  state it — a substitution the user cannot see is a defect. The shape
+       *  is owned by the server's identity resolver (one decision). */
+      resolution?: MemberResolution
     }
   | { ok: false; error: string }
 
@@ -62,6 +71,10 @@ export async function renderHubForPanel(
       schemaVersion: 2,
       symbol: params.symbol,
       mode: "usages",
+      // X1 closure: the defining-file identity disambiguates same-name
+      // members (constructors) — the server resolves through it when the
+      // name alone is ambiguous.
+      ...(params.file ? { file: params.file } : {}),
     })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
@@ -120,6 +133,9 @@ export async function renderHubForPanel(
   if ("error" in tree) return { ok: false, error: tree.error }
 
   const markup = `${byFile.markup}${byCaller.markup}${tree.markup}`
+  // M55.T1: the declared substitution rides the outcome (the renderers already
+  // emitted the visible note + attrs through the ONE core helper).
+  const resolution = (result as { resolution?: MemberResolution }).resolution
   // §13.4: header counts equal the GROUP counts the rows render (the raw
   // multiplicity rides alongside as callerRows/calleeRows).
   const counts = {
@@ -138,8 +154,9 @@ export async function renderHubForPanel(
     counts,
     stale,
     staleStatus,
+    ...(resolution ? { resolution } : {}),
   })
-  return { ok: true, markup, stateJson, staleMarkup, counts }
+  return { ok: true, markup, stateJson, staleMarkup, counts, ...(resolution ? { resolution } : {}) }
 }
 
 function serializeAttr(v: string): string {
@@ -151,19 +168,41 @@ function serializeAttr(v: string): string {
  *  panel rendered DATA or a declared failure (owner test, 2026-09-06: a
  *  click whose panel only ever renders the stale-null not-running banner is
  *  a wiring failure, not a success). */
+/** The live hub panels, one per symbol+file (M55.P1 reuse rule). */
+const HUB_PANELS = new PanelRegistry<WebviewPanel>()
+
 export async function showHubPanel(
   params: { symbol: string; file?: string },
   deps: HubPanelDeps,
   context: ExtensionContext,
 ): Promise<{ panel: WebviewPanel; outcome: HubRenderOutcome }> {
-  const panel = window.createWebviewPanel("bbHub", `Backbencher Hub — ${params.symbol}`, ViewColumn.Beside, {
-    // The toggle needs a script; the W6 shell ships nonce-bound and CSP-locked
-    // (default-src 'none'): enableScripts only makes the nonce-bound local
-    // toggle possible — no remote code can run (H6 adds postMessage on top).
-    enableScripts: true,
-    localResourceRoots: [],
-  })
+  const key = panelKey("hub", params.symbol, params.file)
+  const existing = HUB_PANELS.get(key)
+  if (existing !== null) {
+    // Reuse: same panel, fresh render — a second click on the same symbol must
+    // not open a second column (M55.P1; the filing run reached four columns).
+    const outcome = await renderHubForPanel(params, deps)
+    applyResolutionTitle(existing, `Backbencher Hub — ${params.symbol}`, outcome, params.symbol, "Hub")
+    existing.webview.html = buildHubHtml(outcome, deps.cspSource)
+    existing.reveal(undefined, true)
+    return { panel: existing, outcome }
+  }
+  const placement = resolvePlacementFromSettings()
+  const panel = window.createWebviewPanel(
+    "bbHub",
+    `Backbencher Hub — ${params.symbol}`,
+    { viewColumn: placement.viewColumn, preserveFocus: placement.preserveFocus },
+    {
+      // The toggle needs a script; the W6 shell ships nonce-bound and CSP-locked
+      // (default-src 'none'): enableScripts only makes the nonce-bound local
+      // toggle possible — no remote code can run (H6 adds postMessage on top).
+      enableScripts: true,
+      localResourceRoots: [],
+    },
+  )
   context.subscriptions.push(panel)
+  HUB_PANELS.set(key, panel)
+  panel.onDidDispose(() => HUB_PANELS.delete(key))
   // M42.H6: the webview→editor door. One message channel per panel, wired to
   // the shared handler (version validation, fabricated-path guard, stale
   // labeling); requestRefresh re-renders THIS panel from its stored query.
@@ -173,6 +212,12 @@ export async function showHubPanel(
   }
   context.subscriptions.push(wireWebviewMessages(panel.webview, vscodeDeps(), refresh))
   const outcome = await renderHubForPanel(params, deps)
+  // M55.T1 (Truth Rule 2): the panel title names what is ACTUALLY rendered,
+  // through the ONE title rule the other panels use too. A member rooted
+  // through its owning declaration says so, so a substitution can never be
+  // read as the symbol the user clicked (the filing run's defect: the
+  // constructor graph opened titled `Store`, silently).
+  applyResolutionTitle(panel, `Backbencher Hub — ${params.symbol}`, outcome, params.symbol, "Hub")
   panel.webview.html = buildHubHtml(outcome, deps.cspSource)
   return { panel, outcome }
 }

@@ -22,6 +22,8 @@ import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
@@ -158,7 +160,7 @@ function runNvimSession(driverPath: string, outPath: string): { ok: boolean; res
     if (!existsSync(outPath)) return { ok: false, result: null, stderr }
   }
   if (!existsSync(outPath)) return { ok: false, result: null, stderr: "no results written" }
-  return { ok: true, result: JSON.parse(readFileSync(outPath, "utf8")) as DriverResult, stderr }
+  return { ok: true, result: parseSealedRecord(outPath) as DriverResult, stderr }
 }
 
 let inEditor = { ok: false, result: null as DriverResult | null, stderr: "" }
@@ -311,6 +313,6 @@ const result = {
 }
 
 mkdirSync(path.join(ROOT, "validation/m28/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m28/results/A2.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m28/results/A2.json"), result)
 console.log(`A2: ${status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 if (failed > 0) process.exit(1)

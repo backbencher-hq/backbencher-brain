@@ -22,6 +22,8 @@ import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { generateToolDoc } from "./generate-tool-doc"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const DOC_PATH = join(ROOT, "docs", "m24", "TOOL-DOC.md")
@@ -100,7 +102,7 @@ async function testClaims(): Promise<void> {
     const evPath = join(ROOT, "validation", "m24", "results", `${code}.json`)
     const ok = (() => {
       try {
-        const d = JSON.parse(readFileSync(evPath, "utf8")) as { status?: string }
+        const d = parseSealedRecord(evPath) as { status?: string }
         return d.status === "verified"
       } catch {
         return false
@@ -212,7 +214,7 @@ async function main(): Promise<void> {
     ],
   }
 
-  writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(EVIDENCE_PATH, evidence)
   console.log(`\nD1: ${status.toUpperCase()} (${passed}/${passed + failed} passed, ${negativeCases} negative)`)
   console.log(`Evidence: ${EVIDENCE_PATH}`)
   if (!ok) process.exitCode = 1

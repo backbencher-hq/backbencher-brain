@@ -29,11 +29,18 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
 const SRC = path.join(EXT_ROOT, "src/status-model.ts")
 const EXT_TS = path.join(EXT_ROOT, "src/extension.ts")
+// M55.V1: the status SURFACE owner. The facts used to be assembled inline in
+// extension.ts and shown in a notification; they are now rendered by this pure
+// markup owner (script/m55/verify-status-panel.ts). G4's "the panel renders the
+// per-language evidence table" therefore reads BOTH: the extension feeds
+// perLanguage to the surface, and the surface owner renders the table.
+const STATUS_MARKUP = path.join(EXT_ROOT, "src/status-markup.ts")
 const TOOL_DOC = path.join(ROOT, "docs/m24/TOOL-DOC.md")
 const MANIFEST = JSON.parse(readFileSync(path.join(EXT_ROOT, "package.json"), "utf8")) as {
   contributes?: { commands?: Array<{ command: string }> }
@@ -130,7 +137,12 @@ try {
   // --- G2: drift gate vs the generated tool doc -----------------------------
   {
     const doc = readFileSync(TOOL_DOC, "utf8")
-    const rows = [...doc.matchAll(/^\| (java|groovy|kotlin|scala|typescript|javascript|python) \|(.*)$/gm)]
+    // Language set DERIVED from the single owner (M61 Gap-1 rule: no
+    // gate-internal hardcoded language lists — the wave-1 alternation here
+    // drifted the moment wave 2 landed). Sorted longest-first so e.g.
+    // "typescript" matches before a hypothetical prefix.
+    const langAlt = [...LAUNCH_LANGUAGES].sort((a, b) => b.length - a.length).join("|")
+    const rows = [...doc.matchAll(new RegExp(`^\\| (${langAlt}) \\|(.*)$`, "gm"))]
     check("G2: tool doc has a claim row for every launch language (M29 wave-1 set)", rows.length === LAUNCH_LANGUAGES.length, `${rows.length}`)
     let drift = 0
     for (const row of rows) {
@@ -154,7 +166,11 @@ try {
     const cmds = MANIFEST.contributes?.commands?.map((c) => c.command) ?? []
     check("G4: both commands declared in the manifest", cmds.includes("bbLsp.showStatusPanel") && cmds.includes("bbLsp.indexNow"), cmds.join(","))
     check("G4: staleness fallback on declared absence renders UNKNOWN (never fresh)", extSource.includes("bb/staleness") && extSource.includes('status: "unknown"') && extSource.includes("transport failure"))
-    check("G4: panel renders the per-language evidence table", extSource.includes("perLanguage") && extSource.includes("evidence levels"))
+    const surfaceSource = readFileSync(STATUS_MARKUP, "utf8")
+    check(
+      "G4: panel renders the per-language evidence table (extension feeds it, the surface owner renders it)",
+      extSource.includes("perLanguage: view.perLanguage") && surfaceSource.includes("per-language evidence levels"),
+    )
   }
 
   // --- G5: render capture (log evidence) ------------------------------------
@@ -318,6 +334,6 @@ const result = {
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m25/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m25/results/E3.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m25/results/E3.json"), result)
 console.log(`E3: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

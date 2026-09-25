@@ -20,7 +20,7 @@
       "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M27 completion bar re-verified inside this gate before any M28 issue may close.",
       "acceptanceCriteria": [
-        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence \u2014 each rejection proven by mutation",
+        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
         "M27 bar audit runs inside the gate (spawned, exit-code checked)",
         "All existing milestone gates remain VERIFIED after wiring"
       ],
@@ -44,7 +44,7 @@
       "githubIssue": 624,
       "tool": "mcp-read-tools",
       "status": "verified",
-      "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) \u2014 the agent door shows what the IDE door shows (D-1/D-2).",
+      "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) — the agent door shows what the IDE door shows (D-1/D-2).",
       "acceptanceCriteria": [
         "All three tools registered, validated, executable against a real indexed fixture",
         "Tiers/truncation/absence semantics identical to the IDE surfaces (shared code, not shared prose)",
@@ -71,7 +71,7 @@
       "githubIssue": 625,
       "tool": "union-differential",
       "status": "verified",
-      "scope": "The union differential gate (D-5): one fixture workspace, two doors \u2014 MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
+      "scope": "The union differential gate (D-5): one fixture workspace, two doors — MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
       "acceptanceCriteria": [
         "Every differential assertion passes on the shared fixture",
         ">= 3 mutants (agent-side drift, IDE-side drift) all caught",
@@ -121,7 +121,7 @@
       "githubIssue": 627,
       "tool": "annotations-in-ide",
       "status": "verified",
-      "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge \u2014 an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
+      "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge — an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
       "acceptanceCriteria": [
         "Annotation provenance visible in both surfaces (agent note never reads as index fact)",
         "Real editor session asserts the rendered output (I3)",
@@ -191,5 +191,10 @@
         "negativeCases": 4
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.425Z",
+    "contentSha256": "4bced7c24df7ee9ba4aeb57ab062de5dc83f18ec3119e4ef8eb2d8c313f29f0f"
+  }
 }

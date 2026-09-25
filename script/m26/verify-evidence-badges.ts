@@ -31,10 +31,15 @@ import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CORE = join(ROOT, "script", "m26", "graph-core.ts")
 const HOVER_GLOSS = join(ROOT, "src", "lsp", "cross_language_hover.ts")
+// M55.T5: the tier RULE moved out of the gloss into the LSP lane's single
+// owner; the gloss now delegates. P4 drift-gates the owner and the mirror
+// (core) against each other and asserts the delegation itself.
+const TIER_OWNER = join(ROOT, "src", "lsp", "evidence_tier.ts")
 const DOC = join(ROOT, "docs", "m26", "EVIDENCE-TIERS.md")
 
 let checks = 0
@@ -95,9 +100,9 @@ function fixtureEdges(): { result: any; callers: any[] } {
   const c2 = mk("sym:c2", "c2")
   const c3 = mk("sym:c3", "c3")
   const callers = [
-    { from: c1.id, to: root.id, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { file: "c1.ts", line: 1 }, depth: 0 }, // structural (derived, above floor)
-    { from: c2.id, to: root.id, relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { file: "c2.ts", line: 1 }, depth: 0, metadata: { evidenceClass: "inferred" } }, // stored inferred
-    { from: c3.id, to: root.id, relationshipType: "imports", confidence: 0.8, isCrossLanguage: false, callSite: { file: "c3.ts", line: 1 }, depth: 0 }, // import_based
+    { from: c1.id, to: root.id, relationshipType: "calls", confidence: 0.9, isCrossLanguage: false, callSite: { kind: "call-site", file: "c1.ts", line: 1 }, depth: 0 }, // structural (derived, above floor)
+    { from: c2.id, to: root.id, relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { kind: "call-site", file: "c2.ts", line: 1 }, depth: 0, metadata: { evidenceClass: "inferred" } }, // stored inferred
+    { from: c3.id, to: root.id, relationshipType: "imports", confidence: 0.8, isCrossLanguage: false, callSite: { kind: "call-site", file: "c3.ts", line: 1 }, depth: 0 }, // import_based
   ]
   const result = {
     root,
@@ -160,8 +165,22 @@ async function main(): Promise<void> {
   // --- P4: hover gloss applies the same rule (threshold drift gate) ------------
   const glossSource = readFileSync(HOVER_GLOSS, "utf8")
   const coreSource = readFileSync(CORE, "utf8")
-  check("P4: hover gloss uses the same 0.7 floor", glossSource.includes("0.7") && coreSource.includes(">= 0.7"))
-  check("P4: hover gloss names the same structural set", ["calls", "extends", "implements", "overrides"].every((t) => glossSource.includes(`"${t}"`)))
+  const ownerSource = readFileSync(TIER_OWNER, "utf8")
+  // Comments may NAME the rule (they must explain the delegation); only CODE
+  // can reimplement it, so the negative assertions read the comment-stripped
+  // source.
+  const glossCode = glossSource.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+  check(
+    "P4: hover gloss delegates to the tier owner (no second rule)",
+    glossSource.includes('from "./evidence_tier"') && glossSource.includes("classifyTier(") && !glossCode.includes("0.7") && !glossCode.includes("STRUCTURAL"),
+    "the gloss must call src/lsp/evidence_tier.ts, not re-implement the rule",
+  )
+  check("P4: owner and core declare the same 0.7 floor", ownerSource.includes("STRUCTURAL_FLOOR = 0.7") && coreSource.includes(">= 0.7"))
+  check(
+    "P4: owner and core declare the same structural set",
+    ["calls", "extends", "implements", "overrides", "contains", "exports", "instantiates"].every((t) => ownerSource.includes(`"${t}"`) && coreSource.includes(`"${t}"`)),
+    "the core mirrors the owner (verify-tiers.ts P1 asserts the equivalence table)",
+  )
 
   // --- P5: doc drift gate -------------------------------------------------------
   const doc = readFileSync(DOC, "utf8")
@@ -230,7 +249,7 @@ async function main(): Promise<void> {
           if (!detected) {
             const dSub = makeDom()
             const fxSub = fixtureEdges()
-            fxSub.result.callers = [{ from: "sym:c1", to: "sym:root", relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { file: "c1.ts", line: 1 }, depth: 0 }]
+            fxSub.result.callers = [{ from: "sym:c1", to: "sym:root", relationshipType: "calls", confidence: 0.4, isCrossLanguage: false, callSite: { kind: "call-site", file: "c1.ts", line: 1 }, depth: 0 }]
             m.renderGraph(fxSub.result, dSub as never)
             detected = dSub.el.findAll("bb-badge-structural").length > 0 // sub-floor call wearing structural
           }
@@ -302,7 +321,7 @@ async function main(): Promise<void> {
   }
   const dir = join(ROOT, "validation/m26/results")
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, "W4.json"), JSON.stringify(result2, null, 2) + "\n")
+  writeSealed(join(dir, "W4.json"), result2)
   console.log(`W4: ${result2.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

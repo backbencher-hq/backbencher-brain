@@ -2,19 +2,19 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
-  "sourceFingerprint": "af96c63f747ff5fdfd7733c7d725993180294a7d3f678c7cbb8117e5bce1ba91",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "sourceFingerprint": "a5a92ec983f3355b9d597e7920588237241159b709ec851538c42683aaa48514",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-09-16T12:39:24.027Z",
-  "passed": 18,
+  "generatedAt": "2026-09-20T02:43:29.811Z",
+  "passed": 20,
   "failed": 0,
   "failures": [],
   "negativeCases": 0,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 4,
-    "mutantsTotal": 4,
+    "mutantsCaught": 5,
+    "mutantsTotal": 5,
     "ok": true,
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
   },
@@ -23,5 +23,10 @@
     "heuristic edges from the engine are included; their ratio is declared by the engine's provenance",
     "ranges for engine nodes use line-level precision when the engine lacks byte columns",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:29.811Z",
+    "contentSha256": "051344cc878c06f79f918437ad0f08d724dce45cb4000f87cddb79f54bf37e83"
+  }
 }

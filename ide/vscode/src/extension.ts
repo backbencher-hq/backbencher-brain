@@ -17,7 +17,7 @@
 // returns; progress UX is E2 scope. All work here is non-blocking and the
 // client start is awaited within the measured window.
 
-import { workspace, window, commands, ExtensionContext, StatusBarAlignment, StatusBarItem, ProgressLocation, MarkdownString } from "vscode"
+import { workspace, window, commands, ExtensionContext, StatusBarAlignment, StatusBarItem, ProgressLocation, MarkdownString, type WebviewPanel } from "vscode"
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -29,6 +29,12 @@ import {
 import { resolveServerLaunch, versionDecision, ServerLaunch, SourceMode } from "./server-resolution"
 import { createAutoIndexMachine, AutoIndexMachine } from "./auto-index"
 import { renderStatus, StatusInput, StaleMarkerInput } from "./status-model"
+// M55.V1: the status SURFACE — the pure markup owner + the ONE webview shell
+// and placement helper every panel uses (no second style or placement rule).
+import { renderStatusMarkup, statusSurfaceState, type StatusSurfaceInput } from "./status-markup"
+import { resolvePlacementFromSettings } from "./graph-panel"
+import { panelKey, PanelRegistry } from "./panel-placement"
+import { buildWebviewHtml } from "../../../script/m26/webview-html"
 
 export const BB_ACTIVATION_BUDGET_SETTING = "bbLsp.activationBudgetMs"
 export const BB_MIN_SERVER_VERSION_SETTING = "bbLsp.minServerVersion"
@@ -103,7 +109,26 @@ function buildServerOptions(launch: ServerLaunch): ServerOptions {
 }
 
 function workspaceRoot(): string {
-  return workspace.workspaceFolders?.[0]?.uri.fsPath ?? process.cwd()
+  // Loud invariant, never a guess: activate() refuses before any launch when
+  // there is no workspace folder (workspaceRootOrNull), so reaching here with
+  // null is a programming error — throw, never fall back to process.cwd().
+  const root = workspaceRootOrNull()
+  if (root === null) throw new Error("bb_lsp: no workspace folder — activate() must refuse before resolving a launch")
+  return root
+}
+
+/** Declared-absence guard: a single-file (or untitled) window has NO workspace
+ *  folder. The old fallback silently started the server against
+ *  `process.cwd()` — the extension host's cwd, an arbitrary directory — so the
+ *  server indexed and watched the WRONG project while the status surface
+ *  looked alive (found live, 2026-09-12: hovering a single file showed
+ *  "stale" against the wrong root). Starting against a guessed root is a
+ *  silent misbehavior; refusing is the honest act. Returns null when there is
+ *  no workspace; callers must surface that, never fall back. */
+function workspaceRootOrNull(): string | null {
+  const folders = workspace.workspaceFolders
+  if (!folders || folders.length === 0) return null
+  return folders[0]!.uri.fsPath
 }
 
 /** Format the honest launch line for the status surface (E3 renders it later;
@@ -215,8 +240,20 @@ async function startClient(context: ExtensionContext, report: ActivationReport):
 export async function activate(context: ExtensionContext): Promise<unknown> {
   const startedAt = Date.now()
   const { mode, serverPath, minVersion, budgetMs } = readLaunchConfig()
+  // Declared refusal BEFORE resolution: without a workspace folder there is no
+  // project to index — no silent cwd guess (see workspaceRootOrNull).
+  const wsRoot = workspaceRootOrNull()
+  if (wsRoot === null) {
+    statusItem = window.createStatusBarItem(StatusBarAlignment.Right, 90)
+    statusItem.name = "Backbencher Brain"
+    context.subscriptions.push(statusItem)
+    statusItem.text = "$(info) bb: no workspace"
+    statusItem.tooltip = "bb_lsp is not started: this window has no workspace folder (a single opened file is not a project). Open the project's folder to enable the Backbencher index."
+    statusItem.show()
+    return { activationMs: Date.now() - startedAt, declaredBudgetMs: budgetMs, withinBudget: true, launch: null, serverVersion: undefined, versionOk: false, noWorkspace: true }
+  }
   const launchResult = resolveServerLaunch({
-    workspaceRoot: workspaceRoot(),
+    workspaceRoot: wsRoot,
     extensionRoot: context.extensionUri.fsPath,
     mode,
     explicitServerPath: serverPath,
@@ -266,21 +303,19 @@ export async function activate(context: ExtensionContext): Promise<unknown> {
       return
     }
     const { showGraphPanel } = await import("./graph-panel")
-    await showGraphPanel(word, { client, cspSource: "" }, context)
+    // M55.T1: the defining file rides the request — same-name members resolve
+    // through the index's own truth, never by guessing (Truth Rule 2).
+    await showGraphPanel(word, { client, cspSource: "" }, context, editor.document.uri.fsPath)
   })
-  commands.registerCommand("bbLsp.showServerStatus", () => {
-    const r = activationReport
-    if (r === null) return
-    const lines = [
-      `launch: ${r.launch ? describeLaunch(r.launch) : "unresolved"}`,
-      `server version: ${r.serverVersion ?? "(not reported)"}`,
-      `version ok: ${r.versionOk ? "yes" : "no"}`,
-      `activation: ${r.activationMs} ms (declared budget ${r.declaredBudgetMs} ms, ${r.withinBudget ? "within" : "MISSED"})`,
-    ]
-    void window.showInformationMessage(lines.join("\n"), { modal: false })
-  })
+  // M55.V1: this command used to show its four facts in a notification —
+  // which VS Code renders as ONE line, so the frame (live-8/7-status.png)
+  // showed only `launch: compiled dist (bundled) — …` and hid the version,
+  // the version verdict and the activation cost. It now opens the SAME status
+  // surface, whose provenance section carries exactly these facts: one
+  // surface, one place to look, nothing collapsed.
+  commands.registerCommand("bbLsp.showServerStatus", () => void showStatusPanel(context))
   // E3 status surface commands (declared in the manifest).
-  commands.registerCommand("bbLsp.showStatusPanel", () => void showStatusPanel())
+  commands.registerCommand("bbLsp.showStatusPanel", () => void showStatusPanel(context))
   commands.registerCommand("bbLsp.indexNow", () => void indexNow())
   // M42.H2 + H4: hover link actions (bb.openUsage / bb.openDefinition /
   // bb.showAllUsages / bb.openGraph / bb.openImpact / bb.showCallHierarchy) —
@@ -400,7 +435,7 @@ export function refreshStatus(): void {
 
 /** The full panel: every fact, the per-language evidence table, and the
  *  remediation actions for any failure state (law-failure). */
-export async function showStatusPanel(): Promise<void> {
+export async function showStatusPanel(context?: ExtensionContext): Promise<void> {
   const input: StatusInput = {
     server: {
       up: client !== null && client.state === State.Running,
@@ -418,21 +453,80 @@ export async function showStatusPanel(): Promise<void> {
     language: window.activeTextEditor?.document.languageId ?? null,
   }
   const view = renderStatus(input)
-  const lines = [
-    "Backbencher Brain — status (every fact carries its claim level)",
-    "",
-    ...view.tooltipLines,
-    "",
-    "per-language evidence levels (declared, drift-gated):",
-    ...view.perLanguage.map((p) => `  ${p.language.padEnd(12)} ${p.level.padEnd(4)} ${p.description}`),
-  ]
+  // M55.V1 (owner live test, 2026-09-13): the facts used to go into a
+  // notification — and VS Code renders a notification as ONE line, so the
+  // frame showed only "launch: compiled dist (bundled) — …" while every
+  // evidence level, the budget and the staleness marker were collapsed away.
+  // The facts now render on a real, readable, screenshot-able surface; the
+  // notification is kept ONLY for the remediation buttons, and its single line
+  // is short by construction so nothing is lost in it.
+  await showStatusSurface(view, input, context)
   if (view.actions.length > 0) {
-    const choice = await window.showInformationMessage(lines.join("\n"), ...view.actions.map((a) => a.title))
+    const summary = `Backbencher status: ${input.server.up ? "server running" : "SERVER DOWN"}${view.staleBadge !== null ? " · stale marker active" : ""} — ${view.actions.length} action(s)`
+    const choice = await window.showInformationMessage(summary, ...view.actions.map((a) => a.title))
     const action = view.actions.find((a) => a.title === choice)
     if (action !== undefined) void commands.executeCommand(action.command)
-  } else {
-    void window.showInformationMessage(lines.join("\n"))
   }
+}
+
+/** The status surface (M55.V1): one panel, reused, rendered from the model's
+ *  own lines through the PURE markup owner. The panel keeps focus (Truth Rule
+ *  6) — the facts belong on screen without taking the user's cursor out of
+ *  their file; the remediation buttons live in the notification. */
+const STATUS_PANELS = new PanelRegistry<WebviewPanel>()
+const STATUS_PANEL_KEY = panelKey("status", "status", undefined)
+
+function buildStatusHtml(view: ReturnType<typeof renderStatus>, input: StatusInput, cspSource: string): string {
+  const surface: StatusSurfaceInput = {
+    lines: view.tooltipLines,
+    // The launch / version / cost facts (previously their own notification).
+    serverFacts: serverProvenanceLines(),
+    staleBadge: view.staleBadge,
+    // Declared absence: with no active editor the model's per-file facts do
+    // not exist. Saying so is the honest form of an empty table.
+    noActiveFileNote:
+      input.language === null ? "No active editor — the per-file facts (freshness, language level) are not claimed. Open a file to see them." : null,
+    perLanguage: view.perLanguage,
+    actions: view.actions,
+  }
+  return buildWebviewHtml({ cspSource, stateJson: statusSurfaceState(surface), bodyMarkup: renderStatusMarkup(surface) }).html
+}
+
+/** The server-provenance lines, from the activation report (null report =>
+ *  nothing claimed: an unreported fact is declared absent, never invented). */
+export function serverProvenanceLines(): string[] {
+  const r = activationReport
+  if (r === null) return ["server provenance: not reported yet — activation has not completed in this session"]
+  return [
+    `launch: ${r.launch ? describeLaunch(r.launch) : "unresolved"}`,
+    `server version: ${r.serverVersion ?? "(not reported)"}`,
+    `version ok: ${r.versionOk ? "yes" : "no"}`,
+    `activation: ${r.activationMs} ms (declared budget ${r.declaredBudgetMs} ms, ${r.withinBudget ? "within" : "MISSED"})`,
+  ]
+}
+
+async function showStatusSurface(view: ReturnType<typeof renderStatus>, input: StatusInput, context?: ExtensionContext): Promise<void> {
+  // cspSource "" matches the other panels: the shell's policy is
+  // default-src 'none' with nonce-bound local styles/scripts, so no remote
+  // origin is ever needed.
+  const cspSource = ""
+  const existing = STATUS_PANELS.get(STATUS_PANEL_KEY)
+  if (existing !== null) {
+    existing.webview.html = buildStatusHtml(view, input, cspSource)
+    existing.reveal(undefined, true)
+    return
+  }
+  const placement = resolvePlacementFromSettings()
+  const panel = window.createWebviewPanel(
+    "bbStatus",
+    "Backbencher Status",
+    { viewColumn: placement.viewColumn, preserveFocus: placement.preserveFocus },
+    { enableScripts: false, localResourceRoots: [] },
+  )
+  context?.subscriptions.push(panel)
+  STATUS_PANELS.set(STATUS_PANEL_KEY, panel)
+  panel.onDidDispose(() => STATUS_PANELS.delete(STATUS_PANEL_KEY))
+  panel.webview.html = buildStatusHtml(view, input, cspSource)
 }
 
 // ---------------------------------------------------------------------------

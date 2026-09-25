@@ -20,6 +20,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EVIDENCE_PATH = join(ROOT, "validation/m29/results/X1.json")
@@ -234,7 +235,7 @@ const result = {
     "Co-agent lanes (M14/M37/M40/M41) are outside this program's closure; their gates live in their own milestones.",
   ],
 }
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 
 console.log(`\nX1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negatives)`)
 console.log(`Evidence: ${EVIDENCE_PATH}`)

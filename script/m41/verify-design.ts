@@ -82,7 +82,7 @@ check("D1: single ember accent is declared", globals.includes("--ember: #e2553b"
 check("D1: Fraunces display faces are wired", globals.includes("--font-fraunces") && globals.includes(".font-display-italic"))
 check("D1: fonts are self-hosted via next/font/local", ["fraunces", "fraunces-italic", "hanken", "jbmono"].every((f) => layout.includes(`--font-${f}`)))
 check("D1: self-hosted font files ship with the site", ["fraunces-latin.woff2", "fraunces-i-latin.woff2", "hanken-latin.woff2", "jbmono-latin.woff2"].every((f) => existsSync(path.join(SITE, "src/fonts", f))))
-check("D1: hero renders the new identity (real session film per M45.T1, or the Fig. 01 verbatim figure)", (() => { const s = read("website/src/components/HeroSection.tsx"); return s.includes("HeroFilm") || (s.includes("verbatim from the CLI") && s.includes("bb --help")) })())
+check("D1: hero renders the new identity (live verbatim terminal per owner decision 2026-09-12, or the Fig. 01 verbatim figure)", (() => { const s = read("website/src/components/HeroSection.tsx"); return s.includes("HeroTerminal") || (s.includes("verbatim from the CLI") && s.includes("bb --help")) })())
 check("D1: favicon follows the ember identity", read("website/src/app/icon.svg").includes("#E2553B") && !read("website/src/app/icon.svg").includes("#8b5cf6"))
 
 // --- 3. old-identity vocabulary absent -------------------------------------------

@@ -8,7 +8,7 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 3,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -110,6 +110,10 @@
         "caught": true
       },
       {
+        "name": "M1b empty-state dropped",
+        "caught": true
+      },
+      {
         "name": "M2 fabricated total",
         "caught": true
       },
@@ -164,16 +168,23 @@
     ],
     "D1": [
       {
-        "name": "M1 doctored embedded fact",
+        "name": "M1 doctored embedded fact (drift rule)",
         "caught": true
       },
       {
-        "name": "M2 fabricated pair count",
+        "name": "M2 fabricated reality row",
+        "caught": true
+      },
+      {
+        "name": "M3 ambient leak (leaky control)",
         "caught": true
       }
     ]
   },
-  "generatedAt": "2026-09-07T22:49:46.342Z",
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "generatedAt": "2026-09-20T02:23:20.505Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:23:20.506Z",
+    "contentSha256": "17330ceefef465dded3756691a23dc73d34a1db9e64d84eea2e3de055a01aca7"
+  }
 }

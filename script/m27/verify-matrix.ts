@@ -21,6 +21,8 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const LEDGER = path.join(ROOT, "validation/m27/results/manifest.json")
@@ -78,7 +80,7 @@ function defaultEvidenceLoader(file: string): Record<string, unknown> | null {
   const evidencePath = path.join(ROOT, "validation/m27/results", file)
   if (!existsSync(evidencePath)) return null
   try {
-    return JSON.parse(readFileSync(evidencePath, "utf8")) as Record<string, unknown>
+    return parseSealedRecord(evidencePath) as Record<string, unknown>
   } catch {
     return null
   }
@@ -141,7 +143,7 @@ function main(): void {
     currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
   } catch {}
 
-  const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as { issues: LedgerIssue[] }
+  const ledger = parseSealedRecord(LEDGER) as { issues: LedgerIssue[] }
 
   // --- G1/G2: generation is sourced and honest -----------------------------
   const fresh = generateMatrix(ledger)
@@ -206,7 +208,7 @@ function main(): void {
     ],
   }
   mkdirSync(path.join(ROOT, "validation/m27/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m27/results", result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(ROOT, "validation/m27/results", result.evidenceFile), result)
   console.log(`V1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 }

@@ -111,5 +111,10 @@
   "limitations": [
     "The audit proves the index-backed claim statically (query shape) and dynamically (row-deletion probe); it does not re-verify analyzer symbol extraction (that is the M12 analyzer work)."
   ],
-  "generatedAt": "2026-09-05T20:56:33.919Z"
+  "generatedAt": "2026-09-05T20:56:33.919Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.299Z",
+    "contentSha256": "5764bb14f68f936a5fcbed94f7090c49cdf72cd5832f8298826bc0e6e66a9b0e"
+  }
 }

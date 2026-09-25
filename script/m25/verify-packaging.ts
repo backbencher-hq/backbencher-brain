@@ -32,6 +32,8 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
@@ -204,6 +206,13 @@ try {
     scala: ["tree-sitter-scala.wasm"],
     python: ["tree-sitter-python.wasm"],
     groovy: ["tree-sitter-groovy.wasm"],
+    zig: ["tree-sitter-zig.wasm"],
+    go: ["tree-sitter-go.wasm"],
+    rust: ["tree-sitter-rust.wasm"],
+    c: ["tree-sitter-c.wasm"],
+    cpp: ["tree-sitter-cpp.wasm"],
+    vue: ["tree-sitter-vue.wasm"],
+    svelte: ["tree-sitter-svelte.wasm"],
   }
   const expectedWasms = ["tree-sitter.wasm", ...launchLanguages.flatMap((l) => {
     const f = GRAMMAR_BY_LANGUAGE[l]
@@ -286,15 +295,28 @@ try {
   const pub = spawnSync("node", ["publish-openvsx.mjs"], { cwd: EXT_ROOT, encoding: "utf8", timeout: 120_000 })
   check("G3: publish script exits 0 in dry-run (blocked, never silent-skip)", pub.status === 0, String(pub.stderr).slice(0, 200))
   const recordPath = path.join(RESULTS, "E4-openvsx.json")
-  const record = existsSync(recordPath) ? JSON.parse(readFileSync(recordPath, "utf8")) : null
+  // The publisher (ide/vscode/publish-openvsx.mjs — a plain node script outside
+  // the TS lane) writes the raw record. This gate OWNS its sealed state: the
+  // produced content is re-written through the one write path, seal added,
+  // content byte-preserved (M61.V1 — an unsealed record would be refused by
+  // every trusted reader downstream).
+  if (existsSync(recordPath)) {
+    const rawRecord = JSON.parse(readFileSync(recordPath, "utf8")) as Record<string, unknown>
+    if (!("bbSeal" in rawRecord)) writeSealed(recordPath, rawRecord)
+  }
+  const record = existsSync(recordPath) ? parseSealedRecord(recordPath) : null
   check("G3: machine record written", record !== null)
   check("G3: record is honestly blocked with the credential reason", record?.blocked === true && typeof record?.reason === "string" && record.reason.includes("credentials"), JSON.stringify(record?.reason ?? ""))
   check("G3: record points at a real artifact", typeof record?.artifact === "string" && existsSync(path.join(ROOT, record.artifact)))
   check("G3: record carries the exact publish command for the owner", typeof record?.publishCommand === "string" && record.publishCommand.includes("ovsx publish"))
   // Credential-material check: the record must contain no actual token
   // value — not the word (prose is fine), but credential-shaped strings
-  // (long hex/base64 runs or a resolved --pat value).
-  const recordText = JSON.stringify(record)
+  // (long hex/base64 runs or a resolved --pat value). The seal block is
+  // EXCLUDED (declared integrity metadata: its sha256 is a digest of the
+  // content, not record content — counting it would false-positive every
+  // sealed record).
+  const { bbSeal: _seal, ...recordContent } = (record ?? {}) as Record<string, unknown>
+  const recordText = JSON.stringify(recordContent)
   const credentialShaped = /[A-Fa-f0-9]{32,}/.test(recordText) || /--pat\s+[A-Za-z0-9+/=]{16,}/.test(recordText)
   check("G3: record contains no credential-shaped material", !credentialShaped, recordText.slice(0, 120))
   const pubSource = readFileSync(path.join(EXT_ROOT, "publish-openvsx.mjs"), "utf8")
@@ -407,6 +429,6 @@ const result = {
   ],
 }
 mkdirSync(RESULTS, { recursive: true })
-writeFileSync(path.join(RESULTS, "E4.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(RESULTS, "E4.json"), result)
 console.log(`E4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

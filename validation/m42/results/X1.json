@@ -22,7 +22,7 @@
     "M42-H5": 0,
     "M42-H6": 0
   },
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m42/verify-closure.ts",
   "evidenceFile": "X1.json",
   "launchBar": {
@@ -30,19 +30,22 @@
     "osMatrixDarwinWindows": "machine-blocked records with reasons; executable leg authored in .github/workflows/os-matrix.yml (runs on GitHub-hosted runners on push)",
     "openVsxPublish": "owner-required: OVSX_PAT is owner-held (validation/m25/results/E4-openvsx.json); recorded in LAUNCH-RECORD.md with reason",
     "placeholderMilestones": "milestones #27/#28 closed with pointer comments to #38/#39 (see LAUNCH-RECORD.md)",
-    "knownGapsInventory": "docs/m42/LAUNCH-RECORD.md inventory \u2014 every gap fixed or recorded with reason; the \u00a78.5 achieved/not-achieved verdict stays with the owner"
+    "knownGapsInventory": "docs/m42/LAUNCH-RECORD.md inventory — every gap fixed or recorded with reason; the §8.5 achieved/not-achieved verdict stays with the owner"
   },
   "ownerSpotCheck": {
     "pack": "validation/m42/results/SPOT-CHECK-PACK.md",
     "verdictOwner": "owner (ishaq2321)",
-    "contract": "IDE Honesty Contract \u00a78.5 \u2014 the achieved/not-achieved verdict is the owner's, never the gate's"
+    "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-07T23:16:44.456Z",
+  "generatedAt": "2026-09-20T02:48:08.817Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run.",
-    "The launch bar's owner-held items (OpenVSX publish token, the \u00a78.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons \u2014 this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
-    "Co-agent lanes (M14/M37/M40/M41\u2026) are outside this program's closure; their gates live in their own milestones."
+    "The launch bar's owner-held items (OpenVSX publish token, the §8.5 verdict, darwin/win CI execution on GitHub-hosted runners) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
+    "Co-agent lanes (M14/M37/M40/M41…) are outside this program's closure; their gates live in their own milestones."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:48:08.818Z",
+    "contentSha256": "783dd66db8cda0d083123db4c622fec75809bdee3767350acadc03c0ec3f5c6c"
+  }
 }

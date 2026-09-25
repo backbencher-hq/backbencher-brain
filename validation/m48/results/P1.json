@@ -9,5 +9,10 @@
   "failed": 0,
   "negativeCases": 3,
   "failures": [],
-  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service.run + 250 direct callers of leafB (budget truncation)"
+  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service.run + 250 direct callers of leafB (budget truncation)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.570Z",
+    "contentSha256": "0555866796ab3b116d0521e19213be805f5d440374b35f16f98fac5e1be269aa"
+  }
 }

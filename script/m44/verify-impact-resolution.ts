@@ -33,6 +33,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -41,6 +42,9 @@ const SERVER = path.join(ROOT, "dist/lsp/server.js")
 const BB = path.join(ROOT, "bin/bb")
 const CORE = path.join(ROOT, "script/m26/graph-core.ts")
 const IMPACT = path.join(ROOT, "src/lsp/impact.ts")
+// M55.T1: the member-resolution rules now live in the ONE identity resolver;
+// affected mutant anchors may sit in either file (see withComponent).
+const IDENTITY = path.join(ROOT, "src/lsp/identity.ts")
 
 let checks = 0
 let passed = 0
@@ -126,6 +130,9 @@ async function makeSeedFixture(): Promise<{ raw: any; projectId: string; dataDir
   raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)`).run(
     "file-1", projectId, path.join(ws, "main.ts"), "main.ts", "typescript", "u5-hash",
   )
+  raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)`).run(
+    "file-2", projectId, path.join(ws, "registry.ts"), "registry.ts", "typescript", "u5-hash2",
+  )
   const sym = raw.prepare(
     `INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, owner_symbol_id, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
   )
@@ -134,6 +141,15 @@ async function makeSeedFixture(): Promise<{ raw: any; projectId: string; dataDir
   sym.run("sym-ctor", projectId, "file-1", "constructor", "constructor", 5, 5, 26, 40, "sym-greeter", 6)
   sym.run("sym-main", projectId, "file-1", "main", "function", 8, 11, 50, 90, null, 5)
   sym.run("sym-helper", projectId, "file-1", "helper", "method", 12, 14, 95, 120, "sym-greeter", 4)
+  // The SECOND class + constructor (X1 closure): real repos have several
+  // same-name member rows — the seed mirrors the owner's demo repo shape.
+  sym.run("sym-registry", projectId, "file-2", "Registry", "class", 1, 6, 1, 30, null, 9)
+  // Gravity 20 > greeter's 6: the M48.C1 engine resolves an exact member name
+  // DIRECTLY (gravity-ordered, any type) — without the file hint it roots the
+  // WRONG constructor here. This fixture makes that masking deterministic:
+  // the hinted request must beat gravity, or the gate fails.
+  sym.run("sym-registry-ctor", projectId, "file-2", "constructor", "constructor", 5, 5, 26, 40, "sym-registry", 20)
+  sym.run("sym-register", projectId, "file-2", "register", "function", 8, 11, 50, 90, null, 5)
   // Rule-3 negative at full strength: a NON-traversable member (outside the
   // engine whitelist, like the constructor) that HAS its own reverse edge —
   // the direct path cannot resolve it, so only rule 3 stands between it and
@@ -146,8 +162,10 @@ async function makeSeedFixture(): Promise<{ raw: any; projectId: string; dataDir
   rel.run("u5-contains-ctor", projectId, "sym-greeter", "sym-ctor", "contains", 1.0)
   rel.run("u5-contains-greet", projectId, "sym-greeter", "sym-greet", "contains", 1.0)
   rel.run("u5-contains-helper", projectId, "sym-greeter", "sym-helper", "contains", 1.0)
+  rel.run("u5-contains-reg-ctor", projectId, "sym-registry", "sym-registry-ctor", "contains", 1.0)
   // The class's reverse dependency (the impact set the owner roots at).
   rel.run("u5-inst", projectId, "sym-main", "sym-greeter", "instantiates", 0.9)
+  rel.run("u5-inst-reg", projectId, "sym-register", "sym-registry", "instantiates", 0.9)
   // helper HAS its own reverse edge (rule 3 negative case): a caller calls
   // helper directly — helper must NOT re-root through Greeter.
   rel.run("u5-calls-helper", projectId, "sym-main", "sym-helper", "calls", 0.8)
@@ -176,12 +194,12 @@ async function main(): Promise<void> {
   const { BrainDatabase } = await import(path.join(ROOT, "src/brain/database.ts"))
   const raw = await BrainDatabase.getRawInstance(fx.projectId)
   const ctorRows = raw
-    .prepare(`SELECT s.id, s.name, s.symbol_type, s.owner_symbol_id FROM brain_symbol s WHERE s.project_id = ? AND s.name = 'constructor'`)
-    .all(fx.projectId) as Array<{ id: string; name: string; symbol_type: string; owner_symbol_id: string | null }>
-  check("R0: the real index stores a 'constructor' symbol", ctorRows.length === 1, JSON.stringify(ctorRows))
-  const ctor = ctorRows[0]
-  check("R0: its symbol_type is 'constructor' (outside the engine whitelist)", ctor?.symbol_type === "constructor", ctor?.symbol_type ?? "")
-  check("R0: it has an owner (the containing class)", !!ctor?.owner_symbol_id, String(ctor?.owner_symbol_id ?? ""))
+    .prepare(`SELECT s.id, s.name, s.symbol_type, s.owner_symbol_id, COALESCE(f.relative_path, f.path, '') AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = 'constructor'`)
+    .all(fx.projectId) as Array<{ id: string; name: string; symbol_type: string; owner_symbol_id: string | null; file: string }>
+  check("R0: the real index stores a 'constructor' PER CLASS (2 classes -> 2 rows)", ctorRows.length === 2, JSON.stringify(ctorRows))
+  const ctor = ctorRows.find((r) => r.file.endsWith("main.ts"))
+  check("R0: both constructors are type 'constructor' (outside the engine whitelist)", ctorRows.every((r) => r.symbol_type === "constructor"), ctorRows.map((r) => r.symbol_type).join(","))
+  check("R0: every constructor has an owner (its containing class)", ctorRows.every((r) => !!r.owner_symbol_id), String(ctorRows.filter((r) => !r.owner_symbol_id).length))
   const ownerRows = ctor?.owner_symbol_id
     ? (raw.prepare(`SELECT name, symbol_type FROM brain_symbol WHERE id = ?`).all(ctor.owner_symbol_id) as Array<{ name: string; symbol_type: string }>)
     : []
@@ -193,21 +211,46 @@ async function main(): Promise<void> {
   const containsRow = raw
     .prepare(`SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND target_symbol_id = ? AND relationship_type = 'contains'`)
     .get(fx.projectId, ctor?.id) as { c: number }
-  check("R0: the containment row exists (owner → constructor)", containsRow.c === 1, String(containsRow.c))
+  check("R0: the containment rows exist (Greeter → ctor, Registry → ctor)", containsRow.c === 2, String(containsRow.c))
   const instRow = raw
-    .prepare(`SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND relationship_type = 'instantiates' AND target_symbol_id IN (SELECT id FROM brain_symbol WHERE name = 'Greeter')`)
+    .prepare(`SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND relationship_type = 'instantiates' AND target_symbol_id IN (SELECT id FROM brain_symbol WHERE name IN ('Greeter','Registry'))`)
     .get(fx.projectId) as { c: number }
-  check("R0: the real analyzer wrote the instantiates edge (main → Greeter)", instRow.c === 1, String(instRow.c))
+  check("R0: the real analyzer wrote the instantiates edges (main→Greeter, register→Registry)", instRow.c === 2, String(instRow.c))
 
   // --- R1: component-level resolution over the seeded fixture --------------------
   console.log("\nR1: computeImpact resolves the member through its owner")
   const sfx = await makeSeedFixture()
   try {
-    const result = await impact.computeImpact(sfx.raw, sfx.projectId, "constructor")
-    check("R1: member target roots at the owning class", result.root?.name === "Greeter", JSON.stringify(result.root ?? null))
+    // X1 closure: TWO constructors share the name now. Without the file
+    // hint the ambiguity is a declared error; with the hint each file's
+    // member roots at ITS class.
+    let ambiguousErr = ""
+    try {
+      await impact.computeImpact(sfx.raw, sfx.projectId, "constructor")
+    } catch (e) {
+      ambiguousErr = e instanceof Error ? e.message : String(e)
+    }
+    check("R1: an ambiguous member name without a file hint keeps the declared error", ambiguousErr.startsWith("bb/impact:") && ambiguousErr.includes("not found"), ambiguousErr.slice(0, 140))
+
+    const result = await impact.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "main.ts")
+    check("R1: file-hinted member roots at the owning class (Greeter)", result.root?.name === "Greeter", JSON.stringify(result.root ?? null))
     check("R1: resolution is declared as owning-declaration", result.resolution?.through === "owning-declaration" && result.resolution?.memberName === "constructor" && result.resolution?.ownerName === "Greeter", JSON.stringify(result.resolution ?? null))
     check("R1: the impact set is the class's reverse dependencies (main)", result.impact.length === 1 && result.impact[0]?.name === "main", JSON.stringify(result.impact))
     check("R1: shownCount/totalCount honest (untruncated)", result.shownCount === 1 && result.totalCountIfKnown === 1 && result.truncated === false, JSON.stringify({ shown: result.shownCount, total: result.totalCountIfKnown }))
+
+    const regResult = await impact.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "registry.ts")
+    check("R1: the SAME name in the other file roots at ITS class (Registry)", regResult.root?.name === "Registry" && regResult.resolution?.ownerName === "Registry", JSON.stringify(regResult.resolution ?? null))
+    check("R1: Registry's impact set is its own reverse dependency (register)", regResult.impact.length === 1 && regResult.impact[0]?.name === "register", JSON.stringify(regResult.impact))
+    // A hint that matches no stored row is stale-index noise: a single-row
+    // name would still resolve (index truth); here the name is ambiguous, so
+    // a wrong hint must keep the declared error (never a guess).
+    let staleHintErr = ""
+    try {
+      await impact.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "no-such-file.ts")
+    } catch (e) {
+      staleHintErr = e instanceof Error ? e.message : String(e)
+    }
+    check("R1: a hint matching no row keeps the declared error (never a guess)", staleHintErr.startsWith("bb/impact:") && staleHintErr.includes("not found"), staleHintErr.slice(0, 140))
 
     // Direct path unchanged: a traversable name still resolves directly.
     const direct = await impact.computeImpact(sfx.raw, sfx.projectId, "Greeter")
@@ -258,25 +301,36 @@ async function main(): Promise<void> {
     // --- R6: mutants (component + core) -------------------------------------------
     console.log("\nR6: the resolution laws CAN FAIL (mutants planted)")
     const componentSource = readFileSync(IMPACT, "utf8")
+    const identitySource = readFileSync(IDENTITY, "utf8")
     const coreSource = readFileSync(CORE, "utf8")
     const importComponent = (src: string): string =>
       src
         .replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`)
         .replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${path.join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+    // M55.T1: an anchor may live in the impact door OR in the identity
+    // resolver it now reads. Both copies are written into one temp dir (the
+    // mutated one where the anchor is, the other verbatim) so `import
+    // "./identity"` inside the impact copy resolves to that sibling — the
+    // mutant is still exercised through the door's own computeImpact.
     const withComponent = async (name: string, from: string, to: string, probe: (m: any) => Promise<boolean> | boolean): Promise<void> => {
-      if (!componentSource.includes(from)) {
+      const anchorInImpact = componentSource.includes(from)
+      const anchorInIdentity = identitySource.includes(from)
+      if (!anchorInImpact && !anchorInIdentity) {
         check(`M: ${name} (SKIP — anchor not found)`, false, from.slice(0, 80))
         return
       }
-      const mutantPath = path.join(ROOT, "validation/m44", `impact.u5mutant.${Date.now()}.${Math.floor(Math.random() * 1e6)}.ts`)
-      writeFileSync(mutantPath, importComponent(componentSource.replace(from, to)))
+      const dir = mkdtempSync(path.join(tmpdir(), "m44-u5-mut-"))
+      const mutantIdentity = path.join(dir, "identity.ts")
+      const mutantImpact = path.join(dir, "impact.ts")
+      writeFileSync(mutantIdentity, anchorInIdentity ? identitySource.replace(from, to) : identitySource)
+      writeFileSync(mutantImpact, importComponent(anchorInImpact ? componentSource.replace(from, to) : componentSource))
       try {
-        const m = await import(mutantPath)
+        const m = await import(mutantImpact)
         mutant(name, await probe(m))
       } catch (e) {
         mutant(name, true, `mutant failed to load: ${String(e).slice(0, 80)}`)
       } finally {
-        try { rmSync(mutantPath, { force: true }) } catch {}
+        try { rmSync(dir, { recursive: true, force: true }) } catch {}
       }
     }
     const withCore = async (name: string, from: string, to: string, probe: (m: any) => Promise<boolean> | boolean): Promise<void> => {
@@ -296,17 +350,43 @@ async function main(): Promise<void> {
       }
     }
 
-    // M1: the fallback is dropped — the member dies at the door again.
+    // M1 (M53 update): the post-traverse re-root gate is dropped — the
+    // M48.C1 gravity pick rides silently. The engine resolves the member
+    // name directly (registry's higher-gravity ctor), the U5 fallback never
+    // runs, and the hint-less ambiguous name RESOLVES instead of keeping
+    // the declared error. Caught because the probe demands the declared
+    // error for the hint-less ambiguous name.
     await withComponent(
-      "fallback dropped (member dies at the door)",
-      "const owner = resolveImpactMemberOwner(db, projectId, symbolName)",
-      "const owner = null as null | { id: string; name: string; file: string } // fallback dropped",
+      "post-traverse re-root gate dropped (gravity pick rides silently)",
+      "if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {",
+      "if (false) { // gate dropped: gravity pick allowed over the whitelist",
       async (m) => {
+        // Defect signature: with the gate gone, the engine's M48.C1 direct
+        // resolve hands back a member row (the gravity pick) and the
+        // hint-less AMBIGUOUS name resolves — the declared error the law
+        // demands is gone. Detection = observing that resolve.
         try {
           await m.computeImpact(sfx.raw, sfx.projectId, "constructor")
-          return false // resolved anyway => mutant survived
+          return true // ambiguous name resolved => defect observed => caught
         } catch {
-          return true // the owner-session defect reappears => caught
+          return false // still throws => this mutant shape didn't manifest
+        }
+      },
+    )
+    // M1b (X1 closure): file disambiguation dropped — the filter is gone and
+    // the resolver takes the ARBITRARY first same-name row, so a registry.ts
+    // hint silently roots at Greeter. Caught because the probe demands
+    // Registry when hinting registry.ts.
+    await withComponent(
+      "disambiguation dropped (wrong same-name member resolved)",
+      "const narrowed = memberRows.filter((r) => memberFileMatches(fileHint, r.file))",
+      "const narrowed = memberRows.slice(0, 1) // disambiguation dropped: arbitrary first row",
+      async (m) => {
+        try {
+          const r = await m.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "registry.ts")
+          return r.root?.name === "Greeter" // resolved to the WRONG class (arbitrary first row) => defect visible
+        } catch {
+          return false // declared error = correct behavior => mutant caught
         }
       },
     )
@@ -331,15 +411,17 @@ async function main(): Promise<void> {
       "    resolution,\n  }",
       "    resolution: { through: \"direct\" },\n  }",
       async (m) => {
-        const r = await m.computeImpact(sfx.raw, sfx.projectId, "constructor")
+        const r = await m.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "main.ts")
         return r.resolution?.through !== "owning-declaration" // relabeled => defect visible
       },
     )
     // M4: the renderer hides the note (silent relabel at the UI layer).
     await withCore(
       "note suppressed (UI hides the resolution)",
-      "    note.addClass(\"bb-impact-resolution-note\")",
-      "    // note suppressed",
+      // Anchor updated 2026-09-12 (M55.T1 refactor renamed the local `note` to
+      // `impactNote` when the append-resolution-note helper was extracted).
+      "  if (impactNote !== null) impactNote.addClass(\"bb-impact-resolution-note\")",
+      "  // note suppressed",
       async (m) => {
         const d = makeDom()
         m.renderImpact({ ...result }, d as never)
@@ -419,12 +501,21 @@ async function main(): Promise<void> {
       const init = await request("initialize", { processId: null, rootUri: `file://${U5_WS}`, capabilities: {} })
       if (!init?.capabilities) throw new Error("no capabilities")
       send({ jsonrpc: "2.0", method: "initialized", params: {} })
-      // THE owner-session defect, end to end: bb/impact("constructor") must
-      // resolve through Greeter — not the declared not-in-index error.
-      const r = await request("bb/impact", { schemaVersion: 1, symbol: "constructor" })
-      check("R5: bb/impact resolves the constructor (no declared error)", r?.root?.name === "Greeter", JSON.stringify(r?.root ?? null))
+      // THE owner-session defect, end to end: bb/impact("constructor", file)
+      // must resolve through Greeter — and the hint-less ambiguous name must
+      // keep the declared error (X1 closure: the fixture now has TWO
+      // constructors, mirroring every real repo).
+      const r = await request("bb/impact", { schemaVersion: 1, symbol: "constructor", file: U5_WS + "/main.ts" })
+      check("R5: bb/impact resolves the hinted constructor (no declared error)", r?.root?.name === "Greeter", JSON.stringify(r?.root ?? null))
       check("R5: the wire result carries the declared resolution", r?.resolution?.through === "owning-declaration" && r?.resolution?.memberName === "constructor", JSON.stringify(r?.resolution ?? null))
       check("R5: the impact set is the class's reverse dependencies", Array.isArray(r?.impact) && r.impact.some((d: any) => d.name === "main"), JSON.stringify(r?.impact?.map((d: any) => d.name)))
+      let ambigWireErr = ""
+      try {
+        await request("bb/impact", { schemaVersion: 1, symbol: "constructor" })
+      } catch (e) {
+        ambigWireErr = e instanceof Error ? e.message : String(e)
+      }
+      check("R5: the hint-less ambiguous name keeps the declared error over the wire", ambigWireErr.startsWith("bb/impact:") && /not in the index|not found/.test(ambigWireErr), ambigWireErr.slice(0, 140))
       // The renderer's markup over the wire result states the resolution.
       const dom = makeDom()
       core.renderImpact(r, dom as never)
@@ -478,7 +569,7 @@ async function main(): Promise<void> {
     ],
   }
   mkdirSync(EVIDENCE_DIR, { recursive: true })
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nU5: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

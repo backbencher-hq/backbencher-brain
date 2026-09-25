@@ -1,0 +1,200 @@
+{
+  "issue": "M61.V5 claim pins (issue #846)",
+  "code": "V5",
+  "milestone": "M61",
+  "status": "verified",
+  "checks": 37,
+  "passed": 37,
+  "failed": 0,
+  "realFailed": 0,
+  "failures": [],
+  "checksList": [
+    "ok: C0: no registry problems",
+    "ok: C0: the registry pins a non-trivial number of claims",
+    "ok: C0: the registry covers at least one published doc",
+    "ok: C0: more than one derivation kind is exercised",
+    "ok: C1: no claim is blocked (every cited source resolves)",
+    "ok: C1: every claim's derivation yields numbers",
+    "ok: C2: no published claim has drifted from its ledger",
+    "ok: C2: the pins are live (at least one row was found for every claim)",
+    "ok: C3: every declared doc exists and honors its coverage status",
+    "ok: C3: the audit set covers README, the website and the docs end to end",
+    "ok: C3: the pinned doc really publishes lane counts (the scan is live, not vacuous)",
+    "ok: C3: the coverage set declares a pinned doc and at least one enforced exclusion",
+    "ok: core: render substitutes every declared key",
+    "ok: core: render leaves an unknown key literal",
+    "ok: core: classify — a blocked derivation is blocked, whatever else is true",
+    "ok: core: classify — an unfilled template is blocked, never compared",
+    "ok: core: classify — a found row is pinned",
+    "ok: core: classify — no found row is drift",
+    "ok: core: classify — a stale row beside a correct one is drift",
+    "ok: core: claimAnchor — the longest literal segment no other claim shares",
+    "ok: core: claimAnchor — a segment shared with another claim is never the anchor",
+    "ok: core: claimAnchor — an all-placeholder template has no anchor",
+    "ok: core: claimAnchor — no unique segment means no anchor",
+    "ok: core: claimAnchor — short segments are never anchors",
+    "ok: core: claimAnchor — the most specific candidate wins over the longest",
+    "ok: M: pin-blind (a doc that no longer states the claim reports as drifted)",
+    "ok: M: stale-row (a stale row beside a correct one is drift, not a passing pin)",
+    "ok: M: pin-blind",
+    "ok: M: stale-row-blind",
+    "ok: M: blocked-as-ok",
+    "ok: M: unfilled-as-ok",
+    "ok: M: render-blind",
+    "ok: M: registry-blind",
+    "ok: M: scan-blind",
+    "ok: M: coverage-blind",
+    "ok: M: unpinned-blind",
+    "ok: R: this verifier's own evidence is a sealed record"
+  ],
+  "currentCommit": "8c35bfb36807e711c6d0261e3ff8a5c120c11a99",
+  "verifierCommand": "npx tsx script/m61/verify-claims.ts",
+  "evidenceFile": "V5.json",
+  "generatedAt": "2026-09-20T02:51:25.872Z",
+  "claims": [
+    {
+      "id": "m25-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v1 | M25 | The Extension | **CLOSED** (11/11 verified)",
+      "published": 1
+    },
+    {
+      "id": "m26-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v2 | M26 | The Graph | **CLOSED** (11/11 verified)",
+      "published": 1
+    },
+    {
+      "id": "m27-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (7/7 verified)",
+      "published": 1
+    },
+    {
+      "id": "m28-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v4 | M28 | The Union (MCP + agent) | **CLOSED** (7/7 verified)",
+      "published": 1
+    },
+    {
+      "id": "m29-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v5 | M29 | Precision Waves | **CLOSED** (9/9 verified)",
+      "published": 1
+    },
+    {
+      "id": "m42-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v6 | M42 | The Interactive Hover | **CLOSED** (8/8 verified)",
+      "published": 1
+    },
+    {
+      "id": "m44-x1",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "closure gate verified (X1 48/48 at HEAD)",
+      "published": 1
+    },
+    {
+      "id": "m26-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "39 mutants caught across 9 suites | [m26 ledger]",
+      "published": 1
+    },
+    {
+      "id": "m27-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "17 mutants caught across 5 suites | [m27 ledger]",
+      "published": 1
+    },
+    {
+      "id": "m28-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "18 mutants caught across 5 suites | [m28 ledger]",
+      "published": 1
+    },
+    {
+      "id": "m26-timeline",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "M26 closed: 11/11 issues verified",
+      "published": 1
+    },
+    {
+      "id": "m26-x1",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "X1 closure gate 50/50 with per-mutant records",
+      "published": 1
+    }
+  ],
+  "coverage": [
+    {
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "status": "pinned",
+      "published": 16,
+      "pinned": 12
+    },
+    {
+      "doc": "README.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/src/app/editors/page.tsx",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/src/app/docs/page.tsx",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "docs/website/TOOLS.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/faq.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/index-commands.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/README.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    }
+  ],
+  "limitations": [
+    "The tool pins the claims DECLARED in script/m61/claims.json, and coverage (#846's audit set: README + website + docs) is enforced by the scan — an out-of-scope doc that publishes a lane count fails. The residue on the pinned doc is reported as the `coverage` census rather than hidden: a count-claim line not covered by a pin is visible in the record and is the registry's next extension.",
+    "Byte-gated REGENERATION is the D1 pattern already owned by the generated docs (docs/m26/GRAPH.md via verify-graph-docs, docs/m29/* via verify-m29-docs). The claims doc pinned here is hand-written, so it is PINNED rather than regenerated: the pin fails the moment the prose and the ledger disagree, which is the same protection without rewriting the doc body.",
+    "Derivations read the records' own fields; a claim whose source stops exposing a field BLOCKS (loudly) rather than comparing against a silent zero."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:51:25.872Z",
+    "contentSha256": "b512ca03e903b6d92f4e7be8c8b45847cb6d5b2aa4a2caead2396d1507918e7a"
+  }
+}

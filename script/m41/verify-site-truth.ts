@@ -9,7 +9,8 @@
 // Evidence: validation/m41/results/T2.json
 
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } from "node:fs"
+import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -107,19 +108,45 @@ check("T2: docs has no phantom opencode-era commands", ["bb brain", "bb run", "b
 check("T2: docs quotes setup show (fingerprint-only inspection)", docsPage.includes("bb setup show"))
 check("T2: docs quotes real remediation commands", docsPage.includes("bb index --force") && docsPage.includes("bb index --post") && docsPage.includes("bb index --resume"))
 check("T2: docs tool table lists all tools", uniqueTools.every((t) => docsPage.includes(t)))
-check("T2: docs honesty note about upgrade channel present", docsPage.includes("upgrade") && docsPage.includes("Backbencher releases"))
+// M56.D1 corrected this note instead of pinning it: the old text told users to
+// fix `bb upgrade`'s release channel, but `bb upgrade` does not exist in this
+// CLI. The retargeted check is strictly stronger — it pins the real upgrade path
+// AND forbids a phantom upgrade command from returning to the page.
+check(
+  "T2: docs states the real upgrade path and no phantom upgrade command",
+  docsPage.includes("rerun the installer") && docsPage.includes("no separate in-place") && !docsPage.includes("bb upgrade"),
+)
 
-// --- 3b. T3 pages: install, faq, troubleshooting, contact ------------------------
+// --- 3b. T3 pages: install, support, docs (+ the retired redirects) ---
+// M56.S1: FAQ and Contact consolidated into /support. M56.I1: troubleshooting
+// content moved into /docs, and /demos was retired. The redirect stubs still
+// build (bookmarks stay valid); their content checks now bind to the canonical
+// surface that carries the merged content.
 
-const EXPECTED_ROUTES = ["index", "docs", "tools", "languages", "install", "faq", "troubleshooting", "contact"]
+const EXPECTED_ROUTES = ["index", "docs", "tools", "languages", "install", "support", "troubleshooting", "faq", "contact"]
 for (const route of EXPECTED_ROUTES) {
   check(`T3: route rendered (${route}.html exists in build output)`, buildOk && read(`website/.next/server/app/${route}.html`).length > 0)
 }
 
 const installHtml = buildOk ? normalize(read("website/.next/server/app/install.html")) : ""
-const faqHtml = buildOk ? normalize(read("website/.next/server/app/faq.html")) : ""
-const troubleshootHtml = buildOk ? normalize(read("website/.next/server/app/troubleshooting.html")) : ""
-const contactHtml = buildOk ? normalize(read("website/.next/server/app/contact.html")) : ""
+const faqHtml = buildOk ? normalize(read("website/.next/server/app/support.html")) : "" // the consolidated FAQ surface
+const troubleshootHtml = buildOk ? normalize(read("website/.next/server/app/docs.html")) : "" // M56.I1: fixes live in the docs section
+const contactHtml = buildOk ? normalize(read("website/.next/server/app/support.html")) : "" // the consolidated contact surface
+
+// Retired paths redirect through the site's single declaration
+// (website/src/lib/redirects.ts), which verify-seo.ts pins to its contract.
+const retiredSrc = read("website/src/lib/redirects.ts")
+for (const [from, to] of [
+  ["/faq", "/support"],
+  ["/contact", "/support"],
+  ["/troubleshooting", "/docs#troubleshooting"],
+  ["/demos", "/editors"],
+] as const) {
+  check(
+    `T3: ${from} redirects to ${to} (bookmark-safe)`,
+    retiredSrc.includes(`"${from}": "${to}"`) && read(`website/src/app${from}/page.tsx`).includes(`redirect(REDIRECTS["${from}"])`),
+  )
+}
 
 const installVersion = read("website/src/data/truth.generated.ts").match(/install: \{[\s\S]*?version: "([^"]+)"/)?.[1] ?? ""
 const installRepo = read("website/src/data/truth.generated.ts").match(/repo: "([^"]+)"/)?.[1] ?? ""
@@ -138,7 +165,18 @@ check("T3: contact offers only the real support channel", contactHtml.includes("
 check("T3: shared footer renders on all T3 pages", [installHtml, faqHtml, troubleshootHtml, contactHtml].every((h) => h.includes("independent, local-first code intelligence engine")))
 
 const navSrc = read("website/src/components/Navigation.tsx")
-check("T3: navigation links every route", EXPECTED_ROUTES.every((r) => r === "index" || navSrc.includes(`href: '/${r}'`)), EXPECTED_ROUTES.filter((r) => r !== "index" && !navSrc.includes(`href: '/${r}'`)).join(","))
+// M56.I1: the final nav set is six items, one per public surface, in order.
+const NAV_CONTRACT = ["install", "docs", "tools", "languages", "editors", "support"] as const
+const navEntries = [...navSrc.matchAll(/\{ href: '(\/[a-z0-9-]+)', label: '[^']+' \},/g)].map((m) => m[1]!.slice(1))
+check(
+  "T3: navigation is exactly the six public surfaces, in order",
+  JSON.stringify(navEntries) === JSON.stringify([...NAV_CONTRACT]),
+  navEntries.join(","),
+)
+check(
+  "T3: navigation links no retired path",
+  !["/demos", "/faq", "/contact", "/troubleshooting"].some((r) => navSrc.includes(`href: '/${r}'`)),
+)
 check("T3: no phantom command renders on any T3 page", PHANTOMS.every((p) => ![installHtml, faqHtml, troubleshootHtml, contactHtml].some((h) => h.includes(p))))
 
 // --- 4. language display coverage (source-level) --------------------------------
@@ -153,32 +191,39 @@ check("T2: language display union covers the registry exactly (no missing langua
 check("T2: no duplicate registry id across display families", idRefs.length === idSet.length, `refs=${idRefs.length} unique=${idSet.length}`)
 
 // --- 5. data-source hygiene -------------------------------------------------------
+//
+// M56.T1: tool facts are machine-generated into website/src/data/tools.generated.ts
+// (`bun run docs:generate`); the site keeps presentation only (display groups +
+// icons). The generated facts and the display groups must each cover the registry
+// exactly, and the hand-written notes copy must be gone.
+
+const factsSrc = read("website/src/data/tools.generated.ts")
+const factNames = [...factsSrc.matchAll(/^    "name": "(bb_[a-z_]+)",$/gm)].map((m) => m[1]!)
+check("T2: generated tool facts cover the registry exactly", JSON.stringify([...new Set(factNames)].sort()) === JSON.stringify(uniqueTools), `facts=${factNames.length} registry=${uniqueTools.length}`)
+check("T2: generated tool facts contain no phantom tool", PHANTOMS.every((p) => !factNames.includes(p)))
 
 const toolsSrc = read("website/src/data/brain-tools.ts")
-const orderMatch = toolsSrc.match(/TOOL_ORDER = \[([^\]]*)\]/)
-const orderNames = orderMatch ? (orderMatch[1]!.match(/bb_[a-z_]+/g) ?? []) : []
-check("T2: TOOL_ORDER covers the registry exactly", JSON.stringify([...orderNames].sort()) === JSON.stringify(uniqueTools), `order=${orderNames.length} registry=${uniqueTools.length}`)
-
-const notesSrc = read("website/src/data/brain-tool-notes.ts")
-const noteKeys = [...notesSrc.matchAll(/^  (bb_[a-z_]+): \{/gm)].map((m) => m[1]!)
-check("T2: tool notes keys match the registry exactly", JSON.stringify([...noteKeys].sort()) === JSON.stringify(uniqueTools), `keys=${noteKeys.length} registry=${uniqueTools.length}`)
-check("T2: notes contain no phantom keys", PHANTOMS.every((p) => !noteKeys.includes(p)))
+const groupKeys = [...toolsSrc.matchAll(/^  (bb_[a-z_]+): "(Discovery|Analysis|Diagnostics|Operations)",$/gm)].map((m) => m[1]!)
+check("T2: display groups cover the registry exactly", JSON.stringify([...groupKeys].sort()) === JSON.stringify(uniqueTools), `groups=${groupKeys.length} registry=${uniqueTools.length}`)
+check("T2: display groups contain no phantom tool", PHANTOMS.every((p) => !groupKeys.includes(p)))
+check("T2: hand-written tool notes are deleted", !existsSync(path.join(SITE, "src/data/brain-tool-notes.ts")), "website/src/data/brain-tool-notes.ts still exists")
 
 // --- 6. negatives ------------------------------------------------------------------
 
 // N1 (cheap, source-level): plant a hand-typed phantom claim in a data source
-// and prove the source-hygiene checks catch it — without a rebuild.
+// and prove the source-hygiene checks catch it — without a rebuild. The backup
+// lives OUTSIDE the repo tree: an in-repo `.t2bak` was once swept into a commit
+// by a broad `git add` on the shared checkout.
 {
   const target = path.join(SITE, "src/data/brain-tools.ts")
-  const backup = path.join(SITE, "src/data/brain-tools.ts.t2bak")
+  const backup = path.join(tmpdir(), `brain-tools-t2bak-${process.pid}.ts`)
   cpSync(target, backup)
   try {
-    const mutated = read("website/src/data/brain-tools.ts").replace("const TOOL_ORDER = [", 'const TOOL_ORDER = [\n  "bb_select",')
+    const mutated = read("website/src/data/brain-tools.ts").replace("export const TOOL_GROUPS: Record<string, ToolGroup> = {", 'export const TOOL_GROUPS: Record<string, ToolGroup> = {\n  bb_select: "Discovery",')
     writeFileSync(target, mutated)
     const src = read("website/src/data/brain-tools.ts")
-    const m = src.match(/TOOL_ORDER = \[([^\]]*)\]/)
-    const names = m ? (m[1]!.match(/bb_[a-z_]+/g) ?? []) : []
-    negative("T2: planted phantom in TOOL_ORDER breaks registry coverage check", JSON.stringify([...new Set(names)].sort()) !== JSON.stringify(uniqueTools))
+    const names = [...src.matchAll(/^  (bb_[a-z_]+): "(Discovery|Analysis|Diagnostics|Operations)",$/gm)].map((m) => m[1]!)
+    negative("T2: planted phantom display-group tool breaks registry coverage check", JSON.stringify([...new Set(names)].sort()) !== JSON.stringify(uniqueTools))
   } finally {
     cpSync(backup, target)
     rmSync(backup)
@@ -190,7 +235,10 @@ check("T2: notes contain no phantom keys", PHANTOMS.every((p) => !noteKeys.inclu
 // hand-typed claim cannot survive this verifier.
 if (buildOk) {
   const heroPath = path.join(SITE, "src/components/HeroSection.tsx")
-  const heroBackup = `${heroPath}.t2bak`
+  // Backup lives OUTSIDE the repo tree (os.tmpdir): a co-agent's broad
+  // `git commit -a` on the shared checkout once swept the in-repo backup AND
+  // the planted mutant into a commit (5cce610b). tmpdir makes that impossible.
+  const heroBackup = path.join(tmpdir(), `hero-t2bak-${process.pid}.tsx`)
   cpSync(heroPath, heroBackup)
   let mutantCaught = false
   let mutantDetail = ""
@@ -265,10 +313,10 @@ const evidence = {
   generatedAt: new Date().toISOString(),
   rendered: { version, tools: uniqueTools.length, tables, languages: langCount, dedicatedParsers: dedicated, cliCommands: cliCommands.length },
   limitations: [
-    "Gate covers the seven prerendered routes; adding a route requires updating EXPECTED_ROUTES in the same commit.",
+    "Gate covers the eight navigation-linked prerendered routes in EXPECTED_ROUTES; /demos is covered by M45.T1's embed gate, and /privacy and /terms by S1's disk-derived route parity + head checks.",
     "N2 mutates the hero source and rebuilds twice; a failing site build aborts the mutant proof (build success is checked first).",
     "N3 proves detector sensitivity on synthetic HTML; a full rebuild mutant (N2) covers the end-to-end path.",
-    "Editorial fields (features, examples, longDescription) are reviewed against docs/tools/*.md but not machine-diffed; the registry-owned fields are machine-enforced.",
+    "Since M56.T1 no site field is hand-typed: tool facts are generated into website/src/data/tools.generated.ts and byte-checked by docs:verify, while this gate enforces registry coverage of the generated facts and of the display-only grouping.",
   ],
 }
 writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")

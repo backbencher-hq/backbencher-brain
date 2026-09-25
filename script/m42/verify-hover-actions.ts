@@ -31,6 +31,8 @@ import { execFileSync, spawn } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H4.json")
@@ -152,7 +154,7 @@ try {
   console.log("\nR2: actions row (real server over the real index)")
   const hoverRender = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: renderPos })
   md = (hoverRender?.contents?.value ?? "") as string
-  check("H4/R2: hover resolves render", hoverRender?.data?.name === "render", hoverRender?.data?.name ?? "null")
+  check("H4/R2: hover resolves render", hoverRender?.data?.symbol?.name === "render", hoverRender?.data?.symbol?.name ?? "null")
   check("H4/R2: hover embeds the actions row label", md.includes("**actions**: [Open in graph]"), md.slice(0, 260))
   const actionLinks = commandLinks(md)
   const actions = actionLinks.filter((l) => l.command === "bb.openGraph" || l.command === "bb.openImpact" || l.command === "bb.showCallHierarchy")
@@ -330,7 +332,7 @@ console.log("\nR5: budget")
 // --- R6: docs + manifest drift gate -----------------------------------------------------
 console.log("\nR6: docs drift gate")
 {
-  const pkg = JSON.parse(readFileSync(PKG, "utf8")) as { contributes?: { commands?: Array<{ command: string }> } }
+  const pkg = parseSealedRecord(PKG) as { contributes?: { commands?: Array<{ command: string }> } }
   const cmdIds = (pkg.contributes?.commands ?? []).map((c) => c.command)
   check(
     "R6: manifest contributes registers the three hover actions",
@@ -485,6 +487,6 @@ const result = {
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2))
+writeSealed(EVIDENCE, result)
 console.log(`H4: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantStats.caught}/${mutantStats.total} mutants caught)`)
 if (failed > 0) process.exit(1)

@@ -26,6 +26,8 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import os from "node:os"
 import { mkdtempSync } from "node:fs"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const PKG = path.join(ROOT, "package.json")
@@ -74,7 +76,7 @@ console.log("M29.V1 verifier — wired, fail-able machinery (issue #541)\n")
 // ---------------------------------------------------------------------------
 // W1: wiring proof — machine-read from package.json
 // ---------------------------------------------------------------------------
-const pkg = JSON.parse(readFileSync(PKG, "utf8")) as { scripts: Record<string, string> }
+const pkg = parseSealedRecord(PKG) as { scripts: Record<string, string> }
 const verifyChain = (pkg.scripts["verify"] ?? "").split(" && ")
 const fastChain = (pkg.scripts["verify:fast"] ?? "").split(" && ")
 const inVerify = (tool: string): boolean => verifyChain.some((s) => s.includes(tool))
@@ -183,6 +185,6 @@ const result = {
   limitations,
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/V1-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/V1-verify.json"), result)
 console.log(`V1: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 3 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

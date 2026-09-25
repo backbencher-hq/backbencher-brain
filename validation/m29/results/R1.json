@@ -3,20 +3,23 @@
   "code": "R1",
   "milestone": "M29",
   "status": "verified",
-  "checks": 32,
-  "passed": 32,
+  "checks": 36,
+  "passed": 36,
   "failed": 0,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "mutantsCaught": 7,
+  "mutantsTotal": 7,
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
   "evidenceFile": "R1.json",
-  "generatedAt": "2026-09-07T23:25:56.448Z",
+  "generatedAt": "2026-09-20T02:47:11.627Z",
   "limitations": [
     "S5 (per-language server leg) and S6 (in-editor leg) are R2 execution work; in the dry-run they are declared blockers that cap at I1.",
     "The SPEC conformance read is machine-read from the committed ledger; re-running the SPEC itself is M14's wave machinery, not R1's.",
     "Dry-run observation recorded honestly: the real indexer logs a post-index health-check warning (index marked partial) in the temp data dir; file/symbol/relationship counts are real and non-empty, and the S4 pass rests on the counts, not the health score."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:47:11.628Z",
+    "contentSha256": "566b377c23107ee51a0f5d78067b107b3127dab1847a0fda8465c3b5558b933e"
+  }
 }

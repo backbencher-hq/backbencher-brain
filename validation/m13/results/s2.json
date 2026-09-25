@@ -126,5 +126,10 @@
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
     "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
   ],
-  "generatedAt": "2026-09-05T20:56:15.896Z"
+  "generatedAt": "2026-09-05T20:56:15.896Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.298Z",
+    "contentSha256": "0f34ba5835604c01dd888698e05f64589d0baef4c31fb1954148037e5e5e0669"
+  }
 }

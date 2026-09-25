@@ -1,0 +1,25 @@
+{
+  "verifierCommand": "npx tsx script/m53/verify-branch-audit.ts",
+  "evidenceFile": "R3.json",
+  "status": "verified",
+  "head": "4dfd8c4148d043ff3d1aa720a3b89474f9d677b3",
+  "mainHead": "216d1c67e1ad70dac9f6ec1cef41f2e58024d649",
+  "branchHead": "92a800ae6dbb8292fa228e18201d70ed16143c73",
+  "mergeBase": "c341cfeb334abc635ef5b1f8878257d438eeb7bf",
+  "verdict": "ZERO-TOUCH + merge-required-before-release",
+  "checks": 7,
+  "failed": 0,
+  "mutantsCaught": 3,
+  "mutantsTotal": 3,
+  "checksList": [
+    "ok: M: N1: B1 catches a real planted lane touch",
+    "ok: M: N2: B2 detects a fixed branch",
+    "ok: M: N3: B3 detects a foreign-milestone lane commit"
+  ],
+  "generatedAt": "2026-09-15T22:35:13.248Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-15T22:35:13.249Z",
+    "contentSha256": "5be811282b8de2d21ed5290a944fe5d1fd87013c668661dc0b2ba0c7567e6b6c"
+  }
+}

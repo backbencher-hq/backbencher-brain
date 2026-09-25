@@ -22,6 +22,8 @@ import { createHash } from "node:crypto"
 import { realpathSync, statSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
@@ -117,7 +119,7 @@ function runNvimSession(driverPath: string, workspaceDir: string, outPath: strin
     // nvim exits non-zero after qa! sometimes; results still count.
   }
   if (!existsSync(outPath)) return { ok: false, result: null, stderr: "no results written" }
-  const result = JSON.parse(readFileSync(outPath, "utf8")) as DriverResult
+  const result = parseSealedRecord(outPath) as DriverResult
   return { ok: true, result, stderr }
 }
 
@@ -143,7 +145,7 @@ async function main(): Promise<void> {
       generatedAt: new Date().toISOString(),
     }
     mkdirSync(path.join(ROOT, "validation/m27/results"), { recursive: true })
-    writeFileSync(path.join(ROOT, "validation/m27/results/N1.json"), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m27/results/N1.json"), result)
     console.log("N1: BLOCKED (no nvim)")
     process.exit(1)
   }
@@ -285,7 +287,7 @@ async function main(): Promise<void> {
   }
   const evidenceDir = path.join(ROOT, "validation/m27/results")
   mkdirSync(evidenceDir, { recursive: true })
-  writeFileSync(path.join(evidenceDir, result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(evidenceDir, result.evidenceFile), result)
   console.log(`N1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 }

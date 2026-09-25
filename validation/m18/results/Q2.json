@@ -673,5 +673,10 @@
     }
   },
   "generatedAt": "2026-08-24T23:38:12.135Z",
-  "negativeLine": "Ranks are candidate discovery, not behavioral proof; a gold embedded under a different model than the query is an out-of-domain (coverage) miss, and its recall is bounded by embedding coverage — see Q4's gate and Q1's provenance rather than treating every miss as a retrieval defect."
+  "negativeLine": "Ranks are candidate discovery, not behavioral proof; a gold embedded under a different model than the query is an out-of-domain (coverage) miss, and its recall is bounded by embedding coverage — see Q4's gate and Q1's provenance rather than treating every miss as a retrieval defect.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.357Z",
+    "contentSha256": "a6bd3be9b9f330016f272978e4cf1bdde0c11b848b46de7b11e4d9a841dbf5da"
+  }
 }

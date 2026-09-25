@@ -3573,5 +3573,10 @@
   "regeneratedAtCommit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Adversarial fixture corpus"
+  "title": "Adversarial fixture corpus",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.305Z",
+    "contentSha256": "65c5b78a567f49680a5a27e4df4fd669ba725f8904098135c75a016a6c781a16"
+  }
 }

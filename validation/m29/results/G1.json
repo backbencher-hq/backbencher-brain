@@ -2,23 +2,28 @@
   "issue": "M29.G1",
   "code": "G1",
   "milestone": "M29",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 70,
-  "passed": 68,
-  "failed": 2,
+  "passed": 70,
+  "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-16T12:45:32.767Z",
+  "generatedAt": "2026-09-20T02:50:13.939Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "closed",
-    "m28GateExit": 1
+    "m28GateExit": 0
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
     "A run with relevant uncommitted M29 files is recorded as known-gap; verified status requires a clean relevant tree."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:13.942Z",
+    "contentSha256": "356101fac156c5cecc0b8745938c97fe9145bbd416572ded3ae0bbecd9d6b402"
+  }
 }

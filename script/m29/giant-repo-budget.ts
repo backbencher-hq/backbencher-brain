@@ -18,7 +18,7 @@
 // CLI: npx tsx script/m29/giant-repo-budget.ts
 // Evidence: validation/m29/results/R3.json (machine-emitted)
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
@@ -26,6 +26,8 @@ import { realpathSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const CORPUS = path.join(ROOT, ".tools", "m29-giant-corpus")
 const MANIFEST = path.join(CORPUS, "..", "m29-giant-corpus-manifest.json")
@@ -77,23 +79,61 @@ interface CorpusManifest {
 
 // Relevant inputs for the staleness hash (same model as R2's S5 legs): any
 // change to these files invalidates prior evidence (the ledger flags it stale).
+//
+// The measured artifact is `dist/lsp/server.js`, an UNTRACKED build output.
+// Listing it here (the original form) made the hash machine-local: a fresh
+// clone has no `dist/`, `existsSync` skipped the missing path SILENTLY, and two
+// machines could never agree on whether the evidence was current — R3 read
+// stale on every machine that had not built the exact bundle the record was
+// measured with (found while re-auditing the lane for M62; `dist` is in
+// .gitignore). The rule is now the TRACKED inputs that produce the bundle:
+// every source file under `src/`, the build config, and the corpus/driver
+// inputs. That is reproducible from the repository alone and strictly broader
+// than one entry file. The built artifact is still recorded — with its own
+// hash, as `builtArtifact` — but as an OBSERVATION, never a gate.
 const RELEVANT_INPUTS = [
   "script/m29/giant-repo-budget.ts",
   "script/m29/generate-giant-corpus.ts",
   "script/m29/giant-editor-driver.lua",
-  "src/lsp/hover.ts",
-  "src/lsp/cross_language_hover.ts",
-  "src/brain/schema-ddl.ts",
-  "src/brain/brain.sql.ts",
-  "dist/lsp/server.js",
+  "tsup.config.ts",
 ]
-export function relevantInputsHash(): string {
+
+/** Every tracked `.ts` under `src/` (sorted, so the hash is order-stable). */
+function sourceTree(): string[] {
+  const out: string[] = []
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(p)
+      else if (entry.name.endsWith(".ts")) out.push(path.relative(ROOT, p))
+    }
+  }
+  try { walk(path.join(ROOT, "src")) } catch { /* src is tracked; a missing tree is itself a failure elsewhere */ }
+  return out.sort()
+}
+
+/** The hash of every tracked input the measured bundle is built from.
+ *  `overrides` exists so a gate can prove the rule is SENSITIVE without
+ *  touching the tree (a can-fail leg): the same call must be stable, and a
+ *  substituted file CONTENT must change the digest. */
+export function relevantInputsHash(overrides: Record<string, string> = {}): string {
   const h = createHash("sha256")
-  for (const rel of RELEVANT_INPUTS) {
+  for (const rel of [...RELEVANT_INPUTS, ...sourceTree(), ...Object.keys(overrides)].sort()) {
     const p = path.join(ROOT, rel)
-    if (existsSync(p)) h.update(rel, "utf8"), h.update(readFileSync(p))
+    const body = overrides[rel] ?? (existsSync(p) ? readFileSync(p) : "<absent>")
+    h.update(rel, "utf8")
+    h.update(body)
   }
   return h.digest("hex").substring(0, 40)
+}
+
+/** The built bundle's own hash — recorded beside the evidence, never compared.
+ *  A machine-local fact (dist/ is untracked); a gate that compared it would be
+ *  un-passable off the machine that built it. */
+export function builtArtifactHash(): string | null {
+  const p = path.join(ROOT, "dist/lsp/server.js")
+  if (!existsSync(p)) return null
+  return createHash("sha256").update(readFileSync(p)).digest("hex").substring(0, 40)
 }
 
 function gitCommit(): string {
@@ -146,7 +186,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
   if (!existsSync(MANIFEST)) {
     return { status: "blocked", reason: "giant corpus missing — run npx tsx script/m29/generate-giant-corpus.ts first" }
   }
-  const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as CorpusManifest
+  const manifest = parseSealedRecord(MANIFEST) as CorpusManifest
   const distServer = path.join(ROOT, "dist", "lsp", "server.js")
   if (!existsSync(distServer)) {
     return { status: "blocked", reason: "dist missing — run npm run build first" }
@@ -438,7 +478,7 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
         // nvim may exit non-zero after qa!; results still count.
       }
       if (existsSync(editorOut)) {
-        const parsed = JSON.parse(readFileSync(editorOut, "utf8")) as { session?: Record<string, unknown>; measurements?: FeatureMeasurement[] }
+        const parsed = parseSealedRecord(editorOut) as { session?: Record<string, unknown>; measurements?: FeatureMeasurement[] }
         const eviolations = budgetViolationsFrom(parsed.measurements ?? [], hostNoise)
         inEditor = {
           status: "measured",
@@ -475,6 +515,11 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
       budgets,
       commit,
       relevantInputsHash: relevantInputsHash(),
+      builtArtifact: {
+        path: "dist/lsp/server.js",
+        sha256: builtArtifactHash(),
+        note: "observation only (untracked build output); the gate hashes the tracked inputs that produce it",
+      },
       machine,
     }
   } finally {
@@ -485,7 +530,23 @@ export async function runGiantBudget(): Promise<Record<string, unknown>> {
 // CLI entry.
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   void runGiantBudget().then((result) => {
-    writeFileSync(path.join(ROOT, "validation/m29/results/R3.json"), JSON.stringify(result, null, 2) + "\n")
+    // Audit 2026-09-18: an `--index-only` run is a CACHE BUILD, not a budget
+    // measurement, but it used to write its `{status:"indexed"}` result over
+    // R3.json — the evidence file the M29 ledger points at for R3. Running the
+    // documented re-earn step therefore destroyed the lane's R3 evidence and
+    // failed four R2/R4 checks until a full measurement run restored it. The
+    // cache-build record now goes to its own file; R3.json is written only by a
+    // real measurement run.
+    const indexOnlyRun = process.argv.includes("--index-only")
+    const evidencePath = path.join(
+      ROOT,
+      indexOnlyRun ? "validation/m29/results/R3-index.json" : "validation/m29/results/R3.json",
+    )
+    writeSealed(evidencePath, result)
+    if (indexOnlyRun) {
+      console.log(`R3: index-only cache build recorded in ${path.relative(ROOT, evidencePath)} (R3.json — the measurement evidence — is untouched)`)
+      process.exit(result.status === "indexed" ? 0 : 1)
+    }
     console.log(`R3: ${String(result.status).toUpperCase()}`)
     const budgets = (result.budgets ?? {}) as Record<string, { budgetViolations?: string[]; overColdHoverBudget?: boolean }>
     for (const [k, v] of Object.entries(budgets)) {

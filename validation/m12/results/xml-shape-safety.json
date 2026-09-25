@@ -73,5 +73,10 @@
     "elementdecl",
     "prolog"
   ],
-  "passed": true
+  "passed": true,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.117Z",
+    "contentSha256": "01c0dd58d88b9c9eaa1b5cebfa317d7118157d8007c6177cf828ec5f0944fc61"
+  }
 }

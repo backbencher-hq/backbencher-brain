@@ -96,11 +96,16 @@ export function seedTierFixture(): TierFixture {
   }
 }
 
-/** The expected tier set for the fixture symbol AFTER the R5 fix. */
-export const EXPECTED_TIERS = ["indexed", "structural"]
-// "indexed" arrives via the mapped call/uses vocabulary IF such a row exists;
-// for this fixture the honest expectation is exactly the structural tier from
-// the three stored-evidenceClass rows.
+/** The expected tier set for the fixture symbol AFTER the R5 fix.
+ *
+ *  M55.T5: the emitted vocabulary is closed — the legend's five tiers plus the
+ *  declared `unknown` — so the legacy "indexed" bucket is no longer part of
+ *  any expectation (the pre-T5 value is kept in history, not in the fixture).
+ *  This fixture's three rows all carry a STORED structural class, so the
+ *  honest expectation is exactly the structural tier. */
+export const EXPECTED_TIERS = ["structural"]
+// Kept as a distinct name: R5's claim is the STRICT one (structural, nothing
+// else) — the fixture must not smuggle a legacy label back in.
 export const EXPECTED_TIERS_STRICT = ["structural"]
 
 /** RED/GREEN probe: resolve tiers for the fixture symbol through the REAL hover. */

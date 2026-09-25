@@ -21,5 +21,10 @@
   "crashSamples": [],
   "passed": true,
   "complexityPolicy": "one production parseFile pass per file; the GraphQL analyzer uses a single iterative DFS with Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol scan",
-  "corpusPolicy": "tracked .graphql files from clean graphql-js@9c245018: the real GitHub public schema (strict, 0 errors) plus the kitchen-sink executable corpus (two named grammar-level errors on directive-on-variable and escaped block-string, recorded by graphql-corpus-errors.ts)"
+  "corpusPolicy": "tracked .graphql files from clean graphql-js@9c245018: the real GitHub public schema (strict, 0 errors) plus the kitchen-sink executable corpus (two named grammar-level errors on directive-on-variable and escaped block-string, recorded by graphql-corpus-errors.ts)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.871Z",
+    "contentSha256": "19c7eacbd36f90cc0adf968a48b0f736a23ecb2badf233a005afa97ef351affb"
+  }
 }

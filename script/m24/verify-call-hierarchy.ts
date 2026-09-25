@@ -24,6 +24,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "call_hierarchy.ts")
@@ -100,13 +101,22 @@ interface FixtureNode {
   isExternal: boolean
 }
 
-const FIXTURE_NODES: Record<string, FixtureNode> = {
-  "sym-greet": { id: "sym-greet", name: "greet", symbolType: "method", file: MAIN_REL, filePath: "", line: 2, lineEnd: 4, language: "typescript", complexity: 1, isExternal: false },
-  "sym-main": { id: "sym-main", name: "main", symbolType: "function", file: MAIN_REL, filePath: "", line: 7, lineEnd: 10, language: "typescript", complexity: 2, isExternal: false },
-  "ext:console": { id: "ext:console", name: "console", symbolType: "external", file: "", filePath: "", line: 0, lineEnd: 0, language: "unknown", complexity: 0, isExternal: true },
-  // Depth-3 fixture node for the depth-cap mutant: top -> helper -> main -> greet.
-  "sym-helper": { id: "sym-helper", name: "helper", symbolType: "function", file: MAIN_REL, filePath: "", line: 12, lineEnd: 12, language: "typescript", complexity: 1, isExternal: false },
-  "sym-top": { id: "sym-top", name: "top", symbolType: "function", file: MAIN_REL, filePath: "", line: 13, lineEnd: 13, language: "typescript", complexity: 1, isExternal: false },
+// Real-engine shape (M55.T2): an INDEXED node carries its ABSOLUTE filePath (the
+// DB path column) and a workspace-relative `file`; only external nodes have no
+// file. The original fixture left filePath empty, which made a call-site
+// resolution from the caller's own source impossible — the component then had
+// to fall back, and the M55.T2 contract could not be exercised here (found by
+// the M55 re-shoot: the fixture was shaped for convenience, not for the truth).
+function fixtureNodes(dir: string): Record<string, FixtureNode> {
+  const abs = join(dir, MAIN_REL)
+  return {
+    "sym-greet": { id: "sym-greet", name: "greet", symbolType: "method", file: MAIN_REL, filePath: abs, line: 2, lineEnd: 4, language: "typescript", complexity: 1, isExternal: false },
+    "sym-main": { id: "sym-main", name: "main", symbolType: "function", file: MAIN_REL, filePath: abs, line: 7, lineEnd: 10, language: "typescript", complexity: 2, isExternal: false },
+    "ext:console": { id: "ext:console", name: "console", symbolType: "external", file: "", filePath: "", line: 0, lineEnd: 0, language: "unknown", complexity: 0, isExternal: true },
+    // Depth-3 fixture node for the depth-cap mutant: top -> helper -> main -> greet.
+    "sym-helper": { id: "sym-helper", name: "helper", symbolType: "function", file: MAIN_REL, filePath: abs, line: 12, lineEnd: 12, language: "typescript", complexity: 1, isExternal: false },
+    "sym-top": { id: "sym-top", name: "top", symbolType: "function", file: MAIN_REL, filePath: abs, line: 13, lineEnd: 13, language: "typescript", complexity: 1, isExternal: false },
+  }
 }
 
 // Deeper caller chain for depth testing: helper calls main (depth 2),
@@ -203,7 +213,7 @@ function makeTraverseDouble(dir: string, overrides: Partial<{
     // Ghost node: present in the engine's node map so a fabricated edge to it
     // would RENDER as a real caller — the fabrication must be observable.
     const nodes: Record<string, FixtureNode> = {
-      ...FIXTURE_NODES,
+      ...fixtureNodes(dir),
       "ext:ghost": { id: "ext:ghost", name: "ghost", symbolType: "external", file: "", filePath: "", line: 0, lineEnd: 0, language: "unknown", complexity: 0, isExternal: true },
     }
     return {
@@ -233,7 +243,7 @@ function makeDeepDouble(_dir: string) {
     return {
       callers: chain.filter((e) => e.depth <= maxDepth),
       callees: [],
-      nodes: { ...FIXTURE_NODES },
+      nodes: { ...fixtureNodes(_dir) },
       truncated: false,
       maxDepthReached: maxDepth,
     }
@@ -271,7 +281,18 @@ async function testExpand(): Promise<void> {
   check("G2: incoming callers found", incoming.calls.length === 1, String(incoming.calls.length))
   const caller = incoming.calls[0] as any
   check("G2: caller is main", caller.from?.name === "main", JSON.stringify(caller.from))
-  check("G2: caller carries call site", caller.fromRanges?.[0]?.start?.line === 7, JSON.stringify(caller.fromRanges))
+  // M55.T2: the call site is the INVOCATION of greet inside main — `g.greet()`
+  // on 0-based line 8 — found in the caller's own source and positioned exactly.
+  // The stored edge line (8, 1-based) points at `const g = new Greeter()`: a
+  // position taken from it would be wrong, which is why the component resolves
+  // from source instead (Truth Rule 3).
+  check("G2: caller carries the INVOCATION as its call site", caller.fromRanges?.[0]?.start?.line === 8, JSON.stringify(caller.fromRanges))
+  check("G2: call-site range is exactly the invoked name", (() => {
+    const r = caller.fromRanges?.[0]
+    if (!r || r.start.line !== r.end.line) return false
+    return FIXTURE_MAIN.split("\n")[r.start.line]!.slice(r.start.character, r.end.character) === "greet"
+  })(), JSON.stringify(caller.fromRanges))
+  check("G2: resolved (not approximate) call sites are declared", incoming.callSitesResolved === 1 && incoming.callSitesApproximate === 0, JSON.stringify({ resolved: incoming.callSitesResolved, approx: incoming.callSitesApproximate }))
 
   const outgoing = await ch.expandCalls(raw, "proj", { item, direction: "outgoing" }, makeTraverseDouble(dir))
   check("G2: outgoing callees found", outgoing.calls.length === 1, String(outgoing.calls.length))
@@ -369,6 +390,14 @@ const CH_MUTANTS: Array<{ name: string; from: string; to: string }> = [
     from: "    truncated: result.truncated,\n    truncationReason: result.truncationReason,",
     to: "    truncated: false,\n    truncationReason: undefined,",
   },
+  {
+    // M55.T2: the pre-M55 behaviour — positions taken from the stored edge line
+    // instead of the caller's source. Must be caught by the invocation and
+    // approximate-count assertions above.
+    name: "call sites: skip the source resolution (stored line / fallback only)",
+    from: "    if (invocations.length > 0) {\n      fromRanges = invocations.map((i) => i.range);",
+    to: "    if (false) {\n      fromRanges = invocations.map((i) => i.range);",
+  },
 ]
 
 async function runChMutants(): Promise<number> {
@@ -438,6 +467,14 @@ async function chMutantOracle(mod: any, keepDir: string): Promise<boolean> {
     // IS in the engine's node map, so it would render as a caller — the
     // oracle must catch any caller that is not main.
     if (incoming.calls.some((c: any) => c.from?.name === "ghost")) return true
+    // M55.T2 oracle: the call site must be the INVOCATION in the caller's own
+    // source (`g.greet()`, 0-based line 8), declared as resolved. A component
+    // that echoes the stored edge line or falls back to the caller's name token
+    // must fail here — this is what makes the source-resolution mutant mortal.
+    const r0 = incoming.calls[0].fromRanges?.[0]
+    if (!r0 || r0.start.line !== 8 || r0.end.line !== 8) return true
+    if ((FIXTURE_MAIN.split("\n")[r0.start.line] ?? "").slice(r0.start.character, r0.end.character) !== "greet") return true
+    if (incoming.callSitesResolved !== 1 || incoming.callSitesApproximate !== 0) return true
 
     // Outgoing oracle: exactly one callee (external console), declared.
     const outgoing = await mod.expandCalls(raw, "proj", { item, direction: "outgoing" }, makeTraverseDouble(d))
@@ -509,7 +546,7 @@ async function main(): Promise<void> {
     ],
   }
 
-  writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(EVIDENCE_PATH, evidence)
   console.log(`\nL5: ${status.toUpperCase()} (${passed}/${passed + failed} passed, ${mutantsCaught}/${CH_MUTANTS.length} mutants caught, ${negativeCases} negative)`)
   console.log(`Evidence: ${EVIDENCE_PATH}`)
   if (!ok) process.exitCode = 1

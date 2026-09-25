@@ -8,17 +8,20 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 4,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "readmeFingerprint": "1e418d8e23c3c605149f54a3f456964843711423a93521d65792b90d0c12fe82",
   "listingPath": "ide/vscode/README.md",
   "verifierCommand": "npx tsx script/m25/verify-listing.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-09-07T22:49:03.417Z",
+  "generatedAt": "2026-09-20T02:22:46.456Z",
   "limitations": [
     "The lint is lexical: it proves the listing avoids banned phrasing, not that every sentence is strategically perfect (that word is banned too).",
     "Claim drift is checked against the ledger and F-*.json evidence at run time; a re-run after any evidence change re-derives the allowed claims.",
     "The install follow-along lives in verify-install-docs.ts (clean-profile execution); this file only proves the instructions reference real artifacts."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:22:46.456Z",
+    "contentSha256": "d117aa04813558941b5bacc2dc520e6106d3dc3295df8a9f51c4146681755d95"
+  }
 }

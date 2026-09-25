@@ -318,5 +318,10 @@
         }
       ]
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.961Z",
+    "contentSha256": "ae32a087096bd5bb7ce5fcf91661b78b22240220149c91f3081f49d33656ccce"
+  }
 }

@@ -21,6 +21,7 @@
 
 import type { CoreDatabase } from "../brain/database"
 import { edgeLocation } from "./navigation"
+import { usageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { enrichmentIsStale, hasDisplayableEnrichment, describeEnrichment, parseEnrichment, type Enrichment } from "./enrichment"
 
 /** A resolved usage site: the OTHER end of an edge touching the hovered
@@ -260,7 +261,17 @@ export interface ConnectedGroup {
   sites: RichSite[]
 }
 
+/** The usage sites of a symbol as they come off the index (M55.T3): the one
+ *  collection every count on the hover surface is taken from. */
+export function usageSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSite[] {
+  return usageSitesOf(richSitesForSymbol(raw, symbolId))
+}
+
 /** Group sites into connection facts (summary-verb rows only). */
+// The verb maps below carry no entry for `contains`/`exports` (declaration
+// containments) or for structural ends: a declaration row can therefore never
+// become a connection claim, and every "called by X" name is a member of the
+// usage-site set above (both derive from the same collected rows).
 export function connectedGroups(sites: RichSite[]): ConnectedGroup[] {
   const groups = new Map<string, ConnectedGroup>()
   for (const site of sites) {
@@ -313,20 +324,44 @@ export function connectedSummarySection(groups: ConnectedGroup[]): string {
   return `**connected**: ${parts.join("; ")}`
 }
 
+/** The usage sites of a symbol's collected rows — the vocabulary's own filter
+ *  (src/lsp/relations.ts). Exported so a caller can COUNT exactly what this
+ *  module renders: count and list are the same array, never two filters. */
+export function usageSitesOf(sites: readonly RichSite[]): RichSite[] {
+  return usageSites(sites)
+}
+
 /** Render the usages section: top-MAX_USAGE_LINKS clickable file:line links
  *  plus the "N more" escape hatch — native references view where available,
  *  our hub usages surface otherwise (M44.U6: never a message-only dead end).
- *  Empty string = declared absence (zero usage sites). */
+ *  Empty string = declared absence (zero usage sites).
+ *
+ * M55.T3 (issue #772): the section renders USAGE SITES only — the owning
+ * declaration and callees are filtered out by the vocabulary owner before
+ * anything is rendered (the pre-M55 list offered the hovered method's own
+ * class as a "usage"). The header declares what the rows ARE: a row's
+ * file:line is the REFERENCING symbol's indexed location, where the call is.
+ *
+ * M62.A2 (issue #876): that stays true by construction — this section reads
+ * the referencing symbol's own indexed range (src/lsp/relations.ts), never the
+ * stored `line_number`, so it can never present a call-site line it does not
+ * have. The exact stored call-site address (real line, labeled substitute, or
+ * declared unknown) is served by the address owner
+ * (src/intelligence/graph/line-address.ts) on the hub/graph/MCP surfaces; the
+ * hover's vocabulary is the referencing location, and it says so. */
 export function usagesSection(sites: RichSite[], total: number, forSymbol: string, forFile: string, forLine: number, forCharacter: number): string {
-  if (sites.length === 0) return ""
-  const lines: string[] = ["**usages**"]
-  const shown = sites.slice(0, MAX_USAGE_LINKS)
+  // Defensive: filter here as well as at the caller — a caller that forgets
+  // cannot leak a declaration into the list (the filter is idempotent).
+  const usage = usageSitesOf(sites)
+  if (usage.length === 0) return ""
+  const lines: string[] = [`**usages** — ${usage.length} stored reference${usage.length === 1 ? "" : "s"} (${USAGE_SITE_FILTER_LABEL})`]
+  const shown = usage.slice(0, MAX_USAGE_LINKS)
   shown.forEach((s, i) => {
     lines.push(`${i + 1}. [${siteLabel(s)}](${openUsageUri(s)})`)
   })
-  // total is the authoritative site count (caller passes sites.length or a
+  // total is the authoritative site count (caller passes usage.length or a
   // truncated count); rest = sites beyond the rendered top-3.
-  const rest = total - shown.length
+  const rest = Math.max(0, Math.min(total, usage.length) - shown.length)
   if (rest > 0) {
     lines.push(`+${rest} more — [show all usages](${showAllUsagesUri({ file: forFile, line: forLine, character: forCharacter, symbol: forSymbol })})`)
   }

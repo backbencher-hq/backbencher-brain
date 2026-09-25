@@ -24,6 +24,7 @@ import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SHELL = join(ROOT, "script", "m26", "webview-html.ts")
@@ -175,7 +176,7 @@ async function main(): Promise<void> {
   }
   const dir = join(ROOT, "validation/m26/results")
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, "W6.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "W6.json"), result)
   console.log(`W6: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

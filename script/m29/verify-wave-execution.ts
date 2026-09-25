@@ -19,15 +19,37 @@
 // Run: npx tsx script/m29/verify-wave-execution.ts
 // Evidence: validation/m29/results/R2.json (machine-emitted)
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync, mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { realpathSync } from "node:fs"
 import path from "node:path"
 import { ROOT, WAVE_LANGUAGES } from "./wave-protocol.ts"
-import { assertLanguageApproved, hoverCharacter } from "./wave-execute.ts"
+import { assertLanguageApproved, hoverCharacter, staleRelevantPaths } from "./wave-execute.ts"
+import { writeSealed, canonicalizeKeys } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
+/** Every owner-approved wave record (wave-1, wave-2, …): the union is the
+ *  execution authority, mirroring the executor's approvedLanguages(). */
+function approvalRecord(): { languages: string[]; approvedBy?: string; ownerStatement?: string; waves: string[] } | null {
+  const dir = path.join(ROOT, "validation/m29/results")
+  if (!existsSync(dir)) return null
+  const files = readdirSync(dir).filter((f) => /^wave-\d+-approval\.json$/.test(f)).sort()
+  if (files.length === 0) return null
+  const languages: string[] = []
+  let approvedBy: string | undefined
+  let ownerStatement: string | undefined
+  for (const f of files) {
+    try {
+      const rec = JSON.parse(readFileSync(path.join(dir, f), "utf8")) as { languages?: string[]; approvedBy?: string; ownerStatement?: string }
+      for (const lang of rec.languages ?? []) if (!languages.includes(lang)) languages.push(lang)
+      approvedBy ??= rec.approvedBy
+      ownerStatement ??= rec.ownerStatement
+    } catch {}
+  }
+  return { languages, approvedBy, ownerStatement, waves: files }
+}
 const APPROVAL = path.join(ROOT, "validation/m29/results/wave-1-approval.json")
 const NVIM = path.join(ROOT, ".tools", "nvim-linux-x86_64", "bin", "nvim")
 
@@ -75,10 +97,7 @@ const WARM_BUDGETS: Record<string, number> = {
 }
 
 // --- R1: the approval record governs ----------------------------------------
-let approval: { languages: string[]; approvedBy?: string; ownerStatement?: string } | null = null
-try {
-  approval = JSON.parse(readFileSync(APPROVAL, "utf8"))
-} catch {}
+let approval = approvalRecord()
 check("R1: approval record exists and is readable", approval !== null)
 check("R1: approval names an owner", typeof approval?.approvedBy === "string" && approval.approvedBy.length > 0)
 check("R1: approval names languages", Array.isArray(approval?.languages) && approval.languages.length > 0)
@@ -97,17 +116,24 @@ for (const lang of approval?.languages ?? []) {
     legSummaries.push({ language: lang, status: "missing", steps: 0, budgetsOk: false })
     continue
   }
-  const leg = JSON.parse(readFileSync(legPath, "utf8")) as WaveLeg
+  const leg = parseSealedRecord(legPath) as WaveLeg
   check(`R2: ${lang} S5 status verified`, leg.status === "verified", leg.status)
   // Freshness per the ledger model: the leg is stale only if a RELEVANT
   // input changed since its commit (exact-HEAD equality would stale on
   // every evidence-only pin, which is output, not input).
+  //
+  // RELEVANCE IS PER-LANGUAGE (corrected when wave-2's packs were authored):
+  // the path list named the WHOLE `script/m29/wave-fixtures` directory, so
+  // authoring another language's pack staled every approved leg — a new
+  // language would invalidate the six that were already verified, which is
+  // exactly the coupling contract §9 says a wave must not have (language N+1
+  // joins as a ROUTINE wave). The fixture path is now the language's OWN pack
+  // plus the shared server/launch-set sources that really are common inputs.
   let legStale = false
   try {
-    const changed = execFileSync("git", [
-      "diff", "--name-only", leg.commit, "HEAD", "--",
-      "script/m29/wave-execute.ts", "script/m29/wave-fixtures", "src/lsp/launch_languages.ts", "src/lsp/hover.ts", "src/lsp/navigation.ts", "src/lsp/symbols.ts", "src/lsp/server.ts",
-    ], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean)
+    const changed = execFileSync("git", ["diff", "--name-only", leg.commit, "HEAD", "--", ...staleRelevantPaths(lang)], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean)
     legStale = changed.length > 0
   } catch {
     legStale = true
@@ -134,7 +160,7 @@ if (existsSync(NVIM) && approval) {
       check(`R3: ${lang} expectations exist`, false, expPath)
       continue
     }
-    const expect = JSON.parse(readFileSync(expPath, "utf8")) as Record<string, unknown> & { hoverLine?: number; hover?: { symbol?: string } }
+    const expect = parseSealedRecord(expPath) as Record<string, unknown> & { hoverLine?: number; hover?: { symbol?: string } }
     const hoverChar = hoverCharacter(packDir, ext, expect.hoverLine ?? 0, expect.hover?.symbol ?? "")
     expect["ext"] = ext
     expect["hoverCharacter"] = hoverChar
@@ -142,7 +168,7 @@ if (existsSync(NVIM) && approval) {
     // (ext + derived hoverCharacter) to a temp file and pass that path.
     const enrichedDir = mkdtempSync(path.join(tmpdir(), `m29-s6-${lang}-`))
     const enrichedPath = path.join(enrichedDir, "expectations.json")
-    writeFileSync(enrichedPath, JSON.stringify(expect, null, 2) + "\n")
+    writeSealed(enrichedPath, expect)
 
     // A REAL index for the pack in a temp data dir; nvim (and through it the
     // spawned server) receives BB_DATA_DIR so the editor leg serves the same
@@ -178,7 +204,7 @@ if (existsSync(NVIM) && approval) {
       editorSummaries.push({ language: lang, status: "failed", checks: 0, failed: 0 })
       continue
     }
-    const driverResult = JSON.parse(readFileSync(driverOut, "utf8")) as EditorLeg
+    const driverResult = parseSealedRecord(driverOut) as EditorLeg
     rmSync(enrichedDir, { recursive: true, force: true })
     rmSync(dataDir, { recursive: true, force: true })
     const result = driverResult
@@ -186,7 +212,12 @@ if (existsSync(NVIM) && approval) {
     // Final evidence: driver session + verifier-computed status, written by
     // this script to the path the R1 protocol runner reads.
     const outPath = path.join(ROOT, "validation/m29/results", `wave-editor-${lang}.json`)
-    writeFileSync(outPath, JSON.stringify({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }, null, 2) + "\n")
+    // Canonical key order: the driver's `raw` payloads come through a Lua table
+    // (vim.json.encode), so their key order is arbitrary per run. Their BYTES
+    // are an input of the M29 precision ledger's semantic hash, so a shuffled
+    // payload made that ledger change on every re-run for no semantic reason.
+    // Values are untouched — only key order is normalized (canonicalizeKeys).
+    writeSealed(outPath, canonicalizeKeys({ ...result, status: failedChecks.length === 0 ? "verified" : "failed", commit: gitCommit() }))
     for (const c of result.checks) {
       check(`R3/${lang}: ${c.name}`, c.ok, c.detail)
     }
@@ -195,8 +226,36 @@ if (existsSync(NVIM) && approval) {
   }
 }
 
+/** The RELEVANT inputs of one language's S5 leg: imported from the execution
+ *  library (ONE rule, both doors read it — the gate must not re-implement what
+ *  it gates). Wave-2 rule: the language's OWN analyzer is in the list.
+ *  M4 plants the directory-wide path back against this SAME imported rule.
+ *  (History: this was a dynamic import placed below its first use — the TDZ
+ *  ReferenceError landed in the staleness catch and every leg read stale.) */
+
 // --- R4: mutants --------------------------------------------------------------
 {
+  // M4: the per-language relevance rule. The defect it catches is the coupling
+  // this file shipped with: naming the WHOLE fixtures directory, so authoring
+  // wave-2's packs staled the six approved legs that were already verified.
+  // The rule holds when a leg's inputs name its OWN pack, never another
+  // language's and never the directory.
+  {
+    const paths = staleRelevantPaths("java")
+    mutant(
+      "a wave leg staled by another language's pack (the directory-wide rule)",
+      paths.includes("script/m29/wave-fixtures/java") &&
+        !paths.includes("script/m29/wave-fixtures") &&
+        !paths.includes("script/m29/wave-fixtures/zig"),
+    )
+    // Wave-2 rule, mutant-gated: dropping the language's own analyzer from the
+    // list would break the guarantee that a changed analyzer stales the leg.
+    mutant(
+      "a wave leg NOT staled by its own analyzer's change (the pre-wave-2 rule)",
+      paths.includes("src/ast/real-java-analyzer.ts"),
+    )
+  }
+
   // M1: approval forgery — an unapproved language must be rejected by the
   // execution guard.
   let rejected = false
@@ -216,8 +275,8 @@ if (existsSync(NVIM) && approval) {
     const pa = path.join(ROOT, "validation/m29/results", `wave-${a}.json`)
     const pb = path.join(ROOT, "validation/m29/results", `wave-${b}.json`)
     if (existsSync(pa) && existsSync(pb)) {
-      const la = JSON.parse(readFileSync(pa, "utf8")) as WaveLeg
-      const lb = JSON.parse(readFileSync(pb, "utf8")) as WaveLeg
+      const la = parseSealedRecord(pa) as WaveLeg
+      const lb = parseSealedRecord(pb) as WaveLeg
       mutant("leg language/filename swap goes unnoticed", !(la.language === b || lb.language === a))
     } else {
       mutant("leg language/filename swap goes unnoticed", true, "legs missing — skipped")
@@ -261,6 +320,6 @@ const result = {
 }
 const evidenceDir = path.join(ROOT, "validation/m29/results")
 mkdirSync(evidenceDir, { recursive: true })
-writeFileSync(path.join(evidenceDir, "R2.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(evidenceDir, "R2.json"), result)
 console.log(`R2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)

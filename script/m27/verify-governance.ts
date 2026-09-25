@@ -21,6 +21,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 type Issue = {
   code: string
@@ -200,7 +202,7 @@ function validateM26Bar(m26Ledger: Ledger): string[] {
 }
 
 function main(): void {
-  const ledger = JSON.parse(readFileSync(ledgerPath, "utf8")) as Ledger
+  const ledger = parseSealedRecord(ledgerPath) as Ledger
   const plan = readFileSync(planPath, "utf8")
   const contract = readFileSync(contractPath, "utf8")
   const statusTracker = readFileSync(statusTrackerPath, "utf8")
@@ -306,7 +308,7 @@ function main(): void {
   // --- M26 completion-bar re-audit (version-ladder discipline) -------------
   let m26Ledger: Ledger | null = null
   try {
-    m26Ledger = JSON.parse(readFileSync(m26LedgerPath, "utf8")) as Ledger
+    m26Ledger = parseSealedRecord(m26LedgerPath) as Ledger
   } catch {}
   check("G1: M26 ledger is readable", m26Ledger !== null)
   if (m26Ledger) {
@@ -315,7 +317,7 @@ function main(): void {
 
     let m26X1: Record<string, unknown> | null = null
     try {
-      m26X1 = JSON.parse(readFileSync(m26X1Path, "utf8")) as Record<string, unknown>
+      m26X1 = parseSealedRecord(m26X1Path) as Record<string, unknown>
     } catch {}
     let ancestor = false
     if (m26X1 && typeof m26X1.currentCommit === "string") {
@@ -421,7 +423,7 @@ function main(): void {
       continue
     }
     try {
-      const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as Record<string, unknown>
+      const persisted = parseSealedRecord(evidencePath) as Record<string, unknown>
       if (persisted["status"] !== issue.status) evidenceErrors.push(`${issue.code}:status-mismatch`)
       const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
       const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
@@ -479,13 +481,13 @@ function main(): void {
   const evidenceDir = path.join(ROOT, "validation/m27/results")
   mkdirSync(evidenceDir, { recursive: true })
   const evidencePath = path.join(evidenceDir, result.evidenceFile)
-  writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
-  const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof result
+  writeSealed(evidencePath, result)
+  const persisted = parseSealedRecord(evidencePath) as typeof result
   check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
   const finalFailed2 = checks - passed
   const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
-  writeFileSync(evidencePath, JSON.stringify(finalResult, null, 2) + "\n")
+  writeSealed(evidencePath, finalResult)
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
 }

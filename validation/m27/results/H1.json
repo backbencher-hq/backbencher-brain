@@ -26,11 +26,11 @@
       "caught": true
     }
   ],
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m27/verify-helix.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-07T22:50:48.822Z",
-  "claimLevel": "I2 \u2014 configuration verified against the real server's advertised capabilities; no driven hx session on this machine (D-7)",
+  "generatedAt": "2026-09-20T02:24:16.177Z",
+  "claimLevel": "I2 — configuration verified against the real server's advertised capabilities; no driven hx session on this machine (D-7)",
   "blockedLegs": [
     {
       "leg": "driven hx session",
@@ -41,6 +41,9 @@
     "Helix configuration is verified against the real server capabilities via the M24 harness client; the editor session itself is not machine-driven here.",
     "Graph webview out of scope in Helix (D-6); the capability matrix records the delta."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:24:16.177Z",
+    "contentSha256": "e9796bc599194693d6b91593b45660957beaad2435daf9e2c4a422ef162dc006"
+  }
 }

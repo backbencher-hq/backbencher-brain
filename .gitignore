@@ -28,6 +28,11 @@ tool-mode-corpus.json.fresh
 # @vscode/test-electron download cache (R3/M25 e2e artifacts)
 .vscode-test/
 
+# M55.V1 rig's isolated VS Code profile: a LOCAL 74 MB install artifact (the
+# fresh-VSIX install under test). The frames and the session manifest are the
+# evidence and ARE committed; this profile is machine-local and never is.
+validation/m55/profile/
+
 # client-tooling client runtime dir
 .client-tooling/
 

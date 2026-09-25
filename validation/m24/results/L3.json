@@ -2,19 +2,19 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "sourceFingerprint": "84607ba16b28d88e424e8f434b5cbb7f7baa18055ad8de84847d790b66c93e8b",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "sourceFingerprint": "b7c9c4a899453bf2f5e8d7001e53129e6c2a7d46c5a2126e4261c6e576aefd50",
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",
-  "generatedAt": "2026-09-08T19:43:26.006Z",
-  "passed": 23,
+  "generatedAt": "2026-09-20T02:43:26.620Z",
+  "passed": 27,
   "failed": 0,
   "failures": [],
   "negativeCases": 0,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 5,
-    "mutantsTotal": 5,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
     "ok": true,
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
   },
@@ -24,6 +24,9 @@
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:26.622Z",
+    "contentSha256": "8d36f30ae57be52f3702759f7867bd19da1be50b5450b36b43a9cefd70aaa1fb"
+  }
 }

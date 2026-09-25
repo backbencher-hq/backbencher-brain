@@ -303,16 +303,28 @@ async function driveFeatureSuite(
     position: hoverPos,
   })
   check(ctx, "L2: hover returns markdown contents", hover?.result?.contents?.kind === "markdown")
-  check(ctx, "L2: hover names greet", (hover?.result?.data?.name ?? "") === "greet", JSON.stringify(hover?.result?.data))
-  check(ctx, "L2: hover usage count matches fixture relationship", hover?.result?.data?.usageCount === 1)
-  check(ctx, "L2: hover provenance labels bb index source", (hover?.result?.provenance?.source ?? "") === "bb_index")
+  // Wire law (fixed 2026-09-12, M55.T2 re-run): the component envelope rides
+  // `Hover.data` as `{ provenance, symbol }` — the spec's data slot. This
+  // harness still read a flat `data.name` and a TOP-LEVEL `provenance` (which
+  // LSP Hover does not have), so V1 sat KNOWN-GAP with four red legs while the
+  // server was correct: the gate was asserting a shape the server had stopped
+  // answering. Assert the declared contract, not the remembered one.
+  check(ctx, "L2: hover names greet", (hover?.result?.data?.symbol?.name ?? "") === "greet", JSON.stringify(hover?.result?.data))
+  check(ctx, "L2: hover usage count matches fixture relationship", hover?.result?.data?.symbol?.usageCount === 1, JSON.stringify(hover?.result?.data?.symbol?.usageCount))
+  check(ctx, "L2: hover provenance labels bb index source", (hover?.result?.data?.provenance?.source ?? "") === "bb_index", JSON.stringify(hover?.result?.data?.provenance))
+  // The staleness marker is a declared boolean on both blocks (contract §4):
+  // this fixture seeds brain.db by hand, so the monitor may honestly report
+  // `stale` — what must never happen is a MISSING or silently absent marker.
+  check(ctx, "L2: hover declares its staleness marker", typeof hover?.result?.data?.provenance?.stale === "boolean" && typeof hover?.result?.data?.symbol?.stale === "boolean", JSON.stringify({ provenance: hover?.result?.data?.provenance?.stale, symbol: hover?.result?.data?.symbol?.stale }))
 
-  // Hover at a not-indexed position: declared absence, never fabricated.
+  // Hover at a not-indexed position: declared absence = wire `null` (a
+  // `{contents: null}` envelope is INVALID on the wire — the stock client
+  // converter throws reading `.kind` of null).
   const hoverMiss = await client.request("textDocument/hover", {
     textDocument: { uri: mainUri },
     position: { line: 20, character: 0 },
   })
-  check(ctx, "L2: hover outside index is declared absent", hoverMiss?.result?.contents === null && hoverMiss?.result?.data === null)
+  check(ctx, "L2: hover outside index is declared absent", hoverMiss?.result === null, JSON.stringify(hoverMiss?.result))
 
   // --- Definition + references (L3) ---
   // Wire law: the server answers PROTOCOL shapes (Location / Location[] /
@@ -372,7 +384,19 @@ async function driveFeatureSuite(
 
   const item = prepItems[0]
   const incoming = item ? await client.request("callHierarchy/incomingCalls", { item }) : null
-  check(ctx, "L5: incomingCalls returns CallHierarchyIncomingCall[]", Array.isArray(incoming?.result) && incoming.result.length >= 0)
+  // The fixture's `main` calls `greet` (`g.greet()`), so a correct server always
+  // answers at least one caller — and the call site must be the INVOCATION, not
+  // the caller's declaration line (M55.T2 Truth Rule 1, exercised here too).
+  const incomingList: any[] = Array.isArray(incoming?.result) ? incoming.result : []
+  check(ctx, "L5: incomingCalls returns CallHierarchyIncomingCall[]", Array.isArray(incoming?.result), JSON.stringify(incoming?.result).slice(0, 200))
+  check(ctx, "L5: the fixture's caller is reported", incomingList.some((c) => c.from?.name === "main"), JSON.stringify(incomingList.map((c) => c.from?.name)))
+  check(ctx, "L5: the reported call site is the invocation of greet", (() => {
+    const call = incomingList.find((c) => c.from?.name === "main")
+    const r = call?.fromRanges?.[0]
+    if (r === undefined || r.start.line !== r.end.line) return false
+    const line = FIXTURE_MAIN.split("\n")[r.start.line] ?? ""
+    return line.slice(r.start.character, r.end.character) === "greet"
+  })(), JSON.stringify(incomingList.map((c) => c.fromRanges)))
   const outgoing = item ? await client.request("callHierarchy/outgoingCalls", { item }) : null
   check(ctx, "L5: outgoingCalls returns CallHierarchyOutgoingCall[]", Array.isArray(outgoing?.result))
 

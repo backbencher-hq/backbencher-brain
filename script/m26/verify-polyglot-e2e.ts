@@ -33,6 +33,7 @@ import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { pathToFileURL, fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const FIXTURES = join(ROOT, "test/fixtures/polyglot")
@@ -146,14 +147,21 @@ async function main(): Promise<void> {
   )
 
   // --- P3: the real tier rule applies to the flagged rows --------------------
-  // The DECLARED rule (graph-core STRUCTURAL_TYPES == hover STRUCTURAL_TYPES,
-  // W4-drift-gated): calls/inherits/implements/overrides at >= 0.7 are
-  // structural; anything else (incl. "instantiates") falls through to inferred.
+  // The DECLARED rule (M55.T5: one classifier, src/lsp/evidence_tier.ts;
+  // W4 legend + M29.R5 amendment): instantiates at confidence >= 0.7 is
+  // STRUCTURAL (parser-deterministic), below the floor it is inferred.
   const cl = await import(pathToFileURL(join(ROOT, "src/lsp/cross_language_hover.ts")).href)
   const tierFor = (row: FlaggedRow): string =>
     cl.tierForCrossLanguageEdge({ relationship_type: row.type, confidence: row.confidence, evidence_class: null })
   check("P3: conf-1.0 calls derive structural via the real rule", p1.rows.filter((r) => r.type === "calls").every((r) => tierFor(r) === "structural"), p1.rows.map((r) => `${r.type}:${tierFor(r)}`).join(","))
-  check("P3: instantiates falls through to inferred per the declared set", p1.rows.filter((r) => r.type === "instantiates").every((r) => tierFor(r) === "inferred"), p1.rows.map((r) => `${r.type}:${tierFor(r)}`).join(","))
+  check("P3: instantiates at conf >= 0.7 derives structural (W4 legend, M29.R5)", p1.rows.filter((r) => r.type === "instantiates").every((r) => tierFor(r) === "structural"), p1.rows.map((r) => `${r.type}:${tierFor(r)}`).join(","))
+  // Floor branch through the REAL rule function: below 0.7 the same kind is
+  // inferred — the check discriminates the rule, not a hardcoded label.
+  {
+    const below = cl.tierForCrossLanguageEdge({ relationship_type: "instantiates", confidence: 0.5, evidence_class: null })
+    const at = cl.tierForCrossLanguageEdge({ relationship_type: "instantiates", confidence: 0.9, evidence_class: null })
+    check("P3: floor rule — instantiates 0.5 -> inferred, 0.9 -> structural", below === "inferred" && at === "structural", `${below}/${at}`)
+  }
 
   // --- P4: the real hover component renders the section against the real db --
   if (p1.dbPath) {
@@ -228,7 +236,7 @@ async function main(): Promise<void> {
     evidenceFile: "A1.json",
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(join(dir, "A1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "A1.json"), result)
   console.log(`\nA1: ${result.status.toUpperCase()} (${passed}/${checks} passed, 1 mutant)`)
   if (result.status !== "verified") process.exitCode = 1
 }

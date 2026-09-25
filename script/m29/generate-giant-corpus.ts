@@ -20,6 +20,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync, appendFileSync } from "no
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { createHash } from "node:crypto"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, ".tools", "m29-giant-corpus")
@@ -282,7 +283,7 @@ function main(): void {
   // OUTSIDE the corpus dir (sibling file): a manifest inside the corpus would
   // be counted by the indexer (a real 59001-vs-59000 drift the R3 verifier
   // caught) and would pollute the indexed file set.
-  writeFileSync(path.join(OUT, "..", "m29-giant-corpus-manifest.json"), JSON.stringify(final, null, 2) + "\n")
+  writeSealed(path.join(OUT, "..", "m29-giant-corpus-manifest.json"), final)
   console.log(`total: ${total} files — corpus revision ${revision}`)
 }
 

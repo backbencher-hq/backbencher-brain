@@ -1,0 +1,73 @@
+{
+  "issue": "M55.T5",
+  "code": "T5",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 68,
+  "passed": 68,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 7,
+  "mutants": {
+    "total": 7,
+    "caught": 7
+  },
+  "currentCommit": "9d53dc8f3d900e24276fc2837b1bf8122a0ce70a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
+  "evidenceFile": "T5.json",
+  "generatedAt": "2026-09-19T02:54:13.841Z",
+  "fixture": {
+    "workspace": "/tmp/m55-t5-ws-0jpxiI",
+    "projectId": "81a0c8fb0cce542809c489e2ca101f33ee0e66c9",
+    "symbols": 7,
+    "rows": 9
+  },
+  "observed": {
+    "wireStories": {
+      "s-store": {
+        "tiers": [
+          "structural",
+          "usage_contextual"
+        ],
+        "primary": "structural",
+        "cardHasTierLine": true
+      },
+      "s-put": {
+        "tiers": [
+          "structural",
+          "import_based",
+          "usage_contextual",
+          "inferred"
+        ],
+        "primary": "structural",
+        "cardHasTierLine": true
+      },
+      "s-items": {
+        "tiers": [
+          "structural",
+          "usage_contextual"
+        ],
+        "primary": "structural",
+        "cardHasTierLine": true
+      },
+      "s-untouched": {
+        "tiers": [],
+        "primary": "unknown",
+        "cardHasTierLine": true
+      }
+    }
+  },
+  "failures": [],
+  "limitations": [
+    "The fixture's RED proof is the M2 mutant (the pre-T5 rule reintroduced → the gate fails) plus the issue's own step-zero wire probe; the pre-fix build is not replayed because the owner module is new (authored with the fix), so the RED form is reproduced by planting the old rule rather than by reverting code.",
+    "The external target `push` has no brain_symbol row — that is the indexer's shape for `ext:` targets (target_external, target_symbol_id NULL) — so it has no hoverable position; its story is asserted through its stored rows and through the hub, which is the surface that renders it.",
+    "The hub (bb/graph usages) only traverses the engine's declared relationship types (calls/instantiates/extends/implements), so the `contains`/`imports`/`references`/`uses` rows are asserted on the hover leg and on the model legs, not as hub chips. The hub leg asserts the rules it can carry: stored-class-wins, the floor, and the closed vocabulary.",
+    "The legend's tier set is the five legend tiers by contract; a symbol with no stored rows reports the declared `unknown`, which is deliberately NOT a legend badge (no chip is rendered for it)."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-19T02:54:13.842Z",
+    "contentSha256": "205c22df1d4c110c355430b3ce5deb2b20638f079206b78ada4cccd636bd210a"
+  }
+}

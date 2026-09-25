@@ -20,5 +20,10 @@
   "acceptanceFiles": 7,
   "passed": true,
   "complexityPolicy": "one production parseFile pass per acceptance file; the make analyzer uses one iterative DFS over the tree with O(1) Map-backed symbol dedupe (name:kind) and Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol O(n) scans",
-  "corpusPolicy": "union of all tracked Makefiles across the six pinned clean repos (elixir, cabal, luarocks, terraform, cython, tree-sitter-clean) — the make ecosystem has no single representative repository"
+  "corpusPolicy": "union of all tracked Makefiles across the six pinned clean repos (elixir, cabal, luarocks, terraform, cython, tree-sitter-clean) — the make ecosystem has no single representative repository",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.924Z",
+    "contentSha256": "06ceffb5b3cc0bc52d5bdcf3cbc19fae760e7abd95fafa8c98350b419770b1d0"
+  }
 }

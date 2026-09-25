@@ -70,6 +70,23 @@
           "default": "ask",
           "description": "Auto-index behavior on workspace open (issue #500). Indexing never starts without explicit consent."
         },
+        "bb.panelPlacement": {
+          "type": "string",
+          "enum": [
+            "activeGroup",
+            "beside",
+            "panel",
+            "secondarySidebar"
+          ],
+          "enumDescriptions": [
+            "Open hub/impact/graph panels as a tab in the current editor group, no split (default; the owner's decision).",
+            "Open panels beside the current editor, splitting the group (the pre-M55 behaviour).",
+            "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing.",
+            "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing."
+          ],
+          "default": "activeGroup",
+          "description": "Where Backbencher hub, impact and graph panels open (issue #776). Panels are reused, never duplicated, and informational panels never move the cursor."
+        },
         "bbLsp.trace.server": {
           "type": "string",
           "enum": [
@@ -85,42 +102,42 @@
     "commands": [
       {
         "command": "bbLsp.restartServer",
-        "title": "Backbencher: Restart bb_lsp server",
+        "title": "Restart bb_lsp server",
         "category": "Backbencher"
       },
       {
         "command": "bbLsp.showGraph",
-        "title": "Backbencher: Show graph for symbol",
+        "title": "Show graph for symbol",
         "category": "Backbencher"
       },
       {
         "command": "bbLsp.showStatusPanel",
-        "title": "Backbencher: Show status (evidence levels, staleness)",
+        "title": "Show status (evidence levels, staleness)",
         "category": "Backbencher"
       },
       {
         "command": "bbLsp.indexNow",
-        "title": "Backbencher: Index this workspace now",
+        "title": "Index this workspace now",
         "category": "Backbencher"
       },
       {
         "command": "bbLsp.showServerStatus",
-        "title": "Backbencher: Show server status",
+        "title": "Show server status",
         "category": "Backbencher"
       },
       {
         "command": "bb.openGraph",
-        "title": "Backbencher: Open in Graph (hover action)",
+        "title": "Open in Graph (hover action)",
         "category": "Backbencher"
       },
       {
         "command": "bb.openImpact",
-        "title": "Backbencher: Impact Analysis (hover action)",
+        "title": "Impact Analysis (hover action)",
         "category": "Backbencher"
       },
       {
         "command": "bb.showCallHierarchy",
-        "title": "Backbencher: Show Call Hierarchy (hover action)",
+        "title": "Show Call Hierarchy (hover action)",
         "category": "Backbencher"
       }
     ]

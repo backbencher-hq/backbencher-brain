@@ -155,9 +155,31 @@ export async function loadWebTreeSitter() {
   if (!_wtsModule) {
     installWasiShim()
     _wtsModule = await import("web-tree-sitter")
-    // 0.24.7: default.init() with no args loads core WASM from same directory
     const initFn = _wtsModule.default?.init || _wtsModule.init
-    if (initFn) await initFn()
+    if (initFn) {
+      // Found live (M61 fork-leg investigation, 2026-09-15): init() with no
+      // args lets web-tree-sitter's emscripten glue resolve the CORE wasm as a
+      // bare relative path ("open 'tree-sitter.wasm'"), which resolves against
+      // the PROCESS CWD. In the bundled server the editors spawn (cwd = the
+      // user's workspace) that open fails -> unhandledRejection -> the
+      // reindex pipeline completes with indexed: 0 and every file stays stale
+      // forever (fork legs 87/88: "marker never returns fresh"). The repo-dev
+      // layout masked it: web-tree-sitter stayed external, so the same-dir
+      // file resolved via real node_modules paths regardless of cwd.
+      //
+      // Fix: resolve the core from OUR cwd-independent candidate dirs (the
+      // same registry the grammar loader uses) and hand it to the glue both
+      // as bytes (wasmBinary) and as an absolute locateFile — either alone
+      // removes the cwd dependence; together they also cover a glue version
+      // that ignores one of the two hooks.
+      const coreName = "tree-sitter.wasm"
+      const coreBytes = hasWasmInRegistry(coreName)
+      const coreAbs = resolveWasmAsset(coreName)
+      const initOptions: Record<string, unknown> = {}
+      if (coreBytes) initOptions.wasmBinary = coreBytes
+      if (coreAbs !== coreName) initOptions.locateFile = () => coreAbs
+      await initFn(initOptions)
+    }
   }
   return _wtsModule
 }

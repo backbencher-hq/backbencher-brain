@@ -1,192 +1,164 @@
 {
-  "language": "scala",
   "checks": [
     {
-      "ok": true,
+      "detail": "$HOME/backbencher-brain/dist/lsp/server.js",
       "name": "S6: launch order resolves a server",
-      "detail": "$HOME/backbencher-brain/dist/lsp/server.js"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "1",
       "name": "S6: vim.lsp.start launched bb_lsp",
-      "detail": "1"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "client_id=1 initialized=true",
       "name": "S6: client initialized",
-      "detail": "table: 0x77cecfcaa638"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}",
       "name": "S6: capabilities advertised",
-      "detail": "{\n  d = true,\n  h = true,\n  s = true\n}"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "```\npublic method greet(…) → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees e",
       "name": "S6: hover renders the symbol",
-      "detail": "```\npublic method greet(…) → String\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, structural\n\n**connected*"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "```\npublic method greet(…) → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees e",
       "name": "S6: hover carries evidence tier (contract §2)",
-      "detail": "```\npublic method greet(…) → String\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, structural\n\n**connected*"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 46,\n      line = 6\n    },\n    start = {\n      character = 2,\n      line = 6\n    }\n  },\n  uri = \"file://$HOMEh",
       "name": "S6: definition resolves",
-      "detail": "{\n  range = {\n    [\"end\"] = {\n      character = 46,\n      line = 6\n    },\n    start = {\n      character = 2,\n      line = 6\n    }\n  },\n  uri = \"file://$HOMEh"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "2",
       "name": "S6: references returns locations",
-      "detail": "3"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "{ \"Greeter\", \"Main\" }",
       "name": "S6: documentSymbols include the class",
-      "detail": "{ \"Greeter\", \"Main\" }"
+      "ok": true
     },
     {
-      "ok": true,
+      "detail": "{}",
       "name": "S6: declared absence is honored (no fabricated symbols)",
-      "detail": "{}"
+      "ok": true
     }
   ],
-  "session": [],
+  "commit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "language": "scala",
   "raw": {
-    "references": [
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala",
-        "range": {
-          "start": {
-            "character": 0,
-            "line": 5
-          },
-          "end": {
-            "character": 1,
-            "line": 7
-          }
+    "definition": {
+      "range": {
+        "end": {
+          "character": 46,
+          "line": 6
+        },
+        "start": {
+          "character": 2,
+          "line": 6
         }
       },
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala",
-        "range": {
-          "start": {
-            "character": 2,
-            "line": 10
-          },
-          "end": {
-            "character": 3,
-            "line": 13
-          }
-        }
-      },
-      {
-        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala",
-        "range": {
-          "start": {
-            "character": 2,
-            "line": 6
-          },
-          "end": {
-            "character": 46,
-            "line": 6
-          }
-        }
-      }
-    ],
+      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala"
+    },
     "documentSymbol": [
       {
         "children": [
           {
             "children": [],
-            "name": "constructor",
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:constructor:6",
+              "notIndexed": false
+            },
             "detail": "constructor",
             "kind": 9,
-            "selectionRange": {
-              "start": {
-                "character": 13,
-                "line": 5
-              },
+            "name": "constructor",
+            "range": {
               "end": {
                 "character": 34,
+                "line": 5
+              },
+              "start": {
+                "character": 13,
                 "line": 5
               }
             },
-            "data": {
-              "evidenceTier": "indexed",
-              "notIndexed": false,
-              "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:constructor:6"
-            },
-            "range": {
-              "start": {
-                "character": 13,
-                "line": 5
-              },
+            "selectionRange": {
               "end": {
                 "character": 34,
+                "line": 5
+              },
+              "start": {
+                "character": 13,
                 "line": 5
               }
             }
           },
           {
             "children": [],
-            "name": "greet",
+            "data": {
+              "evidenceTier": "indexed",
+              "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:greet:7",
+              "notIndexed": false
+            },
             "detail": "greet",
             "kind": 6,
-            "selectionRange": {
-              "start": {
-                "character": 2,
-                "line": 6
-              },
+            "name": "greet",
+            "range": {
               "end": {
                 "character": 46,
+                "line": 6
+              },
+              "start": {
+                "character": 2,
                 "line": 6
               }
             },
-            "data": {
-              "evidenceTier": "indexed",
-              "notIndexed": false,
-              "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:greet:7"
-            },
-            "range": {
-              "start": {
-                "character": 2,
-                "line": 6
-              },
+            "selectionRange": {
               "end": {
                 "character": 46,
+                "line": 6
+              },
+              "start": {
+                "character": 2,
                 "line": 6
               }
             }
           }
         ],
-        "name": "Greeter",
-        "detail": "Greeter",
-        "kind": 5,
-        "selectionRange": {
-          "start": {
-            "character": 0,
-            "line": 5
-          },
-          "end": {
-            "character": 1,
-            "line": 7
-          }
-        },
         "data": {
           "evidenceTier": "indexed",
-          "notIndexed": false,
-          "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:Greeter:6"
+          "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:Greeter:6",
+          "notIndexed": false
         },
+        "detail": "Greeter",
+        "kind": 5,
+        "name": "Greeter",
         "range": {
-          "start": {
-            "character": 0,
-            "line": 5
-          },
           "end": {
             "character": 1,
             "line": 7
+          },
+          "start": {
+            "character": 0,
+            "line": 5
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 1,
+            "line": 7
+          },
+          "start": {
+            "character": 0,
+            "line": 5
           }
         }
       },
@@ -194,131 +166,153 @@
         "children": [
           {
             "children": [],
-            "name": "main",
-            "detail": "main",
-            "kind": 6,
-            "selectionRange": {
-              "start": {
-                "character": 2,
-                "line": 10
-              },
-              "end": {
-                "character": 3,
-                "line": 13
-              }
-            },
             "data": {
               "evidenceTier": "indexed",
-              "notIndexed": false,
-              "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:main:11"
+              "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:main:11",
+              "notIndexed": false
             },
+            "detail": "main",
+            "kind": 6,
+            "name": "main",
             "range": {
-              "start": {
-                "character": 2,
-                "line": 10
-              },
               "end": {
                 "character": 3,
                 "line": 13
+              },
+              "start": {
+                "character": 2,
+                "line": 10
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 3,
+                "line": 13
+              },
+              "start": {
+                "character": 2,
+                "line": 10
               }
             }
           }
         ],
-        "name": "Main",
-        "detail": "Main",
-        "kind": 2,
-        "selectionRange": {
-          "start": {
-            "character": 0,
-            "line": 9
-          },
-          "end": {
-            "character": 1,
-            "line": 14
-          }
-        },
         "data": {
           "evidenceTier": "indexed",
-          "notIndexed": false,
-          "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:Main:10"
+          "id": "f8429876d1bf88a200e075f594e5fe6dea72245f:main.scala:Main:10",
+          "notIndexed": false
         },
+        "detail": "Main",
+        "kind": 2,
+        "name": "Main",
         "range": {
-          "start": {
-            "character": 0,
-            "line": 9
-          },
           "end": {
             "character": 1,
             "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 9
+          }
+        },
+        "selectionRange": {
+          "end": {
+            "character": 1,
+            "line": 14
+          },
+          "start": {
+            "character": 0,
+            "line": 9
           }
         }
       }
     ],
-    "definition": {
-      "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala",
-      "range": {
-        "start": {
-          "character": 2,
-          "line": 6
-        },
-        "end": {
-          "character": 46,
-          "line": 6
-        }
-      }
-    },
     "hover": {
       "contents": {
-        "value": "```\npublic method greet(…) → String\n```\n\n**greet** — method, 4 usages\n\nevidence: indexed, structural\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages**\n1. [Greeter — main.scala:6](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\n2. [main — main.scala:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala:7](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D))_",
-        "kind": "markdown"
+        "kind": "markdown",
+        "value": "```\npublic method greet(…) → String\n```\n\n**greet** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.scala:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala:7](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D))_"
+      },
+      "data": {
+        "provenance": {
+          "engine": "bb_lsp hover@m24.l2",
+          "evidenceClass": "structural",
+          "limitations": [
+            "index-sourced; no compiler-backed types (complement stance)"
+          ],
+          "source": "bb_index",
+          "stale": false
+        },
+        "symbol": {
+          "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D)",
+          "annotationSection": "",
+          "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
+          "crossLanguageSection": "",
+          "definition": {
+            "character": 2,
+            "line": 6
+          },
+          "evidenceTiers": [
+            "structural",
+            "usage_contextual"
+          ],
+          "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala",
+          "freshnessStatus": "fresh",
+          "lineEnd": 7,
+          "lineStart": 7,
+          "name": "greet",
+          "qualifiedName": "greet",
+          "signature": "public method greet(…) → String",
+          "stale": false,
+          "symbolType": "method",
+          "usageCount": 1,
+          "usagesSection": "**usages** — 1 stored reference (usage sites only; declaration and callees excluded)\n1. [main — main.scala:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)"
+        }
       },
       "range": {
-        "start": {
-          "character": 2,
-          "line": 6
-        },
         "end": {
           "character": 46,
           "line": 6
-        }
-      },
-      "data": {
-        "actionsSection": "**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22greet%22%2C%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D)",
-        "crossLanguageSection": "",
-        "definition": {
+        },
+        "start": {
           "character": 2,
           "line": 6
-        },
-        "stale": false,
-        "freshnessStatus": "fresh",
-        "filePath": "$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala",
-        "lineStart": 7,
-        "lineEnd": 7,
-        "name": "greet",
-        "qualifiedName": "greet",
-        "symbolType": "method",
-        "signature": "public method greet(…) → String",
-        "usageCount": 4,
-        "evidenceTiers": [
-          "indexed",
-          "structural"
-        ],
-        "connectedSection": "**connected**: called by [main](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · _role consumer · layer core→core · 2 referring rows · low criticality (enriched by index)_",
-        "annotationSection": "",
-        "usagesSection": "**usages**\n1. [Greeter — main.scala:6](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\n2. [main — main.scala:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fhome%2Fishaq2321%2Fbackbencher-brain%2Fscript%2Fm29%2Fwave-fixtures%2Fscala%2Fmain.scala%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)"
-      },
-      "provenance": {
-        "limitations": [
-          "index-sourced; no compiler-backed types (complement stance)"
-        ],
-        "source": "bb_index",
-        "evidenceClass": "indexed",
-        "engine": "bb_lsp hover@m24.l2",
-        "stale": false
+        }
       }
     },
+    "references": [
+      {
+        "range": {
+          "end": {
+            "character": 3,
+            "line": 13
+          },
+          "start": {
+            "character": 2,
+            "line": 10
+          }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala"
+      },
+      {
+        "range": {
+          "end": {
+            "character": 46,
+            "line": 6
+          },
+          "start": {
+            "character": 2,
+            "line": 6
+          }
+        },
+        "uri": "file://$HOME/backbencher-brain/script/m29/wave-fixtures/scala/main.scala"
+      }
+    ],
     "workspaceAbsence": []
   },
+  "session": [],
   "status": "verified",
-  "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:45:04.698Z",
+    "contentSha256": "b3d3bd1454bf8d241d718d494dac0ba19f08f7cb3e4fd3c778749b5e67a8ab54"
+  }
 }

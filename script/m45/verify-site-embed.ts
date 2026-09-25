@@ -1,28 +1,38 @@
 // script/m45/verify-site-embed.ts — M45.T1 (#711), the website-embed gate.
 //
-// Machine-checks that the verified session films are actually consumed by the
-// website (not just sitting in validation/):
-//   1. Hero embed: HeroFilm exists, references BOTH film files' scenario
-//      contract (poster, muted/loop/playsInline, reduced-motion fallback),
-//      and HeroSection actually renders it.
-//   2. /demos page: exists, renders both films, captions bind to the capture
-//      manifests (never hand-typed claims), and the page links the evidence.
-//   3. Discovery: /demos is reachable from Navigation and SiteFooter, and the
-//      sitemap route list includes it.
-//   4. Assets: both mp4s + posters exist in website/public/demos with size
-//      floors (a zero-byte or truncated copy fails).
-//   5. Gates extended honestly: M41 SEO route list contains /demos; M41 design
-//      gate accepts the film hero.
-//   6. Build truth: the Next build output contains the /demos route.
-//   7. Six planted mutations prove the checks can fail (removed poster attr,
-//      hand-typed caption replacing the manifest reference, dropped sitemap
-//      route, deleted mp4, nav link removed, autoplay unmuted).
+// SCOPE CHANGE (recorded, not deleted — M56.I1, #785): /demos is RETIRED.
+// The owner withdrew both films after review (pacing and craft, not truth).
+// The hero decision is unchanged (video-free, live verbatim terminal), and the
+// machine-verified session stills from the same harness are the proof that
+// survives — they now serve on /editors. So this gate still asserts that the
+// verified M45 material reaches the site, but the retired page is asserted as
+// RETIRED (a redirect, no media, no nav/sitemap entry) rather than live.
+//
+// Checks:
+//   1. Hero figure: HeroTerminal exists, renders REAL verbatim CLI output, and
+//      HeroSection actually renders it. The hero is VIDEO-FREE (owner decision
+//      2026-09-12): no film lives in the hero. Reduced-motion reveals all lines.
+//   2. Retirement: /demos is a redirect stub to /editors through the site's one
+//      redirect declaration; the withdrawn media is gone from the published
+//      bundle; no source references the /demos/ asset path.
+//   3. Discovery: no retired path is linked from Navigation or the footer, and
+//      the sitemap keeps /demos only as a parity entry excluded by the
+//      RETIRED_ROUTES filter (a sitemap lists canonical URLs only).
+//   4. Surviving proof: the verified stills the harness produced ship on
+//      /editors under website/public/editors.
+//   5. Gates extended honestly: the M41 SEO gate pins the retirement in its
+//      redirect contract; the M41 design gate accepts the live terminal hero.
+//   6. Build truth: the Next build output still carries the /demos route (as a
+//      redirect — the URL stays valid for bookmarks).
+//   7. Six planted mutations prove the checks can fail (verbatim line replaced,
+//      hero figure unrendered, /demos resurrected as a content page, /demos
+//      re-added to the nav, withdrawn media re-added, redirect destination
+//      drifted).
 //
 // Run: npx tsx script/m45/verify-site-embed.ts
 // Evidence: validation/m45/results/T1.json
 
-import { readFileSync, existsSync, statSync } from "node:fs"
-import { writeFileSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, rmSync, readdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 
@@ -44,54 +54,83 @@ function read(p: string): string {
   return existsSync(p) ? readFileSync(p, "utf8") : ""
 }
 
-// --- 1. hero embed ----------------------------------------------------------------
+const RETIRED = ["/demos", "/faq", "/contact", "/troubleshooting"]
 
-const heroFilm = read(path.join(SITE, "src/components/HeroFilm.tsx"))
-check("T1: HeroFilm component exists", heroFilm.length > 200)
-check("T1: hero video uses the poster frame", heroFilm.includes('"/demos/hero-poster.jpg"'))
-check("T1: hero video is muted (no sound, ever)", /muted/.test(heroFilm))
-check("T1: hero video loops and plays inline", heroFilm.includes("loop") && heroFilm.includes("playsInline"))
-check("T1: reduced-motion fallback pauses autoplay", heroFilm.includes("prefers-reduced-motion"))
-check("T1: HeroSection renders the film (static figure replaced)", read(path.join(SITE, "src/components/HeroSection.tsx")).includes("<HeroFilm />"))
+// --- 1. hero figure (video-free by owner decision) ----------------------------------
 
-// --- 2. /demos page ----------------------------------------------------------------
+const heroTerminal = read(path.join(SITE, "src/components/HeroTerminal.tsx"))
+const heroSection = read(path.join(SITE, "src/components/HeroSection.tsx"))
+const globals = read(path.join(SITE, "src/app/globals.css"))
+check("T1: HeroTerminal component exists", heroTerminal.length > 200)
+check("T1: hero terminal shows verbatim CLI output (not invented)", heroTerminal.includes('"bb --version"') && heroTerminal.includes("Usage: bb [options] [command]"))
+check("T1: hero figure is video-free (owner decision 2026-09-12)", !heroSection.includes("<video") && !heroSection.includes("HeroFilm"))
+check("T1: HeroSection renders the live terminal", heroSection.includes("<HeroTerminal />"))
+check("T1: reduced-motion reveals all lines instantly (CSS gate)", globals.includes(".hero-line") && /reduce\)/.test(globals))
 
-const demos = read(path.join(SITE, "src/app/demos/page.tsx"))
-check("T1: /demos page exists with real content", demos.length > 1000)
-check("T1: /demos renders both verified films", demos.includes("hero-cut.mp4") && demos.includes("hero-cut-money.mp4"))
-check("T1: captions bind to capture manifests (not hand-typed claims)", demos.includes("capture-manifest.json") && demos.includes("capture-manifest-money.json"))
-check("T1: /demos links the machine-verified evidence", demos.includes("validation/m45/results"))
+// --- 2. /demos is retired -----------------------------------------------------------
+
+const redirectsSrc = read(path.join(SITE, "src/lib/redirects.ts"))
+const demosStub = read(path.join(SITE, "src/app/demos/page.tsx"))
+check("T1: the site declares its redirect map in one module", redirectsSrc.includes("export const REDIRECTS") && redirectsSrc.includes("RETIRED_ROUTES"))
+check("T1: the declaration retires /demos to /editors", /"\/demos":\s*"\/editors"/.test(redirectsSrc))
+check("T1: /demos is a redirect stub, not a page", demosStub.includes('from "@/lib/redirects"') && demosStub.includes('redirect(REDIRECTS["/demos"])'))
+check("T1: the retired page carries no film markup", !demosStub.includes("<video") && !demosStub.includes(".mp4") && !demosStub.includes("capture-manifest"))
+check("T1: the withdrawn media is gone from the published bundle", !existsSync(path.join(SITE, "public/demos")))
+function sourceFilesReferencing(needle: string): string[] {
+  const hits: string[] = []
+  const stack = ["src/app", "src/components", "src/data", "src/lib"].map((d) => path.join(SITE, d))
+  while (stack.length) {
+    const p = stack.pop()!
+    if (!existsSync(p)) continue
+    if (statSync(p).isDirectory()) {
+      for (const f of readdirSync(p)) stack.push(path.join(p, f))
+      continue
+    }
+    if (/\.(tsx?|css|md)$/.test(p) && read(p).includes(needle)) hits.push(path.relative(ROOT, p))
+  }
+  return hits
+}
+const demosAssetRefs = sourceFilesReferencing("/demos/")
+check("T1: no site source references the withdrawn /demos/ assets", demosAssetRefs.length === 0, demosAssetRefs.join(","))
 
 // --- 3. discovery -------------------------------------------------------------------
 
-check("T1: /demos reachable from the main navigation", /["']\/demos["']/.test(read(path.join(SITE, "src/components/Navigation.tsx"))))
-check("T1: /demos reachable from the footer", read(path.join(SITE, "src/components/SiteFooter.tsx")).includes('"/demos"'))
+const navSrc = read(path.join(SITE, "src/components/Navigation.tsx"))
+const footerSrc = read(path.join(SITE, "src/components/SiteFooter.tsx"))
+check("T1: no retired path is linked from the navigation", !RETIRED.some((r) => navSrc.includes(`href: '${r}'`)))
+check("T1: no retired path is linked from the footer", !RETIRED.some((r) => footerSrc.includes(`href: "${r}"`)))
 const sitemapSrc = read(path.join(SITE, "src/app/sitemap.ts"))
-check("T1: sitemap route list includes /demos", sitemapSrc.includes('"/demos"'))
+check("T1: the sitemap keeps /demos only as a parity entry excluded by the retirement filter", sitemapSrc.includes('"/demos"') && sitemapSrc.includes("RETIRED_ROUTES") && /filter\(\(r\) => !\(RETIRED_ROUTES/.test(sitemapSrc))
 
-// --- 4. assets ----------------------------------------------------------------------
+// --- 4. surviving proof --------------------------------------------------------------
 
-for (const f of ["hero-cut.mp4", "hero-cut-money.mp4", "hero-poster.jpg", "hero-poster-money.jpg"]) {
-  const p = path.join(SITE, "public/demos", f)
-  const ok = existsSync(p) && statSync(p).size > 50_000
-  check(`T1: asset ${f} exists with sane size`, ok, ok ? "" : "missing or <50KB")
-}
+const editorsPage = read(path.join(SITE, "src/app/editors/page.tsx"))
+const editorsData = read(path.join(SITE, "src/data/editors.generated.ts"))
+check("T1: /editors renders the surviving capture stills", editorsPage.includes("still.publicPath") && editorsData.includes('"/editors/'))
+const stills = [...editorsData.matchAll(/publicPath": "(\/editors\/[A-Za-z0-9._-]+)"/g)].map((m) => m[1]!)
+check("T1: every surviving still ships as a real file with a size floor", stills.length >= 3 && stills.every((rel) => {
+  const p = path.join(SITE, "public", rel.replace(/^\//, ""))
+  return existsSync(p) && statSync(p).size > 100_000
+}), `${stills.length} stills`)
 
 // --- 5. gates extended honestly -----------------------------------------------------
 
-check("T1: M41 SEO gate route list extended with /demos", read(path.join(ROOT, "script/m41/verify-seo.ts")).includes('"/demos"'))
-check("T1: M41 design gate accepts the film hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("HeroFilm"))
+const seoGate = read(path.join(ROOT, "script/m41/verify-seo.ts"))
+check(
+  "T1: the M41 SEO gate pins the /demos retirement in its redirect contract",
+  seoGate.includes('"/demos": "/editors"') && seoGate.includes("EXPECTED_REDIRECTS"),
+)
+check("T1: M41 design gate accepts the live terminal hero", read(path.join(ROOT, "script/m41/verify-design.ts")).includes("HeroTerminal"))
 
-// --- 6. build truth -------------------------------------------------------------------
+// --- 6. build truth -----------------------------------------------------------------
 
 const buildRoutes = read(path.join(SITE, ".next/app-path-routes-manifest.json"))
-check("T1: built site contains the /demos route", buildRoutes.includes("/demos"), "run `next build` in website/ first")
+check("T1: built site still carries the /demos route (as a redirect)", buildRoutes.includes("/demos"), "run `next build` in website/ first")
 
-// --- 7. mutation proofs (the gate can fail) -------------------------------------------
+// --- 7. mutation proofs (the gate can fail) ------------------------------------------
 
 let mutantsCaught = 0
 let mutantsSurvived = 0
-// A mutant is caught when the predicate FAILS under the mutation.
 function mutantCheck(name: string, predicateHolds: boolean): void {
   if (predicateHolds) {
     mutantsSurvived++
@@ -101,7 +140,6 @@ function mutantCheck(name: string, predicateHolds: boolean): void {
     console.log(`  mutant caught: ${name}`)
   }
 }
-
 function mutated(mutator: (s: string) => string, source: string, name: string, predicate: (s: string) => boolean): void {
   const orig = readFileSync(source, "utf8")
   try {
@@ -112,31 +150,48 @@ function mutated(mutator: (s: string) => string, source: string, name: string, p
   }
 }
 
-// asset deletion mutant: a missing/zero-byte mp4 must fail the size floor
-const mp4 = path.join(SITE, "public/demos/hero-cut.mp4")
-const { unlinkSync } = await import("node:fs")
-const mp4Orig = readFileSync(mp4)
-try {
-  writeFileSync(mp4, Buffer.alloc(0))
-  const zeroOk = existsSync(mp4) && statSync(mp4).size > 50_000
-  mutantCheck("T1-mutant: zero-byte asset fails the size floor", zeroOk)
-} finally {
-  writeFileSync(mp4, mp4Orig)
-  if (existsSync(mp4 + ".probe")) unlinkSync(mp4 + ".probe")
+mutated((s) => s.replace("Usage: bb [options] [command]", "Usage: invented [fake] [lines]"), path.join(SITE, "src/components/HeroTerminal.tsx"), "T1-mutant: verbatim output replaced fails", (s) => s.includes("Usage: bb [options] [command]"))
+mutated((s) => s.replace("<HeroTerminal />", "{null}"), path.join(SITE, "src/components/HeroSection.tsx"), "T1-mutant: unrendered hero figure fails", (s) => s.includes("<HeroTerminal />"))
+// Resurrect /demos as a content page: the retirement predicate must fail.
+mutated(
+  (s) => s.replace('redirect(REDIRECTS["/demos"])', '<video src="/demos/hero-cut.mp4" />'),
+  path.join(SITE, "src/app/demos/page.tsx"),
+  "T1-mutant: /demos resurrected as a content page fails",
+  (s) => s.includes('redirect(REDIRECTS["/demos"])') && !s.includes("<video"),
+)
+// Re-add /demos to the nav: the retired-link predicate must fail.
+mutated(
+  (s) => s.replace("{ href: '/editors', label: 'Editors' },", "{ href: '/editors', label: 'Editors' },\n  { href: '/demos', label: 'Demos' },"),
+  path.join(SITE, "src/components/Navigation.tsx"),
+  "T1-mutant: retired path re-added to the nav fails",
+  (s) => !RETIRED.some((r) => s.includes(`href: '${r}'`)),
+)
+// Re-add withdrawn media: the bundle predicate must fail.
+{
+  const dir = path.join(SITE, "public/demos")
+  try {
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(path.join(dir, "hero-cut.mp4"), Buffer.alloc(60_000))
+    mutantCheck("T1-mutant: withdrawn media re-added to the bundle fails", !existsSync(dir))
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 }
+// Drift the declared destination: the retirement predicate must fail.
+mutated(
+  (s) => s.replace('"/demos": "/editors"', '"/demos": "/tools"'),
+  path.join(SITE, "src/lib/redirects.ts"),
+  "T1-mutant: drifted redirect destination fails",
+  (s) => /"\/demos":\s*"\/editors"/.test(s),
+)
 
-mutated((s) => s.replace('"/demos/hero-poster.jpg"', '"/demos/missing-poster.jpg"'), path.join(SITE, "src/components/HeroFilm.tsx"), "T1-mutant: hero poster attr removed fails", (s) => s.includes('"/demos/hero-poster.jpg"'))
-mutated((s) => s.replace("\n        muted", "\n        // muted"), path.join(SITE, "src/components/HeroFilm.tsx"), "T1-mutant: unmuted autoplay fails", (s) => /[^\/]muted/.test(s) && !s.includes("// muted"))
-mutated((s) => s.replace('"/demos"', '"/demoz"'), path.join(SITE, "src/app/sitemap.ts"), "T1-mutant: sitemap route dropped fails", (s) => s.includes('"/demos"'))
-mutated((s) => s.replace("capture-manifest.json", "captre-manifest.json"), path.join(SITE, "src/app/demos/page.tsx"), "T1-mutant: manifest binding removed fails", (s) => s.includes("capture-manifest.json"))
-mutated((s) => s.replace("'/demos'", "'/demoz'"), path.join(SITE, "src/components/Navigation.tsx"), "T1-mutant: nav link removed fails", (s) => s.includes("'/demos'"))
-
-// --- evidence -------------------------------------------------------------------------
+// --- evidence -----------------------------------------------------------------------
 
 const ok = failed === 0
 const evidence = {
   gate: "T1",
   issue: 711,
+  scopeChange: "M56.I1 (#785): /demos retired by owner decision; withdrawn films removed from the published bundle, retired URL redirects to /editors, surviving verified stills serve on /editors.",
   verifierCommand: "npx tsx script/m45/verify-site-embed.ts",
   currentCommit: (() => { try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim() } catch { return "unknown" } })(),
   passed,
