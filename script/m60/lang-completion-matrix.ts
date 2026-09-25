@@ -79,7 +79,7 @@ const familyOf = (l: string) =>
 const TRACKER_ALIASES: Record<string, string[]> = {
   java: ["java"], kotlin: ["kotlin"], scala: ["scala"], groovy: ["groovy"],
   typescript: ["typescript"], javascript: ["javascript"], vue: ["vue"], svelte: ["svelte"],
-  c: ["c holy", "cpp/c", "c/cpp"], cpp: ["cpp", "c++"], rust: ["rust"],
+  c: ["c holy", "cpp/c", "c/cpp", "c+cpp"], cpp: ["cpp", "c++"], rust: ["rust"],
   go: ["golang", "go:", "go master", "go and haskell", "c+cpp+rust+go+zig"],
   csharp: ["csharp", "c#"], fsharp: ["fsharp", "f#"], dart: ["dart"], ruby: ["ruby"],
   php: ["php"], python: ["python"], swift: ["swift"], objc: ["objc", "objective-c"],
@@ -193,6 +193,17 @@ function trackerSelfTest(): { passed: number; failed: string[] } {
     JSON.stringify(reasons.map(([n]) => Number(n)).sort((a, b) => a - b)) === JSON.stringify([593, 864, 930, 943]))
   check("exclusion hygiene: no exclusion is enumerated for a nonexistent issue id",
     reasons.every(([n]) => Number.isFinite(Number(n))))
+  // The systems family's joint closure gate OPENS with c's name, and c's alias list
+  // could not reach it: the older phrases need a slash (`cpp/c`) or the word holy, and
+  // #612 spells the family "c+cpp+rust+go+zig". So the one systems lane that TICKED did
+  // so while its family gate was open — go's alias list carried the exact string and
+  // c's did not. Asserted on the real title, in both directions.
+  const FAMILY = ISSUE(612, "M37.19 System family closure: c+cpp+rust+go+zig joint gates")
+  check("family gate: #612 names c, its own family member", hits("c", [FAMILY]) === "612")
+  check("family gate: the other four systems lanes see that same issue",
+    ["cpp", "rust", "go", "zig"].every(l => hits(l, [FAMILY]) === "612"))
+  check("family gate: it does not leak to a lane outside the family",
+    ["python", "php", "java", "csharp"].every(l => hits(l, [FAMILY]) === ""))
   return { passed, failed }
 }
 
