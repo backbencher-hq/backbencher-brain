@@ -28,6 +28,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EXT_ROOT = join(ROOT, "ide/vscode")
@@ -36,11 +37,27 @@ const README_PATH = join(EXT_ROOT, "README.md")
 let checks = 0
 let passed = 0
 const failures: string[] = []
+const canFail: string[] = []
 function check(name: string, ok: boolean, detail = ""): void {
   checks++
   if (ok) passed++
   else failures.push(detail ? `${name} — ${detail}` : name)
   console.log(`  ${ok ? "ok" : "FAIL"}: ${name}${ok && detail ? ` (${detail})` : detail ? ` — ${detail}` : ""}`)
+}
+// M61.V6 (#847): the install-doc surface's can-fail proof, LABELLED and
+// RECORDED. The verifier lint's registry flagged this gate as having no planted
+// defect; the doc's three machine-checkable claims are now exercised against a
+// doctored README so the rules are proven live rather than merely asserted true.
+function mutant(name: string, caught: boolean, detail = ""): void {
+  canFail.push(`${caught ? "ok" : "FAIL"}: M: ${name}`)
+  check(`M: ${name}`, caught, detail)
+}
+
+/** The README's machine-checkable install claims, as pure predicates (M61.V6). */
+const README_RULES = {
+  namesExactVsix: (doc: string, vsix: string) => doc.includes(vsix),
+  launchesCleanProfile: (doc: string) => /--user-data-dir[^\n]*--extensions-dir/.test(doc),
+  namesStatusCommand: (doc: string) => doc.includes("Backbencher: Show status"),
 }
 
 console.log("M25.D1 install follow-along — README steps executed on a clean profile\n")
@@ -58,10 +75,19 @@ if (!existsSync(vsixPath)) {
   execFileSync("npx", ["tsx", "script/m25/verify-packaging.ts"], { cwd: ROOT, encoding: "utf8", timeout: 400_000, stdio: ["ignore", "pipe", "inherit"] })
 }
 check("pre: the VSIX the README names exists", existsSync(vsixPath), vsixName)
-check("pre: README install block references this exact VSIX", readme.includes(vsixName))
-check("pre: README launch command uses clean user-data + extensions dirs",
-  /--user-data-dir[^\n]*--extensions-dir/.test(readme))
-check("pre: README names the status command as the first verify step", readme.includes("Backbencher: Show status"))
+check("pre: README install block references this exact VSIX", README_RULES.namesExactVsix(readme, vsixName))
+check("pre: README launch command uses clean user-data + extensions dirs", README_RULES.launchesCleanProfile(readme))
+check("pre: README names the status command as the first verify step", README_RULES.namesStatusCommand(readme))
+
+// The can-fail proof of those three rules (M61.V6 / #847): each doctored README
+// must be rejected. If a rule ever becomes unconditional, one of these fires.
+// The doctored copies must be WHOLLY doctored: the README names the status
+// command in three places, so a single `replace` would leave the claim standing
+// and the mutant would prove nothing (found exactly that way — the first run of
+// this proof reported 2/3).
+mutant("install doc naming a stale VSIX passes", !README_RULES.namesExactVsix(readme.replaceAll(vsixName, "bb-lsp-vscode-0.0.1.vsix"), vsixName))
+mutant("install doc launching without a clean profile passes", !README_RULES.launchesCleanProfile(readme.replace(/--user-data-dir[^\n]*/g, "")))
+mutant("install doc omitting the status command passes", !README_RULES.namesStatusCommand(readme.replaceAll("Backbencher: Show status", "")))
 
 // --- S1: install ---------------------------------------------------------------
 console.log("\nS1 — install the VSIX via the documented CLI")
@@ -187,6 +213,9 @@ const result = {
   currentCommit,
   verifierCommand: "npx tsx script/m25/verify-install-docs.ts",
   evidenceFile: "D1-install.json",
+  mutantsCaught: canFail.filter((c) => c.startsWith("ok")).length,
+  mutantsTotal: canFail.length,
+  checksList: canFail,
   generatedAt: new Date().toISOString(),
   limitations: [
     "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
@@ -194,7 +223,7 @@ const result = {
     "Runs on this machine's Linux only; macOS/Windows install-doc execution is E7 scope.",
   ],
 }
-writeFileSync(join(ROOT, "validation/m25/results", "D1-install.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(join(ROOT, "validation/m25/results", "D1-install.json"), result)
 
 console.log(`\nD1-install: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed)`)
 console.log(`Evidence: ${join(ROOT, "validation/m25/results/D1-install.json")}`)

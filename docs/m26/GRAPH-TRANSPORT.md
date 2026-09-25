@@ -86,7 +86,7 @@ distinguish declared errors from bugs.
 | missing/empty symbol | `bb/graph: params.symbol (non-empty string) is required` |
 | bad direction/maxDepth/… | `bb/graph: params.<field> must be …` |
 | **unindexed workspace** | `bb/graph: workspace is not indexed — run `bb index` first …` |
-| unknown symbol | `Symbol '<name>' not found` (from the engine; surfaced as-is) |
+| unknown symbol | `bb/graph: symbol '<name>' not found — no graph exists (declared error; run `bb index` or check the name)` |
 | untraceable edge (internal) | `bb/graph: internal consistency failure — edge … has no brain_relationship row id` |
 
 Note: a client that never sends `schemaVersion` (a legacy caller) gets the

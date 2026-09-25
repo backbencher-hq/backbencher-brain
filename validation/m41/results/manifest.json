@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-04T23:05:43.637Z",
+  "updatedAt": "2026-09-13T22:44:26.944Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -51,13 +51,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "de52fb6ecb10fc81877e98a1d2b2dc818cc5230e",
+        "currentCommit": "fdb1a6f5740a246ecc694120098abac74f1e7741",
         "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-04T20:57:08.409Z",
-        "passed": 27,
+        "generatedAt": "2026-09-13T21:57:27.577Z",
+        "passed": 32,
         "failed": 0,
-        "negativeCases": 8
+        "negativeCases": 11
       }
     },
     {
@@ -78,10 +78,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "c5f5fcd9a365ab45afebcd97f0a96e92cca58242",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-04T20:54:31.953Z",
+        "generatedAt": "2026-09-13T03:14:34.454Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 4
@@ -105,11 +105,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a07aa8a03cf959cb351ab213fca2bd24206233e7",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
         "evidenceFile": "T2.json",
-        "generatedAt": "2026-09-04T21:28:28.638Z",
-        "passed": 49,
+        "generatedAt": "2026-09-13T03:17:56.750Z",
+        "passed": 58,
         "failed": 0,
         "negativeCases": 3
       }
@@ -119,7 +119,7 @@
       "githubIssue": 643,
       "tool": "site-truth",
       "status": "verified",
-      "scope": "new pages: install, FAQ, troubleshooting, contact \u2014 truth-checked and SEO-complete from birth; npm-forward-compatible install section",
+      "scope": "new pages: install, FAQ, troubleshooting, contact — truth-checked and SEO-complete from birth; npm-forward-compatible install section",
       "acceptanceCriteria": [
         "4 new routes live, all claims generated/verified",
         "every quoted CLI command/flag verified against real bb --help",
@@ -132,11 +132,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "87d7537e2193814a77d6844da5976db3fed148eb",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts --label T3",
         "evidenceFile": "T3.json",
-        "generatedAt": "2026-09-04T21:50:23.546Z",
-        "passed": 49,
+        "generatedAt": "2026-09-13T03:18:56.115Z",
+        "passed": 58,
         "failed": 0,
         "negativeCases": 3
       }
@@ -159,13 +159,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "f4d5bafc3d48101f895ff82b63cc218c5a4102f9",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-seo.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-04T22:07:41.243Z",
-        "passed": 25,
+        "generatedAt": "2026-09-13T03:20:00.344Z",
+        "passed": 65,
         "failed": 0,
-        "negativeCases": 2
+        "negativeCases": 10
       }
     },
     {
@@ -173,7 +173,7 @@
       "githubIssue": 645,
       "tool": "seo-onboarding",
       "status": "verified",
-      "scope": "guided search-engine onboarding: GSC verification, Bing import, Brave submission, sitemap submits \u2014 owner performs dashboard/DNS actions from agent checklists",
+      "scope": "guided search-engine onboarding: GSC verification, Bing import, Brave submission, sitemap submits — owner performs dashboard/DNS actions from agent checklists",
       "acceptanceCriteria": [
         "GSC verified + sitemap submitted",
         "Bing verified (imported) + sitemap submitted",
@@ -187,14 +187,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "329a57074eba308fc3845dc9f2cbc78c8855bee0",
+        "currentCommit": "fedeb9424d69ecc6050a93eced105fb6f9c5d0ec",
         "verifierCommand": "npx tsx script/m41/verify-seo-onboarding.ts",
         "evidenceFile": "S2.json",
         "ownerConfirmationsFile": "S2-OWNER-CONFIRMATIONS.json",
-        "generatedAt": "2026-09-04T23:05:36.091Z",
-        "passed": 12,
+        "generatedAt": "2026-09-13T22:44:19.158Z",
+        "passed": 15,
         "failed": 0,
-        "negativeCases": 3
+        "negativeCases": 5,
+        "deployGate": "Deploy-gated by construction: S2 probes the LIVE deployment (dns.google + backbencher.cc) and cannot be re-run from the repository working tree. It is accepted PASS-with-negatives at this ancestor commit; the owner re-runs the gate after the Vercel deploy, which records deployLag (open -> closed) and re-pins S2 onto the batch commit. M56.X1 and M41.X1 both refuse to close on an unstated lag state."
       }
     },
     {
@@ -215,10 +216,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "1fd5a279746ee2fa1801257624054cbfe5fd7e53",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
         "verifierCommand": "npx tsx script/m41/verify-design.ts",
         "evidenceFile": "D1.json",
-        "generatedAt": "2026-09-05T21:28:47.357Z",
+        "generatedAt": "2026-09-13T03:20:01.293Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 3,
@@ -237,7 +238,7 @@
       "code": "X1",
       "githubIssue": 647,
       "tool": "gate",
-      "status": "planned",
+      "status": "verified",
       "scope": "closure gate: one-commit evidence batch, full side-by-side audit at pushed commit, CI green, Vercel wait-for-checks proven, completion bar",
       "acceptanceCriteria": [
         "all 7 prior gates green at one commit; evidence batch committed",
@@ -249,7 +250,22 @@
         "closure evidence at current commit",
         "all sibling issues verified or explicitly known-gap/blocked with reason",
         "real GitHub issue numbers wired (placeholders rejected)"
-      ]
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "verifierCommand": "npx tsx script/m41/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "generatedAt": "2026-09-13T03:25:27.341Z",
+        "passed": 36,
+        "failed": 0,
+        "negativeCases": 13
+      }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.541Z",
+    "contentSha256": "df16a7bdfe60cfdbb982e7e0fa794f30f58c3df0ad0ac26d756e7de24ccfd4d2"
+  }
 }

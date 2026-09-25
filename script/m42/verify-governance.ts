@@ -16,6 +16,8 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m42/results")
@@ -101,7 +103,7 @@ console.log("M42.G1 — governance for the Interactive Hover (issue #648)\n")
 // --- Load artifacts ------------------------------------------------------------------
 const ledgerPath = path.join(EVIDENCE_DIR, "manifest.json")
 check("G1: ledger manifest exists", existsSync(ledgerPath))
-const ledger = JSON.parse(readFileSync(ledgerPath, "utf8")) as {
+const ledger = parseSealedRecord(ledgerPath) as {
   schemaVersion: number
   milestone: string
   githubMilestone: number
@@ -248,7 +250,7 @@ for (const issue of ledger.issues) {
     continue
   }
   try {
-    const persisted = JSON.parse(readFileSync(p, "utf8")) as Record<string, unknown>
+    const persisted = parseSealedRecord(p) as Record<string, unknown>
     const verdict = persisted["verdict"] as { realComponentFailures?: number } | undefined
     const realFailed = verdict && typeof verdict.realComponentFailures === "number" ? verdict.realComponentFailures : persisted["failed"]
     if (realFailed !== 0) evidenceErrors.push(`${issue.code}:persisted-failed`)
@@ -382,13 +384,13 @@ const result = {
 }
 mkdirSync(EVIDENCE_DIR, { recursive: true })
 const evidencePath = path.join(EVIDENCE_DIR, result.evidenceFile)
-writeFileSync(evidencePath, JSON.stringify(result, null, 2) + "\n")
-const persisted = JSON.parse(readFileSync(evidencePath, "utf8")) as typeof result
+writeSealed(evidencePath, result)
+const persisted = parseSealedRecord(evidencePath) as typeof result
 check("G1: evidence is persisted and re-readable", persisted.issue === result.issue && persisted.currentCommit === currentCommit)
 
 // Counters re-captured AFTER the last check (the M24-inherited undercount bug).
 const finalFailed2 = checks - passed
 const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
-writeFileSync(evidencePath, JSON.stringify(finalResult, null, 2) + "\n")
+writeSealed(evidencePath, finalResult)
 console.log(`\nG1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
 process.exit(finalFailed2 === 0 ? 0 : 1)

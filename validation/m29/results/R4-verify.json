@@ -1,6 +1,6 @@
 {
   "status": "verified",
-  "passed": 16,
+  "passed": 19,
   "failed": 0,
   "negatives": {
     "planned": 5
@@ -11,11 +11,14 @@
     "mutantsTotal": 6,
     "ok": true
   },
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
   "evidenceFile": "R4-verify.json",
-  "generatedAt": "2026-09-07T23:25:09.897Z",
+  "generatedAt": "2026-09-20T02:46:25.508Z",
   "details": [],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:46:25.508Z",
+    "contentSha256": "afafab473171359a0e0aa3071f6a760c91254c06c134c3d3ef5fccdca7c662f6"
+  }
 }

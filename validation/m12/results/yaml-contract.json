@@ -80,5 +80,10 @@
   ],
   "passed": true,
   "count": 19,
-  "passedCount": 19
+  "passedCount": 19,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.118Z",
+    "contentSha256": "6ed819426c19cd2d0e692b3b08778f6e284c2f745a33b99a1422b69a0b5f3331"
+  }
 }

@@ -49,6 +49,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -577,7 +578,7 @@ async function main(): Promise<void> {
     ],
   }
   mkdirSync(EVIDENCE_DIR, { recursive: true })
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nU1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants caught)`)
   try { fx.cleanup() } catch {}
   process.exit(failed === 0 ? 0 : 1)

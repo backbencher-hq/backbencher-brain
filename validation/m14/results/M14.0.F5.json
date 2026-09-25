@@ -1491,5 +1491,10 @@
   "regeneratedAtCommit": "fdbf069f5e0b9e69277f942b370e9b043c2beba9",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Differential corpus harness (two-corpus gate)"
+  "title": "Differential corpus harness (two-corpus gate)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.318Z",
+    "contentSha256": "8d56dcba00fdb1494892a744f4b47d907b810479a63e878ccbd067766851bb47"
+  }
 }

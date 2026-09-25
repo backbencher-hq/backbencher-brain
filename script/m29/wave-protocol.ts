@@ -28,6 +28,8 @@ import path from "node:path"
 import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { tmpdir } from "node:os"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 export const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 export const SPEC_LEDGER = path.join(ROOT, "validation/m14/results/M14.0.SPEC.json")
@@ -182,7 +184,7 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
   // S1: analyzer conformance from the committed SPEC ledger.
   let spec: SpecLedger | null = null
   try {
-    spec = JSON.parse(readFileSync(SPEC_LEDGER, "utf8")) as SpecLedger
+    spec = parseSealedRecord(SPEC_LEDGER) as SpecLedger
   } catch {
     // spec stays null — S1 records the reason below
   }
@@ -204,16 +206,31 @@ export async function evaluateLanguage(language: string): Promise<WaveVerdict> {
 
   // S5: the per-language server leg. Real only against the language's OWN
   // index with per-language assertions — that is R2's execution evidence.
-  // In a dry-run it is a declared blocker, never a silent pass.
-  steps.push({ step: "S5-server-leg", status: "blocked", detail: "requires R2's per-language server leg (real bb_lsp over the language's own index)" })
-  blockers.push("S5-server-leg requires R2 execution")
+  // Like S6 below, the runner honors the RECORDED leg (wave-<lang>.json,
+  // written by R2's execution): verified → pass, failed → fail, missing →
+  // a declared blocker. Never a silent pass; never a hardcoded blocked when
+  // evidence exists (that bug capped verified languages at I1).
+  const serverLegPath = path.join(ROOT, "validation/m29/results", `wave-${language}.json`)
+  if (existsSync(serverLegPath)) {
+    try {
+      const leg = parseSealedRecord(serverLegPath) as { status?: string }
+      steps.push({ step: "S5-server-leg", status: leg.status === "verified" ? "pass" : "fail", detail: `recorded S5 leg status: ${String(leg.status)}` })
+      if (leg.status !== "verified") blockers.push("S5-server-leg recorded leg is not verified")
+    } catch {
+      steps.push({ step: "S5-server-leg", status: "fail", detail: "recorded S5 leg unreadable" })
+      blockers.push("S5-server-leg recorded leg unreadable")
+    }
+  } else {
+    steps.push({ step: "S5-server-leg", status: "blocked", detail: "requires R2's per-language server leg (real bb_lsp over the language's own index)" })
+    blockers.push("S5-server-leg requires R2 execution")
+  }
 
   // S6: editor-verified evidence (R2's in-editor leg). The runner only
   // honors recorded wave evidence — it never assumes it.
   const waveEvidence = path.join(ROOT, "validation/m29/results", `wave-editor-${language}.json`)
   if (existsSync(waveEvidence)) {
     try {
-      const ev = JSON.parse(readFileSync(waveEvidence, "utf8")) as { status?: string }
+      const ev = parseSealedRecord(waveEvidence) as { status?: string }
       steps.push({ step: "S6-editor-leg", status: ev.status === "verified" ? "pass" : "fail", detail: `recorded evidence status: ${String(ev.status)}` })
     } catch {
       steps.push({ step: "S6-editor-leg", status: "fail", detail: "recorded evidence unreadable" })
@@ -247,7 +264,7 @@ function main(): void {
     console.log(`  IDE cap: ${verdict.ideCap}${verdict.blockers.length ? ` (blockers: ${verdict.blockers.length})` : ""}`)
     if (outFile) {
       mkdirSync(path.dirname(outFile), { recursive: true })
-      writeFileSync(outFile, JSON.stringify(verdict, null, 2) + "\n")
+      writeSealed(outFile, verdict)
     }
     process.exit(verdict.ok ? 0 : 1)
   })

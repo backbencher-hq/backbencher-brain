@@ -1,0 +1,49 @@
+{
+  "verifierCommand": "npx tsx script/m53/r2-probe.mts",
+  "evidenceFile": "R2.json",
+  "status": "verified",
+  "head": "4dfd8c4148d043ff3d1aa720a3b89474f9d677b3",
+  "repo": "$HOME/bb-demo-hub",
+  "index": {
+    "files": 8,
+    "symbols": 30,
+    "relationships": 85,
+    "m51GuardClean": true
+  },
+  "differential": {
+    "files": {
+      "now": 8,
+      "floor": 8
+    },
+    "symbols": {
+      "now": 30,
+      "floor": 30
+    },
+    "relationships": {
+      "now": 85,
+      "floor": 85
+    },
+    "references": {
+      "now": 3,
+      "floor": 2
+    },
+    "impactRoots": {
+      "now": 2,
+      "floor": 2
+    }
+  },
+  "checks": 15,
+  "failed": 0,
+  "mutantsCaught": 2,
+  "mutantsTotal": 2,
+  "checksList": [
+    "ok: M: differential blind to a below-floor count",
+    "ok: M: differential flags a declared improvement (above-floor counted as regression)"
+  ],
+  "generatedAt": "2026-09-15T22:41:37.278Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-15T22:41:37.280Z",
+    "contentSha256": "69a22bd0410d27e2751e258c6729c4a342e7ddb31e9b6dea5c3506a59f020673"
+  }
+}

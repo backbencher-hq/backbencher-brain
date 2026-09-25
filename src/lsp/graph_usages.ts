@@ -28,7 +28,7 @@
 // Pure by construction: no imports beyond types + the traversal contracts —
 // the mutation suite and every consumer exercise it through the same code.
 
-import type { GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence/contracts"
+import type { CallSiteAddress, GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence/contracts"
 
 /** One stored relationship row as it survives grouping. Nothing about the
  *  row is dropped: rowId keeps it traceable, evidenceClass/enrichment ride
@@ -38,10 +38,10 @@ import type { GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence
 export interface GroupedRow {
   rowId: string
   relationshipType: string
-  /** Source-side call site (file relative + 1-based line). null line = the
-   *  analyzer could not derive one (M59.O4 #823) — renderers must treat it
-   *  as "unknown", never substitute another line. */
-  callSite?: { file: string; line: number | null }
+  /** Source-side position, as the M62 address owner derived it. Never a bare
+   *  line: a legacy `0` or a NULL line is `kind: "unknown"` (or a labeled
+   *  `"declaration"` substitute) — see src/intelligence/graph/line-address.ts. */
+  callSite?: CallSiteAddress
   /** Traversal depth of the edge this row came from. */
   depth: number
   confidence: number
@@ -239,8 +239,17 @@ export function groupUsagesEdges(result: GraphTraversalResult): { callers: Usage
   // to the root. Caller edge Y→X: group Y (the caller), parent X (Y calls X,
   // X calls root). Callee edge X→Y: group Y (the callee), parent X (X calls
   // Y, root calls X). Depth-0 rows therefore parent to the root symbol id.
-  const callerMap = groupSide(result.callers ?? [], result.nodes ?? {}, (e) => e.from, (e) => e.to)
-  const calleeMap = groupSide(result.callees ?? [], result.nodes ?? {}, (e) => e.to, (e) => e.from)
+  //
+  // M55.T3 (§14 Truth Rule 1): a SELF-REFERENTIAL row (from === to) is an
+  // analyzer artifact, not a usage — it must not appear as the symbol's own
+  // caller in the hub. The same row is excluded by the hover's collector
+  // (rich_hover) and by the SQL count (relations.countUsageSites); the hub
+  // answers the same question, so it applies the same rule. Found live by the
+  // T3 gate: the graph listed `greet` among greet's callers.
+  const noSelfLoops = <T extends { from: string; to: string }>(edges: readonly T[]): T[] =>
+    edges.filter((e) => e.from !== e.to)
+  const callerMap = groupSide(noSelfLoops(result.callers ?? []), result.nodes ?? {}, (e) => e.from, (e) => e.to)
+  const calleeMap = groupSide(noSelfLoops(result.callees ?? []), result.nodes ?? {}, (e) => e.to, (e) => e.from)
   return { callers: finalize(callerMap), callees: finalize(calleeMap) }
 }
 

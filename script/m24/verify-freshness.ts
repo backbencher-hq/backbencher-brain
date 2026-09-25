@@ -19,6 +19,7 @@ import { join } from "node:path"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { hashFileContent } from "../../src/brain/freshness"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const COMPONENT = path.join(ROOT, "src/lsp/freshness.ts")
@@ -420,7 +421,7 @@ async function main() {
     ],
   }
   mkdirSync(path.join(ROOT, "validation/m24/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m24/results/P2.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(ROOT, "validation/m24/results/P2.json"), result)
   console.log(`P2: ${result.status.toUpperCase()} (real component: ${functionalFailedBefore === 0 ? "all guarantees hold" : `${functionalFailedBefore} failures`}, ${mutantResults.filter(m => m.caught).length}/${mutants.length} mutants caught)`)
   process.exit(verdictOk ? 0 : 1)
 }

@@ -40,8 +40,11 @@ import {
 } from "./positions"
 import { storedCrossLanguageRows, factsFromRows, crossLanguageSection } from "./cross_language_hover"
 import { annotationHoverSection, type AnnotationRow } from "./annotation_ui"
+import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
+import { parseParameters, renderSignature } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
-import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usagesSection } from "./rich_hover"
+import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (M29.R2: one owner; the set was duplicated here
@@ -50,62 +53,33 @@ import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_la
 export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
 /** Evidence tiers for relationship data, per the evidence class vocabulary.
- *  M29.R5: the hover tier is the five-class vocabulary (structural,
- *  import_based, usage_contextual, reference_qualified, inferred) plus the
- *  coarse "indexed" legacy bucket mapped through tierForRelationship below.
- *  Rationale (F7 fixture script/m29/r5-tier-fixture.ts): the pre-R5 map had
- *  10 entries and dumped parser-deterministic facts (contains, instantiates,
- *  exports) into "inferred" — measured 42.5% of giant-corpus relationships
- *  downgraded. The structural set and the 0.7 floor mirror the W4 decision
- *  (script/m26/graph-core.ts TIER_MEANINGS; drift-gated by
- *  script/m26/verify-evidence-badges.ts P4 and
- *  script/m29/verify-precision-improvements.ts). */
-export type EvidenceTier = "structural" | "import_based" | "usage_contextual" | "reference_qualified" | "indexed" | "inferred" | "semantic_candidate" | "unknown"
-
-const RELATIONSHIP_TIER: Record<string, EvidenceTier> = {
-  call: "indexed",
-  calls: "indexed",
-  import: "indexed",
-  imports: "indexed",
-  extends: "indexed",
-  implements: "indexed",
-  override: "indexed",
-  reference: "indexed",
-  references: "indexed",
-  uses: "indexed",
-}
-
-/** Structural relationship types: parser-deterministic facts. Same set as the
- *  W4 badge owner (script/m26/graph-core.ts STRUCTURAL_TYPES) plus the
- *  containment/exports/instantiates facts the analyzers stamp structural. */
-const STRUCTURAL_RELATIONSHIPS = new Set(["call", "calls", "extends", "implements", "overrides", "contains", "exports", "instantiates", "inherits"])
-
-/** Tier for one relationship row (M29.R5 rule):
- *  1. a STORED metadata.evidenceClass wins (the analyzer's own
- *     classification — same "stored wins" rule as tierForCrossLanguageEdge
- *     and the W4 webview badge);
- *  2. else a structural relationship type at confidence >= 0.7 is structural
- *     (the W4 floor — below it the edge is a guess and must read inferred);
- *  3. else the legacy coarse map (indexed vocabulary);
- *  4. else sub-0.5 confidence is a semantic candidate; everything else is
- *     honestly inferred. */
-function tierForRelationship(relType: string, confidence: number | null, evidenceClass: string | null): EvidenceTier {
-  if (evidenceClass === "structural" || evidenceClass === "import_based" || evidenceClass === "usage_contextual" || evidenceClass === "reference_qualified" || evidenceClass === "inferred") {
-    return evidenceClass
-  }
-  const t = relType.toLowerCase()
-  if (STRUCTURAL_RELATIONSHIPS.has(t)) return (confidence ?? 0) >= 0.7 ? "structural" : "inferred"
-  const coarse = RELATIONSHIP_TIER[t]
-  if (coarse) return coarse
-  if (confidence !== null && confidence < 0.5) return "semantic_candidate"
-  return "inferred"
-}
+ *  M55.T5: the hover tier is derived by the SINGLE owner
+ *  (src/lsp/evidence_tier.ts) — the same rule the W4 legend and the hub row
+ *  chips use. Before T5 this file carried its own copy of the rule whose
+ *  legacy coarse map answered "indexed" for `imports`/`references`/`uses`
+ *  while the same stored row rendered `import_based`/`usage_contextual` in
+ *  the hub and the legend declared a five-tier vocabulary with no "indexed"
+ *  in it (found live by the T5 step-zero wire probe; see the owner's header).
+ *  Rationale for the structural set and the 0.7 floor is the F7 fixture
+ *  script/m29/r5-tier-fixture.ts: the pre-R5 map had 10 entries and dumped
+ *  parser-deterministic facts (contains, instantiates, exports) into
+ *  "inferred" — measured 42.5% of giant-corpus relationships downgraded.
+ *  The vocabulary/derivation are drift-gated by script/m55/verify-tiers.ts
+ *  and script/m29/verify-precision-improvements.ts (F6, retargeted to the
+ *  owner when the rule moved). */
+export type { EvidenceTier } from "./evidence_tier"
 
 export interface SymbolHoverData {
   name: string
   qualifiedName: string | null
   symbolType: string
   signature: string
+  /** M55.T4 (§14 Truth Rule 4): the STORED structured parameters, typed and
+   *  unrendered — the wire keeps the machine data while the rendered signature
+   *  is human text (a client that wants the structured form reads this, never
+   *  the markdown). null when the index stores no structured list (declared
+   *  absence); an empty array is a callable with zero parameters. */
+  parameters: Array<{ name: string; type: string | null; isOptional: boolean; defaultValue: string | null; isRest: boolean }> | null
   usageCount: number
   evidenceTiers: EvidenceTier[]
   /** M26.W3: pre-rendered cross-language section — empty string when the
@@ -184,26 +158,14 @@ interface FileRow {
   language: string | null
 }
 
-/** Build a human-readable signature from the indexed symbol fields. */
-export function buildSignature(row: {
-  name: string
-  symbol_type: string
-  return_type: string | null
-  parameters: string | null
-  visibility: string | null
-}): string {
-  const parts: string[] = []
-  if (row.visibility) parts.push(row.visibility)
-  parts.push(row.symbol_type)
-  let sig = parts.join(" ") + " " + row.name
-  if (row.parameters !== null && row.parameters !== undefined) {
-    sig += `(${row.parameters})`
-  } else if (row.symbol_type === "function" || row.symbol_type === "method") {
-    sig += "(…)"
-  }
-  if (row.return_type) sig += ` → ${row.return_type}`
-  return sig
-}
+// M55.T4 (issue #772): the signature renderer moved to its ONE owner,
+// src/lsp/signature.ts. The pre-M55 version interpolated the stored
+// `parameters` column verbatim, so the card rendered the analyzer's raw JSON
+// (`method greetAll([{"name":"names","type":"string[]",...}])`). Every
+// surface that renders a signature now calls the owner with the symbol's
+// language; nothing in the LSP lane interpolates `parameters` directly
+// (asserted at source level by script/m55/verify-signatures.ts).
+export { renderSignature, renderParameterList, UNRESOLVED_TYPE } from "./signature"
 
 /**
  * Resolve the LSP position to an index position via the P1 component and
@@ -307,50 +269,51 @@ export async function resolveOccurrenceSymbol(
   }
 }
 
-/** Count usages of a symbol from brain_relationship (direct count). */
+/** Count usages of a symbol (M55.T3: the vocabulary's usage-site count).
+ *
+ * History: this counted EVERY row touching the symbol — both directions,
+ * including the owning declaration and callees, undeduplicated by location.
+ * On the demo index that made `greet` read "6 usages" while its list rendered
+ * 6 rows (one of them its class) and the graph reported 3 callers; `greetAll`
+ * read a usage it did not have while its caller set was empty. The count now
+ * comes from src/lsp/relations.ts — the same rule, in SQL (independent of the
+ * row materialization the hover list uses; the M55.T3 gate asserts the two
+ * agree on a real index). */
 export function countUsages(raw: CoreDatabase, symbolId: string): number {
-  // M29.R3 scale fix: the OR form defeats both single-column indexes and
-  // scanned brain_relationship at giant scale (hover p95 902ms on a 59k-file
-  // corpus vs the 50ms budget). The UNION form is two indexed probes with
-  // row-identity dedupe — the exact result multiset of the OR, index-served.
-  const row = raw
-    .prepare(
-      "SELECT COUNT(*) AS c FROM (SELECT id FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT id FROM brain_relationship WHERE source_symbol_id = ?)",
-    )
-    .get(symbolId, symbolId) as { c: number }
-  return row.c
+  return countUsageSites(raw, symbolId)
 }
 
-/** Collect evidence tiers across the symbol's relationships. */
+/** Collect the symbol's evidence tiers across its stored relationships.
+ *
+ *  M55.T5: the derivation AND the ordering are the owner's
+ *  (src/lsp/evidence_tier.ts) — this function only fetches the rows and
+ *  hands them over. The pre-T5 version derived locally and returned
+ *  `[...tiers].sort()`, an ALPHABETICAL order that made `indexed` the
+ *  reported primary of any symbol that also carried structural evidence.
+ *
+ *  M29.R3 scale fix kept: UNION rewrite (see countUsages) — same tier set,
+ *  two indexed probes instead of one full scan. */
 export function evidenceTiersFor(raw: CoreDatabase, symbolId: string): EvidenceTier[] {
-  // M29.R3 scale fix: UNION rewrite (see countUsages) — same tier set, two
-  // indexed probes instead of one full scan.
   const rows = raw
     .prepare(
       "SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE target_symbol_id = ? UNION SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE source_symbol_id = ?",
     )
-    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; metadata: string | null }>
-  const tiers = new Set<EvidenceTier>()
-  for (const r of rows) {
-    let evidenceClass: string | null = null
-    if (r.metadata) {
-      try {
-        const cls = (JSON.parse(r.metadata) as { evidenceClass?: unknown }).evidenceClass
-        if (typeof cls === "string") evidenceClass = cls
-      } catch {
-        // unreadable metadata is not evidence — fall through to derivation
-      }
-    }
-    tiers.add(tierForRelationship(r.relationship_type, r.confidence, evidenceClass))
-  }
-  return [...tiers].sort()
+    .all(symbolId, symbolId) as StoredTierRow[]
+  return orderTiers(rows.map(classifyStoredRow))
 }
 
 /** Format the hover markdown, including the honesty block. */
 export function formatHoverMarkdown(data: SymbolHoverData): string {
   const lines: string[] = []
   lines.push(`\`\`\`\n${data.signature}\n\`\`\``)
-  lines.push(`**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"}`)
+  // M55.T3: the count line declares what was counted, so a reader (and the
+  // references surface, which legitimately answers a wider question when the
+  // client asks for the declaration too) can never read two numbers as a
+  // disagreement. Zero is stated, never omitted: a symbol with no stored
+  // references reads "0 usages", not silence (§14 Truth Rule 1).
+  lines.push(
+    `**${data.name}** — ${data.symbolType}, ${data.usageCount} usage${data.usageCount === 1 ? "" : "s"} _(${USAGE_SITE_FILTER_LABEL})_`,
+  )
   if (data.evidenceTiers.length > 0) {
     lines.push(`evidence: ${data.evidenceTiers.join(", ")}`)
   } else {
@@ -459,12 +422,18 @@ export async function hover(
   const freshnessStatus = freshness?.status ?? "missing"
   const stale = freshnessStatus !== "fresh"
 
-  const usageCount = countUsages(raw, symbol.id)
   const tiers = evidenceTiersFor(raw, symbol.id)
   // M42.H2: usage sites = the L3 references row set, resolved through the
-  // navigation location owner. Used for BOTH the connected summary and the
-  // top-3 usage links (one collection, two renderings).
+  // navigation location owner. Used for the connected summary, the top-3
+  // usage links AND the count (one collection, three renderings).
   const sites = richSitesForSymbol(raw, symbol.id)
+  // M55.T3 (§14 Truth Rule 1): the count IS this array's length — the number
+  // of rows the usages list can show (the `+N more` rest included, since the
+  // list is capped at MAX_USAGE_LINKS and reports the remainder). The
+  // vocabulary filter (declaration/callee exclusion) lives in relations.ts;
+  // it is applied once here, and the section renders the same filtered array.
+  const usageSiteRows = usageSitesOf(sites)
+  const usageCount = usageSiteRows.length
   // M26.W3: per-pair cross-language facts from stored rows only.
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
   // M28.A2: annotation rows for this symbol, rendered by the single owner.
@@ -530,12 +499,25 @@ export async function hover(
     name: symbol.name,
     qualifiedName: symbol.qualified_name,
     symbolType: symbol.symbol_type,
-    signature: buildSignature(symbol),
+    signature: renderSignature(symbol, file.language),
+    // M55.T4: structured data stays structured (see the field's declaration).
+    parameters: (() => {
+      const parsed = parseParameters(symbol.parameters)
+      if (parsed.shape === "empty") return []
+      if (parsed.shape !== "list") return null
+      return parsed.entries.map((e) => ({
+        name: e.name,
+        type: e.type ?? null,
+        isOptional: e.isOptional === true,
+        defaultValue: e.defaultValue ?? null,
+        isRest: e.isRest === true,
+      }))
+    })(),
     usageCount,
     evidenceTiers: tiers,
     // M42.H2: rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
-    usagesSection: usagesSection(sites, sites.length, symbol.name, file.path, request.position.line, request.position.character),
+    usagesSection: usagesSection(usageSiteRows, usageCount, symbol.name, file.path, request.position.line, request.position.character),
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },
@@ -561,7 +543,10 @@ export async function hover(
     data,
     provenance: {
       source: "bb_index",
-      evidenceClass: stale ? "stale" : (tiers[0] ?? "unknown"),
+      // M55.T5: the primary is the STRONGEST tier the symbol carries, by the
+      // declared rank — a member of `tiers` by construction, so the primary
+      // can never disagree with the tier list it headlines.
+      evidenceClass: stale ? "stale" : primaryTier(tiers),
       engine: "bb_lsp hover@m24.l2",
       limitations: [
         "index-sourced; no compiler-backed types (complement stance)",

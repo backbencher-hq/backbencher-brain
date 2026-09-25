@@ -38,6 +38,7 @@ import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const IMPACT = join(ROOT, "src", "lsp", "impact.ts")
@@ -170,17 +171,19 @@ async function main(): Promise<void> {
 
     // Differential vs the L3 references surface (real resolveReferences).
     // Declared sampling: the flat fixture IS the sample — every reverse edge
-    // of rootFn is in it, none skipped. Like-for-like rule: L3 references
-    // counts BOTH directions by design (incoming + outgoing), impact is
-    // reverse-only; the fixture declares exactly one outgoing edge
-    // (rootFn→otherFn), so the differential subtracts it. Callers are 1:1
-    // with their edges here (one call site each) — the flat condition.
+    // of rootFn is in it, none skipped. Like-for-like rule: since M55.T3
+    // (issue #772, §14 Truth Rule 1) L3 references answers the USAGE SITES —
+    // incoming rows whose kind is not a declaration containment — which is
+    // exactly the reverse-only set impact computes. No direction correction is
+    // needed any more: the pre-M55 version had to subtract the fixture's one
+    // outgoing row (rootFn→otherFn) because references counted both ways.
+    // Callers are 1:1 with their edges here (one call site each) — the flat
+    // condition.
     const { resolveReferences } = await import(join(ROOT, "src", "lsp", "navigation.ts"))
     const refs = resolveReferences(fx.raw, { filePath: join(fx.ws, "main.ts"), line: 0, character: 17, includeDeclaration: false })
-    const outgoingKnown = 1 // w5-rel-5 (rootFn → otherFn), fixture-declared
     const depth0 = result.impact.filter((d: any) => d.depth === 0)
-    const l3Incoming = refs.totalCount - outgoingKnown
-    check("R1: differential — impact set equals the L3 incoming set on the flat fixture (all reverse edges sampled, direction accounted)", l3Incoming === 4 && depth0.length === 4 && result.shownCount === 4, `l3 totalCount=${refs.totalCount} outgoing=${outgoingKnown} incoming=${l3Incoming} impact=${result.shownCount}`)
+    const l3Incoming = refs.totalCount
+    check("R1: differential — impact set equals the L3 usage-site set on the flat fixture (all reverse edges sampled)", l3Incoming === 4 && depth0.length === 4 && result.shownCount === 4, `l3 totalCount=${refs.totalCount} incoming=${l3Incoming} impact=${result.shownCount}`)
     check("R1: L3 truncated=false with the full set under MAX_LOCATIONS", refs.truncated === false && refs.evidenceTier === "indexed")
 
     // --- R2: the declared containment delta ------------------------------------
@@ -211,6 +214,18 @@ async function main(): Promise<void> {
     const markerU = domU.el.find("bb-impact-truncation-marker") as El | null
     check("G4: unknown total renders 'unknown', never a fabricated number", markerU !== null && markerU!.attrs["data-total-if-known"] === "unknown" && markerU!.textContent.includes("total unknown"))
 
+    // Declared empty-state (owner live test, 2026-09-12): a resolved root with
+    // zero reverse dependencies renders the visible absence note — never
+    // legend-only silence.
+    const domE = makeDom()
+    const renderedE = core.renderImpact({ ...result, impact: [], shownCount: 0, totalCountIfKnown: 0, truncated: false, truncationReason: null }, domE as never)
+    const emptyEl = domE.el.find("bb-impact-empty") as El | null
+    check("G4: empty impact set renders the declared absence note (never legend-only)", renderedE.nodesRendered === 0 && emptyEl !== null && emptyEl!.attrs["data-empty"] === "impact" && emptyEl!.textContent.includes("No reverse dependencies"))
+    // ...and a non-empty set must NOT carry the empty note (no false absence).
+    const domNE = makeDom()
+    core.renderImpact(result, domNE as never)
+    check("G4: non-empty impact set renders no absence note", domNE.el.find("bb-impact-empty") === null)
+
     // --- Latency (contract §3 render budget, headless regime) --------------------
     const samples: number[] = []
     for (let i = 0; i < 20; i++) {
@@ -235,6 +250,17 @@ async function main(): Promise<void> {
           const d = makeDom()
           const r = m.renderImpact({ ...result, impact: result.impact.slice(0, 2), shownCount: 2, totalCountIfKnown: 4, truncated: true, truncationReason: "x" }, d as never)
           return d.el.find("bb-impact-truncation-marker") === null // marker gone => defect visible
+        },
+      },
+      {
+        name: "M1b empty-state dropped",
+        home: "core",
+        from: "if (result.impact.length === 0) {",
+        to: "if (false) {",
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact({ ...result, impact: [], shownCount: 0, totalCountIfKnown: 0, truncated: false, truncationReason: null }, d as never)
+          return d.el.find("bb-impact-empty") === null // note gone => defect visible
         },
       },
       {
@@ -364,9 +390,9 @@ async function main(): Promise<void> {
       evidenceFile: "W5.json",
       generatedAt: new Date().toISOString(),
       differential: {
-        sampling: "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 direction rule accounted (incoming+outgoing by design, one outgoing edge fixture-declared); containment delta verified separately",
+        sampling: "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
         l3TotalCount: refs.totalCount,
-        l3IncomingCount: refs.totalCount - outgoingKnown,
+        l3IncomingCount: l3Incoming,
         impactShownCount: result.shownCount,
         nestedDelta: names.includes("nested1") ? "nested1 counted in impact via owner cascade (a flat L3 location too, as a distinct edge)" : "absent",
       },
@@ -378,7 +404,7 @@ async function main(): Promise<void> {
     }
     const dir = join(ROOT, "validation/m26/results")
     mkdirSync(dir, { recursive: true })
-    writeFileSync(join(dir, "W5.json"), JSON.stringify(evidence, null, 2) + "\n")
+    writeSealed(join(dir, "W5.json"), evidence)
     console.log(`W5: ${evidence.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
     process.exit(failed === 0 ? 0 : 1)
   } finally {

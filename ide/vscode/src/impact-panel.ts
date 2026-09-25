@@ -18,8 +18,16 @@ import type { LanguageClient } from "vscode-languageclient/node"
 // Bundled at build time from script/m26/graph-core.ts (the ONE renderer).
 // Same structural one-renderer rule as graph-panel's renderGraph import.
 import { renderImpact } from "../../../script/m26/graph-core"
-import { serialize, StringElement } from "./graph-panel"
+import { serialize, StringElement, applyResolutionTitle, resolvePlacementFromSettings } from "./graph-panel"
+// M55.P1 (Truth Rule 6): the reuse registry — one impact panel per symbol+file.
+import { panelKey, PanelRegistry } from "./panel-placement"
+
+/** The live impact panels (M55.P1 reuse rule). */
+const IMPACT_PANELS = new PanelRegistry<WebviewPanel>()
 import { buildWebviewHtml } from "../../../script/m26/webview-html"
+// Type-only import: erased at build time, so this stays a thin client — the
+// SHAPE is owned by the server's identity resolver (src/lsp/identity.ts).
+import type { MemberResolution } from "../../../src/lsp/identity"
 
 /** bb/impact request — schemaVersion-pinned per src/lsp/impact_request.ts. */
 const IMPACT_METHOD = "bb/impact"
@@ -33,9 +41,9 @@ export interface ImpactPanelDeps {
  *  the shell inputs. Declared failures come back as { error } — loud, with
  *  the server's declared reason (bb/impact: prefix preserved verbatim). */
 export async function renderImpactForPanel(
-  params: { symbol: string },
+  params: { symbol: string; file?: string },
   deps: ImpactPanelDeps,
-): Promise<{ ok: true; markup: string; stateJson: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; markup: string; stateJson: string; resolution?: MemberResolution } | { ok: false; error: string }> {
   if (deps.client === null) {
     return { ok: false, error: "bb_lsp is not running — restart the server (command: Backbencher: Restart server)." }
   }
@@ -44,6 +52,10 @@ export async function renderImpactForPanel(
     raw = await deps.client.sendRequest(IMPACT_METHOD, {
       schemaVersion: 1,
       symbol: params.symbol,
+      // X1 closure: the defining-file identity disambiguates same-name
+      // members (constructors) — the server resolves through it when the
+      // name alone is ambiguous.
+      ...(params.file ? { file: params.file } : {}),
     })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
@@ -71,7 +83,12 @@ export async function renderImpactForPanel(
     symbol: params.symbol,
     nodesRendered: rendered.nodesRendered,
   })
-  return { ok: true, markup, stateJson }
+  // M55.T1 (Truth Rule 2): the declared substitution rides the outcome so the
+  // panel TITLE states it too — the renderer's note is not the only place a
+  // user learns what was actually shown (the filing defect: a member graph
+  // titled with the member after the server had rooted at its owner).
+  const resolution = (raw as { resolution?: MemberResolution }).resolution
+  return { ok: true, markup, stateJson, ...(resolution ? { resolution } : {}) }
 }
 
 /** Open (or reuse) the impact panel for a symbol. Returns the panel AND the
@@ -83,13 +100,35 @@ export async function showImpactPanel(
   symbol: string,
   deps: ImpactPanelDeps,
   context: ExtensionContext,
-): Promise<{ panel: WebviewPanel; outcome: { ok: true; markup: string; stateJson: string } | { ok: false; error: string } }> {
-  const panel = window.createWebviewPanel("bbImpact", `Backbencher Impact — ${symbol}`, ViewColumn.Beside, {
-    enableScripts: false,
-    localResourceRoots: [],
-  })
+  /** X1 closure: the hover's defining-file identity (same-name members). */
+  file?: string,
+): Promise<{ panel: WebviewPanel; outcome: Awaited<ReturnType<typeof renderImpactForPanel>> }> {
+  const key = panelKey("impact", symbol, file)
+  const existing = IMPACT_PANELS.get(key)
+  if (existing !== null) {
+    // Reuse, never duplicate (M55.P1): the same symbol is the same panel, and
+    // a repeat click must not widen the layout or steal the cursor.
+    const outcome = await renderImpactForPanel({ symbol, file }, deps)
+    applyResolutionTitle(existing, `Backbencher Impact — ${symbol}`, outcome, symbol, "Impact")
+    existing.webview.html = buildHtml(outcome, deps.cspSource)
+    existing.reveal(undefined, true)
+    return { panel: existing, outcome }
+  }
+  const placement = resolvePlacementFromSettings()
+  const panel = window.createWebviewPanel(
+    "bbImpact",
+    `Backbencher Impact — ${symbol}`,
+    { viewColumn: placement.viewColumn, preserveFocus: placement.preserveFocus },
+    {
+      enableScripts: false,
+      localResourceRoots: [],
+    },
+  )
   context.subscriptions.push(panel)
-  const outcome = await renderImpactForPanel({ symbol }, deps)
+  IMPACT_PANELS.set(key, panel)
+  panel.onDidDispose(() => IMPACT_PANELS.delete(key))
+  const outcome = await renderImpactForPanel({ symbol, file }, deps)
+  applyResolutionTitle(panel, `Backbencher Impact — ${symbol}`, outcome, symbol, "Impact")
   panel.webview.html = buildHtml(outcome, deps.cspSource)
   return { panel, outcome }
 }

@@ -36,6 +36,7 @@ import path from "node:path"
 import { parse as parseToml } from "smol-toml"
 import { fetchServerCapabilities } from "./server-caps.ts"
 import { runHarness } from "../m24/lsp_harness.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT = path.join(ROOT, "ide", "zed", "bb-lsp")
@@ -253,7 +254,7 @@ function main(): void {
     }
     const evidenceDir = path.join(ROOT, "validation/m27/results")
     mkdirSync(evidenceDir, { recursive: true })
-    writeFileSync(path.join(evidenceDir, result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(evidenceDir, result.evidenceFile), result)
     console.log(`Z1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
     process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
   })()

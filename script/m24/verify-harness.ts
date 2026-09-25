@@ -23,6 +23,7 @@ import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { runHarness, type HarnessRun } from "./lsp_harness"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_PATH = join(ROOT, "validation", "m24", "results", "V1.json")
@@ -189,7 +190,7 @@ async function main(): Promise<void> {
     ],
   }
 
-  writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(EVIDENCE_PATH, evidence)
   console.log(`\nV1: ${evidence.status.toUpperCase()} (${passed}/${passed + failed} passed, ${negativeCases} negative)`)
   console.log(`Evidence: ${EVIDENCE_PATH}`)
   if (!ok) process.exitCode = 1

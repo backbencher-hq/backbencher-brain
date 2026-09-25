@@ -1,16 +1,19 @@
 {
   "status": "verified",
-  "passed": 25,
+  "passed": 28,
   "failed": 0,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "relevantInputsHash": "f6855955d2456994368ae32a584b5f2ea398a612",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "relevantInputsHash": "49b428d28e42965e261aa89e2bd731849fdf741b",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-07T23:13:50.339Z",
+  "generatedAt": "2026-09-20T02:45:31.520Z",
   "details": [],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:45:31.520Z",
+    "contentSha256": "9b3358a38a4e2153afc3f173db386938620afb2228dfdb812e11b9bf8837688c"
+  }
 }

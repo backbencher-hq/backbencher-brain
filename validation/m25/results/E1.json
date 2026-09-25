@@ -3,24 +3,27 @@
   "code": "E1",
   "milestone": "M25",
   "status": "verified",
-  "checks": 42,
-  "passed": 42,
+  "checks": 44,
+  "passed": 44,
   "failed": 0,
   "mutantsCaught": 3,
   "mutantsTotal": 3,
   "negativeCases": 0,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
   "evidenceFile": "E1.json",
-  "generatedAt": "2026-09-07T22:46:17.403Z",
+  "generatedAt": "2026-09-20T02:20:56.190Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
   },
   "limitations": [
     "Headless module verification: the vscode API layer (activate path) is verified in-editor by E5; this suite covers the pure core, budget/crash declarations, and complement-stance lint.",
-    "Activation budget value is declared (150 ms default); the measured in-editor number is recorded by E5 evidence per contract \u00a77.3/\u00a73."
+    "Activation budget value is declared (150 ms default); the measured in-editor number is recorded by E5 evidence per contract §7.3/§3."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:20:56.191Z",
+    "contentSha256": "0db652ad133e521aef77dae69bbbeae674575bce05ac67ab2b4acfeca18bea04"
+  }
 }

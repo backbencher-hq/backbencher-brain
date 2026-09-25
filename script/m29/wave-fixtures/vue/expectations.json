@@ -1,0 +1,9 @@
+{
+  "language": "vue",
+  "hover": { "symbol": "message", "contains": ["message"], "evidenceClassRequired": true },
+  "hoverLine": 9,
+  "definition": { "symbol": "message", "minLocations": 1 },
+  "references": { "symbol": "message", "minCount": 1 },
+  "documentSymbols": ["message"],
+  "declaredAbsence": { "symbol": "nonexistent_symbol_xyz", "note": "absence must be declared, never fabricated" }
+}

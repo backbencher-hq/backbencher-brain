@@ -5,17 +5,17 @@
   "title": "The Understandable Hub (IDE v7)",
   "status": "closed",
   "authority": "docs/m44/M44-MASTER-PLAN.md (Issue groups table)",
-  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (\u00a713 Understanding Rules, M44 amendment)",
-  "prerequisite": "M29 + M42 completion bars met \u2014 verified at HEAD (re-audited by G1 on every run)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§13 Understanding Rules, M44 amendment)",
+  "prerequisite": "M29 + M42 completion bars met — verified at HEAD (re-audited by G1 on every run)",
   "issues": [
     {
       "code": "G1",
       "githubIssue": 687,
       "tool": "m44-governance",
       "status": "verified",
-      "scope": "M44 ledger; closure gate re-auditing the M29+M42 bars; \u00a713 Understanding Rules in the contract doc, machine-gated",
+      "scope": "M44 ledger; closure gate re-auditing the M29+M42 bars; §13 Understanding Rules in the contract doc, machine-gated",
       "acceptanceCriteria": [
-        "gate exits 0 at a HEAD where M24\u2192M42 governance all exit 0; exits non-zero when any ledger item lacks evidence or a bar fails (proven by mutant ledger entries)",
+        "gate exits 0 at a HEAD where M24→M42 governance all exit 0; exits non-zero when any ledger item lacks evidence or a bar fails (proven by mutant ledger entries)",
         "evidence JSON written (machine-emitted) with commit pin; no hollow assertions (self-audit)",
         "no M43/M41/M14/M37 lane files touched (lane separation)"
       ],
@@ -42,7 +42,7 @@
       "status": "verified",
       "scope": "bb/graph usages mode returns per-symbol groups (callers/callees once) with declared relationship-type + occurrence counts; file-level and external rows in declared sections; schema version bumped with the client",
       "acceptanceCriteria": [
-        "fixture-first: 2 call sites of one caller + 2 relationship types + a file-level import + an external row render 4 distinct groups with declared counts \u2014 no repeated rows",
+        "fixture-first: 2 call sites of one caller + 2 relationship types + a file-level import + an external row render 4 distinct groups with declared counts — no repeated rows",
         "mutation: collapsing two distinct callers or dropping a relationship type from a group count FAILS",
         "differential: per-group occurrence counts equal the raw stored rows per symbol (SQL-count comparable); M26/M42 consumers updated with re-verified gates"
       ],
@@ -71,7 +71,7 @@
       "acceptanceCriteria": [
         "DOM harness positive: a U1-shaped fixture renders one row per symbol with chips/badges/affordances asserted by class+attr contract",
         "DOM harness negative: a lying renderer that repeats a symbol row, drops a chip, or renders a non-clickable row for a clickable target FAILS",
-        "in-editor leg (E5/E6): real hover \u2192 Open in graph \u2192 grouped rows; click navigates via the existing H6 channel"
+        "in-editor leg (E5/E6): real hover → Open in graph → grouped rows; click navigates via the existing H6 channel"
       ],
       "closureRequirements": [
         "U2 evidence (verified, current HEAD)",
@@ -81,12 +81,13 @@
       "evidence": {
         "status": "verified",
         "currentCommit": "see U2.json",
-        "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
+        "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
         "evidenceFile": "U2.json",
         "passed": 29,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 7
+        "negativeCases": 7,
+        "note": "U2 is DERIVED: its own owner gate (script/m44/verify-hub-list.ts) derives this record from the m26 webview harness run it names, under six gated laws. The declaration lives in script/m44/u2-declaration.json."
       }
     },
     {
@@ -151,9 +152,9 @@
       "status": "verified",
       "scope": "impact root resolution resolves member/keyword targets (constructors and member names) through the owning declaration when the member has no stored relationships; declared errors only for genuinely absent symbols",
       "acceptanceCriteria": [
-        "fixture: constructor symbol with only a containment row \u2192 impact opens the owning class with a declared note; unknown symbol \u2192 declared bb/impact: error unchanged",
+        "fixture: constructor symbol with only a containment row → impact opens the owning class with a declared note; unknown symbol → declared bb/impact: error unchanged",
         "mutation: a regression that breaks member resolution FAILS",
-        "in-editor: hover new Greeter(\u2026) / constructor \u2192 Impact analysis renders, not an error toast"
+        "in-editor: hover new Greeter(…) / constructor → Impact analysis renders, not an error toast"
       ],
       "closureRequirements": [
         "U5 evidence (verified, current HEAD)",
@@ -171,7 +172,7 @@
         "mutantsTotal": 4,
         "negativeCases": 2,
         "inEditor": "E5 83/83 (E5-U5 constructor impact renders with owning-declaration note)",
-        "docs": "docs/m44/M44-MASTER-PLAN.md U5 decision; IDE-HONESTY-CONTRACT \u00a713.10",
+        "docs": "docs/m44/M44-MASTER-PLAN.md U5 decision; IDE-HONESTY-CONTRACT §13.10",
         "generatedAt": "2026-09-08T19:49:56Z"
       }
     },
@@ -182,8 +183,8 @@
       "status": "verified",
       "scope": "show-all-usages opens OUR usages list when the editor's native references surface is unavailable or throws; native handoff stays primary; fallback declared and tested",
       "acceptanceCriteria": [
-        "headless: command-level test with a stubbed editor whose referencesTrigger throws \u2192 fallback surface opens, no message-only return",
-        "in-editor (E5): click show-all-usages \u2192 native references peek OR our usages list; never a bare message",
+        "headless: command-level test with a stubbed editor whose referencesTrigger throws → fallback surface opens, no message-only return",
+        "in-editor (E5): click show-all-usages → native references peek OR our usages list; never a bare message",
         "mutation: a regression that returns the message-only path FAILS"
       ],
       "closureRequirements": [
@@ -210,9 +211,9 @@
       "githubIssue": 694,
       "tool": "m44-closure",
       "status": "verified",
-      "scope": "M44 closure gate: full-ladder audit M24\u2192M44 at HEAD; in-editor visual leg through E5/E6 with the new hub; launch bar; known gaps fixed or owner-waived with recorded reason",
+      "scope": "M44 closure gate: full-ladder audit M24→M44 at HEAD; in-editor visual leg through E5/E6 with the new hub; launch bar; known gaps fixed or owner-waived with recorded reason",
       "acceptanceCriteria": [
-        "gate exits 0 only when the whole ladder M24\u2192M44 is green at HEAD and every M44 ledger item carries evidence; can-fail proven by mutants",
+        "gate exits 0 only when the whole ladder M24→M44 is green at HEAD and every M44 ledger item carries evidence; can-fail proven by mutants",
         "evidence JSON pinned to the closure commit",
         "launch bar evidence recorded (editors exercised, versions)"
       ],
@@ -233,9 +234,14 @@
         "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
         "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
         "currentCommit": "see X1.json",
-        "note": "see X1.json currentCommit \u2014 the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs"
+        "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs"
       }
     }
   ],
-  "closedAt": "2026-09-09"
+  "closedAt": "2026-09-09",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-17T01:36:14.721Z",
+    "contentSha256": "8f36ff1b05a0ac03a274678f0c953b220b65b3ea7bca3c9d41e40fc600eb63a4"
+  }
 }

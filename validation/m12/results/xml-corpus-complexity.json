@@ -19,5 +19,10 @@
   "crashSamples": [],
   "acceptanceFiles": 154,
   "passed": true,
-  "complexityPolicy": "single iterative AST traversal per file; attribute and relationship insertion are O(1) per emitted node, with a Set-based relationship dedupe"
+  "complexityPolicy": "single iterative AST traversal per file; attribute and relationship insertion are O(1) per emitted node, with a Set-based relationship dedupe",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.115Z",
+    "contentSha256": "336b64720c429d3f108211e6c65b681544c1052989f00d0d22e0bc2949f2d5a4"
+  }
 }

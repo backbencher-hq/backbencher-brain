@@ -50,5 +50,10 @@
     "total": 7,
     "passed": 7,
     "failed": 0
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.573Z",
+    "contentSha256": "9b52c1d64f92c73da90907ab2ae3fd6bf795e19e09eedbc9ff28a35cc53e9d7c"
   }
 }

@@ -112,6 +112,22 @@ Deliverables:
 - Close all issues + milestone with evidence comments.
 Acceptance: every closure-gate check green at current HEAD; negative probes fire.
 
+## X1 owner steps (the part no agent can do)
+
+The closure gate proves everything observable from the repository; these steps
+need dashboards and credentials no agent holds:
+
+1. **Enable Vercel wait-for-checks** — project → Settings → Git → "Wait for
+   Checks" — the one toggle that makes a red build undeployable.
+2. **Push** the branch to `origin/main`.
+3. Confirm **CI** is green on the pushed commit (Actions tab, or
+   `gh run list --workflow ci.yml --limit 1`).
+4. **After the deploy**, re-run `npx tsx script/m41/verify-seo-onboarding.ts`:
+   it re-pins S2 onto the deployed commit and closes the recorded route lag.
+5. Resubmit `sitemap.xml` in Google Search Console, Bing Webmaster Tools and
+   Brave so the refreshed route set is crawled.
+6. Close the M41 issues (#640–#647) and the milestone with the evidence comments.
+
 ## Gates & future verifications (permanent)
 
 All M41 verifiers join `npm run verify` → enforced by CI on every push, forever.
@@ -135,3 +151,58 @@ separate deploy pipeline is created; the existing one becomes trustworthy.
 - SEO work describes only what bb verifiably does; no manufactured claims.
 - Search-engine submissions require the owner's accounts; those steps are guided,
   not impersonated.
+
+## Addendum — 2026-09-12: S1 structured data and route parity
+
+Owner request: make the site eligible for search rich results, and fix the legal
+pages being unfindable. Both are technical-SEO deliverables, so S1 was extended in
+place rather than opened as a new issue; nothing here changes a claim the site
+makes.
+
+S1 now also enforces:
+
+- **Route parity against the filesystem.** `website/src/app` is the authority:
+every directory that owns a `page.tsx` (plus the root page) must appear in the
+sitemap, and the sitemap must contain nothing else. The earlier check compared two
+hand-written lists on both sides, which is exactly why `/privacy` and `/terms`
+could sit outside the sitemap without failing anything. They are in it now.
+- **Head coverage for every real route**, replacing a fixed eight-route list. Turned
+on for the first time, it caught `/demos` shipping without a canonical URL — fixed
+in the same change.
+- **`FAQPage` structured data on `/faq`**, built from `src/data/faqs.tsx`: the same
+array the page renders, with each answer's plain text extracted from its React
+nodes. The gate proves source → JSON-LD → rendered page agree, so no answer can be
+published to a search engine that the page does not show. The payload escapes `<`
+so a quoted `bb tool <name>` cannot corrupt the script element.
+- **Negatives that can fail**: the homepage must not satisfy the FAQPage detector; a
+drifted answer and a drifted question must each be rejected; a sitemap missing a
+real page must be rejected; the normalizer must strip React's text separators and
+decode entities.
+
+Evidence limitations were updated accordingly: structured data claims only the two
+types the site actually carries, and route discovery follows the directory layout.
+
+### Evidence-batch invariant (same change)
+
+G1 now rejects a ledger entry that disagrees with the evidence file it names —
+commit, passes, failures, negative cases — plus a separate check that every entry's
+commit exists in this history. G1's own entry is excluded from the artifact
+comparison (the validating run replaces G1.json, so that comparison could never
+settle) but not from the reachability check.
+
+The check was added because the M41
+ledger was found citing pre-re-pin commits and a stale passed-count for T2 and T3
+while the files on disk said otherwise: drift that makes a "one-commit batch" a
+claim instead of a fact. T3's artifact was also left behind by a mass re-pin and
+is re-pinned in this batch.
+
+The batch procedure is therefore mechanical rather than remembered:
+
+1. run every M41 verifier at ONE HEAD, with no commit in between;
+2. `npx tsx script/m41/sync-ledger.ts` — copies each artifact's facts into the ledger;
+3. `npx tsx script/m41/verify-governance.ts` — green;
+4. commit evidence + ledger, then STOP re-running gates.
+
+Re-running a single verifier after step 4 moves that artifact past the ledger and
+G1 turns red until the batch is re-pinned. That is intended: staleness becomes
+visible instead of invisible.

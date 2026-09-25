@@ -181,5 +181,10 @@
     "This evidence does not establish analyzer completeness or semantic-answer quality.",
     "S2 (e2e) and S3 (real-repo corpus) are separate M13 issues."
   ],
-  "generatedAt": "2026-09-05T20:57:58.730Z"
+  "generatedAt": "2026-09-05T20:57:58.730Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.296Z",
+    "contentSha256": "aac49d2e91aeb13f46c3860e3991dfd2f07c0b36087e179454017ab691b36d0d"
+  }
 }

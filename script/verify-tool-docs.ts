@@ -103,9 +103,9 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     evidence: "Counts and versions come from the brain database; freshness compares indexed metadata with the filesystem.",
   },
   bb_graph: {
-    returns: ["Per-symbol dependency graph: callers and callees", "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence", "Declared truncation with a reason when the traversal is bounded"],
+    returns: ["Per-symbol dependency graph: callers and callees", "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence", "Per-edge call-site address (M62.A2): `{ kind, file, line, note }` — `call-site` is an exact stored line; `declaration` is a LABELED substitute (the calling symbol's own declaration, shown only when no call-site line is stored); `unknown` has no position at all (line null) and states why. A position is never fabricated and never reported as line 0", "Declared truncation with a reason when the traversal is bounded"],
     errors: ["Missing symbol", "maxDepth outside the declared 1-10 range", "Symbol not found in the index"],
-    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run", "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row", "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`"],
+    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run", "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row", "Call-site positions depend on the analyzer: an exact line is claimed only where the index stored a real line; a legacy 0 or a NULL line yields the declared `declaration` or `unknown` address instead (derived by src/intelligence/graph/line-address.ts — never an inline fallback)", "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`"],
     performance: "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
     safety: "Read-only. It does not modify source files or index data.",
     evidence: "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json).",
@@ -147,6 +147,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const artifactPath = resolve(root, "docs/data/public-tools.json")
 const referenceDir = resolve(root, "docs/tools")
+const siteDataPath = resolve(root, "website/src/data/tools.generated.ts")
 
 function artifact(): Record<string, unknown> {
   return {
@@ -221,10 +222,68 @@ function renderReference(tool: any): string {
   return `# \`${tool.name}\`\n\n${tool.description}\n\n## Contract\n\n- Category: \`${tool.documentation.category}\`\n- Mutability: \`${tool.mutability}\`\n- Requires index: \`${tool.requiresIndex}\`\n- Modes: ${tool.modes.map((mode: string) => `\`${mode}\``).join(", ")}\n- Planned modes (roadmap, not executable): ${(tool.plannedModes ?? []).map((mode: string) => `\`${mode}\``).join(", ") || "(none)"}\n- Defaults: \`${JSON.stringify(tool.documentation.defaults)}\`\n\n## Input Schema\n\n\`\`\`json\n${schema}\n\`\`\`\n\n## Returns\n\n${bullets(tool.returns)}\n\n## Examples\n\n${examples}\n\n## Errors\n\n${bullets(tool.errors)}\n\n## Limitations\n\n${bullets(tool.limitations)}\n\n## Performance\n\n${tool.performance}\n\n## Safety\n\n${tool.safety}\n\n## Evidence Semantics\n\n${tool.evidence}\n\n## Relationship to other tools\n\n${RELATIONS[tool.name] ?? ""}\n\n## Staleness\n\n${stalenessSection(tool)}\n\nThis page is generated from the executable registry and curated documentation. Run \`npm run docs:generate\` to update it.\n`
 }
 
+// M56.T1 (#781): the website's tool reference is generated HERE, in the same
+// pass that writes docs/data/public-tools.json and docs/tools/*.md, so the
+// site, the shipped markdown reference and the executable registry cannot
+// disagree. Every field below is either a registry field or a curated field
+// rendered into docs/tools/*.md — the site renders these values and may not
+// hand-type tool facts.
+function siteToolFacts(): unknown[] {
+  const data = artifact() as { tools: any[] }
+  return data.tools.map((tool: any) => ({
+    name: tool.name,
+    category: tool.documentation.category,
+    summary: tool.documentation.summary,
+    description: tool.description,
+    mutability: tool.mutability,
+    requiresIndex: tool.requiresIndex,
+    modes: tool.modes,
+    plannedModes: tool.plannedModes ?? [],
+    parameters: Object.entries((tool.inputSchema?.properties ?? {}) as Record<string, any>)
+      .map(([pname, p]: [string, any]) => ({
+        name: pname,
+        type: p.type ?? "any",
+        required: ((tool.inputSchema?.required ?? []) as string[]).includes(pname),
+        description: p.description ?? "",
+      }))
+      .sort((a: any, b: any) => Number(b.required) - Number(a.required) || a.name.localeCompare(b.name)),
+    defaults: tool.documentation.defaults,
+    examples: tool.documentation.examples,
+    returns: tool.returns,
+    errors: tool.errors,
+    limitations: tool.limitations,
+    performance: tool.performance,
+    safety: tool.safety,
+    evidence: tool.evidence,
+    relations: RELATIONS[tool.name] ?? "",
+    staleness: stalenessSection(tool).replace(/`/g, ""),
+    referencePath: tool.referencePath,
+  }))
+}
+
+function renderSiteData(): string {
+  return `// AUTO-GENERATED by script/verify-tool-docs.ts --write - DO NOT EDIT BY HAND.
+//
+// The website tool reference, derived from the executable registry
+// (src/mcp/tool-registry.ts) through the same pass that writes
+// docs/data/public-tools.json and docs/tools/*.md. Fields are registry fields
+// or curated reference fields; the tools page, the docs table and the homepage
+// render these values and are forbidden from hand-typing tool facts.
+//
+// Regenerate: bun run docs:generate
+// Verify:     bun run docs:verify
+
+export const TOOL_FACTS = ${JSON.stringify(siteToolFacts(), null, 2)}
+
+export type ToolFact = (typeof TOOL_FACTS)[number]
+`
+}
+
 function expectedFiles(): Map<string, string> {
   const data = artifact() as { tools: any[] }
   const files = new Map<string, string>([[artifactPath, `${JSON.stringify(data, null, 2)}\n`]])
   for (const tool of data.tools) files.set(resolve(root, tool.referencePath), renderReference(tool))
+  files.set(siteDataPath, renderSiteData())
   return files
 }
 
@@ -232,6 +291,7 @@ const files = expectedFiles()
 if (process.argv.includes("--write")) {
   mkdirSync(dirname(artifactPath), { recursive: true })
   mkdirSync(referenceDir, { recursive: true })
+  mkdirSync(dirname(siteDataPath), { recursive: true })
   for (const [path, content] of files) writeFileSync(path, content)
   console.log(`Generated ${files.size} canonical tool documentation artifacts.`)
   process.exit(0)

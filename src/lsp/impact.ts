@@ -54,6 +54,32 @@ export const IMPACT_BUDGET = {
   maxDepth: 5,
 } as const
 
+/** Root symbol types the engine's graph traversal can root (the engine's
+ *  STRUCTURAL whitelist, src/intelligence/graph/graph-engine.ts
+ *  resolveGraphRoot). M53: a DIRECT root outside this set means the engine's
+ *  M48.C1 any-type exact resolve picked a member (constructor, plain field…)
+ *  — those re-root through their OWNING declaration with the U5 rules, never
+ *  silently ride a gravity pick. Exported so the bb/graph door shares the
+ *  ONE list; drift-gated by the U5 gate's mutant suite. */
+export const IMPACT_TRAVERSABLE_ROOT_TYPES: readonly string[] = IDENTITY_TRAVERSABLE_TYPES
+
+// M55.T1 (issue #770): the whitelist above and the member-resolution rules
+// below now live in the ONE resolver, `src/lsp/identity.ts`. This module
+// re-exports them under its historical names so every existing caller, gate
+// and mutant anchor keeps working — the DECISION is not duplicated, only its
+// name, and the identity owner is the place to change it.
+import {
+  IDENTITY_TRAVERSABLE_TYPES,
+  memberFileMatches,
+  resolveMemberIdentity as resolveImpactMemberOwner,
+} from "./identity"
+export {
+  memberFileMatches,
+  resolveMemberIdentity as resolveImpactMemberOwner,
+  type MemberIdentityHint as ImpactMemberIdentity,
+  type MemberResolution,
+} from "./identity"
+
 export interface ImpactResult {
   root: { id: string; name: string; file: string }
   /** Reverse dependencies, bounded, deepest last. */
@@ -69,7 +95,7 @@ export interface ImpactResult {
    *  name is an indexed member the whitelist excludes (constructor, plain
    *  members), rooted through its owner with the member named. First-class
    *  so the UI states what it rooted at — never a silent relabel. */
-  resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string }
+  resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string; memberFile?: string }
 }
 
 export interface ImpactDb {
@@ -80,75 +106,15 @@ export interface ImpactDeps {
   traverse?: typeof graphTraversal
 }
 
-/** The member-resolution fallback (M44.U5, issue #692). The engine's root
- *  resolver whitelists traversable symbol types ('function','method','class',
- *  ...); an indexed member the whitelist excludes (a constructor, a plain
- *  member) must not die at the impact door — it roots through its OWNING
- *  declaration. Returns the owner row only when ALL of:
- *    1. the name resolves to exactly one stored symbol (exact, project-
- *       scoped — never fuzzy here: a member fallback must be certain),
- *    2. that symbol's type is outside the engine's traversable whitelist
- *       (otherwise the direct path already handled it),
- *    3. the member has no stored reverse edges of its own (its own impact
- *       set would be non-empty — resolving through the owner then would
- *       DROP real dependencies), and
- *    4. the owner (via owner_symbol_id) exists and is a traversable type.
- *  Any other outcome returns null and the caller keeps the declared error —
- *  a genuinely absent symbol never silently becomes someone else's impact. */
-export function resolveImpactMemberOwner(
-  db: ImpactDb,
-  projectId: string,
-  symbolName: string,
-): { id: string; name: string; file: string } | null {
-  try {
-    const TRAVERSABLE = ["function", "method", "class", "interface", "trait", "struct", "enum", "macro"]
-    const memberRows = db
-      .prepare(
-        `SELECT s.id, s.name, s.symbol_type AS symbolType, s.owner_symbol_id AS ownerId,
-                COALESCE(f.relative_path, f.path, '') AS file
-         FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id
-         WHERE s.project_id = ? AND s.name = ?`,
-      )
-      .all(projectId, symbolName) as Array<{ id: string; name: string; symbolType: string; ownerId: string | null; file: string }>
-    // Rule 1: exactly one exact member match (ambiguous name -> declared
-    // error path, never a guessed owner).
-    if (memberRows.length !== 1) return null
-    const member = memberRows[0]!
-    // Rule 2: the direct path handles traversable types — no fallback here.
-    if (TRAVERSABLE.includes(member.symbolType)) return null
-    // Rule 3: the member's OWN reverse edges exist -> its own impact set is
-    // real; resolving through the owner would drop dependencies. Declared
-    // error (unchanged behavior) is the honest answer for that shape.
-    const inbound = db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM brain_relationship
-         WHERE project_id = ? AND target_symbol_id = ?
-           AND relationship_type IN ('calls','instantiates','extends','implements')`,
-      )
-      .get(projectId, member.id) as { c: number }
-    if (typeof inbound?.c === "number" && inbound.c > 0) return null
-    // Rule 4: the owner must exist and be traversable (the cascade needs a
-    // real root; the owner prefix cascade in the engine does the rest).
-    if (!member.ownerId) return null
-    const ownerRows = db
-      .prepare(
-        `SELECT s.id, s.name, s.symbol_type AS symbolType,
-                COALESCE(f.relative_path, f.path, '') AS file
-         FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id
-         WHERE s.project_id = ? AND s.id = ?`,
-      )
-      .all(projectId, member.ownerId) as Array<{ id: string; name: string; symbolType: string; file: string }>
-    if (ownerRows.length !== 1) return null
-    const owner = ownerRows[0]!
-    if (!TRAVERSABLE.includes(owner.symbolType)) return null
-    return { id: owner.id, name: owner.name, file: owner.file }
-  } catch {
-    // Unreadable index: null -> the caller's declared error stands (never a
-    // crash disguised as resolution).
-    return null
-  }
-}
+// (The member identity contract and the file-hint matcher are re-exported
+// above from src/lsp/identity.ts — the ONE resolver. Nothing is defined
+// twice: the rules have a single owner, the impact door keeps its names.)
 
+// M55.T1 (issue #770): the member-resolution rules (M44.U5, disambiguated at
+// the M53 X1 closure) now live in src/lsp/identity.ts — the ONE resolver —
+// and are re-exported above as `resolveImpactMemberOwner`. The rules are not
+// duplicated here: this door reads them from that owner, and the identity
+// owner's header carries the full rule list.
 /** The containment rule the engine's caller traversal uses (owner cascade:
  *  a call edge to any nested symbol of X counts as a reverse dependency of
  *  X). Declared here so the total-count query and the differential gate use
@@ -195,6 +161,11 @@ export async function computeImpact(
   projectId: string,
   symbolName: string,
   deps: ImpactDeps = {},
+  /** X1 closure: the hover's defining-file identity. Same-name members
+   *  (every real repo's constructors) resolve ONLY through it; without it an
+   *  ambiguous member name keeps the declared error. Positional so existing
+   *  call sites stay source-compatible. */
+  memberFile?: string,
 ): Promise<ImpactResult> {
   const traverse = deps.traverse ?? graphTraversal
   let resolution: ImpactResult["resolution"] = { through: "direct" }
@@ -204,7 +175,7 @@ export async function computeImpact(
   } catch (error) {
     // Member fallback (declared, narrow): only when the direct traversal
     // could not resolve the name AND the member-resolution rules all hold.
-    const owner = resolveImpactMemberOwner(db, projectId, symbolName)
+    const owner = resolveImpactMemberOwner(db, projectId, symbolName, memberFile)
     if (owner === null) {
       // No fallback applies: the declared error stands. The engine's raw
       // not-found is normalized to the component's declared shape (the wire
@@ -222,7 +193,44 @@ export async function computeImpact(
       // declared error stands, never a fabricated set.
       throw error
     }
-    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name }
+    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
+  }
+  // M53: the hover's server-resolved identity beats the engine's gravity
+  // pick. M48.C1 made the engine resolve exact member names DIRECTLY
+  // (gravity-ordered, any type), which silently bypassed the U5 fallback and
+  // could root a same-name member in the WRONG file (found live: two
+  // `constructor` rows; the hinted greeter.ts request rooted the
+  // higher-gravity one). The hint is a server-resolved identity, so a root
+  // outside it is a silent relabel — re-resolve through the hinted member's
+  // OWNING declaration with the same U5 rules (owner exists, is traversable,
+  // and the member has no reverse edges of its own). A hint-less unique
+  // member the engine whitelist excludes re-roots too (the fallback owns
+  // that decision for BOTH doors). Failures here are never silent: a
+  // mismatched or unresolvable hint keeps the declared error.
+  const rootType = (result.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
+  if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
+    const owner = resolveImpactMemberOwner(db, projectId, symbolName, memberFile)
+    if (owner === null) {
+      throw new Error(
+        `bb/impact: symbol '${symbolName}' is not a traversable root (${rootType}) — no impact set exists` +
+          ` (declared error: the symbol was not found as a traversable root${
+            memberFile
+              ? "; the hinted file does not disambiguate it — hover a symbol that was indexed"
+              : "; run `bb index` or check the name"
+          })`,
+      )
+    }
+    result = await traverse(projectId, owner.name, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+    if (!result.root || !result.root.id) throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error)`)
+    resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
+  } else if (memberFile && result.root && rootType && IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
+    // Traversable root WITH a hint: still the hinted identity's truth or the
+    // declared error — gravity never overrules the hover's identity.
+    if (typeof result.root.file !== "string" || !memberFileMatches(memberFile, result.root.file)) {
+      throw new Error(
+        `bb/impact: symbol '${symbolName}' resolves to a member in '${result.root.file}' but the hover's identity is '${memberFile}' — the hinted symbol was not found at that identity; refusing the silent relabel (declared error)`,
+      )
+    }
   }
   if (!result.root || !result.root.id) {
     throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error; run \`bb index\` or check the name)`)

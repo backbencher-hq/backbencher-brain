@@ -6,11 +6,11 @@ One legend ships with every hub list, hub tree, graph, and impact render (§13.9
 
 ## Edge evidence tiers:
 
-- tier `structural` — structural: stored or derived structure (calls/extends/implements/overrides at confidence >= 0.7) — safe to trust for navigation
+- tier `structural` — structural: stored or derived structure (calls/extends/implements/overrides/contains/exports/instantiates at confidence >= 0.7) — safe to trust for navigation
 - tier `import_based` — import_based: derived from import statements — the module relationship is real, the use may be indirect
 - tier `usage_contextual` — usage_contextual: usage-site evidence — the name appears in context, not guaranteed to be a call
 - tier `reference_qualified` — reference_qualified: reference with qualifier evidence — stronger than usage_contextual, weaker than structure
-- tier `inferred` — inferred: a guess (heuristic or confidence < 0.7) — treat as a hint, never as fact
+- tier `inferred` — inferred: a guess or an unrecognized relationship kind (heuristic, or confidence < 0.7) — treat as a hint, never as fact
 ## Enrichment annotations:
 
 - enrichment — ⌾ role/pattern/layer/criticality — inferred by the index enrichment pass (M40); an annotation, never an evidence tier.

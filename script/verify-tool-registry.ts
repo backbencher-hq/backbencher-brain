@@ -68,6 +68,37 @@ check(
     JSON.stringify(JSON.parse(serialized)) === JSON.stringify(parsed),
   leaks.join(", "),
 )
+
+// "Serializable without handlers" is a claim about the DATA, not about English
+// prose. JSON.stringify drops function values, so a leaked handler can only
+// ever surface as a `handler` key — the previous raw substring test instead
+// fired on the word "handler" in bb_search's description (which honestly
+// documents its auto-refresh path), a false positive that could only be
+// silenced by censoring a true sentence. Scan for the key itself, at any
+// depth, in both the live descriptors and their serialization.
+function hasHandlerKey(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasHandlerKey)
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).some(([key, nested]) => key === "handler" || hasHandlerKey(nested))
+  }
+  return false
+}
+
+check(
+  "metadata is serializable without handlers",
+  Array.isArray(parsed) &&
+    parsed.length === TOOL_DESCRIPTORS.length &&
+    !hasHandlerKey(TOOL_DESCRIPTORS) &&
+    !hasHandlerKey(parsed) &&
+    !/"handler"\s*:/.test(serialized),
+  `descriptor keys: ${[...new Set(TOOL_DESCRIPTORS.flatMap((descriptor) => Object.keys(descriptor)))].join(",")}`,
+)
+// The predicate must be able to fail: a real handler key is caught, while a
+// description that mentions handlers in words is not the failure mode.
+check(
+  "handler-key detector is sensitive (a real leak would be caught)",
+  hasHandlerKey({ nested: [{ handler: {} }] }) && !hasHandlerKey({ description: "the handler refreshes files" }),
+)
 check("mutability is explicit", TOOL_DESCRIPTORS.every((descriptor) => ["read", "index", "write"].includes(descriptor.mutability)))
 check("documentation metadata is complete", TOOL_DESCRIPTORS.every((descriptor) => descriptor.documentation.summary && descriptor.documentation.category && Array.isArray(descriptor.documentation.examples)))
 

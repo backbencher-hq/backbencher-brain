@@ -21,6 +21,7 @@ import { spawnSync, execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const SRC = path.join(ROOT, "script/m25/feature-assertions.ts")
@@ -392,6 +393,6 @@ const result = {
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m25/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m25/results/V1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m25/results/V1.json"), result)
 console.log(`V1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

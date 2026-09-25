@@ -33,6 +33,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const RESULTS = join(ROOT, "validation/m25/results")
@@ -89,7 +90,7 @@ export function completionBarViolations(input: BarInput): string[] {
   const forkRecords = ["F-CURSOR.json", "F-ANTIGRAVITY.json", "F-WINDSURF.json"]
   const forkVerified = forkRecords.filter((f) => {
     if (!input.evidencePresent(f)) return false
-    const rec = JSON.parse(readFileSync(join(RESULTS, f), "utf8")) as { status?: string }
+    const rec = parseSealedRecord(join(RESULTS, f)) as { status?: string }
     return rec.status === "verified"
   })
   if (forkVerified.length < 1) v.push("bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)")
@@ -191,6 +192,7 @@ for (const { category, code, where } of SECTION6_CATEGORIES) {
       writeFileSync(join(tmp, "status-model.mutant.ts"), src.replace(BUDGET_MUTANT.from, BUDGET_MUTANT.to))
       const probe = `
 import { pathToFileURL } from "node:url"
+import { parseSealedRecord } from "../lib/evidence.ts"
 const mod = await import(pathToFileURL(${JSON.stringify(join(tmp, "status-model.mutant.ts"))}).href)
 const input = {
   server: { up: true, version: "0.3.0", versionOk: true },
@@ -227,7 +229,7 @@ process.stdout.write(hidden ? "CAUGHT" : "SURVIVED")
 
 // --- Pass 3: v1 completion-bar audit at HEAD ---------------------------------------
 console.log("\npass 3: v1 completion-bar audit (master plan items 1-5)")
-const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as { issues: Array<{ code: string; status: string; evidence?: { status?: string } }> }
+const manifest = parseSealedRecord(MANIFEST_PATH) as { issues: Array<{ code: string; status: string; evidence?: { status?: string } }> }
 const ledgerMap: BarInput["ledger"] = {}
 for (const i of manifest.issues) ledgerMap[i.code] = { status: i.status, evidence: i.evidence }
 const barInput: BarInput = {
@@ -237,7 +239,7 @@ const barInput: BarInput = {
   osFields: Object.fromEntries(
     ["E5.json", "F-CURSOR.json", "F-ANTIGRAVITY.json", "F-WINDSURF.json", "E7-linux.json"].map((f) => {
       try {
-        const rec = JSON.parse(readFileSync(join(RESULTS, f), "utf8")) as { os?: string }
+        const rec = parseSealedRecord(join(RESULTS, f)) as { os?: string }
         return [f, rec.os]
       } catch {
         return [f, undefined]
@@ -300,7 +302,7 @@ const result = {
     "The §6 table's M24 rows point at the M24 closure gate's caught mutants (server-side classes); this gate re-proves the extension-surface classes directly.",
   ],
 }
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 
 console.log(`\nX1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negative)`)
 console.log(`Evidence: ${EVIDENCE_PATH}`)

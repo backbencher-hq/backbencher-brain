@@ -52,5 +52,10 @@
     "selection": "300 tracked *.kt files with size > 5KB, sorted lexicographically (deterministic at pinned revision; .idea templates excluded)",
     "fileList": "validation/m12/results/kotlin-corpus-sample.txt",
     "repoState": "dirty (unrelated .agents/skills deletions; Kotlin sources intact)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.919Z",
+    "contentSha256": "ec9765838b55b92095b96760d2c58b7ce5445935861ed03ae1f2ea80827cf953"
   }
 }

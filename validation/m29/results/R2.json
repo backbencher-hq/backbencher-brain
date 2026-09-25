@@ -3,15 +3,15 @@
   "code": "R2",
   "milestone": "M29",
   "status": "verified",
-  "checks": 115,
-  "passed": 115,
+  "checks": 261,
+  "passed": 261,
   "failed": 0,
-  "mutantsCaught": 3,
-  "mutantsTotal": 3,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
   "evidenceFile": "R2.json",
-  "generatedAt": "2026-09-07T23:13:45.691Z",
+  "generatedAt": "2026-09-20T02:45:26.280Z",
   "approval": {
     "record": "validation/m29/results/wave-1-approval.json",
     "approvedBy": "owner (ishaq2321)",
@@ -21,7 +21,15 @@
       "typescript",
       "javascript",
       "kotlin",
-      "scala"
+      "scala",
+      "groovy",
+      "zig",
+      "go",
+      "rust",
+      "c",
+      "cpp",
+      "vue",
+      "svelte"
     ]
   },
   "s5Legs": [
@@ -57,6 +65,54 @@
     },
     {
       "language": "scala",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "groovy",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "zig",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "go",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "rust",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "c",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "cpp",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "vue",
+      "status": "verified",
+      "steps": 12,
+      "budgetsOk": true
+    },
+    {
+      "language": "svelte",
       "status": "verified",
       "steps": 12,
       "budgetsOk": true
@@ -98,12 +154,63 @@
       "status": "verified",
       "checks": 10,
       "failed": 0
+    },
+    {
+      "language": "groovy",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "zig",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "go",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "rust",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "c",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "cpp",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "vue",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
+    },
+    {
+      "language": "svelte",
+      "status": "verified",
+      "checks": 10,
+      "failed": 0
     }
   ],
   "limitations": [
-    "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract \u00a710); other OSes are declared absent, not assumed.",
+    "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed.",
     "S5/S6 legs exercise the six owner-approved languages; languages outside the approval record are not onboarded this wave (the binding forbids it)."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:45:26.280Z",
+    "contentSha256": "13da1c25622aa1d89a8347dcb0f900f9bd2571bc1dcb07d4f397037254c12727"
+  }
 }

@@ -28,9 +28,13 @@ import {
   createServer,
   languageForPath,
   isLaunchLanguage,
-  LAUNCH_LANGUAGES,
   ErrorCodes,
 } from "../../src/lsp/server"
+// D-5 (gate-internal facts): the launch set is read from its OWNER module, never
+// re-listed inline here and never taken second-hand through a re-export — this is
+// the fact this gate checks against the owner-approved wave records below.
+import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "server.ts")
@@ -231,8 +235,9 @@ async function testLanguages(): Promise<void> {
   check("G5: languageForPath maps .py to python (M29 wave 1)", languageForPath("src/main.py") === "python")
   check("G5: languageForPath maps .js to javascript (M29 wave 1)", languageForPath("src/main.js") === "javascript")
   check(
-    "G5: launch set matches the owner-approved wave record exactly",
-    JSON.stringify([...LAUNCH_LANGUAGES].sort()) === JSON.stringify(["groovy", "java", "javascript", "kotlin", "python", "scala", "typescript"]),
+    "G5: launch set matches the owner-approved wave records exactly (wave 1 + wave 2)",
+    JSON.stringify([...LAUNCH_LANGUAGES].sort()) ===
+      JSON.stringify(["c", "cpp", "go", "groovy", "java", "javascript", "kotlin", "python", "rust", "scala", "svelte", "typescript", "vue", "zig"]),
   )
 }
 
@@ -290,6 +295,40 @@ const MUTANTS: Mutant[] = [
     name: "initialize: omit protocolVersion",
     from: 'protocolVersion: "3.18",',
     to: "",
+  },
+  {
+    // M53 live-session defect (2026-09-12): the hover handler leaked the
+    // component envelope ({contents: null, provenance}) onto the wire. The
+    // stock client converter throws on contents:null ("reading 'kind'") and
+    // VS Code logs "provider FAILED" — the declared-absence contract rendered
+    // as a crash. The wire law: hover answers a PROTOCOL Hover (null when
+    // absent; contents+range+data when present), like every other read
+    // method. The oracle spawns the REAL dist server and hovers a position
+    // with nothing indexed: the mutant leaks the envelope (contents !==
+    // undefined), the honest server answers plain null.
+    name: "hover: leak the component envelope onto the wire",
+    from: "if (r.contents === null || r.range === null || r.data === null) return null",
+    to: "if (false) return null",
+    oracle: async (mod) => {
+      const ws = mkdtempSync(join(tmpdir(), "bblsp-hoverwire-"))
+      try {
+        const server = new mod.BbLspServer(ws)
+        await server.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+        await server.handleMessage({ jsonrpc: "2.0", method: "initialized", params: {} })
+        const uri = "file://" + join(ws, "nothing.ts")
+        const res = await server.handleMessage({
+          jsonrpc: "2.0", id: 2, method: "textDocument/hover",
+          params: { textDocument: { uri }, position: { line: 0, character: 0 } },
+        })
+        const hover = (res as any)?.result
+        // Wire law: absence is null (or undefined) — NEVER an object with
+        // contents (the envelope) and never an object without contents.
+        if (hover === null || hover === undefined) return false // honest
+        return true // envelope leaked OR malformed object
+      } finally {
+        try { rmSync(ws, { recursive: true, force: true }) } catch {}
+      }
+    },
   },
 ]
 
@@ -453,7 +492,7 @@ async function main(): Promise<void> {
     ],
   }
 
-  writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(EVIDENCE_PATH, evidence)
   console.log(`\nL1: ${status.toUpperCase()} (${passed}/${passed + failed} passed, ${mutantsCaught}/${MUTANTS.length} mutants caught, ${negativeCases} negative)`)
   console.log(`Evidence: ${EVIDENCE_PATH}`)
   if (!ok) process.exitCode = 1

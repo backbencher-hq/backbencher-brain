@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 3,
   "mutantsTotal": 3,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
   "evidenceFile": "W6.json",
-  "generatedAt": "2026-09-07T22:49:42.748Z",
+  "generatedAt": "2026-09-20T02:23:18.479Z",
   "adversarialFixtures": [
     "script tag in symbol name",
     "event handler attribute breakout",
@@ -24,6 +24,9 @@
     "CSP is enforced by the host webview at render time; this suite proves the emitted document's policy and escaping, not browser behavior.",
     "The future webview provider must consume buildWebviewHtml(); a provider that hand-rolls its own HTML is a governance violation (single-owner rule)."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:23:18.479Z",
+    "contentSha256": "c48a879519af8454168214f3e58e11af8a769ee4f6e962b0e4daa18467042901"
+  }
 }

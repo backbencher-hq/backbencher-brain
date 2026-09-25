@@ -3,14 +3,14 @@
   "code": "X1",
   "milestone": "M24",
   "status": "verified",
-  "checks": 62,
-  "passed": 62,
+  "checks": 69,
+  "passed": 69,
   "failed": 0,
   "negativeCases": 6,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m24/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-07T22:41:53.070Z",
+  "generatedAt": "2026-09-20T02:43:43.789Z",
   "suite": [
     {
       "code": "P1",
@@ -68,11 +68,11 @@
       "coveredBy": "L5"
     },
     {
-      "category": "wrong position (\u00b11 line)",
+      "category": "wrong position (±1 line)",
       "coveredBy": "P1"
     },
     {
-      "category": "wrong position (\u00b11 column)",
+      "category": "wrong position (±1 column)",
       "coveredBy": "P1"
     },
     {
@@ -106,6 +106,9 @@
     "Per-language I2 fixture evidence is M25 scope; this gate claims I1 (protocol-passed) for all five launch languages and never I2 for languages without fixture evidence.",
     "The bun-source harness leg is blocked where bun is absent (recorded with reason, never silently skipped)."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:43.790Z",
+    "contentSha256": "6794a5811dee24738e2fc072ffc33ea82d308f52381b993aaae8ebc5773f3fcb"
+  }
 }

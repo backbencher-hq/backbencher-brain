@@ -54,7 +54,7 @@
       "githubIssue": 499,
       "tool": "extension-skeleton",
       "status": "verified",
-      "scope": "VS Code extension (ide/vscode/): activation on workspace open for supported languages, LanguageClient wired to bb lsp (compiled dist preferred, source/bun fallback declared), activation budget gate (contract \u00a77.3)",
+      "scope": "VS Code extension (ide/vscode/): activation on workspace open for supported languages, LanguageClient wired to bb lsp (compiled dist preferred, source/bun fallback declared), activation budget gate (contract §7.3)",
       "acceptanceCriteria": [
         "extension activates within declared activation budget (measured p95, machine recorded)",
         "client connects to bundled/resolved server binary; version compatibility pinned and checked",
@@ -108,7 +108,7 @@
       "githubIssue": 501,
       "tool": "status-surface",
       "status": "verified",
-      "scope": "status bar/panel: indexing progress, staleness indicators (P2 markers rendered), per-language claim levels visible to the user; stale results never render unmarked (contract \u00a74.3)",
+      "scope": "status bar/panel: indexing progress, staleness indicators (P2 markers rendered), per-language claim levels visible to the user; stale results never render unmarked (contract §4.3)",
       "acceptanceCriteria": [
         "stale marker rendering proven by UI mutation (suppress marker -> test fails)",
         "per-language evidence level rendered (e.g. CONFORMANT vs declared-lower)",
@@ -226,7 +226,7 @@
       "githubIssue": 504,
       "tool": "fork-verification",
       "status": "verified",
-      "scope": "separate I4 runs in each available fork at pinned versions, same assertion core; a fork we cannot run locally is recorded blocked with reason \u2014 never omitted, never claimed by inheritance",
+      "scope": "separate I4 runs in each available fork at pinned versions, same assertion core; a fork we cannot run locally is recorded blocked with reason — never omitted, never claimed by inheritance",
       "acceptanceCriteria": [
         "per-fork evidence: version, OS, workspace, per-feature assertions",
         "unavailable fork -> blocked state with reason in ledger",
@@ -259,7 +259,7 @@
           },
           "windsurf": {
             "status": "blocked",
-            "reason": "windsurf CLI not found on PATH \u2014 install or record the waiver (E6 honest blocked state)",
+            "reason": "windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
             "evidenceFile": "F-WINDSURF.json"
           }
         },
@@ -282,11 +282,11 @@
       "githubIssue": 544,
       "tool": "cross-platform",
       "status": "verified",
-      "scope": "extension end-to-end verified on Linux, macOS, Windows (OS-matrix runners); every claim records the OS it was measured on (contract \u00a710); platform bug classes (BB_DATA_DIR home-dir nondeterminism, path-separator bugs) get dedicated mutation cases",
+      "scope": "extension end-to-end verified on Linux, macOS, Windows (OS-matrix runners); every claim records the OS it was measured on (contract §10); platform bug classes (BB_DATA_DIR home-dir nondeterminism, path-separator bugs) get dedicated mutation cases",
       "acceptanceCriteria": [
         "extension end-to-end verified on at least two OSes; the third is either verified or blocked with reason",
         "path-separator and BB_DATA_DIR platform cases exist as mutation cases and fail on planted defects",
-        "every evidence JSON carries an OS field per contract \u00a710"
+        "every evidence JSON carries an OS field per contract §10"
       ],
       "closureRequirements": [
         "owner spot-check of E7 evidence",
@@ -309,7 +309,7 @@
           "E7-darwin.json",
           "E7-windows.json"
         ],
-        "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) \u2014 two-OS acceptance stays open for X1/owner"
+        "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) — two-OS acceptance stays open for X1/owner"
       }
     },
     {
@@ -349,7 +349,7 @@
       "githubIssue": 507,
       "tool": "closure-gate",
       "status": "verified",
-      "scope": "full contract \u00a76 mutant set over the extension surface (staleness suppression, wrong evidence level rendered, budget hidden, fork claim without run) + v1 completion-bar audit at current HEAD",
+      "scope": "full contract §6 mutant set over the extension surface (staleness suppression, wrong evidence level rendered, budget hidden, fork claim without run) + v1 completion-bar audit at current HEAD",
       "acceptanceCriteria": [
         "per-mutant records",
         "v1 bar audited: OpenVSX live, I3 VS Code, I4 >=1 fork, activation budget, staleness mutation-proven",
@@ -371,5 +371,10 @@
         "negativeCases": 3
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.418Z",
+    "contentSha256": "2ef1c4b067b126e1ff7935acae88415c9b6f66ca873ec9839ff67d2f5e91fa12"
+  }
 }

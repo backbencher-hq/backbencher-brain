@@ -26,5 +26,10 @@
   ],
   "passed": true,
   "complexityPolicy": "one production parseFile pass per acceptance file; the markdown analyzer uses one iterative DFS over the block tree, an O(1) byte-offset map from the engine's inline pre-parse, Map-backed symbol dedupe, and Set-backed relationship dedupe — O(block nodes + inline facts), no per-symbol O(n) scans",
-  "corpusPolicy": "tracked .md files from clean scala3@18df09c (the scala3 language repo, already pinned for the scala analyzer); four named grammar-level limitations (|| in table cell, indented <details> in numbered lists, EOF heading without newline) are excluded and measured separately by markdown-corpus-errors.ts"
+  "corpusPolicy": "tracked .md files from clean scala3@18df09c (the scala3 language repo, already pinned for the scala analyzer); four named grammar-level limitations (|| in table cell, indented <details> in numbered lists, EOF heading without newline) are excluded and measured separately by markdown-corpus-errors.ts",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.932Z",
+    "contentSha256": "d30a5eac4018ae7fef5383b8caffc94136497f700295f94d8f1400f414b66608"
+  }
 }

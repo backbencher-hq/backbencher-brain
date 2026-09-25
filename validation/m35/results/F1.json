@@ -7,5 +7,10 @@
   "generatedAt": "2026-09-04T01:49:36.076Z",
   "passed": 29,
   "failed": 0,
-  "negativeCases": 3
+  "negativeCases": 3,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.478Z",
+    "contentSha256": "47a029d92399edadf33f5ede2e5ee29b2c3d78c9e814849542cf63228caf25d2"
+  }
 }

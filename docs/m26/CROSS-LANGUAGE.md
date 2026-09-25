@@ -14,7 +14,19 @@ it, and this document declares that absence. Never hand-edit — regenerate.
 
 Launch languages: java, groovy, kotlin, scala, typescript, javascript, python
 (M29 wave-1 extension). Any pair among
-them not in the table above is **declared absent**: no stored rows exist,
-the UI renders no cross-language text for it, and no bridge is claimed.
-Real project dbs scanned: 38.
+them not in the table above and not recorded in the evidence record is
+**declared absent**: no stored rows exist, the UI renders no cross-language
+text for it, and no bridge is claimed.
+
+## Machine reality (recorded, not asserted here)
+
+Facts about a specific machine's own real index store — how many project
+databases were readable and which cross-language pairs they store — are
+machine-specific and are therefore **not** asserted by this document.
+This document is byte-gated because it is a pure function of the
+repository; a fact only one machine can reproduce does not belong in it.
+
+The live scan is recorded, per run, in the evidence record `validation/m26/results/W3.json`
+(`machineReality`, `realPairRows`). That record is timestamped and pinned,
+and it says of itself that it is machine-specific; read it there.
 

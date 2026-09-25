@@ -15,6 +15,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const COMPONENT = path.join(ROOT, "src/lsp/positions.ts")
@@ -183,6 +184,60 @@ for (const text of FIXTURES) {
   check(`roundtrip fixture ${JSON.stringify(text.slice(0, 12))}...`, bad.length === 0, bad.slice(0, 3).join("; "))
 }
 
+// --- Row byte-column conversion (the two index-writer conventions) -----------
+// `resolveRowByteColumns` is the single owner that turns a stored symbol row
+// into a per-line column, and it had NO leg of its own before M55.T2. These
+// cases are the conventions the writers actually produce:
+//   per-line  the analyzers' declared 1-based byte column (fits the line)
+//   absolute  the parallel indexer's file-absolute 0-based offset (byte 0 = the
+//             first declaration of a file — the shape the pre-M55 guard threw
+//             away, killing prepareCallHierarchy for `loop`/`deep`/any symbol
+//             that opens its file)
+//   absent    an offset that lands nowhere, and a row claiming byte 0 on a line
+//             that is not line 1 (inconsistent data) — both declared null
+const ROW_TEXT = ["export function deep(): number {", "  return 1;", "}", ""].join("\n")
+type RowCase = {
+  name: string
+  line: number
+  byte: number
+  want: { line: number; column: number } | null
+}
+const ROW_CASES: RowCase[] = [
+  { name: "per-line column on a later line", line: 2, byte: 3, want: { line: 2, column: 3 } },
+  { name: "per-line exclusive end column (len + 1)", line: 2, byte: 12, want: { line: 2, column: 12 } },
+  { name: "absolute offset 0 = the file's first declaration", line: 1, byte: 0, want: { line: 1, column: 1 } },
+  { name: "absolute offset inside a later line", line: 3, byte: 45, want: { line: 3, column: 1 } },
+  { name: "absolute exclusive end of a later line", line: 3, byte: 46, want: { line: 3, column: 2 } },
+  { name: "byte 0 claimed on a line that is not line 1 (inconsistent row)", line: 2, byte: 0, want: null },
+  { name: "offset beyond the file", line: 1, byte: 100, want: null },
+  { name: "line beyond the file", line: 9, byte: 5, want: null },
+]
+function runRowExpectations(comp: any): string[] {
+  const failures: string[] = []
+  if (typeof comp.resolveRowByteColumns !== "function") {
+    return ["resolveRowByteColumns is not exported by the component"]
+  }
+  for (const c of ROW_CASES) {
+    let got: { line: number; column: number } | null
+    try {
+      got = comp.resolveRowByteColumns(ROW_TEXT, c.line, c.byte)
+    } catch (e: any) {
+      failures.push(`${c.name}: threw ${e.message}`)
+      continue
+    }
+    const want = c.want === null ? null : JSON.stringify(c.want)
+    const have = got === null || got === undefined ? null : JSON.stringify(got)
+    if (want !== have) failures.push(`${c.name}: want ${String(want)}, got ${String(have)}`)
+  }
+  return failures
+}
+const rowFailures = runRowExpectations(real)
+check(
+  "P1: row conversion covers per-line, absolute (incl. byte 0) and declared-absent rows",
+  rowFailures.length === 0,
+  rowFailures.join("; "),
+)
+
 // --- Mutants ----------------------------------------------------------------
 type Mutant = { name: string; mutate: (src: string) => string }
 const mutants: Mutant[] = [
@@ -218,6 +273,18 @@ const mutants: Mutant[] = [
     name: "line count drops phantom line",
     mutate: (src) => src.replace("this.lineTexts = sourceText.split(/\\r\\n|\\r|\\n/)", "this.lineTexts = sourceText.split(/\\r\\n|\\r|\\n/).filter((l, i, a) => i < a.length - 1 || l !== \"\")"),
   },
+  {
+    name: "row: byte 0 rejected again (the pre-M55 hole)",
+    mutate: (src) => src.replace("!Number.isInteger(byte) || byte < 0", "!Number.isInteger(byte) || byte < 1"),
+  },
+  {
+    name: "row: byte 0 accepted on any line (inconsistent rows invented)",
+    mutate: (src) => src.replace("if (byte === 0) return line === 1 ? { line: 1, column: 1 } : null", "if (byte === 0) return { line, column: 1 }"),
+  },
+  {
+    name: "row: absolute column off by one",
+    mutate: (src) => src.replace("const col = byte - cumStart + 1", "const col = byte - cumStart"),
+  },
 ]
 
 const componentSource = readFileSync(COMPONENT, "utf8")
@@ -248,6 +315,9 @@ for (const mut of mutants) {
     // Mutants may also throw where the real component succeeds; runExpectations
     // already treats unexpected throws as failures.
   }
+  // The row-conversion legs are part of this suite too: a mutant that only the
+  // row cases catch is still caught.
+  caughtBy.push(...runRowExpectations(mod))
   const caught = caughtBy.length > 0
   mutantResults.push({ name: mut.name, caught, detail: caught ? `caught: ${caughtBy[0]}` : "survived all fixtures" })
   check(`mutant [${mut.name}] caught by suite`, caught, caught ? "" : "survived")
@@ -281,11 +351,12 @@ const result = {
   generatedAt: new Date().toISOString(),
   limitations: [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
+    "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
     "Tab-width treated as 1 UTF-16 unit (LSP standard); editor tab rendering is a client concern.",
     "Roundtrip property samples code-point boundaries, not every byte of multi-byte sequences.",
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m24/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m24/results/P1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m24/results/P1.json"), result)
 console.log(`P1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantResults.filter((m) => m.caught).length}/${mutants.length} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

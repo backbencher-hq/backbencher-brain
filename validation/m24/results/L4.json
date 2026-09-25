@@ -2,11 +2,11 @@
   "issue": "493",
   "code": "L4",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "sourceFingerprint": "16e57df5c96a0602f38de94674c1a4777b40b68b420f5d4acaa40391d7fb535b",
   "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
   "evidenceFile": "L4.json",
-  "generatedAt": "2026-09-07T22:41:36.146Z",
+  "generatedAt": "2026-09-20T02:43:28.068Z",
   "passed": 18,
   "failed": 0,
   "failures": [],
@@ -24,6 +24,9 @@
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:28.068Z",
+    "contentSha256": "174de3d39466fdb654a7253ac8a44c5c877b6e5781942e4b35cd6572f86d51b3"
+  }
 }

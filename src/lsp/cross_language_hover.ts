@@ -13,13 +13,13 @@
 //                stored fact exists; the hover renders the section only when
 //                the section is non-empty. A pair with no rows renders no
 //                cross-language text at all.
-//   tier rule:   per the W4 rules — the edge's tier from its stored
-//                metadata.evidenceClass when present, else the declared
-//                derivation (calls/extends/implements/overrides >= 0.7 →
-//                structural, imports → import_based, references →
-//                usage_contextual, references_qualified →
-//                reference_qualified, else inferred). Confidence is rendered
-//                with the tier.
+//   tier rule:   the SINGLE owner's rule — src/lsp/evidence_tier.ts
+//                (M55.T5: stored metadata.evidenceClass wins, else the
+//                declared derivation: structural set at >= 0.7 → structural,
+//                imports → import_based, references/uses → usage_contextual,
+//                references_qualified → reference_qualified, else inferred).
+//                Confidence is rendered with the tier. This file no longer
+//                carries a second copy of the rule.
 //   direction:   callers (edges INTO the symbol from another language) and
 //                callees (edges OUT to another language) are separate
 //                declared facts; both carry the opposite file's language.
@@ -31,6 +31,8 @@
 //   G4 mutation:   a fabricated cross-language edge in the UI fails the suite
 //
 // Run: imported by src/lsp/hover.ts (W3 wiring)
+
+import { classifyTier, type EvidenceTier } from "./evidence_tier"
 
 export interface CrossLanguageEdgeRow {
   relationship_type: string
@@ -44,28 +46,29 @@ export interface CrossLanguageEdgeRow {
   evidence_class: string | null
 }
 
-export type EdgeTier = "structural" | "import_based" | "usage_contextual" | "reference_qualified" | "inferred"
+/** The tier vocabulary a cross-language fact can carry. Kept as a named
+ *  alias because the W2/W3 surface types read `EdgeTier`; the vocabulary
+ *  itself is owned by src/lsp/evidence_tier.ts (M55.T5). */
+export type EdgeTier = EvidenceTier
 
-const STRUCTURAL_TYPES = new Set(["calls", "call", "inherits", "extends", "implements", "overrides"])
-const IMPORT_TYPES = new Set(["imports", "import"])
-
-/** Tier for an edge per the declared W4 rule (mirrors script/m26/graph-core.ts;
- *  the core owns render tiers, this owns hover tiers — same declared rule). */
+/** Tier for a cross-language edge.
+ *
+ *  M55.T5: this is a DELEGATION, not a second rule. Before T5 this function
+ *  carried its own copy of the W4 rule while src/lsp/hover.ts carried the
+ *  legacy variant, so the SAME stored `imports` row rendered `import_based`
+ *  in the cross-language section and `indexed` in the hover's evidence list.
+ *  One classifier now answers for every server surface
+ *  (src/lsp/evidence_tier.ts — classifyTier). */
 export function tierForCrossLanguageEdge(edge: {
   relationship_type: string
   confidence: number | null
   evidence_class: string | null
 }): EdgeTier {
-  const stored = edge.evidence_class
-  if (stored === "structural" || stored === "import_based" || stored === "usage_contextual" || stored === "reference_qualified" || stored === "inferred") {
-    return stored
-  }
-  const t = edge.relationship_type.toLowerCase()
-  if (STRUCTURAL_TYPES.has(t)) return (edge.confidence ?? 0) >= 0.7 ? "structural" : "inferred"
-  if (IMPORT_TYPES.has(t)) return "import_based"
-  if (t === "references") return "usage_contextual"
-  if (t === "references_qualified") return "reference_qualified"
-  return "inferred"
+  return classifyTier({
+    relationshipType: edge.relationship_type,
+    confidence: edge.confidence,
+    evidenceClass: edge.evidence_class,
+  })
 }
 
 export interface CrossLanguageFact {

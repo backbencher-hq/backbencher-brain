@@ -2,12 +2,12 @@
   "issue": "491",
   "code": "L2",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "sourceFingerprint": "474521fe12cfc31fe411e5380d0009c241e1263a655373ac2f19f3d8dbcee814",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "sourceFingerprint": "29cac9a06d82b77da5ac9e5e59e67ca3b862970e73fbcbeb14ff79bb8a612b05",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-09-08T19:41:14.774Z",
-  "passed": 20,
+  "generatedAt": "2026-09-20T02:43:16.238Z",
+  "passed": 21,
   "failed": 0,
   "failures": [],
   "negativeCases": 0,
@@ -24,6 +24,9 @@
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
     "latency measured on this machine only; cross-platform budgets are M25 scope"
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:16.239Z",
+    "contentSha256": "1b0155aa0fb97deb6d76afe8cda7a74d22344c687ac9e6266eb5af080e950d66"
+  }
 }

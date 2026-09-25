@@ -13,7 +13,7 @@
 //
 // CLI: npx tsx script/m29/wave-execute.ts [--languages a,b,c]
 
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdirSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
@@ -21,6 +21,8 @@ import path from "node:path"
 import { realpathSync } from "node:fs"
 import { WAVE_LANGUAGES, ROOT } from "./wave-protocol.ts"
 import { createStdioTransport, measureWarmP95, type FeatureMeasurement } from "../m25/feature-assertions.ts"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 interface Expectations {
   language: string
@@ -105,7 +107,7 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
       steps, indexCounts: null, measurements: [], budgetViolations: [], commit, machine, generatedAt,
     }
   }
-  const expectations = JSON.parse(readFileSync(expPath, "utf8")) as Expectations
+  const expectations = parseSealedRecord(expPath) as Expectations
   const distIndex = path.join(ROOT, "dist", "index.js")
   const distServer = path.join(ROOT, "dist", "lsp", "server.js")
   if (!existsSync(distIndex) || !existsSync(distServer)) {
@@ -218,19 +220,52 @@ export async function executeWaveLeg(language: string): Promise<WaveLegResult> {
   }
 }
 
-/** Approved set discipline: read the approval record; it is the execution
- *  authority. `--languages` may narrow (execute a subset) but never extend. */
+/** The wave-leg freshness rule, in ONE place (the library, not the gate —
+ *  importing a gate executes it; M55 lesson). A leg's evidence is stale when
+ *  any of these changed since the leg's commit:
+ *    - the execution engine itself,
+ *    - the language's OWN fixture pack,
+ *    - the language's OWN analyzer (wave-2 rule, fixture-first): the analyzer
+ *      produces the index the S5 leg serves, so a changed analyzer stales the
+ *      leg — a cheap, declared re-run refreshes it. Never another language's
+ *      pack or analyzer (per-language coupling is banned and mutant-gated).
+ *    - the shared LSP surfaces the leg exercises.
+ */
+export function staleRelevantPaths(language: string): string[] {
+  return [
+    "script/m29/wave-execute.ts",
+    `script/m29/wave-fixtures/${language}`,
+    `src/ast/real-${language}-analyzer.ts`,
+    "src/lsp/launch_languages.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/symbols.ts",
+    "src/lsp/server.ts",
+  ]
+}
+
+/** Approved set discipline: read the approval recordS (wave 1 and wave 2 —
+ *  every owner-approved wave joins the union; the union is the execution
+ *  authority). `--languages` may narrow (execute a subset) but never extend. */
 export function approvedLanguages(): string[] {
-  const approvalPath = path.join(ROOT, "validation/m29/results/wave-1-approval.json")
-  const approval = JSON.parse(readFileSync(approvalPath, "utf8")) as { languages: string[] }
+  const resultsDir = path.join(ROOT, "validation/m29/results")
+  const approvalFiles = existsSync(resultsDir)
+    ? readdirSync(resultsDir).filter((f) => /^wave-\d+-approval\.json$/.test(f)).sort()
+    : []
+  if (approvalFiles.length === 0) throw new Error("no wave approval record found (validation/m29/results/wave-N-approval.json)")
+  const languages: string[] = []
+  for (const f of approvalFiles) {
+    const approval = JSON.parse(readFileSync(path.join(resultsDir, f), "utf8")) as { languages: string[] }
+    for (const lang of approval.languages) if (!languages.includes(lang)) languages.push(lang)
+  }
   const args = process.argv.slice(2)
   const idx = args.indexOf("--languages")
   if (idx !== -1) {
     const requested = args[idx + 1]!.split(",").map((s) => s.trim()).filter(Boolean)
-    for (const lang of requested) assertLanguageApproved(lang, approval)
+    for (const lang of requested) assertLanguageApproved(lang, { languages })
     return requested
   }
-  return approval.languages
+  return languages
 }
 
 async function main(): Promise<void> {
@@ -240,7 +275,7 @@ async function main(): Promise<void> {
   let allOk = true
   for (const language of languages) {
     const result = await executeWaveLeg(language)
-    writeFileSync(path.join(ROOT, "validation/m29/results", `wave-${language}.json`), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results", `wave-${language}.json`), result)
     const fails = result.steps.filter((s) => s.status === "fail")
     console.log(`  ${language.padEnd(11)} ${result.status.toUpperCase().padEnd(8)} ${result.steps.length} checks, ${fails.length} failed${result.reason ? ` — ${result.reason}` : ""}`)
     if (result.status !== "verified") allOk = false

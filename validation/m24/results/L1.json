@@ -2,19 +2,19 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "sourceFingerprint": "bee83c2eb97ecbdca86ef9f7985148ab5ddb4156ad04de58d8e85a8748c3bb4f",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "sourceFingerprint": "686a511db46773a80f0bee24123c9742a499a78426588e82132c6d2f08278033",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-09-07T22:41:16.546Z",
+  "generatedAt": "2026-09-20T02:43:09.020Z",
   "passed": 33,
   "failed": 0,
   "failures": [],
   "negativeCases": 0,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 9,
-    "mutantsTotal": 9,
+    "mutantsCaught": 10,
+    "mutantsTotal": 10,
     "ok": true,
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
   },
@@ -24,6 +24,9 @@
     "feature handlers land in L2-L5; capabilities advertise only registered handlers",
     "stdio framing is byte-stream based with Content-Length parsing"
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:09.020Z",
+    "contentSha256": "915c7657a6c6b0ecef35c65936b44f89004a51e0837f1cf3c6c3e86753d54d06"
+  }
 }

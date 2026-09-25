@@ -16,7 +16,9 @@
 import path from "node:path"
 
 /** The launch set: languages bb_lsp serves with real index-backed features.
- *  Extension order: M24 launch five, then M29 wave 1 (javascript, python). */
+ *  Extension order: M24 launch five, M29 wave 1 (javascript, python),
+ *  M29 wave 2 (owner-approved 2026-09-14: groovy, zig, go, rust, c, cpp,
+ *  vue, svelte — validation/m29/results/wave-2-approval.json). */
 export const LAUNCH_LANGUAGES = [
   "java",
   "groovy",
@@ -25,6 +27,13 @@ export const LAUNCH_LANGUAGES = [
   "typescript",
   "javascript",
   "python",
+  "zig",
+  "go",
+  "rust",
+  "c",
+  "cpp",
+  "vue",
+  "svelte",
 ] as const
 
 export type LaunchLanguage = (typeof LAUNCH_LANGUAGES)[number]
@@ -54,6 +63,17 @@ export function languageForPath(filePath: string): string | null {
     ".mjs": "javascript",
     ".cjs": "javascript",
     ".py": "python",
+    ".zig": "zig",
+    ".go": "go",
+    ".rs": "rust",
+    ".c": "c",
+    ".h": "c",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".vue": "vue",
+    ".svelte": "svelte",
   }
   return map[ext] ?? null
 }

@@ -9,10 +9,10 @@
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "negativeCases": 5,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
   "evidenceFile": "E2.json",
-  "generatedAt": "2026-09-07T22:46:35.939Z",
+  "generatedAt": "2026-09-20T02:21:02.724Z",
   "os": "linux",
   "verdict": {
     "realComponentFailures": 0
@@ -22,6 +22,9 @@
     "The in-editor dialog/progress UX is exercised by E5 in-editor evidence; this suite proves the pure machine, the real CLI integration, cancel/resume semantics, and the non-blocking glue by lint.",
     "Progress file counters are parsed best-effort from CLI output; final honesty gate is the presence of a non-empty brain.db, never the parsed counters."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:21:02.724Z",
+    "contentSha256": "6826a34cda6e669a1762e620815c48a30cafedf85d993605023367df71c9038b"
+  }
 }

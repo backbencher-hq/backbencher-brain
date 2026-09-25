@@ -84,15 +84,28 @@ export class PositionError extends Error {
  * The `fits` case is ambiguous in principle (a per-line column can equal a
  * small absolute offset on line 1); rows on line 1 with byte <= len+1 convert
  * identically under both readings, so `fits` is safe there too.
+ *
+ * M55.T2 (issue #771) — the byte-0 hole. Per-line columns are 1-based, so a
+ * stored 0 can NEVER be a per-line column: it is unambiguously the
+ * file-absolute offset 0, the first byte of line 1 (the first declaration of a
+ * file, which the parallel indexer stores as byte_start = 0). The pre-M55
+ * guard (`byte < 1` -> null) therefore made every such row unconvertible, and
+ * `prepareCallHierarchy` returned a declared absence for the first symbol of
+ * every file — found live by the M55.T2 gate on a fixture whose symbols start
+ * at offset 0. A 0 stored against any OTHER line is a row the indexer never
+ * writes; it is inconsistent data and stays declared-unconvertible (null).
  */
 export function resolveRowByteColumns(
   sourceText: string,
   line: number,
   byte: number,
 ): { line: number; column: number } | null {
-  if (!Number.isInteger(line) || line < 1 || !Number.isInteger(byte) || byte < 1) return null
+  if (!Number.isInteger(line) || line < 1 || !Number.isInteger(byte) || byte < 0) return null
   const lines = sourceText.split("\n")
   if (line > lines.length) return null
+  // Byte 0 is unambiguous (see the header): the file's first byte is line 1,
+  // column 1. Any other line claiming byte 0 is inconsistent -> declared null.
+  if (byte === 0) return line === 1 ? { line: 1, column: 1 } : null
   // byte -> 0-based offset within the line (per-line reading)
   const line0 = line - 1
   const lineByteLen = Buffer.byteLength(lines[line0]!, "utf8")
