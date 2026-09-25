@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-25T16:22:38.391Z",
+  "at": "2026-09-25T18:02:48.384Z",
   "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
@@ -701,26 +701,6 @@
       "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
     },
     {
-      "repo": "sdwebimage",
-      "lang": "objc",
-      "files": 104,
-      "truth": 6052,
-      "covered": 6052,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "FULL EXTENT (104/104 .m files — the whole pinned first corpus). hash 74f30e2d774e4d93, analyzer-edges 6,339, coverage 100%, fabrication 0%. Re-derived at this closure, on the code that carries the M59.A7 line contract AND the #D/#B fixes of this round: 21,204 edges over both corpora, 0 unlined, every claimed line re-checked against the source (21,204 token-checked, 0 INCONSISTENT, 0 exemptions used — script/m14/tmp/oc-line-equivalence.ts). Truth and analyzer moved TOGETHER by the #D fix (-38 here, -35 on afnetworking): the block-pointer parameter declaration is no longer a read on EITHER side, so coverage stayed 100%/0 while a fabrication class of 387 raw rows left the corpora."
-    },
-    {
-      "repo": "afnetworking",
-      "lang": "objc",
-      "files": 49,
-      "truth": 2855,
-      "covered": 2855,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "FULL EXTENT (49/49 .m files — the whole pinned second corpus). hash 29684f4b8391be9f, analyzer-edges 3,170, coverage 100%, fabrication 0%. The heuristic-class counts (287 and 315) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap; they did not move with this round's fixes."
-    },
-    {
       "repo": "fmt",
       "lang": "cpp",
       "files": 73,
@@ -771,6 +751,26 @@
       "missing": 0,
       "unexplained": 0,
       "note": "SECOND corpus at FULL EXTENT under the corrected universe (423 .cpp + 57 .hpp + 17 .h = 497; 496 drawn — the one .h file the old universe already measured is the overlap), `279/496 fresh`, hash 25cb8fe94f2edef7. FINAL: analyzer-edges 6622, uncovered 0, unexplained 0. This is the draw that found the lane's real defects, and it took the FULL extent to do it: a 200-file draw of this same corpus reads 0/0. PRE-fix, at the same hash: MISSING=1 (`tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ` — the declared name was read off a pointer local's INITIALIZER, binding the local as `environ` and shadowing the real read) and unexplained=1 (`tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299` — a `JSON_HEDLEY_NON_NULL(3)` between the return type and the name makes the grammar wrap the whole declarator in a `parenthesized_declarator`, so the method's symbol AND its scope were never created and the parameter's read escaped to the namespace-scope enumerator 8k lines away; that one header alone had lost 14 method symbols). Both closed; the two false reads that the shared template rule had left are gone with them (uses 691 -> 686 on that header, contains 1092 -> 1106)."
+    },
+    {
+      "repo": "sdwebimage",
+      "lang": "objc",
+      "files": 247,
+      "truth": 6580,
+      "covered": 6580,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (247/247 objc-routed files = 104 .m + 143 headers the router admits — the whole pinned first corpus under the lane's M60 universe). hash 5d19f542a93d72c5, analyzer-edges 6,925, coverage 100%, fabrication 0%. Re-derived after the M60 grammar wave: the bare-macro rule recovered the declaration half, so truth moved 6,574 -> 6,580 and analyzer edges 6,893 -> 6,925 while coverage stayed 100%/0/0. The heuristic count moved 287 -> 345 because the header half carries real first-parent implicit-override guesses (they are declared at 0.5 and reported as heuristic, never as unexplained). Line contract re-checked over the SAME widened set: 322 files, 23,379 edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT (script/m14/tmp/oc-line-equivalence.ts)."
+    },
+    {
+      "repo": "afnetworking",
+      "lang": "objc",
+      "files": 75,
+      "truth": 2957,
+      "covered": 2957,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers — the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
     }
   ],
   "current": [
@@ -1285,26 +1285,6 @@
       "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
     },
     {
-      "repo": "sdwebimage",
-      "lang": "objc",
-      "files": 104,
-      "truth": 6052,
-      "covered": 6052,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "FULL EXTENT (104/104 .m files — the whole pinned first corpus). hash 74f30e2d774e4d93, analyzer-edges 6,339, coverage 100%, fabrication 0%. Re-derived at this closure, on the code that carries the M59.A7 line contract AND the #D/#B fixes of this round: 21,204 edges over both corpora, 0 unlined, every claimed line re-checked against the source (21,204 token-checked, 0 INCONSISTENT, 0 exemptions used — script/m14/tmp/oc-line-equivalence.ts). Truth and analyzer moved TOGETHER by the #D fix (-38 here, -35 on afnetworking): the block-pointer parameter declaration is no longer a read on EITHER side, so coverage stayed 100%/0 while a fabrication class of 387 raw rows left the corpora."
-    },
-    {
-      "repo": "afnetworking",
-      "lang": "objc",
-      "files": 49,
-      "truth": 2855,
-      "covered": 2855,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "FULL EXTENT (49/49 .m files — the whole pinned second corpus). hash 29684f4b8391be9f, analyzer-edges 3,170, coverage 100%, fabrication 0%. The heuristic-class counts (287 and 315) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap; they did not move with this round's fixes."
-    },
-    {
       "repo": "sqlite",
       "lang": "cpp",
       "files": 42,
@@ -1333,6 +1313,26 @@
       "missing": 0,
       "unexplained": 0,
       "note": "SECOND corpus at FULL EXTENT under the corrected universe (423 .cpp + 57 .hpp + 17 .h = 497; 496 drawn — the one .h file the old universe already measured is the overlap), `279/496 fresh`, hash 25cb8fe94f2edef7. FINAL: analyzer-edges 6622, uncovered 0, unexplained 0. This is the draw that found the lane's real defects, and it took the FULL extent to do it: a 200-file draw of this same corpus reads 0/0. PRE-fix, at the same hash: MISSING=1 (`tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ` — the declared name was read off a pointer local's INITIALIZER, binding the local as `environ` and shadowing the real read) and unexplained=1 (`tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299` — a `JSON_HEDLEY_NON_NULL(3)` between the return type and the name makes the grammar wrap the whole declarator in a `parenthesized_declarator`, so the method's symbol AND its scope were never created and the parameter's read escaped to the namespace-scope enumerator 8k lines away; that one header alone had lost 14 method symbols). Both closed; the two false reads that the shared template rule had left are gone with them (uses 691 -> 686 on that header, contains 1092 -> 1106)."
+    },
+    {
+      "repo": "sdwebimage",
+      "lang": "objc",
+      "files": 247,
+      "truth": 6580,
+      "covered": 6580,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (247/247 objc-routed files = 104 .m + 143 headers the router admits — the whole pinned first corpus under the lane's M60 universe). hash 5d19f542a93d72c5, analyzer-edges 6,925, coverage 100%, fabrication 0%. Re-derived after the M60 grammar wave: the bare-macro rule recovered the declaration half, so truth moved 6,574 -> 6,580 and analyzer edges 6,893 -> 6,925 while coverage stayed 100%/0/0. The heuristic count moved 287 -> 345 because the header half carries real first-parent implicit-override guesses (they are declared at 0.5 and reported as heuristic, never as unexplained). Line contract re-checked over the SAME widened set: 322 files, 23,379 edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT (script/m14/tmp/oc-line-equivalence.ts)."
+    },
+    {
+      "repo": "afnetworking",
+      "lang": "objc",
+      "files": 75,
+      "truth": 2957,
+      "covered": 2957,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers — the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
     }
   ],
   "adjudicated": {
@@ -1350,7 +1350,7 @@
     "erlang": "CLEAN at depth on two corpora (rebar3 200, otp 200) — and this does NOT clear the lane: erlang's fixture lane is 0/9 red, and the two gates measure different things. Named rather than averaged away.",
     "haskell": "#872's haskell analyzer half had never landed. Found by the hledger full-extent draw (`extends Lines -> Spr.Lines` MISSING), root-caused to `processClass` still being the flat-list walk the review itself calls the PRE-fix state, fixed in this round against the oracle's own rule (constraint-tree walk, left-spine class, qualified head verbatim), and pinned by four new fixture extends plus a third mutant. cabal was clean before and after — the canonical draw never sampled the shape, which is exactly why this needed depth to see.",
     "zig": "CLEAN at depth on two corpora (zig 200/2947 + zls at full extent).",
-    "objc": "#815 + #853 + the M12 adjudication (which found #D and #B below) — CLOSED this round. Both review waves' acceptance checklists are discharged on re-derived evidence: every claim probe-verified against the analyzer AND the oracle (reviews/objc/first-review.md, second-review.md), fixes checked against the lane's F5 lanes at full extent in this session (sdwebimage + afnetworking, 0/0 both), fixture pins + regression mutants per fix (objc fixtures 7/7 with 35 M59.A7 line pins and 11 near-miss forbids; 30/30 objc mutants CAUGHT), spec decisions recorded in script/m14/spec/objc-completeness.json (OC-B/OC-D/OC-E/OC-R1/R2 + OC-F/G/H/R3), and the lane's closure record written (reviews/objc/m60-closure.md).",
+    "objc": "#815 + #853 + the M12 adjudication (which found #D and #B below) — CLOSED. Both review waves' acceptance checklists are discharged on re-derived evidence: every claim probe-verified against the analyzer AND the oracle (reviews/objc/first-review.md, second-review.md), fixes checked against the lane's F5 lanes at full extent (sdwebimage + afnetworking, 0/0 both, now header-inclusive), fixture pins + regression mutants per fix (objc fixtures 8/8 with 35 M59.A7 line pins and 12 near-miss forbids; 32/32 objc mutants CAUGHT), spec decisions recorded in script/m14/spec/objc-completeness.json (OC-B/OC-D/OC-E/OC-R1/R2 + OC-F/G/H/R3), and the lane's closure record written (reviews/objc/m60-closure.md).",
     "cpp": "#612's own bar for the family is a 200+-file deep differential per language. cpp could not meet it: its F5 sampling universe was `ext: \"cc,h\"` while three other declarations in this repo (the product's indexer, the M12 census, the fixture harness) treat .cpp/.hpp as C++. Corrected, the second corpus went 17 -> 496 drawable files, and at full extent the lane was NOT clean — one MISSING (environ, fixed and pinned this round) and one unexplained (the wrapped-declarator scope loss, fixed and pinned this round). Both are now closed: fmt 73 files 5328/5328, nlohmann-json 496 files 6887/6887, 0/0 on both, at hashes identical to the red runs. The depth cell reads pass because the red draws were fixed, not because the sampler was narrowed."
   },
   "worstPerLang": {
@@ -1432,11 +1432,11 @@
       "note": "GREEN at FULL EXTENT, and GREEN for a reason that can be checked: the residue the cell was red on (MISSING=1 unexplained=5 at 554 files) was a RESIDUE OF THE FULL EXTENT — the canonical 60-file draw is clean both before and after this round, byte-identical (hash ea2ac2a489ca0853), so a lane whose depth cell had been read off the canonical draw alone would have looked finished while six real findings sat outside it. swift-nio 554/554: truth 20,465 / 20,465, analyzer-edges 20,288, MISSING=0 unexplained=0. alamofire 98/98 (its whole swift surface): truth 3,549 / 3,549, MISSING=0 unexplained=0. Both canonical 60-file draws (swift-nio hash ea2ac2a489ca0853, alamofire hash 0052e892f6e0d27b) are also 0/0, so the report is not hiding behind its weakest draw. No red draw survives: the pre-fix full-extent reading is recorded in `closedInThisRound` rather than left as a live red row, because a red row whose defect has been fixed and pinned is history, not a state."
     },
     "objc": {
-      "maxSample": 104,
+      "maxSample": 247,
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "GREEN at FULL EXTENT on both corpora: sdwebimage 104/104 files (tree-truth 6,052 / 6,052, analyzer-edges 6,339, MISSING=0 unexplained=0) and afnetworking 49/49 (2,855 / 2,855, analyzer-edges 3,170, 0/0). Both file counts are the WHOLE corpus, not a draw: the two repos together are 153 files, which is why this lane's depth cell has always been answered rather than sampled — the residue class that kept swift's cell red (findings outside a 60-file draw of a 554-file corpus) cannot exist here, and that is a property of the corpus, not of the lane."
+      "note": "GREEN at FULL EXTENT on both corpora under the WIDENED universe: sdwebimage 247/247 files (tree-truth 6,580 / 6,580, analyzer-edges 6,925, MISSING=0 unexplained=0) and afnetworking 75/75 (2,957 / 2,957, analyzer-edges 3,290, 0/0). Both file counts are the WHOLE corpus, not a draw, and the corpus now includes the 169 headers that production routes to this lane and the harness never read (see the sampling-universe audit): the declaration half is 52% of the language's files, so leaving it outside the depth claim was itself the gap. The residue class that kept swift's cell red (findings outside a 60-file draw of a 554-file corpus) cannot exist here — both corpora are read whole — and that is a property of the corpus, not of the lane."
     },
     "csharp": {
       "maxSample": 900,
@@ -1536,15 +1536,16 @@
     "swift line contract (M59.A7 handoff)": "Every published relationship carries the line of the NAME it names: 652 files, 78,747 edges, 0 unlined, 0 out of range, and 77,737 token-checked with 0 INCONSISTENT by script/m14/tmp/sw-line-equivalence.ts (the token checker's own self-test rejects `discount`/`other` for `count`, so it can fail). Found by the fixture dump rather than by a gate: the surviving `calls Endpoint -> method` edge claimed the CONVERTED site's line (L22) instead of the genuine call's (L29); the same round fixed `retiredLines` being GLOBAL instead of per-pool (it silently deleted unrelated lines), the import range including a preceding attribute line, and the per-emit-site stamping. Mutants swift/drop-relationship-lines and swift/line-off-by-one are CAUGHT.",
     "the five depth `n/a` cells with a corpus (clojure, elixir, erlang, haskell, zig)": "These five were the only lanes with a pinned corpus and an F5 row but no deeper draw — the measurable half of the matrix's 22 `depth: n/a` cells. Measured on the primary corpus and the second corpus each. Four are clean on both corpora; haskell found a live defect on the second corpus and it is fixed + pinned in this round.",
     "#872 (haskell analyzer half)": "Recorded as FIXED + GATED in reviews/m49-hs1-superclass-constraint-tree.md, but the analyzer change was never in the tree: no commit has touched real-haskell-analyzer.ts since 2026-09-14, the oracle's own comment asserts lockstep it does not have, and both guarding mutants recorded `0 -> 0` in F4. The fixture pinned neither a tuple superclass nor the `Applied` class one mutant names. Now: analyzer walks the constraint tree, four shapes pinned (tuple, qualified, tuple-with-qualified, applied head), mutants CAUGHT, F4 survivors 8 -> 6 (all six remaining are erlang's known fixture red).",
-    "#815 (objective-c first review wave) + #853 (second)": "The two acceptance checklists closed on re-derived evidence rather than on the reviews' own prose: OC-B (category exports), OC-D (C type inventory), OC-E (bare value reads), OC-R1/R2 (update operands, @synthesize/@selector), OC-F (enum cases as values), OC-G (@protocol(P) directive), OC-H (function decay) — each with its spec entry and its fixtures/mutants already in the tree, plus this round's F5 re-measurement at full extent on both corpora (0/0) and the closure record.",
+    "#815 (objective-c first review wave) + #853 (second)": "The two acceptance checklists closed on re-derived evidence rather than on the reviews' own prose: OC-B (category exports), OC-D (C type inventory), OC-E (bare value reads), OC-R1/R2 (update operands, @synthesize/@selector), OC-F (enum cases as values), OC-G (@protocol(P) directive), OC-H (function decay) — each with its spec entry and its fixtures/mutants already in the tree, plus the F5 re-measurement at full extent on both corpora (0/0) and the closure record.",
     "objective-c line contract (M59.A7 handoff)": "Before this round the objc analyzer emitted NO `line_number` at all — 0 of 21,591 edges, which is why the LCM's `lines` cell read `fail` for this lane. Now every relationship carries the line of the NAME it names, across all eight kinds the lane publishes (uses 9,669 / calls 8,033 / contains 2,192 / overrides 603 / references 515 / instantiates 507 / extends 52 / implements 20): 0 unlined, 0 out of range, and 21,591 token-checked with 0 INCONSISTENT (the probe self-tests its own boundary-aware token checker first, and needed ZERO exemptions — its two named exemption classes are declared and empty). The stamping is node-driven at every site (the text and the line come from one selection; `fullMessageSelectorNode` exists for exactly that reason), and the post-pass rows take the owning symbol's own declaration line — which is how the pins discovered that a method's owner row names its IMPLEMENTATION line, because an @interface method declaration is not symbolized in this lane (protocols excepted). Pinned by 35 line pins + 11 near-miss forbids across three fixtures and three reverting mutants (objc/drop-relationship-lines, objc/line-off-by-one, objc/contains-line-at-container), each CAUGHT by exactly the pinned fixtures.",
-    "#D — objc: a block-pointer parameter DECLARATION was published as a value read": "The M12 adjudication of this round surfaced one analyzer row that was a defect rather than a fact: `uses register_block -> handler` fired from `void (^handler)(NSString *)` ALONE, with no read anywhere in the function (probe script/m14/tmp/oc-callee-uses.ts: 'decl only' -> uses handler; the C analyzer given the identical function-pointer parameter emits NOTHING, and the identical probe on C still emits only the call). That contradicts the lane's own OC-E ruling ('declaration names' are never reads) and C family parity. Root cause: the bare-read pass tested the parent node type and init_declarator chains, but a block parameter's name nests `identifier < block_pointer_declarator < parenthesized_declarator < function_declarator < parameter_declaration`, so neither test could see it. Fixed structurally in src/ast/real-objective-c-analyzer.ts (isParameterDeclaredName: climb the shared DECLARATOR_WRAPPERS set and require the node to be the enclosing parameter's own `declarator` field). The ORACLE had the same hole and was fixed in the same round (script/m14/differential.ts objcIsParameterDeclaredName) — without that, the analyzer fix would have read as MISSING at full extent (the #916 lesson). Both corpora re-measured: truth 6,090->6,052 and 2,890->2,855, analyzer 6,377->6,339 and 3,205->3,170, coverage 100%/MISSING=0/unexplained=0 on both, heuristic unchanged (287/315). 387 raw rows left the corpora, all of them declaration-site reads. Pinned by the F9 probe battery (F9-PROBE-OBJC-PARAM-DECL, analyzer AND oracle, oracleForbid on) and by a new forbid pin + mutant in objc/bare-value-reads (objc/emit-param-decl-as-bare-read; lane mutants 30/30 -> 31/31 CAUGHT).",
+    "#D — objc: a block-pointer parameter DECLARATION was published as a value read": "The M12 adjudication surfaced one analyzer row that was a defect rather than a fact: `uses register_block -> handler` fired from `void (^handler)(NSString *)` ALONE, with no read anywhere in the function (probe script/m14/tmp/oc-callee-uses.ts: 'decl only' -> uses handler; the C analyzer given the identical function-pointer parameter emits NOTHING). Root cause: the bare-read pass tested the parent node type and init_declarator chains, but a block parameter's name nests `identifier < block_pointer_declarator < parenthesized_declarator < function_declarator < parameter_declaration`. Fixed structurally (isParameterDeclaredName: climb the shared DECLARATOR_WRAPPERS set and require the node to be the enclosing parameter's own `declarator` field), mirrored in the ORACLE (without that the analyzer fix reads as MISSING at full extent — the #916 lesson). Both corpora re-measured at the time: truth 6,090->6,052 and 2,890->2,855, coverage 100%/MISSING=0/unexplained=0 on both. Pinned by F9-PROBE-OBJC-PARAM-DECL (analyzer AND oracle, oracleForbid on) and by objc/bare-value-reads' forbid pin + mutant (objc/emit-param-decl-as-bare-read).",
     "#B — production: the noise filter ate every selector target (17 of the M12 FNs)": "The other half of the M12 adjudication was not the analyzer at all. src/ast/pool-worker.ts filterNoiseRelationships computed a relationship target's 'leaf' as the LAST ':'-separated segment; an Objective-C selector ENDS in ':' because that colon IS its arity, so the leaf was empty, `leaf.length < 1` fired, and the row was dropped as noise BEFORE any consumer saw it — every `calls` to a keyword selector and every `contains` naming a parameterized method. Measured: 17 of the differential's 30 false negatives were rows the analyzer had emitted and this filter had eaten (the M14 fixture/mutant suites cannot see it: they call analyzer.analyze directly, which is why the lane's fixture suite stayed green over it). Fixed by skipping empty colon segments (the noise-blocking intent is unchanged: `:` or `` still has no leaf; period-terminated markdown prose still drops). Blast radius measured over the pinned corpora (script/m14/tmp/noise-filter-blast.ts): sdwebimage 3,641 of 17,696 relationships and afnetworking 1,724 of 8,333 were being silently dropped — 20% of sdwebimage's graph — plus Clyde 161; every other repo in the sample moved by 1-12 rows, and those are markdown/YAML heading keys whose text ends in ':' (`Breaking changes:`), the only other shape with a legitimate trailing colon. Fixture-level cross-lane check (script/m14/tmp/m12-cross-lane-filter-check.ts, all 41 languages, fix applied vs reverted on an otherwise identical tree): ONLY objective-c's differential moves (TP 72->89, FN 17->0, FP 0 in both). Pinned by the F9 probe battery (F9-PROBE-OBJC-PRODUCTION-SELECTOR runs the PRODUCTION entry over a real .m file and fails if the selector rows are dropped) and by the M12 objc differential itself (89/89, below).",
     "cpp's F5 sampling universe (`ext` \"cc,h\" -> \"cc,cpp,cxx,h,hpp\")": "The lane's drawable second corpus goes 17 -> 496 files, which is what #612's 200-file floor requires; the canonical F5 row recorded at fdbf069f was drawn under the old string and is not comparable to a re-run in the .cpp-inclusive universe.",
     "cpp declarator-chain name extraction (CPPD12)": "The declared name was read with a shallow, document-order lookup whose first identifier on an init_declarator is the INITIALIZER. Three defects from one rule: a local bound as the initializer (shadowing the real global's reads — the corpus MISSING edge), no symbol at all for `**p`/arrays, and `backing` published as the name of `int &alias = backing;`. Pinned by cpp/wrapped-declarator-names-612, three mutants CAUGHT.",
     "cpp template-wrapped declarator names read as uses (CPPD15/CPPD16)": "`template <> constexpr auto num_bits<native_int128>() -> int` puts the declared name inside `template_function`, so the leftmost-declarator rule (which gates on the direct parent) read the declared entity as a use of itself — on BOTH sides, which is why no fixture, mutant or draw had ever seen it: the analyzer and the oracle agreed on a wrong answer and the counts cancelled. 7 such pairs at the fmt full extent. One shared rule now (`templateWrappedDeclaratorName`, exported by the analyzer and imported by the oracle), pinned by cpp/template-declarator-name-612, one mutant, and F9-PROBE-CPP-TEMPLATE-DECL-NAME which asserts the absence on both sides with `oracleForbid`.",
     "cpp wrapped function declarators losing the method symbol and its scope (CPPD17/CPPD18)": "Two spellings wrap the declarator — a parenthesized NAME (`bool (acceptParenthesized)(…)`) and a macro between the return type and the name (`JSON_HEDLEY_NON_NULL(3)` + a multi-line parameter list, which the grammar recovers as `parenthesized_declarator[ERROR, function_declarator]`). The declared-name lookup scanned the function_declarator's DIRECT children, so neither was found: no method symbol, and because the caller pushes the function scope out of that same result, no scope — so parameters never bound and their reads resolved outward (the lane's last unexplained edge, `uses binary_reader -> strict @8299`; 14 method symbols lost in that one header). Pinned by cpp/wrapped-declarator-names-612 (both spellings; the macro one carries the ERROR exactly as the corpus does) and F9-PROBE-CPP-WRAPPED-DECLARATOR-SCOPE; the macro spelling cannot live in a probe because the battery refuses snippets whose tree has errors. One mutant CAUGHT.",
     "cpp fabricated `uses` duplicates for template-wrapped member calls (CPPD14)": "Three `uses <owner> -> get_ref` edges the oracle does not derive, which HEAD hid behind the declarator bug (the wrong local binding happened to be named `get_ref`). Suppressed through the member-leaf rule's template climbing plus a narrow declaration-name guard; the corpus reads unobstructed (0/0) with the suppression in place, and cpp/wrapped-declarator-names-612 pins the declaration-name half.",
-    "the F9 battery's oracle loader kept a second copy of the wasm table": "`oracleFor` loaded the grammar from a hand-kept 8-language map that duplicated LANGS verbatim and had no `cpp` entry — so a cpp probe that pins an ORACLE contract (the only kind that catches collusion, which is exactly what the template-declaration class was) could not be written at all. It now reads LANGS, the F5 sweep's own table. Found by trying to write the probe, which is the same way the lane's other instrument gaps were found."
+    "the F9 battery's oracle loader kept a second copy of the wasm table": "`oracleFor` loaded the grammar from a hand-kept 8-language map that duplicated LANGS verbatim and had no `cpp` entry — so a cpp probe that pins an ORACLE contract (the only kind that catches collusion, which is exactly what the template-declaration class was) could not be written at all. It now reads LANGS, the F5 sweep's own table. Found by trying to write the probe, which is the same way the lane's other instrument gaps were found.",
+    "the M60 objc grammar wave (#743's class, objc half)": "The lane's sampling universe was extended to the header half the product already feeds it (`ext: \"m,h\"` behind the objective-c content guard), and the header half exposed the #743 class in its own idiom: a BARE macro invocation line at file scope immediately before an `@`-declaration (`NS_ASSUME_NONNULL_BEGIN` .. `_END`, which wraps every Apple header) was read as the first specifier of a declaration that then swallowed the `@interface` line into an ERROR — 11 headers, 122 real symbols, AFHTTPSessionManager.h analysing to 0 of its 37 declared symbols, plus phantom symbols minted from the wreckage (`variable NSObject`, `variable void`, `variable provider`). Landed as a grammar rule (grammars/tree-sitter-objc, rebuilt wasm): `macro_prefixed_objc_declaration`, no conflict entry demanded, `prec(-1)` load-bearing (dropping it was built and refused: `Add a conflict for these rules: type_specifier, macro_prefixed_objc_declaration`). Full-corpus A/B: 0 files worsened, 0 clean files perturbed, ERROR/MISSING nodes 795 -> 582, analyzer output diffed edge by edge (the differential cannot answer this — its oracle walks the same tree) with 0 real symbol losses and 0 relationship losses against +113 symbols / +158 relationships. The one residue (`prec(-1)` leaves two STACKED macro lines to the `declaration` path, which published `variable PROTOCOL_MACRO`) is refused in the analyzer by isUnterminatedDeclaration, the family's existing ERROR policy. Pinned by objc/macro-prefixed-declaration (which FAILS on the committed wasm and passes on the new one) + objc/publish-unterminated-declaration. Record: reviews/m60-743-objc-grammar-macro-specifier.md."
   }
 }

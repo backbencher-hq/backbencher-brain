@@ -7851,6 +7851,13 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "runBlock", target: "handler", isExternal: true, weight: 1, confidence: 0.9, metadata: { isBareRead: true } }] }),
   },
   {
+    id: "objc/publish-unterminated-declaration",
+    language: "objc",
+    defectClass: "symbol-fabrication",
+    description: "M60 grammar-wave regression: the unterminated-declaration refusal is reverted, re-publishing the specifier identifier of a `declaration` closed by a MISSING `;` — the shape two STACKED macro lines (NS_ASSUME_NONNULL_END then the next macro) parse into, which is the phantom class the #743 grammar wave removed for c/cpp (`variable NS_ASSUME_NONNULL_END`); caught by objc/macro-prefixed-declaration expectSymbolCount/forbidSymbols",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "NS_ASSUME_NONNULL_END", kind: "variable", range: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }, metadata: { objcSpecific: true } }] }),
+  },
+  {
     id: "objc/emit-synthesize-as-bare-read",
     language: "objc",
     defectClass: "relationship-fabrication",
