@@ -3233,6 +3233,14 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
   }
   while (stack.length > 0) {
     const n = stack.pop()!
+    // NOTE (#889 round): the guard for grammar error regions is deliberately
+    // NARROW — see the composite-literal branch below. Skipping every ERROR
+    // subtree here was the first draft, and it cost 4 real calls the analyzer
+    // legitimately emits from recovered regions (the analyzer's own walk skips
+    // ERROR subtrees, but its SYMBOL walk still reaches functions that error
+    // recovery re-parsed afterwards, so a blanket oracle skip desynchronises
+    // the two sides in the other direction). Only the construction synthesis,
+    // which INVENTS a type name out of error-mangled text, is refused.
     if (n.type === "func_literal") {
       // Stored package-scope closure (non-IIFE, not inside any function body):
       // template, not executed at init -> skip body entirely. IIFE closures
@@ -3264,14 +3272,35 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
         edges.push({ label: "instantiates", from: "(expr)", target: name })
       }
     } else if (n.type === "composite_literal") {
+      // A GRAMMAR error region is not evidence of a construction (#889 round).
+      // The pinned tree-sitter-go errors on two LEGAL constructs — a
+      // package-scope generic function VALUE (`var _ = slices.Backward[[]int]`)
+      // and a method on an instantiated generic receiver (`func (Either[A, B])
+      // A() A`) — and error RECOVERY re-reads the next declaration's text as a
+      // composite literal: `func caller(s []int) {` became
+      // `composite_literal "s []int) { _ = s }"`, from which BOTH sides
+      // published `instantiates -> s`, a construction of a name the source
+      // never constructs (it is a parameter of the mangled declaration). The
+      // analyzer's composite pass never descends into an ERROR subtree; this is
+      // the same rule expressed against the flat DFS, so the fabrication
+      // disappears on both sides at once instead of reading as MISSING on one.
+      let inError = false
+      for (let p: any = n.parent; p; p = p.parent) {
+        if (p.type === "ERROR" || p.isMissing) {
+          inError = true
+          break
+        }
+      }
       // Composite-literal construction (`Foo{...}`, `&Foo{...}`,
       // `pkg.Foo{...}`) -> instantiates of the type leaf. Mirror of the
       // analyzer's analyzeGoCompositeLiteralConstruction (M37 #604): only
       // type_identifier / qualified_type children name a type; slice/map/
       // array literals carry wrapper type children and elided element
       // literals have none, so both fall through to no edge. Builtin guard
-      // matches the analyzer.
-      const typeN = n.childForFieldName?.("type") ?? (n.namedChildCount > 0 ? n.namedChild(0) : undefined)
+      // matches the analyzer. In an ERROR region no literal is read at all —
+      // but the traversal continues, because a real declaration can sit
+      // deeper inside a recovered region and must not be lost.
+      const typeN = inError ? undefined : (n.childForFieldName?.("type") ?? (n.namedChildCount > 0 ? n.namedChild(0) : undefined))
       let ctorTarget: string | undefined
       if (typeN && typeN.type === "type_identifier") {
         ctorTarget = typeN.text
@@ -6974,14 +7003,22 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
 export function deriveGoImplements(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  // Every map below is keyed by a name READ FROM SOURCE, so it must not inherit
+  // Object.prototype: a legal Go type named `constructor`, `toString` or
+  // `valueOf` made the lookup find the INHERITED function instead of "absent",
+  // and `structMethods[receiverType].add(...)` then threw — the go lane crashed
+  // outright on go-tools/go/callgraph/vta/vta.go (`func (c *constructor) ...`),
+  // which the canonical 60-file draw never reaches. Null-prototype records are
+  // the fix; `Object.keys`/`Object.entries` and every truthiness test behave
+  // identically, so nothing else about the oracle moves.
   // interfaceName -> Set<methodName>
-  const interfaces: Record<string, Set<string>> = {}
+  const interfaces: Record<string, Set<string>> = Object.create(null)
   // interfaceName -> Set<embeddedInterfaceName>
-  const embedded: Record<string, Set<string>> = {}
+  const embedded: Record<string, Set<string>> = Object.create(null)
   // structName -> Set<embeddedStructName> (Go struct embedding promotion)
-  const structEmbedded: Record<string, Set<string>> = {}
+  const structEmbedded: Record<string, Set<string>> = Object.create(null)
   // receiverType -> Set<methodName> (value AND pointer receivers merged)
-  const structMethods: Record<string, Set<string>> = {}
+  const structMethods: Record<string, Set<string>> = Object.create(null)
   // Generic type names (type_spec with type_parameter_list): implements
   // satisfaction across generic instantiations needs type UNIFICATION, so
   // BOTH sides refuse (M37 #604, mirrors the analyzer's hasGenerics skip).

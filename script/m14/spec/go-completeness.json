@@ -113,8 +113,16 @@
     ]
   },
   "gap": {
-    "_description": "Go declared-type reference graph is fixture-pinned (go/type-usage-graph). Remaining declaration-ish nodes \u2014 type_parameter_list (generics bounds), function_type (callback types) \u2014 are parsed but not emitted as standalone symbols; they are structural, not declaration sites. differential go-tools:go is 0 missing / 0 unexplained at the pinned floor. analyzer literals that are structural-internal (func_type/function_type, string_literal/interpreted_string_literal) are internal_silent by contract.",
-    "gaps": []
+    "_description": "Go declared-type reference graph is fixture-pinned (go/type-usage-graph). Remaining declaration-ish nodes \u2014 type_parameter_list (generics bounds), function_type (callback types) \u2014 are parsed but not emitted as standalone symbols; they are structural, not declaration sites. differential go-tools:go is 0 missing / 0 unexplained at the pinned floor; at FULL extent (#799 round, script/m14/tmp/go-799-surface.ts) go-tools reads 1,931 files / truth 30,700 / MISSING 10 / unexplained 2 and terraform 1,993 files / truth 40,927 / MISSING 22 / unexplained 0 \u2014 every row the #914 name-only `implements` oracle class, named rather than rounded away. analyzer literals that are structural-internal (func_type/function_type, string_literal/interpreted_string_literal) are internal_silent by contract.",
+    "gaps": [
+      {
+        "id": "GO-GAP-1",
+        "kind": "grammar capability (registered, NOT hidable)",
+        "statement": "Two LEGAL Go constructs have no representation in the pinned tree-sitter-go grammar \u2014 a package-scope generic function VALUE and a method on an INSTANTIATED GENERIC RECEIVER \u2014 and error recovery swallows the declarations that follow: 3 of 1,931 go-tools files, 92 declarations, 0 of 1,993 terraform files. Those declarations are not symbols and carry no `contains` edges in either direction.",
+        "why_not_a_fixture_expectation": "Writing the loss into an expectation is how a defect becomes a contract. The round fixed what it CAN fix (the fabricated construction, GO15), and pinned that the loss STOPS at the declaration: the calls inside a recovered body are published again (GO16). Fixture go/grammar-error-not-a-construction-889 deliberately does NOT assert the swallowed `caller` symbol, and go/error-region-callee-descend-799 asserts the calls without asserting the recovered declarations as symbols.",
+        "evidence": "script/m14/tmp/go-799-grammar-gap.ts (blast radius from the tree's ERROR regions) + go-799-lockcall2.ts, go-799-region-tree.ts (the recovered-shape probes)"
+      }
+    ]
   },
   "design_decision": {
     "decisions": [
@@ -278,6 +286,34 @@
         "status": "RULED",
         "question": "Go second review (2026-09-13): generic type parameters never bound (the entry loop visited parameter_list only, though params parse as parameter_declaration under type_parameter_list too), so a colliding file value misattributed on invalid code (`return T` emitted f->T for the const).",
         "resolution": "FIXED, explicitly unpinned: no valid-Go observable exists (a value-position use of a type-param name does not compile; type positions never read), so no fixture/mutant covers it \u2014 the shared bindParamsOf path is fixture-pinned via GO10, and lanes + F3 confirm zero valid-code impact. Kept for robustness on error-tolerant parses (3 lines)."
+      },
+      {
+        "id": "GO15",
+        "node_type": "grammar ERROR regions (composite literal, call/selector chains)",
+        "status": "FIXED",
+        "question": "The pinned tree-sitter-go errors on two LEGAL constructs \u2014 a package-scope generic function VALUE (`var _ = slices.Backward[[]int]`, Go 1.21+) and a method on an INSTANTIATED GENERIC RECEIVER (`func (Either[A, B]) A() A`, Go 1.18+) \u2014 and its error RECOVERY re-reads the FOLLOWING declaration's text as a composite literal (`func caller(s []int) {` -> `composite_literal \"s []int) { _ = s }\"`). Both sides derived `instantiates -> s` from it: a construction of a name the source never constructs, named after a PARAMETER.",
+        "resolution": "FIXED + PINNED (#799 round): a grammar error region is not evidence of a construction. The analyzer's composite-literal pass skips ERROR/isMissing subtrees, and the oracle's `composite_literal` branch refuses to read a literal inside one \u2014 while STILL DESCENDING, because real declarations sit deeper inside recovered regions (the `!leaf` prune of GO16 is the second half of that rule). Blast radius measured from the tree's own ERROR regions, not from a line count: 20 of 1,931 go-tools files parse with an error and 3 of them swallow declarations (92 in total, 37 from the generic-value shape: slicesbackward.go 37, slicescontains.go 31, internal/gcimporter/testdata/genmeth/a.go 24); terraform 0 of 1,993. 15 fabricated rows removed on go-tools. Fixture go/grammar-error-not-a-construction-889 (forbidRelationships names the fabricated edge) + mutant go/error-region-construction CAUGHT."
+      },
+      {
+        "id": "GO16",
+        "node_type": "package-scope call walk (callee that cannot be NAMED)",
+        "status": "FIXED",
+        "question": "`analyzeGoPackageScopeCalls` returned on any call_expression whose callee it could not name (parenthesized, index/generic instantiation, or parse-recovery debris), abandoning the node's whole SUBTREE. Measured at full extent: the only two non-implements MISSING rows the lane had were `s[i].Lock()` / `s[i].Unlock()` in go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go \u2014 lost while `s[i].String()`, twelve lines later in the SAME recovery region, was emitted. The difference was recovery luck, not source.",
+        "resolution": "FIXED + PINNED (#799 round): an unnameable callee claims no edge (it names no target) but the walk DESCENDS, exactly like the oracle's flat DFS. Full extent: MISSING 12 -> 10, analyzer edges +2, unexplained unchanged (2, both the #914 implements class). Fixture go/error-region-callee-descend-799 (expects calls -> Lock and calls -> Unlock; also pins `Backward[[]int](tail(nil))` -> calls -> tail, the generic-callee form of the same rule) + mutant go/error-region-callee-prunes-subtree CAUGHT."
+      },
+      {
+        "id": "GO17",
+        "node_type": "qualified type USE (references/declared_type, references/return_type)",
+        "status": "FIXED",
+        "question": "A qualified type use was published as SOURCE TEXT \u2014 `io.Reader`, `testing.T`, `types.Importer`, `template.Template` (1,162 + 56 rows on a 400-file draw) \u2014 while the lane's own `uses` targeted selector LEAVES (`pkg.Fn` -> `Fn`) and struct/interface embedding's `extends` had just been moved to the leaf. One node kind, two answers; and `.` is a character no Go declaration may contain, which is how `references|.` entered the lane's R10 separator vocabulary.",
+        "resolution": "FIXED + PINNED (#799 round, R10): a qualified type use is published under the LEAF the lane would declare for that type (`Reader`, `T`, `Importer`, `Template`) with the package-qualified spelling kept in `metadata.qualifiedType`. Fixtures go/type-usage-graph + go/relationship-and-payloads pin leaf + metadata; mutant go/qualified-type-raw-text CAUGHT by both. Separator targets 39,280 -> 11,933 over the full draw."
+      },
+      {
+        "id": "GO18",
+        "node_type": "import dependency (the import_spec edge)",
+        "status": "FIXED",
+        "question": "The dependency edge carried the `references` label with the module SPECIFIER as its target (`net/http`, `github.com/google/go-cmp/cmp`), which put `/`, `.` and `-` into the references TARGET surface \u2014 a vocabulary that could only be excused by an R10 ruling which would then also excuse a real spelling defect on the same label. A module specifier is not a name: it is a string literal naming a module.",
+        "resolution": "FIXED + PINNED (#799 round, R10): the dependency now rides the family's FIRST-CLASS `imports` kind (the direction #910 took for c; go's own requiredKinds has named `imports` since the systems wave), with `metadata.isImport` + `isGoImportDep` KEPT \u2014 completeness section B pins the kind from the marker, and classifyEvidenceTier gained the `imports` -> import_based branch (the seam the kotlin/T1 regression class lives in). The references surface is now separator-free, so a future foreign spelling there fails R10 immediately. Fixtures go/relationship-and-payloads (imports -> fmt) + go/callsite-lines-825 (the import_spec's line) + mutant go/import-dep-labeled-reference CAUGHT."
       }
     ]
   }
