@@ -132,7 +132,7 @@ const STRICT_RE = /^\s+\[strict\] ([a-z0-9_]+): truth=(\d+) covered-as-written=(
 const HOLD_RE = /^\s+\[strict\] ([a-z0-9_]+): identities hold/
 const BREACH_RE = /STRICT-INVARIANT BREACH ([a-z0-9_]+): (.+)$/
 
-function parseLane(lang: string, logPath: string, log: string): { repos: RepoRow[]; breaches: string[]; hardSamples: string[]; softSamples: string[] } {
+export function parseLane(lang: string, log: string): { repos: RepoRow[]; breaches: string[]; hardSamples: string[]; softSamples: string[] } {
   const repos: RepoRow[] = []
   const breaches: string[] = []
   const hardSamples: string[] = []
@@ -152,16 +152,35 @@ function parseLane(lang: string, logPath: string, log: string): { repos: RepoRow
     const s = STRICT_RE.exec(line)
     if (s) {
       if (!pending) throw new Error(`${lang}: a [strict] line with no repo line above it — the log is not the one this parser reads`)
-      pending.strictCovered = +s[2]
-      pending.strictMissing = +s[3]
-      pending.hidden = +s[4]
-      pending.hard = +s[5]
-      pending.soft = +s[6]
-      // the parentheses carry the PUBLISHED numbers for the SAME corpus — identity B
-      // is checked against them, not against a re-implementation of the loose rule.
-      if (+s[8] !== pending.publishedCovered || +s[9] !== pending.publishedMissing) {
-        breaches.push(`${pending.repo}: the [strict] line reports published covered=${s[8]} missing=${s[9]} but the repo line reported ${pending.publishedCovered}/${pending.publishedMissing} (the two halves of the log disagree)` )
+      // GROUPS: 2 truth, 3 covered-as-written, 4 strict-missing, 5 hidden, 6 hard, 7 soft,
+      // 8 published covered, 9 published missing. Read by NAME, then verified — this
+      // parser shipped an off-by-one that printed `strict-missing=12790` over a log that
+      // said 0, i.e. exactly the failure this instrument exists to find, so the checks
+      // below are what make the mapping falsifiable instead of trusted.
+      const [strictTruth, covered, missing, hidden, hard, soft, pubCovered, pubMissing] =
+        [+s[2], +s[3], +s[4], +s[5], +s[6], +s[7], +s[8], +s[9]]
+      if (line.replace(/\s+/g, " ").trim() !== `[strict] ${lang}: truth=${strictTruth} covered-as-written=${covered} strict-missing=${missing} hidden=${hidden} hard=${hard} soft=${soft} (published rule: covered=${pubCovered} missing=${pubMissing})`) {
+        breaches.push(`${pending.repo}: the [strict] line does not round-trip through the parser's own field order — the regex and the reader disagree: ${line.trim()}`)
       }
+      if (strictTruth !== pending.truth) {
+        breaches.push(`${pending.repo}: the [strict] line reports truth=${strictTruth} but the repo line reported ${pending.truth} (the pass read a different truth set than the published loops)`)
+      }
+      if (covered + missing !== strictTruth) {
+        breaches.push(`${pending.repo}: parser identity A: covered-as-written ${covered} + strict-missing ${missing} != truth ${strictTruth}`)
+      }
+      // the parentheses carry the PUBLISHED numbers for the SAME corpus — identity B is
+      // checked against them, not against a re-implementation of the loose rule.
+      if (pubCovered !== pending.publishedCovered || pubMissing !== pending.publishedMissing) {
+        breaches.push(`${pending.repo}: the [strict] line reports published covered=${pubCovered} missing=${pubMissing} but the repo line reported ${pending.publishedCovered}/${pending.publishedMissing} (the two halves of the log disagree)`)
+      }
+      if (missing - hidden !== pending.publishedMissing) {
+        breaches.push(`${pending.repo}: parser identity B: strict-missing ${missing} − hidden ${hidden} != published missing ${pending.publishedMissing}`)
+      }
+      pending.strictCovered = covered
+      pending.strictMissing = missing
+      pending.hidden = hidden
+      pending.hard = hard
+      pending.soft = soft
       continue
     }
     const b = BREACH_RE.exec(line)
@@ -176,6 +195,7 @@ function parseLane(lang: string, logPath: string, log: string): { repos: RepoRow
 function verdictOf(row: Omit<LaneRow, "verdict">): string {
   if (row.breaches.length) return "instrument-breach"
   if (row.after && fpKey(row.measuredAt) !== fpKey(row.after)) return "tree-moved"
+  if (row.repos.length === 0) return "no-output"
   const truth = row.repos.reduce((a, r) => a + r.truth, 0)
   if (truth === 0) return "no-corpus"
   if (row.measuredAt.analyzersDirty) return "dirty"
@@ -203,7 +223,7 @@ function measureLane(lang: string): LaneRow {
   const durationMs = Date.now() - t0
   const after = fingerprint()
   const log = fs.readFileSync(logPath, "utf8")
-  const parsed = parseLane(lang, logPath, log)
+  const parsed = parseLane(lang, log)
   const row: Omit<LaneRow, "verdict"> = {
     lang, measuredAt: before, after, durationMs, log: logPath,
     repos: parsed.repos, breaches: parsed.breaches,
@@ -283,7 +303,27 @@ function selftest(): number {
   convicts("invariant B convicts a pass that read a different truth set", { ...good, hidden: 0 }, /^B:/)
   convicts("invariant C convicts hard > hidden", { ...good, hard: 3 }, /^C:/)
   check("and a pass with no hidden row and matching counts is accepted", sharpnessInvariants({ truth: 10, covered: 8, missing: 2, hidden: 2, hard: 0, publishedMissing: 0 }).length === 0)
-  console.log(failures.length === 0 ? "selftest: the instrument separates the known-hidden pair and its identities convict a broken pass" : `selftest: ${failures.length} FAILURE(S)`)
+
+  // THE PARSER IS PART OF THE INSTRUMENT, and it shipped an off-by-one that printed
+  // `strict-missing=12790` over a log that said 0 — a false alarm of exactly the class
+  // this sweep exists to find. These cases pin the field mapping and prove the round-trip
+  // guard convicts a shifted line instead of accepting it.
+  const repoLine = "[lodash] javascript: files=55 tree-truth=12232 covered=12232 (100%) MISSING=0 | analyzer-edges=12232 unexplained=0 (0%) heuristic=0 hash=494e1b94766e8ade"
+  const strictLine = "  [strict] javascript: truth=12232 covered-as-written=12232 strict-missing=0 hidden=0 hard=0 soft=0  (published rule: covered=12232 missing=0)"
+  const okLog = `${repoLine}\n${strictLine}\n    [strict] javascript: identities hold, and the published rule hid nothing on this corpus\n`
+  const okParse = parseLane("javascript", okLog)
+  check("parser maps the [strict] fields by name", okParse.repos[0]?.strictCovered === 12232 && okParse.repos[0]?.strictMissing === 0 && okParse.repos[0]?.hidden === 0 && okParse.repos[0]?.hard === 0 && okParse.repos[0]?.soft === 0)
+  check("parser accepts a sound log", okParse.breaches.length === 0)
+  check("parser reads the repo row too", okParse.repos[0]?.truth === 12232 && okParse.repos[0]?.publishedMissing === 0 && okParse.repos[0]?.hash === "494e1b94766e8ade")
+  const shifted = parseLane("javascript", `${repoLine}\n  [strict] javascript: truth=12232 covered-as-written=12232 strict-missing=0 hidden=3 hard=3 soft=0  (published rule: covered=12232 missing=0)\n`)
+  check("parser CONVICTS a log whose hidden count breaks identity B", shifted.breaches.some((b) => /identity B/.test(b)))
+  const renamed = parseLane("javascript", `${repoLine}\n  [strict] javascript: truth=12232 covered-as-written=0 strict-missing=12232 hidden=0 hard=0 soft=0  (published rule: covered=12232 missing=0)\n`)
+  check("parser CONVICTS a log that reports the wrong field for the wrong value", renamed.breaches.length > 0)
+  check("parser refuses a [strict] line with no repo row above it (fail-closed)", (() => {
+    try { parseLane("javascript", `${strictLine}\n`); return false } catch { return true }
+  })())
+  check("parser records HARD/SOFT samples for triage", parseLane("javascript", `${repoLine}\n${strictLine}\n    HARD file.js :: calls a -> X.y   vs analyzer -> Z.y\n`).hardSamples.length === 1)
+  console.log(failures.length === 0 ? "selftest: the instrument separates the known-hidden pair, its identities convict a broken pass, and its parser round-trips a real log" : `selftest: ${failures.length} FAILURE(S)`)
   return failures.length === 0 ? 0 : 1
 }
 
