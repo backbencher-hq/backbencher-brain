@@ -77,19 +77,65 @@
 
 ## Complexity
 
+Declared budget: fixtures < 5 s (met: 0.33 s); corpus (309 files) < 60 s, symbols/s ≥ 200,
+relationships/s ≥ 200. **Met**, with the margins stated below rather than asserted — but see the
+*how many draws* paragraph: the declaration fixes the wall bound, and the load-stable comparison is
+`userCpuMsPerFile`.
+
+The count is the whole available Clean corpus, not a slice of it: every `.icl`/`.dcl` file
+under the corpus root `$HOME/fixtures/repositories` that is non-empty and ≤ 1 MiB —
+**309 of 312**, the three exclusions being 0-byte `clean-stdlib/_library.dcl`,
+`_startup.dcl` and `_system.dcl`. So the draw needs no `--limit` and is like-for-like with
+itself across runs, and the manifest's `setDigest` pins the exact set.
+
 - Single-pass iterative walk with an explicit stack (no recursion, no O(n²)
   scans). Multi-clause function merging is O(1) via `functionSymbolIndex`
   (key = `scope::name`). The post-loop contains pass is a single O(symbols)
   linear sweep.
-- Corpus envelope (clean_stdlib@6971a8a, 62 files ≥1KB):
-  1,307 symbols / 1,416 relationships in 3.0s (435 syms/s) — see
-  `validation/m12/results/clean-complexity.json`. **Disclosed: that artifact is unscorable
-  by the M60 envelope instrument** (`validation/m60/results/analyzer-complexity.json`,
-  verdict `unscorable`, severity 5) because it records no `loadRule` (#871), no
-  `corpusManifest` (#909) and no `userCpuMsPerFile`/`loadAvg1` on its corpus row — so the
-  wall-clock figure above is not load-stable and predates the v1.2.7 pin. Re-measuring it
-  with load context is owed, and it is the only documented number on this lane that is not
-  artifact-backed to the current standard.
+- Corpus envelope, **re-measured 2026-09-25** at the v1.2.7 pin and after the `.dcl` ruling:
+  **309 files → 6,338 symbols / 9,656 relationships in 4,757 ms** (1,332 symbols/s,
+  2,030 relationships/s) — `validation/m12/results/clean-complexity.json`. The frame is complete:
+  `loadRule`, `corpusManifest` with set digest `27935ec564834992` and `extensionFiltered: true`,
+  `loadAvg1` 2.75, `loadQuiet: true`, `userCpuMsPerFile` **29.9**. Against the declaration above
+  that is 4,757 ms of 60,000 ms (12.6x), 1,332 of ≥ 200 symbols/s (6.7x) and 2,030 of ≥ 200
+  relationships/s (10.2x).
+  The M60 envelope instrument now reads this lane **`within-budget`**
+  (`script/m60/analyzer-complexity-gate.ts`), where its predecessor read `unscorable`
+  (severity 5) — clean is the **second** lane in the tree with a scored envelope, c being the
+  first.
+- **How many draws, and why that matters.** The same rule was drawn twice within 90 seconds, both
+  draws on a box the harness itself judged quiet: **6,643 ms** at `load1` 3.35 and **4,757 ms** at
+  `load1` 2.75 — identical file set (digest `27935ec564834992`, so the *set* is not the variance) and
+  identical counts (6,338 / 9,656, so the *work* is not either). A wall swing of 39.6 % of the faster
+  draw is the measurement, not noise to round off: it is why `userCpuMsPerFile` (36.0 vs 29.9, 17 %)
+  is the number to compare across lanes, and why a wall row is evidence only when its frame names
+  the load it ran under. The artifact holds the second draw; both are recorded here.
+- The figure this replaces, kept rather than deleted: 62 files / 1,307 symbols / 1,416
+  relationships in 3.0 s from `corpusDir: "/tmp/clean-corpus-copy"` under the **v1.2.4** grammar.
+  A temp path that no longer exists means the number was never re-derivable, which is the #909
+  defect verbatim; it also predates both the v1.2.7 pin and the `.dcl` ruling, so the two rows are
+  not comparable — symbol density is 21.1 per file there and 20.5 here, i.e. the growth is the
+  corpus (62 → 309 files, 5 repos instead of 1), and a reader should not read the 5x count as a
+  5x parser improvement. This paragraph is the only place the old row survives, which is the point:
+  it is quoted as history, never cited as the current figure.
+- **The frame is attacked, not asserted.** `script/m14/tmp/clean-envelope-frame.ts` recomputes the
+  set digest with an independent walk (`find` + `sha256`, sharing nothing with the harness but the
+  format) — it reproduces `27935ec564834992` — re-derives `totalBytes`/`avgBytes`/`maxFileBytes`,
+  and then applies **8 frame mutations to copies** of the artifact (`loadRule` removed, manifest
+  removed, `setDigest` removed, `extensionFiltered=false`, `loadAvg1` removed, `loadQuiet=false`,
+  `userCpuMsPerFile` removed, fixtures-only) and requires the instrument's own reader to name a gap
+  for each. 8/8, plus the control (the committed artifact has no gap and reads `within-budget`).
+  The probe also caught a real defect in the first draft of this paragraph: it had draw 1's
+  throughput (954/1,454) written beside draw 2's wall time (the artifact's rates for the row it
+  holds are 1,332/2,030).
+- **Disclosed, and this one is not the lane's to fix:** `script/m60/analyzer-complexity-gate.ts`,
+  its register `validation/m60/analyzer-budget-register.json` and its census
+  `validation/m60/results/analyzer-complexity.json` are **untracked in this checkout** — the R6
+  instrument exists on no ref — and the `package.json` wiring that runs it (`audit:complexity`, plus
+  its place in `npm run verify`) is uncommitted too. So every claim in this section is true of
+  `validation/m12/results/clean-complexity.json`, which **is** committed, and of the instrument in
+  this working tree; the verdict's own artifact and this lane's `paid` register entry are not in
+  history yet. Recorded as `reviews/m60-clean-grammar-127-adjudication.md` §13.6.
 - Cyclomatic complexity (`metadata.cyclomaticComplexity`) counts `case_expression`,
   `case_alternative`, `guard_equation` (function guards), `guard` (list-comprehension
   qualifiers) and `binary_expression`. Before the fix it counted `guard` and NOT

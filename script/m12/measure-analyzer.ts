@@ -78,7 +78,13 @@ function listFiles(dir: string, subject: boolean): string[] {
   const walk = (d: string) => {
     for (const entry of readdirSync(d).sort()) {
       const full = join(d, entry)
-      const st = statSync(full)
+      // throwIfNoEntry: the same idiom as the root check above, and load-bearing: the
+      // corpus root contains DANGLING SYMLINKS (measured: cabal's
+      // tests/fixtures/project-root/cabal.project.symlink.broken), and a bare statSync
+      // threw ENOENT out of the walk — so pointing a lane at the real corpus root did
+      // not measure a thinner set, it measured NOTHING, for every lane at once.
+      const st = statSync(full, { throwIfNoEntry: false })
+      if (!st) continue
       if (st.isDirectory()) walk(full)
       else if (st.isFile() && st.size > 0 && st.size <= MAX_BYTES) {
         if (subject) {
