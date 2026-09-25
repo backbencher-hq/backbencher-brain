@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-25T16:12:54.883Z",
+  "snapshotAt": "2026-09-25T19:07:34.011Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 102,
+  "count": 103,
   "issues": [
     {
       "number": 134,
@@ -605,11 +605,6 @@
       ]
     },
     {
-      "number": 926,
-      "title": "groovy: .gsp templates were routed to the Groovy grammar (39/39 = 100% unparseable) — the sibling of #913",
-      "labels": []
-    },
-    {
       "number": 930,
       "title": "m60: the `lines` cell is defined as `alive`, so ONE writer satisfies it — php passed with 92.7% of its edges unlined",
       "labels": [
@@ -628,6 +623,22 @@
       "title": "M60.R8/R10 adjudicate a COMMITTED census artifact, so a dirty-derived one passes its gate forever — php's framework surface is un-adjudicated at HEAD (0 sites, 1 binding) and cpp's committed R10 row is not HEAD-true",
       "labels": [
         "bug"
+      ]
+    },
+    {
+      "number": 947,
+      "title": "groovy: a command expression whose argument is a bare name parses as a declaration — method published as a type, call and read lost (368 sites, 96 files)",
+      "labels": [
+        "bug",
+        "lang:groovy"
+      ]
+    },
+    {
+      "number": 948,
+      "title": "m12: the groovy hand audit reads FAIL (precision 0.707) because the analyzer's fixture-pinned behaviour moved under it",
+      "labels": [
+        "bug",
+        "lang:groovy"
       ]
     }
   ]
