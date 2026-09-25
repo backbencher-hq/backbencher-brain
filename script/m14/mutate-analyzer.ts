@@ -4038,6 +4038,37 @@ export const MUTANTS: Mutant[] = [
       x.type === "overrides" ? { ...x, metadata: { ...x.metadata, overrideSig: undefined } } : x) }),
   },
   {
+    id: "kotlin/override-grandparent-ancestor-revert",
+    language: "kotlin",
+    defectClass: "attribution",
+    description: "#949 regression: the pre-fix generic-substitution mirror, at the point where it is observable — an override whose DECLARING ancestor is a GRANDPARENT interface is republished against the DIRECT parent (which does not declare the member at all) at the 0.5 first-supertype guess. Derived from the result alone: the direct parent is the source owner's own first extends/implements target, so this is the measured pre-fix output rather than a hardcoded string, and the direct-parent case (a verified edge that already names its parent) is left standing. Caught by kotlin/override-declaring-ancestor-949, which requires IRenderer.render at 0.9/structural for both spellings AND forbids Base.render at either tier.",
+    transform: r => {
+      const directParent = new Map<string, string>()
+      for (const x of r.relationships ?? []) {
+        if ((x.type === "extends" || x.type === "implements") && typeof x.source === "string" && typeof x.target === "string" && !directParent.has(x.source)) {
+          directParent.set(x.source, x.target)
+        }
+      }
+      return { ...r, relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "overrides" || x.metadata?.reasonCode !== "in-file-verified") return x
+        const owner = String(x.source ?? "").split(".")[0]
+        const parts = String(x.target ?? "").split(".")
+        const targetOwner = parts[0]
+        const parent = directParent.get(owner)
+        // The pre-fix resolver only reached a grandparent when its signature
+        // test failed; an edge that already names the direct parent is what the
+        // guess tier would have published anyway, so it is left alone.
+        if (!parent || parent === targetOwner) return x
+        return {
+          ...x,
+          target: [parent, ...parts.slice(1)].join("."),
+          confidence: 0.5,
+          metadata: { ...x.metadata, overrideParent: parent, reasonCode: "first-supertype-guess", evidenceClass: "inferred" },
+        }
+      }) }
+    },
+  },
+  {
     id: "java/type-source-revert",
     language: "java",
     defectClass: "attribution",

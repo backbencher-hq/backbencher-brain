@@ -18,6 +18,61 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent } from "./override-context"
 
+/**
+ * #949: does a parameter signature carry a GENERIC TYPE VARIABLE — Kotlin's
+ * single-capital convention (`T`, `R`)? Char-scan, no regex: analyzers carry no
+ * regex literals (R2 register).
+ *
+ * This is a DELIBERATE mirror of the differential's own `hasTypeVar`
+ * (differential.ts, the `sigCompatible` used by the override truth derivation),
+ * boundary-for-boundary: a type variable is recognised only at `(`, `,`, `:`,
+ * `|`, `[`, `<`, `&` or string start, and only as a SINGLE capital (a following
+ * letter makes it concrete).
+ *
+ * The previous kotlin version split the signature on `,` and required the whole
+ * token to be one capital letter. That reads `(T?)` as CONCRETE — the nullable
+ * form is how Kotlin types every generic parameter — so the documented
+ * generic-substitution fallback never fired, and an override whose declaring
+ * ancestor is a GRANDPARENT interface fell through to the first-supertype guess
+ * (measured on exposed-core ColumnType.kt: `ColumnWithTransform : ColumnType`,
+ * `ColumnType : IColumnType` with `IColumnType.valueToDB sig=(T?)`: the analyzer
+ * published `ColumnType.valueToDB` at 0.5 where the truth says
+ * `IColumnType.valueToDB`, and `ColumnType` declares no such member at all).
+ * The judge already reads `(T?)` as a type variable; the analyzer now reads the
+ * same signature the same way, which is the only property that keeps the
+ * differential measuring one question rather than two.
+ *
+ * Mirroring is not free, and the boundary is registered rather than widened:
+ * `(Byte?)` and `(Wrapped?)` are NOT type variables (`Byte` is concrete;
+ * `Wrapped` is a multi-letter parameter the single-capital convention cannot
+ * name), exactly as the judge reads them — which is why the true overrides here
+ * fire on the ANCESTOR's `(T?)` and not on the child's sig. The judge's residual
+ * blindness (type variables in nested `<T>` positions) is oracle debt, not paid
+ * for with a fabricated red row.
+ */
+function kotlinSigHasTypeVar(sig: string): boolean {
+  const n = sig.length
+  let i = 0
+  while (i < n) {
+    const c = sig[i]
+    if (c === "(" || c === "," || c === ":" || c === "|" || c === "[" || c === "<" || c === "&" || i === 0) {
+      let j = i
+      while (j < n && (sig[j] === "(" || sig[j] === "[" || sig[j] === " " || sig[j] === ":" || sig[j] === ",")) j++
+      if (j < n && sig[j] >= "A" && sig[j] <= "Z") {
+        let end = j + 1
+        while (end < n && ((sig[end] >= "A" && sig[end] <= "Z") || (sig[end] >= "a" && sig[end] <= "z") || (sig[end] >= "0" && sig[end] <= "9") || sig[end] === "_")) end++
+        if (end === j + 1) return true
+        i = end
+        continue
+      }
+      i = j > i ? j : i + 1
+      continue
+    }
+    i++
+  }
+  return false
+}
+
 export interface KotlinContext {
   content: string
   currentFile: string
@@ -365,19 +420,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!sigs || sigs.size === 0) return false
             if (overrideSig && sigs.has(overrideSig)) return true
             // No signature on a side (extractor gap) OR a generic type
-            // variable in either sig: name-only pairing. A sig carrying a
-            // bare capitalized token (T, R) is a type VARIABLE — concrete
-            // types (Int, String) still require the exact sig so overloads
-            // never pair.
-            const hasTypeVar = (sig: string): boolean => {
-              const inner = sig.slice(1, -1)
-              if (!inner) return false
-              for (const tok of inner.split(",")) {
-                const t2 = tok.trim()
-                if (t2.length === 1 && t2 >= "A" && t2 <= "Z") return true
-              }
-              return false
-            }
+            // variable in either sig: name-only pairing. A type variable is
+            // a single capital (T, R) at a token boundary — `(T?)` included,
+            // which is how Kotlin writes a nullable generic parameter and
+            // which the old token-split mirror misread as a concrete type
+            // (#949). Concrete types (Int, String, Byte?) still require the
+            // exact sig so overloads never pair. The scan is the judge's own
+            // (kotlinSigHasTypeVar) — see its comment for why mirroring it
+            // boundary-for-boundary is load-bearing.
+            const hasTypeVar = (sig: string): boolean => kotlinSigHasTypeVar(sig)
             if (!overrideSig) return true
             for (const s2 of sigs) if (hasTypeVar(s2) || hasTypeVar(overrideSig)) return true
             return false
