@@ -38,10 +38,14 @@
  * a lane that legitimately publishes bare targets is not libelled as hiding rows.
  *
  * FINGERPRINTING, because this tree is edited by several actors at once. Every row
- * carries the HEAD, the harness digest and the analyzer digest it was measured at,
- * sampled BEFORE and AFTER the lane; a lane whose inputs moved mid-run is recorded
- * `tree-moved` and never counted as measured. A lane measured with a dirty analyzer
- * is marked `dirty` and can never be cited as re-derivable.
+ * carries the digest of the IMPORT CLOSURE it actually reads — the harness's closure,
+ * the lane's analyzer closure, the lane's grammar binary — sampled BEFORE and AFTER
+ * the lane; a lane whose inputs moved mid-run is recorded `tree-moved` and never
+ * counted as measured. The identity is a property of the BYTES, not of the commit:
+ * keying it on HEAD (the first version of this script did) discarded the javascript row
+ * while its own inputs never changed, because an unrelated commit had landed somewhere
+ * in the tree. A lane whose closure contains a dirty file is marked `dirty` and can
+ * never be cited as re-derivable.
  *
  * CLI:
  *   bun script/m60/verify-oracle-sharpness.ts --full            # measure every lane not yet measured
@@ -79,24 +83,58 @@ const git = (args: string[]) => {
   const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" })
   return (r.stdout ?? "").trim()
 }
-const analyzerFiles = () => fs.readdirSync(path.join(ROOT, "src", "ast"))
-  .filter((f) => /^real-.*-analyzer\.ts$/.test(f)).sort()
 
-/** The inputs this measurement depends on: the harness, every analyzer, each lane's
- *  grammar binary. Sampled before and after each lane. */
-function fingerprint() {
+/** The lane's IMPORT CLOSURE — the files whose content the measurement actually
+ *  reads. HEAD is NOT part of the identity: this tree is edited by several actors
+ *  at once, so keying on the commit made every lane `tree-moved` the moment an
+ *  unrelated commit landed anywhere (measured: the javascript lane's first row was
+ *  discarded that way while its own inputs never changed). What makes a row
+ *  re-derivable is that these bytes are the same, which is a property of the files,
+ *  not of the commit graph. */
+function resolveImport(fromFile: string, spec: string): string | null {
+  if (!spec.startsWith(".")) return null
+  const base = path.resolve(path.dirname(fromFile), spec)
+  for (const cand of [base, `${base}.ts`, `${base}.tsx`, `${base}.mts`, `${base}.json`, path.join(base, "index.ts")]) {
+    try { if (fs.statSync(cand).isFile()) return cand } catch { /* keep looking */ }
+  }
+  return null
+}
+export function closure(entry: string, seen = new Set<string>()): Set<string> {
+  const abs = path.resolve(entry)
+  if (seen.has(abs)) return seen
+  seen.add(abs)
+  let src = ""
+  try { src = fs.readFileSync(abs, "utf8") } catch { return seen }
+  for (const m of src.matchAll(/(?:from|import|import\(|require\()\s*["']([^"']+)["']/g)) {
+    const r = resolveImport(abs, m[1])
+    if (r) closure(r, seen)
+  }
+  return seen
+}
+
+/** The inputs one lane's row depends on: the harness's own closure, the lane's
+ *  analyzer closure, and the lane's grammar binary. Sampled before and after. */
+function fingerprint(lang: string) {
+  const cfg = (LANGS as any)[lang] as { analyzerFile: string; wasm: string } | undefined
+  const files = new Set<string>([...closure(DIFFERENTIAL)])
+  if (cfg?.analyzerFile) for (const f of closure(path.join(ROOT, "src", "ast", `${cfg.analyzerFile}.ts`))) files.add(f)
+  const wasm = cfg?.wasm ? path.join(ROOT, "wasm", cfg.wasm) : null
+  const inputs = [...files].map((f) => path.relative(ROOT, f)).sort()
+  const digests = inputs.map((rel) => `${rel}:${shaFile(path.join(ROOT, rel))}`)
+  if (wasm) digests.push(`wasm/${path.basename(wasm)}:${shaFile(wasm)}`)
+  const dirty = git(["status", "--porcelain", "--", ...inputs])
+    .split("\n").filter(Boolean).map((l) => l.slice(3).trim())
   const head = git(["rev-parse", "HEAD"])
-  const analyzerDigests = analyzerFiles().map((f) => `${f}:${shaFile(path.join(ROOT, "src", "ast", f))}`)
   return {
     head,
     headShort: head.slice(0, 8),
-    differential: shaFile(DIFFERENTIAL),
-    analyzers: sha(analyzerDigests.join("\n")),
-    analyzersDirty: git(["status", "--porcelain", "--", ...analyzerFiles().map((f) => `src/ast/${f}`)]).length > 0,
-    differentialDirty: git(["status", "--porcelain", "--", "script/m14/differential.ts"]).length > 0,
+    inputs: inputs.length + (wasm ? 1 : 0),
+    digest: sha(digests.join("\n")),
+    dirty,
+    dirtyInputs: dirty.length,
   }
 }
-const fpKey = (f: ReturnType<typeof fingerprint>) => `${f.head}:${f.differential}:${f.analyzers}`
+const fpKey = (f: ReturnType<typeof fingerprint>) => f.digest
 
 interface RepoRow {
   repo: string
@@ -198,7 +236,7 @@ function verdictOf(row: Omit<LaneRow, "verdict">): string {
   if (row.repos.length === 0) return "no-output"
   const truth = row.repos.reduce((a, r) => a + r.truth, 0)
   if (truth === 0) return "no-corpus"
-  if (row.measuredAt.analyzersDirty) return "dirty"
+  if (row.measuredAt.dirtyInputs > 0) return "dirty"
   const hard = row.repos.reduce((a, r) => a + r.hard, 0)
   const soft = row.repos.reduce((a, r) => a + r.soft, 0)
   const hidden = row.repos.reduce((a, r) => a + r.hidden, 0)
@@ -211,7 +249,7 @@ function verdictOf(row: Omit<LaneRow, "verdict">): string {
 function measureLane(lang: string): LaneRow {
   fs.mkdirSync(LOG_DIR, { recursive: true })
   fs.mkdirSync(WORK, { recursive: true })
-  const before = fingerprint()
+  const before = fingerprint(lang)
   const logPath = path.join(LOG_DIR, `${lang}.log`)
   const fd = fs.openSync(logPath, "w")
   const t0 = Date.now()
@@ -221,7 +259,7 @@ function measureLane(lang: string): LaneRow {
   })
   fs.closeSync(fd)
   const durationMs = Date.now() - t0
-  const after = fingerprint()
+  const after = fingerprint(lang)
   const log = fs.readFileSync(logPath, "utf8")
   const parsed = parseLane(lang, log)
   const row: Omit<LaneRow, "verdict"> = {
@@ -259,7 +297,7 @@ function printTable(state: any) {
     console.log(
       `${pad(lang, 11)}${num(sum((r) => r.files), 7)}${num(sum((r) => r.truth), 8)}${num(sum((r) => r.publishedMissing), 8)}` +
       `${num(sum((r) => r.strictMissing), 11)}${num(sum((r) => r.hidden), 8)}${num(sum((r) => r.hard), 5)}${num(sum((r) => r.soft), 6)}` +
-      `  ${pad(row.verdict, 9)} [${row.measuredAt.headShort}${row.measuredAt.analyzersDirty ? " dirty" : ""}]`,
+      `  ${pad(row.verdict, 9)} [${row.measuredAt.headShort} in=${row.measuredAt.digest}${row.measuredAt.dirtyInputs ? " dirty" : ""}]`,
     )
   }
   console.log(`${pad("TOTAL", 11)}${num(totals.files, 7)}${num(totals.truth, 8)}${num(totals.pub, 8)}${num(totals.miss, 11)}${num(totals.hidden, 8)}${num(totals.hard, 5)}${num(totals.soft, 6)}`)
@@ -323,6 +361,14 @@ function selftest(): number {
     try { parseLane("javascript", `${strictLine}\n`); return false } catch { return true }
   })())
   check("parser records HARD/SOFT samples for triage", parseLane("javascript", `${repoLine}\n${strictLine}\n    HARD file.js :: calls a -> X.y   vs analyzer -> Z.y\n`).hardSamples.length === 1)
+
+  // The fingerprint must be a CONTENT identity over the closure, so that a commit
+  // anywhere else in the tree cannot invalidate a lane whose inputs are unchanged.
+  const jsClosure = closure(DIFFERENTIAL)
+  check("fingerprint: the harness closure is non-trivial", jsClosure.size > 1)
+  check("fingerprint: the closure contains its own entry (a one-file fingerprint would be vacuous)", jsClosure.has(path.resolve(DIFFERENTIAL)))
+  check("fingerprint: the closure is relative-import only (a package spec is not a local input)", resolveImport(DIFFERENTIAL, "node:fs") === null && resolveImport(DIFFERENTIAL, "../m14/differential") !== null)
+  check("fingerprint: a lane's identity is the analyzer it names, and differs between lanes", fpKey(fingerprint("javascript")) !== fpKey(fingerprint("typescript")))
   console.log(failures.length === 0 ? "selftest: the instrument separates the known-hidden pair, its identities convict a broken pass, and its parser round-trips a real log" : `selftest: ${failures.length} FAILURE(S)`)
   return failures.length === 0 ? 0 : 1
 }
@@ -336,29 +382,42 @@ function main() {
 
   if (selftestOnly) process.exit(selftest())
   if (args.includes("--help") || args.length === 0) {
-    console.log("bun script/m60/verify-oracle-sharpness.ts [--full|--lang a,b|--report|--selftest]")
+    console.log("bun script/m60/verify-oracle-sharpness.ts [--full|--lang a,b|--report|--fingerprint|--selftest]")
     console.log(`state: ${STATE}`)
+    process.exit(0)
+  }
+  // A diagnostic worth having on its own: WHICH files a lane's row depends on, and
+  // whether any of them is dirty — i.e. why a row is or is not re-derivable.
+  if (args.includes("--fingerprint")) {
+    const only = langsArg ? langsArg.split(",").map((s) => s.trim()).filter(Boolean) : LANE_ORDER
+    for (const lang of only) {
+      const fp = fingerprint(lang)
+      const cfg = (LANGS as any)[lang]
+      const closureFiles = [...closure(DIFFERENTIAL)].map((f) => path.relative(ROOT, f))
+        .concat(cfg?.analyzerFile ? [...closure(path.join(ROOT, "src", "ast", `${cfg.analyzerFile}.ts`))].map((f) => path.relative(ROOT, f)) : [])
+      console.log(`${pad(lang, 11)} ${fp.inputs} input(s) digest=${fp.digest}${fp.dirtyInputs ? ` DIRTY(${fp.dirtyInputs}): ${fp.dirty.join(", ")}` : " clean"}`)
+      if (args.includes("--verbose")) for (const f of [...new Set(closureFiles)].sort()) console.log(`    ${f}`)
+    }
     process.exit(0)
   }
 
   const state = loadState()
-  const current = fingerprint()
   const langs = langsArg ? langsArg.split(",").map((s) => s.trim()).filter(Boolean) : LANE_ORDER
   const unknown = langs.filter((l) => !LANE_ORDER.includes(l))
   if (unknown.length) { console.error(`unknown lane(s): ${unknown.join(", ")}`); process.exit(2) }
 
   if (reportOnly) { printTable(state); process.exit(0) }
 
+  const now = fingerprint(langs[0])
   const todo = langs.filter((lang) => {
     const row: LaneRow | undefined = state.lanes[lang]
     if (!row) return true
     if (!wantFull && !langsArg) return false
-    // re-measure a row that was measured at a different harness/analyzer digest, or
-    // whose inputs moved under it, or that was measured dirty
-    return fpKey(row.measuredAt) !== fpKey(current) || row.verdict === "tree-moved" || row.verdict === "dirty" || row.verdict === "run-failed"
+    // re-measure a row whose OWN inputs changed under it, or that was measured dirty
+    return fpKey(row.measuredAt) !== fpKey(fingerprint(lang)) || row.verdict === "tree-moved" || row.verdict === "dirty" || row.verdict === "run-failed"
   })
 
-  console.log(`oracle sharpness sweep — ${todo.length} lane(s) to measure, at ${current.headShort} (harness ${current.differential}${current.differentialDirty ? " DIRTY" : ""}, analyzers ${current.analyzers}${current.analyzersDirty ? " DIRTY" : ""})`)
+  console.log(`oracle sharpness sweep — ${todo.length} lane(s) to measure, at ${now.headShort} (harness closure ${now.inputs} file(s), digest ${now.digest}${now.dirtyInputs ? ` DIRTY: ${now.dirty.join(", ")}` : ""})`)
   console.log(`state ${STATE}; one log per lane in ${LOG_DIR}\n`)
 
   for (const lang of todo) {
@@ -389,4 +448,4 @@ function main() {
   process.exitCode = hard.length || breach.length ? 1 : 0
 }
 
-main()
+if (process.argv[1]?.endsWith("verify-oracle-sharpness.ts")) main()
