@@ -395,7 +395,12 @@ for (const r of rows.filter(r => !r.done)) {
   console.log(`  ${r.lang} (${failed.join(", ")}): ${why.join(" | ")}`)
 }
 
-writeFileSync(OUT, JSON.stringify({
+// The emission is guarded: this module EXPORTS `trackerHits` so the audit that checks
+// the cell can use the cell's own rule, and an import must not rewrite the artifact it
+// is auditing. Measured the hard way — the audit, run from a checkout whose P1 and
+// depth-probes were another lane's in-flight edits, clobbered LCM.json with those
+// stamps. A reader that writes is not a reader.
+if (import.meta.main) writeFileSync(OUT, JSON.stringify({
   gate: "M60.LCM",
   title: "Per-language completion matrix — a tick only where every applicable dimension is green",
   at: new Date().toISOString(),
@@ -438,4 +443,4 @@ writeFileSync(OUT, JSON.stringify({
   nonAnalyzerDetected,
   totals: { languages: rows.length, ticked: ticked.length },
 }, null, 1) + "\n")
-console.log(`\nevidence written: validation/m60/results/LCM.json`)
+if (import.meta.main) console.log(`\nevidence written: validation/m60/results/LCM.json`)
