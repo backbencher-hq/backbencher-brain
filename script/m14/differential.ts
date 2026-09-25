@@ -3359,9 +3359,17 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
               // Embedded field: no field_identifier/name child, only a type.
               const hasName = (fd.namedChildren ?? []).some((c: any) => c.type === "field_identifier" || c.type === "identifier")
               if (hasName) continue
-              const typeN = fd.childForFieldName?.("type") ?? (fd.namedChildren ?? []).find((c: any) => c.type === "type_identifier" || c.type === "qualified_type")
+              const typeN =
+                fd.childForFieldName?.("type") ??
+                (fd.namedChildren ?? []).find(
+                  (c: any) => c.type === "type_identifier" || c.type === "qualified_type" || c.type === "generic_type" || c.type === "pointer_type",
+                )
               if (typeN) {
-                const t = lastSegment(typeN.text)
+                // The embedded field's NAME, not its text: `lastSegment(raw)`
+                // put the last dot INSIDE a generic's type arguments and
+                // published `Example]` for `listers.ResourceIndexer[*crv1.Example]`
+                // (see goEmbeddedLeaf).
+                const t = goEmbeddedLeaf(typeN)
                 if (t && !seen.has("ext:" + nm.text + "->" + t)) {
                   seen.add("ext:" + nm.text + "->" + t)
                   edges.push({ label: "extends", from: nm.text, target: t })
@@ -7048,6 +7056,42 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+/**
+ * The embedded field's NAME — the oracle-side mirror of the analyzer's
+ * `goEmbeddedFieldName` (src/ast/real-go-analyzer.ts), written out here rather
+ * than imported because an oracle that shares the rule cannot see the rule.
+ *
+ * Why it exists (go-heavy corpus stress read, 2026-09-24): kubernetes' generated
+ * client code embeds INSTANTIATED GENERICS — `listers.ResourceIndexer[*crv1.Example]`,
+ * `*gentype.ClientWithListAndApply[*crv1.Example, *crv1.ExampleList, *applyconfigurationcrv1.ExampleApplyConfiguration]` —
+ * and the oracle used `lastSegment(raw text)`, whose last dot lands INSIDE the
+ * type arguments: it published `Example]` and
+ * `CustomResourceDefinitionApplyConfiguration]` as the embedded type's name
+ * while the analyzer published the LEAF (`ResourceIndexer`,
+ * `ClientWithListAndApply`). Both sides were then wrong about each other: on
+ * 13,488 kubernetes files the F5 comparison reads 648 MISSING + 557
+ * UNEXPLAINED `extends` rows, every one this shape. The two pinned corpora carry
+ * ZERO generic embedded fields, so no draw of them could ever show it.
+ *
+ * `T`, `*T`, `pkg.T`, `Generic[A, B]` and `*pkg.Generic[A, B]` all name the leaf
+ * of their BASE type; a leaf that is not an identifier names nothing honest.
+ */
+function goEmbeddedLeaf(typeNode: any): string | undefined {
+  let cur = typeNode
+  for (let guard = 0; guard < 8 && cur; guard++) {
+    if (cur.type === "pointer_type" || cur.type === "generic_type") {
+      cur = cur.namedChildCount > 0 ? cur.namedChild(0) : undefined
+      continue
+    }
+    break
+  }
+  if (!cur || (cur.type !== "type_identifier" && cur.type !== "qualified_type")) return undefined
+  const raw = String(cur.text ?? "")
+  const dot = raw.lastIndexOf(".")
+  const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : undefined
+}
+
 // Go implicit interface-implementation truth (duck typing): a struct S
 // implements interface I when S's receiver-method set (value OR pointer
 // receivers) contains every method I declares. Mirrors the analyzer's
@@ -7108,14 +7152,13 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
               if (nameF) continue // named field, not embedding
               const typeNode = fd.childForFieldName?.("type") ?? (fd.namedChildCount > 0 ? fd.namedChild(0) : undefined)
               if (!typeNode) continue
-              // Descend pointer/qualified wrappers to the leaf identifier.
-              let inner: any = typeNode
-              let guard = 0
-              while (inner && guard++ < 4 && (inner.type === "pointer_type" || inner.type === "qualified_type")) {
-                inner = inner.namedChildCount > 0 ? inner.namedChild(0) : undefined
-              }
-              const raw = inner?.text ?? typeNode.text
-              const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+              // Descend pointer/GENERIC/qualified wrappers to the leaf identifier —
+              // the generic wrapper is the go-heavy-corpus finding: without it the
+              // "leaf" of `listers.ResourceIndexer[*crv1.Example]` was `Example]`,
+              // a TYPE ARGUMENT recorded as an embedded struct whose methods were
+              // then promoted into the embedding struct's set (fabrication), while
+              // the real embedded type was never recorded (omission).
+              const leaf = goEmbeddedLeaf(typeNode)
               if (leaf) { if (!structEmbedded[nm]) structEmbedded[nm] = new Set(); structEmbedded[nm].add(leaf) }
             }
           }
