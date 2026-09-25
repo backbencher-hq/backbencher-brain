@@ -281,6 +281,8 @@ export const LANG_REPOS: Record<string, string> = {
   // F5-cert wave (CLJ): the clojure/clojure checkout (pin 2cea6925) was
   // already present as java's second corpus; it becomes clojure's primary.
   clojure: "clojure",
+  // F5 wave (CLEAN): Clyde (109 icl/dcl) is the lane's primary corpus.
+  clean: "Clyde",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -322,9 +324,28 @@ export const SECOND_CORPUS: Record<string, string> = {
   // cljs files, shallow clone @703a44cc) exercises dialect the core repo
   // does not (transducer-heavy, cljs interop, tooling macros).
   clojure: "clj-kondo",
+  // F5 wave (CLEAN): clean-stdlib (74 icl/dcl) is an independent corpus —
+  // the compiler's own standard library, a different dialect from Clyde
+  // (tooling). NOTE: 312 total Clean files on this box is short of the
+  // family's 900-file standard; disclosed, not hidden.
+  clean: "clean-stdlib",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
+// M60 (functional/clean lane): `--lang a,b` restricts the sweep to those
+// languages' (lang, repo) pairs — primary AND second corpus — so ONE lane can be
+// re-measured (and its own artifact emitted) without running the whole set.
+//
+// Measured gap: the harness had no such scope even though its own #943 note
+// refers to `--repo cython --lang python` as a one-lane probe — `--repo` routes
+// EVERY language at one repo, so that run measured python only by accident of
+// routing and could not see python's second corpus at all.
+const ONLY_LANGS = (() => {
+  const i = process.argv.indexOf("--lang")
+  if (i < 0 || i + 1 >= process.argv.length) return null
+  const set = process.argv[i + 1].split(",").map(s => s.trim()).filter(Boolean)
+  return set.length > 0 ? set : null
+})()
 // M49 W11 (Defect 3): the sweep cannot finish inside ONE wasm module. Every
 // lane constructs a Parser in the fixed-size web-tree-sitter heap and the
 // module degrades after ~19-31 lanes — then `new ParserClass()` aborts with
@@ -390,6 +411,9 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex,exs" },
   erlang: { wasm: "tree-sitter-erlang.wasm", analyzerFile: "real-erlang-analyzer", className: "RealErlangAnalyzer", ext: "erl" },
   clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj,cljc,cljs" },
+  // F5 wave (CLEAN): tree-sitter-clean v1.2.7 (pinned sha
+  // 9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec).
+  clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -9844,6 +9868,226 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   return edges
 }
 
+// Clean calls/instantiates/implements/references oracle (F5 wave).
+//
+// The clean lane had NO read oracle, so `differential.ts --repo Clyde` refused
+// with `derived ZERO truth edges` rather than certify a 0/0 row. This is
+// derived from the PINNED v1.2.7 grammar's tree shapes (probed: application's
+// `function:`/`argument:` fields, qualified_identifier's module:constructor/
+// name:identifier pair, function_declaration's `name` field, class_member ->
+// type_signature -> signature_name, instance_declaration's
+// name:instance_class/argument:constructor) and the analyzer's declared
+// contract (src/ast/real-clean-analyzer.ts):
+//
+//   - module_declaration names the file's module; each `module:` field child of
+//     an import_declaration emits module -> imported-module `references`
+//     (multiple names in one import emit one edge each);
+//   - instance_declaration emits `implements` target-type -> class and names
+//     the implementation after the TARGET type (the universal impl-naming
+//     contract: Rust `impl User`, Elixir `defimpl`, Haskell instance Stream);
+//   - an `application` emits `calls` for a qualified_identifier head (full
+//     qualified text, module qualification preserved) or an identifier head
+//     ONLY when that name is DECLARED in-file (forward references resolve via
+//     the pre-pass; imported/StdEnv names and pattern variables emit nothing),
+//     and `instantiates` for a constructor head outside pattern position;
+//   - where-local functions and their bodies attribute to NOTHING (M11.11
+//     closure boundary), and an application outside any function emits
+//     nothing (the analyzer gates every call on `ctx.currentFunction`).
+//
+// Written as a straight pre-order walk with an explicit scope stack, from the
+// grammar rather than translated line-by-line from the analyzer, so a
+// disagreement surfaces as MISSING/UNEXPLAINED instead of being copied.
+// Clean's node shapes make the case/function pattern gate nearly inert
+// (patterns are constructor_pattern/paren_pattern nodes, never applications)
+// but it is mirrored so a future grammar that app-lifts a pattern cannot
+// silently start fabricating instantiates.
+export function deriveCleanEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    // NO self-edge guard, deliberately: the analyzer's pushRel has none, and
+    // Clean makes self-loops REAL for every label here. A recursive call to an
+    // uppercase-named function (`Concat xs ys` inside `Concat`) has a head typed
+    // `constructor` — Clean's lexical rule cannot tell it from a constructor
+    // application — so the analyzer emits `instantiates Concat -> Concat` and the
+    // oracle must derive the same edge or report a phantom MISSING (measured:
+    // 19 such edges across Clyde, e.g. UtilStrictLists.icl).
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+
+  const kids = (n: any): any[] => {
+    const out: any[] = []
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c) out.push(c) }
+    return out
+  }
+  const firstOf = (n: any, type: string): any => kids(n).find((c: any) => c.type === type)
+  // module_name children compose dotted names (Data + Map -> "Data.Map").
+  const modName = (node: any): string => {
+    if (!node) return ""
+    let out = ""
+    for (const c of kids(node)) {
+      const leaf = c.type === "module_name" ? modName(c) : c.text
+      if (out) out += "."
+      out += leaf
+    }
+    return out || node.text
+  }
+  // The declared name comes from the grammar's `name` FIELD, not the first
+  // `identifier` child: an uppercase definition's name is typed `constructor`,
+  // so the heuristic read the first PARAMETER instead (measured at HEAD: 447 of
+  // 4,647 declarations under v1.2.7; e.g. `NSMakeSize w h ...` -> `w`). The
+  // field is used when present, the heuristic stays as a fallback.
+  const declName = (fn: any): string => {
+    const byField = fn.childForFieldName?.("name")
+    if (byField?.text) return byField.text
+    return firstOf(fn, "identifier")?.text ?? ""
+  }
+
+  // Pre-pass: in-file declared function/method names (forward references).
+  // Mirrors the analyzer's collectDeclaredFunctions, INCLUDING its early stop:
+  // a declaration's body is not descended, so a where-local's name is never
+  // declared (and its body therefore attributes to nothing).
+  const declared = new Set<string>()
+  {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()
+      if (n.type === "function_declaration") { const nm = declName(n); if (nm) declared.add(nm); continue }
+      if (n.type === "type_signature") {
+        const sig = firstOf(n, "signature_name")
+        if (sig?.text) declared.add(sig.text)
+        continue
+      }
+      for (const c of kids(n)) stack.push(c)
+    }
+  }
+
+  // Pattern gate (analyzer mirror): an application before a case-alternative's
+  // `->`, or anywhere under a function head, is pattern territory.
+  const isBeforeArrow = (alt: any, node: any): boolean => {
+    for (const c of kids(alt)) {
+      if (c.type === "arrow") return node.startIndex < c.startIndex
+      if (c === node) return true
+    }
+    return false
+  }
+  const isBeforeEquals = (fn: any, node: any): boolean => {
+    for (const c of kids(fn)) {
+      if (c.type === "operator" && c.text === "=") return node.startIndex < c.startIndex
+    }
+    return false
+  }
+  const isPatternPosition = (node: any): boolean => {
+    let cur = node.parent
+    while (cur) {
+      if (cur.type === "case_alternative") return cur.namedChild(0) === node || isBeforeArrow(cur, node)
+      if (cur.type === "function_declaration") return isBeforeEquals(cur, node)
+      if (cur.type === "type_definition" || cur.type === "class_declaration" || cur.type === "instance_declaration") return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  // Straight pre-order walk. `scopeStack` mirrors the analyzer's symbol scopes
+  // (only `kind` matters here: a `namespace` scope marks where-local territory);
+  // `currentFunction` is the enclosing function a call attributes to.
+  let currentModule: string | undefined
+  let currentFunction: string | undefined
+  const scopeStack: { node: any; name: string; kind: string }[] = []
+  const stack: { node: any; exit?: boolean; restore?: string; hasRestore?: boolean }[] = [{ node: root }]
+  while (stack.length > 0) {
+    const frame = stack.pop()!
+    const node = frame.node
+    if (frame.exit) {
+      if (frame.hasRestore) currentFunction = frame.restore
+      else if (
+        node.type === "function_declaration" ||
+        node.type === "type_definition" ||
+        node.type === "class_declaration" ||
+        node.type === "instance_declaration"
+      ) currentFunction = undefined
+      if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1].node === node) scopeStack.pop()
+      continue
+    }
+    if (node.isMissing) continue
+
+    let pushedScope = false
+    const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+
+    if (node.type === "module_declaration") {
+      const nameNode = firstOf(node, "module_name")
+      if (nameNode) currentModule = modName(nameNode)
+    } else if (node.type === "import_declaration") {
+      const mods = node.childrenForFieldName?.("module") ?? []
+      for (const mod of mods) {
+        if (!mod) continue
+        push("references", currentModule || "", modName(mod))
+      }
+    } else if (node.type === "type_definition") {
+      const nameNode = firstOf(node, "constructor")
+      if (nameNode?.text) { scopeStack.push({ node, name: nameNode.text, kind: "type" }); pushedScope = true }
+    } else if (node.type === "class_declaration") {
+      const nameNode = firstOf(node, "class_name")
+      if (nameNode?.text) { scopeStack.push({ node, name: nameNode.text, kind: "interface" }); pushedScope = true }
+    } else if (node.type === "instance_declaration") {
+      const className = firstOf(node, "instance_class")?.text || ""
+      const targetType = firstOf(node, "constructor")?.text || ""
+      if (className && targetType) {
+        push("implements", targetType, className)
+        scopeStack.push({ node, name: targetType, kind: "class" })
+        pushedScope = true
+      }
+    } else if (node.type === "function_declaration") {
+      const localScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+      if (localScope?.kind === "namespace") {
+        // Where-local function: scoped noise — its internals attribute to
+        // nothing (M11.11 closure boundary), and the enclosing function is
+        // restored afterwards.
+        stack.push({ node, exit: true, hasRestore: true, restore: currentFunction })
+        currentFunction = undefined
+        scopeStack.push({ node, name: "local", kind: "namespace" })
+      } else {
+        const nm = declName(node)
+        if (nm) {
+          currentFunction = nm
+          const kind = currentScope && (currentScope.kind === "interface" || currentScope.kind === "class") ? "method" : "function"
+          scopeStack.push({ node, name: nm, kind })
+          pushedScope = true
+        }
+      }
+    } else if (node.type === "where_block") {
+      // where-locals: scoped noise (the current function is NOT cleared here —
+      // only the local's own function_declaration clears it).
+      scopeStack.push({ node, name: "local", kind: "namespace" })
+      pushedScope = true
+    } else if (node.type === "application") {
+      const head = (node.namedChildCount ?? 0) > 0 ? node.namedChild(0) : null
+      if (head && currentFunction) {
+        if (head.type === "qualified_identifier") {
+          push("calls", currentFunction, head.text)
+        } else if (head.type === "constructor") {
+          if (!isPatternPosition(node)) push("instantiates", currentFunction, head.text)
+        } else if (head.type === "identifier") {
+          if (declared.has(head.text)) push("calls", currentFunction, head.text)
+        }
+      }
+    } else if (node.type === "type_signature") {
+      // A signature is a TYPE tree — no call sites inside, and the analyzer
+      // skips its children, so the oracle does too.
+      continue
+    }
+
+    if (pushedScope) stack.push({ node, exit: true })
+    const children = kids(node)
+    for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i] })
+  }
+  return edges
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -12097,6 +12341,7 @@ async function main() {
   // regressions on EITHER corpus fail the language's check.
   const lanes: { lang: string; repo: string; isSecond: boolean }[] = []
   for (const lang of Object.keys(LANGS)) {
+    if (ONLY_LANGS && !ONLY_LANGS.includes(lang)) continue
     lanes.push({ lang, repo: repoFor(lang), isSecond: false })
     // Probe mode (--repo X): single corpus only — the second lane would point
     // at an unrelated repo and defeat the probe's intent.
@@ -12831,6 +13076,15 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "clean") {
+        // F5 wave (CLEAN): dedicated clean
+        // calls/instantiates/implements/references oracle. Before it existed
+        // the lane derived ZERO truth edges and the sweep refused the row
+        // (a 0/0 pass is a fabrication), so Clean held no differential at all.
+        for (const e of deriveCleanEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
         // opaque raw_text - re-parse them and derive the SAME structural
@@ -12934,7 +13188,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -12943,7 +13197,7 @@ async function main() {
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "csharp" ? ["calls", "references"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" ? ["references"] : [])].includes(r.label))
+        ...(lang === "csharp" ? ["calls", "references"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
@@ -13137,13 +13391,85 @@ async function main() {
     try { fs.rmSync(FROZEN_ROOT, { recursive: true, force: true }) } catch { /* empty dir left behind */ }
     console.log(`[frozen] removed ${frozenTrees.size} pinned-tree worktree(s): ${[...frozenTrees.keys()].join(", ")}`)
   }
-  const SCOPED_RUN = !!REPO || process.argv.includes("--sample")
+  const SCOPED_RUN = !!REPO || process.argv.includes("--sample") || !!ONLY_LANGS
   if (SCOPED_RUN) {
     const measured = Object.keys(report).length + Object.keys(reportSecond).length
+    const measuredKeys = [...Object.keys(report), ...Object.keys(reportSecond)]
+    const scope = ONLY_LANGS ? ONLY_LANGS.join("+") : REPO!
+    // A SCOPED run may emit its OWN lane-scoped artifact, never the canonical
+    // one. M14.0.F5 claims the whole ${Object.keys(LANGS).length}-language, two-corpus sweep in its own
+    // `samplingRule`, and there is one artifact path — so a probe writing it
+    // replaces that claim with a smaller one. `--emit` writes
+    // `M14.0.F5.<scope>` instead; the unscoped sweep keeps the canonical name.
+    //
+    // This is the F10/F11 precedent applied to F5 (see verify-parse-success.ts
+    // and verify-grammar-leaves.ts): a lane's own evidence is the honest way to
+    // record a lane-scoped measurement when the canonical artifact belongs to a
+    // different (or, as when this was written, an in-flight) claim.
+    if (process.argv.includes("--emit")) {
+      const codeInputs = readCodeInputs(ROOT)
+      // The claim a LANE-SCOPED artifact makes is about THIS lane's rows, so the
+      // code-input check is scoped to the producers of those rows — the lane's
+      // analyzer plus the shared oracle/harness (and, when a lane has one, its
+      // spec) — not the whole checkout. Another lane's in-flight analyzer edit
+      // did not produce these rows, so it must not mark them unclaimable; but the
+      // lane's own uncommitted code MUST, so the oracle stays inside the set.
+      const laneInputs = new Set<string>([
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts",
+        ...Object.keys(report).map(l => `src/ast/${(LANGS as any)[l]?.analyzerFile}.ts`),
+        ...Object.keys(report).map(l => `script/m14/spec/${l}-completeness.json`),
+      ])
+      const laneDirt = codeInputs.dirty.filter(p => laneInputs.has(p))
+      const otherDirt = codeInputs.dirty.filter(p => !laneInputs.has(p))
+      const { emitEvidence } = await import("./evidence-harness")
+      const rowCheck = (key: string, row: any) => ({
+        id: `differential-${key}`,
+        description: `${key}: analyzer vs oracle agreement on the drawn file set`,
+        status: (row.missingInAnalyzer === 0 && row.unexplainedInAnalyzer === 0 ? "pass" : "fail") as "pass" | "fail",
+        detail:
+          `files=${row.filesSampled} tree-truth=${row.treeTruthEdges} covered=${row.coveredByAnalyzer} (${row.coveragePct}%) MISSING=${row.missingInAnalyzer} ` +
+          `| analyzer-edges=${row.analyzerEdges} unexplained=${row.unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${row.heuristicUnexplained} hash=${row.sampleSetHash}`,
+      })
+      emitEvidence({
+        issueId: `M14.0.F5.${scope}`,
+        title: `Differential corpus harness, LANE-SCOPED (${scope}: ${measuredKeys.join(", ")}) — NOT the canonical ${Object.keys(LANGS).length}-language claim`,
+        claimLevel: "L1",
+        layers: ["differential"],
+        checks: [
+          {
+            id: "differential-code-inputs",
+            description: "the analyzers, oracle and spec that produced THIS lane's rows are this commit's",
+            status: laneDirt.length === 0 ? "pass" : "fail",
+            detail: laneDirt.length === 0
+              ? `this lane's measured inputs are clean at head ${codeInputs.head.slice(0, 10)}`
+              : `${laneDirt.length} of this lane's measured input(s) differ from head ${codeInputs.head.slice(0, 10)}: ${laneDirt.join(", ")}`,
+          },
+          ...Object.entries<any>(report).map(([k, r]) => rowCheck(k, r)),
+          ...Object.entries<any>(reportSecond).map(([k, r]) => rowCheck(k, r)),
+        ],
+        limitations: [
+          { description: `LANE-SCOPED artifact: this run measured ${measured} lane(s) (${measuredKeys.join(", ")}), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane.` },
+          { description: "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness" },
+          { description: "seeded sample of files per language, deterministic; not exhaustive over the corpus" },
+          { description: `the code-input check is scoped to this lane's producers (${[...laneInputs].join(", ")}); ${otherDirt.length} OTHER measured input(s) are dirty in this checkout from other lanes (${otherDirt.slice(0, 6).join(", ")}${otherDirt.length > 6 ? ", …" : ""}) and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts` },
+        ],
+        corpusPins: Object.fromEntries([...new Set(lanes.map(l => l.repo))].map(r => [r, repoPins[r]]).filter((e): e is [string, string] => Boolean(e[1]))),
+        data: {
+          scoped: true,
+          scope,
+          samplingRule: `seeded ${SAMPLE_PER_LANG} files/language, scoped to ${scope}`,
+          report,
+          secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
+          codeInputs: { ...codeInputs, laneInputs: [...laneInputs], laneDirt, otherDirt },
+        },
+      })
+      console.log(`wrote validation/m14/results/M14.0.F5.${scope}.json (lane-scoped; canonical M14.0.F5.json untouched)`)
+    }
     console.log(
-      `probe run (${REPO ? `--repo ${REPO}` : "--sample"}): measured ${measured} lane(s) — M14.0.F5 NOT written. `
+      `probe run (${ONLY_LANGS ? `--lang ${scope}` : REPO ? `--repo ${REPO}` : "--sample"}): measured ${measured} lane(s) — M14.0.F5 NOT written. `
       + `The artifact belongs to the canonical ${SAMPLE_PER_LANG}-file, ${Object.keys(LANGS).length}-language sweep; `
-      + `a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.`,
+      + `a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one${process.argv.includes("--emit") ? " (its own lane-scoped artifact was written)" : ""}.`,
     )
     removeFrozenTrees()
     process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)
