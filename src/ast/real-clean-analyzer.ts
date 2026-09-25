@@ -92,8 +92,16 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // Complexity — the v1.2.4 grammar's emitted decision points.
-      if (node.type === "case_expression" || node.type === "case_alternative" || node.type === "guard" || node.type === "binary_expression") {
+      // Complexity — the PINNED grammar's emitted decision points.
+      //
+      // A function guard is a `guard_equation` (1,594 sites over this lane's
+      // corpora); the `guard` node type beside it is a LIST-COMPREHENSION
+      // qualifier (23 sites, every one of them under a `comprehension_qualifier`,
+      // e.g. `[ k \\ k <- xs | k > 0 ]`). Counting only `guard` therefore measured
+      // comprehension filters while 1,594 function guards — the decision points
+      // this counter exists for — went uncounted. Both are counted now: they are
+      // different decision points, not two spellings of one.
+      if (node.type === "case_expression" || node.type === "case_alternative" || node.type === "guard_equation" || node.type === "guard" || node.type === "binary_expression") {
         cyclomaticComplexity++
       }
 
@@ -726,13 +734,22 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  // Pattern territory inside a function definition is everything BEFORE its body
+  // FIELD. The pre-fix form scanned the children for one typed `operator` with
+  // text `=`, which the pinned grammar cannot produce — measured, three ways:
+  // a definition's s-expression carries name/pattern…/body and NO `=` child at
+  // all; across the lane's 312 corpus files the 1,576 `operator` nodes are
+  // operator SYMBOLS whose parents are binary_expression (829), unary_expression
+  // (99), paren_pattern (9), operator_definition (5), instance_class (11), … and
+  // never a function_declaration; and no `operator` node's text is `=`. The gate
+  // could not fire, so a grammar that app-lifts a pattern into an `application`
+  // would have started fabricating `instantiates` with nothing to stop it — the
+  // exact failure this guard was written against. Expressed against the field,
+  // the rule is live and means the same thing.
   private isBeforeEquals(fnDecl: Node, node: Node): boolean {
-    for (let i = 0; i < fnDecl.namedChildCount; i++) {
-      const c = fnDecl.namedChild(i)
-      if (!c) continue
-      if (c.type === "operator" && c.text === "=") return node.startIndex < c.startIndex
-    }
-    return false
+    const body = fnDecl.childForFieldName("body")
+    if (!body) return false // no body (damaged parse): claim no pattern territory
+    return node.startIndex < body.startIndex
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {

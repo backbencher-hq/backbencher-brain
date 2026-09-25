@@ -10027,11 +10027,18 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
     }
     return false
   }
+  // Mirror of the analyzer's `isBeforeEquals`: pattern territory is everything
+  // before the body FIELD. The pre-fix form looked for a child typed `operator`
+  // with text `=`, which the pinned grammar never produces (a definition's
+  // children are name/pattern…/body; the 1,576 `operator` nodes on the corpora
+  // are operator symbols under binary_expression/unary_expression/paren_pattern),
+  // so the gate could not fire on either side. Both sides now compare against
+  // the field — an oracle that mirrored the dead form would keep agreeing with
+  // the analyzer for the wrong reason.
   const isBeforeEquals = (fn: any, node: any): boolean => {
-    for (const c of kids(fn)) {
-      if (c.type === "operator" && c.text === "=") return node.startIndex < c.startIndex
-    }
-    return false
+    const body = fn.childForFieldName?.("body")
+    if (!body) return false
+    return node.startIndex < body.startIndex
   }
   const isPatternPosition = (node: any): boolean => {
     let cur = node.parent

@@ -1133,6 +1133,141 @@ class Host
     )
   }
 
+  // ── M60 clean: the declaration contract, the operator callable and its
+  //    scope exit, the guard-equation complexity signal, and the head-pattern
+  //    gate — four defects this lane actually had, each asserted on the
+  //    analyzer (and, where the shape is an edge, on the oracle too).
+  //
+  //   1. a definition module's declared interface published NOTHING: 2,002
+  //      distinct module-level signature names over the lane's 312 files, 708 of
+  //      them visible nowhere, and the export predicate `!sym.ownerName` — the
+  //      negation of the rule its own comment stated — left 312 of 312 files
+  //      exporting at most one thing.
+  //   2. an `operator_definition` owned no call at all, and the moment it did it
+  //      was never released: `(++|)` in clean-stdlib/StdOverloadedList.icl claimed
+  //      `flatten l` from a macro six lines below it (the single UNEXPLAINED row
+  //      of the exhaustive mini-differential).
+  //   3. `cyclomaticComplexity` counted the `guard` node type — 23 corpus sites,
+  //      every one of them a LIST-COMPREHENSION qualifier — while `guard_equation`
+  //      (1,594 function guards) went uncounted. The signal measured the rare
+  //      shape and missed the intended one.
+  //   4. the function-head pattern gate looked for a child typed `operator` with
+  //      text `=`, which the pinned grammar cannot produce (a definition's
+  //      children are name/pattern…/body and the `=` is not a child; the 1,576
+  //      corpus `operator` nodes are operator symbols under binary_expression /
+  //      unary_expression / paren_pattern). The gate was dead, so a grammar that
+  //      app-lifts a head pattern would have started fabricating `instantiates`
+  //      with nothing in the way — the failure it was written against.
+  {
+    const cleanCfg = { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: ".icl" }
+    const declCfg = { ...cleanCfg, ext: ".dcl" }
+
+    // 1. the declaration contract, in one definition module
+    const dclSrc = [
+      "definition module DclInterface",
+      "import StdEnv",
+      "plainFunction :: !Int -> Bool",
+      "NSMakeSize :: !Int !Int -> Int",
+      "(%.) infixl 9 :: !Int !Int -> Int",
+      "(bitxor) :: !Int !Int -> Int",
+      "",
+    ].join("\n")
+    const dcl = await analyzeWith("clean", declCfg, dclSrc)
+    const dclSyms = new Set((dcl.symbols as any[]).map((s) => `${s.kind}:${s.name}`))
+    const dclExps = new Set((dcl.exports as any[]).map((e) => `${e.kind}:${e.name}`))
+    const wantShapes = ["plainFunction", "NSMakeSize", "%.", "bitxor"]
+    const missSym = wantShapes.filter((w) => !dclSyms.has(`function:${w}`))
+    const missExp = wantShapes.filter((w) => !dclExps.has(`function:${w}`))
+    const marked = (dcl.symbols as any[]).filter((s) => s.metadata?.isDeclaration === true).length
+    const dclPass = missSym.length === 0 && missExp.length === 0 && marked === wantShapes.length
+    record("F9-PROBE-CLEAN-DCL-INTERFACE", "clean",
+      "a definition module's declared interface publishes a symbol per `signature_name` shape AND exports it (identifier, constructor-as-function, parenthesized_operator, parenthesized_name), each marked as a declaration",
+      dclPass,
+      dclPass
+        ? `4 shapes published and exported, ${marked} marked isDeclaration`
+        : `missing symbols=[${missSym}] missing exports=[${missExp}] isDeclaration-marked=${marked}`)
+
+    // 3. guards are decision points; a comprehension filter is a different one
+    // Clean's comprehension separator is TWO backslashes. Built from char codes
+    // so this snippet does not depend on counting escape levels in a JS literal —
+    // the first draft wrote one backslash and the snippet failed to parse, which
+    // is the kind of silent difference a probe must not have.
+    const SEP = String.fromCharCode(92) + String.fromCharCode(92)
+    const guardBody = (n: string) => [
+      "module GuardComplexity",
+      "import StdEnv",
+      "classify :: !Int -> String",
+      n,
+      "filters :: ![Int] -> [Int]",
+      `filters xs = [ k * k ${SEP} k <- xs | k > 0 ]`,
+      "",
+    ].join("\n")
+    const withGuards = await analyzeWith("clean", cleanCfg, guardBody('classify n\n\t| n < 0\t\t= "negative"\n\t| n == 0\t= "zero"\n\t| otherwise\t= "positive"'))
+    const noGuards = await analyzeWith("clean", cleanCfg, guardBody('classify n = "any"'))
+    const cxWith: number = withGuards.metadata?.cyclomaticComplexity ?? 0
+    const cxWithout: number = noGuards.metadata?.cyclomaticComplexity ?? 0
+    const delta = cxWith - cxWithout
+    const guardPass = delta >= 3
+    record("F9-PROBE-CLEAN-GUARD-COMPLEXITY", "clean",
+      "cyclomaticComplexity counts FUNCTION guards (`guard_equation`) — three guard equations raise it by at least three over the same file without them — and a list-comprehension `guard` remains a counted decision point of its own",
+      guardPass,
+      guardPass
+        ? `guards add ${delta} (${cxWithout} -> ${cxWith})`
+        : `guards add only ${delta} (${cxWithout} -> ${cxWith}); guard_equation is not counted`)
+
+    // 2 + 4: both defects are MISATTRIBUTION — the same target reached from a
+    // source that must not own it. `probeLang`'s oracle half cannot express that:
+    // it reduces an edge to `label:target`, so `forbid: ["calls:++->tweak"]`
+    // becomes `calls:tweak`, which the oracle legitimately derives for
+    // `later -> tweak` — a false "oracle colludes" (measured: that is exactly how
+    // these two probes first failed). A source-aware comparison on BOTH sides is
+    // the only honest form for this class, so it is written out here.
+    const wtsAny: any = WTS
+    const PB = wtsAny.Parser ?? wtsAny.default ?? wtsAny
+    const LB = wtsAny.Language ?? wtsAny.default?.Language
+    await PB.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+    const cleanParser = new PB()
+    cleanParser.setLanguage(await LB.load(fs.readFileSync(path.join(WASM_DIR, "tree-sitter-clean.wasm"))))
+    const { deriveCleanEdges } = await import("./differential")
+
+    const probeCleanEdges = async (id: string, description: string, src: string, expect: string[], forbid: string[]) => {
+      try {
+        const root = cleanParser.parse(src).rootNode
+        if (root.hasError) throw new Error("probe snippet has parse errors for clean")
+        const res = await analyzeWith("clean", cleanCfg, src)
+        const analyzer = new Set((res.relationships as any[]).map((r) => `${r.type}:${r.source}->${r.target}`))
+        const oracle = new Set(deriveCleanEdges(root).map((e: any) => `${e.label}:${e.from}->${e.target}`))
+        const missing = expect.filter((e) => !analyzer.has(e))
+        const fabricated = forbid.filter((e) => analyzer.has(e))
+        const oracleMissing = expect.filter((e) => !oracle.has(e))
+        const oracleColludes = forbid.filter((e) => oracle.has(e))
+        if (missing.length) return record(id, "clean", description, false, `missing: ${missing.join(", ")}`)
+        if (fabricated.length) return record(id, "clean", description, false, `fabricated: ${fabricated.join(", ")}`)
+        if (oracleMissing.length) return record(id, "clean", description, false, `oracle no longer derives: ${oracleMissing.join(", ")} (oracle regression)`)
+        if (oracleColludes.length) return record(id, "clean", description, false, `oracle colludes: truth derives ${oracleColludes.join(", ")} (lockstep mirrored a fabrication — the lane cannot see it)`)
+        record(id, "clean", description, true, `ok (oracle agrees, source-aware: no collusion on the forbidden set)`)
+      } catch (e: any) {
+        record(id, "clean", description, false, e?.message ?? String(e))
+      }
+    }
+
+    await probeCleanEdges(
+      "F9-PROBE-CLEAN-OPERATOR-SCOPE",
+      "an operator definition's body attributes its call to the operator, and the attribution is RELEASED when its scope ends — a later module-level application keeps its own source instead of being swallowed by the operator",
+      "module OperatorScope\nimport StdEnv\n(++) x y = helper x\nlater :: !Int -> Int\nlater z = tweak z\ntweak :: !Int -> Int\ntweak w = w - 1\nhelper :: !Int -> Int\nhelper v = v\n",
+      ["calls:++->helper", "calls:later->tweak"],
+      ["calls:++->tweak"],
+    )
+
+    await probeCleanEdges(
+      "F9-PROBE-CLEAN-HEAD-PATTERN",
+      "a constructor in a function HEAD pattern is never an `instantiates` (pattern territory is everything before the body FIELD — the pre-fix gate tested for an `operator` child with text `=`, which this grammar cannot produce), while the same constructor in a BODY still is",
+      "module HeadPattern\nimport StdEnv\nunwrap :: Maybe Int -> Int\nunwrap (Just v) = v\nwrap :: Int -> Maybe Int\nwrap y = Just y\n",
+      ["instantiates:wrap->Just"],
+      ["instantiates:unwrap->Just"],
+    )
+  }
+
   // ── F7 detector self-test: regexes regress like any code ────────────────
   {
     const hyg = await import("./verify-analyzer-hygiene")
