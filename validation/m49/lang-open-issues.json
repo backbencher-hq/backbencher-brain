@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-25T14:44:25.848Z",
+  "snapshotAt": "2026-09-25T16:12:54.883Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 104,
+  "count": 102,
   "issues": [
     {
       "number": 134,
@@ -435,11 +435,6 @@
       "labels": []
     },
     {
-      "number": 815,
-      "title": "M49.OC1 ObjC first review wave: process reviews/objc OC-B/OC-D/OC-E/OC-R1/OC-R2 under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 825,
       "title": "M59.A7 — Analyzer lane: emit the call-site line per language (handoff)",
       "labels": []
@@ -482,11 +477,6 @@
     {
       "number": 840,
       "title": "M49 W16/F5 harness: sweep-state key + corpus pin (fixed in 9dfc8e84) — register the residual: corpus repos must be pinned checkouts",
-      "labels": []
-    },
-    {
-      "number": 853,
-      "title": "M49.OC2 ObjC second review wave: process reviews/objc OC-F/G/H under the verify-first protocol",
       "labels": []
     },
     {

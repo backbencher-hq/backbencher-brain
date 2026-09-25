@@ -5470,13 +5470,36 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
     }
     return null
   }
+  const objcDeclaratorWrappers = new Set(["array_declarator", "pointer_declarator", "parenthesized_declarator", "attributed_declarator", "abstract_pointer_declarator", "abstract_block_pointer_declarator", "block_pointer_declarator", "function_declarator"])
   const objcIsDeclaratorName = (inode: any): boolean => {
-    const wrappers = new Set(["array_declarator", "pointer_declarator", "parenthesized_declarator", "attributed_declarator", "abstract_pointer_declarator", "block_pointer_declarator", "function_declarator"])
+    const wrappers = objcDeclaratorWrappers
     let cur: any = inode
     let p: any = inode.parent ?? null
     while (p && wrappers.has(p.type) && cur) { cur = p; p = p.parent ?? null }
     if (!p || p.type !== "init_declarator" || !cur) return false
     return objcSpanIn(p.namedChild(0), cur)
+  }
+  // M60 objc lane (2026-09-25), analyzer mirror: the DECLARED NAME of a parameter
+  // is a name, never a read. The direct `identifier < parameter_declaration` and
+  // `identifier < pointer_declarator < parameter_declaration` shapes were already
+  // covered by the parent-type skip, but a BLOCK-POINTER parameter nests
+  // `identifier < block_pointer_declarator < parenthesized_declarator <
+  // function_declarator < parameter_declaration`, so this oracle published
+  // `uses h -> handler` from the declaration alone (probe
+  // script/m14/tmp/oc-oracle-param-uses.ts: "block decl only" -> uses handler,
+  // with no read in the file) — while the C oracle given the identical
+  // function-pointer parameter publishes NOTHING. The analyzer's isParameterDeclaredName
+  // now refuses it, so the oracle must refuse it too (the #916 lesson: a fix the
+  // oracle does not learn reads as MISSING at full extent).
+  const objcIsParameterDeclaredName = (inode: any): boolean => {
+    let cur: any = inode
+    let p: any = inode.parent ?? null
+    while (p && objcDeclaratorWrappers.has(p.type) && cur) { cur = p; p = p.parent ?? null }
+    if (!p || !cur) return false
+    if (p.type !== "parameter_declaration" && p.type !== "method_parameter") return false
+    const declared = typeof p.childForFieldName === "function" ? p.childForFieldName("declarator") : null
+    if (!declared) return p.type === "method_parameter"
+    return objcSpanIn(declared, cur)
   }
   const objcIsForInVar = (forNode: any, inode: any): boolean => {
     for (let i = 0; i < forNode.childCount; i++) {
@@ -5935,7 +5958,7 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
           isName = true
         } else if (ptype === "for_statement" && parent && objcIsForInVar(parent, n)) {
           isName = true
-        } else if (objcIsDeclaratorName(n)) {
+        } else if (objcIsDeclaratorName(n) || objcIsParameterDeclaredName(n)) {
           isName = true
         }
         if (!isName && objcBound(text, owner)) push("uses", text)
