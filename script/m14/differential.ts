@@ -583,10 +583,47 @@ function rustImplSelfTypeName(t: any): string | null {
   const base = lt >= 0 ? text.slice(0, lt) : text
   return base.split("::").filter(Boolean).pop() || null
 }
-function normTarget(t: string): string {
+export function normTarget(t: string): string {
   // scala type args use square brackets; multi-line constructs can leave a
   // trailing unbalanced "[" in raw-text targets (List[ -> List)
   return lastSegment(t.replace(/<.*$/, "").replace(/\[.*$/, "").trim())
+}
+// M60 oracle sharpness (2026-09-25; report-only behind BB_F5_STRICT=1). The
+// coverage match below is `label + normTarget(target)`, and normTarget is the
+// LAST SEGMENT: the qualifier is discarded, so a truth row can be satisfied by an
+// unrelated analyzer edge that happens to share its leaf. That is not
+// hypothetical — the groovy lane's anonymous-body defect was PUBLISHED as 2
+// MISSING rows when 4 rows were missing, because the truth's
+// `anonymous_X.decode -> X.decode` was matched by the analyzer's
+// `IdentityDecoder.decode -> PropertyDecoder.decode`. These helpers re-match on
+// the target AS WRITTEN (generics/args stripped, qualifier kept) so the sharper
+// question can be asked of EVERY lane without moving any published number: the
+// flag adds counters and a report line, never a gate, and a run without it emits
+// a byte-identical artifact. Evidence: reviews/m60-oracle-sharpness.md, whose
+// instrument is falsified on the known case before any 0-count is believed.
+export const strictTargetText = (t: string): string => String(t ?? "").replace(/<.*$/, "").replace(/\[.*$/, "").trim()
+export const strictKey = (label: string, target: string): string => `${label}|${strictTargetText(target)}`
+export const qualifierOf = (t: string): string => {
+  const parts = strictTargetText(t).split(".").filter(Boolean)
+  return parts.length > 1 ? parts.slice(0, -1).join(".") : ""
+}
+const BB_F5_STRICT = !!process.env.BB_F5_STRICT
+// The sharpness pass is arithmetic, so it can be CHECKED while it runs instead
+// of trusted: `sharpnessInvariants` is asserted per repo and any breach is
+// printed, because an instrument that cannot fail is not evidence. The three
+// identities are exact, not approximate:
+//   (A) every truth row is either strictly covered or strictly missing;
+//   (B) a strict miss with NO same-leaf analyzer row is by definition a row the
+//       published rule ALSO missed — so the two counts must agree, and a
+//       disagreement means the pass read a different `truth`/`rels` than the
+//       published loops did;
+//   (C) the masked subset cannot exceed the hidden one.
+export function sharpnessInvariants(s: { truth: number; covered: number; missing: number; hidden: number; hard: number; publishedMissing: number }): string[] {
+  const bad: string[] = []
+  if (s.covered + s.missing !== s.truth) bad.push(`A: covered ${s.covered} + missing ${s.missing} != truth ${s.truth}`)
+  if (s.missing - s.hidden !== s.publishedMissing) bad.push(`B: missing ${s.missing} - hidden ${s.hidden} != published missing ${s.publishedMissing}`)
+  if (s.hard > s.hidden) bad.push(`C: hard ${s.hard} > hidden ${s.hidden}`)
+  return bad
 }
 
 interface TreeEdge { label: string; from: string; target: string }
@@ -12703,6 +12740,13 @@ async function main() {
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
     let heuristicUnexplained = 0
+    // Sharpness counters (BB_F5_STRICT only). strictMissing counts truth rows the
+    // written-target rule cannot match; strictMasks counts the subset the
+    // PUBLISHED rule passes anyway, both sides qualified and disagreeing — i.e.
+    // rows the current rule hides rather than reports.
+    let strictCovered = 0, strictMissing = 0, strictHidden = 0, strictHard = 0, strictSoft = 0
+    const strictSamples: string[] = []
+    const strictSoftSamples: string[] = []
     const samples: any[] = []
     const samplesHeuristic: any[] = []
 
@@ -13349,6 +13393,49 @@ async function main() {
           if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
+      // Sharpness pass (BB_F5_STRICT only): re-match this file's truth rows on the
+      // target AS WRITTEN, and count the ones the published rule PASSES anyway —
+      // those are the rows it hides. Inside the per-file loop by necessity: both
+      // `truth` and `rels` are scoped to it.
+      if (BB_F5_STRICT) {
+        const strictSet = new Set(rels.map((r: any) => strictKey(r.label, r.target)))
+        for (const te of truth) {
+          if (strictSet.has(strictKey(te.label, te.target))) { strictCovered++; continue }
+          strictMissing++
+          // `sameLeaf` is the PUBLISHED rule's own predicate, so a strict miss
+          // that has one is a row the rule PASSES: it printed `MISSING=0` over a
+          // target that is not the one the analyzer published.
+          const sameLeaf = rels.filter((r: any) => r.label === te.label && normTarget(r.target) === normTarget(te.target))
+          if (sameLeaf.length === 0) continue
+          strictHidden++
+          const tQual = qualifierOf(te.target) !== ""
+          const qualified = sameLeaf.filter((r: any) => qualifierOf(r.target) !== "")
+          if (tQual && qualified.length > 0) {
+            // HARD: the rule matched a DIFFERENT qualified target. This is the
+            // shape that hid the groovy anonymous-body rows (one call to
+            // `lastSegment` discarded `anonymous_X` and `PropertyDecoder`
+            // alike, and the first row that happened to share the leaf won).
+            strictHard++
+            if (strictSamples.length < 200) {
+              strictSamples.push(
+                `${relPath} :: ${te.label} truth=${te.from ?? "?"} -> ${te.target}   vs analyzer -> ${qualified.map((r: any) => r.target).join(" / ")}`,
+              )
+            }
+          } else {
+            // SOFT: one side is spelled qualified and the other bare, so the leaf
+            // match crossed a spelling asymmetry. Not automatically a defect —
+            // it is a CONTRACT question (which side owes the qualifier) and is
+            // counted separately so a lane with a bare-target convention is not
+            // reported as if it hid rows.
+            strictSoft++
+            if (strictSoftSamples.length < 200) {
+              strictSoftSamples.push(
+                `${relPath} :: ${te.label} truth=${te.from ?? "?"} -> ${te.target}${tQual ? "" : " (truth bare)"}   vs analyzer -> ${sameLeaf.map((r: any) => r.target).join(" / ")}`,
+              )
+            }
+          }
+        }
+      }
     }
 
     const row = {
@@ -13382,6 +13469,9 @@ async function main() {
       // (resampled — triage). See sampleSetHash().
       sampleSetHash: sampleSetHash(sample.map((f: any) => path.relative(repoDir, f))),
       samples,
+      // BB_F5_STRICT only, so a canonical run's artifact stays byte-identical to
+      // what the gate compares.
+      ...(BB_F5_STRICT ? { strict: { coveredAsWritten: strictCovered, strictMissing, hidden: strictHidden, hard: strictHard, soft: strictSoft } } : {}),
     }
     if (sample.length === 0) {
       // Vacuous-pass guard: a repo with zero files of this language produces a
@@ -13418,6 +13508,29 @@ async function main() {
     // were captured for exactly this purpose and then had no output path —
     // triage of a MISSING/UNEXPLAINED diff required re-deriving the lane by
     // hand. BB_F5_SHOW_SAMPLES=1 prints them for lane probes.
+    if (BB_F5_STRICT) {
+      console.log(
+        `  [strict] ${lang}: truth=${treeEdgesTotal} covered-as-written=${strictCovered} strict-missing=${strictMissing}` +
+          ` hidden=${strictHidden} hard=${strictHard} soft=${strictSoft}` +
+          `  (published rule: covered=${coveredByAnalyzer} missing=${missingInAnalyzer})`,
+      )
+      const breaches = sharpnessInvariants({
+        truth: treeEdgesTotal,
+        covered: strictCovered,
+        missing: strictMissing,
+        hidden: strictHidden,
+        hard: strictHard,
+        publishedMissing: missingInAnalyzer,
+      })
+      for (const b of breaches) console.log(`    STRICT-INVARIANT BREACH ${lang}: ${b}`)
+      if (breaches.length === 0 && strictHidden === 0) {
+        console.log(`    [strict] ${lang}: identities hold, and the published rule hid nothing on this corpus`)
+      }
+      for (const s of strictSamples.slice(0, 25)) console.log(`    HARD ${s}`)
+      if (strictSamples.length > 25) console.log(`    … +${strictSamples.length - 25} more HARD row(s)`)
+      for (const s of strictSoftSamples.slice(0, 10)) console.log(`    SOFT ${s}`)
+      if (strictSoftSamples.length > 10) console.log(`    … +${strictSoftSamples.length - 10} more SOFT row(s)`)
+    }
     if (process.env.BB_F5_SHOW_SAMPLES && row.samples.length > 0) {
       for (const s of row.samples.slice(0, 40)) {
         console.log(`    ${s.dir} ${s.file} :: ${s.label} ${s.from ?? "?"} -> ${s.target}${s.line ? ` (line ${s.line})` : ""}`)
