@@ -197,6 +197,54 @@ export function qualifiedDeclaratorLeaf(qid: Node): { nameNode: Node; scopeQid: 
   return { nameNode, scopeQid: realJoin ? leaf : null }
 }
 
+/**
+ * CPPD15 (#612 family round): a TEMPLATE WRAPPER does not change WHOSE
+ * declarator name this is. In an explicit specialization the declared name is
+ * wrapped in `template_function`, so the identifier's own parent is not a
+ * declarator at all:
+ *
+ *   template <> constexpr auto num_bits<native_int128>() -> int { … }
+ *   // identifier(num_bits) < template_function < function_declarator
+ *
+ * and the leftmost-declarator rule therefore read the DECLARED name as a value
+ * read. That is the shape that minted the false `uses num_bits` on BOTH sides
+ * of the fmt lane — the two sides agreed on a wrong answer, which is why no
+ * fixture, mutant or depth draw ever caught it: the analyzer emitted the read
+ * and the oracle derived the same read, so they cancelled out of every count.
+ * Measured at the fmt full extent: 7 covered reads (fmt format.h `num_bits`/
+ * `digits10`, printf.h `find`, gtest.h `GenerateNamesRecursively`, one-arg.cc
+ * `from_repr`, fuzzer-common.h `assign_from_buf`, format-impl-test.cc
+ * `run_double_tests`) existed ONLY because a specialization's own name was read
+ * as a use. The declared entity is not a use of itself (the general rule this
+ * mirrors, `Node` declared before an initializer is a declaration), so the name
+ * is a DECLARATION POSITION — on both sides.
+ *
+ * Deliberately narrow: only the NAME of a template-wrapped declarator — not
+ * every identifier under a declarator's surface, which would kill real reads
+ * such as an array-size argument (`char buffer[num_bits<UInt>()]` is a CALL, so
+ * its callee leaf belongs to the calls branch, and
+ * `Sha1ToString(const uint8_t Sha1[kSHA1NumBytes])` is a genuine oracle-derived
+ * read of a file-scope constant). The template wrapper's span must BE the
+ * declarator's name span, which is what distinguishes
+ * `template_function < function_declarator` (the declared name) from a
+ * `template_function` anywhere else in an expression.
+ *
+ * Exported so the F5 oracle classifies it with the SAME rule rather than a copy
+ * (#916's lesson; see `macroDeclaredBody`).
+ */
+export function templateWrappedDeclaratorName(nameNode: Node): boolean {
+  const p = nameNode.parent
+  if (!p) return false
+  if (p.type !== "template_function" && p.type !== "template_method" && p.type !== "dependent_name") return false
+  const gp = p.parent
+  if (!gp || (gp.type !== "function_declarator" && gp.type !== "abstract_function_declarator")) return false
+  // The span compared is the WRAPPER's: a function declarator's `declarator`
+  // field IS the template_function (`num_bits<native_int128>`), while this node
+  // is the identifier inside it.
+  const decl = gp.childForFieldName?.("declarator")
+  return !!decl && decl.startIndex === p.startIndex && decl.endIndex === p.endIndex
+}
+
 export function macroInvocationText(content: string, nameStart: number): string | null {
   const CAP = 4000
   let i = nameStart
@@ -517,6 +565,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isDeclarationPosition = (node: Node): boolean => {
       const p = node.parent
       if (!p) return false
+      // CPPD15/CPPD16: a template wrapper does not change WHOSE declarator name
+      // this is — see `templateWrappedDeclaratorName` (exported: the F5 oracle
+      // reads the same rule). Two shapes, one rule: nlohmann's ERROR-recovered
+      // `push_back(typename object_t::value_type(std::move(key.get_ref<string_t&>()), …));`
+      // parses as a declaration whose parameter carries
+      // `key.get_ref<string_t&>()` as a function_declarator (so `get_ref` NAMES a
+      // declared function), and fmt's explicit specializations carry the defined
+      // entity's own name inside the same wrapper
+      // (`template <> auto num_bits<native_int128>() -> int`).
+      if (templateWrappedDeclaratorName(node)) return true
       // Template value-parameter defaults: only the FIRST identifier child
       // declares (`template <int N = M>`: N declares, M reads).
       // F6 audit: only the real template-parameter nodes belong here. The
@@ -636,6 +694,32 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (`x.template m<T>()`) and defense parentheses (`(f)(x)`, the Windows
     // min/max idiom the calls branch already unwraps). Without the climb,
     // every explicit-template call emitted calls+uses for one target.
+    // CPPD14: the span of a member leaf, seen THROUGH template wrappers.
+    // `key.get_ref<string_t&>()` parses as identifier(get_ref) < template_function
+    // < field_expression < call_expression, so the member-leaf guard (which tests
+    // the identifier's own parent for the field role) missed it and the identifier
+    // was published as a bare value read — `uses push_back -> get_ref`, an edge the
+    // oracle does not derive and the analyzer only hid before behind an accidental
+    // local binding. The calls branch does not own the site either (the callee is a
+    // field_expression, so isCallCallee stops short and the oracle derives no call),
+    // so the oracle-consistent outcome is silence: the member leaf is owned by the
+    // field path, and a template argument list does not change whose leaf it is.
+    const memberLeafTop = (node: Node): Node => {
+      let top: Node = node
+      let p: Node | null = node.parent
+      while (p && (p.type === "template_function" || p.type === "template_method" || p.type === "dependent_name")) {
+        top = p
+        p = p.parent
+      }
+      return top
+    }
+    const isMemberLeaf = (node: Node): boolean => {
+      const top = memberLeafTop(node)
+      const p = top.parent
+      if (!p || p.type !== "field_expression") return false
+      const field = p.childForFieldName("field")
+      return !!field && field.startIndex === top.startIndex
+    }
     const isCallCallee = (node: Node): boolean => {
       let top: Node = node
       let p: Node | null = node.parent
@@ -704,18 +788,103 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       return false
     }
     // Parameter names of one declarator (K&R n/a in C++).
+    // CPPD12: the DECLARED name of a declarator, down the declarator CHAIN
+    // (pointer/reference/array/parenthesized wrappers, `(*fp)(int)`) and NEVER from
+    // the initializer. The extraction it replaces was `findChild(d, "identifier")` —
+    // a SHALLOW, document-order lookup — and an `init_declarator`'s named children
+    // are [declarator, initializer], so `int *p = g;` yielded `g`. That single wrong
+    // name propagated twice: the local was BOUND as `g` (suppressing every read of
+    // the real `g` — nlohmann-json full extent lost `uses -> environ`, whose read is
+    // `char **Environ = environ;`), and the symbol was PUBLISHED as `g`. Where the
+    // declarator was wrapped with no initializer the old lookup found nothing at
+    // all, so `char **environ;` and `int a[4];` published no symbol either.
+    const declaredNameNode = (node: Node | null): Node | null => {
+      let cur: Node | null = node
+      while (cur) {
+        if (cur.type === "identifier" || cur.type === "field_identifier") return cur
+        // CPPD12b: the chain must never NAME A FUNCTION where a value is expected.
+        // A function declarator whose own declarator is a bare name declares a
+        // function (`void JSON_ASSERT(int);`), so descending through it is how the
+        // first cut of this fix minted `variable:assert_invariant`,
+        // `property:JSON_ASSERT`, `variable:dump` … from ERROR-recovered macro
+        // statements — and one of those new names made `key.get_ref<string_t&>()`
+        // resolvable, adding three fabricated `push_back -> get_ref` uses edges at
+        // the nlohmann-json full extent. Measured at json_v3_10_5.hpp:7701: the
+        // `JSON_ASSERT(...)` statement is folded INTO the preceding field_declaration
+        // as a second declarator, reached through a parenthesized_declarator — so the
+        // guard has to sit at every step, not on the top declarator only. A function
+        // POINTER is still a value: its inner step is a parenthesized/pointer
+        // declarator, never a bare name.
+        if (cur.type === "function_declarator" || cur.type === "abstract_function_declarator") {
+          const inner: Node | null = cur.childForFieldName?.("declarator") ?? null
+          if (!inner || inner.type === "identifier" || inner.type === "field_identifier" ||
+              inner.type === "qualified_identifier" || inner.type === "operator_name" ||
+              inner.type === "destructor_name" || inner.type === "type_identifier") {
+            return null
+          }
+        }
+        const viaField: Node | null = cur.childForFieldName?.("declarator") ?? null
+        let next: Node | null = viaField
+        if (!next) {
+          for (let k = 0; k < cur.namedChildCount; k++) {
+            const c = cur.namedChild(k)
+            if (c && (c.type.endsWith("declarator") || c.type === "identifier" || c.type === "field_identifier")) { next = c; break }
+          }
+        }
+        cur = next
+      }
+      return null
+    }
+    // CPPD12b: the declared name of a VALUE declaration — never a function's. The
+    // chain walk above reaches a function name through `function_declarator`
+    // (`void JSON_ASSERT(int);` names JSON_ASSERT), and publishing that as a
+    // variable is wrong. It is also how the first cut of this fix leaked: the
+    // fallback below fires precisely where the function branch did NOT (macro-shaped
+    // and ERROR-recovered declarations), so it minted `variable:assert_invariant`,
+    // `property:JSON_ASSERT`, `variable:dump` … and one of those new names made
+    // `key.get_ref<string_t&>()` resolvable, adding three fabricated uses edges
+    // (`push_back -> get_ref`) at the nlohmann full extent. A function-pointer
+    // variable (`int (*fp)(int);`) is still a VALUE: its function_declarator's
+    // declarator is a parenthesized/pointer declarator, not a bare name.
+    const declaredValueName = (node: Node | null): Node | null => {
+      const decl: Node | null = node?.childForFieldName?.("declarator") ?? null
+      if (!decl) return null
+      if (decl.type === "function_declarator" || decl.type === "abstract_function_declarator") {
+        const inner: Node | null = decl.childForFieldName?.("declarator") ?? null
+        if (!inner || inner.type === "identifier" || inner.type === "field_identifier" ||
+            inner.type === "qualified_identifier" || inner.type === "operator_name" || inner.type === "destructor_name") {
+          return null
+        }
+      }
+      return declaredNameNode(decl)
+    }
     const declaratorParamNames = (decl: Node | null): string[] => {
       const out: string[] = []
       if (!decl) return out
       const walk: Node[] = [decl]
       while (walk.length > 0) {
         const m = walk.pop()!
+        // CPPD13: the DECLARED NAME of a parameter comes off the declarator
+        // chain, never off the default value (`declaredNameNode`). The old
+        // extraction was the same shallow, document-order lookup CPPD12 fixed for
+        // variables, so a parameter whose declarator is wrapped published the
+        // wrong name or none at all.
+        //
+        // This roster is deliberately `parameter_declaration` ONLY. A defaulted
+        // parameter (`optional_parameter_declaration`, `const bool strict = true`)
+        // is bound by the shared declaration-position rule at its own node in walk
+        // order, exactly like every other declaring occurrence in this analyzer
+        // (measured: fixture cpp/wrapped-declarator-names-612 pins `no uses ->
+        // strict` for all three spellings of the same parameter, and CPPD17/18's
+        // wrapped declarators were the only shape where that binding failed — for
+        // a different reason, a missing function scope). Pre-binding optional
+        // parameters here would move the binding EARLIER than the parameter's own
+        // declaration node, which changes flow-sensitive results for shapes like
+        // `void f(int a = b, int b = 1)` where the default legitimately reads an
+        // outer `b`; the walk-order rule is the one the family contract describes.
         if (m.type === "parameter_declaration") {
-          let cur: Node | null = m
-          while (cur) {
-            if (cur.type === "identifier" || cur.type === "field_identifier") { out.push(cur.text); break }
-            cur = cur.childForFieldName("declarator") || cur.namedChild(0)
-          }
+          const nm = declaredNameNode(m)
+          if (nm) out.push(nm.text)
           continue
         }
         for (let k = 0; k < m.namedChildCount; k++) {
@@ -1415,27 +1584,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (type === "field_declaration" || type === "declaration") {
           const decls = this.findAllChildren(node, "init_declarator")
           if (decls.length === 0) {
-            // Member fields use field_identifier (`int id_;`); pointer/reference
-            // members wrap it in a pointer_declarator (`UserRepository *repository_;`).
-            const ptrWrap =
-              this.findChild(node, "pointer_declarator") || this.findChild(node, "reference_declarator")
-            const basicDecl =
-              this.findChild(node, "identifier") ||
-              this.findChild(node, "field_identifier") ||
-              (ptrWrap ? this.findChild(ptrWrap, "field_identifier") || this.findChild(ptrWrap, "identifier") : null)
-            if (basicDecl) decls.push(node)
+            // A declaration with NO initializer still declares when its declarator
+            // is wrapped — a member `UserRepository *repository_;`, a file-scope
+            // `char **environ;`, an array `int a[4];`. The old test looked ONE level
+            // into pointer/reference wrappers, so `**p` and arrays published no
+            // symbol at all (nlohmann-json full extent: zero symbols named
+            // `environ` for `extern "C" char **environ;`).
+            if (declaredValueName(node)) decls.push(node)
           }
 
           for (let idx = 0; idx < decls.length; idx++) {
             const d = decls[idx];
-            // Still finding the immediate identifier for a variable, no deep walks
-            let idNode = this.findChild(d, "identifier") || this.findChild(d, "field_identifier")
-            if (!idNode) {
-              const ptr = this.findChild(d, "pointer_declarator") || this.findChild(d, "reference_declarator")
-              if (ptr) idNode = this.findChild(ptr, "identifier") || this.findChild(ptr, "field_identifier")
-            }
-
-            const name = idNode ? idNode.text : this.childText(d, "identifier") || this.childText(d, "field_identifier")
+            // CPPD12: the name comes off the declarator chain, never off the
+            // initializer (see declaredNameNode).
+            const idNode = d.type === "init_declarator" ? declaredNameNode(d) : declaredValueName(d)
+            const name = idNode ? idNode.text : ""
             // Function-local declarations are execution artifacts, not
             // declaration sites — only class-scope fields and file-scope
             // variables become symbols.
@@ -1824,8 +1987,8 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Member leaves — the field path owns them (both read and call
           // positions). The OBJECT of a field access is a genuine read and
           // stays (CGD31 contract): only the field-role leaf is skipped.
-          !(p && p.type === "field_expression" &&
-            p.childForFieldName("field")?.startIndex === node.startIndex) &&
+          // CPPD14: seen through template wrappers (`key.get_ref<string_t&>()`).
+          !isMemberLeaf(node) &&
           // Qualified reads (`ns::x`) — limitation, stays silent.
           !hasQualifiedAncestor(node) &&
           // Labels and attributes never name values.
@@ -2369,20 +2532,84 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
   private getFunctionDetails(
     node: Node,
   ): { name: string; scope?: string; isDestructor: boolean; isOperator: boolean; nameNode: Node } | null {
+    // CPPD17/CPPD18 (#612 family round): the function_declarator can sit UNDER a
+    // declarator wrapper, because a macro between the return type and the name
+    // changes how the grammar nests the declaration. Measured in
+    // `include/nlohmann/json_v3_10_5.hpp` (`binary_reader::sax_parse`):
+    //
+    //   JSON_HEDLEY_NON_NULL(3)
+    //   bool sax_parse(const input_format_t format, …, const bool strict = true) { … }
+    //     function_definition
+    //       parenthesized_declarator        <- the macro's own parens, recovered
+    //         function_declarator           <- the real declarator, one level down
+    //
+    // This lookup was DIRECT (`findChild` scans one level), with a one-level
+    // pointer/reference fallback for a wrapped RETURN type. Neither reaches a
+    // `parenthesized_declarator`, so this method returned null — and the caller
+    // pushes the function's SYMBOL and its SCOPE out of this result, so the
+    // method vanished and, with no function scope, the body's parameter reads
+    // resolved OUTWARD. That is the whole of the lane's one remaining unexplained
+    // edge at the nlohmann full extent (`uses binary_reader -> strict @8299`: the
+    // parameter `strict` reaching `error_handler_t::strict` 8k lines away).
+    // The descent is the declarator CHAIN (pointer/reference/parenthesized), the
+    // same wrappers the rest of this file already unwraps for names and types, and
+    // it SUBSUMES the one-level pointer/reference fallback it replaces.
     let decl = this.findChild(node, "function_declarator")
     if (!decl) {
-      const ptr = this.findChild(node, "pointer_declarator") || this.findChild(node, "reference_declarator")
-      if (ptr) decl = this.findChild(ptr, "function_declarator")
+      const WRAPPERS = ["pointer_declarator", "reference_declarator", "parenthesized_declarator"]
+      let cur: Node | null = null
+      for (const w of WRAPPERS) { cur = this.findChild(node, w); if (cur) break }
+      for (let i = 0; cur && i < 8; i++) {
+        const found = this.findChild(cur, "function_declarator")
+        if (found) { decl = found; break }
+        let next: Node | null = null
+        for (const w of WRAPPERS) { next = this.findChild(cur, w); if (next) break }
+        cur = next
+      }
     }
 
     if (!decl) return null
 
-    let nameNode =
-      this.findChild(decl, "identifier") ||
-      this.findChild(decl, "field_identifier") ||
-      this.findChild(decl, "destructor_name") ||
-      this.findChild(decl, "operator_name") ||
-      this.findChild(decl, "qualified_identifier")
+    // CPPD17 (#612 family round): the NAME can be WRAPPED one declarator down.
+    // The grammar keeps `function_declarator` direct under the definition but
+    // routes a parenthesized NAME through its declarator field:
+    //
+    //   bool parse_result(const bool strict = true) { … }
+    //     function_declarator[declarator: field_identifier parse_result, …]
+    //   bool (parse_result)(const bool strict = true) { … }
+    //     function_declarator[declarator: parenthesized_declarator[field_identifier], …]
+    //
+    // The lookups below scan the declarator's DIRECT named children, so the
+    // wrapped spelling found no name at all and this method returned null — and
+    // with it went the method's SYMBOL *and*, because the caller pushes the
+    // function scope out of this result, the function scope itself. Measured on
+    // the nlohmann-json full extent (496 files, the first .cpp-inclusive run):
+    // `include/nlohmann/json_v3_10_5.hpp` declares its readers this way, and with
+    // no scope there is no function-local roster for the body's reads to consult,
+    // so every parameter read resolved OUTWARD — the lane's one remaining
+    // unexplained edge, `uses binary_reader -> strict @8299` (the parameter
+    // `strict` reaching the namespace-scope enumerator `error_handler_t::strict`
+    // 8k lines away). Minimal reproduction, same defect on both spellings:
+    // fixture-shaped `bool parse_result(const bool strict = true)` publishes the
+    // symbol and binds the parameter; `bool (parse_result)(…)` published neither.
+    // The descent is the declarator CHAIN only (parenthesized wrappers; repeated
+    // spelling `((name))` cannot recurse more than a few levels) and stops at the
+    // same five name kinds, so qualified/operator/destructor spellings keep the
+    // handling below unchanged.
+    let nameNode: Node | null = null
+    {
+      let cur: Node | null = decl
+      for (let i = 0; cur && i < 8; i++) {
+        nameNode =
+          this.findChild(cur, "identifier") ||
+          this.findChild(cur, "field_identifier") ||
+          this.findChild(cur, "destructor_name") ||
+          this.findChild(cur, "operator_name") ||
+          this.findChild(cur, "qualified_identifier")
+        if (nameNode) break
+        cur = this.findChild(cur, "parenthesized_declarator")
+      }
+    }
 
     if (!nameNode) return null
     // #921: the node the returned name was READ FROM, kept so the caller can ask
