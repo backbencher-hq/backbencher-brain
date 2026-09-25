@@ -53,7 +53,20 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (isExit) {
         if (restoreFn !== undefined) ctx.currentFunction = restoreFn
-        else if (node.type === "function_declaration" || node.type === "type_definition" || node.type === "class_declaration" || node.type === "instance_declaration") {
+        else if (
+          node.type === "function_declaration" ||
+          // An `operator_definition` makes a callable exactly as a
+          // function_declaration does, so it must relinquish attribution on the
+          // same terms. Without this the operator stayed `currentFunction` past
+          // its own scope and swallowed every later module-level application:
+          // measured on clean-stdlib/StdOverloadedList.icl, `(++|)` claimed
+          // `flatten l` from the `Flatten :== flatten l` macro 6 lines below it
+          // (the single UNEXPLAINED row of the exhaustive mini-differential).
+          node.type === "operator_definition" ||
+          node.type === "type_definition" ||
+          node.type === "class_declaration" ||
+          node.type === "instance_declaration"
+        ) {
           ctx.currentFunction = undefined
         }
         if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1].node === node) scopeStack.pop()
@@ -123,15 +136,49 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           ctx.currentFunction = undefined
           scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace })
         }
+      } else if (node.type === "operator_definition") {
+        // An operator definition is a CALLABLE wherever it lives — the Clean
+        // norm for Eq/Ord instance members, and the definition half of a
+        // module-level operator declaration — EXCEPT inside a where block, where
+        // it is scoped noise like a where-local function (M11.11). Its body is
+        // therefore attributed for the first time: measured over this lane's five
+        // corpora (`script/m14/tmp/clean-dcl-shapes.ts`), 39 real module-level and
+        // 192 instance-member operator definitions whose bodies hold 12 and 39
+        // applications — this ruling gives 8 and 11 of them an attribution target,
+        // the rest having heads the lane's own call gate excludes.
+        const localScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+        const insideLocalBlock = localScope?.kind === ASTEngine.SymbolKind.Namespace
+        const opName = insideLocalBlock ? null : this.operatorDefinitionName(node)
+        if (opName) {
+          pushedScope = this.processCallable(node, opName, ctx, currentScope, scopeStack)
+        } else if (insideLocalBlock) {
+          stack.push({ node, isExit: true, restoreFn: ctx.currentFunction })
+          ctx.currentFunction = undefined
+          scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace })
+        }
+        // A pattern mis-shape (`# (a,b,c) = expr;`) is not a definition at all:
+        // it publishes nothing and attributes nothing, exactly as before.
       } else if (node.type === "type_signature") {
-        // Record the signature for return-type metadata; the function symbol
-        // comes from the function_declaration. Class member signatures are
-        // already Method symbols from the class_member → type_signature path
-        // (handled in processClass via signature_name).
+        // Record the signature for return-type metadata.
         const sigName = this.findChild(node, (n) => n.type === "signature_name")
         const typeFn = this.findChild(node, (n) => n.type === "type_function")
         if (sigName?.text && typeFn?.text) {
           ctx.patterns["Typed Functions"] = true
+        }
+        // A MODULE-LEVEL declaration signature IS the file's interface (the whole
+        // content of a `.dcl`), so it publishes a symbol. The HC2 precedent
+        // (real-c-analyzer.ts): a C prototype publishes a Function marked
+        // `isDeclaration`, and a prototype+definition pair merges into ONE
+        // symbol, the definition winning — a Clean definition module is the same
+        // case with different syntax, which is why the definition replaces this
+        // symbol in `processCallable` rather than sitting beside it.
+        //
+        // Class/instance member signatures are already Method symbols from the
+        // class/instance path, and a where-local signature is scoped noise; only
+        // the module scope publishes here (scopeStack empty).
+        if (scopeStack.length === 0) {
+          const declName = this.declarationName(node)
+          if (declName) this.processDeclaration(node, declName, ctx)
         }
         continue
       } else if (node.type === "class_member" || node.type === "instance_member") {
@@ -178,8 +225,36 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       ASTEngine.SymbolKind.Constructor,
       ASTEngine.SymbolKind.Property,
     ])
+    // A symbol the MODULE owns is part of the module's interface, so it is
+    // exported — the haskell lane's rule verbatim (`s.ownerName ===
+    // currentModule`, real-haskell-analyzer.ts). The condition here used to be
+    // `!sym.ownerName`, the exact NEGATION of the rule this block's own comment
+    // stated, so it exported nothing but the module symbol itself: measured over
+    // this lane's five corpora, 312 of 312 files exported <= 1 thing (6,031
+    // module-owned symbols against 295 exports in total). A `.dcl`'s declared
+    // interface is precisely what this list exists for, which is why the fix
+    // rides the declaration ruling and not a wave of its own.
+    //
+    // Class/instance members keep their owner (`<class>` / the instance target
+    // type), so they are NOT exported: their membership rides the `contains`
+    // edge, exactly as the haskell lane treats a class method.
+    //
+    // Name-keyed first-wins dedupe — the exports-family invariant
+    // (run-fixtures.ts, M49 JVM-closure audit) requires UNIQUE export names,
+    // because a duplicate cannot identify its provider. Clean reaches the
+    // collision honestly: `instance Eq ParseState where ...` publishes its
+    // Class under the instance TARGET type, so a file that both defines the
+    // type and implements an instance for it offered `ParseState` twice
+    // (measured: 59 of 312 files before this line). Same dedupe as
+    // cpp/go/objc/clojure (`seenExportNames`), keyed by bare name — a Clean
+    // module exports a name, not a name+kind pair.
+    const seenExportNames = new Set<string>()
     for (const sym of ctx.symbols) {
-      if (!sym.name.startsWith("_") && EXPORTABLE_KINDS.has(sym.kind) && !sym.ownerName) {
+      if (sym.name.startsWith("_")) continue
+      if (!EXPORTABLE_KINDS.has(sym.kind)) continue
+      if (seenExportNames.has(sym.name)) continue
+      if (sym.ownerName === ctx.currentModule || !sym.ownerName) {
+        seenExportNames.add(sym.name)
         ctx.exports.push({ name: sym.name, kind: sym.kind, range: sym.range, visibility: "public" })
       }
     }
@@ -222,6 +297,54 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.relationships.push({ source, target, type, confidence, metadata })
   }
 
+  // The name a `type_signature` DECLARES, normalized across the four shapes the
+  // pinned grammar puts inside `signature_name`:
+  //
+  //   identifier              `f :: !Int -> Bool`
+  //   constructor             `NSMakeSize :: !NSSize !NSSizeType -> NSSize*`
+  //                           — Clean lets an uppercase name be a FUNCTION, and
+  //                           the grammar types it `constructor`
+  //   parenthesized_operator  `(%.) infixl 9 :: ...` — the name is `%.`
+  //   parenthesized_name      `(bitxor) :: !Int !Int -> Int` — the name is
+  //                           `bitxor` (a prefix declaration of an infix-capable
+  //                           name)
+  //
+  // A parenthesized shape carrying a comma or a brace is NOT a name: it is the
+  // grammar's mis-shape for a PATTERN (`# (a,b,c) = expr;`, `# (r,{gst & ls=s})`),
+  // and publishing it would fabricate a symbol no source declares. Measured over
+  // this lane's five corpora (312 files, 148 of them `.dcl`): 2,753 module-level
+  // signature sites, of which 1,021 names were published nowhere — 708
+  // identifiers, 259 constructors, 45 operators, 9 parenthesized names.
+  private declarationName(node: Node): string | null {
+    const sigName = this.findChild(node, (n) => n.type === "signature_name")
+    if (!sigName) return null
+    const kid = sigName.namedChildCount > 0 ? sigName.namedChild(0) : null
+    if (!kid) return null
+    if (kid.type === "identifier" || kid.type === "constructor") return kid.text
+    if (kid.type === "parenthesized_operator" || kid.type === "parenthesized_name") {
+      return this.unparenthesize(kid.text)
+    }
+    return null
+  }
+
+  // The name an `operator_definition` declares. Same normalization as
+  // `declarationName`'s parenthesized branch, so a signature and its definition
+  // land on ONE key and merge instead of producing two symbols.
+  private operatorDefinitionName(node: Node): string | null {
+    const nameNode =
+      node.childForFieldName("name") ??
+      this.findChild(node, (n) => n.type === "parenthesized_operator" || n.type === "parenthesized_name")
+    if (!nameNode?.text) return null
+    return this.unparenthesize(nameNode.text)
+  }
+
+  /** Inner text of `(x)`, or null when the parens hold a PATTERN, not a name. */
+  private unparenthesize(text: string): string | null {
+    const inner = text.replace(/^\(|\)$/g, "").trim()
+    if (!inner || /[,{}]/.test(inner)) return null
+    return inner
+  }
+
   // The declared name of a function definition, read from the grammar's FIELD.
   //
   // `findChild(node, n => n.type === "identifier")` returns the FIRST identifier child, which is
@@ -253,8 +376,13 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     if (node.type === "type_signature") {
-      const name = this.findChild(node, (n) => n.type === "signature_name")
-      if (name?.text) out.add(name.text)
+      const name = this.declarationName(node)
+      if (name) out.add(name)
+      return
+    }
+    if (node.type === "operator_definition") {
+      const name = this.operatorDefinitionName(node)
+      if (name) out.add(name)
       return
     }
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -386,11 +514,14 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       const member = node.namedChild(i)
       if (!member || member.type !== "class_member") continue
       const sig = this.findChild(member, (n) => n.type === "type_signature")
-      const sigName = sig ? this.findChild(sig, (n) => n.type === "signature_name") : null
-      const mName = sigName ? this.findChild(sigName, (n) => n.type === "identifier") : null
-      if (!mName?.text) continue
+      // The member name normalizes through all four `signature_name` shapes, so a
+      // class operator (`class Eq a where (==) :: a a -> Bool`) finally publishes
+      // its Method — measured on this lane's corpora, 45 module-level and the
+      // class-member operator signatures were published nowhere before.
+      const mName = sig ? this.declarationName(sig) : null
+      if (!mName) continue
       ctx.symbols.push({
-        name: mName.text,
+        name: mName,
         kind: ASTEngine.SymbolKind.Method,
         range: this.nodeToRange(member),
         ownerName: name,
@@ -445,13 +576,37 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): boolean {
     const nameNode = this.declaredName(node)
     if (!nameNode?.text) return false
-    const name = nameNode.text
+    return this.processCallable(node, nameNode.text, ctx, currentScope, scopeStack)
+  }
 
+  // Publish (or extend) the callable named `name` in the current scope and make
+  // it the attribution target for its body. Shared by `function_declaration` and
+  // `operator_definition` — the two shapes Clean uses to DEFINE a callable — so
+  // the clause-merge and declaration-merge rules cannot drift between them.
+  private processCallable(
+    node: Node,
+    name: string,
+    ctx: CleanContext,
+    currentScope: Scope | undefined,
+    scopeStack: Scope[],
+  ): boolean {
     const functionKey = `${currentScope?.name || ""}::${name}`
     const existingIdx = ctx.functionSymbolIndex[functionKey]
     if (existingIdx !== undefined) {
-      // Multi-clause function (map2 f [] = ... / map2 f [x:xs] = ...) — merge
       const existing = ctx.symbols[existingIdx]
+      if (existing.metadata?.isDeclaration) {
+        // HC2: the DEFINITION wins over the declaration occurrence — one entity,
+        // the definition's own range, and no longer a bare declaration. This is
+        // what keeps a `.icl`'s `f :: T` + `f x = ...` at ONE symbol instead of
+        // four (2,753 module-level signature sites meet 1,294 in-file
+        // definitions on this lane's corpora).
+        existing.range = this.nodeToRange(node)
+        delete existing.metadata.isDeclaration
+        ctx.currentFunction = name
+        scopeStack.push({ node, name, kind: existing.kind })
+        return true
+      }
+      // Multi-clause definition (map2 f [] = ... / map2 f [x:xs] = ...) — merge
       const newRange = this.nodeToRange(node)
       existing.range.endLine = Math.max(existing.range.endLine, newRange.endLine)
       if (existing.range.endIndex !== undefined && newRange.endIndex !== undefined) {
@@ -482,6 +637,23 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.currentFunction = name
     scopeStack.push({ node, name, kind })
     return true
+  }
+
+  // A module-level DECLARATION signature publishes a Function symbol marked
+  // `isDeclaration`, which a later definition replaces (see processCallable). A
+  // repeated declaration is one entity: the first occurrence wins.
+  private processDeclaration(node: Node, name: string, ctx: CleanContext): void {
+    const functionKey = `::${name}`
+    if (ctx.functionSymbolIndex[functionKey] !== undefined) return
+    ctx.symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: this.nodeToRange(node),
+      ownerName: ctx.currentModule,
+      visibility: "public",
+      metadata: { cleanSpecific: true, isDeclaration: true },
+    })
+    ctx.functionSymbolIndex[functionKey] = ctx.symbols.length - 1
   }
 
   // ==========================================================================
