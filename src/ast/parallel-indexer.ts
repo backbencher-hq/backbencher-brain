@@ -1753,8 +1753,8 @@ export async function storeResults(
  
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
-     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, is_declaration, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -1814,11 +1814,25 @@ export async function storeResults(
    //
    // Prefer the nearest candidate: same file, then same language, then any;
    // ties broken by id so the same input always yields the same graph.
+   //
+   // #612: a DEFINITION beats a DECLARATION, ahead of every proximity rule.
+   // Proximity alone is wrong in the one case this family exists to measure:
+   // `math.c` holds both the CALLER (`main`) and a c prototype
+   // (`extern int run_engine(void);`), while the definition lives in
+   // `engine.cpp`. Same-file preference picked the prototype in the caller's
+   // own file, so the c→cpp edge was stored `is_cross_file = 0`,
+   // `is_cross_language = 0` and the M14.0.SC1 family gate could not see a
+   // cross-language call that plainly exists. A declaration is a promise, a
+   // definition is the thing itself; and when the definition is not in the
+   // index at all (a libc prototype, an FFI symbol implemented elsewhere)
+   // every candidate is still a declaration, so the remaining rules decide
+   // exactly as before. `COALESCE` puts legacy NULL rows in the definition
+   // tier — the pre-#612 behaviour for DBs that have not been re-indexed.
    const resolveTargetStmt = rawDb.prepare(
      `SELECT s.id, s.file_id, f.language FROM brain_symbol s
       LEFT JOIN brain_file f ON f.id = s.file_id
       WHERE s.project_id = ? AND s.name = ?
-      ORDER BY (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+      ORDER BY COALESCE(s.is_declaration, 0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
       LIMIT 1`
    )
 
@@ -2232,13 +2246,58 @@ export async function storeResults(
                    // M51.A1: a container the insert filters will skip is not an
                    // owner — keep searching for an outer storeable container.
                    if (!storeableName(c.name, c.start)) continue
-                   if (c.start > 0 && (c.end >= symbolEndLine || c.end === c.start)) {
+                   // #612: containment must be STATED, not assumed. The loop
+                   // guard above (`c.start >= symbolStartLine → break`) means
+                   // every container reachable here starts BEFORE the symbol, so
+                   // `c.end >= symbolEndLine` is the only test that can be
+                   // satisfied by a container that actually encloses it. A
+                   // degenerate container (`c.end === c.start`) used to be
+                   // accepted outright — and it CANNOT be a container here: its
+                   // whole extent is one line that begins before the symbol's
+                   // first line, so the tree has already said it does not contain
+                   // the symbol. Measured 2026-09-25 over five real systems
+                   // corpora (go-tools 5,937 · nlohmann-json 1,575 · zls 606 ·
+                   // fmt 322 · jq 39 = 8,479 assignments): every analyzer-path one
+                   // was cross-line with respect to the symbol, and the only
+                   // 5 fallback-path ones are handled by Tier 2 below. Not one
+                   // was same-line containment, which is the case the clause
+                   // would have had to serve to be truthful. It was handing
+                   // every go package-clause symbol (`main:1-1`) ownership of
+                   // every file-scope function below it, and every cpp type alias
+                   // or one-line forward declaration (`json:32-32`) ownership of
+                   // the functions that followed.
+                   if (c.start > 0 && c.end >= symbolEndLine) {
                      ownerSymbolId = `${fileId}:${c.name}:${c.start}`
                      break
                    }
                  }
-                 // Tier 2: Nearest preceding container (regex fallback — single-line symbols)
-                 if (!ownerSymbolId) {
+                 // Tier 2: Nearest preceding container.
+                 //
+                 // #612: this rule is gated on the REGEX FALLBACK path, which is
+                 // the only path it was ever truthful for — and its own comment
+                 // said so. The fallback emits flat single-line symbols with no
+                 // containment information (`extractBasicSymbols` writes
+                 // `startLine: i + 1, endLine: i + 1`), so nearest-preceding is
+                 // the only available approximation. On the ANALYZER path the
+                 // tree gives every container a real extent, and a container
+                 // whose recorded `end` is before the symbol's `start` is a
+                 // contradicted fact, not an approximation: the analysis says it
+                 // does not contain the symbol. Assigning it anyway is how this
+                 // lane fabricated ownership — measured 2026-09-25 across five
+                 // real systems corpora (nlohmann-json 125, zls 78, fmt 84, jq 6,
+                 // go-tools 2 = 295 assignments): EVERY one was analyzer-path and
+                 // ended-before, and ZERO came from the fallback this rule was
+                 // written for. The reported defect was `cpp engine.cpp
+                 // run_engine` — a file-scope function owned by `Engine` merely
+                 // because the class precedes it (`go Sqrt@main`, `zig
+                 // render@Palette` had the same shape). Tier 1 above already
+                 // accepts a degenerate single-line container (`c.end ===
+                 // c.start`), so nothing the analyzer path could place is lost
+                 // here; it is confined to the path whose ranges it was meant
+                 // for. Unlike the earlier M59/#879 additive rule (which runs
+                 // only when an owner is still NULL), this is corrected in place:
+                 // the fabricated owners simply stop being written.
+                 if (!ownerSymbolId && isFallbackResult) {
                    for (let ci = containersByStart.length - 1; ci >= 0; ci--) {
                      const c = containersByStart[ci]
                      if (c.start >= symbolStartLine) continue
@@ -2324,6 +2383,13 @@ export async function storeResults(
                // seam. Bound by the M60.P1 enumeration; the payload-seam
                // matrix's rot-check fails the moment this binding disappears.
                symbol.scope || null,
+               // #612: the declaration/definition fact, the same seam class as
+               // docstring (M35) and scope_kind (#837) — the analyzers publish
+               // it, the worker carries it, and the resolver reads it. Unlike
+               // those two this column is NEW, so the binding is the only
+               // writer and a NULL means "definition or undistinguishing
+               // language".
+               symbol.isDeclaration ? 1 : null,
                now,
                now,
              )
