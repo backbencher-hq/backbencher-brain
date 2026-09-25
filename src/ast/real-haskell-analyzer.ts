@@ -802,26 +802,38 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
 
-    // Superclasses: class Semigroup s => Mergeable s → context → apply → first
-    // name child. Multiple: class (A a, B a) => C a → context → tuple → applies.
+    // Superclasses: the constraint tree is walked EXACTLY as the oracle does
+    // (`deriveHaskellEdges`'s #872 lockstep) — tuple lists, parens wrappers,
+    // quantified (forall) bodies, and applied heads taking the LEFT-SPINE class
+    // (`Eq (f a) => D` : the class is Eq, `(f a)` is its argument).
+    //
+    // This was the ONE half of #872 that never landed: the review recorded the
+    // analyzer as fixed, the oracle comment says "exactly as the analyzer now
+    // does", and the analyzer was still the flat list below — which the review
+    // itself describes as the PRE-fix state. The cost was invisible until
+    // `hledger-lib/Hledger/Write/Html/HtmlCommon.hs` (`class (Spr.Lines b) =>
+    // Lines b`) surfaced at depth: `extends Lines -> Spr.Lines` MISSING, and the
+    // fixture's own tuple class pinned nothing, so no gate could have caught it.
+    // Two shapes were missing, and they are different failures: the TUPLE (every
+    // list-context superclass dropped — the shape the canonical 60-file draw
+    // never sampled) and the QUALIFIED head (`P.Show` vs `Show`), which is taken
+    // VERBATIM because that is the text the oracle derives; taking the leaf would
+    // only trade a MISSING edge for a differently-spelled one.
     const context = this.findNamedChildByType(node, ["context"])
     if (context) {
-      const superNames: string[] = []
-      const applies = this.collectNamedChildrenByType(context, ["apply"])
-      for (const ap of applies) {
-        const first = ap.namedChildCount > 0 ? ap.namedChild(0) : null
-        if (first && (first.type === "name" || first.type === "constructor" || first.type === "type")) {
-          superNames.push(first.text)
+      const superNames = new Set<string>()
+      const stack: Node[] = [context]
+      while (stack.length > 0) {
+        const x = stack.pop()!
+        if (x.type === "apply") {
+          // Left spine: apply(apply(f, a), b) => f. An applied head is the class.
+          let head: Node | null = x
+          while (head && head.type === "apply") head = head.namedChildren[0] ?? null
+          if (head && (head.type === "name" || head.type === "constructor" || head.type === "qualified")) {
+            superNames.add(head.text)
+          }
         }
-      }
-      // Parens-wrapped: (Show a) → parens → apply
-      if (superNames.length === 0) {
-        const parens = this.collectNamedChildrenByType(context, ["parens"])
-        for (const p of parens) {
-          const ap = this.findNamedChildByType(p, ["apply"])
-          const first = ap?.namedChildCount ? ap.namedChild(0) : null
-          if (first && (first.type === "name" || first.type === "constructor")) superNames.push(first.text)
-        }
+        for (const c of x.namedChildren) if (c) stack.push(c)
       }
       for (const sn of superNames) {
         this.pushRel(ctx, name, sn, ASTEngine.RelationshipType.Extends, 1.0, { isSuperclass: true })
