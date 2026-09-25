@@ -37,6 +37,7 @@ import {
   parseEnrichment,
   type Enrichment,
 } from "../../src/lsp/enrichment.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H3.json")
@@ -163,7 +164,11 @@ try {
   console.log("\nR2: hover consumes enrichment (single-site implements row)")
   const h = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: namedPos })
   const md = (h?.contents?.value ?? "") as string
-  check("H3/R2: hover resolves Named", h?.data?.name === "Named", h?.data?.name ?? "null")
+  // Wire law (fixed 2026-09-12, M55.G1 bar re-audit): the component envelope
+  // rides the spec Hover's `data` slot as `{ provenance, symbol }`; identity is
+  // `data.symbol.name`. This gate read the pre-`5cce610b` flat `data.name`, so
+  // it sat red from the wire-law commit while the server was correct.
+  check("H3/R2: hover resolves Named", h?.data?.symbol?.name === "Named", h?.data?.symbol?.name ?? "null")
   check("H3/R2: connected section carries the enrichment origin label", md.includes("(enriched by index)"), md.slice(0, 260))
   check("H3/R2: enrichment fields render with their field labels", md.includes("role ") && md.includes("layer "), md.slice(0, 300))
   check("H3/R2: enrichment never upgrades the tier line", md.includes("evidence: structural") && !/evidence: .*role|evidence: .*enriched/.test(md), md.split("\n").find((l) => l.startsWith("evidence")) ?? "")
@@ -278,6 +283,6 @@ const result = {
     "Overhead budget is a pure-layer proxy (2000 cycles); the in-editor 50ms hover budget with an enriched fixture is asserted in the E5 session.",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE, result)
 console.log(`\nH3: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants)`)
 if (failed > 0) process.exitCode = 1

@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "b9c69549a3abd91f4a2ffd7c412d7cfa37beb185",
+  "inputsHash": "014640e8a0ec3edfb15d00629fc1c9d3c993504f",
   "inputs": [
     "validation/m29/results/wave-java.json",
     "validation/m29/results/wave-python.json",
@@ -44,12 +44,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.01,
-          "definition": 2.29,
-          "references": 4.23,
-          "documentSymbol": 3.33,
-          "workspaceSymbol": 2.1,
-          "prepareCallHierarchy": 2.86
+          "hover": 8.57,
+          "definition": 0.95,
+          "references": 1.52,
+          "documentSymbol": 1.21,
+          "workspaceSymbol": 0.83,
+          "prepareCallHierarchy": 0.75
         },
         "budgetViolations": []
       },
@@ -64,13 +64,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-java.json",
-          "commit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
-          "generatedAt": "2026-09-07T00:18:33.288Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-java.json",
-          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -97,12 +94,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.39,
-          "definition": 2.94,
-          "references": 3.22,
-          "documentSymbol": 3.33,
-          "workspaceSymbol": 2.66,
-          "prepareCallHierarchy": 3.02
+          "hover": 6.77,
+          "definition": 0.89,
+          "references": 2.16,
+          "documentSymbol": 1.07,
+          "workspaceSymbol": 0.82,
+          "prepareCallHierarchy": 0.74
         },
         "budgetViolations": []
       },
@@ -117,13 +114,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-python.json",
-          "commit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
-          "generatedAt": "2026-09-07T00:18:39.388Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-python.json",
-          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -150,12 +144,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 9.98,
-          "definition": 3.05,
-          "references": 5.02,
-          "documentSymbol": 3.76,
-          "workspaceSymbol": 3.1,
-          "prepareCallHierarchy": 2.92
+          "hover": 9.67,
+          "definition": 1.89,
+          "references": 2.56,
+          "documentSymbol": 2.21,
+          "workspaceSymbol": 1.43,
+          "prepareCallHierarchy": 1.43
         },
         "budgetViolations": []
       },
@@ -170,13 +164,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-typescript.json",
-          "commit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
-          "generatedAt": "2026-09-07T00:18:44.739Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-typescript.json",
-          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -203,12 +194,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 15.33,
-          "definition": 3.15,
-          "references": 3.86,
-          "documentSymbol": 4.89,
-          "workspaceSymbol": 3.35,
-          "prepareCallHierarchy": 2.56
+          "hover": 8.98,
+          "definition": 1.16,
+          "references": 1.39,
+          "documentSymbol": 2.26,
+          "workspaceSymbol": 1.21,
+          "prepareCallHierarchy": 1.44
         },
         "budgetViolations": []
       },
@@ -223,13 +214,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-javascript.json",
-          "commit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
-          "generatedAt": "2026-09-07T00:18:50.451Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-javascript.json",
-          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -256,12 +244,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 10.97,
-          "definition": 2.52,
-          "references": 3.28,
-          "documentSymbol": 2.8,
-          "workspaceSymbol": 2.67,
-          "prepareCallHierarchy": 2.96
+          "hover": 8.31,
+          "definition": 1.07,
+          "references": 1.18,
+          "documentSymbol": 1.39,
+          "workspaceSymbol": 1.87,
+          "prepareCallHierarchy": 1.46
         },
         "budgetViolations": []
       },
@@ -276,13 +264,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-kotlin.json",
-          "commit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
-          "generatedAt": "2026-09-07T00:18:55.945Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-kotlin.json",
-          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -309,12 +294,12 @@
       },
       "latency": {
         "warmP95Ms": {
-          "hover": 13.85,
-          "definition": 2.34,
-          "references": 3.75,
-          "documentSymbol": 3.04,
-          "workspaceSymbol": 3.03,
-          "prepareCallHierarchy": 2.55
+          "hover": 9.68,
+          "definition": 1.63,
+          "references": 2.02,
+          "documentSymbol": 2.57,
+          "workspaceSymbol": 1.83,
+          "prepareCallHierarchy": 1.82
         },
         "budgetViolations": []
       },
@@ -329,13 +314,10 @@
       "evidence": {
         "s5": {
           "path": "validation/m29/results/wave-scala.json",
-          "commit": "9f7c3afb8c6f70de8c18fa702bad7d76d8c8f0d1",
-          "generatedAt": "2026-09-07T00:19:01.485Z",
           "status": "verified"
         },
         "s6": {
           "path": "validation/m29/results/wave-editor-scala.json",
-          "commit": "e535d780ba84b1d6eff16257f412d23d3a32a587",
           "status": "verified"
         }
       },
@@ -349,18 +331,18 @@
       "revision": "f7572f6229314400",
       "files": 59000
     },
-    "hoverP95Ms": 21.55,
-    "inEditorHoverP95Ms": 9.09,
-    "coldMedianMs": 576,
+    "hoverP95Ms": 4.78,
+    "inEditorHoverP95Ms": 8.13,
+    "coldMedianMs": 882,
     "tierRatio": {
-      "totalRelationships": 777954,
-      "inferredRatioBeforePct": 42.5,
+      "totalRelationships": 785954,
+      "inferredRatioBeforePct": 42.1,
       "inferredRatioAfterPct": 0,
       "fix": "hover honors stored metadata.evidenceClass + structural set at the W4 0.7 floor (script/m29/r5-tier-fixture.ts, mutant-gated)"
     },
     "evidence": "validation/m29/results/R3.json"
   },
-  "stalenessPolicy": "This ledger is machine-regenerated. Any change to the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
+  "stalenessPolicy": "This ledger is machine-regenerated. Any change to the SEMANTIC content of the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Declared volatile run metadata is excluded from the hash (commit, currentCommit, generatedAt, bbSeal, workingTreeRelevantChanges) because it changes on every re-run while the evidence itself does not — including it would make byte-identical regeneration un-passable. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
   "limitations": [
     "Differential floors are M14's committed baselines (named repo per language), not the full ecosystem — the numbers are floors, not upper bounds.",
     "Per-language warm p95 is measured over the wave fixture pack (real index, real server), not over giant-scale workspaces; the scale row (R3) covers the giant regime separately.",

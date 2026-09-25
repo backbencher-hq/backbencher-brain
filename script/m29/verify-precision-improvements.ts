@@ -28,11 +28,17 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { probeFixture, seedTierFixture } from "./r5-tier-fixture.ts"
 import { createRequire } from "node:module"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const require = createRequire(import.meta.url)
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const R3 = path.join(ROOT, "validation/m29/results/R3.json")
+const LEDGER_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
 const HOVER = path.join(ROOT, "src/lsp/hover.ts")
+// M55.T5: the tier rule moved out of src/lsp/hover.ts into the LSP lane's
+// single owner; F6 drift-gates the owner and asserts the hover delegates.
+const TIER_OWNER = path.join(ROOT, "src/lsp/evidence_tier.ts")
 
 let passed = 0
 let failed = 0
@@ -114,11 +120,21 @@ check("F0: dist is fresh (rebuilt after the last hover.ts change)", distMtime >=
 // ---------------------------------------------------------------------------
 let tierRatio: any = null
 try {
-  tierRatio = (JSON.parse(readFileSync(R3, "utf8")) as any).budgets.tierRatio
+  tierRatio = (parseSealedRecord(R3) as any).budgets.tierRatio
 } catch {}
 check("F2: tier-ratio measurement recorded in R3.json", !!tierRatio && typeof tierRatio.inferredRatioBeforePct === "number")
 check("F2: the improvement is real (inferredAfter < inferredBefore)", !!tierRatio && tierRatio.inferredAfter < tierRatio.inferredBefore, tierRatio ? `${tierRatio.inferredBefore} -> ${tierRatio.inferredAfter} of ${tierRatio.totalRelationships}` : undefined)
-check("F2: before-ratio matches the published ledger motivation (42.5%)", tierRatio?.inferredRatioBeforePct === 42.5, String(tierRatio?.inferredRatioBeforePct))
+// M53: the motivation figure is the GENERATED ledger's recorded value —
+// never a frozen literal (the corpus re-measures when analyzers change; a
+// literal goes stale, a generated record drift-detects via R4's freshness
+// gate). R5 asserts R3's live measurement agrees with what the ledger
+// publishes; regenerating the ledger reconciles them (one owner of truth).
+let ledgerBeforePct: number | null = null
+try {
+  ledgerBeforePct = (parseSealedRecord(LEDGER_JSON) as any).giantScale.tierRatio.inferredRatioBeforePct
+} catch {}
+check("F2: before-ratio matches the published ledger motivation", typeof ledgerBeforePct === "number" && tierRatio?.inferredRatioBeforePct === ledgerBeforePct, `live=${tierRatio?.inferredRatioBeforePct} ledger=${ledgerBeforePct}`)
+check("F2: the published motivation is in the declared band (>= 40% inferred before the fix)", typeof ledgerBeforePct === "number" && ledgerBeforePct >= 40, String(ledgerBeforePct))
 // F3: replay both rules over the recorded distribution — the delta is attributable.
 {
   const dist = (tierRatio?.distributionAfter ?? {}) as Record<string, number>
@@ -138,9 +154,13 @@ check("F4: a 0.7-confidence contains edge reads structural", newTier("contains",
 // F6: source drift gates — the rule lives where the gates say it lives
 // ---------------------------------------------------------------------------
 const src = readFileSync(HOVER, "utf8")
-check("F6: hover.ts honors stored evidenceClass", src.includes("evidenceClass") && src.includes("JSON.parse(r.metadata)"))
-check("F6: hover.ts structural set includes the containment/exports/instantiates facts", ["contains", "exports", "instantiates", "inherits"].every((t) => src.includes(`"${t}"`)))
-check("F6: the 0.7 floor is declared in hover.ts", src.includes(">= 0.7") || src.includes("0.7 ?"))
+const owner = readFileSync(TIER_OWNER, "utf8")
+// M55.T5: the rule lives in ONE module (src/lsp/evidence_tier.ts). The hover
+// must DELEGATE (no local copy), and the owner must carry the R5 rule.
+check("F6: hover.ts delegates tier derivation to the single owner (M55.T5)", src.includes('./evidence_tier') && !src.includes("RELATIONSHIP_TIER") && !src.includes("JSON.parse(r.metadata)"), "the hover must not carry a second derivation")
+check("F6: the owner honors stored evidenceClass", owner.includes("evidenceClass") && owner.includes("isDeclaredTier") && owner.includes("JSON.parse(metadata)"))
+check("F6: the owner's structural set includes the containment/exports/instantiates facts", ["contains", "exports", "instantiates", "inherits"].every((t) => owner.includes(`"${t}"`)))
+check("F6: the 0.7 floor is declared in the owner", owner.includes("STRUCTURAL_FLOOR = 0.7") && owner.includes(">= STRUCTURAL_FLOOR"))
 check("F6: the F7 fixture is referenced in hover.ts's rationale", src.includes("r5-tier-fixture"))
 
 // ---------------------------------------------------------------------------
@@ -179,6 +199,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/R5-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R5-verify.json"), result)
 console.log(`R5: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 4 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

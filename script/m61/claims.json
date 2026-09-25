@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M61",
+  "issue": "M61.V5 claim pins (issue #846)",
+  "authority": "docs/m61/M61-MASTER-PLAN.md D-5 (claims are re-derived)",
+  "note": "Every published number is pinned to the evidence that owns it. `template` is rendered from the DERIVED values at gate-run time and must appear verbatim in `doc` — row-anchored so a matching number in another row cannot satisfy it. A mismatch is drift: either the doc or the ledger moved. `coverage` declares the full audit set (README + website + docs, per issue #846): a `pinned` doc publishes this lane's counts and must have claims here; an `out-of-scope` doc must publish NONE — a lane count appearing there fails the gate, so the exclusion is enforced rather than assumed.",
+  "coverage": [
+    { "doc": "docs/IDE-PROGRAM-STATUS.md", "status": "pinned" },
+    {
+      "doc": "README.md",
+      "status": "out-of-scope",
+      "reason": "README publishes the analyzer/MCP surface numbers (tool counts, 40+ Tree-sitter languages, file-mode digits) — another lane's claims, not this one's. This lane publishes no count there; the scan enforces that, so a lane number added to README fails until it is pinned."
+    },
+    {
+      "doc": "website/src/app/editors/page.tsx",
+      "status": "out-of-scope",
+      "reason": "the editors page POINTS at drift-gated docs (docs/m24/TOOL-DOC.md, the m29 precision ledger) and states the I1 protocol tier; it publishes no lane count. A count appearing here is a published claim and fails."
+    },
+    { "doc": "website/src/app/docs/page.tsx", "status": "out-of-scope", "reason": "documentation index: page metadata and links, no lane counts." },
+    { "doc": "docs/website/TOOLS.md", "status": "out-of-scope", "reason": "tool surface reference: describes tool semantics, states no lane count." },
+    { "doc": "website/faq.md", "status": "out-of-scope", "reason": "FAQ prose: no lane counts." },
+    { "doc": "website/index-commands.md", "status": "out-of-scope", "reason": "command reference: no lane counts." },
+    { "doc": "website/README.md", "status": "out-of-scope", "reason": "website build instructions: no lane counts." }
+  ],
+  "claims": [
+    {
+      "id": "m25-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "| v1 | M25 | The Extension | **CLOSED** ({verified}/{total} verified)",
+      "derive": { "kind": "issue-counts", "source": "validation/m25/results/manifest.json" }
+    },
+    {
+      "id": "m26-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "| v2 | M26 | The Graph | **CLOSED** ({verified}/{total} verified)",
+      "derive": { "kind": "issue-counts", "source": "validation/m26/results/manifest.json" }
+    },
+    {
+      "id": "m27-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** ({verified}/{total} verified)",
+      "derive": { "kind": "issue-counts", "source": "validation/m27/results/manifest.json" }
+    },
+    {
+      "id": "m28-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "| v4 | M28 | The Union (MCP + agent) | **CLOSED** ({verified}/{total} verified)",
+      "derive": { "kind": "issue-counts", "source": "validation/m28/results/manifest.json" }
+    },
+    {
+      "id": "m29-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "| v5 | M29 | Precision Waves | **CLOSED** ({verified}/{total} verified)",
+      "derive": { "kind": "issue-counts", "source": "validation/m29/results/manifest.json" }
+    },
+    {
+      "id": "m42-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "| v6 | M42 | The Interactive Hover | **CLOSED** ({verified}/{total} verified)",
+      "derive": { "kind": "issue-counts", "source": "validation/m42/results/manifest.json" }
+    },
+    {
+      "id": "m44-x1",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "closure gate verified (X1 {passed}/{checks} at HEAD)",
+      "derive": { "kind": "field", "source": "validation/m44/results/X1.json", "template": "{passed}/{checks}" }
+    },
+    {
+      "id": "m26-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "{mutants} mutants caught across {suites} suites | [m26 ledger]",
+      "derive": { "kind": "mutant-totals", "source": "validation/m26/results/*.json" }
+    },
+    {
+      "id": "m27-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "{mutants} mutants caught across {suites} suites | [m27 ledger]",
+      "derive": { "kind": "mutant-totals", "source": "validation/m27/results/*.json" }
+    },
+    {
+      "id": "m28-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "{mutants} mutants caught across {suites} suites | [m28 ledger]",
+      "derive": { "kind": "mutant-totals", "source": "validation/m28/results/*.json" }
+    },
+    {
+      "id": "m26-timeline",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "M26 closed: {verified}/{total} issues verified",
+      "derive": { "kind": "issue-counts", "source": "validation/m26/results/manifest.json" }
+    },
+    {
+      "id": "m26-x1",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "template": "X1 closure gate {passed}/{checks} with per-mutant records",
+      "derive": { "kind": "field", "source": "validation/m26/results/X1.json", "template": "{passed}/{checks}" }
+    }
+  ]
+}

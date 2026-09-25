@@ -26,6 +26,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
 import { pathToFileURL } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EXT_ROOT = path.join(ROOT, "ide/vscode")
@@ -130,6 +131,25 @@ try {
     typeof nothing.error === "string" && nothing.error.includes("bbLsp.serverPath"),
     JSON.stringify(nothing),
   )
+
+  // --- G1b: no-workspace refusal (M53 live-session defect, 2026-09-12) -----
+  // A single-file window has NO workspace folder. The extension used to fall
+  // back to process.cwd() and silently start the server against an arbitrary
+  // root (it indexed and watched the WRONG project while the status surface
+  // looked alive). The extension now refuses BEFORE resolution; the refusal
+  // is a pure function of the workspace state, verified here at the same
+  // boundary activate() uses. The resolver itself must also never be handed
+  // a guessed root: the wire contract is workspaceRootOrNull() === null →
+  // no launch attempt.
+  {
+    const src = readFileSync(path.join(EXT_ROOT, "src", "extension.ts"), "utf8")
+    const hasGuard = src.includes("workspaceRootOrNull()") && src.includes("no workspace folder")
+    check("G1b: single-file window is a declared refusal (no silent cwd root)", hasGuard, hasGuard ? "activate() refuses before resolveServerLaunch" : "guard missing")
+    // The fallback path must be GONE: workspaceRoot() may not return cwd when
+    // folders exist — and activate may not call it without a null check.
+    const cwdFallback = /workspaceFolders\?\.\[0\]\?\.uri\.fsPath \?\? process\.cwd\(\)/.test(src)
+    check("G1b: the process.cwd() fallback is removed from the root getter", !cwdFallback, cwdFallback ? "silent fallback still present" : "clean")
+  }
 
   // --- G2: version matrix --------------------------------------------------
   check("G2: equal version satisfies minimum", serverVersionSatisfiesMinimum("0.3.0", "0.3.0") === true)
@@ -294,6 +314,6 @@ const result = {
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m25/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m25/results/E1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m25/results/E1.json"), result)
 console.log(`E1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught)`)
 process.exit(failed === 0 ? 0 : 1)

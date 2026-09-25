@@ -24,6 +24,9 @@
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
 import { createPositionMapper, resolveRowByteColumns, PositionError } from "./positions";
+// M55.T3: the ONE relation vocabulary — a declaration row is never a usage,
+// and neither is a row that references the symbol from itself.
+import { isUsageSiteRow } from "./relations";
 import { languageForPath } from "./hover";
 
 /** Hard cap on locations per response (contract §3 bounded result sets). */
@@ -103,7 +106,6 @@ interface EdgeRow {
   id: string;
   source_symbol_id: string | null;
   target_symbol_id: string | null;
-  line_number: number | null;
   confidence: number;
   relationship_type: string;
   source_path: string | null;
@@ -182,12 +184,119 @@ export function findIndexedSymbol(
   return best;
 }
 
+/** M53: the identifier under the cursor resolves to the indexed symbol it
+ *  NAMES — reference-first resolution, the same truth hover uses. This is
+ *  the call-site fix (found live during M53.R2): at a call site (`g.greet(`)
+ *  the symbol containing the position is the ENCLOSING function, so the old
+ *  containment-only model navigated to the wrong place (definition on
+ *  `greet` landed on `main`). Resolution order, declared:
+ *    1. exact-name symbol in the SAME FILE (owner of the identifier — this
+ *       includes the identifier's own declaration position),
+ *    2. else exact-name symbol UNIQUE in the workspace (cross-file use of a
+ *       uniquely-named symbol),
+ *    3. else null — declared absence. Ambiguity is NEVER guessed: a
+ *       workspace-ambiguous name falls back to containment (the enclosing
+ *       symbol is still a truthful answer), and callers keep their contract.
+ *  Returns null when the position holds no identifier or the file cannot be
+ *  read (containment remains the only model — honest degradation). */
+export function findNamedSymbolAtPosition(
+  raw: CoreDatabase,
+  filePath: string,
+  line: number,
+  character: number,
+): SymbolRow | null {
+  let sourceText: string;
+  try {
+    sourceText = readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+  const mapper = createPositionMapper(sourceText);
+  let indexPos;
+  try {
+    indexPos = mapper.lspToIndex({ line: line, character: character });
+  } catch (err) {
+    if (err instanceof PositionError) return null;
+    throw err;
+  }
+  // The identifier under the cursor, from the actual file text (per-line
+  // 1-based byte columns, the index convention P1 owns).
+  const lines = sourceText.split("\n");
+  const lineText = lines[indexPos.line - 1] ?? "";
+  // Convert the 1-based byte column to a JS string index (UTF-8 bytes → code
+  // units via a byte-accurate walk; ASCII fast path first).
+  let jsCol = indexPos.column - 1;
+  if (Buffer.byteLength(lineText, "utf8") !== lineText.length) {
+    let bytes = 0;
+    jsCol = 0;
+    for (let i = 0; i < lineText.length; i++) {
+      const b = Buffer.byteLength(lineText[i], "utf8");
+      if (bytes + b > indexPos.column - 1) break;
+      bytes += b;
+      jsCol = i + 1;
+    }
+    if (jsCol > 0) jsCol -= 0; // jsCol = first code unit at/after the byte col
+  }
+  if (jsCol > lineText.length) return null;
+  const isWordChar = (ch: string): boolean => /[A-Za-z0-9_$]/.test(ch);
+  if (jsCol < lineText.length && !isWordChar(lineText[jsCol]!)) {
+    // Cursor on a non-word char (dot, paren): step left onto the identifier.
+    if (jsCol === 0 || !isWordChar(lineText[jsCol - 1]!)) return null;
+    jsCol--;
+  }
+  let start = jsCol;
+  let end = jsCol;
+  while (start > 0 && isWordChar(lineText[start - 1]!)) start--;
+  while (end < lineText.length && isWordChar(lineText[end]!)) end++;
+  const identifier = lineText.slice(start, end);
+  if (!identifier) return null;
+  // 1. same-file exact name — the identifier's owner (declarations included).
+  const sameFile = raw
+    .prepare(
+      `SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.file_id,
+              s.byte_start, s.byte_end, s.line_start, s.line_end,
+              f.path, f.language
+       FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+       WHERE f.path = ? AND s.name = ?`,
+    )
+    .all(filePath, identifier) as SymbolRow[];
+  if (sameFile.length === 1) return sameFile[0]!;
+  if (sameFile.length > 1) {
+    // Several same-file rows share the name (overloads, member + local): the
+    // narrowest span containing the column wins (inner symbol over outer).
+    const hit = sameFile.find(
+      (r) =>
+        r.line_start !== null &&
+        r.line_end !== null &&
+        r.line_start <= indexPos.line &&
+        r.line_end >= indexPos.line,
+    );
+    if (hit) return hit;
+  }
+  // 2. workspace-unique exact name.
+  const rows = raw
+    .prepare(
+      `SELECT s.id, s.name, s.qualified_name, s.symbol_type, s.file_id,
+              s.byte_start, s.byte_end, s.line_start, s.line_end,
+              f.path, f.language
+       FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+       WHERE s.name = ?`,
+    )
+    .all(identifier) as SymbolRow[];
+  if (rows.length === 1) return rows[0]!;
+  return null; // 3. ambiguous or unknown — declared absence (never a guess)
+}
+
 /** Resolve textDocument/definition for a position. */
 export function resolveDefinition(
   raw: CoreDatabase,
   request: DefinitionRequest,
 ): DefinitionResult {
-  const symbol = findIndexedSymbol(raw, request.filePath, request.line, request.character);
+  // M53: reference-first — the identifier the cursor is ON wins over the
+  // symbol that CONTAINS the cursor. Only when the position names nothing
+  // indexed does containment answer (enclosing symbol — the old model).
+  const named = findNamedSymbolAtPosition(raw, request.filePath, request.line, request.character);
+  const symbol = named ?? findIndexedSymbol(raw, request.filePath, request.line, request.character);
   if (symbol === null) {
     return {
       found: false,
@@ -307,11 +416,28 @@ export function resolveReferences(
     };
   }
 
-  // Reverse edges: relationships pointing at this symbol (callers), plus the
-  // symbol's own declaration when includeDeclaration is set.
+  // Reverse edges: the stored rows whose TARGET is this symbol — the usage
+  // sites, by the one vocabulary in src/lsp/relations.ts (M55.T3, §14 Truth
+  // Rule 1). History: this surface answered BOTH directions, so a callee (a
+  // symbol the hovered one calls) and the hovered symbol's own owning class
+  // (`contains`) were served as "references" — on the demo index greet
+  // answered 7 while the graph reported 3 callers and the hover counted 6.
+  // Declaration containments (`contains`/`exports`) are filtered by the same
+  // predicate the hover list uses, so the two surfaces cannot disagree; the
+  // declaration itself is still offered when the client asks for it
+  // (includeDeclaration, the LSP context flag).
   const edges = raw
     .prepare(
-      `SELECT r.id, r.source_symbol_id, r.target_symbol_id, r.line_number,
+      // M62.A2 (issue #876): the stored `r.line_number` is deliberately NOT
+      // selected here. This surface navigates to the referencing symbol's own
+      // indexed location (byte-accurate); presenting the stored call-site line
+      // would be a line-only position (character 0) and a SECOND position
+      // claim beside the address owner's. Where a real call-site line exists
+      // it is served by the hub/graph/MCP address surfaces, which derive it
+      // through src/intelligence/graph/line-address.ts. Keeping the raw column
+      // out of this query is what the M62 permanence lint asserts for every
+      // display-side consumer.
+      `SELECT r.id, r.source_symbol_id, r.target_symbol_id,
               r.confidence, r.relationship_type,
               sf.path AS source_path, ss.byte_start AS source_byte_start,
               ss.byte_end AS source_byte_end, ss.line_start AS source_line_start,
@@ -324,32 +450,42 @@ export function resolveReferences(
        LEFT JOIN brain_file sf ON sf.id = ss.file_id
        LEFT JOIN brain_symbol ts ON ts.id = r.target_symbol_id
        LEFT JOIN brain_file tf ON tf.id = ts.file_id
-       WHERE r.target_symbol_id = ? OR r.source_symbol_id = ?
+       WHERE r.target_symbol_id = ?
        ORDER BY r.confidence DESC, r.id`,
     )
-    .all(symbol.id, symbol.id) as EdgeRow[];
+    .all(symbol.id) as EdgeRow[];
 
   const locations: NavigationLocation[] = [];
   const seen = new Set<string>();
   for (const edge of edges) {
-    // The reference site is the *other* end of the edge (the caller for
-    // incoming edges, the callee for outgoing ones).
-    const useSource = edge.target_symbol_id === symbol.id;
-    const loc = useSource
-      ? edgeLocation(
-          edge.source_path,
-          edge.source_byte_start,
-          edge.source_byte_end,
-          edge.source_line_start,
-          edge.source_line_end,
-        )
-      : edgeLocation(
-          edge.target_path,
-          edge.target_byte_start,
-          edge.target_byte_end,
-          edge.target_line_start,
-          edge.target_line_end,
-        );
+    // The ONE vocabulary (src/lsp/relations.ts): a reference is a stored row
+    // whose target is this symbol and whose kind is not a declaration
+    // containment. The same predicate is applied by the hover's collector and
+    // by the SQL count, so the three surfaces cannot drift apart — including
+    // on the rows that are easy to forget (a self-loop `calls` row written by
+    // an analyzer is neither a declaration nor a reference; the first version
+    // of this filter kept it and the T3 gate caught the extra location).
+    if (
+      !isUsageSiteRow(
+        {
+          source_symbol_id: edge.source_symbol_id,
+          target_symbol_id: edge.target_symbol_id,
+          relationship_type: edge.relationship_type,
+        },
+        symbol.id,
+      )
+    ) {
+      continue;
+    }
+    // The reference site is the OTHER end — the referencing symbol, whose
+    // indexed location is where the reference lives.
+    const loc = edgeLocation(
+      edge.source_path,
+      edge.source_byte_start,
+      edge.source_byte_end,
+      edge.source_line_start,
+      edge.source_line_end,
+    );
     if (loc === null) continue;
     const key = `${loc.path}:${loc.line}:${loc.character}`;
     if (seen.has(key)) continue;

@@ -25,6 +25,8 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { createHash } from "node:crypto"
 import { computeCap, analyzerConformance, type SpecLedger, type Step } from "./wave-protocol.ts"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -59,7 +61,7 @@ function gitCommit(): string {
 // The owner-approved wave-1 set is the ledger's row set (authority: the
 // approval record; languages are added here ONLY via a recorded wave).
 function approvedLanguages(): string[] {
-  const a = JSON.parse(readFileSync(APPROVAL, "utf8")) as { languages: string[] }
+  const a = parseSealedRecord(APPROVAL) as { languages: string[] }
   return a.languages
 }
 
@@ -145,12 +147,88 @@ function languageRow(lang: string, spec: SpecLedger): Record<string, unknown> {
       evidenceTiersPinned: tierCount === null ? null : Number(tierCount),
       source: "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)",
     },
+    // Path + status only: the input's OWN run metadata (commit, generatedAt)
+    // stays in that input's record. Publishing it here would make this artifact
+    // change on every upstream re-run while nothing semantic changed, and the
+    // R4/D1 records that pin this file could then never be fresh at the same
+    // HEAD (found at HEAD e596a107: each closure re-run rewrote the S6 leg
+    // evidence, whose commit is published here, so byte-identical regeneration
+    // — the drift gate — was impossible to hold). A generated artifact whose
+    // byte identity IS the gate carries no other run's metadata; the R4 gate
+    // asserts this invariant structurally.
     evidence: {
-      s5: { path: s5Path, commit: s5.commit, generatedAt: s5.generatedAt, status: s5.status },
-      s6: s6 ? { path: s6Path, commit: s6.commit, status: s6.status } : { path: s6Path, present: false },
+      s5: { path: s5Path, status: s5.status },
+      s6: s6 ? { path: s6Path, status: s6.status } : { path: s6Path, present: false },
     },
     limitations: s5.budgetViolations.length > 0 ? [`budget violations recorded: ${s5.budgetViolations.join("; ")}`] : [],
   }
+}
+
+// --- Declared volatile fields in the input evidence --------------------------
+//
+// The ledger's inputs are EVIDENCE RECORDS, and a record correctly carries the
+// metadata of the run that produced it: the commit it ran at, the generation
+// time, and its seal. Those fields change on EVERY re-run even when nothing
+// semantic changed — and this ledger's drift gate is byte-identical
+// regeneration, so hashing raw bytes would make the gate un-passable after any
+// upstream re-run while reporting "stale" for a ledger that is not stale.
+//
+// The fix is a declared exclusion, not a weakened gate: the hash is taken over
+// the PARSED record with exactly these fields removed. Every semantic field
+// still participates (a changed claim, check, measurement, status, or a
+// re-shaped record all change the hash), which the R4 gate now proves in both
+// directions (G2: a volatile field is ignored; M5: a semantic field is not).
+const VOLATILE_FIELDS = new Set([
+  "commit",
+  "currentCommit",
+  "generatedAt",
+  "bbSeal",
+  "workingTreeRelevantChanges",
+])
+
+/** Exported for the R4 gate's two-direction proof (volatile ignored, semantic
+ *  honored). The gate must not be able to widen this exclusion silently. */
+export function normalizeEvidence(value: unknown): unknown {
+  return dropVolatile(value)
+}
+
+function dropVolatile(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(dropVolatile)
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (VOLATILE_FIELDS.has(k)) continue
+      out[k] = dropVolatile(v)
+    }
+    return out
+  }
+  return value
+}
+
+/** The bytes the hash is taken over for one declared input: raw for source
+ *  files, volatile-normalized for JSON evidence (unparseable JSON falls back to
+ *  raw so a corrupt record still drifts). */
+function hashInputBytes(rel: string): string | null {
+  const p = path.join(ROOT, rel)
+  if (!existsSync(p)) return null
+  if (!rel.endsWith(".json")) return readFileSync(p, "utf8")
+  const raw = readFileSync(p, "utf8")
+  try {
+    return JSON.stringify(dropVolatile(JSON.parse(raw)))
+  } catch {
+    return raw
+  }
+}
+
+export function hashInputs(inputs: string[]): string {
+  const h = createHash("sha256")
+  for (const rel of inputs) {
+    const bytes = hashInputBytes(rel)
+    if (bytes === null) continue
+    h.update(rel, "utf8")
+    h.update(bytes)
+  }
+  return h.digest("hex").substring(0, 40)
 }
 
 export function buildLedger(): { json: string; md: string; inputsHash: string } {
@@ -161,7 +239,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
   // Giant-scale row from R3 (scale regime — separate from per-language S5).
   let giant: Record<string, unknown> = { present: false, note: "R3.json missing — no scale row published" }
   if (existsSync(R3)) {
-    const r3 = JSON.parse(readFileSync(R3, "utf8")) as any
+    const r3 = parseSealedRecord(R3) as any
     if (r3?.status === "verified") {
       giant = {
         present: true,
@@ -196,12 +274,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
     "script/m29/wave-protocol.ts",
     "script/m29/generate-precision-ledger.ts",
   ]
-  const h = createHash("sha256")
-  for (const rel of INPUTS) {
-    const p = path.join(ROOT, rel)
-    if (existsSync(p)) h.update(rel, "utf8"), h.update(readFileSync(p))
-  }
-  const inputsHash = h.digest("hex").substring(0, 40)
+  const inputsHash = hashInputs(INPUTS)
 
   const doc = {
     milestone: "M29.R4",
@@ -215,7 +288,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
     inputs: INPUTS,
     languages: rows,
     giantScale: giant,
-    stalenessPolicy: "This ledger is machine-regenerated. Any change to the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
+    stalenessPolicy: "This ledger is machine-regenerated. Any change to the SEMANTIC content of the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Declared volatile run metadata is excluded from the hash (commit, currentCommit, generatedAt, bbSeal, workingTreeRelevantChanges) because it changes on every re-run while the evidence itself does not — including it would make byte-identical regeneration un-passable. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
     limitations: [
       "Differential floors are M14's committed baselines (named repo per language), not the full ecosystem — the numbers are floors, not upper bounds.",
       "Per-language warm p95 is measured over the wave fixture pack (real index, real server), not over giant-scale workspaces; the scale row (R3) covers the giant regime separately.",
@@ -228,7 +301,7 @@ export function buildLedger(): { json: string; md: string; inputsHash: string } 
   // together; the gate requires byte-identical equality with both).
   const md: string[] = []
   md.push("# Precision ledger — bb_lsp per-language, per-feature truth (M29.R4)\n")
-  md.push(`Inputs hash \`${inputsHash}\` (deterministic: byte-identical regeneration is the drift gate; run record with commit + timestamp lives in validation/m29/results/R4.json).\n`)
+  md.push(`Inputs hash \`${inputsHash}\` (deterministic: byte-identical regeneration is the drift gate. The hash covers the evidence's semantic content; declared volatile run metadata — commit, generation time, seal — is excluded, so an upstream re-run does not report a false "stale". Run record with commit + timestamp lives in validation/m29/results/R4.json).\n`)
   md.push("> This document is **generated** from evidence files. A hand edit breaks the drift gate (`script/m29/verify-precision-ledger.ts`). Claim levels are computed by the R1 binding from recorded evidence — they cannot be edited up. Staleness policy: any input-evidence change makes this stale until regenerated.\n")
   md.push("| language | claim | conformance | hover | tier | def | refs | docSym | wsSym | absence | callHier | budget | diff missing/unexplained | ms/file | tiers |")
   md.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
@@ -266,7 +339,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
       commit: gitCommit(),
       generatedAt: new Date().toISOString(),
     }
-    writeFileSync(path.join(ROOT, "validation/m29/results/R4.json"), JSON.stringify(result, null, 2) + "\n")
+    writeSealed(path.join(ROOT, "validation/m29/results/R4.json"), result)
     console.log(`R4: ledger written (inputsHash ${inputsHash.slice(0, 10)})`)
   } else {
     console.log(json)

@@ -143,7 +143,7 @@
       "githubIssue": 572,
       "tool": "cli",
       "status": "verified",
-      "scope": "English help unification + help\u2194implementation parity gate (both directions, built binary)",
+      "scope": "English help unification + help↔implementation parity gate (both directions, built binary)",
       "acceptanceCriteria": [
         "all CLI-facing strings in bb --help are English (Turkish list pinned as banned in help)",
         "every command/flag in help exists in implementation and vice versa",
@@ -217,5 +217,10 @@
         "negativeCases": 6
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.473Z",
+    "contentSha256": "a5ce3cbf042781823d700e41bbf46375de962542feab6e22bae5f14bd4178011"
+  }
 }

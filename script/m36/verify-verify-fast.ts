@@ -2,10 +2,18 @@
 //
 // CI enforcement gate. Proves that the runner-certified verification
 // discipline is actually WIRED for enforcement:
-//   A. package.json defines `verify:fast` containing exactly the 21 gates
-//      fresh-HOME-certified for runners (M30×6, M32×6, M33×6, M34×3) —
-//      and nothing else (a removed gate or a smuggled-in machine-specific
-//      gate both fail).
+//   A. package.json defines `verify:fast` containing exactly the certified
+//      set — and nothing else (a removed gate or a smuggled-in gate that can
+//      never run on a runner both fail). The set has two tiers, each with a
+//      stated certification basis:
+//        - 21 fresh-HOME-certified gates (M30×6, M32×6, M33×6, M34×3).
+//        - 3 runner-proven additions: M29 R1/R4 (observed green on
+//          ubuntu-latest in CI run 34774391788) and M56 governance
+//          (HOME-independent: it reads plan/ledger/git metadata only, and is
+//          green in a runner-faithful checkout with no website deps).
+//      A leg that needs website deps, a built site, a display, the packaged
+//      VSIX, or ffmpeg is NOT eligible, however green it is on a dev box —
+//      those live in the verify-site job or the local `npm run verify` chain.
 //   B. .github/workflows/ci.yml has a `verify` job that runs verify:fast
 //      on ubuntu-latest with npm ci and EXPLICITLY installs groff + man-db
 //      (absent from runner images; silently skipping the man-page gate is
@@ -45,8 +53,10 @@ function check(label: string, condition: boolean, detail = ""): void {
   }
 }
 
-// The runner-certified gate set — the exact list fresh-HOME-certified in the
-// M36.S2 certification runs (21 gates). Keep in sync with package.json.
+// The runner-certified gate set. Tier 1 (21 gates) is the exact list
+// fresh-HOME-certified in the M36.S2 certification runs; tier 2 (the last 3)
+// is the runner-proven additions documented in the header. Keep in sync with
+// package.json — that equality is check A.
 const CERTIFIED_GATES = [
   "script/m30/verify-governance.ts",
   "script/m30/verify-setup.ts",
@@ -69,6 +79,11 @@ const CERTIFIED_GATES = [
   "script/m34/verify-governance.ts",
   "script/m34/verify-install-smoke.ts",
   "script/m34/verify-script-gate.ts",
+  // Tier 2 — runner-proven additions (basis stated in the header). Each is
+  // HOME-independent and free of website/display/VSIX/ffmpeg prerequisites.
+  "script/m29/verify-wave-protocol.ts",
+  "script/m29/verify-precision-ledger.ts",
+  "script/m56/verify-governance.ts",
 ]
 
 function extractVerifyFast(pkgText: string): string[] {
@@ -107,7 +122,7 @@ console.log("M36.S2 verify-fast wiring gate")
 const pkgText = readFileSync(path.join(ROOT, "package.json"), "utf8")
 const listed = extractVerifyFast(pkgText)
 check("A: verify:fast exists in package.json", listed.length > 0)
-check("A: verify:fast lists exactly the 21 certified gates", listed.length === CERTIFIED_GATES.length && CERTIFIED_GATES.every((g) => listed.includes(g)), `listed=${listed.length}`)
+check("A: verify:fast lists exactly the certified gates", listed.length === CERTIFIED_GATES.length && CERTIFIED_GATES.every((g) => listed.includes(g)), `listed=${listed.length}`)
 check("A: every certified gate file exists in the repo", CERTIFIED_GATES.every((g) => existsSync(path.join(ROOT, g))))
 check("A: verify:fast uses tsx (CI runners have no bun)", (JSON.parse(pkgText).scripts?.["verify:fast"] ?? "").startsWith("npx tsx "))
 
@@ -231,7 +246,9 @@ const result = {
   evidenceFile: "S2.json",
   generatedAt: new Date().toISOString(),
   limitations: [
-    "The full 21-gate verify:fast chain was proven green locally (in two halves at one commit, recorded in the closing issue); this verifier proves the WIRING and spot-runs the two cheapest gates — re-running ~13 minutes of gates here would duplicate what CI now enforces on every push.",
+    "The verify:fast chain was proven green locally (in two halves at one commit, recorded in the closing issue); this verifier proves the WIRING and spot-runs the two cheapest gates — re-running ~13 minutes of gates here would duplicate what CI now enforces on every push.",
+    "Tier-2 certification is per-gate and stated in the header; it is runner-observed (M29 R1/R4: CI run 34774391788 on ubuntu-latest) or runner-faithful-local (M56 governance: HOME-independent metadata gate). It is not a fresh-HOME run, and the check does not claim one.",
+    "Legs that a runner cannot satisfy (website deps, built site, display, packaged VSIX, ffmpeg) are excluded by contract and live in the verify-site job or the local full chain; the A-check rejects them here even if they are green on a developer machine.",
     "Runner certification (fresh-HOME) was empirical at S2 build time; a future runner-image change that breaks a gate will surface as a red CI verify job, not a silent pass.",
     "The build job check asserts byte-structure (steps, order, matrix, cache), not raw bytes; any real edit to the build job changes one of the asserted facts.",
   ],

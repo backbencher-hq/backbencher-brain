@@ -137,5 +137,10 @@
     "Embeddings were bounded off during the fresh batch (BB_EMBEDDING_BATCH_LIMIT=1); semantic coverage is Q1/Q2 scope.",
     "Analyzer-kind precision is M14's lane; this issue verifies scale/index substrate, not analyzer correctness."
   ],
-  "generatedAt": "2026-08-26T17:15:36.308Z"
+  "generatedAt": "2026-08-26T17:15:36.308Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.368Z",
+    "contentSha256": "689e8cce11c7d9515f23f787f81eb6bde72f387c649c75325752033364e8b661"
+  }
 }

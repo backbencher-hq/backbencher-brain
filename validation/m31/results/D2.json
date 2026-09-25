@@ -56,5 +56,10 @@
       "ok": true,
       "detail": "no public tool binding; narrative/reference page"
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.466Z",
+    "contentSha256": "d9149c2f5379b292c822b756659eafd2314ada2163020c01bc000a830ba9face"
+  }
 }

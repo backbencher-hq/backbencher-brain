@@ -54,6 +54,30 @@ export interface GraphNodeLike {
   isExternal: boolean
 }
 
+/** M62.A2 (issue #876): the address mirror of
+ *  `CallSiteAddress` (src/intelligence/contracts.ts). The owner
+ *  (`src/intelligence/graph/line-address.ts`) derives and formats it; this
+ *  core stays import-pure (W1), so the shape and the formatter are MIRRORED
+ *  here and drift-gated against the owner by script/m62/verify-consumers.ts.
+ *  A renderer may never present a position the owner did not derive: a
+ *  `declaration` is a labeled substitute and an `unknown` has no position at
+ *  all. */
+export interface CallSiteAddressLike {
+  kind: "call-site" | "declaration" | "unknown"
+  file: string
+  line: number | null
+  note?: string
+}
+
+/** Mirror of the owner's `formatAddress` (drift-gated, M62.A2). */
+export function formatCallSiteAddress(a: CallSiteAddressLike): string {
+  const position = a.line === null ? null : a.file.length > 0 ? `${a.file}:${a.line}` : `line ${a.line}`
+  if (a.kind === "call-site") return position ?? "call site not stored"
+  const note = a.note ?? "call site not stored"
+  if (position === null) return a.file.length > 0 ? `${a.file} — ${note}` : note
+  return `${position} — ${note}`
+}
+
 export interface GraphEdgeLike {
   from: string
   to: string
@@ -61,7 +85,7 @@ export interface GraphEdgeLike {
   confidence: number
   isCrossLanguage: boolean
   bridgeMechanism?: string
-  callSite: { file: string; line: number }
+  callSite: CallSiteAddressLike
   depth: number
   rowId?: string
   /** Stored metadata: the analyzer's evidenceClass PLUS (M42.H3) the
@@ -127,8 +151,29 @@ export interface RenderStats {
   edgesTruncated: boolean
 }
 
-const STRUCTURAL_TYPES = new Set(["calls", "inherits", "implements", "overrides"])
+// M55.T5: the derivation mirror. The owner is src/lsp/evidence_tier.ts
+// (the server's ONE classifier); this core is import-pure (verify-webview-core
+// P1: zero imports) so it mirrors the rule, and script/m55/verify-tiers.ts
+// drift-gates the mirror on a declared case table against the owner. Before
+// T5 this set lacked the containment/exports/instantiates facts and the
+// `uses`/`usage` kinds, so a hub row whose analyzer stored no class rendered
+// `inferred` where the hover card for the same row rendered `structural` /
+// `usage_contextual` — a symbol with two tier stories.
+const STRUCTURAL_TYPES = new Set([
+  "call",
+  "calls",
+  "extends",
+  "inherits",
+  "implements",
+  "overrides",
+  "override",
+  "contains",
+  "exports",
+  "instantiates",
+])
 const IMPORT_TYPES = new Set(["imports", "import"])
+const USAGE_TYPES = new Set(["reference", "references", "use", "uses", "usage"])
+const REFERENCE_QUALIFIED_TYPES = new Set(["references_qualified", "reference_qualified"])
 
 /** Tier meanings in UI terms — the legend vocabulary. Documented decision:
  *  the 0.7 confidence floor mirrors patterns.ts inheritance — at or above it
@@ -136,24 +181,27 @@ const IMPORT_TYPES = new Set(["imports", "import"])
  *  MUST render as inferred. Kept in sync with the hover gloss
  *  (src/lsp/cross_language_hover.ts) — the W4 verifier drift-gates the two. */
 export const TIER_MEANINGS: Record<EdgeTier, string> = {
-  structural: "stored or derived structure (calls/extends/implements/overrides at confidence >= 0.7) — safe to trust for navigation",
+  structural: "stored or derived structure (calls/extends/implements/overrides/contains/exports/instantiates at confidence >= 0.7) — safe to trust for navigation",
   import_based: "derived from import statements — the module relationship is real, the use may be indirect",
   usage_contextual: "usage-site evidence — the name appears in context, not guaranteed to be a call",
   reference_qualified: "reference with qualifier evidence — stronger than usage_contextual, weaker than structure",
-  inferred: "a guess (heuristic or confidence < 0.7) — treat as a hint, never as fact",
+  inferred: "a guess or an unrecognized relationship kind (heuristic, or confidence < 0.7) — treat as a hint, never as fact",
 }
 
-/** Tier for an edge: stored evidenceClass wins; else the declared derivation.
+/** Tier for an edge: a STORED legend-tier evidenceClass wins; else the
+ *  declared derivation (the owner's rule, mirrored — see STRUCTURAL_TYPES).
+ *  A stored label outside the legend is not a tier claim (M55.T5), so the
+ *  edge's own kind decides, exactly as src/lsp/evidence_tier.ts does.
  *  The 0.7 confidence floor mirrors the inheritance threshold decision in
  *  patterns.ts — below it, an edge is a guess and must render as inferred. */
 export function tierForEdge(edge: GraphEdgeLike): EdgeTier {
   const stored = edge.metadata?.evidenceClass
   if (stored && (EDGE_TIERS as readonly string[]).includes(stored)) return stored as EdgeTier
-  const t = edge.relationshipType
+  const t = edge.relationshipType.trim().toLowerCase()
   if (STRUCTURAL_TYPES.has(t)) return edge.confidence >= 0.7 ? "structural" : "inferred"
   if (IMPORT_TYPES.has(t)) return "import_based"
-  if (t === "references") return "usage_contextual"
-  if (t === "references_qualified") return "reference_qualified"
+  if (USAGE_TYPES.has(t)) return "usage_contextual"
+  if (REFERENCE_QUALIFIED_TYPES.has(t)) return "reference_qualified"
   return "inferred"
 }
 
@@ -201,13 +249,23 @@ function edgeElement(edge: GraphEdgeLike, index: number, dom: GraphDom): GraphDo
   return el
 }
 
+/** The ONE tier -> badge-class mapping (M55.T5 acceptance 4): the legend
+ *  swatch and every evidence badge derive their class from this single
+ *  function, so the rendering path can never disagree with the legend it
+ *  ships. Before T5 the template was written twice (legend + badge) and the
+ *  two could drift silently; script/m55/verify-tiers.ts asserts the template
+ *  appears exactly once in this source. */
+export function badgeClassForTier(tier: EdgeTier): string {
+  return `bb-badge-${tier}`
+}
+
 /** W4 badge: tier name + confidence, class-distinct per tier, rendered from
  *  the SAME tier resolution as the element it sits on (a badge can never
  *  disagree). Shared by graph edges and hub usage rows (M42.H5). */
 function appendEvidenceBadge(parent: GraphDomElement, edge: GraphEdgeLike, tier: EdgeTier, badgeClass: string, dom: GraphDom): void {
   const badge = dom.create("span")
   badge.addClass(badgeClass)
-  badge.addClass(`bb-badge-${tier}`)
+  badge.addClass(badgeClassForTier(tier))
   badge.setAttribute("data-badge-tier", tier)
   badge.setAttribute("data-badge-confidence", String(edge.confidence))
   badge.textContent = `${tier} · ${edge.confidence}`
@@ -259,7 +317,7 @@ export function renderLegend(dom: GraphDom): GraphDomElement {
     item.addClass(`bb-legend-${tier}`)
     const swatch = dom.create("span")
     swatch.addClass("bb-legend-swatch")
-    swatch.addClass(`bb-badge-${tier}`)
+    swatch.addClass(badgeClassForTier(tier))
     swatch.setAttribute("data-legend-tier", tier)
     const meaning = dom.create("span")
     meaning.addClass("bb-legend-meaning")
@@ -471,6 +529,32 @@ export interface ImpactResultLike {
   truncationReason: string | null
 }
 
+/** M55.T1 (Truth Rule 2): a declared substitution is rendered on EVERY surface
+ *  that names the target — ONE helper, called by impact, the hub list and the
+ *  hub tree. Machine-readable attributes plus a visible note; an unlabeled
+ *  substitution is the defect this exists to prevent (the filing run: the
+ *  constructor graph opened titled `Store` with nothing said). The wording is
+ *  passed in so each surface keeps its own declared noun and the M44.U5
+ *  impact rendering stays byte-identical. */
+export function appendResolutionNote(
+  layer: GraphDomElement,
+  dom: GraphDom,
+  result: { resolution?: { through?: string; memberName?: string; ownerName?: string } },
+  text: (member: string, owner: string) => string,
+): GraphDomElement | null {
+  const resolution = result.resolution
+  if (resolution === undefined || resolution.through !== "owning-declaration") return null
+  layer.setAttribute("data-resolution-through", "owning-declaration")
+  if (resolution.memberName) layer.setAttribute("data-resolution-member", resolution.memberName)
+  if (resolution.ownerName) layer.setAttribute("data-resolution-owner", resolution.ownerName)
+  const note = dom.create("div")
+  note.addClass("bb-resolution-note")
+  note.setAttribute("data-resolution", "owning-declaration")
+  note.textContent = text(resolution.memberName ?? "member", resolution.ownerName ?? "")
+  layer.appendChild(note)
+  return note
+}
+
 /** Render the impact set into the DOM port. Truncation renders a visible
  *  marker with declared counts (shown vs total-if-known, or "unknown") —
  *  silent truncation is impossible by construction here. */
@@ -481,17 +565,13 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
   // M44.U5: the declared resolution rides the render — a member target
   // rooted through its owning declaration SAYS so (never a silent relabel
   // of what the user clicked). Machine-readable attr + visible note.
-  const resolution = (result as { resolution?: { through?: string; memberName?: string; ownerName?: string } }).resolution
-  if (resolution && resolution.through === "owning-declaration") {
-    layer.setAttribute("data-resolution-through", "owning-declaration")
-    if (resolution.memberName) layer.setAttribute("data-resolution-member", resolution.memberName)
-    if (resolution.ownerName) layer.setAttribute("data-resolution-owner", resolution.ownerName)
-    const note = dom.create("div")
-    note.addClass("bb-impact-resolution-note")
-    note.setAttribute("data-resolution", "owning-declaration")
-    note.textContent = `"${resolution.memberName ?? "member"}" has no dependencies of its own — showing the impact of its owner ${resolution.ownerName ?? ""}`
-    layer.appendChild(note)
-  }
+  const impactNote = appendResolutionNote(
+    layer,
+    dom,
+    result as { resolution?: { through?: string; memberName?: string; ownerName?: string } },
+    (member, owner) => `"${member}" has no dependencies of its own — showing the impact of its owner ${owner}`,
+  )
+  if (impactNote !== null) impactNote.addClass("bb-impact-resolution-note")
   for (const dep of result.impact) {
     const el = dom.create("div")
     el.addClass("bb-impact-node")
@@ -499,6 +579,18 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
     el.setAttribute("data-depth", String(dep.depth))
     el.textContent = `${dep.name} (${dep.file || "external"})`
     layer.appendChild(el)
+  }
+  // Declared empty-state (owner live test, 2026-09-12): a resolved root with
+  // zero stored reverse dependencies renders a visible note — never
+  // legend-only silence, which reads as a broken panel. Absence is declared,
+  // not assumed: the note states what absence means and how to refresh.
+  if (result.impact.length === 0) {
+    const emptyNote = dom.create("div")
+    emptyNote.addClass("bb-impact-empty")
+    emptyNote.setAttribute("data-empty", "impact")
+    emptyNote.textContent =
+      "No reverse dependencies stored for this symbol — nothing in the index calls or references it (declared absence; re-index if the code recently changed)."
+    layer.appendChild(emptyNote)
   }
   // U4: the ONE badge legend ships with the impact surface too (§13.9).
   layer.appendChild(renderLegend(dom))
@@ -541,7 +633,8 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
 export interface GroupedHubRow {
   rowId: string
   relationshipType: string
-  callSite?: { file: string; line: number }
+  /** M62.A2: the owner-derived address (never a bare fabricated line). */
+  callSite?: CallSiteAddressLike
   depth: number
   confidence: number
   isCrossLanguage: boolean
@@ -624,7 +717,10 @@ function relChips(entry: GroupedHubEntry, parent: GraphDomElement, dom: GraphDom
     const tier = tierForTypeRows(typeRows)
     const chip = dom.create("span")
     chip.addClass("bb-hub-relchip")
-    chip.addClass(tier === "mixed" ? "bb-badge-mixed" : `bb-badge-${tier}`)
+    // M55.T5: the chip's class comes from the ONE mapping (badgeClassForTier),
+    // never a second literal template — the legend, the edge badge and the hub
+    // chip must be incapable of disagreeing.
+    chip.addClass(tier === "mixed" ? "bb-badge-mixed" : badgeClassForTier(tier))
     chip.setAttribute("data-rel-type", rt.type)
     chip.setAttribute("data-occurrences", String(rt.occurrences))
     chip.setAttribute("data-tier", tier)
@@ -632,6 +728,22 @@ function relChips(entry: GroupedHubEntry, parent: GraphDomElement, dom: GraphDom
     wrap.appendChild(chip)
   }
   parent.appendChild(wrap)
+}
+
+/** M62.A2: the declared address kind of one stored row ("none" when the row
+ *  carries no address). A renderer that shows a position must say which kind
+ *  it is showing. */
+export function callSiteKindOf(row: GroupedHubRow): string {
+  return row.callSite?.kind ?? "none"
+}
+
+/** The address kinds present across a group's stored rows, sorted — the
+ *  machine-readable claim the hub row makes about its positions. One kind when
+ *  the rows agree; several when they differ (the row shows more than one
+ *  claim, and says so rather than picking one). */
+export function callSiteKindsOfEntry(entry: GroupedHubEntry): string {
+  const kinds = [...new Set(entry.rows.map(callSiteKindOf))].sort()
+  return kinds.length > 0 ? kinds.join(",") : "none"
 }
 
 /** Enrichment is stored per ROW; a group is enriched when any member row is.
@@ -659,6 +771,8 @@ function groupRow(entry: GroupedHubEntry, dir: "caller" | "callee", dom: GraphDo
   el.setAttribute("data-row-ids", entry.rows.map((r) => r.rowId).join(" "))
   el.setAttribute("data-occurrences", String(entry.occurrences))
   if (entry.rows.length > 0) el.setAttribute("data-depth", String(Math.min(...entry.rows.map((r) => r.depth))))
+  // M62.A2: the row declares which address kinds it is showing.
+  el.setAttribute("data-callsite-kinds", callSiteKindsOfEntry(entry))
   // H6 machine click targets: index-resolved file/line/symbol — the bridge
   // navigates from these attrs, never from the display text (issue #654).
   const navigable = entry.file.length > 0
@@ -790,6 +904,12 @@ function allEntries(grouped: GroupedHub): Array<{ entry: GroupedHubEntry; dir: "
 export function renderHubList(grouped: GroupedHub, dom: GraphDom, group: "file" | "caller"): RenderStats {
   const section = hubSection(grouped, dom, "bb-hub-list")
   section.setAttribute("data-group", group)
+  // M55.T1: a member target rooted through its owning declaration is LABELED
+  // here too, through the same helper the impact surface uses (one label rule,
+  // one wording per surface). The hub is where the silent relabel was found.
+  appendResolutionNote(section, dom, grouped as { resolution?: { through?: string; memberName?: string; ownerName?: string } }, (member, owner) =>
+    `"${member}" has no graph of its own — showing the usages of its owning declaration ${owner}`,
+  )
   const all = allEntries(grouped)
   if (all.length === 0) {
     hubEmpty(section, dom)
@@ -839,6 +959,26 @@ interface TreeSide {
   byId: Map<string, GroupedHubEntry>
 }
 
+/** Concrete placement parent for RENDERING (M55): the row type keeps
+ *  `parentSymbolId`/`parentName` optional so hand-built LIST fixtures stay
+ *  valid, but the tree's nesting law (U3) requires them for every depth-≥1
+ *  row. A depth-≥1 row without them is a declared error — never an
+ *  `undefined` that silently becomes the key "undefined" and nests a group
+ *  under a phantom parent. Depth-0 rows fold to the root level (the engine
+ *  treats cascade(root) as root — declared, not guessed). */
+function placementParentOf(entry: GroupedHubEntry, rootId: string): { symbolId: string; name: string } {
+  const row = placementOf(entry, rootId)
+  if (row.depth === 0) {
+    return { symbolId: row.parentSymbolId ?? rootId, name: row.parentName ?? "" }
+  }
+  if (row.parentSymbolId === undefined || row.parentName === undefined) {
+    throw new Error(
+      `bb/graph: tree placement is missing the parent fields on a depth-${row.depth} row (${entry.name}) — the index emitted a row the tree cannot nest honestly (declared error)`,
+    )
+  }
+  return { symbolId: row.parentSymbolId, name: row.parentName }
+}
+
 function sideGroups(grouped: GroupedHub, dir: "caller" | "callee"): TreeSide {
   const groups = dir === "caller" ? grouped.callers : grouped.callees
   const byId = new Map<string, GroupedHubEntry>()
@@ -853,10 +993,14 @@ function placementOf(entry: GroupedHubEntry, rootId: string): GroupedHubRow {
   if (entry.rows.length === 0) throw new Error("bb/graph: tree placement on an empty group — a group without rows cannot nest")
   let best = entry.rows[0]!
   for (const r of entry.rows) {
+    // The parent fields are optional at the TYPE level (hand-built list
+    // fixtures). The tie-break needs a total order, so an absent name sorts
+    // as "" — and placementParentOf below is what refuses to render a depth
+    // ≥ 1 row without them (a declared error, never a phantom parent key).
     const rank = (x: GroupedHubRow): [number, number, string, string] => [
       x.depth,
       x.parentSymbolId === rootId ? 0 : 1,
-      x.parentName,
+      x.parentName ?? "",
       x.rowId,
     ]
     const a = rank(r)
@@ -894,9 +1038,9 @@ function treeSideInto(
 
   const emit = (entry: GroupedHubEntry, level: number, parentEl: GraphDomElement): void => {
     rowsRendered.count += 1
-    const p = placementOf(entry, rootId)
-    const folded = p.parentSymbolId !== rootId && !side.byId.has(p.parentSymbolId)
-    const row = treeRow(entry, side.dir, level, p.parentSymbolId, p.parentName, folded, dom)
+    const p = placementParentOf(entry, rootId)
+    const folded = p.symbolId !== rootId && !side.byId.has(p.symbolId)
+    const row = treeRow(entry, side.dir, level, p.symbolId, p.name, folded, dom)
     parentEl.appendChild(row)
     const kids = anchorKids.get(entry.symbolId)
     if (kids && kids.length > 0) {
@@ -926,8 +1070,8 @@ function treeSideInto(
   // groups emit through their parent's recursion, so every group renders
   // exactly once per side.
   for (const g of side.groups) {
-    const p = placementOf(g, rootId)
-    if (p.parentSymbolId === rootId || !side.byId.has(p.parentSymbolId)) emit(g, 0, header)
+    const p = placementParentOf(g, rootId)
+    if (p.symbolId === rootId || !side.byId.has(p.symbolId)) emit(g, 0, header)
   }
 }
 
@@ -964,6 +1108,8 @@ function treeRow(
   if (folded) el.setAttribute("data-fold", "cascade")
   const minDepth = entry.rows.length > 0 ? Math.min(...entry.rows.map((r) => r.depth)) : 0
   el.setAttribute("data-depth", String(minDepth))
+  // M62.A2: same declared address kinds as the list view.
+  el.setAttribute("data-callsite-kinds", callSiteKindsOfEntry(entry))
   const navigable = entry.file.length > 0
   if (navigable) el.setAttribute("data-file", entry.file)
   el.setAttribute("data-line", String(entry.line))
@@ -998,6 +1144,11 @@ function treeRow(
  *  renders exactly once inside its symbol's node. */
 export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
   const section = hubSection(grouped, dom, "bb-hub-tree")
+  // M55.T1: the same declared-substitution label as the list and impact
+  // surfaces — the tree is not allowed to quietly drop it.
+  appendResolutionNote(section, dom, grouped as { resolution?: { through?: string; memberName?: string; ownerName?: string } }, (member, owner) =>
+    `"${member}" has no graph of its own — showing the usages of its owning declaration ${owner}`,
+  )
   const all = allEntries(grouped)
   if (all.length === 0) {
     hubEmpty(section, dom)
@@ -1017,10 +1168,10 @@ export function renderHubTree(grouped: GroupedHub, dom: GraphDom): RenderStats {
   for (const side of [callers, callees]) {
     const map = side.dir === "caller" ? callerKids : calleeKids
     for (const g of side.groups) {
-      const p = placementOf(g, grouped.root.symbolId)
-      if (p.parentSymbolId !== grouped.root.symbolId && side.byId.has(p.parentSymbolId)) {
-        if (!map.has(p.parentSymbolId)) map.set(p.parentSymbolId, [])
-        map.get(p.parentSymbolId)!.push(g)
+      const p = placementParentOf(g, grouped.root.symbolId)
+      if (p.symbolId !== grouped.root.symbolId && side.byId.has(p.symbolId)) {
+        if (!map.has(p.symbolId)) map.set(p.symbolId, [])
+        map.get(p.symbolId)!.push(g)
       }
     }
   }

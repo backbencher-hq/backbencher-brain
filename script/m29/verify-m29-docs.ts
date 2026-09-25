@@ -26,6 +26,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { buildLedger } from "./generate-precision-ledger.ts"
 import { generateWaveDoc } from "./generate-wave-doc.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const WAVE_DOC = path.join(ROOT, "docs/m29/WAVE-PROTOCOL.md")
@@ -172,6 +173,6 @@ const result = {
   ],
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/D1-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/D1-verify.json"), result)
 console.log(`D1: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 3 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

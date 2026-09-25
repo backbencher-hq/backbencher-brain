@@ -1,0 +1,170 @@
+{
+  "status": "captured",
+  "run": "live-9",
+  "display": ":99",
+  "screen": {
+    "width": 1920,
+    "height": 1080
+  },
+  "editor": {
+    "binary": "/usr/bin/code",
+    "version": "1.137.0",
+    "pinnedDeclared": "1.85.0 (.vscode-test)",
+    "pinHonored": false
+  },
+  "bundle": {
+    "vsix": "$HOME/backbencher-brain/ide/vscode/bb-lsp-vscode-0.1.0.vsix",
+    "installedAt": "2026-09-13T19:34:00.743Z",
+    "bundlePath": "$HOME/backbencher-brain/validation/m55/profile/extensions/backbencher.bb-lsp-vscode-0.1.0/dist/extension.js",
+    "bundleSha256": "036b17cef1d74073eb7f54053aaf59f265ee145f949c155176d015b120c184ab"
+  },
+  "fixture": {
+    "workspace": "$HOME/bb-demo-hub",
+    "present": true,
+    "contentHash": "68ec1d0c93256542eaf913fca7e585145d9468a019f6b1779f1be3980db02a3f",
+    "indexedProjectDir": "$HOME/.bb/projects/693ac0d258eee9282c48710e76362d6ba159c7af"
+  },
+  "flows": [
+    {
+      "id": "1",
+      "label": "base",
+      "status": "captured",
+      "frame": {
+        "flow": "1",
+        "label": "base",
+        "shows": "the workspace open at the pinned settings (the reference frame)",
+        "path": "validation/m55/frames/live-9/1-base.png",
+        "sha256": "a324bbe4d444ec58f459edbfd324048cc6ec356df60f27347911b7307f6657e4",
+        "bytes": 120180,
+        "capturedAt": "2026-09-13T19:34:13.231Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "id": "2",
+      "label": "hover-declaration",
+      "status": "captured",
+      "frame": {
+        "flow": "2",
+        "label": "hover-declaration",
+        "shows": "the card at a method's declaration (T3, T4, T5)",
+        "path": "validation/m55/frames/live-9/2-hover-declaration.png",
+        "sha256": "85578313dbb7cc4a0dff5c44a29c51334cdaab190cefa17f371a4d522d9d459b",
+        "bytes": 131326,
+        "capturedAt": "2026-09-13T19:34:19.114Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "id": "3",
+      "label": "hover-call-site",
+      "status": "captured",
+      "frame": {
+        "flow": "3",
+        "label": "hover-call-site",
+        "shows": "the card at a call site — the same identity (T1, T3)",
+        "path": "validation/m55/frames/live-9/3-hover-call-site.png",
+        "sha256": "279f597e13824ac953397eb4fa105b64661f4d0f97d193f11a621a8b394a8d90",
+        "bytes": 146470,
+        "capturedAt": "2026-09-13T19:34:24.658Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "id": "4",
+      "label": "open-in-graph",
+      "status": "captured",
+      "frame": {
+        "flow": "4",
+        "label": "open-in-graph",
+        "shows": "the hub list by file (T3, T5, P1)",
+        "path": "validation/m55/frames/live-9/4-open-in-graph.png",
+        "sha256": "e544cebe0a920f9f0cddc267a64355fc1d0e0e5bf529dd5bce45eb352c01a1dc",
+        "bytes": 175428,
+        "capturedAt": "2026-09-13T19:34:38.376Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "id": "5",
+      "label": "impact",
+      "status": "captured",
+      "frame": {
+        "flow": "5",
+        "label": "impact",
+        "shows": "the impact view (T1 U5 root)",
+        "path": "validation/m55/frames/live-9/5-impact.png",
+        "sha256": "1c42390f9157219588f21d1e2afc47e8010c0a9ab4eb173b050572401f5ff26f",
+        "bytes": 133027,
+        "capturedAt": "2026-09-13T19:34:50.928Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "id": "6",
+      "label": "call-hierarchy",
+      "status": "captured",
+      "frame": {
+        "flow": "6",
+        "label": "call-hierarchy",
+        "shows": "the call hierarchy (T2)",
+        "path": "validation/m55/frames/live-9/6-call-hierarchy.png",
+        "sha256": "5a183cbddc82c96e2a12c87e08ec1165f38744f2fb06fe3e3f57560fbbf102a5",
+        "bytes": 181706,
+        "capturedAt": "2026-09-13T19:35:04.096Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "id": "7",
+      "label": "status",
+      "status": "captured",
+      "frame": {
+        "flow": "7",
+        "label": "status",
+        "shows": "the status surface: every fact carries its claim level (Truth Rule 1)",
+        "path": "validation/m55/frames/live-9/7-status.png",
+        "sha256": "232ef67a80fa0110ef6a9fa132f928b21d2e9ce738381d14669d9fba0d2682c4",
+        "bytes": 141382,
+        "capturedAt": "2026-09-13T19:35:17.464Z",
+        "window": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    }
+  ],
+  "generatedAt": "2026-09-13T19:33:43.578Z"
+}

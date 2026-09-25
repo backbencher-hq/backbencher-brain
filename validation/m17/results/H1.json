@@ -22,5 +22,10 @@
     "bb_search": "no analysis persistence",
     "bb_edit": "no analysis persistence"
   },
-  "negativeLine": "Determinism tested on rake (Ruby) only; other corpora share the same canonical run-history path."
+  "negativeLine": "Determinism tested on rake (Ruby) only; other corpora share the same canonical run-history path.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.355Z",
+    "contentSha256": "cf90778ceba18859a8f1701fce2ad56b7bb6e151da2b691f65af2b81a3b2e928"
+  }
 }

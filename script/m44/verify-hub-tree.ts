@@ -29,6 +29,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -281,6 +282,39 @@ async function main(): Promise<void> {
     const rowsShown = model.rows.length
     check("R2b: truncated tree renders the marker with the rendered count + declared-unknown total", /bb-truncation-marker/.test(truncHtml) && truncHtml.includes(`data-shown="${rowsShown}"`) && truncHtml.includes('data-total-if-known="unknown"'), truncHtml.slice(0, 200))
 
+    // --- R2c: an unnesteable row is a DECLARED error (M55) -------------------
+    // The row type keeps parentSymbolId/parentName optional for hand-built
+    // LIST fixtures; the tree's nesting law requires them for depth ≥ 1. The
+    // renderer must refuse — a fold to root here would nest a group under a
+    // phantom parent (the honest-looking lie this exists to make impossible).
+    console.log("\nR2c: a depth ≥ 1 row without its parent fields is a declared error")
+    const unnesteable = {
+      ...resp,
+      callers: [
+        {
+          symbolId: "phantom:foreign",
+          name: "foreign",
+          file: "",
+          line: 0,
+          occurrences: 1,
+          relationshipTypes: [{ type: "calls", occurrences: 1 }],
+          rows: [{ rowId: "phantom:foreign:1", relationshipType: "calls", depth: 1, confidence: 1, isCrossLanguage: false }],
+        },
+      ],
+      callees: [],
+    }
+    let declaredError = ""
+    try {
+      renderDom((m, d) => core.renderHubTree(m, d), unnesteable)
+    } catch (e) {
+      declaredError = e instanceof Error ? e.message : String(e)
+    }
+    check(
+      "R2c: renderHubTree throws the declared placement error (names the row, no phantom parent)",
+      declaredError.startsWith("bb/graph: tree placement is missing the parent fields") && declaredError.includes("depth-1") && declaredError.includes("(foreign)"),
+      declaredError || "no error thrown — a phantom parent was fabricated",
+    )
+
     // --- R3: the REAL dist server over stdio --------------------------------
     console.log("\nR3: real bb_lsp server over the fixture workspace")
     // #824: both R3 laws are emitted on EVERY path — blocked, failed, or clean
@@ -379,7 +413,7 @@ async function main(): Promise<void> {
     const defects: Array<{ name: string; from: string; to: string; assertion: string }> = [
       {
         name: "flatten-to-root (deeper rows emitted at the top level)",
-        from: "if (p.parentSymbolId === rootId || !side.byId.has(p.parentSymbolId)) emit(g, 0, header)",
+        from: "if (p.symbolId === rootId || !side.byId.has(p.symbolId)) emit(g, 0, header)",
         to: "if (true) emit(g, 0, header) // every group flattened to the root",
         assertion: "AH7-9",
       },
@@ -422,6 +456,35 @@ async function main(): Promise<void> {
         mutant(`${d.name} (mutant failed to load — counts as detected)`, true, String(e).slice(0, 120))
       }
     }
+
+    // M55: R2c's declared error must be FAIL-ABLE. Disabling the placement
+    // throw must break R2c — an unnesteable row silently folding to a phantom
+    // parent is the honest-looking lie the check exists to catch. (This one
+    // is asserted by R2c, not by the hub harness, so it has its own leg.)
+    {
+      const anchor = "if (row.parentSymbolId === undefined || row.parentName === undefined) {"
+      if (!coreSource.includes(anchor)) {
+        check("M: placement throw disabled (SKIP — anchor not found)", false, anchor)
+      } else {
+        const mutantPath = path.join(ROOT, "validation/m44", `graph-core.u3mutant.${Date.now()}.${Math.floor(Math.random() * 1e6)}.ts`)
+        writeFileSync(mutantPath, coreSource.replace(anchor, "if (false) {"))
+        try {
+          const m = await import(mutantPath)
+          const root = new El("div")
+          let threw = false
+          try {
+            m.renderHubTree(unnesteable, { create: (t: string) => new El(t), root: () => root })
+          } catch {
+            threw = true
+          }
+          mutant("placement throw disabled (an unnesteable row folds to a phantom parent — R2c catches)", threw === false)
+        } catch (e) {
+          mutant("placement throw disabled (mutant failed to load — counts as detected)", true, String(e).slice(0, 120))
+        } finally {
+          try { rmSync(mutantPath, { force: true }) } catch {}
+        }
+      }
+    }
   } finally {
     fx.cleanup()
   }
@@ -452,7 +515,7 @@ async function main(): Promise<void> {
     ],
   }
   mkdirSync(EVIDENCE_DIR, { recursive: true })
-  writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+  writeSealed(EVIDENCE, result)
   console.log(`\nU3: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

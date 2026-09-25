@@ -27,6 +27,8 @@ import path from "node:path"
 import os from "node:os"
 import { budgetViolationsFrom, relevantInputsHash, WARM_BUDGETS, type HostNoise, type FeatureMeasurement } from "./giant-repo-budget.ts"
 import { createStdioTransport } from "../m25/feature-assertions.ts"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const EVIDENCE = path.join(ROOT, "validation/m29/results/R3.json")
@@ -64,7 +66,7 @@ function gitCommit(): string {
 // ---------------------------------------------------------------------------
 let manifest: { corpusRevision: string; totalFiles: number; kind: string; declared: string } | null = null
 try {
-  manifest = JSON.parse(readFileSync(MANIFEST, "utf8"))
+  manifest = parseSealedRecord(MANIFEST)
 } catch {}
 check("R1: corpus manifest exists and declares a synthetic kind", !!manifest && typeof manifest.kind === "string" && manifest.kind.startsWith("synthetic"), manifest?.kind)
 check("R1: corpus meets the M19 giant-scale bar (files >= 50k)", !!manifest && manifest.totalFiles >= 50000, String(manifest?.totalFiles))
@@ -80,7 +82,7 @@ check("R1: corpus on disk matches the manifest", diskFiles === manifest?.totalFi
 // ---------------------------------------------------------------------------
 let evidence: any = null
 try {
-  evidence = JSON.parse(readFileSync(EVIDENCE, "utf8"))
+  evidence = parseSealedRecord(EVIDENCE)
 } catch {}
 check("R2: R3.json exists with verified status", evidence?.status === "verified", evidence?.status)
 // The commit stamp must be an ancestor of HEAD (the evidence was produced on
@@ -93,6 +95,22 @@ try {
 } catch {}
 check("R2: evidence commit is an ancestor of HEAD", commitIsAncestor, `${evidence?.commit?.slice(0, 8)} vs HEAD ${gitCommit().slice(0, 8)}`)
 check("R2: relevant inputs unchanged since the evidence run", evidence?.relevantInputsHash === relevantInputsHash(), `evidence=${evidence?.relevantInputsHash ?? "none"} vs current=${relevantInputsHash()} — re-run giant-repo-budget.ts --reuse to refresh`)
+// The staleness rule's can-fail legs (added with the tracked-inputs fix): the
+// digest must be STABLE for identical inputs and SENSITIVE to a content change,
+// so it can be neither a constant (always fresh) nor noise (never fresh).
+check("R2: the staleness digest is stable for identical inputs", relevantInputsHash() === relevantInputsHash())
+check(
+  "R2: the staleness digest changes when an input's CONTENT changes (the rule can fail)",
+  relevantInputsHash({ "src/brain/schema-ddl.ts": "mutated" }) !== relevantInputsHash(),
+)
+// The measured artifact is untracked, so it is recorded as an observation and
+// never compared: what is gated is the tracked input set above.
+check(
+  "R2: the built artifact is recorded as an observation, not a gate input",
+  evidence?.builtArtifact === undefined ||
+    (evidence.builtArtifact?.path === "dist/lsp/server.js" && /^(?:[0-9a-f]{40}|null)$/.test(String(evidence.builtArtifact?.sha256))),
+  JSON.stringify(evidence?.builtArtifact ?? null),
+)
 // The recorded indexed counts must agree with the manifest.
 check("R2: evidence indexed counts agree with the manifest", evidence?.corpus?.indexedFiles === manifest?.totalFiles, `${evidence?.corpus?.indexedFiles} vs ${manifest?.totalFiles}`)
 check("R2: index regime declared (reuse vs fresh build is not ambiguous)", typeof evidence?.corpus?.indexRegime === "string" && evidence.corpus.indexRegime.length > 0)
@@ -224,6 +242,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/R3-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R3-verify.json"), result)
 console.log(`R3: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 6 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

@@ -28,6 +28,8 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EVIDENCE_PATH = join(ROOT, "validation/m42/results/X1.json")
@@ -168,7 +170,7 @@ function audit(
       if (!existsSync(p)) v.push(`pre6:EVIDENCE row ${cells[1]} references missing file ${payload}`)
       else {
         try {
-          const d = JSON.parse(readFileSync(p, "utf8")) as { status?: string }
+          const d = parseSealedRecord(p) as { status?: string }
           if (d.status !== "verified") v.push(`pre6:EVIDENCE row ${cells[1]} file ${payload} is ${d.status ?? "unverified"}`)
         } catch {
           v.push(`pre6:EVIDENCE row ${cells[1]} file ${payload} is not readable evidence JSON`)
@@ -188,7 +190,7 @@ function audit(
 
 let ledgerSnapshot: Array<{ code: string; status: string; evidence?: { status?: string } }> = []
 try {
-  const ledger = JSON.parse(readFileSync(LEDGER_PATH, "utf8")) as { issues: Array<{ code: string; status: string; evidence?: { status?: string } }> }
+  const ledger = parseSealedRecord(LEDGER_PATH) as { issues: Array<{ code: string; status: string; evidence?: { status?: string } }> }
   ledgerSnapshot = ledger.issues.map((i) => ({ ...i }))
 } catch {
   ledgerSnapshot = []
@@ -286,7 +288,7 @@ const result = {
   ],
 }
 mkdirSync(join(ROOT, "validation/m42/results"), { recursive: true })
-writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE_PATH, result)
 
 console.log(`\nX1: ${failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${negatives} negatives)`)
 console.log(`Evidence: ${EVIDENCE_PATH}`)

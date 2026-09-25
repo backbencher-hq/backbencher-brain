@@ -9,5 +9,10 @@
   "verifierCommand": "npx tsx script/m54/probe-fk-store-soak.ts",
   "status": "verified",
   "method": "same corpus dir indexed twice: BB_FK_ENFORCE=0 (legacy) vs default (M54, store-phase FK ON)",
-  "verdict": "store-phase FK enforcement loses no data; 'spurious rejection' claim unreproduced"
+  "verdict": "store-phase FK enforcement loses no data; 'spurious rejection' claim unreproduced",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.578Z",
+    "contentSha256": "54e892d45b87c9b8f9de351be4e362f79dfaa823f10c658dd850af25a5c79340"
+  }
 }

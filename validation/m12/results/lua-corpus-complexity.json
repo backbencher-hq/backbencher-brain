@@ -20,5 +20,10 @@
     "relationshipsPerSecond": 1148.9939735837145,
     "parseErrors": 0
   },
-  "note": "Tracked .lua/.luau files only; production pool-worker parseFile path with the isolated Lua parser lifecycle; no generated or untracked files included."
+  "note": "Tracked .lua/.luau files only; production pool-worker parseFile path with the isolated Lua parser lifecycle; no generated or untracked files included.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.921Z",
+    "contentSha256": "70667f9b7419f0ef77400b9670456ec203ea26611abdb08de476b1c3c4360fe8"
+  }
 }

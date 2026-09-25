@@ -16,5 +16,10 @@
     "coverageNeutered": "gate failed",
     "restored": "green"
   },
-  "negativeLine": "Proves the gate responds to tampering; does not prove the underlying analyzers are perfect. Coverage-presence check is on reporting-presence (machine-checkable), not a fixed % gate."
+  "negativeLine": "Proves the gate responds to tampering; does not prove the underlying analyzers are perfect. Coverage-presence check is on reporting-presence (machine-checkable), not a fixed % gate.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.364Z",
+    "contentSha256": "a27984ba2d6ef85e1cc58718adb136607b1438cd356a9bdbd861ec44374c7ea5"
+  }
 }

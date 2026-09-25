@@ -23,6 +23,7 @@ import { execFileSync } from "node:child_process"
 import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -215,7 +216,7 @@ async function main(): Promise<void> {
     ],
   }
   mkdirSync(path.join(ROOT, "validation/m28/results"), { recursive: true })
-  writeFileSync(path.join(ROOT, "validation/m28/results", result.evidenceFile), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(ROOT, "validation/m28/results", result.evidenceFile), result)
   console.log(`T1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants)`)
   process.exit(failed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 }

@@ -1,7 +1,7 @@
 # The Graph surface — what renders and what it claims (M26.D1)
 
 This document is **GENERATED** by `script/m26/verify-graph-docs.ts` from
-live code and stored evidence — never hand-edit it. Every number below
+live code and committed evidence — never hand-edit it. Every number below
 is imported from the module that owns it, and the drift gate fails the
 suite if this file stops matching a fresh generation.
 
@@ -17,11 +17,11 @@ versioned custom LSP request `bb/graph` (schema v2, declared in
 
 | tier | meaning in UI terms |
 | --- | --- |
-| **structural** | stored or derived structure (calls/extends/implements/overrides at confidence >= 0.7) — safe to trust for navigation |
+| **structural** | stored or derived structure (calls/extends/implements/overrides/contains/exports/instantiates at confidence >= 0.7) — safe to trust for navigation |
 | **import_based** | derived from import statements — the module relationship is real, the use may be indirect |
 | **usage_contextual** | usage-site evidence — the name appears in context, not guaranteed to be a call |
 | **reference_qualified** | reference with qualifier evidence — stronger than usage_contextual, weaker than structure |
-| **inferred** | a guess (heuristic or confidence < 0.7) — treat as a hint, never as fact |
+| **inferred** | a guess or an unrecognized relationship kind (heuristic, or confidence < 0.7) — treat as a hint, never as fact |
 
 Derivation: stored `metadata.evidenceClass` wins; otherwise a structural
 edge below the 0.7 confidence floor renders as inferred. The hover gloss
@@ -36,18 +36,27 @@ with real counts ("Showing X of Y") and machine-readable `data-shown` /
 declared budget: `200` reverse-dependency nodes at traversal depth
 `5` (src/lsp/impact.ts).
 
-## Per-pair cross-language reality (generated from stored rows)
+## Per-pair cross-language reality (rule here, data in the record)
 
-From stored `brain_relationship` rows only (`is_cross_language = 1`).
-Launch languages: java, groovy, kotlin, scala, typescript. A pair not
-listed is **declared absent** — no stored rows, no cross-language UI
-text, no claimed bridge.
+Cross-language UI text comes from stored `brain_relationship` rows only
+(`is_cross_language = 1`). A pair with no stored rows is **declared absent**:
+no cross-language UI text, no claimed bridge, nothing filled in. Which
+pairs a real index actually stores is machine reality — it is recorded,
+not asserted here (see below).
 
-| source language | target language | stored edges | bridge (sample) | origin |
-| --- | --- | --- | --- | --- |
-| _(none — no cross-language rows stored anywhere)_ | | | | |
+Launch languages: java, groovy, kotlin, scala, typescript.
 
-Real project dbs scanned: 38 (skipped/unreadable: 3).
+## Machine reality (recorded, not asserted here)
+
+Facts about a specific machine's own real index store — how many project
+databases were readable and which cross-language pairs they store — are
+machine-specific and are therefore **not** asserted by this document.
+This document is byte-gated because it is a pure function of the
+repository; a fact only one machine can reproduce does not belong in it.
+
+The live scan is recorded, per run, in the evidence record `validation/m26/results/D1.json`
+(`machineReality`, `realPairRows`). That record is timestamped and pinned,
+and it says of itself that it is machine-specific; read it there.
 
 ## Verification status (generated from the M26 evidence ledger)
 
@@ -71,10 +80,10 @@ commit — it is not a promise about code written after that commit.
 
 ## Declared limitations
 
-- Per-pair cross-language coverage is generated from what is actually
-  stored; an unindexed language pair is absent, not broken.
-- The table reflects this machine's `~/.bb/projects` dbs at generation
-  time; other machines regenerate from their own reality.
+- Per-pair cross-language coverage is recorded from what is actually
+  stored on the recording machine; an unindexed language pair is absent,
+  not broken, and this document therefore states the RULE rather than a
+  machine's snapshot of it.
 - "Showing X of Y" is honest per render; the underlying traversal
   budgets are documented above and enforced in code.
 - The webview harness verifies rendered DOM, not a live editor; the

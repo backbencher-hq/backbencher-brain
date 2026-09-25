@@ -29,5 +29,10 @@
   ],
   "medianMeasuredMs": 413,
   "baseline": "~37,000ms per-call (user report, pre-M52)",
-  "status": "verified"
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.577Z",
+    "contentSha256": "8884bf9ac2143fd4cdd4c97b93ffdbe5c14d785d5ecd99b4ffd6edb676530bae"
+  }
 }

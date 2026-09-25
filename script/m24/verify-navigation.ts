@@ -24,6 +24,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "navigation.ts")
@@ -143,6 +144,24 @@ function makeFixture(dir: string): any {
         },
         all(...args: any[]) {
           if (s.includes("from brain_symbol s join brain_file f")) {
+            // M53: the name-resolution queries (reference-first model) —
+            // same-file exact name (args: path, name) and workspace exact
+            // name (args: name). Mirror the real schema's truth.
+            if (s.includes("s.name = ?")) {
+              const nameArg = String(s.includes("f.path = ?") ? args[1] : args[0])
+              let hits = FIXTURE_SYMBOLS.filter((sym) => sym.name === nameArg)
+              if (s.includes("f.path = ?")) {
+                const relKey = Object.keys(FILES).find((k) => abs(k) === args[0])
+                hits = hits.filter((sym) => sym.file === relKey)
+              }
+              return hits.map((sym) => ({
+                ...sym,
+                file_id: `file-${sym.file}`,
+                f_id: `file-${sym.file}`,
+                path: abs(sym.file),
+                language: "typescript",
+              }))
+            }
             const fpath = args[0] as string
             const line1 = args[1] as number
             const rel = Object.entries(FILES).find(([, ]) => abs(Object.keys(FILES)[Object.values(FILES).indexOf(fpath as never)] ?? "") === fpath)
@@ -213,6 +232,22 @@ async function testDefinition(): Promise<void> {
   check("G1: definition carries indexed evidence tier", result.evidenceTier === "indexed")
   check("G1: definition location points at the file", result.location?.path === join(dir, MAIN_REL))
   check("G1: definition location is 0-based LSP line 1", result.location?.line === 1, String(result.location?.line))
+
+  // --- M53 call-site law (found live during M53.R2) -------------------------
+  // At a call site the identifier under the cursor must resolve to the symbol
+  // it NAMES (greet), never the symbol that CONTAINS the cursor (the
+  // enclosing function). The fixture's call sites: main.ts lines 8-9
+  // (1-based) = 0-based 7-8, use.ts line 3 = 0-based 2.
+  const callMain = nav.resolveDefinition(raw, { filePath: join(dir, MAIN_REL), line: 7, character: 2 })
+  check("G1b: definition at a CALL SITE names the callee (greet)", callMain.symbol?.name === "greet", JSON.stringify(callMain.symbol))
+  check("G1b: the call-site location lands on greet's declaration", callMain.location?.path === join(dir, MAIN_REL) && callMain.location?.line === 1, JSON.stringify(callMain.location))
+  const callUse = nav.resolveDefinition(raw, { filePath: join(dir, USE_REL), line: 2, character: 6 })
+  check("G1b: CROSS-FILE call site resolves to the unique callee", callUse.symbol?.name === "greet" && callUse.location?.path === join(dir, MAIN_REL), JSON.stringify(callUse.symbol))
+  // Declared absence: an identifier no index row names keeps found=false —
+  // containment would have answered with the enclosing symbol, which would
+  // read as a fabricated navigation target for an unindexed name.
+  const unknownName = nav.resolveDefinition(raw, { filePath: join(dir, MAIN_REL), line: 6, character: 5 })
+  check("G1b: an unindexed identifier stays declared-absent (never the enclosing symbol)", unknownName.found === false && unknownName.location === null, JSON.stringify(unknownName.symbol))
   cleanupDir(dir)
 }
 
@@ -347,6 +382,14 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string }> = [
     from: "    if (err instanceof PositionError) return null;",
     to: "    if (false) return null;",
   },
+  {
+    // M53 (permanent, F7 rule): the reference-first resolution is dropped —
+    // definition regresses to the containment-only model and a call site
+    // navigates to the enclosing symbol (the live defect M53.R2 found).
+    name: "call-site: reference-first resolution dropped",
+    from: "  const named = findNamedSymbolAtPosition(raw, request.filePath, request.line, request.character);",
+    to: "  const named = null as SymbolRow | null; // reference-first dropped",
+  },
 ]
 
 async function runNavMutants(): Promise<number> {
@@ -427,6 +470,14 @@ async function navMutantOracle(mod: any): Promise<boolean> {
       return true
     }
 
+    // M53 call-site oracle (F7: permanent): at a call site the definition
+    // must name the CALLEE. A component that regresses to the containment-
+    // only model (or loses the reference-first resolution entirely) answers
+    // with the enclosing symbol instead — caught exactly here.
+    const atCall = mod.resolveDefinition(raw, { filePath: join(dir, MAIN_REL), line: 7, character: 2 })
+    if (atCall.found !== true || atCall.symbol?.name !== "greet") return true
+    if (atCall.location?.path !== join(dir, MAIN_REL) || atCall.location?.line !== 1) return true
+
     // References oracle: all 3 call sites present, none dropped.
     const refs = mod.resolveReferences(raw, { filePath: join(dir, MAIN_REL), line: 1, character: 2, includeDeclaration: false })
     if (refs.locations.length !== 3 || refs.totalCount !== 3) return true
@@ -490,7 +541,7 @@ async function main(): Promise<void> {
     ],
   }
 
-  writeFileSync(EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + "\n")
+  writeSealed(EVIDENCE_PATH, evidence)
   console.log(`\nL3: ${status.toUpperCase()} (${passed}/${passed + failed} passed, ${mutantsCaught}/${NAV_MUTANTS.length} mutants caught, ${negativeCases} negative)`)
   console.log(`Evidence: ${EVIDENCE_PATH}`)
   if (!ok) process.exitCode = 1

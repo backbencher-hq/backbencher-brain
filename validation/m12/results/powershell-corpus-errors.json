@@ -302,5 +302,10 @@
   ],
   "unexpectedErrors": [],
   "passed": true,
-  "policy": "Every tracked .ps1/.psm1/.psd1 file in clean powershell@91ce9844 is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Files under test/ are the PowerShell parser/engine test suite and deliberately embed invalid syntax as parser-error test data; they are counted and audited, never hidden. Six production files hit valid modern-PowerShell constructs (?? / ?. / nested [Type+Type] literals / --flag=\"$var\" tokens / comma-separated bare args / $var\\ paths) that the vendored grammar does not model — each is named explicitly. Clean acceptance files are those with zero parse errors."
+  "policy": "Every tracked .ps1/.psm1/.psd1 file in clean powershell@91ce9844 is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Files under test/ are the PowerShell parser/engine test suite and deliberately embed invalid syntax as parser-error test data; they are counted and audited, never hidden. Six production files hit valid modern-PowerShell constructs (?? / ?. / nested [Type+Type] literals / --flag=\"$var\" tokens / comma-separated bare args / $var\\ paths) that the vendored grammar does not model — each is named explicitly. Clean acceptance files are those with zero parse errors.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.950Z",
+    "contentSha256": "a7e7ffce412ea57c170557d0ddf6e0eee8604eacf5d71d83fb0e97de2fbb1cc4"
+  }
 }

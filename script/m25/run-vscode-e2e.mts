@@ -8,6 +8,7 @@
 //
 // Run: npx tsx script/m25/run-vscode-e2e.mts
 // Evidence: validation/m25/results/E5.json (+ E5-inner.json from the host)
+import { writeSealed } from "../lib/evidence.ts"
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -131,7 +132,7 @@ async function main(): Promise<void> {
   if (innerError !== null) {
     result.limitations.push(`in-editor run error: ${innerError.slice(0, 300)} (honest failure — never silently skipped)`)
   }
-  writeFileSync(path.join(RESULTS, "E5.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(path.join(RESULTS, "E5.json"), result)
   console.log(`E5: ${result.status.toUpperCase()} (${passedInner}/${checks.length} in-editor checks passed)`)
   process.exit(result.status === "verified" ? 0 : 1)
 }

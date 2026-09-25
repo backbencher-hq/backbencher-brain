@@ -40,6 +40,7 @@ import {
   usagesSection,
   type RichSite,
 } from "../../src/lsp/rich_hover.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H2.json")
@@ -177,20 +178,39 @@ try {
   const hoverRender = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: renderPos })
   const coldMs = performance.now() - t0
   md = (hoverRender?.contents?.value ?? "") as string
-  check("H2/R3: hover resolves render", hoverRender?.data?.name === "render", hoverRender?.data?.name ?? "null")
+  // Wire law (fixed 2026-09-12, M55.G1 bar re-audit): the component envelope
+  // rides the spec Hover's `data` slot as `{ provenance, symbol }` — identity is
+  // `data.symbol.name`. This gate still read the pre-`5cce610b` flat
+  // `data.name`, so it was red from the wire-law commit on while the server was
+  // correct: the gate asserted a shape the server had stopped answering.
+  check("H2/R3: hover resolves render", hoverRender?.data?.symbol?.name === "render", hoverRender?.data?.symbol?.name ?? "null")
   check("H2/R3: connected section renders called-by", md.includes("**connected**: called by"), md.slice(0, 200))
   check(
     "H2/R3: both same-name callers listed, second disambiguated",
     md.includes("[main](command:bb.openUsage") && md.includes("[main — Main2.java:4]"),
     "",
   )
-  check("H2/R3: usages section renders clickable file:line links", md.includes("**usages**") && md.includes("[Greeter — App.java:6]"), md.slice(0, 200))
+  // M55.T3 (§14 Truth Rule 1): the usages section lists USAGE SITES. The
+  // pre-M55 assertion required `[Greeter — App.java:6]` — render's own owning
+  // class, offered as a "usage" — which is exactly the defect T3 removed
+  // (found live: the owner hovered a call and read another symbol's data).
+  // It now asserts the real call sites AND the class's absence.
+  check(
+    "H2/R3: usages section renders the call sites as clickable links",
+    md.includes("**usages**") && md.includes("[main — App.java:") && md.includes("[main — Main2.java:"),
+    md.slice(md.indexOf("**usages**")),
+  )
+  check(
+    "H2/R3: the hovered method's own class never renders as a usage",
+    !md.slice(md.indexOf("**usages**")).includes("Greeter — App.java:6"),
+    md.slice(md.indexOf("**usages**")),
+  )
   check("H2/R3: definition footnote is clickable (bb.openDefinition)", md.includes("bb.openDefinition?"), "definition link missing")
   check("H2/R3: existing sections unchanged (signature + evidence + source still present)", md.includes("public method render") && md.includes("evidence:") && md.includes("bb index"), "")
 
   const hoverGreeter = await lsp.request("textDocument/hover", { textDocument: { uri: appUri }, position: greeterPos })
   const gmd = (hoverGreeter?.contents?.value ?? "") as string
-  check("H2/R3: hover resolves Greeter", hoverGreeter?.data?.name === "Greeter", hoverGreeter?.data?.name ?? "null")
+  check("H2/R3: hover resolves Greeter", hoverGreeter?.data?.symbol?.name === "Greeter", hoverGreeter?.data?.symbol?.name ?? "null")
   check("H2/R3: implements verb names Named (connected)", gmd.includes("implements [Named]"), "")
   check("H2/R3: instantiated-by lists both mains (second disambiguated)", gmd.includes("instantiated by [main]") && gmd.includes("Main2.java:4"), "")
   void greeterPos
@@ -207,7 +227,16 @@ try {
   // component's path/line/character ride inside it.
   const refList: Array<{ uri: string; range: { start: { line: number; character: number } } }> = Array.isArray(refs) ? refs : []
   const refLocs = new Set(refList.map((l) => `${filePathOf(l.uri)}:${l.range.start.line}:${l.range.start.character}`))
-  check("H2/R4: references surface returns the fixture's sites", refLocs.size >= 3, `got ${refLocs.size}`)
+  // M55.T3: references answers the usage sites under its declared filter
+  // (declaration NOT included) — the fixture stores exactly two calling
+  // symbols (App.main, Main2.main) plus the owning class's `contains` row,
+  // which is not a reference to render.
+  check("H2/R4: references surface returns each usage site exactly once", refLocs.size === 2, `got ${refLocs.size}`)
+  check(
+    "H2/R4: the owning declaration is not served as a reference",
+    ![...refLocs].some((l) => l.endsWith(`:${H2_EXPECT.renderDefLine}:`) && l.startsWith(H2_FILE_APP)),
+    JSON.stringify([...refLocs]),
+  )
   const usageLinks = commandLinks(md).filter((l) => l.command === "bb.openUsage")
   const targetInRefs = (t: { file: string; line: number; character: number }) => refLocs.has(`${t.file}:${t.line}:${t.character}`)
   check(
@@ -361,6 +390,6 @@ const result = {
     "Editor-leg (link clicking in a real session) is asserted in the E5-pattern session at H2 acceptance; this file proves the server surface.",
   ],
 }
-writeFileSync(EVIDENCE, JSON.stringify(result, null, 2) + "\n")
+writeSealed(EVIDENCE, result)
 console.log(`\nH2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants)`)
 if (failed > 0) process.exitCode = 1

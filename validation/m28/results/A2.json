@@ -2,12 +2,12 @@
   "issue": "M28.A2",
   "code": "A2",
   "milestone": "M28",
-  "status": "known-gap",
-  "checks": 13,
-  "passed": 12,
-  "failed": 1,
-  "mutantsCaught": 5,
-  "mutantsTotal": 5,
+  "status": "verified",
+  "checks": 23,
+  "passed": 23,
+  "failed": 0,
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
   "mutantRecords": [
     {
       "name": "A2 mutant: author-label-dropping renderer is caught by the label rule",
@@ -28,14 +28,21 @@
     {
       "name": "A2 mutant: annotation-less model renders NO badge, annotated model renders exactly one author-labeled badge (real DOM rules)",
       "caught": true
+    },
+    {
+      "name": "A2 mutant: lying in-editor driver is caught by the assertion set",
+      "caught": true
     }
   ],
-  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-09-16T12:42:18.932Z",
+  "generatedAt": "2026-09-20T02:25:03.872Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
-  "failures": [
-    "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing"
-  ]
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:25:03.872Z",
+    "contentSha256": "b2a3682f4cf4fc551a8953ed6dc6442bb9d452d32b5950ec2f970ecb20b1c49f"
+  }
 }

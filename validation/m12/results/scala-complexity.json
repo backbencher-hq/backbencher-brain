@@ -53,5 +53,10 @@
     "fileList": "validation/m12/results/scala-corpus-sample.txt",
     "repoState": "clean",
     "grammar": "tree-sitter-scala v0.26.2 (built with tree-sitter-cli 0.22.6 for web-tree-sitter env-import ABI)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.053Z",
+    "contentSha256": "95ea2331d42c40ade92583af37b86b748da95eb10fd229d77a29cf9e96ca138e"
   }
 }

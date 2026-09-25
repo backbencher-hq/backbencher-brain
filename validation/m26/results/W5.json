@@ -3,18 +3,18 @@
   "code": "W5",
   "milestone": "M26",
   "status": "verified",
-  "checks": 13,
-  "passed": 13,
+  "checks": 15,
+  "passed": 15,
   "failed": 0,
-  "mutantsCaught": 5,
-  "mutantsTotal": 5,
-  "currentCommit": "ff1e31243214ff5d4ed271598b27601532f68b82",
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-09-16T12:41:56.060Z",
+  "generatedAt": "2026-09-20T02:23:17.774Z",
   "differential": {
-    "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 direction rule accounted (incoming+outgoing by design, one outgoing edge fixture-declared); containment delta verified separately",
-    "l3TotalCount": 5,
+    "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
+    "l3TotalCount": 4,
     "l3IncomingCount": 4,
     "impactShownCount": 4,
     "nestedDelta": "nested1 counted in impact via owner cascade (a flat L3 location too, as a distinct edge)"
@@ -23,5 +23,10 @@
     "totalCountIfKnown is computed by an independent bounded COUNT under the same containment rule; it counts distinct caller symbols, not call sites.",
     "Impact depth cap mirrors the engine (5); deeper chains exist but are declared out of budget.",
     "Latency measured headless (component + engine); in-editor regime is measured by the editor legs."
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:23:17.775Z",
+    "contentSha256": "f00d2965cbccf5b740a8158248739304afc6221d36a1fb4d45d35b0bbb8b829b"
+  }
 }

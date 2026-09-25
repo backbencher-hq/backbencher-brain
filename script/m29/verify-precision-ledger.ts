@@ -8,7 +8,11 @@
 //                      and a fresh build (a hand edit to JSON or MD, or any
 //                      upstream evidence change, fails until regenerated)
 //   G2 staleness hash: the recorded inputsHash equals a fresh hash over the
-//                      declared input set (the staleness policy, enforced)
+//                      declared input set (the staleness policy, enforced),
+//                      over the evidence's SEMANTIC content — declared volatile
+//                      run metadata is excluded, proved in both directions —
+//                      and the published body itself carries no run metadata
+//                      (the artifact is a fixpoint across upstream re-runs)
 //   G3 claim honesty:  every recorded claim equals computeCap replayed over
 //                      the recorded evidence steps — and a synthetic row whose
 //                      S5 fails computes I0 (claims cannot be edited up)
@@ -24,8 +28,9 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { createHash } from "node:crypto"
-import { buildLedger } from "./generate-precision-ledger.ts"
+import { buildLedger, normalizeEvidence } from "./generate-precision-ledger.ts"
 import { computeCap, type SpecLedger, type Step } from "./wave-protocol.ts"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_JSON = path.join(ROOT, "validation/m29/results/PRECISION-LEDGER.json")
@@ -85,6 +90,44 @@ try {
 } catch {}
 check("G2: recorded inputsHash equals a fresh hash over the declared inputs", recorded?.inputsHash === fresh.inputsHash, `recorded=${recorded?.inputsHash} fresh=${fresh.inputsHash}`)
 check("G2: inputs list is non-trivial (>= 12 declared inputs)", Array.isArray(recorded?.inputs) && recorded.inputs.length >= 12, String(recorded?.inputs?.length))
+// The declared volatile-field exclusion, proved in BOTH directions over a real
+// evidence record: a re-run's metadata must not fake a stale hash, and a
+// semantic change must never be able to hide behind the exclusion.
+const sampleEvidence = JSON.parse(readFileSync(path.join(ROOT, "validation/m29/results/wave-editor-java.json"), "utf8")) as Record<string, unknown>
+const bumpedMetadata = { ...sampleEvidence, commit: "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", generatedAt: "2099-01-01T00:00:00.000Z", bbSeal: { sealed: false } }
+check(
+  "G2: a volatile-field change alone does not change the normalized evidence (an upstream re-run cannot report a false stale)",
+  JSON.stringify(normalizeEvidence(bumpedMetadata)) === JSON.stringify(normalizeEvidence(sampleEvidence)),
+  "commit/generatedAt/bbSeal excluded",
+)
+const semanticEdit = JSON.parse(JSON.stringify(sampleEvidence)) as { checks: Array<{ ok: boolean }> }
+if (semanticEdit.checks.length > 0) semanticEdit.checks[0].ok = !semanticEdit.checks[0].ok
+check(
+  "G2: a semantic-field change DOES change the normalized evidence (the exclusion cannot widen silently)",
+  JSON.stringify(normalizeEvidence(semanticEdit)) !== JSON.stringify(normalizeEvidence(sampleEvidence)),
+  "checks[0].ok flipped",
+)
+// The artifact itself must be a FIXPOINT: its byte identity is the drift gate,
+// so the published body may not embed any other run's metadata. Without this
+// invariant an upstream re-run rewrites the ledger, which makes the R4/D1
+// records that pin it permanently stale at the same HEAD.
+const volatileInBody: string[] = []
+const scanBody = (value: unknown, where: string): void => {
+  if (Array.isArray(value)) return value.forEach((v, i) => scanBody(v, `${where}[${i}]`))
+  if (value !== null && typeof value === "object") {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (["commit", "currentCommit", "generatedAt", "bbSeal", "workingTreeRelevantChanges"].includes(k)) volatileInBody.push(`${where}.${k}`)
+      scanBody(v, `${where}.${k}`)
+    }
+  }
+}
+scanBody(recorded?.languages, "languages")
+scanBody(recorded?.giantScale, "giantScale")
+check(
+  "G2: the published ledger body carries no per-run metadata (the artifact is a fixpoint across upstream re-runs)",
+  volatileInBody.length === 0,
+  volatileInBody.slice(0, 4).join(", "),
+)
 
 // ---------------------------------------------------------------------------
 // G3: claim honesty — every claim equals computeCap over recorded evidence
@@ -189,6 +232,6 @@ const result = {
   generatedAt: new Date().toISOString(),
   details: details.slice(0, 10),
 }
-writeFileSync(path.join(ROOT, "validation/m29/results/R4-verify.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(ROOT, "validation/m29/results/R4-verify.json"), result)
 console.log(`R4: ${result.status.toUpperCase()} (${passed}/${passed + failed} passed, 5 negatives)`)
 process.exit(failed === 0 ? 0 : 1)

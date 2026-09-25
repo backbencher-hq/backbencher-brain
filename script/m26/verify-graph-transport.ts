@@ -38,6 +38,7 @@ import { realpathSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { spawn, execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "graph_request.ts")
@@ -166,7 +167,7 @@ async function main(): Promise<void> {
     const tampered = await handleGraphRequest(fx4.db, fx4.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" }, {
       traverse: async () => ({
         root: {} as never,
-        callers: [{ from: "a", to: "b", relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { file: "f", line: 1 }, depth: 0 }] as never,
+        callers: [{ from: "a", to: "b", relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { kind: "call-site", file: "f", line: 1 }, depth: 0 }] as never,
         callees: [],
         nodes: {},
         provenance: {} as never,
@@ -291,7 +292,7 @@ async function main(): Promise<void> {
         const r = await m.handleGraphRequest(fxm.db, fxm.projectId, { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: "main" }, {
           traverse: async () => ({
             root: {},
-            callers: [{ from: "a", to: "b", relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { file: "f", line: 1 }, depth: 0 }],
+            callers: [{ from: "a", to: "b", relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { kind: "call-site", file: "f", line: 1 }, depth: 0 }],
             callees: [],
             nodes: {},
             provenance: {},
@@ -369,7 +370,7 @@ async function main(): Promise<void> {
   }
   const dir = join(ROOT, "validation/m26/results")
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, "W2.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "W2.json"), result)
   console.log(`W2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
   process.exit(failed === 0 ? 0 : 1)
 }

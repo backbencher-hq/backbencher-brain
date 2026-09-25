@@ -20,7 +20,7 @@
       "status": "verified",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
-        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence \u2014 each rejection proven by mutation",
+        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
         "M26 bar audit runs inside the gate (spawned, exit-code checked)",
         "All existing milestone gates remain VERIFIED after wiring"
       ],
@@ -75,7 +75,7 @@
       "acceptanceCriteria": [
         "Template valid per LSP4IJ user-defined schema",
         "Method-set subset proven and drift-gated",
-        "runIde attempt recorded with result or blocked-with-reason \u2014 never silent"
+        "runIde attempt recorded with result or blocked-with-reason — never silent"
       ],
       "closureRequirements": [
         "npx tsx script/m27/verify-lsp4ij.ts exits 0 at HEAD with clean relevant tree",
@@ -200,5 +200,10 @@
         "negativeCases": 4
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.423Z",
+    "contentSha256": "952c1b2913a513728bc44d2d469f7702680e2821694425c181c987b35a8ea634"
+  }
 }

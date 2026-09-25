@@ -30,8 +30,12 @@
 //             evidenceClass passes through when stored)
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
+// M55.T1: the graph door reads the ONE identity resolver directly (the same
+// module the impact door re-exports from) — one decision, one owner.
+import { resolveMemberIdentity, memberFileMatches, IDENTITY_TRAVERSABLE_TYPES } from "./identity"
 import type { GraphTraversalResult } from "../intelligence/contracts"
 import { buildGroupedUsages, classifyFileLevel, type GroupedUsages } from "./graph_usages"
+import { memberResolutionRecord } from "./identity"
 
 export const GRAPH_REQUEST_METHOD = "bb/graph"
 // M44.U1 (issue #688): the usages-mode RESPONSE became grouped per symbol
@@ -65,6 +69,10 @@ export interface GraphRequestParams {
   includeCrossLanguage?: unknown
   /** M42.H5: "graph" (default) | "usages" (the hub's declared profile). */
   mode?: unknown
+  /** X1 closure: the hover's defining-file identity. Same-name members
+   *  (every real repo's constructors) resolve through it; optional — a bare
+   *  unique name works exactly as before. */
+  file?: unknown
 }
 
 /** Minimal db surface this module needs (structural, so tests can stub). */
@@ -86,6 +94,81 @@ export function isIndexedWorkspace(db: GraphRequestDb, projectId: string): boole
 export interface GraphRequestDeps {
   /** Traversal engine (injection seam for the mutation suite). */
   traverse: typeof graphTraversal
+  /** Member resolution (injection seam; defaults to the ONE identity
+   *  resolver, src/lsp/identity.ts). */
+  resolveMember?: typeof resolveMemberIdentity
+}
+
+/** X1 closure: ONE member-fallback decision for BOTH doors. A member name
+ *  the engine whitelist excludes (constructor, plain member) roots through
+ *  its OWNING declaration — same rules as bb/impact (impact.ts owns the
+ *  decision; this is the shared call), with the hover's file hint
+ *  disambiguating same-name members. A genuinely unknown symbol still
+ *  throws the engine's declared error. */
+async function resolveTraversalRoot(
+  deps: GraphRequestDeps,
+  db: GraphRequestDb,
+  projectId: string,
+  params: GraphRequestParams,
+): Promise<ReturnType<typeof graphTraversal>> {
+  const file = typeof params.file === "string" && params.file.length > 0 ? params.file : undefined
+  const opts = () => ({
+    direction: (params.direction as "callers" | "callees" | "both" | undefined) ?? (params.mode === GRAPH_MODE_USAGES ? "both" : undefined),
+    maxDepth: params.maxDepth as number | undefined,
+    relationshipTypes: params.relationshipTypes as string[] | undefined,
+    includeCrossLanguage: params.includeCrossLanguage as boolean | undefined,
+  })
+  try {
+    const r = await deps.traverse(projectId, params.symbol as string, opts())
+    // M53: the hover's server-resolved identity beats the engine's gravity
+    // pick — the SAME post-traverse gate as bb/impact (M48.C1 made the engine
+    // resolve member names directly, silently bypassing the U5 fallback). A
+    // non-traversable root re-resolves through its owning declaration; a
+    // hinted request whose root lands outside the hint is a silent relabel
+    // and is refused (declared error, never a guessed root).
+    const rootType = (r.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
+    if (rootType && !IDENTITY_TRAVERSABLE_TYPES.includes(rootType)) {
+      const owner = (deps.resolveMember ?? resolveMemberIdentity)(db, projectId, params.symbol as string, file)
+      if (owner === null) {
+        throw new GraphRequestError(
+          `bb/graph: symbol '${params.symbol}' is not a traversable root (${rootType}) — no graph exists for it (declared error: the symbol was not found as a traversable root)`,
+        )
+      }
+      const rr = await deps.traverse(projectId, owner.name, opts())
+      ;(rr as { resolution?: unknown }).resolution = memberResolutionRecord(params.symbol as string, owner.name, file)
+      return rr
+    }
+    if (file && typeof r.root?.file === "string" && r.root.file !== "" && !memberFileMatches(file, r.root.file)) {
+      throw new GraphRequestError(
+        `bb/graph: symbol '${params.symbol}' resolves to a member in '${r.root.file}' but the hover's identity is '${file}' — the hinted symbol was not found at that identity; refusing the silent relabel (declared error)`,
+      )
+    }
+    return r
+  } catch (error) {
+    const owner = (deps.resolveMember ?? resolveMemberIdentity)(db, projectId, params.symbol as string, file)
+    if (owner === null) {
+      // M55.T1 (Truth Rule 2, declared-error half): a genuinely absent symbol is
+      // THIS door's declared error, in this door's language. The engine's
+      // "Symbol '<name>' not found" used to escape verbatim, which contradicted
+      // the transport doc's own prefix contract ("every failure throws with the
+      // `bb/graph:` prefix") — clients that match the prefix to tell a declared
+      // error from a bug could not classify it. Only the not-found shape is
+      // wrapped: any other engine failure is still thrown untouched, because
+      // prefixing a real bug would mislabel it as expected behaviour.
+      const detail = error instanceof Error ? error.message : String(error)
+      if (/^Symbol '.+' not found$/.test(detail)) {
+        throw new GraphRequestError(
+          `bb/graph: symbol '${params.symbol}' not found — no graph exists (declared error; run \`bb index\` or check the name)`,
+        )
+      }
+      throw error
+    }
+    const r = await deps.traverse(projectId, owner.name, opts())
+    // Declare the resolution in the payload (M55.T1 Truth Rule 2; the
+    // record's shape is owned by the identity resolver).
+    ;(r as { resolution?: unknown }).resolution = memberResolutionRecord(params.symbol as string, owner.name, file)
+    return r
+  }
 }
 
 /** Validate params, resolve the traversal, and gate the response on
@@ -140,12 +223,7 @@ export async function handleGraphRequest(
     throw new GraphRequestError("bb/graph: workspace is not indexed — run `bb index` first (declared error: an unindexed workspace has no graph to serve)")
   }
 
-  const result = await deps.traverse(projectId, params.symbol as string, {
-    direction: effectiveDirection,
-    maxDepth: requestedDepth,
-    relationshipTypes: params.relationshipTypes as string[] | undefined,
-    includeCrossLanguage: params.includeCrossLanguage as boolean | undefined,
-  })
+  const result = await resolveTraversalRoot(deps, db, projectId, params)
 
   // Response-side traceability gate: trust construction, then verify. An
   // edge without a stored row id must fail the request, never ship.
@@ -200,7 +278,13 @@ export async function handleGraphRequest(
       )
       .all(projectId, rootNode.file) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
     const dependencies = classifyFileLevel(fileDepsRaw).imports
-    return buildGroupedUsages(result as GraphTraversalResult, { ...fileLevel, dependencies })
+    const grouped = buildGroupedUsages(result as GraphTraversalResult, { ...fileLevel, dependencies })
+    // X1 closure: carry the declared member resolution into the grouped
+    // shape too (the resolver stamped it on the traversal result) — the hub
+    // states what it rooted at, same rule as impact and the raw graph shape.
+    const res = (result as { resolution?: unknown }).resolution
+    if (res !== undefined) (grouped as { resolution?: unknown }).resolution = res
+    return grouped
   }
   return result
 }

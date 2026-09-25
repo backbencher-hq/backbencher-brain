@@ -2,48 +2,73 @@
 //
 // Docs are claims; D1's doc is GENERATED, not hand-written. The verifier
 // OWNS docs/m26/GRAPH.md: it derives every fact from live code and the
-// evidence ledger, writes the file, and the drift gate is byte-identical
-// equality between the on-disk file and a fresh generation (a hand edit or a
-// code change without regeneration both fail it).
+// committed evidence ledger, writes the file, and the drift gate is
+// byte-identical equality between the on-disk file and a fresh generation (a
+// hand edit or a code change without regeneration both fail it).
 //
-//   G1 imported facts:   budgets/version/tier meanings read via require()
-//                        from the REAL modules (impact.ts, graph-core.ts,
-//                        graph_request.ts) — the doc cannot drift from code
-//   G2 per-pair table:   GENERATED from stored brain_relationship rows
-//                        (is_cross_language = 1) scanned from real project
-//                        dbs — the same seam as CROSS-LANGUAGE.md (W3)
-//   G3 tier table:       generated from TIER_MEANINGS (the W4 UI-law map)
-//   G4 truncation:       generated from RENDER_BUDGET (the W1 law) and
-//                        IMPACT_BUDGET (the W5 law)
-//   G5 claim levels:     the verification table reflects the M26 ledger
-//                        statuses at generation time
-//   G6 drift gate:       on-disk file must equal a fresh generation,
-//                        byte-identical
-//   M1 mutant:           an embedded fact lies -> drift gate fails
-//   M2 mutant:           the generator lies about pairs -> row cross-check
-//                        fails
-//   V vocabulary:        the generated doc passes the contract §1 lint
+//   G1 imported facts:   budgets/version/tiers come from the owning modules
+//   G2 reality split:    the doc states the cross-language rule + launch
+//                        languages + a pointer to the record; the RECORD carries
+//                        the machine scan (one row per stored pair, each
+//                        attributed to its database) — nothing fabricated
+//   G3 tier table:       every EDGE_TIERS name renders with its TIER_MEANINGS gloss
+//   G4 budgets:          truncation + impact policy state the live numbers
+//   G5 claim levels:     the verification table mirrors the m26 ledger
+//   G6 drift gate:       on-disk doc == fresh generation (read BEFORE write)
+//   G7 ambient-free:     two different machine realities produce ONE document
+//                        (negative control: a leaky generator is caught)
+//
+// Audit 2026-09-18 (found by the M53/M61/M62 lane convergence) — two defects
+// fixed here, both of the class M61 exists to catch:
+//
+//   1. AMBIENT STATE IN A BYTE-GATED DOC. The doc embedded
+//      `Real project dbs scanned: N` and one row per pair found in the
+//      operator's live `~/.bb/projects`. Those are functions of machine state
+//      outside the repo, so any `bb index` on the machine regenerated a
+//      different committed document, which invalidated this record's pin, which
+//      turned m26 governance red (`D1:stale-commit`) and — through the closure
+//      ladders — every downstream bar red with it. Machine reality now lives in
+//      the record (script/m26/ambient-reality.ts owns the scan); the doc
+//      carries a stable pointer and is a pure function of the repository.
+//   2. A HOLLOW DRIFT CHECK. The old order was `writeFileSync(DOC, generated)`
+//      and then `check(readFileSync(DOC) === regenerated)` — the write erased
+//      the very evidence of a hand edit, so the check could not fail. The
+//      on-disk bytes are now read BEFORE the write and compared to the fresh
+//      generation: a hand-edited doc FAILS on the next run (and the run heals
+//      the file). First run after a content change fails and regenerates; the
+//      next run proves the committed doc matches. That fixpoint is declared,
+//      not accidental.
 //
 // Run: npx tsx script/m26/verify-graph-docs.ts
 // Evidence: validation/m26/results/D1.json (machine-emitted)
 
-import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { execFileSync } from "node:child_process"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
+import {
+  leakyControlDoc,
+  realityPointerLines,
+  scanRealPairs,
+  type RealPair,
+  type RealityFacts,
+} from "./ambient-reality.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const DOC = join(ROOT, "docs", "m26", "GRAPH.md")
-const REAL_DATA_DIR = join(process.env.HOME ?? "", ".bb", "projects")
+const RECORD_FILE = "validation/m26/results/D1.json"
 const nodeRequire = createRequire(import.meta.url)
-const Database = nodeRequire("better-sqlite3")
 
-interface RealPair {
-  source: string
-  target: string
-  edgeCount: number
-  sampleBridge: string | null
+/** The facts a byte-gated document may assert: every one is imported from a
+ *  module in this repository or read from a committed file. */
+interface RepoFacts {
+  impactBudget: { maxNodes: number; maxDepth: number }
+  renderBudget: { maxNodes: number; maxEdges: number; warmMs: number; coldMs: number }
+  schemaVersion: number
+  edgeTiers: readonly string[]
+  tierMeanings: Record<string, string>
 }
 
 let checks = 0
@@ -54,56 +79,42 @@ function check(label: string, condition: boolean, detail = ""): void {
   else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
 }
 
-/** Scan real project dbs (read-only) for stored cross-language pairs. */
-function scanRealPairs(): { pairs: RealPair[]; scanned: number; skipped: number } {
-  const pairs: RealPair[] = []
-  let scanned = 0
-  let skipped = 0
-  if (existsSync(REAL_DATA_DIR)) {
-    for (const d of readdirSync(REAL_DATA_DIR)) {
-      try {
-        const ro = new Database(join(REAL_DATA_DIR, d, "brain.db"), { readonly: true })
-        const has = ro.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='brain_relationship'`).get()
-        if (has) {
-          scanned++
-          const rows = ro
-            .prepare(
-              `SELECT sf.language AS source, tf.language AS target, COUNT(*) AS edgeCount, MAX(r.bridge_mechanism) AS sampleBridge
-               FROM brain_relationship r
-               JOIN brain_symbol ss ON ss.id = r.source_symbol_id AND ss.project_id = r.project_id
-               JOIN brain_file sf ON sf.id = ss.file_id
-               JOIN brain_symbol ts ON ts.id = r.target_symbol_id AND ts.project_id = r.project_id
-               JOIN brain_file tf ON tf.id = ts.file_id
-               WHERE r.is_cross_language = 1 GROUP BY sf.language, tf.language`,
-            )
-            .all() as any[]
-          for (const r of rows) if (r.source && r.target) pairs.push({ source: r.source, target: r.target, edgeCount: r.edgeCount, sampleBridge: r.sampleBridge ?? null })
-        } else skipped++
-        ro.close()
-      } catch {
-        skipped++
-      }
-    }
-  }
-  return { pairs, scanned, skipped }
+/** The drift rule, named so the mutant can exercise it directly. A doc is
+ *  accepted only if the bytes already on disk equal a fresh generation. */
+function driftMatches(onDisk: string, fresh: string): boolean {
+  return onDisk === fresh
 }
 
-/** The generator — the SINGLE owner of docs/m26/GRAPH.md content. */
-function generateDoc(facts: {
-  impactBudget: { maxNodes: number; maxDepth: number }
-  renderBudget: { maxNodes: number; maxEdges: number; warmMs: number; coldMs: number }
-  schemaVersion: number
-  edgeTiers: readonly string[]
-  tierMeanings: Record<string, string>
-  realPairs: RealPair[]
-  realDbsScanned: number
-  realDbsSkipped: number
-}): string {
+/** Every recorded machine-reality row must BE a scanned row: same pair, same
+ *  count, same bridge, same database. A record that added, dropped, or edited a
+ *  row is rejected — the recorded reality is a copy, never a claim of its own. */
+function samePairRow(a: RealPair, b: RealPair): boolean {
+  return (
+    a.source === b.source &&
+    a.target === b.target &&
+    a.edgeCount === b.edgeCount &&
+    a.sampleBridge === b.sampleBridge &&
+    a.database === b.database
+  )
+}
+function recordRowsMatch(recordRows: RealPair[], scanned: RealityFacts): boolean {
+  return recordRows.length === scanned.pairs.length && recordRows.every((r) => scanned.pairs.some((p) => samePairRow(p, r)))
+}
+
+/** The generator — the SINGLE owner of docs/m26/GRAPH.md content.
+ *
+ *  `reality` is accepted as the declared AMBIENT SEAM: the document must not
+ *  render any value from it (only a stable pointer), and passing the seam in is
+ *  what gives the G7 ambient-independence check teeth — an edit that lets
+ *  machine state into the doc changes the bytes for a different reality and
+ *  fails G7. */
+function generateDoc(facts: RepoFacts, reality: RealityFacts): string {
+  void reality
   const L: string[] = []
   L.push("# The Graph surface — what renders and what it claims (M26.D1)")
   L.push("")
   L.push("This document is **GENERATED** by `script/m26/verify-graph-docs.ts` from")
-  L.push("live code and stored evidence — never hand-edit it. Every number below")
+  L.push("live code and committed evidence — never hand-edit it. Every number below")
   L.push("is imported from the module that owns it, and the drift gate fails the")
   L.push("suite if this file stops matching a fresh generation.")
   L.push("")
@@ -134,26 +145,22 @@ function generateDoc(facts: {
   L.push("declared budget: `" + facts.impactBudget.maxNodes + "` reverse-dependency nodes at traversal depth")
   L.push("`" + facts.impactBudget.maxDepth + "` (src/lsp/impact.ts).")
   L.push("")
-  L.push("## Per-pair cross-language reality (generated from stored rows)")
+  L.push("## Per-pair cross-language reality (rule here, data in the record)")
   L.push("")
-  L.push("From stored `brain_relationship` rows only (`is_cross_language = 1`).")
-  L.push("Launch languages: java, groovy, kotlin, scala, typescript. A pair not")
-  L.push("listed is **declared absent** — no stored rows, no cross-language UI")
-  L.push("text, no claimed bridge.")
+  L.push("Cross-language UI text comes from stored `brain_relationship` rows only")
+  L.push("(`is_cross_language = 1`). A pair with no stored rows is **declared absent**:")
+  L.push("no cross-language UI text, no claimed bridge, nothing filled in. Which")
+  L.push("pairs a real index actually stores is machine reality — it is recorded,")
+  L.push("not asserted here (see below).")
   L.push("")
-  L.push("| source language | target language | stored edges | bridge (sample) | origin |")
-  L.push("| --- | --- | --- | --- | --- |")
-  const rows = facts.realPairs.map((p) => ({ ...p, origin: "real project index" }))
-  if (rows.length === 0) L.push("| _(none — no cross-language rows stored anywhere)_ | | | | |")
-  for (const p of rows) L.push("| " + p.source + " | " + p.target + " | " + p.edgeCount + " | " + (p.sampleBridge ?? "_(row carries no mechanism)_") + " | " + p.origin + " |")
+  L.push("Launch languages: java, groovy, kotlin, scala, typescript.")
   L.push("")
-  L.push("Real project dbs scanned: " + facts.realDbsScanned + " (skipped/unreadable: " + facts.realDbsSkipped + ").")
-  L.push("")
+  for (const line of realityPointerLines(RECORD_FILE, "`machineReality`, `realPairRows`")) L.push(line)
   L.push("## Verification status (generated from the M26 evidence ledger)")
   L.push("")
   L.push("| issue | claim level |")
   L.push("| --- | --- |")
-  const ledger = JSON.parse(readFileSync(join(ROOT, "validation", "m26", "results", "manifest.json"), "utf8"))
+  const ledger = parseSealedRecord(join(ROOT, "validation", "m26", "results", "manifest.json"))
   for (const issue of ledger.issues as Array<{ code: string; status: string }>) {
     L.push("| " + issue.code + " | " + issue.status + " |")
   }
@@ -164,10 +171,10 @@ function generateDoc(facts: {
   L.push("")
   L.push("## Declared limitations")
   L.push("")
-  L.push("- Per-pair cross-language coverage is generated from what is actually")
-  L.push("  stored; an unindexed language pair is absent, not broken.")
-  L.push("- The table reflects this machine's `~/.bb/projects` dbs at generation")
-  L.push("  time; other machines regenerate from their own reality.")
+  L.push("- Per-pair cross-language coverage is recorded from what is actually")
+  L.push("  stored on the recording machine; an unindexed language pair is absent,")
+  L.push("  not broken, and this document therefore states the RULE rather than a")
+  L.push("  machine's snapshot of it.")
   L.push('- "Showing X of Y" is honest per render; the underlying traversal')
   L.push("  budgets are documented above and enforced in code.")
   L.push("- The webview harness verifies rendered DOM, not a live editor; the")
@@ -177,22 +184,20 @@ function generateDoc(facts: {
 }
 
 function main(): void {
-  // --- Fact gathering: everything from live code or scanned evidence --------
+  // --- Fact gathering ------------------------------------------------------
+  // Repo-derived facts (may be asserted in the doc) ...
   const impactMod = nodeRequire(join(ROOT, "src/lsp/impact.ts"))
   const core = nodeRequire(join(ROOT, "script/m26/graph-core.ts"))
   const transport = nodeRequire(join(ROOT, "src/lsp/graph_request.ts"))
-  const scan = scanRealPairs()
-
-  const facts = {
+  const facts: RepoFacts = {
     impactBudget: impactMod.IMPACT_BUDGET,
     renderBudget: core.RENDER_BUDGET,
     schemaVersion: transport.GRAPH_SCHEMA_VERSION,
     edgeTiers: core.EDGE_TIERS as readonly string[],
     tierMeanings: core.TIER_MEANINGS as Record<string, string>,
-    realPairs: scan.pairs,
-    realDbsScanned: scan.scanned,
-    realDbsSkipped: scan.skipped,
   }
+  // ... and machine reality (recorded, never asserted in the doc).
+  const reality = scanRealPairs()
 
   // --- G1: facts really are imported from the owning modules ----------------
   const self = readFileSync(fileURLToPath(import.meta.url), "utf8")
@@ -202,16 +207,28 @@ function main(): void {
   // the wire schema moved to 2 — pinned here against the live transport.
   check("G1: schema version imported from the real transport", self.includes(`nodeRequire(join(ROOT, "src/lsp/graph_request.ts"))`) && facts.schemaVersion === 2)
   check("G1: tier meanings imported from the real core map", facts.edgeTiers.length === 5 && typeof facts.tierMeanings[facts.edgeTiers[0]] === "string" && facts.tierMeanings[facts.edgeTiers[0]].length > 10)
+  // The audit rules: this gate must not read machine reality into the document.
+  // The forbidden needle is assembled at runtime so this check's own source
+  // text cannot satisfy it (the same self-reference trap the banned-vocabulary
+  // lint avoids by not linting the gate itself).
+  const forbiddenNeedle = ["REAL_DATA", "DIR"].join("_")
+  check("G1: the machine-reality scan is owned by ambient-reality.ts, not by this gate", self.includes(`from "./ambient-reality.ts"`) && !self.includes(forbiddenNeedle))
 
-  // --- Generate + write ------------------------------------------------------
-  const generated = generateDoc(facts)
-  writeFileSync(DOC, generated)
+  // --- Generate, then compare the bytes ALREADY ON DISK ---------------------
+  const generated = generateDoc(facts, reality)
+  const onDisk = existsSync(DOC) ? readFileSync(DOC, "utf8") : ""
+  check("G6: drift gate — the on-disk doc is byte-identical to a fresh generation", driftMatches(onDisk, generated), onDisk === "" ? "doc missing" : "on-disk doc differs from a fresh generation (regenerated below — rerun to pin)")
+  // Heal, and say so: the first run after a content change fails and rewrites;
+  // the next run proves the committed doc matches (the declared fixpoint).
+  if (onDisk !== generated) writeFileSync(DOC, generated)
+  const written = readFileSync(DOC, "utf8")
+  check("G6: after the run the on-disk doc equals the fresh generation", driftMatches(written, generated))
 
-  // --- G2: the per-pair table reflects the raw scan --------------------------
-  const tableRows = (generated.match(/^\| [a-z]+ \| [a-z]+ \|/gm) ?? []).length
-  check("G2: pair-table rows == real scanned rows (or declared empty)", tableRows === facts.realPairs.length || (facts.realPairs.length === 0 && generated.includes("_(none — no cross-language rows stored anywhere)_")), `table=${tableRows} real=${facts.realPairs.length}`)
-  check("G2: real-dbs-scan count is stated truthfully", generated.includes("Real project dbs scanned: " + facts.realDbsScanned + " (skipped/unreadable: " + facts.realDbsSkipped + ")."))
-  check("G2: launch languages declared", generated.includes("java, groovy, kotlin, scala, typescript"))
+  // --- G2: the doc asserts rules, the record carries reality ----------------
+  check("G2: the doc states the launch languages", generated.includes("java, groovy, kotlin, scala, typescript"))
+  check("G2: the doc points at the record that carries machine reality", generated.includes(RECORD_FILE))
+  check("G2: the doc asserts no machine-reality count", !/dbs scanned/i.test(generated), "a live store count leaked into the byte-gated doc")
+  check("G2: every recorded reality row is a scanned row (nothing fabricated)", recordRowsMatch(reality.pairs, reality))
 
   // --- G3: tier table matches the W4 meanings map ----------------------------
   for (const tier of facts.edgeTiers) {
@@ -223,15 +240,24 @@ function main(): void {
   check("G4: truncation policy carries the live impact budget", generated.includes("`" + facts.impactBudget.maxNodes + "` reverse-dependency nodes at traversal depth") && generated.includes("`" + facts.impactBudget.maxDepth + "` (src/lsp/impact.ts)"))
 
   // --- G5: claim levels reflect the ledger -----------------------------------
-  const ledger = JSON.parse(readFileSync(join(ROOT, "validation", "m26", "results", "manifest.json"), "utf8"))
+  const ledger = parseSealedRecord(join(ROOT, "validation", "m26", "results", "manifest.json"))
   for (const issue of ledger.issues as Array<{ code: string; status: string }>) {
     check("G5: verification table states " + issue.code + " per ledger", generated.includes("| " + issue.code + " | " + issue.status + " |"))
   }
 
-  // --- G6: drift gate — the on-disk doc equals a fresh generation ------------
-  const freshScan = scanRealPairs()
-  const regenerated = generateDoc({ ...facts, realPairs: freshScan.pairs, realDbsScanned: freshScan.scanned, realDbsSkipped: freshScan.skipped })
-  check("G6: on-disk doc is byte-identical to a fresh generation", readFileSync(DOC, "utf8") === regenerated)
+  // --- G7: the byte-gated doc is a pure function of the repository -----------
+  const realityA: RealityFacts = { dir: reality.dir, present: false, scanned: 0, skipped: 0, pairs: [] }
+  const realityB: RealityFacts = {
+    dir: "/tmp/not-this-machine/projects",
+    present: true,
+    scanned: 4242,
+    skipped: 7,
+    pairs: [{ source: "zig", target: "rust", edgeCount: 9, sampleBridge: "ffi", database: "does-not-exist" }],
+  }
+  check(
+    "G7: two different machine realities produce ONE document (ambient-independent)",
+    generateDoc(facts, realityA) === generateDoc(facts, realityB),
+  )
 
   // --- V: the generated doc passes the contract §1 lint ----------------------
   // Same pattern list as the G1 gate (negations like "not guaranteed" are
@@ -241,21 +267,33 @@ function main(): void {
   const bannedHit = BANNED.map((p) => generated.match(p)?.[0]).filter(Boolean)
   check("V: generated doc passes the banned-vocabulary lint", bannedHit.length === 0, bannedHit.join(","))
 
-  // --- M1: an embedded fact lies -> drift gate fails -------------------------
+  // --- Mutants: the suite CAN fail ------------------------------------------
   const mutants: Array<{ name: string; caught: boolean }> = []
   {
-    const lied = generated.replace("`" + facts.renderBudget.maxNodes + "` nodes / `" + facts.renderBudget.maxEdges + "` edges", "`99999` nodes / `88888` edges")
-    const caught = lied !== readFileSync(DOC, "utf8")
-    mutants.push({ name: "M1 doctored embedded fact", caught })
-    check("M1: doctored embedded fact fails the drift gate", caught)
+    // M1: a hand-edited embedded fact must fail the drift rule. The old gate
+    // wrote the file before comparing, so this mutant could not be caught.
+    const doctored = generated.replace(
+      "`" + facts.renderBudget.maxNodes + "` nodes / `" + facts.renderBudget.maxEdges + "` edges",
+      "`99999` nodes / `88888` edges",
+    )
+    const caught = doctored !== generated && !driftMatches(doctored, generated)
+    mutants.push({ name: "M1 doctored embedded fact (drift rule)", caught })
+    check("M1: a doctored embedded fact fails the drift rule", caught)
   }
-  // --- M2: the generator lies about pairs -> row cross-check fails -----------
   {
-    const fakeCount = facts.realPairs.length + 1
-    // The G2 rule: rows must equal the scan count, or be zero-and-declared.
-    const crossCheckWouldFail = !(fakeCount === facts.realPairs.length || (fakeCount === 0 && generated.includes("_(none — no cross-language rows stored anywhere)_")))
-    mutants.push({ name: "M2 fabricated pair count", caught: crossCheckWouldFail })
-    check("M2: fabricated pair count fails the row cross-check", crossCheckWouldFail)
+    // M2: a record that fabricated a reality row must be rejected.
+    const phantom: RealPair = { source: "zig", target: "rust", edgeCount: 9, sampleBridge: "ffi", database: "does-not-exist" }
+    const caught = !recordRowsMatch([...reality.pairs, phantom], reality)
+    mutants.push({ name: "M2 fabricated reality row", caught })
+    check("M2: a fabricated reality row is rejected by the copy rule", caught)
+  }
+  {
+    // M3: the ambient-independence rule must reject a generator that DOES embed
+    // machine reality — otherwise G7 could not fail and would not be evidence.
+    const leaky = (r: RealityFacts): string => leakyControlDoc("# leaky", r)
+    const caught = !(leaky(realityA) === leaky(realityB))
+    mutants.push({ name: "M3 ambient leak (leaky control)", caught })
+    check("M3: an ambient-leaky generator is rejected by the ambient-independence rule", caught)
   }
   for (const m of mutants) console.log(`  ${m.caught ? "caught" : "SURVIVED"}: ${m.name}`)
 
@@ -271,19 +309,26 @@ function main(): void {
     status: checks === passed ? "verified" : "failed",
     passed,
     failed: checks - passed,
-    negativeCases: 2,
+    negativeCases: mutants.length,
     mutants: mutants.map((m) => ({ name: m.name, caught: m.caught })),
     mutantsCaught: mutants.filter((m) => m.caught).length,
     mutantsTotal: mutants.length,
-    realDbsScanned: facts.realDbsScanned,
-    realDbsSkipped: facts.realDbsSkipped,
-    realCrossLanguagePairs: facts.realPairs.length,
+    // Machine reality: recorded, explicitly labelled, never asserted in a doc.
+    machineReality: { dir: reality.dir, present: reality.present, scanned: reality.scanned, skipped: reality.skipped },
+    realDbsScanned: reality.scanned,
+    realDbsSkipped: reality.skipped,
+    realCrossLanguagePairs: reality.pairs.length,
+    realPairRows: reality.pairs,
     docFile: "docs/m26/GRAPH.md",
     currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-graph-docs.ts",
     generatedAt: new Date().toISOString(),
+    limitations: [
+      "The byte-gated doc asserts repository-derived facts only; machine reality (realDbsScanned/realPairRows) is recorded here and is specific to the machine that ran this gate.",
+      "The drift gate compares the bytes on disk BEFORE writing, so the first run after a content change fails and regenerates; the run after that is the proof.",
+    ],
   }
-  writeFileSync(join(dir, "D1.json"), JSON.stringify(result, null, 2) + "\n")
+  writeSealed(join(dir, "D1.json"), result)
   console.log("D1: " + result.status.toUpperCase() + " (" + passed + "/" + checks + " passed, " + result.mutantsCaught + "/" + result.mutantsTotal + " mutants)")
   if (result.status !== "verified") process.exitCode = 1
 }

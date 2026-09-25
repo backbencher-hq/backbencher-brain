@@ -2,11 +2,11 @@
   "issue": "496",
   "code": "D1",
   "status": "verified",
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
-  "sourceFingerprint": "4f06b8c03e5fa873d341d48fd2e01da6195390f0b94203fb4cf274c70d3d34cd",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-09-07T22:41:53.021Z",
+  "generatedAt": "2026-09-20T02:43:43.747Z",
   "passed": 44,
   "failed": 0,
   "failures": [],
@@ -17,10 +17,13 @@
     "note": "doc fingerprint is the committed TOOL-DOC.md; regeneration byte-identity is the drift gate."
   },
   "limitations": [
-    "claim levels capped at I1 (protocol-passed) by design \u2014 I3/I4/I5 are M25 scope and declared absent",
+    "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent",
     "per-language fixture evidence is M25 scope; the claim table states the language-agnostic protocol claim",
     "vocabulary lint covers docs/m24/ artifacts (tool doc + master plan); the contract and decision records are canonical and outside the lint surface"
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:43.747Z",
+    "contentSha256": "ca8056660be3d2330246a33ba534a4a2bc12abc6870f0db3a4baa8f8dc45e513"
+  }
 }

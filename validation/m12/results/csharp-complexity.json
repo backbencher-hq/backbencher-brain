@@ -45,5 +45,10 @@
       "relationships": 17563
     }
   ],
-  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.848Z",
+    "contentSha256": "0d50f2447a8d187b9dea31348b6e0f2d66f8c8ddc716e32f94b70c201a9e0930"
+  }
 }

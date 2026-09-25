@@ -60,7 +60,7 @@ jobs:
             BASE=$(git merge-base HEAD "origin/main" 2>/dev/null || echo "origin/main")
             CHANGED=$(git diff --name-only "$BASE"...HEAD || true)
           fi
-          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|script/m41/|package-lock.json)'; then
+          if echo "$CHANGED" | grep -qE '^(website/|docs/data/|docs/tools/|script/m41/|script/m45/|script/m56/|script/m48/|script/verify-tool-docs.ts|website/faq.md|ide/|validation/m25/|validation/m29/|validation/m45/|package-lock.json)'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -81,30 +81,107 @@ jobs:
         working-directory: website
         run: npm ci
 
+      # M41 chain — ORDER IS CONTRACTUAL: the governance gate runs BEFORE the
+      # gates that emit evidence, because every evidence writer stamps
+      # `currentCommit` with the run's HEAD. A ledger (committed, pinned to the
+      # batch commit) compared against run-stamped artifacts can never agree,
+      # so governance-last is unpassable by construction. Running it first is
+      # what "an evidence batch is a fact, not a claim" actually means: the
+      # committed ledger is checked against the committed artifacts, and only
+      # then may the gates re-prove the site from scratch.
       - name: Verify site truth, SEO, and design (M41 chain)
         if: steps.sitechanged.outputs.changed == 'true'
         run: |
           npx tsx script/m41/generate-site-truth.ts --check && \
+          npx tsx script/m41/verify-governance.ts && \
           npx tsx script/m41/verify-truth-pipeline.ts && \
           npx tsx script/m41/verify-design.ts && \
           npx tsx script/m41/verify-site-truth.ts && \
           npx tsx script/m41/verify-site-truth.ts --label T3 && \
           npx tsx script/m41/verify-seo.ts && \
-          npx tsx script/m41/verify-governance.ts && \
           npx tsx script/m41/verify-seo-onboarding.ts
 
+      # M56.T1 — the tool reference is single-sourced. Needs website deps
+      # (it rebuilds when .next is older than a site source) and website/ has
+      # a separate lockfile, so it runs here rather than in the fast job.
+      - name: Verify tool-reference single-sourcing (M56.T1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-tools-truth.ts
+
+      # M56.E1 — the editors/IDEs surface. Same dependency shape as T1
+      # (website deps + a rebuild when .next is stale), so it also lives here.
+      - name: Verify editors-page claims (M56.E1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-editors-page.ts
+
+      # M56.L1 — the language/analyzer surface. Same dependency shape again.
+      - name: Verify languages-surface depth claims (M56.L1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-languages-surface.ts
+
+      # M56.D1 — the docs page's CLI reference and indexing facts.
+      - name: Verify docs completeness (M56.D1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-docs-completeness.ts
+
+      # M56.S1 — the support surface: faq.md as single source, /support render,
+      # redirects, JSON-LD agreement.
+      - name: Verify support consolidation (M56.S1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-support-page.ts
+
+      # M56.I1 — the site's shape: six-surface nav, the one redirect
+      # declaration, /demos retirement, and sitemap parity with the disk.
+      - name: Verify information architecture (M56.I1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-ia.ts
+
+      # M45.T1 — the website-embed gate, re-scoped by M56.I1 to the recorded
+      # /demos retirement (the hero decision itself is unchanged).
+      - name: Verify demo embedding and retirement (M45.T1)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m45/verify-site-embed.ts
+
+      # M56.D2 — design & accessibility: computed contrast floors, focus ring,
+      # reduced-motion guards, one component kit, no dead modules.
+      - name: Verify design and accessibility (M56.D2)
+        if: steps.sitechanged.outputs.changed == 'true'
+        run: npx tsx script/m56/verify-design.ts
+
   # M36.S2 — enforcement of the verification discipline on every push/PR.
-  # Runs the runner-certified subset (M30/M32/M33/M34 gates, fresh-HOME
-  # certified; the full `npm run verify` chain includes machine-specific
-  # legs, e.g. M19 benchmarks against a local intellij-community checkout,
-  # and stays a local command). Requires groff/man-db for the man-page gate
-  # (absent from runner images — installed explicitly, never skipped).
+  # Runs the runner-certified subset: `verify:fast` is EXACTLY the certified
+  # set and nothing else — that equality is asserted by
+  # script/m36/verify-verify-fast.ts, which also guarantees this job is
+  # passable. The set is 21 fresh-HOME-certified gates (M30×6, M32×6, M33×6,
+  # M34×3) plus 3 runner-proven additions (M29 R1/R4, M56 governance).
+  # A leg needing website deps, a built site, a display, the gitignored
+  # extension VSIX or ffmpeg can never run here, however green it is locally.
+  # Where the other legs live instead:
+  #   - site/web-dependent gates (M41 chain, M56 T1/E1/L1/D1/S1/I1/D2, M45 T1)
+  #     → the `verify-site` job above, which installs website deps and builds
+  #       the site (they are path-filtered to site changes by design).
+  #   - machine-specific legs (M45 C1/D1/governance need the packaged VSIX +
+  #     ffmpeg, M55 live-surface needs a display, M19 benchmarks need a local
+  #     intellij-community checkout) and milestone-governance legs whose
+  #     evidence is lane-owned (M42, M44, M55) → the full `npm run verify`
+  #     chain, which stays a local command (this job must never run it: the
+  #     M36.S2 mutant asserts that pointing this job at the full chain is
+  #     rejected).
+  # Requires groff/man-db for the man-page gate (absent from runner images —
+  # installed explicitly, never skipped).
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, not a shallow clone: the tier-2 M56 governance gate
+          # asserts that every verified ledger entry cites a commit that exists
+          # in this history (its batch commit is an ancestor, not HEAD), and a
+          # depth-1 checkout reports those commits as nonexistent. Same reason
+          # the verify-site job fetches full depth.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

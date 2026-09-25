@@ -8,10 +8,10 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "7777dd53f4529cfd1412b316cece6d0caf0ff409",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-09-09T19:21:56.219Z",
+  "generatedAt": "2026-09-20T02:50:30.846Z",
   "fixture": {
     "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
@@ -35,6 +35,9 @@
     "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here.",
     "U2/U3 (hub list/tree presentation redesign) extend this DOM contract; U1 pins the grouped data + row-per-group rendering."
   ],
-  "rePinnedAt": "2026-09-09T19:35:21.732561+00:00",
-  "rePinNote": "evidence re-pinned to the closure HEAD by the standing X1 sweep procedure (content of the verified run unchanged)"
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:30.847Z",
+    "contentSha256": "df3ee633c23423b32bf011c4810b6e10f2d478fa12c08232cfad069f6d31ad82"
+  }
 }

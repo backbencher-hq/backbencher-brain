@@ -2,7 +2,14 @@
   "wave": 1,
   "approvedBy": "owner (ishaq2321)",
   "approvedAt": "2026-09-04",
-  "languages": ["java", "python", "typescript", "javascript", "kotlin", "scala"],
+  "languages": [
+    "java",
+    "python",
+    "typescript",
+    "javascript",
+    "kotlin",
+    "scala"
+  ],
   "ownerStatement": "The languages so far that are one hundred percent done; the others are also done but not confirmed. This list is fully confirmed from the owner's side: Java, Python, TypeScript, JavaScript, Kotlin, Scala. All analyzers onboard after M37/M14 are done fully; M14 is the king of the analyzer work. The program targets 42 analyzers (42 languages) in the future.",
   "futureWaves": {
     "policy": "Remaining analyzers onboard in later waves once M37/M14 completes; each wave runs the same M29.R1 protocol.",
@@ -10,5 +17,10 @@
     "wave2Decision": "Owner confirmed 2026-09-04: keep wave 1's six languages; onboard the remaining registry languages in bulk waves only after M37/M14 is fully done. No interim per-language waves unless the owner orders one."
   },
   "gitStrategy": "Continue local; sync with origin/main deferred as an owner-level decision (169 unpushed commits spanning M24-M29; upstream is 7 commits ahead on co-agent M37/M35 lanes with no M29 overlap; a rebase replay collides with co-agent lane rewrites).",
-  "evidenceRule": "The R2 verifier executes exactly this set and nothing else; any language not in this list that attempts a wave leg fails the verifier."
+  "evidenceRule": "The R2 verifier executes exactly this set and nothing else; any language not in this list that attempts a wave leg fails the verifier.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.435Z",
+    "contentSha256": "fe08c48faaf6ba5f1bbcb78e7cccba9b55fa39fd39684bdad24b57a02bc9ec2c"
+  }
 }

@@ -208,6 +208,84 @@ for (const rel of ["docs/m41/M41-MASTER-PLAN.md", "validation/m41/results/manife
 }
 check("G1: banned vocabulary absent from M41 artifacts", bannedHits.length === 0, bannedHits.join(", "))
 
+// ---------------------------------------------------------------------------
+// Ledger ↔ artifact agreement
+// ---------------------------------------------------------------------------
+//
+// A verified ledger entry must MATCH the evidence file it names: same commit,
+// same pass/fail counts, same negative-case count. Without this, a re-run can
+// move the artifacts while the ledger keeps citing an older commit, and a
+// "one-commit evidence batch" only looks uniform.
+//
+// Found here 2026-09-12: M41's T2 and T3 entries cited pre-re-pin commits and a
+// passed-count of 49 while their files on disk said 50.
+//
+// generatedAt is deliberately NOT compared: G1 rewrites its own evidence in the
+// very run that validates this ledger, so a timestamp comparison could never
+// settle. Commit + counts are stable across a deterministic re-run at one HEAD.
+//
+// G1's OWN entry is excluded from the comparison for the same reason: this run
+// rewrites G1.json, so requiring the ledger's G1 entry to match the artifact it
+// is about to replace would be unsatisfiable. Its commit is still policed by the
+// reachability check below, which applies to every entry including G1.
+
+interface EvidenceFile {
+  currentCommit?: string
+  passed?: number
+  failed?: number
+  negativeCases?: number
+}
+
+function ledgerArtifactMismatches(target: Ledger): string[] {
+  const out: string[] = []
+  for (const issue of target.issues) {
+    if (issue.status === "planned" || !issue.evidence) continue
+    if (issue.code === "G1") continue // self-reference — see the note above
+    const e = issue.evidence
+    let file: EvidenceFile | null = null
+    try {
+      file = JSON.parse(readFileSync(path.join(RESULTS, e.evidenceFile), "utf8")) as EvidenceFile
+    } catch {
+      file = null
+    }
+    if (!file) {
+      out.push(`${issue.code}:unreadable`)
+      continue
+    }
+    if (file.currentCommit !== e.currentCommit) out.push(`${issue.code}:commit`)
+    if (file.passed !== e.passed) out.push(`${issue.code}:passed`)
+    if (file.failed !== e.failed) out.push(`${issue.code}:failed`)
+    if (file.negativeCases !== e.negativeCases) out.push(`${issue.code}:negatives`)
+  }
+  return out
+}
+
+const artifactMismatches = ledgerArtifactMismatches(ledger)
+check(
+  "G1: every verified entry matches its evidence file (commit + counts)",
+  artifactMismatches.length === 0,
+  `${artifactMismatches.join(", ")} — after a batch, run npx tsx script/m41/sync-ledger.ts`,
+)
+
+// Every entry must cite a commit that actually exists in this history — a
+// fabricated or unreachable SHA is not evidence of anything. This applies to
+// G1's own entry too, which is why the comparison above can safely skip it.
+function commitReachableInHistory(sha: string): boolean {
+  if (!/^[0-9a-f]{7,40}$/.test(sha)) return false
+  try {
+    execFileSync("git", ["merge-base", "--is-ancestor", sha, "HEAD"], { cwd: ROOT, stdio: ["ignore", "ignore", "ignore"] })
+    return true
+  } catch {
+    return false
+  }
+}
+
+const unreachableCommits = ledger.issues
+  .filter((i) => i.status !== "planned" && i.evidence)
+  .filter((i) => !commitReachableInHistory(i.evidence!.currentCommit))
+  .map((i) => `${i.code}:${i.evidence!.currentCommit.slice(0, 8)}`)
+check("G1: every verified entry cites a commit that exists in this history", unreachableCommits.length === 0, unreachableCommits.join(", "))
+
 let headCommit = "unknown"
 try {
   headCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
@@ -245,6 +323,38 @@ negative("G1: unknown issue number is rejected", validateLedger(wrongNumber, pla
 
 const leakPatternWorks = KEY_PATTERNS.some(([, p]) => p.test("sk-or-v1-" + "a".repeat(32))) && KEY_PATTERNS.some(([, p]) => p.test("nvapi-" + "X".repeat(24)))
 negative("G1: key-leak patterns detect planted key shapes", leakPatternWorks)
+
+// N (real ledger, real files): an entry citing a commit its evidence file does
+// not carry must be rejected. T2 is verified in this ledger (asserted above), so
+// the planted state is forced on a clone rather than depending on live status.
+const staleCommitLedger = structuredClone(ledger)
+const staleCommitIssue = staleCommitLedger.issues.find((i) => i.code === "T2")
+if (staleCommitIssue?.evidence) staleCommitIssue.evidence.currentCommit = "0".repeat(40)
+negative(
+  "G1: entry citing a different evidence commit is rejected",
+  Boolean(staleCommitIssue?.evidence) && ledgerArtifactMismatches(staleCommitLedger).includes("T2:commit"),
+)
+
+// N: drifted check counts must be rejected too (the 49-vs-50 case found here).
+// The planted value is the FILE's count + 1, not the ledger's + 1: an increment
+// of a stale entry can land back on the file's value and the mutant would
+// survive by accident. Forcing it against the artifact guarantees the drift.
+const staleCountsLedger = structuredClone(ledger)
+const staleCountsIssue = staleCountsLedger.issues.find((i) => i.code === "T2")
+const staleCountsFile = staleCountsIssue?.evidence
+  ? (JSON.parse(readFileSync(path.join(RESULTS, staleCountsIssue.evidence.evidenceFile), "utf8")) as EvidenceFile)
+  : null
+if (staleCountsIssue?.evidence && staleCountsFile?.passed !== undefined) {
+  staleCountsIssue.evidence.passed = staleCountsFile.passed + 1
+}
+negative(
+  "G1: entry with drifted check counts is rejected",
+  Boolean(staleCountsIssue?.evidence) && Boolean(staleCountsFile) && ledgerArtifactMismatches(staleCountsLedger).includes("T2:passed"),
+)
+
+// N: a fabricated or unreachable commit is not evidence. (Checked against the
+// real repository history, so this probe cannot pass by accident.)
+negative("G1: unreachable evidence commit is rejected", !commitReachableInHistory("0".repeat(40)) && !commitReachableInHistory("not-a-sha"))
 
 const fabricated = structuredClone(ledger)
 // Force the fabricated state explicitly: status planned + evidence attached.
@@ -285,6 +395,8 @@ const evidence = {
     "Key patterns match OpenRouter and NVIDIA shapes; a new provider format must be added to KEY_PATTERNS.",
     "GitHub issue numbers are enforced exactly (milestone 41, issues 640-647); refiling requires updating REAL_ISSUE_NUMBERS and the ledger together.",
     "Deploy-gate enforcement (Vercel wait-for-checks) is contractually declared here but proven end-to-end only in X1.",
+    "Ledger entries are compared with their evidence files by commit and check counts, not timestamps; after any verifier re-run the batch is stale until script/m41/sync-ledger.ts is re-run. Committing without re-running is the intended closure procedure.",
+    "G1's own ledger entry is excluded from the artifact comparison (this run replaces G1.json); its commit is still required to exist in history like every other entry.",
   ],
 }
 mkdirSync(RESULTS, { recursive: true })

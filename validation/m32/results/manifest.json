@@ -24,7 +24,7 @@
   },
   "secretHygiene": {
     "keyStorage": "not applicable to M32 (no provider keys used); .env.local remains gitignored, mode 0600",
-    "evidenceRecords": "key fingerprint (last 4 chars) only \u2014 bb setup show and bb doctor must never print full keys",
+    "evidenceRecords": "key fingerprint (last 4 chars) only — bb setup show and bb doctor must never print full keys",
     "guard": "verifier fails if any raw key pattern appears in tracked files, and fails if S1 output paths can emit full key material"
   },
   "issueNumberPolicy": {
@@ -119,7 +119,7 @@
       "githubIssue": 564,
       "tool": "cli",
       "status": "verified",
-      "scope": "bb doctor: diagnoses no-config, never-validated key, model mismatch vs stored embeddings, wrong permissions \u2014 each with the exact fix command; reads local state only",
+      "scope": "bb doctor: diagnoses no-config, never-validated key, model mismatch vs stored embeddings, wrong permissions — each with the exact fix command; reads local state only",
       "acceptanceCriteria": [
         "every reported cause is backed by real local state planted by the fixture (config file rows, brain_semantic_embedding.embedding_model)",
         "model mismatch names both models and prescribes bb index --force",
@@ -219,5 +219,10 @@
         "negativeCases": 6
       }
     }
-  ]
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.470Z",
+    "contentSha256": "20a11ad29ac2f8bed9d7250dd9c0779ab1ad8cdc0b8def9991abcb7a29f0e82e"
+  }
 }

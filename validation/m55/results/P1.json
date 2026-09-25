@@ -1,0 +1,26 @@
+{
+  "issue": "776",
+  "code": "P1",
+  "milestone": "M55",
+  "title": "Panel placement + focus (Truth Rule 6)",
+  "status": "verified",
+  "passed": 25,
+  "failed": 0,
+  "checks": 25,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "negatives": 0,
+  "currentHost": "linux",
+  "focusLeg": "pending — column count + active editor are asserted in-editor by V1's rig (closure requirement)",
+  "currentCommit": "fc0f707b00839f5a53d631a328277d334e2dcefc",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m55/verify-panel-placement.ts",
+  "evidenceFile": "P1.json",
+  "generatedAt": "2026-09-19T02:54:15.532Z",
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-19T02:54:15.533Z",
+    "contentSha256": "5df7ad62a32684e28b6b68c9f3b57ab582dd1c5eec61f0b831e030adeba8db8b"
+  }
+}

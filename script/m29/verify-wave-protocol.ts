@@ -31,6 +31,8 @@ import {
   type Step,
 } from "./wave-protocol.ts"
 import { generateWaveDoc } from "./generate-wave-doc.ts"
+import { writeSealed } from "../lib/evidence.ts"
+import { parseSealedRecord } from "../lib/evidence.ts"
 
 let checks = 0
 let passed = 0
@@ -50,6 +52,17 @@ function mutant(label: string, caught: boolean, detail = ""): void {
 }
 
 const step = (name: string, status: Step["status"]): Step => ({ step: name, status, detail: "" })
+
+/** A VOLATILE PIN in a byte-gated artifact: the live HEAD, or a wall-clock
+ *  timestamp. Either one re-stales the drift gate on the very commit that
+ *  records it (the "self-staling byte-gated doc" class, M61.V6 / #847 — the
+ *  m53 integration receipt states the invariant in prose). */
+function volatilePin(doc: string, head: string): string | null {
+  const short = head.slice(0, 8)
+  if (short.length === 8 && doc.includes(short)) return `live HEAD ${short}`
+  const iso = doc.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)
+  return iso ? `wall-clock timestamp ${iso[0]}` : null
+}
 
 // --- R1: the binding moves exactly per the tier rules ------------------------
 {
@@ -78,7 +91,7 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
 {
   let spec: SpecLedger | null = null
   try {
-    spec = JSON.parse(readFileSync(SPEC_LEDGER, "utf8")) as SpecLedger
+    spec = parseSealedRecord(SPEC_LEDGER) as SpecLedger
   } catch {}
   check("R2: SPEC ledger is readable", spec !== null)
   if (spec) {
@@ -108,17 +121,34 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
     const s4 = byStep.get("S4-real-index")
     check("R3: S4 real-index passes with non-empty counts", s4?.status === "pass" && (verdict.indexCounts?.symbols ?? 0) > 0, s4?.detail)
     const s5 = byStep.get("S5-server-leg")
-    check("R3: S5 honestly blocked in dry-run", s5?.status === "blocked", s5?.detail)
+    // The protocol honors RECORDED server-leg evidence, exactly like S6:
+    // wave-<lang>.json verified → S5 passes; missing → honestly blocked.
+    // (History: S5 was hardcoded blocked, which capped fully-verified
+    // languages at I1 even with both legs green on disk.)
+    const javaServerEv = path.join(ROOT, "validation", "m29", "results", "wave-java.json")
+    check("R3: S5 honors recorded evidence", s5?.status === (existsSync(javaServerEv) ? (parseSealedRecord(javaServerEv) as { status?: string }).status === "verified" ? "pass" : "fail" : "blocked"), s5?.detail)
+    // R5-M5 — the SILENT CAPABILITY CAP class (M61.V6 / #847). Incident: this
+    // step was hardcoded "blocked" here, which capped fully-verified languages
+    // at I1 even with both legs green on disk: the cap lied downward and
+    // recorded no blocker. The permanent proof: a HARDCODED status that the
+    // recorded evidence disagrees with must fire the detector above.
+    {
+      const hardcodedS5 = verdict.steps.map((s) => (s.step === "S5-server-leg" ? { ...s, status: "blocked" as const } : s))
+      const honest = existsSync(javaServerEv) && (parseSealedRecord(javaServerEv) as { status?: string }).status === "verified" ? "pass" : "blocked"
+      const detectorFires = hardcodedS5.find((s) => s.step === "S5-server-leg")!.status !== honest
+      mutant("silent capability cap: a hardcoded blocked S5 caps a fully-evidenced language", detectorFires)
+    }
     const s6 = byStep.get("S6-editor-leg")
     // The protocol honors RECORDED editor evidence (R2 execution writes it).
     // When java's S6 evidence exists, S6 reads pass and the cap stays I1
     // (S5 remains R2-scoped); without it, S6 is honestly blocked.
     const javaEditorEv = path.join(ROOT, "validation", "m29", "results", "wave-editor-java.json")
     if (existsSync(javaEditorEv)) {
-      const ev = JSON.parse(readFileSync(javaEditorEv, "utf8")) as { status?: string }
+      const ev = parseSealedRecord(javaEditorEv) as { status?: string }
       check("R3: S6 honors recorded evidence", s6?.status === (ev.status === "verified" ? "pass" : "fail"), s6?.detail)
-      check("R3: cap stays I1 while S5 is R2-scoped", verdict.ideCap === "I1", `got ${verdict.ideCap}`)
-      check("R3: blockers = S5 only", verdict.blockers.length === 1, `got ${verdict.blockers.length}`)
+      // Both legs recorded and verified → the cap is the top of the ladder.
+      check("R3: cap reaches I3 with both legs verified", verdict.ideCap === "I3", `got ${verdict.ideCap}`)
+      check("R3: no blockers with both legs verified", verdict.blockers.length === 0, `got ${verdict.blockers.length}`)
     } else {
       check("R3: S6 honestly blocked without recorded evidence", s6?.status === "blocked", s6?.detail)
       check("R3: blockers recorded", verdict.blockers.length === 2, `got ${verdict.blockers.length}`)
@@ -171,11 +201,25 @@ const step = (name: string, status: Step["status"]): Step => ({ step: name, stat
 {
   let spec: SpecLedger | null = null
   try {
-    spec = JSON.parse(readFileSync(SPEC_LEDGER, "utf8")) as SpecLedger
+    spec = parseSealedRecord(SPEC_LEDGER) as SpecLedger
   } catch {}
   const tampered = structuredClone(spec!)
   delete tampered.data.languages["typescript"]
   mutant("ledger entry removed without the gate noticing", analyzerConformance(tampered, "typescript").conformant === false)
+}
+
+// --- R5-M6: a byte-gated doc carrying a VOLATILE PIN re-stales ----------------
+// (M61.V6 / #847 — the self-staling-byte-gated-doc class. A byte-compared
+// artifact that embeds the live HEAD, or a wall-clock timestamp, re-stales on
+// the very commit that records it, so its drift gate can never go green: the
+// gate reports a lie forever. The m53 receipt states the invariant in prose;
+// this gate enforces it on the bytes it owns.)
+{
+  const head = execCommit()
+  const pin = volatilePin(generateWaveDoc(), head)
+  check("R4: the generated doc carries no volatile pin (live HEAD / wall clock)", pin === null, pin ?? undefined)
+  mutant("byte-gated doc embedding the live HEAD re-stales", volatilePin(`${generateWaveDoc()}\n<!-- pin ${head.slice(0, 8)} -->\n`, head) !== null)
+  mutant("byte-gated doc embedding a wall-clock timestamp re-stales", volatilePin(`${generateWaveDoc()}\n<!-- 2026-01-02T03:04 -->\n`, head) !== null)
 }
 
 // --- Persist evidence --------------------------------------------------------
@@ -202,7 +246,7 @@ const result = {
 }
 const evidenceDir = path.join(ROOT, "validation", "m29", "results")
 mkdirSync(evidenceDir, { recursive: true })
-writeFileSync(path.join(evidenceDir, "R1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.join(evidenceDir, "R1.json"), result)
 console.log(`R1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants — every mutant must be caught)`)
 process.exit(finalFailed === 0 && mutantsCaught === mutantsTotal ? 0 : 1)
 

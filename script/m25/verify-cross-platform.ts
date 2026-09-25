@@ -36,6 +36,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { pathToFileURL } from "node:url"
 import { join, resolve } from "node:path"
+import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const AUTO_INDEX_SRC = join(ROOT, "ide/vscode/src/auto-index.ts")
@@ -84,7 +85,7 @@ const editorLegRecords: Array<Record<string, unknown>> = []
 for (const f of readdirSync(RESULTS_DIR)) {
   if (!/^E5\.json$/.test(f) && !/^F-[A-Za-z0-9-]+\.json$/.test(f)) continue
   try {
-    editorLegRecords.push(JSON.parse(readFileSync(join(RESULTS_DIR, f), "utf8")) as Record<string, unknown>)
+    editorLegRecords.push(parseSealedRecord(join(RESULTS_DIR, f)) as Record<string, unknown>)
   } catch {
     check(`G1: evidence readable — ${f}`, false, "unparseable JSON")
   }
@@ -176,7 +177,7 @@ for (const entry of OS_MATRIX) {
     evidenceFile: entry.file,
     generatedAt: new Date().toISOString(),
   }
-  writeFileSync(join(RESULTS_DIR, entry.file), JSON.stringify(blocked, null, 2) + "\n")
+  writeSealed(join(RESULTS_DIR, entry.file), blocked)
   check(`G3: ${entry.label} recorded blocked with reason (never omitted, never claimed)`, existsSync(join(RESULTS_DIR, entry.file)))
 }
 
@@ -288,7 +289,7 @@ const thisResult = {
     `The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY; the native ${nativeLabel} leg itself exercises ${runningOs} semantics (drive letters, % variables on win32).`,
   ],
 }
-writeFileSync(join(RESULTS_DIR, evidenceFile), JSON.stringify(thisResult, null, 2) + "\n")
+writeSealed(join(RESULTS_DIR, evidenceFile), thisResult)
 
 console.log(`\nE7(${runningOs}): ${thisResult.status.toUpperCase()} (${passed}/${checks} passed, ${mutantsCaught}/${MUTANTS.length} mutants caught)`)
 console.log(`Evidence: ${join(RESULTS_DIR, evidenceFile)}`)
