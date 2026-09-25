@@ -60,8 +60,15 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const cfgs: Record<string, string> = { objc: "tree-sitter-objc.wasm", csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm", scala: "tree-sitter-scala.wasm", go: "tree-sitter-go.wasm" }
-  const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfgs[lang])))
+  // The wasm comes from LANGS — the F5 sweep's own table, not a second copy of
+  // it. This was a hand-kept map of 8 languages and it read as a limit on what
+  // could be probed: `cpp` had no entry, so a cpp probe that pins an ORACLE
+  // contract (the only kind that can catch collusion) could not be written at
+  // all. The map also duplicated LANGS verbatim for every entry it did have —
+  // a copy that could drift silently. One definition, one lookup.
+  const wasmName = (diff as any).LANGS?.[lang]?.wasm
+  if (!wasmName) throw new Error(`oracleFor: no LANGS entry for ${lang} (wasm unknown — add the lane to LANGS)`)
+  const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, wasmName)))
   const parser = new P()
   parser.setLanguage(langWasm)
   const tree = parser.parse(src)
@@ -1013,6 +1020,117 @@ class Host
     } catch (e: any) {
       record(id, "objc", description, false, e.message)
     }
+  }
+
+  // ── M37.19 (#612) cpp: a template-wrapped DECLARATOR NAME is not a read ──
+  // The defect class this round found, and the ONLY kind of gate that could
+  // have caught it: the analyzer and the oracle AGREED on a wrong answer. The
+  // declared name of an explicit specialization sits inside `template_function`
+  // (`template <> constexpr auto num_bits<native_int128>() -> int`), so the
+  // leftmost-declarator rule — which gates on the node's DIRECT parent — read
+  // the declared entity as a use of itself on BOTH sides. 7 such pairs were
+  // `covered` reads at the fmt full extent (fmt format.h num_bits/digits10,
+  // printf.h find, gtest.h GenerateNamesRecursively, one-arg.cc from_repr,
+  // fuzzer-common.h assign_from_buf, format-impl-test.cc run_double_tests), so
+  // every count in that lane read clean while the lane published 7 false reads.
+  // A fixture alone cannot express this: the M14 fixture runner asserts the
+  // analyzer against its OWN expectation, and the analyzer was not wrong
+  // relative to the oracle — both were. `oracleForbid` is the assertion that
+  // the truth side refuses the edge too; drop the shared rule from either side
+  // and this probe fails.
+  {
+    const src = [
+      `namespace detail {`,
+      `template <typename T> constexpr auto bits_of() -> int { return (int)sizeof(T) * 8; }`,
+      `template <> constexpr auto bits_of<long>() -> int { return 64; }`,
+      `const int kBufferSize = 8;`,
+      `int shared_counter;`,
+      `int use_bits() { return bits_of<short>(); }`,
+      `int read_through_size() { char buffer[kBufferSize]; return buffer[0] + shared_counter; }`,
+      `}`,
+    ].join("\n") + "\n"
+    await probeLang("F9-PROBE-CPP-TEMPLATE-DECL-NAME", "cpp",
+      "a template-wrapped declarator's NAME is a DECLARATION on both sides: no `uses -> bits_of` from `template <> constexpr auto bits_of<long>() -> int` on the analyzer OR in the bare-uses truth, while the genuine reads in the same file (an array-size read of a namespace constant and a bare value read) stay on both sides",
+      { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cpp" },
+      "deriveCppBareUses", src,
+      [
+        "uses:read_through_size->kBufferSize",
+        "uses:read_through_size->shared_counter",
+      ],
+      [
+        "uses:bits_of",
+        "uses:detail->bits_of",
+      ],
+      { oracleForbid: true },
+    )
+    await probeLang("F9-PROBE-CPP-TEMPLATE-CALL", "cpp",
+      "the controls that keep the declaration gate narrow: a CALL of the same template is still a call on both sides (the callee leaf belongs to the calls branch), and the size-expression read of a namespace-scope constant is still a read — so the rule cannot be satisfied by silencing the name",
+      { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cpp" },
+      "deriveCppEdges", src,
+      [
+        // deriveCppEdges derives the call truth (calls + member reads); the
+        // bare-value read controls belong to the probe above, which pins them
+        // against their own oracle.
+        "calls:use_bits->bits_of",
+      ],
+      [
+        // The danger with a declaration-position rule is the mirror mistake:
+        // reading `bits_of<long>()` in a DECLARATOR as a call whose source is
+        // the enclosing scope. `calls:use_bits->bits_of` above must survive,
+        // so the forbid is the scope-sourced shape, not the bare target.
+        "calls:detail->bits_of",
+      ],
+    )
+  }
+
+  // ── M37.19 (#612) cpp: a WRAPPED declarator still opens a function scope ──
+  // The FUNCTION-path sibling of the two probes above, and the one that cost a
+  // whole SCOPE. Two spellings wrap the declarator, and for both the declared
+  // name was looked up among the function_declarator's DIRECT children:
+  //
+  //   bool (acceptParenthesized)(bool strict = true) { … }
+  //     function_declarator[declarator: parenthesized_declarator[field_identifier]]
+  //   JSON_HEDLEY_NON_NULL(3)
+  //   bool sax_parse(const input_format_t format,          <- macro between the
+  //                  json_sax_t* sax_, …)                 <- return type and the name
+  //     function_definition > parenthesized_declarator[ERROR, function_declarator]
+  //
+  // No name meant no method SYMBOL and, because the caller pushes the function
+  // scope out of that same result, NO SCOPE — so the parameter `strict` was never
+  // bound and its reads resolved outward to the file-scope enumerator. Measured:
+  // nlohmann-json's `include/nlohmann/json_v3_10_5.hpp` lost 14 method symbols and
+  // produced the lane's last unexplained edge, `uses binary_reader -> strict`.
+  //
+  // Only the FIRST spelling can live in a probe: the second is a grammar RECOVERY
+  // shape, and the battery refuses a snippet whose tree has errors (a probe must
+  // be valid code — see analyzeWith). The macro spelling is pinned by
+  // cpp/wrapped-declarator-names-612 instead, whose own tree carries the ERROR
+  // exactly as the corpus does. Here the parenthesized spelling gets the shared
+  // rule: the parameter's read must be absent on BOTH sides while a real read in
+  // the same snippet stays on both — the control that stops `no strict read` from
+  // being satisfied by silencing the name outright.
+  {
+    const src = [
+      `enum class error_handler_t { strict, ignore };`,
+      `int counter;`,
+      `class binary_reader {`,
+      `  int bump() { return counter; }`,
+      `  bool (acceptParenthesized)(bool strict = true) { return strict; }`,
+      `};`,
+    ].join("\n") + "\n"
+    await probeLang("F9-PROBE-CPP-WRAPPED-DECLARATOR-SCOPE", "cpp",
+      "a wrapped declarator name (`bool (acceptParenthesized)(…)`) still publishes its method and opens a function scope, so its parameter's read never escapes to the file-scope enumerator — on the analyzer OR in the bare-uses truth — while a genuine read in the same snippet stays on both sides",
+      { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cpp" },
+      "deriveCppBareUses", src,
+      [
+        "uses:bump->counter",
+      ],
+      [
+        "uses:strict",
+        "uses:binary_reader->strict",
+      ],
+      { oracleForbid: true },
+    )
   }
 
   // ── F7 detector self-test: regexes regress like any code ────────────────
