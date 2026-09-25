@@ -9270,9 +9270,12 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
   return edges
 }
 
-// Erlang oracle (ER wave, M14 #275 F5 + #880 obligation 4): mirrors
-// real-erlang-analyzer.ts edge-for-edge on the compared kinds — calls,
-// implements, instantiates. Mirrored decisions, not approximations:
+// Erlang oracle (ER wave, M14 #275 F5 + #880 obligation 4; ER2 grew the
+// compared kinds): mirrors real-erlang-analyzer.ts edge-for-edge on the
+// compared kinds — calls, implements, instantiates, uses (record member reads,
+// index reads and updates, ER-D7) and references (includes, imports, macro
+// uses, fun values, type dependencies). Mirrored decisions, not
+// approximations:
 //   - a local call fires only when the callee is DECLARED in the file (the
 //     analyzer's forward-reference prepass) AND the file carries -module
 //     (the analyzer's ctx.currentModule gate; a module-less file emits no
@@ -9313,21 +9316,31 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
   const firstNamed = (n: any): any => {
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) return c }
     return undefined
-  }
-  const collectAtoms = (n: any, out: string[]) => {
-    if (n.type === "atom" && n.isNamed && n.text) out.push(n.text)
-    for (let i = 0; i < n.childCount; i++) collectAtoms(n.child(i), out)
-  }
+  }  // Arity of a call/head: the expr_args' named children, comments excluded
+  // (ER-D2; the identity verifier's `commented` case pins the exclusion).
 
-  // Prepass mirror (collectDeclaredFunctions): every declared function name,
-  // stopping at fun_decl (no descent into its body for more declarations).
+  const argCount = (args: any): number => {
+    if (!args) return 0
+    let n = 0
+    for (let i = 0; i < (args.namedChildCount ?? 0); i++) {
+      const c = args.namedChild(i)
+      if (c && c.type !== "comment") n++
+    }
+    return n
+  }
+  const clauseArity = (clause: any): number => argCount(childByType(clause, "expr_args"))
+
+  // Prepass mirror (collectDeclaredFunctions): every declared function
+  // name/ARITY, stopping at fun_decl (no descent into its body for more
+  // declarations). The arity is load-bearing: a call to f/2 must not be
+  // satisfied by a declaration of f/1 (ER-D2).
   const declared = new Set<string>()
   const collectDecls = (n: any): void => {
     if (n.type === "fun_decl") {
       for (const c of kids(n)) {
         if (c.type !== "function_clause") continue
         const nameNode = childByType(c, "atom") || childByType(c, "var")
-        if (nameNode?.text) declared.add(nameNode.text)
+        if (nameNode?.text) declared.add(`${nameNode.text}/${clauseArity(c)}`)
       }
       return
     }
@@ -9349,32 +9362,171 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
   }
   findModule(root)
 
-  // isInFunHead mirror: a record_expr is construction only outside a
-  // function head (clause_body boundary before function_clause/fun_clause).
-  const inFunHead = (n: any): boolean => {
+  // isInHead mirror (ER-D7): a clause HEAD is a match — a record literal there
+  // constructs nothing and a member read there is not an evaluation — while a
+  // GUARD and a clause BODY both evaluate. The boundary is therefore `guard` or
+  // `clause_body` on the way up, and only an expr_args child of
+  // function_clause/fun_clause counts as the head.
+  const inHead = (n: any): boolean => {
     let cur = n.parent
     while (cur) {
-      if (cur.type === "clause_body") return false
-      if (cur.type === "function_clause" || cur.type === "fun_clause") return true
+      const t = cur.type
+      if (t === "clause_body" || t === "guard") return false
+      if (t === "expr_args") {
+        const p = cur.parent
+        if (p && (p.type === "function_clause" || p.type === "fun_clause")) return true
+      }
+      if (t === "function_clause" || t === "fun_clause") return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  // isInTypeSyntax mirror: -spec/-callback/-type/-opaque type syntax DECLARES
+  // (ruling ER-D3) — `state()` there is a type application, never a call site.
+  const TYPE_SYNTAX = new Set(["spec", "callback", "type_alias", "opaque", "type_sig", "fun_type", "fun_type_sig", "ann_type", "ann_var", "field_type", "range_type", "nominal", "type_name", "var_args", "type_guards", "pipe"])
+  const inTypeSyntax = (n: any): boolean => {
+    let cur = n.parent
+    while (cur) {
+      if (TYPE_SYNTAX.has(cur.type)) return true
+      if (cur.type === "clause_body" || cur.type === "source_file") return false
       cur = cur.parent
     }
     return false
   }
   const stripLeadingHash = (t: string) => (t.startsWith("#") ? t.slice(1) : t)
+  const stripFirstParen = (t: string) => (t.includes("(") ? t.slice(0, t.indexOf("(")) : t).trim()
+  const stripQuotes = (t: string) => { let o = ""; for (const ch of t) if (ch !== '"' && ch !== "'") o += ch; return o }
+  const lastAtom = (n: any): string => {
+    let found = ""
+    for (let i = 0; i < (n.childCount ?? 0); i++) { const c = n.child(i); if (c?.type === "atom" && c.text) found = c.text }
+    return found || (n.type === "atom" ? n.text ?? "" : "")
+  }
 
-  // Main walk mirror: currentFunction is set on entering a fun_decl and
-  // cleared on leaving it (record_expr attribution follows it); calls are
-  // extracted per function_clause subtree.
-  const walk = (n: any, fn: string): void => {
+  // Type dependencies (ER-D10): -type and -opaque emit references from the
+  // declared type to every NAMED type in the expression. Vars are the type's
+  // PARAMETERS (never references), quoted atoms are literals, and the
+  // declaration's own type_name subtree is skipped BY SPAN (the hygiene gate's
+  // KAD2/TSD2 rule — a fresh wrapper never compares equal, so a self-reference
+  // would have been emitted on both sides and mirrored invisibly).
+  const typeRefs = (node: any, typeNameNode: any, declaredName: string): void => {
+    const walkT = (n: any): void => {
+      if (typeNameNode && n.startIndex >= typeNameNode.startIndex && n.endIndex <= typeNameNode.endIndex) return
+      switch (n.type) {
+        case "comment":
+        case "var":
+        case "integer":
+        case "float":
+        case "string":
+        case "char":
+          return
+        case "atom": {
+          const txt = n.text
+          if (!txt || txt.startsWith("'")) return
+          push("references", declaredName, txt)
+          return
+        }
+        case "call": {
+          const head = firstNamed(n)
+          if (head?.type === "atom" && head.text && !head.text.startsWith("'")) push("references", declaredName, head.text)
+          for (let i = 1; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walkT(c) }
+          return
+        }
+        default:
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walkT(c) }
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) walkT(c) }
+  }
+
+  // Main walk mirror: the attribution rule is ONE rule for every evaluation
+  // context (ER-D12) — named function > enclosing record declaration (a field
+  // DEFAULT evaluates in the record's scope) > module. `fn` is set on entering
+  // a fun_decl and `rec` on entering a record_decl, both cleared on leaving.
+  const walk = (n: any, fn: string, rec: string): void => {
     const t = n.type
-    if (t === "behaviour_attribute") {
+    if (t === "include_attribute" || t === "include_lib_attribute" || t === "pp_include" || t === "pp_include_lib") {
+      const s = childByType(n, "string")
+      if (s?.text) push("references", modName || "", stripQuotes(s.text))
+    } else if (t === "import_attribute") {
+      const m = childByType(n, "atom")
+      if (m?.text) push("references", modName || "", m.text)
+    } else if (t === "behaviour_attribute") {
       const b = childByType(n, "atom")
       if (b?.text) push("implements", modName, b.text)
+    } else if (t === "record_decl") {
+      const nameNode = childByType(n, "atom")
+      const recordName = nameNode?.text ?? ""
+      for (const c of kids(n)) walk(c, fn, recordName)
+      return
+    } else if (t === "macro_call_expr") {
+      // ER-D8: a use is a reference whether or not the macro is defined here.
+      const nm = childByType(n, "var") || childByType(n, "atom")
+      if (nm?.text) push("references", fn || rec || modName || "Global", nm.text)
+    } else if (t === "internal_fun") {
+      const nm = childByType(n, "atom")
+      if (nm?.text) push("references", fn || rec || modName || "Global", nm.text)
+    } else if (t === "external_fun") {
+      const m = childByType(n, "module")
+      const nm = childByType(n, "atom")
+      const mod = m ? lastAtom(m) : ""
+      if (mod && nm?.text) push("references", fn || rec || modName || "Global", `${mod}:${nm.text}`)
+    } else if (t === "record_field_expr" || t === "record_index_expr") {
+      // ER-D7: a record member READ names the record and the field.
+      if (!inHead(n)) {
+        const rn = childByType(n, "record_name")
+        const fld = childByType(n, "record_field_name")
+        const r = rn?.text ? stripLeadingHash(rn.text) : ""
+        const f = fld ? lastAtom(fld) : ""
+        const src = fn || rec || modName || "Global"
+        if (r) push("uses", src, r)
+        if (f) push("uses", src, f)
+      }
+    } else if (t === "record_update_expr") {
+      // ER-D7/ER-D4: an update is a member WRITE — uses -> record and -> each
+      // assigned field, never an instantiates.
+      if (!inHead(n)) {
+        const rn = childByType(n, "record_name")
+        const r = rn?.text ? stripLeadingHash(rn.text) : ""
+        const src = fn || rec || modName || "Global"
+        if (r) push("uses", src, r)
+        for (const c of kids(n)) {
+          if (c.type !== "record_field") continue
+          const f = childByType(c, "atom")
+          if (f?.text) push("uses", src, f.text)
+        }
+      }
     } else if (t === "record_expr") {
-      if (!inFunHead(n)) {
+      if (!inHead(n)) {
         const nameNode = childByType(n, "record_name") || childByType(n, "atom")
-        const rec = nameNode ? stripLeadingHash(nameNode.text) : ""
-        if (rec) push("instantiates", fn || modName || "Global", rec)
+        const r = nameNode ? stripLeadingHash(nameNode.text) : ""
+        if (r) push("instantiates", fn || rec || modName || "Global", r)
+      }
+    } else if (t === "type_alias" || t === "opaque") {
+      const tn = childByType(n, "type_name")
+      const name = tn?.text ? stripFirstParen(tn.text) : (childByType(n, "atom")?.text ?? "")
+      if (name) typeRefs(n, tn, name)
+    } else if (t === "call") {
+      if (!inHead(n) && !inTypeSyntax(n)) {
+        const callee = firstNamed(n)
+        const arity = argCount(childByType(n, "expr_args"))
+        if (callee?.type === "remote") {
+          // ER-D14: structural extraction (module atom of `remote_module`, the
+          // function atom of `remote`) + the one unambiguous predefined macro:
+          // ?MODULE in module position expands to the current module.
+          const modNode = childByType(callee, "remote_module")
+          const funNode = childByType(callee, "atom")
+          let mod = ""
+          const mc = modNode ? firstNamed(modNode) : undefined
+          if (mc?.type === "atom") mod = mc.text ?? ""
+          else if (mc?.type === "macro_call_expr") {
+            const mn = childByType(mc, "var") || childByType(mc, "atom")
+            if (mn?.text === "MODULE" && modName) mod = modName
+          }
+          if (mod && funNode?.text) push("calls", fn || rec || modName || "Global", `${mod}:${funNode.text}`)
+        } else if (callee?.type === "atom" && callee.text && modName && declared.has(`${callee.text}/${arity}`)) {
+          push("calls", fn || rec || modName || "Global", callee.text)
+        }
       }
     } else if (t === "fun_decl") {
       let funcName = ""
@@ -9382,30 +9534,13 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
         if (c.type !== "function_clause") continue
         const nameNode = childByType(c, "atom") || childByType(c, "var")
         if (nameNode?.text) funcName = nameNode.text
-        // extractCallsFromFunction mirror: every call node in the clause.
-        const cs: any[] = [c]
-        while (cs.length > 0) {
-          const node = cs.pop()
-          if (node.type === "call") {
-            const callee = firstNamed(node)
-            const remoteNode = childByType(node, "remote")
-            if (remoteNode) {
-              const atoms: string[] = []
-              collectAtoms(remoteNode, atoms)
-              if (atoms.length >= 2) push("calls", funcName, `${atoms[0]}:${atoms[1]}`)
-            } else if (callee?.type === "atom" && callee.text && modName) {
-              if (declared.has(callee.text)) push("calls", funcName, callee.text)
-            }
-          }
-          for (let i = node.childCount - 1; i >= 0; i--) { const ch = node.child(i); if (ch) cs.push(ch) }
-        }
       }
-      for (const c of kids(n)) walk(c, funcName)
+      for (const c of kids(n)) walk(c, funcName, rec)
       return
     }
-    for (const c of kids(n)) walk(c, fn)
+    for (const c of kids(n)) walk(c, fn, rec)
   }
-  walk(root, "")
+  walk(root, "", "")
   return edges
 }
 
@@ -13352,11 +13487,17 @@ async function main() {
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
           // #910 (c imports) and G7 (groovy uses) notes below record.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+          // ER2 (#275 family wave): erlang joins the uses-audited set with the
+          // record-member read/update surface restored — the label was
+          // excluded by construction before it existed, so the lane could not
+          // have caught the read half going missing a second time. The
+          // `references` half is added in the list below for the same reason
+          // (macro uses, fun values, includes/imports, type dependencies).
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "csharp" ? ["calls", "references"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label))
+        ...(lang === "csharp" ? ["calls", "references"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
