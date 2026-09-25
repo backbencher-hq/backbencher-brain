@@ -73,6 +73,12 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   // `.icl` is the implementation — the F6 check must see both or the ruling's
   // first half is unexercised by construction.
   clean:      { wasm: "tree-sitter-clean.wasm",     ext: [".icl", ".dcl"], analyzer: "real-clean-analyzer.ts" },
+  // M60 functional family (ER2 restoration, 2026-09-25): erlang was absent
+  // from this gate entirely — which is one reason its fixture lane could read
+  // 0/9 committed while nothing measured what the analyzer referenced versus
+  // what its fixtures pinned. Enrolled now, with the restored surface:
+  // record member ops, macro/fun/type references, -callback/-opaque.
+  erlang:     { wasm: "tree-sitter-erlang.wasm",     ext: [".erl"],    analyzer: "real-erlang-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types
