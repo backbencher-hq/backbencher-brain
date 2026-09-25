@@ -333,6 +333,18 @@ export const SECOND_CORPUS: Record<string, string> = {
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
+// M60 groovy lane (2026-09-25): the lane's DISCOVERY cap must never truncate a
+// full-extent draw. It read `if (files.length > 4000) return` — an early return
+// that abandons the whole directory — so on grails-core the groovy+gradle pool
+// was a DIRECTORY-ORDER PREFIX of the corpus: 4,014 files of 6,931, with 2,917
+// hidden (2,762 `.groovy`, 155 `.gradle`, and the hidden head is `src/test/**`
+// spec source). `--sample 100000`, whose entire purpose is to measure every
+// file, reported `files=4014` as if that WERE the corpus, and the same hash on
+// a widened `ext` looked like agreement when it was the cap. The constant is a
+// memory/time bound for the canonical 60-file draw, where 4,000 files is 66x
+// the draw and the bound costs nothing; it must therefore scale with the draw
+// rather than be a constant. Measured with script/m14/tmp/gr-scan-cap.ts.
+const DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)
 // M60 (functional/clean lane): `--lang a,b` restricts the sweep to those
 // languages' (lang, repo) pairs — primary AND second corpus — so ONE lane can be
 // re-measured (and its own artifact emitted) without running the whole set.
@@ -387,7 +399,13 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
   scala: { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
-  groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
+  // M60 groovy universe (2026-09-25): `ext` read "groovy", so the Gradle DSL —
+  // which the ROUTER has mapped to this lane since M49 W21 (#850) precisely
+  // because it is the largest real-world Groovy surface — was outside every F5
+  // row, depth draw and fixture. grails-core alone holds 454 `.gradle` files
+  // against 6,564 `.groovy`; unlike objc's headers this needs no content guard,
+  // because the router decides `.gradle` by NAME.
+  groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy,gradle" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
   // `ext` is the lane's SAMPLING UNIVERSE, and for cpp it read "cc,h" until the
@@ -12567,7 +12585,7 @@ async function main() {
     const repoPin = repoPins[langRepo]
     const files: string[] = []
     const scan = (d: string) => {
-      if (files.length > 4000) return
+      if (files.length > DISCOVERY_CAP) return
       let entries
       try { entries = fs.readdirSync(d, { withFileTypes: true }) } catch { return }
       for (const e of entries) {

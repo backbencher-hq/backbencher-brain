@@ -326,6 +326,20 @@
         "status": "CONFIRMED",
         "question": "M49.G1 closeout probe (java review claim #3 lens): do varargs and array-form parameters normalize to the same override signature?",
         "resolution": "YES by design: both lex to the same spread/array parameter shape and resolve exact-in-file at confidence 1.0 (probe-verified S.f -> B.f). Pinned in groovy/multicatch-and-varargs."
+      },
+      {
+        "id": "GD30",
+        "node_type": "object_creation_expression (anonymous class body)",
+        "status": "FIXED",
+        "question": "An anonymous class body registers a symbol, a symbolMap key and a scope (with `parents: [constructedType]`) — does it also enter `classHierarchy`, which is the ONLY map the override pass reads?",
+        "resolution": "It did not, so every override inside an anonymous body was silently dropped (all three resolver tiers read `classHierarchy` keyed by the owner's FQN) — measured at full extent as the lane's only MISSING rows, on IdentityDecoder.groovy (`anonymous_IdentityTypeDecoder.bsonType -> IdentityTypeDecoder.bsonType`, eight instantiations in one static block) and SimpleDecoder.groovy (a field-initialiser anonymous type). FIXED: the constructed type IS the parent, so the same fact the scope already carried is written to the hierarchy. Pinned by fixture groovy/anonymous-body-overrides (with confidenceMin 0.9, so demotion to the tier-3 first-parent guess at 0.5 fails too) and mutant groovy/drop-anonymous-body-override."
+      },
+      {
+        "id": "GD31",
+        "node_type": "lambda_expression",
+        "status": "CONFIRMED",
+        "question": "Which source form produces the grammar's `lambda_expression` node, and what is the contract for it? (M14.0.F6 read uncovered: [lambda_expression], i.e. an analyzer branch with no fixture.)",
+        "resolution": "The UNBRACED arrow — `(int x) -> x + 1`, `s -> !s.isEmpty()`, `() -> x`, `(K k, V v) -> { … }` — parenthesised or not, typed or not; every BRACE form (`{ x -> x + 1 }`, `{ int x -> x + 1 }`, `{ x + 1 }`, `{ a, b -> a + b }`, `list.each { int x -> print x }`) is a `closure`. It is REAL, mainstream syntax, not an exotic spelling: 60 occurrences in 26 files across the two pinned corpora, with the parent a variable_declarator (26), argument_list (20), expression_statement (8), range_expression (3), closure (2) or return_statement (1) — `.filter(s -> !s.isEmpty())`, `map.forEach((K key, V value) -> { … })`, `registerBean(…, () -> userCacheManager)`. CONTRACT (family, K6/#866): a lambda is an EXPRESSION — no symbol of its own, its parameters are not project symbols, and the calls in its body (including an argument-position lambda's) attribute to the lexically enclosing declaration at their own lines. Pinned by fixture groovy/lambda-expression."
       }
     ]
   }
