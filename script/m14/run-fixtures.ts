@@ -59,6 +59,15 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // export list (arity is function identity in Erlang), and the name-only
   // duplicate check would have rejected correct output.
   erlang: { wasm: "tree-sitter-erlang.wasm", analyzerFile: "real-erlang-analyzer", className: "RealErlangAnalyzer", ext: "erl" },
+  // M60 (#884): clean had a fixture on disk and NO runner entry, so
+  // `validation/m14/fixtures/clean/import-modules-alias-884` was committed against
+  // an OPEN defect and executed by nothing: the lane's matrix cell read "no
+  // adversarial fixture lane" while the pin sat in the tree. The wasm
+  // (tree-sitter-clean.wasm), the analyzer class and the `.icl` // `.dcl` routing
+  // (src/ast/language-detection.ts) all already existed — only this map was short,
+  // which is why an inert fixture is worse than a missing one: it looks like
+  // evidence. A fixture lane is not a directory, it is a directory this map names.
+  clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
 }
 
 interface Entry { [k: string]: any }
@@ -775,6 +784,32 @@ async function main() {
   if (scoped && process.argv.includes("--update-baseline")) {
     console.error("refusing --update-baseline on a scoped run: it would drop every lane the run did not cover")
     process.exit(5)
+  }
+
+  // M60 (#884) — fixture-lane coverage. `LANGS` names the lanes this runner can run;
+  // `validation/m14/fixtures/<lang>/` is where those lanes' fixtures live. The two are
+  // maintained by hand and can drift, and when they drift the failure is SILENT:
+  // `clean`'s `import-modules-alias-884` pair was committed against an OPEN defect and
+  // executed by nothing, so the lane's matrix cell read "no adversarial fixture lane"
+  // while its pin sat in the tree. That is worse than a missing fixture — it looks like
+  // evidence and cannot fail, which is the one property a gate may not have. A fixture
+  // lane is not a directory; it is a directory this map names. Checked on a FULL run for
+  // the same reason the baseline gate is: a milestone claim may not rest on a partial one.
+  if (!scoped) {
+    const dirs = fs
+      .readdirSync(FIXTURES_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+    const orphaned = dirs.filter((d) => !(d in LANGS))
+    if (orphaned.length) {
+      console.error(`\nfixture-lane gate: ${orphaned.length} fixture director(ies) no runner lane claims: ${orphaned.join(", ")}`)
+      for (const d of orphaned) {
+        const n = fs.readdirSync(path.join(FIXTURES_DIR, d)).filter((f) => f.endsWith(".expectation.json")).length
+        console.error(`  ${d}: ${n} expectation file(s) — evidence nothing executes. Add the lane to LANGS (wasm + analyzerFile + className + ext) or remove the directory.`)
+      }
+      process.exit(6)
+    }
+    console.log(`fixture-lane gate: ${dirs.length} fixture director(ies), every one named in LANGS`)
   }
 
   const allDetails: any[] = []
