@@ -478,6 +478,199 @@ function dropNonComponentPhantomContainment(r: any) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Clean (M60 `.dcl` ruling). Every transform below is a faithful revert of a
+// MEASURED state, not a hypothetical one:
+//
+//   - the export predicate `!sym.ownerName` — the exact negation of the rule
+//     its own comment stated — left 312 of 312 corpus files exporting at most
+//     one thing (295 exports against 6,031 module-owned symbols);
+//   - a module-level `type_signature` published nothing, so a definition
+//     module's declared interface was invisible (2,002 distinct module-level
+//     signature names over the lane's 312 files, 708 published nowhere);
+//   - an `operator_definition` (a different node from `function_declaration`)
+//     published nothing and owned no call (39 real module-level and 192
+//     instance-member definitions);
+//   - and the merged entity was not released when its scope ended, so `(++|)`
+//     in clean-stdlib/StdOverloadedList.icl claimed `flatten l` from a macro six
+//     lines below it.
+//
+// Where a revert needs a fact the RESULT no longer carries — which names had a
+// declaration — it reads the SOURCE, so it stays faithful instead of
+// hard-coding one fixture's names (the failure mode that leaves a mutant
+// surviving the moment a fixture is renamed).
+// ---------------------------------------------------------------------------
+
+/** Names a Clean source DECLARES at module level: `f :: T`, `(%) infixr 5 :: T`. */
+function cleanDeclaredNames(source: string): Set<string> {
+  const out = new Set<string>()
+  for (const line of source.split("\n")) {
+    const m = /^\s*(?:\(([^)]*)\)|([A-Za-z_][A-Za-z0-9_]*))\s*(?:infix[rl]?\s*\d+\s*)?::/.exec(line)
+    if (!m) continue
+    const raw = (m[1] ?? m[2] ?? "").trim()
+    if (!raw || /[,{}]/.test(raw)) continue
+    out.add(raw)
+  }
+  return out
+}
+
+/** True for a name Clean spells with operator characters (`++.`, `%`, `==`). */
+function isCleanOperatorName(name: string): boolean {
+  return typeof name === "string" && name.length > 0 && /[^A-Za-z0-9_]/.test(name)
+}
+
+/** Pre-fix: a module-level declaration published NO symbol at all — the whole
+ *  of a `.dcl`'s interface was invisible. Caught by
+ *  clean/definition-module-interface (expectSymbols + expectExports). */
+function dropCleanDeclarations() {
+  return (r: any) => {
+    const dropped = new Set(
+      (r.symbols ?? []).filter((s: any) => s?.metadata?.isDeclaration === true).map((s: any) => String(s.name)),
+    )
+    if (dropped.size === 0) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s?.metadata?.isDeclaration !== true),
+      exports: (r.exports ?? []).filter((e: any) => !dropped.has(String(e.name))),
+      // a symbol that never existed cannot be contained by its module
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(String(x.type) === "contains" && dropped.has(String(x.target))),
+      ),
+    }
+  }
+}
+
+/** The merge regression: the DECLARATION's range wins instead of the
+ *  definition's, so the merged symbol points at the prototype line. Caught by
+ *  clean/signature-definition-merge's expectSymbolRanges (mergeTarget startLine
+ *  20 = the definition, not 19 = the declaration). */
+function cleanDeclarationRangeWins() {
+  return (r: any, source?: string) => {
+    if (!source) return r
+    const lines = source.split("\n")
+    const declLine = new Map<string, number>()
+    for (let i = 0; i < lines.length; i++) {
+      const m = /^\s*(?:\(([^)]*)\)|([A-Za-z_][A-Za-z0-9_]*))\s*(?:infix[rl]?\s*\d+\s*)?::/.exec(lines[i])
+      if (!m) continue
+      const raw = (m[1] ?? m[2] ?? "").trim()
+      if (!raw || /[,{}]/.test(raw) || declLine.has(raw)) continue
+      declLine.set(raw, i + 1)
+    }
+    let moved = 0
+    const symbols = (r.symbols ?? []).map((s: any) => {
+      const ln = declLine.get(String(s.name))
+      if (ln === undefined || s?.metadata?.isDeclaration === true) return s
+      if (typeof s?.range?.startLine !== "number") return s
+      moved++
+      return { ...s, range: { ...s.range, startLine: ln } }
+    })
+    return moved === 0 ? r : { ...r, symbols }
+  }
+}
+
+/** The merge broken the other way: the declaration is kept BESIDE the definition
+ *  instead of being replaced by it, so one name is published twice. Caught by
+ *  the exports-family invariant of run-fixtures.ts on
+ *  clean/signature-definition-merge (a duplicate export name cannot identify
+ *  its provider). */
+function cleanDeclarationBesideDefinition() {
+  return (r: any, source?: string) => {
+    if (!source) return r
+    const declared = cleanDeclaredNames(source)
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.isDeclaration === true) continue
+      if (String(s?.kind) !== "function") continue
+      if (!declared.has(String(s.name))) continue
+      extra.push({ ...s, metadata: { ...(s.metadata ?? {}), isDeclaration: true } })
+    }
+    return extra.length === 0 ? r : { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+
+/** Pre-fix: an operator definition owned no call, its body's applications
+ *  attributed to nobody. Caught by clean/signature-definition-merge (expects
+ *  `calls ++. -> helper`). */
+function cleanOperatorNotCallable() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    const kept = rels.filter(
+      (x: any) => !(String(x.type) === "calls" && isCleanOperatorName(String(x.source))),
+    )
+    return kept.length === rels.length ? r : { ...r, relationships: kept }
+  }
+}
+
+/** The attribution LEAK: the operator is never released when its scope ends, so
+ *  it swallows the next module-level application — `(++|)` claiming `flatten l`
+ *  six lines below it. Caught by clean/signature-definition-merge's
+ *  forbidRelationships entry for `calls ++. -> tweak`. */
+function cleanOperatorAttributionLeak() {
+  return (r: any) => {
+    const syms: any[] = r.symbols ?? []
+    const rels: any[] = r.relationships ?? []
+    const callable = (s: any) => String(s?.kind) === "function" || String(s?.kind) === "method"
+    const lineOf = (s: any) => (typeof s?.range?.startLine === "number" ? s.range.startLine : Number.MAX_SAFE_INTEGER)
+    const extra: any[] = []
+    for (const op of syms.filter((s) => callable(s) && isCleanOperatorName(String(s.name)))) {
+      const end = typeof op?.range?.endLine === "number" ? op.range.endLine : -1
+      const next = syms
+        .filter((s) => callable(s) && !isCleanOperatorName(String(s.name)) && lineOf(s) > end)
+        .sort((a, b) => lineOf(a) - lineOf(b))[0]
+      if (!next) continue
+      const targets = new Set(
+        rels.filter((x) => String(x.type) === "calls" && String(x.source) === String(next.name)).map((x) => String(x.target)),
+      )
+      for (const t of targets) {
+        extra.push({ type: "calls", source: op.name, target: t, confidence: 0.9, metadata: { cleanSpecific: true, context: "local function call" } })
+      }
+    }
+    return extra.length === 0 ? r : { ...r, relationships: [...rels, ...extra] }
+  }
+}
+
+/** Pre-fix: a module exported nothing but its own module symbol (`!sym.ownerName`
+ *  — the negation of the rule the block's own comment stated). Caught by every
+ *  clean fixture's expectExports. */
+function cleanExportOwnerNegation() {
+  return (r: any) => {
+    const moduleName = (r.symbols ?? []).find((s: any) => String(s?.kind) === "module")?.name
+    const exports: any[] = r.exports ?? []
+    if (!moduleName || exports.length <= 1) return r
+    return { ...r, exports: exports.filter((e: any) => String(e.name) === String(moduleName)) }
+  }
+}
+
+/** The name-keyed dedupe removed: a name a file publishes in two KINDS is
+ *  offered twice. Caught by the exports-family invariant on
+ *  clean/instance-target-name-collision (type + the instance class named by its
+ *  target type). */
+function cleanExportDuplicateName() {
+  return (r: any) => {
+    const syms: any[] = r.symbols ?? []
+    const moduleName = syms.find((s) => String(s?.kind) === "module")?.name
+    const byName = new Map<string, any[]>()
+    for (const s of syms) {
+      if (s.ownerName && s.ownerName !== moduleName) continue
+      const k = String(s.name)
+      byName.set(k, [...(byName.get(k) ?? []), s])
+    }
+    const exports: any[] = [...(r.exports ?? [])]
+    let added = 0
+    for (const [name, list] of byName) {
+      if (new Set(list.map((s) => String(s.kind))).size < 2) continue
+      const seen = new Set(exports.filter((e: any) => String(e.name) === name).map((e: any) => String(e.kind)))
+      for (const s of list) {
+        if (seen.has(String(s.kind))) continue
+        seen.add(String(s.kind))
+        exports.push({ name, kind: s.kind, range: s.range, visibility: "public" })
+        added++
+      }
+    }
+    return added === 0 ? r : { ...r, exports }
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -9532,6 +9725,57 @@ export const MUTANTS: Mutant[] = [
       ...r,
       symbols: (r.symbols ?? []).map((s: any) => (typeof s.name === "string" && s.name.startsWith("operator checked ") ? { ...s, name: `operator ${s.name.slice("operator checked ".length)}` } : s)),
     }),
+  },
+  // M60 clean `.dcl` ruling (the declaration contract, the operator callable, and
+  // the export surface). Seven mutants, each a revert of a measured state.
+  {
+    id: "clean/declarations-not-published",
+    language: "clean",
+    defectClass: "symbol-loss",
+    description: "The `.dcl` ruling reverted: a module-level `type_signature` publishes nothing, so a definition module's declared interface is invisible (measured: 2,002 distinct module-level signature names over the lane's 312 files, 708 published nowhere). Caught by clean/definition-module-interface — its expectSymbols entries for interfaceFunction/NSMakeSize/%./bitxor and their expectExports twins.",
+    transform: dropCleanDeclarations(),
+  },
+  {
+    id: "clean/declaration-range-wins",
+    language: "clean",
+    defectClass: "symbol-identity",
+    description: "The merge resolved the WRONG way: the declaration's range wins instead of the definition's, so a merged symbol points at its prototype line. Caught by clean/signature-definition-merge's expectSymbolRanges (mergeTarget startLine 20 = the definition line; the declaration is 19).",
+    transform: cleanDeclarationRangeWins(),
+  },
+  {
+    id: "clean/declaration-beside-definition",
+    language: "clean",
+    defectClass: "symbol-identity",
+    description: "The merge broken the other way: the declaration is kept BESIDE the definition instead of being replaced by it, so one name is published as two symbols. Caught by clean/signature-definition-merge's expectSymbolCount (`mergeTarget` equals 1) — measured catch, printed by script/m14/tmp/mutant-catch-reasons.ts; the same regression inside the analyzer's own export loop would additionally trip the exports-family invariant, which is why the fixture pins both halves.",
+    transform: cleanDeclarationBesideDefinition(),
+  },
+  {
+    id: "clean/operator-not-callable",
+    language: "clean",
+    defectClass: "relationship-loss",
+    description: "Pre-fix state: an `operator_definition` — a different node from `function_declaration`, and the Clean norm for Eq/Ord instance members — is not a callable, so its body's applications are attributed to nobody (measured: 39 real module-level + 192 instance-member operator definitions). Caught by clean/signature-definition-merge's `calls ++. -> helper`.",
+    transform: cleanOperatorNotCallable(),
+  },
+  {
+    id: "clean/operator-attribution-leak",
+    language: "clean",
+    defectClass: "relationship-fabrication",
+    description: "Pre-fix state: an operator is never released when its scope exits, so it swallows the next module-level application — the exact defect the exhaustive mini-differential found as `calls ++| -> flatten` in clean-stdlib/StdOverloadedList.icl (the operator claiming a call from a macro six lines below it). Caught by clean/signature-definition-merge's forbidRelationships entry for `calls ++. -> tweak`.",
+    transform: cleanOperatorAttributionLeak(),
+  },
+  {
+    id: "clean/export-owner-negation",
+    language: "clean",
+    defectClass: "name-surface",
+    description: "Pre-fix export predicate: `!sym.ownerName`, the exact negation of the rule the block's own comment stated, so a file exported nothing but its own module symbol (measured: 312 of 312 corpus files exported at most one thing — 295 exports against 6,031 module-owned symbols). Caught by every clean fixture's expectExports.",
+    transform: cleanExportOwnerNegation(),
+  },
+  {
+    id: "clean/export-duplicate-name",
+    language: "clean",
+    defectClass: "name-surface",
+    description: "The name-keyed export dedupe removed: a file that publishes one name in two KINDS offers it twice. Reached honestly — `instance == Collision` publishes its Class under the instance TARGET type, so 59 of the lane's 312 corpus files collided. Caught by clean/instance-target-name-collision via the exports-family invariant.",
+    transform: cleanExportDuplicateName(),
   },
 ]
 
