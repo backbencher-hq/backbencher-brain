@@ -484,16 +484,15 @@ for (const r of reasons) console.log(`  ${r}`)
 // the other lane's evidence byte-identical; a run for the lane that already owns the
 // canonical name keeps writing it.
 const CANONICAL_F11 = path.join(ROOT, "validation/m14/results/M14.0.F11.json")
-let emitId = "M14.0.F11"
+let ownsCanonical = true
 try {
   const prev = JSON.parse(readFileSync(CANONICAL_F11, "utf8"))
   const prevLang = prev?.data?.lang ?? null
-  if (prevLang && prevLang !== LANG) emitId = `M14.0.F11.${LANG}`
+  if (prevLang && prevLang !== LANG) ownsCanonical = false
 } catch { /* no prior artifact: the canonical name is free */ }
 
 if (hasArg("--emit")) {
-  const out = emitEvidence({
-    issueId: emitId,
+  const base = {
     title: `Grammar-leaf admissibility gate — ${LANG} candidate ${path.basename(CANDIDATE)}`,
     claimLevel: "L3",
     layers: ["grammar", "analyzer", "corpus"],
@@ -545,7 +544,21 @@ if (hasArg("--emit")) {
       admissible,
       reasons,
     },
-  })
+  }
+  // The artifact id must be a PLAIN LITERAL in the emit call: M49's producer
+  // register (`verify-evidence-identity`) discovers a producer by the exact shape
+  // `issueId: "M14…"` inside the emit window, so the variable id this gate used
+  // first left BOTH M14.0.F11 and M14.0.F11.clean as orphans there. One declared
+  // branch per lane, and an undeclared lane is refused rather than written as an
+  // orphan.
+  let out: string
+  if (ownsCanonical) out = emitEvidence({ ...base, issueId: "M14.0.F11" })
+  else if (LANG === "clean") out = emitEvidence({ ...base, issueId: "M14.0.F11.clean" })
+  else throw new Error(
+    `verify-grammar-leaves: --emit has no declared artifact id for lane "${LANG}" — add one literal emit call `
+    + '(`{ ...base, issueId: "M14.0.F11.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
+    + `M49 verify-evidence-identity reports as an orphan`,
+  )
   console.log(`evidence: ${path.relative(ROOT, out)}`)
 }
 
