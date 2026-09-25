@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-24T23:02:42.878Z",
+  "at": "2026-09-25T03:05:46.660Z",
   "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
@@ -455,6 +455,86 @@
       "missing": 0,
       "unexplained": 0,
       "note": "FULL EXTENT (475/475 .py — the whole pinned primary corpus, not a sample). hash 8e2340b6bbdeb581, analyzer-edges 20085, heuristic-class 3339. CLEAN, and the same-files record of this lane's whole round: the identical hash read 20093 analyzer edges / 15 unexplained at 0b348cd4 (the #902 round's 4 fabricated `calls` + 1 fabricated `extends`, split out as #927), then 20085 / 10 with those removed and #928's ten override edges still Unexplained, and now 20085 / 0 with #928 fixed ORACLE-side — the analyzer's edge count never moved for #928, only the truth's ability to explain it (truth 16208 -> 16218, exactly the ten chained class-attribute members of PyrexTypes.py 457-460)."
+    },
+    {
+      "repo": "dart-http",
+      "lang": "dart",
+      "files": 335,
+      "truth": 13654,
+      "covered": 13654,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (335/335 .dart files — the whole pinned second corpus). hash 2dee60fd89aee7be, analyzer-edges 12708. It is the SAME drawn set as the draw that found this round's two ORACLE-side defects, so it is a strict same-files before/after: tree-truth 13628 -> 13654 and unexplained 27 -> 0 with the analyzer's edge count UNMOVED (12708 both times) — the truth learned to explain edges the analyzer had been emitting correctly all along (27 named-constructor `instantiates` inside `extension type` containers, +1 keyword `calls -> as` removed; #937)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 500,
+      "truth": 37584,
+      "covered": 37584,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "chunk 1/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash fa4d51dff25f6af7, analyzer-edges 33826, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 500,
+      "truth": 35634,
+      "covered": 35634,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "chunk 2/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash 91b64a06de1ca8dd, analyzer-edges 32411, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 500,
+      "truth": 36188,
+      "covered": 36188,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "chunk 3/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash dbb1252d0c54dabe, analyzer-edges 32561, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 500,
+      "truth": 35032,
+      "covered": 35032,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "chunk 4/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash c97214c6867ae3d2, analyzer-edges 31643, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 500,
+      "truth": 35159,
+      "covered": 35159,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "chunk 5/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash 49a08d94a7375873, analyzer-edges 31587, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 60,
+      "truth": 4408,
+      "covered": 4408,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "canonical 60-file draw at this closure, re-derived on the final code: hash 5d521eb201148639 — IDENTICAL to the round's earlier canonical draw, so this is a strict same-files before/after. analyzer-edges 4009, MISSING=0 unexplained=0. Truth 4427 -> 4408 because the DARTD22 rule removed enum-constant declaration reads from BOTH sides at once (the analyzer stopped emitting them, the oracle's bare-uses mirror stopped deriving them), which is why the drop is not a coverage loss: covered = truth, 100%."
+    },
+    {
+      "repo": "dart-http",
+      "lang": "dart",
+      "files": 60,
+      "truth": 1627,
+      "covered": 1627,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "canonical 60-file draw at this closure, re-derived on the final code (fresh private pool, so a different 60 files than the round's earlier canonical draw: hash 549143339f0cfaa9, truth 1,627 vs 2,601 before). CLEAN: analyzer-edges 1497, MISSING=0, unexplained=0."
     }
   ],
   "current": [
@@ -867,6 +947,36 @@
       "missing": 0,
       "unexplained": 0,
       "note": "FULL EXTENT (475/475 .py — the whole pinned primary corpus, not a sample). hash 8e2340b6bbdeb581, analyzer-edges 20085, heuristic-class 3339. CLEAN, and the same-files record of this lane's whole round: the identical hash read 20093 analyzer edges / 15 unexplained at 0b348cd4 (the #902 round's 4 fabricated `calls` + 1 fabricated `extends`, split out as #927), then 20085 / 10 with those removed and #928's ten override edges still Unexplained, and now 20085 / 0 with #928 fixed ORACLE-side — the analyzer's edge count never moved for #928, only the truth's ability to explain it (truth 16208 -> 16218, exactly the ten chained class-attribute members of PyrexTypes.py 457-460)."
+    },
+    {
+      "repo": "dart-http",
+      "lang": "dart",
+      "files": 335,
+      "truth": 13654,
+      "covered": 13654,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (335/335 .dart files — the whole pinned second corpus). hash 2dee60fd89aee7be, analyzer-edges 12708. It is the SAME drawn set as the draw that found this round's two ORACLE-side defects, so it is a strict same-files before/after: tree-truth 13628 -> 13654 and unexplained 27 -> 0 with the analyzer's edge count UNMOVED (12708 both times) — the truth learned to explain edges the analyzer had been emitting correctly all along (27 named-constructor `instantiates` inside `extension type` containers, +1 keyword `calls -> as` removed; #937)."
+    },
+    {
+      "repo": "proxicall",
+      "lang": "dart",
+      "files": 60,
+      "truth": 4408,
+      "covered": 4408,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "canonical 60-file draw at this closure, re-derived on the final code: hash 5d521eb201148639 — IDENTICAL to the round's earlier canonical draw, so this is a strict same-files before/after. analyzer-edges 4009, MISSING=0 unexplained=0. Truth 4427 -> 4408 because the DARTD22 rule removed enum-constant declaration reads from BOTH sides at once (the analyzer stopped emitting them, the oracle's bare-uses mirror stopped deriving them), which is why the drop is not a coverage loss: covered = truth, 100%."
+    },
+    {
+      "repo": "dart-http",
+      "lang": "dart",
+      "files": 60,
+      "truth": 1627,
+      "covered": 1627,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "canonical 60-file draw at this closure, re-derived on the final code (fresh private pool, so a different 60 files than the round's earlier canonical draw: hash 549143339f0cfaa9, truth 1,627 vs 2,601 before). CLEAN: analyzer-edges 1497, MISSING=0, unexplained=0."
     }
   ],
   "adjudicated": {
@@ -876,7 +986,8 @@
     "go": "#799 — CLEAN at depth, with the residue ruled and counted. go-tools full extent (1,931 files): MISSING 10, unexplained 2, every row `implements` and every one the name-only oracle (#914: it matches method NAMES, so it over-claims a satisfaction the analyzer correctly withholds). terraform: three harness-verbatim draws (200 / 200 rotation 2 / 400) at 0 unexplained, 0-2 of the same implements-class MISSING. The canonical 60-file draw is clean and is why the lane's `diff` cell reads pass; the full extent is published beside it so the cell is not read as 'no residue'.",
     "c": "#901 — two MISSING `uses` on all-caps macro names, from the canonical sweep.",
     "python": "#902/#927 — CLOSED at depth: the conditional-callee `calls` edge and the factory-function `extends` edge the deeper draws found are gone, held by python/callee-shapes and python/base-shapes with two CAUGHT reverting mutants. #928 — CLOSED: the depth cell's last red, resolved ORACLE-side (5043a3cb), which cleared the full extent (unexplained 10 -> 0) and turned this cell green. Python has no open depth residual.",
-    "rust": "#798 — CLEAN at depth, and the depth rows were re-measured the moment the comparison changed: `uses` and `references` were outside the rust allowlist before this round, so the first three draws measured a smaller surface (truth 4156 on the ripgrep hash that now reads 6309). All three final-bytes draws are 100% covered, MISSING=0, unexplained=0, heuristic=0."
+    "rust": "#798 — CLEAN at depth, and the depth rows were re-measured the moment the comparison changed: `uses` and `references` were outside the rust allowlist before this round, so the first three draws measured a smaller surface (truth 4156 on the ripgrep hash that now reads 6309). All three final-bytes draws are 100% covered, MISSING=0, unexplained=0, heuristic=0.",
+    "dart": "#937 — CLOSED: the truth oracle's named-constructor prescan accepted only `class_definition`, so a Dart 3 `extension type` container's named constructors were invisible to it; the analyzer (whose named-ctor set comes from SYMBOLS, where the extension type became an owner in DARTD21) was right. Full extent: 27 unexplained + 1 MISSING -> 0/0, truth 13,628 -> 13,654, analyzer-edges unmoved at 12,708. #936 — CLOSED: the cold pool keyed on the FROZEN-TREE path, so every run reported 100% fresh and re-drew files it had already measured (proxicall:dart: 5,942 pooled paths for a 2,211-file corpus under four freeze prefixes). Fixed by keying on the corpus-relative path; without it this round's chunked full extent would not have been a union at all."
   },
   "worstPerLang": {
     "javascript": {
@@ -996,6 +1107,13 @@
       "unexplained": 2,
       "drawsRed": 0,
       "note": "maxSample is the PRIMARY corpus at FULL EXTENT (a draw cap cannot express it); the deepest DRAW is 400 files on terraform"
+    },
+    "dart": {
+      "maxSample": 2211,
+      "missing": 0,
+      "unexplained": 0,
+      "drawsRed": 1,
+      "note": "GREEN at FULL EXTENT, measured not assumed. dart-http: the whole 335-file corpus in one run (truth 13,654/13,654, MISSING=0, unexplained=0). proxicall: the whole 2,211-file corpus across five disjoint 500-file draws, every one 0/0, union verified 2,211/2,211 from the drawn-path log — a single-process 2,211-file run is IMPOSSIBLE on this box and fails honestly (the wasm heap dies, the parser returns empty trees, and the harness's parsed-but-empty guard refuses the 0/0 row rather than publishing a fabricated pass; reproduced twice). The one red draw is that failure, attributed and disclosed, not a lane defect. The ORACLE-side red the deep draw DID find (27 unexplained + 1 MISSING at dart-http full extent) is #937, fixed this round: truth 13,628 -> 13,654 with the analyzer unmoved."
     }
   },
   "closedInThisRound": {
@@ -1008,6 +1126,8 @@
     "#798 (rust depth)": "rust's first depth evidence, and its re-measurement after the read/declared-type labels joined the comparison — 110-file full extent + two rotating 200-file cargo draws, all 0/0 (plus full-extent full-lane enumerators at 0/0 on both corpora).",
     "#902 (python) + #927 (its base-position sibling)": "One rule, two positions: a callee and a BASE that are not statically a name must name NOTHING. `callLeafName`/`callLeafNode` and `baseClassLeaf` now share the allowlist shape (identifier names its text, attribute its leaf, subscript its head in the base position, `parenthesized_expression` unwraps as transparent grouping, everything else names nothing). Measured same-files on the full cython corpus (hash 8e2340b6bbdeb581): analyzer-edges 20093 -> 20085, unexplained 15 -> 10, truth and coverage unmoved. Held by two new fixtures (python/callee-shapes, python/base-shapes) and two CAUGHT reverting mutants (python/callee-shape-fallthrough, python/base-shape-fallthrough).",
     "#799 (go depth)": "go's first depth evidence: the primary corpus at full extent (1,931 files, all of go-tools) plus three rotating terraform draws up to 400 files, with the class of every non-zero row named (#914 implements, name-only oracle). The `depth: n/a` cell is answered, not asserted: the canonical draw was already clean, and the question the cell asks — does a deeper draw find what the canonical one hid? — is answered with measurements in both directions (the 200 rotation 2 draw finds 2 rows the first 200 draw did not, and the full extent finds 10 + 2).",
-    "#928 (python, ORACLE-side depth residual)": "The override oracle registered only `def`s as class members, so a subclass `def` redefining a base class-ATTRIBUTE (PyrexType's chained `get_xdecref_code = ...` assignments, PyrexTypes.py 457-460) was invisible to it while the analyzer's ten `overrides` edges were correct. The oracle now registers every name of a chained class assignment at every nesting level of the right-nested chain; the analyzer was NOT touched, per the ruling. Same-files at hash 8e2340b6bbdeb581: truth 16208 -> 16218, unexplained 10 -> 0, analyzer-edges 20085 unmoved. requests is unaffected (37 files, truth 1216, analyzer 1336, 0/0)."
+    "#928 (python, ORACLE-side depth residual)": "The override oracle registered only `def`s as class members, so a subclass `def` redefining a base class-ATTRIBUTE (PyrexType's chained `get_xdecref_code = ...` assignments, PyrexTypes.py 457-460) was invisible to it while the analyzer's ten `overrides` edges were correct. The oracle now registers every name of a chained class assignment at every nesting level of the right-nested chain; the analyzer was NOT touched, per the ruling. Same-files at hash 8e2340b6bbdeb581: truth 16208 -> 16218, unexplained 10 -> 0, analyzer-edges 20085 unmoved. requests is unaffected (37 files, truth 1216, analyzer 1336, 0/0).",
+    "#937 (dart, ORACLE-side depth residual)": "The oracle's named-ctor prescan walked up from each constructor signature looking only for `class_definition`. The pinned FFI bindings declare their whole surface as `extension type` containers, so it registered 0 of 159 constructor signatures in native_cupertino_bindings.dart and every `Foo.named(...)` call inside such a container fell through to the keyword branch — the truth published `calls -> as` (the FFI `as` constructor's name) where the analyzer published the correct `instantiates`. Fix: accept `extension_type_declaration` as a constructor-owning container, mirroring DARTD21 and the oracle's own extension-type branch. Analyzer untouched, per the ruling.",
+    "#936 (cold pool keyed on the measured path)": "`coldPoolPick` recorded the absolute path it measured; for a corpus whose checkout is dirty or moved, that is a detached worktree under /tmp/m14-frozen-corpus-<hash>/, a NEW directory every run — so nothing ever looked sampled, the `[cold-pool] N/M fresh` disclosure line read 100% fresh forever, and the pool grew without bound. Fix: key on the corpus-relative path, accepting the old absolute spelling on read so in-place lanes are not reset. Found and closed by this round's full-extent work; it is lane-neutral machinery, so every lane measured on a frozen corpus was sampling blind."
   }
 }

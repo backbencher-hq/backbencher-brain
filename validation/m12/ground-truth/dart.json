@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "truthSource": "manual_audit",
- "source": "Independent hand audit of validation/m12/fixtures/dart/*.dart against Dart language semantics and the C#/F#/TS/JS family contract (enums → enum + enum_member, constructors → 'constructor', getters/setters → property, mixins → mixin, extensions → extension, no locals/params/lambda-params as symbols, leaf call identities, Object-leaf methods and print/assert filtered, contains from ownerName, overrides via extends-base only, imports/exports from directives). Box<String>(...) misparses as relational_expression (upstream tree-sitter-dart grammar gap) — no instantiates emitted for it.",
+ "source": "Independent hand audit of validation/m12/fixtures/dart/*.dart against Dart language semantics and the C#/F#/TS/JS family contract (enums → enum + enum_member, constructors → 'constructor', getters/setters → property, mixins → mixin, extensions → extension, no locals/params/lambda-params as symbols, leaf call identities, Object-leaf methods and print/assert filtered, contains from ownerName, overrides via extends-base only, imports/exports from directives). Box<String>(...) misparses as relational_expression (upstream tree-sitter-dart grammar gap) — no instantiates emitted for it. AMENDED 2026-09-24 (#933, the dart half): this audit predated three waves that landed on the analyzer — the DT2 `uses` surface (interpolation, parameter/local/lambda, and selector member reads), `overrides` derived through an IMPLEMENTED interface, and `instantiates` for a CONST constructor invocation. Its old parenthetical said `overrides via extends-base only`; that was the audit's own scope, not the contract. Every one of the 32 false positives the live verifier reported was read back against the fixture SOURCE TEXT (each fact's evidence reference quotes the line) and every one is a correct edge, so the analyzer was not changed for them: the truth was stale. The 5 remaining facts are the analyzer's sub-threshold refusals (bare member reads at confidence 0.6), pinned as expectedState=unknown so that a wave which stops emitting them fails as missingClassifications rather than passing silently. Totals: 119 -> 156 facts.",
  "facts": [
   {
    "id": "sym:base.dart:4:class:BaseService",
@@ -1787,6 +1787,566 @@
     "authority": "manual_audit",
     "reference": "fn(1) in run body"
    }
+  },
+  {
+   "id": "rel:Domain.dart:uses:greet:name",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Domain.dart",
+   "sourceId": "greet",
+   "targetId": "name",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Domain.dart:24 `String greet() => 'Hi $name';` — the interpolation reads the declared field `name`"
+   }
+  },
+  {
+   "id": "rel:Domain.dart:uses:toString:id",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Domain.dart",
+   "sourceId": "toString",
+   "targetId": "id",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Domain.dart:27 `'User(${id.value}, $name)'` — the interpolation's head identifier `id` is the field, read as a value (the `value` member read is the sibling fact already in the truth)"
+   }
+  },
+  {
+   "id": "rel:Domain.dart:uses:toString:name",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Domain.dart",
+   "sourceId": "toString",
+   "targetId": "name",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Domain.dart:27 `'User(${id.value}, $name)'` — `$name` reads the field `name`"
+   }
+  },
+  {
+   "id": "rel:Domain.dart:uses:toString:value",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Domain.dart",
+   "sourceId": "toString",
+   "targetId": "value",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Domain.dart:12 `String toString() => 'UserId($value)';` — `$value` reads the field `value` of UserId"
+   }
+  },
+  {
+   "id": "rel:Features.dart:uses:fetch:id",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "fetch",
+   "targetId": "id",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:31 `log('fetching $id');` — `$id` reads the parameter `id`"
+   }
+  },
+  {
+   "id": "rel:Features.dart:uses:format:v",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "format",
+   "targetId": "v",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:27 `String format(int v) => 'n=$v';` — `$v` reads the parameter"
+   }
+  },
+  {
+   "id": "rel:Features.dart:uses:save:data",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "save",
+   "targetId": "data",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:38 `void save(String data) { log(data); }` — the argument reads the parameter `data`"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:_helper:x",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "_helper",
+   "targetId": "x",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:21 `int _helper(int x) => x + _secret;` — `x` reads the parameter"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:processList:items",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "processList",
+   "targetId": "items",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:8 `final local = items.length;` — `items` reads the parameter"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:processList:i",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "processList",
+   "targetId": "i",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:10-11 `for (var i = 0; i < items.length; i++)` / `count += i;` — `i` is the loop variable, read on the RHS"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:processList:count",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "processList",
+   "targetId": "count",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:11 `count += i;` — `+=` READS the LHS (only a plain `=` is a write, DT-F)"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:processList:x",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "processList",
+   "targetId": "x",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:15 `items.map((x) => x * 2)` — the lambda parameter `x` is read in the closure body"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:run:a",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "run",
+   "targetId": "a",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:24 `final fn = (int a) => a + 1;` — the lambda parameter `a` is read"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:load:id",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "load",
+   "targetId": "id",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:14 `final result = await base.fetch(id);` — the argument reads the parameter `id`"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:load:result",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "load",
+   "targetId": "result",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:15 `final u = User(UserId(id), name: result);` — `result` reads the bound local"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:load:u",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "load",
+   "targetId": "u",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:16 `return u.greet();` — `u` is the receiver, read as a value"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:formatAll:values",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "formatAll",
+   "targetId": "values",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:21 `values.forEach((v) => sb.write(format(v)));` — `values` reads the parameter"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:formatAll:sb",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "formatAll",
+   "targetId": "sb",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:21 — `sb` is the receiver of `write`, read as a value"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:formatAll:v",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "formatAll",
+   "targetId": "v",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:21 — the lambda parameter `v` is read by the inner `format(v)` call"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:format:v",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "format",
+   "targetId": "v",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:25 `String format(int v) => base.format(v);` — the argument reads the parameter"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:box",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "box",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:30 `final msg = box.unwrap();` — `box` is the receiver, read as a value"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:msg",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "msg",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:34 `print(msg);` — reads the bound local"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:statuses",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "statuses",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:35 `print(statuses.length);` — `statuses` is the receiver, read as a value"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:counter",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "counter",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:36 `print(counter.value);` — `counter` is the receiver of a cascade-constructed local, read as a value"
+   }
+  },
+  {
+   "id": "rel:base.dart:uses:log:message",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "base.dart",
+   "sourceId": "log",
+   "targetId": "message",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "base.dart:12 `print(message);` — reads the parameter `message` of the mixin method `log`"
+   }
+  },
+  {
+   "id": "rel:Negative.dart:uses:processList:length",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "processList",
+   "targetId": "length",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:8 `items.length` — the `.length` selector is a member read of the parameter's value"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:active",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "active",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:28 `final statuses = [Status.active, Status.inactive];` — `Status.active` reads the enum constant `active`"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:inactive",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "inactive",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:28 — same rule for `Status.inactive`"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:length",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "length",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:35 `statuses.length` — member read on the local's value"
+   }
+  },
+  {
+   "id": "rel:Services.dart:uses:demo:value",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "demo",
+   "targetId": "value",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:36 `counter.value` — member read on the local's value"
+   }
+  },
+  {
+   "id": "rel:Features.dart:instantiates:fetch:Duration",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "fetch",
+   "targetId": "Duration",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:32 `await Future.delayed(const Duration(seconds: 1));` — a const constructor invocation of a declared type; the language rules of `instantiates` do not care whether the construction is const"
+   }
+  },
+  {
+   "id": "rel:Features.dart:overrides:Counter.save:Repository.save",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "Counter.save",
+   "targetId": "Repository.save",
+   "attributes": {
+    "type": "overrides"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:21 `class Counter extends BaseService with Loggable implements Repository` (line 37 `void save(String data)`) — `save` is declared by the implemented interface `Repository` (base.dart:17), so the method overrides it; the interface-derived override is the same rule the truth ALREADY applies to `format`/`fetch` through the mixin/extends chain"
+   }
+  },
+  {
+   "id": "rel:Features.dart:uses:unwrap:item",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "unwrap",
+   "targetId": "item",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:14 `T unwrap() => item;` — a bare read of the declared field `item`; the analyzer declines to claim it (no `this.`, an outer scope could shadow it), which is the ruling the fixture dart/bare-member-read-uses pins at 0.6"
+   },
+   "expectedState": "unknown"
+  },
+  {
+   "id": "rel:Features.dart:uses:increment:value",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Features.dart",
+   "sourceId": "increment",
+   "targetId": "value",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Features.dart:42 `value++;` — the `++` reads the field; unqualified, so the claim is refused like the one above"
+   },
+   "expectedState": "unknown"
+  },
+  {
+   "id": "rel:Negative.dart:uses:_helper:_secret",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.dart",
+   "sourceId": "_helper",
+   "targetId": "_secret",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Negative.dart:21 `x + _secret` — bare read of the private field `_secret`"
+   },
+   "expectedState": "unknown"
+  },
+  {
+   "id": "rel:Services.dart:uses:format:base",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "format",
+   "targetId": "base",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:25 `base.format(v)` — the receiver `base` is a bare read of the declared field `base`"
+   },
+   "expectedState": "unknown"
+  },
+  {
+   "id": "rel:Services.dart:uses:load:base",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Services.dart",
+   "sourceId": "load",
+   "targetId": "base",
+   "attributes": {
+    "type": "uses"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "Services.dart:14 `base.fetch(id)` — same field, same refusal"
+   },
+   "expectedState": "unknown"
   }
  ]
 }
