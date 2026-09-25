@@ -607,7 +607,21 @@ async function main() {
   // exits 2 so a battery reads "needs re-pin" rather than green. A gate that
   // cannot fail on a moved corpus is the class this project keeps paying for.
   const verdict = failures > 0 ? "fail" : moved.length > 0 ? "needs-repin" : "pass"
-  if (!SCOPED) {
+  // M60 (functional/clean lane): a SCOPED run may emit its OWN lane-scoped
+  // artifact, never the canonical one.
+  //
+  // F10's canonical artifact is a WHOLE-SET claim (all 48/50 pinned lanes, one
+  // file), so a `--lang`/`--repo` run writing it replaces that claim with a
+  // smaller one — the mirror of F5's scoped-run guard and the same failure
+  // F11's fail-closed emit already records. `--emit` writes
+  // `M14.0.F10.<scope>` instead; the unscoped sweep keeps the canonical name.
+  //
+  // Measured motivation: pinning clean's floor was blocked because the
+  // canonical M14.0.F10.json was mid-flight on another lane's sample-moved
+  // re-pin (proxicall:dart rotated to 972a593a). A lane-scoped artifact is the
+  // honest way to record one lane's floors at such a moment.
+  const SCOPED_EMIT = hasArg("--emit")
+  if (!SCOPED || SCOPED_EMIT) {
     // Emitted through the shared harness, so the artifact carries the standard
     // governance/schema fields and G8 can see M14.0.F10's producer in source
     // (a hand-written JSON file is an ORPHAN artifact to that gate — which is how
@@ -621,8 +635,10 @@ async function main() {
         `damaged-lines median=${r.errorLinesMedian} max=${r.errorLinesMax} digest=${r.sampleDigest} verdict=${r.verdict}`,
     }))
     emitEvidence({
-      issueId: "M14.0.F10",
-      title: "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
+      issueId: SCOPED ? `M14.0.F10.${SCOPED_LANG ?? SCOPED_REPO}` : "M14.0.F10",
+      title: SCOPED
+        ? `corpus parse-success floor, LANE-SCOPED (${SCOPED_LANG ?? SCOPED_REPO}) — NOT the canonical whole-set claim`
+        : "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
       claimLevel: "L1",
       layers: [
         "corpus routing (the pipeline's own detectLanguageFromPath, including the .h sniff)",
@@ -647,6 +663,12 @@ async function main() {
           description:
             "The rate is the full production-routed surface, so the c figure includes plain C headers and the cpp figure includes the headers production sniffs as C++. The per-extension split is recorded beside every row so these reconcile with the .c-only census in reviews/m49-w17-parse-success-census.md.",
         },
+        ...(SCOPED
+          ? [{
+              description:
+                `LANE-SCOPED artifact: this run measured ${scored.length} lane(s) (${scored.map((r) => r.lane).join(", ")}), not the whole lane set. Its floors describe those lanes only and must not be read as the canonical M14.0.F10 claim; the canonical artifact carries every pinned lane. These floors are not yet in validation/m14/parse-success-baseline.json, which is only rewritten by an unscoped --update-baseline.`,
+            }]
+          : []),
       ],
       corpusPins: Object.fromEntries(
         scored.filter((r) => r.repoPin).map((r) => [r.repo, r.repoPin]),
@@ -663,9 +685,13 @@ async function main() {
         verdict,
       },
     })
-    console.log(`\nwrote ${path.relative(ROOT, EVIDENCE_PATH)}`)
+    console.log(
+      SCOPED
+        ? `\nwrote validation/m14/results/M14.0.F10.${SCOPED_LANG ?? SCOPED_REPO}.json (lane-scoped; canonical M14.0.F10.json untouched)`
+        : `\nwrote ${path.relative(ROOT, EVIDENCE_PATH)}`,
+    )
   } else {
-    console.log("\nscoped run — M14.0.F10 NOT written (the canonical artifact is the full lane set)")
+    console.log("\nscoped run — M14.0.F10 NOT written (the canonical artifact is the full lane set; pass --emit for a lane-scoped one)")
   }
 
   if (UPDATE_BASELINE && !SCOPED) {
