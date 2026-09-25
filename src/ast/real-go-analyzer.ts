@@ -1059,6 +1059,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < targetParamList.namedChildCount; i++) {
       const param = targetParamList.namedChild(i)
       if (param?.type === "parameter_declaration" || param?.type === "variadic_parameter_declaration") {
+        // GO20 (#914): a variadic parameter keeps its variadic-ness in the
+        // payload (`args ...T`) — `type` stays the ELEMENT type (the pinned
+        // payload contract), and `isVariadic` carries the marker so the
+        // signature compare can render `...T`. Without it `Logf(format
+        // string, args ...any)` compared EQUAL to `Logf(format string, args
+        // []any)` — a duck-typing check Go would refuse.
+        const isVariadic = param.type === "variadic_parameter_declaration"
         const nameNodes: Node[] = []
         for (let j = 0; j < param.namedChildCount; j++) {
           const c = param.namedChild(j)
@@ -1073,6 +1080,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               name: nameNode.text,
               type: typeNode?.text,
               isOptional: false, // Go doesn't have optional parameters
+              ...(isVariadic ? { isVariadic: true } : {}),
             })
           }
         } else if (typeNode) {
@@ -1080,6 +1088,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: `arg${parameters.length}`,
             type: typeNode?.text,
             isOptional: false, // Go doesn't have optional parameters
+            ...(isVariadic ? { isVariadic: true } : {}),
           })
         }
       }
@@ -1627,6 +1636,41 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     )
     const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
+    // GO20 (#914): the implementor candidates are the file's RECEIVER TYPE
+    // NAMES, not merely the types DECLARED in it. Go's method set is a
+    // PACKAGE-level property: `func (s *clientDispatcher) LogTrace(...)` in
+    // tsclient.go says everything this file knows about `clientDispatcher`
+    // (gopls declares the struct in protocol.go, a different file) and all 21
+    // of Client's methods are declared right here, so the pair is provable
+    // from this file's own evidence. Requiring a same-file `type` declaration
+    // silently dropped every such row. The differential oracle has always
+    // keyed its implementor map by receiver name, so this removes an
+    // asymmetry rather than creating one — mirrored exactly: no generics skip
+    // is possible for a name with no declaration in the file, and no
+    // promotion is possible for a type whose embedding is declared elsewhere.
+    const declaredTypeNames = new Set<string>()
+    for (const s of symbols) {
+      if (
+        s.kind === ASTEngine.SymbolKind.Struct ||
+        s.kind === ASTEngine.SymbolKind.Class ||
+        s.kind === ASTEngine.SymbolKind.Interface ||
+        s.kind === ASTEngine.SymbolKind.Type
+      ) {
+        declaredTypeNames.add(s.name)
+      }
+    }
+    const candidates: Array<{ name: string; hasGenerics: boolean }> = mapSymbols(structs, (s) => ({
+      name: s.name,
+      hasGenerics: !!s.metadata?.hasGenerics,
+    }))
+    for (const m of methods) {
+      const receiverType = m.metadata?.receiverType || m.metadata?.receiver?.typeName
+      if (typeof receiverType !== "string" || !receiverType) continue
+      if (declaredTypeNames.has(receiverType)) continue
+      if (someSymbol(candidates, (c) => c.name === receiverType)) continue
+      candidates.push({ name: receiverType, hasGenerics: false })
+    }
+
     // Embedded-struct method promotion: `type Worker struct { *Shape }`
     // promotes Shape's methods into Worker's method set (Go spec — a
     // promoted method is an element of the embedding struct's method set, so
@@ -1659,9 +1703,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (interfaceSymbol.metadata?.hasGenerics) return
       const interfaceMethods = this.getGoInterfaceMethods(interfaceSymbol, symbols)
 
-      forEachSymbol(structs, (structSymbol) => {
-        if (structSymbol.metadata?.hasGenerics) return
-        const structName = structSymbol.name
+      forEachSymbol(candidates, (candidate) => {
+        if (candidate.hasGenerics) return
+        const structName = candidate.name
         // Promoted methods: direct + transitive embedding closure (Go
         // method promotion — an embedded type's methods are elements of the
         // embedding struct's method set). We promote the FULL method set
@@ -1692,7 +1736,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         if (valueImpl.implements) {
           relationships.push({
-            source: structSymbol.name,
+            source: structName,
             target: interfaceSymbol.name,
             type: ASTEngine.RelationshipType.Implements,
             confidence: valueImpl.confidence,
@@ -1711,7 +1755,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         if (!valueImpl.implements && pointerImpl.implements) {
           relationships.push({
-            source: structSymbol.name,
+            source: structName,
             target: interfaceSymbol.name,
             type: ASTEngine.RelationshipType.Implements,
             confidence: pointerImpl.confidence,
@@ -3611,6 +3655,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     })
 
+    // GO20 (#914): release the visiting mark on the way OUT, so it is a
+    // PATH mark and not a global "seen" set. Left in place (the pre-fix
+    // behaviour, mirrored by the oracle) it poisoned DIAMONDS: for
+    // `interface A { B; C }` with `B { D }` and `C { D }`, the first branch
+    // marked D visited and the second branch's `D` lookup returned NOTHING — so
+    // A silently lost D's methods depending on declaration order. The mark is
+    // still checked on entry, so the `A { B }; B { A }` cycle guard G12 relies
+    // on is unchanged.
+    seen.delete(interfaceSymbol.name)
+
     return interfaceMethods
   }
 
@@ -3652,7 +3706,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Build Go method signature for comparison
    */
   private buildGoMethodSignature(method: ASTEngine.UniversalSymbol): string {
-    const params = mapSymbols(method.parameters || [], (p) => p.type || "interface{}").join(", ") || ""
+    // GO20 (#914): a variadic parameter renders as `...T`. The parameter TYPE
+    // is not part of Go's notion of a varying `...T` vs `[]T` — they are
+    // DIFFERENT types, and an interface satisfied by one is not satisfied by
+    // the other. Normalization keeps it (normalizeGoSignature only drops the
+    // space before the dots).
+    const params = mapSymbols(method.parameters || [], (p) => (p.isVariadic ? "..." : "") + (p.type || "interface{}")).join(", ") || ""
     const returnType = method.returnType || "void"
     return `${method.name}(${params}) ${returnType}`
   }
@@ -3835,7 +3894,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (let i = 0; i < paramList.namedChildCount; i++) {
       const param = paramList.namedChild(i)
-      if (param?.type !== "parameter_declaration") continue
+      // GO20 (#914): `variadic_parameter_declaration` was rejected outright, so
+      // EVERY variadic interface method lost its last parameter and no struct
+      // could ever be shown to satisfy it — the analyzer's half of the grpc
+      // generated-code rows (`Foo(ctx, in *X, opts ...grpc.CallOption)` lost
+      // `opts`, the implementation kept it as a plain param, and the textual
+      // signature compare then refused a pair Go accepts). The declared and
+      // implemented sides must read the same node set or the compare is not a
+      // comparison of signatures at all.
+      const isVariadic = param?.type === "variadic_parameter_declaration"
+      if (param?.type !== "parameter_declaration" && !isVariadic) continue
 
       const typeNode = param.childForFieldName("type")
       const nameNodes: Node[] = []
@@ -3850,6 +3918,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: nameNode.text,
             type: typeNode?.text,
             isOptional: false,
+            ...(isVariadic ? { isVariadic: true } : {}),
           })
         }
       } else if (typeNode) {
@@ -3857,6 +3926,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           name: `arg${parameters.length}`,
           type: typeNode.text,
           isOptional: false,
+          ...(isVariadic ? { isVariadic: true } : {}),
         })
       }
     }

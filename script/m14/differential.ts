@@ -7089,17 +7089,203 @@ function goEmbeddedLeaf(typeNode: any): string | undefined {
   const raw = String(cur.text ?? "")
   const dot = raw.lastIndexOf(".")
   const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : undefined
+  return isGoIdentifier(leaf) ? leaf : undefined
 }
 
-// Go implicit interface-implementation truth (duck typing): a struct S
-// implements interface I when S's receiver-method set (value OR pointer
-// receivers) contains every method I declares. Mirrors the analyzer's
-// checkGoInterfaceImplementation. Method-name set is compared (the analyzer
-// also compares signatures, but name-set equality is the sufficient, stable
-// truth — signature equality adds another oracle that must itself be
-// mirrored, so it is intentionally simplified to the name set, which is
-// still a correct superset check the analyzer also satisfies).
+/** A Go identifier, by character scan (the lane's standing no-regex rule). */
+function isGoIdentifier(text: string): boolean {
+  if (text.length === 0) return false
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const alpha = (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95
+    const digit = c >= 48 && c <= 57
+    if (i === 0 ? !alpha : !(alpha || digit)) return false
+  }
+  return true
+}
+
+/**
+ * The analyzer's canonical Go method-signature TEXT, derived here from the
+ * TREE and never imported — an oracle that shares the rule cannot see the rule
+ * (the same reason `goEmbeddedLeaf` above is written out).
+ *
+ * WHY THIS EXISTS (go #914, 2026-09-24). The oracle used to compare interface
+ * and implementor method sets by NAME ONLY, which is a strict SUPERSET of Go's
+ * satisfaction rule: on two full corpora it published pairs Go refuses.
+ * `Value` (whose `Elem() Value`) "implemented" `Type` (whose `Elem() Type`);
+ * `graphTransformerMulti` (`Transform(*Graph) error`) "implemented"
+ * `GraphVertexTransformer` (`Transform(dag.Vertex) (dag.Vertex, error)`);
+ * `Diff` (`RenderHuman(int, RenderHumanOpts) string`) "implemented"
+ * `DiffRenderer` (`RenderHuman(Diff, int, RenderHumanOpts) string`);
+ * `UnimplementedProviderServer` (fixed-arity, and with a `mustEmbed...`
+ * placeholder) "implemented" `ProviderClient` (variadic). Every one of those
+ * rows was charged to the analyzer as a MISSING edge it could never close,
+ * because there was no real edge to close. Method SIGNATURES, not names, are
+ * the truth — this oracle now compares what Go compares.
+ *
+ * The canonical rules, mirrored one-for-one with the analyzer
+ * (`buildGoMethodSignature` + `extractGoParameters` /
+ * `extractGoMethodSpecParameters` + `extractGoReturnType` /
+ * `extractGoMethodSpecReturnType` + `normalizeGoSignature`):
+ *   1. parameters compare by TYPE only — a parameter NAME is not part of a Go
+ *      method signature, so `(ctx context.Context)` == `(arg0 context.Context)`;
+ *   2. a GROUPED declaration (`a, b int`) names one parameter per NAME;
+ *   3. a VARIADIC parameter is `...T`, which is a DIFFERENT type from `[]T`
+ *      (go 1.26's `Logf(format string, args ...any)`, and every grpc client
+ *      method); an absent type is the analyzer's `interface{}` placeholder;
+ *   4. named results reduce to their TYPES (`(result any, err error)` ==
+ *      `(any, error)`), a single result stays bare, no result at all is `void`;
+ *   5. the text is then normalized (whitespace collapsed, no space before the
+ *      dots, `interface{}` -> `any`) and the whole strings are compared.
+ */
+function normalizeGoSignatureText(sig: string): string {
+  // (a) collapse every whitespace run to one space
+  let collapsed = ""
+  let prevSpace = false
+  for (let i = 0; i < sig.length; i++) {
+    const ch = sig[i]
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
+      if (!prevSpace && collapsed.length > 0) collapsed += " "
+      prevSpace = true
+    } else {
+      collapsed += ch
+      prevSpace = false
+    }
+  }
+  // (b) drop the space before `...` (so `x ...T` and `x...T` agree)
+  let variadic = ""
+  for (let i = 0; i < collapsed.length; i++) {
+    const ch = collapsed[i]
+    if (ch === "." && collapsed[i + 1] === "." && collapsed[i + 2] === ".") {
+      if (variadic.length > 0 && variadic[variadic.length - 1] === " ") variadic = variadic.slice(0, -1)
+      variadic += "..."
+      i += 2
+    } else {
+      variadic += ch
+    }
+  }
+  // (c) interface{} -> any
+  let result = ""
+  let k = 0
+  while (k < variadic.length) {
+    if (variadic[k] === "i" && variadic.slice(k, k + 11) === "interface{}") {
+      result += "any"
+      k += 11
+    } else {
+      result += variadic[k]
+      k++
+    }
+  }
+  // (d) trim
+  let start = 0
+  let end = result.length
+  while (start < end && result[start] === " ") start++
+  while (end > start && result[end - 1] === " ") end--
+  return result.slice(start, end)
+}
+
+const GO_SIGNATURE_TYPE_NODES = [
+  "type_identifier",
+  "qualified_type",
+  "pointer_type",
+  "slice_type",
+  "array_type",
+  "map_type",
+  "channel_type",
+  "function_type",
+]
+
+/**
+ * The parameter_list holding a node's PARAMETERS: for a method_declaration
+ * that is the SECOND one (the first is the receiver parameter_list); for a
+ * method_spec it is the FIRST (a method_spec children are only ever
+ * [field_identifier, parameter_list(parameters), result?]).
+ */
+function goParameterList(node: any): any {
+  const lists: any[] = []
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && c.type === "parameter_list") lists.push(c)
+  }
+  return node.type === "method_declaration" ? lists[1] : lists[0]
+}
+
+/** Rule 1/2/3: the parameter TYPES of a Go parameter_list, in order, with the
+ *  `...` marker kept on a variadic declaration. */
+function goSignatureParameterTypes(paramList: any): string[] {
+  const out: string[] = []
+  if (!paramList) return out
+  for (let i = 0; i < paramList.namedChildCount; i++) {
+    const p = paramList.namedChild(i)
+    if (!p) continue
+    const isVariadic = p.type === "variadic_parameter_declaration"
+    if (p.type !== "parameter_declaration" && !isVariadic) continue
+    const t = p.childForFieldName?.("type")
+    const typeText = t ? String(t.text ?? "") : "interface{}"
+    const rendered = isVariadic ? "..." + typeText : typeText
+    let names = 0
+    for (let j = 0; j < p.namedChildCount; j++) {
+      if (p.namedChild(j)?.type === "identifier") names++
+    }
+    for (let k = 0; k < Math.max(1, names); k++) out.push(rendered)
+  }
+  return out
+}
+
+/** Rule 4: the canonical RESULT text — named results reduce to their types, one
+ *  type stays bare, no result at all is `void` (the analyzer's `|| "void"`). */
+function goSignatureResult(node: any): string {
+  const resultNode = node.childForFieldName?.("result")
+  if (resultNode) {
+    if (resultNode.type === "parameter_list") {
+      const types: string[] = []
+      for (let i = 0; i < resultNode.namedChildCount; i++) {
+        const p = resultNode.namedChild(i)
+        if (!p || p.type !== "parameter_declaration") continue
+        const t = p.childForFieldName?.("type")
+        if (!t) continue
+        let names = 0
+        for (let j = 0; j < p.namedChildCount; j++) {
+          if (p.namedChild(j)?.type === "identifier") names++
+        }
+        for (let k = 0; k < Math.max(1, names); k++) types.push(String(t.text ?? ""))
+      }
+      if (types.length === 1) return types[0]
+      if (types.length > 1) return `(${types.join(", ")})`
+      return String(resultNode.text ?? "")
+    }
+    return String(resultNode.text ?? "")
+  }
+  // The analyzer's last-resort scan: a DIRECT type-shaped child. A bare
+  // parameter_list is deliberately NOT in the list — in this grammar the named
+  // result list is the `result` FIELD (handled above), so a stray
+  // parameter_list here is the RECEIVER (methods) or the PARAMETERS, and
+  // reading either as a return type is exactly the go-wave deep-review defect.
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const child = node.namedChild(i)
+    if (child && GO_SIGNATURE_TYPE_NODES.indexOf(child.type) !== -1) return String(child.text ?? "")
+  }
+  return "void"
+}
+
+/** Rules 1-5 applied: the whole canonical signature the implements check compares. */
+function goSignatureText(name: string, node: any): string {
+  const params = goSignatureParameterTypes(goParameterList(node))
+  return normalizeGoSignatureText(`${name}(${params.join(", ")}) ${goSignatureResult(node)}`)
+}
+
+// Go implicit interface-implementation truth (duck typing): a type T
+// implements interface I when T's receiver-method set (value OR pointer
+// receivers) contains a method that MATCHES every method I declares — by name
+// AND by canonical signature (see `goSignatureText`). Mirrors the analyzer's
+// checkGoInterfaceImplementation exactly.
+//
+// IMPLEMENTOR CANDIDATES are the receiver TYPE NAMES read off method
+// declarations, not the types declared in the file: Go's method set is a
+// PACKAGE-level property, so `func (s *clientDispatcher) LogTrace(...)` alone
+// — the struct itself declared in a sibling file, as gopls does — still names
+// a type whose method set this file can enumerate. The analyzer mirrors this
+// (GO20).
 export function deriveGoImplements(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -7111,14 +7297,17 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
   // which the canonical 60-file draw never reaches. Null-prototype records are
   // the fix; `Object.keys`/`Object.entries` and every truthiness test behave
   // identically, so nothing else about the oracle moves.
-  // interfaceName -> Set<methodName>
-  const interfaces: Record<string, Set<string>> = Object.create(null)
+  // interfaceName -> method entries {name, signature} (an ARRAY, not a Map:
+  // duplicate names with different signatures must stay visible, exactly as
+  // the analyzer's getGoInterfaceMethods keeps them)
+  const interfaces: Record<string, Array<{ name: string; signature: string }>> = Object.create(null)
   // interfaceName -> Set<embeddedInterfaceName>
   const embedded: Record<string, Set<string>> = Object.create(null)
   // structName -> Set<embeddedStructName> (Go struct embedding promotion)
   const structEmbedded: Record<string, Set<string>> = Object.create(null)
-  // receiverType -> Set<methodName> (value AND pointer receivers merged)
-  const structMethods: Record<string, Set<string>> = Object.create(null)
+  // receiverType -> method entries {name, signature} (value AND pointer
+  // receivers merged)
+  const structMethods: Record<string, Array<{ name: string; signature: string }>> = Object.create(null)
   // Generic type names (type_spec with type_parameter_list): implements
   // satisfaction across generic instantiations needs type UNIFICATION, so
   // BOTH sides refuse (M37 #604, mirrors the analyzer's hasGenerics skip).
@@ -7129,7 +7318,15 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
     if (n.type === "type_declaration") {
       for (let i = 0; i < n.namedChildCount; i++) {
         const ts = n.namedChild(i)
-        if (!ts || ts.type !== "type_spec") continue
+        // GO20 (#914): `type A = interface { M() }` is a `type_alias`, NOT a
+        // `type_spec`, and the type_spec-only gate skipped it — so an ALIAS
+        // never entered `interfaces`, and neither the struct that satisfies it
+        // nor the interface that embeds it could ever be derived (go-tools
+        // internal/gcimporter/testdata/issue25301.go was the only file in the
+        // lane with unexplained implements rows, both from this). The alias
+        // node declares the same `name` and `type` fields as the spec, so it is
+        // read through the identical path below.
+        if (!ts || (ts.type !== "type_spec" && ts.type !== "type_alias")) continue
         const nm = ts.childForFieldName?.("name")?.text
         // Generic type_spec (`MapLattice[Key comparable, ...]`): satisfaction
         // needs unification — record for the pair-level skip below.
@@ -7144,7 +7341,7 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
           // embedding resolution).
           const fdl = structN.namedChildren.find((c: any) => c.type === "field_declaration_list")
           if (fdl) {
-            if (!structMethods[nm]) structMethods[nm] = new Set()
+            if (!structMethods[nm]) structMethods[nm] = []
           for (let k = 0; k < fdl.namedChildCount; k++) {
               const fd = fdl.namedChild(k)
               if (!fd || fd.type !== "field_declaration") continue
@@ -7165,13 +7362,13 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
         }
         const interfaceN = ts.namedChildren.find((c: any) => c.type === "interface_type")
         if (nm && interfaceN) {
-          const set = new Set<string>()
+          const entries: Array<{ name: string; signature: string }> = []
           for (let j = 0; j < interfaceN.namedChildCount; j++) {
             const m = interfaceN.namedChild(j)
             if (!m) continue
             if (m.type === "method_spec") {
               const mn = m.childForFieldName?.("name")
-              if (mn) set.add(mn.text)
+              if (mn) entries.push({ name: mn.text, signature: goSignatureText(mn.text, m) })
             } else if (m.type === "constraint_elem") {
               // Embedded interface (`Reader`/`io.Closer` in
               // `interface { Reader; Close() error }`) — the embedded
@@ -7192,7 +7389,7 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
               }
             }
           }
-          interfaces[nm] = set
+          interfaces[nm] = entries
         }
       }
     } else if (n.type === "method_declaration") {
@@ -7217,8 +7414,8 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
         }
       }
       if (nm && receiverType) {
-        if (!structMethods[receiverType]) structMethods[receiverType] = new Set()
-        structMethods[receiverType].add(nm)
+        if (!structMethods[receiverType]) structMethods[receiverType] = []
+        structMethods[receiverType].push({ name: nm, signature: goSignatureText(nm, n) })
       }
     }
     // Package-scope-only mirror (LocalsAreNotSymbols contract): function-,
@@ -7235,6 +7432,17 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
   }
   // Fold embedded-interface method sets into embedding interfaces,
   // transitively (interface { Reader } promotes Reader's methods).
+  //
+  // The embedded interface is resolved FULLY FIRST, then merged — the order
+  // matters and was a real omission: copying `interfaces[e]` before folding `e`
+  // meant a two-hop embedding (`interface A { B }; interface B { C }`) only ever
+  // contributed C's methods to whichever of B/A happened to be visited second,
+  // so the result depended on declaration order. The analyzer recurses the same
+  // way (`getGoInterfaceMethods` returns the embedded interface's COMPLETE set),
+  // and it now deletes its visiting mark on the way out too, so a diamond
+  // (`A` embeds both `B` and `C`, each embedding `D`) resolves to D's methods
+  // through BOTH branches on each side. Cycles stay safe: the mark is checked
+  // on entry.
   const fold = (name: string, visiting: Set<string>) => {
     const target = interfaces[name]
     if (!target || visiting.has(name)) return
@@ -7242,10 +7450,13 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
     const embs = embedded[name]
     if (embs) {
       for (const e of embs) {
-        const eSet = interfaces[e]
-        if (!eSet) continue
-        for (const m of eSet) target.add(m)
         fold(e, visiting)
+        const eEntries = interfaces[e]
+        if (!eEntries) continue
+        for (const m of eEntries) {
+          // Same dedup as the analyzer's merge: identical name AND signature.
+          if (!target.some((x) => x.name === m.name && x.signature === m.signature)) target.push(m)
+        }
       }
     }
     visiting.delete(name)
@@ -7262,24 +7473,35 @@ export function deriveGoImplements(root: any): { label: string; from: string; ta
     const embs = structEmbedded[name]
     if (embs) {
       for (const e of embs) {
-        const eSet = structMethods[e]
-        if (eSet) for (const m of eSet) target.add(m)
+        // Fully resolve the embedded type first (transitivity, same reason as
+        // the interface fold above), then promote its whole set. Shadowing
+        // mirrors the analyzer's collectGoPromotedMethods: a method the
+        // embedding type (or an already-promoted one) already carries with the
+        // SAME signature wins over the promoted copy.
         foldStruct(e, visiting)
+        const eEntries = structMethods[e]
+        if (eEntries) {
+          for (const m of eEntries) {
+            if (!target.some((x) => x.signature === m.signature)) target.push(m)
+          }
+        }
       }
     }
     visiting.delete(name)
   }
   for (const name of Object.keys(structMethods)) foldStruct(name, new Set())
   for (const [iface, ifaceMethods] of Object.entries(interfaces)) {
-    if (ifaceMethods.size === 0) continue
+    if (ifaceMethods.length === 0) continue
     // Generic pairs skipped on BOTH sides (mirrors the analyzer).
     if (genericNames.has(iface)) continue
     for (const [structName, methods] of Object.entries(structMethods)) {
       if (structName === iface) continue
       if (genericNames.has(structName)) continue
       let ok = true
-      for (const m of ifaceMethods) {
-        if (!methods.has(m)) { ok = false; break }
+      for (const im of ifaceMethods) {
+        // Go's rule: a method of the same NAME and the same canonical
+        // SIGNATURE. Name-only here was the over-claim (#914).
+        if (!methods.some((m) => m.name === im.name && m.signature === im.signature)) { ok = false; break }
       }
       if (ok && !seen.has(structName + "->" + iface)) {
         seen.add(structName + "->" + iface)
