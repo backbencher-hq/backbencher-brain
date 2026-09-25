@@ -634,8 +634,7 @@ async function main() {
         `files=${r.files} ERROR=${r.errorFiles} MISSING=${r.missingFiles} either=${r.eitherFiles} ` +
         `damaged-lines median=${r.errorLinesMedian} max=${r.errorLinesMax} digest=${r.sampleDigest} verdict=${r.verdict}`,
     }))
-    emitEvidence({
-      issueId: SCOPED ? `M14.0.F10.${SCOPED_LANG ?? SCOPED_REPO}` : "M14.0.F10",
+    const base = {
       title: SCOPED
         ? `corpus parse-success floor, LANE-SCOPED (${SCOPED_LANG ?? SCOPED_REPO}) — NOT the canonical whole-set claim`
         : "corpus parse-success floor — how much of each corpus the pinned grammar can parse",
@@ -684,7 +683,21 @@ async function main() {
         improved,
         verdict,
       },
-    })
+    }
+    // The artifact id must be a PLAIN LITERAL in the emit call: M49's producer
+    // register (`verify-evidence-identity`) discovers a producer by the exact
+    // shape `issueId: "M14…"` inside the emit window. A ternary here cost the
+    // CANONICAL M14.0.F10 its producer claim (measured: the artifact became an
+    // orphan the moment the id became `SCOPED ? … : "M14.0.F10"`), so each
+    // declared lane gets its own literal call and an undeclared scope is refused
+    // rather than written as an orphan.
+    if (!SCOPED) emitEvidence({ ...base, issueId: "M14.0.F10" })
+    else if (SCOPED_LANG === "clean") emitEvidence({ ...base, issueId: "M14.0.F10.clean" })
+    else throw new Error(
+      `verify-parse-success: --emit has no declared artifact id for scope "${SCOPED_LANG ?? SCOPED_REPO}" — add one literal emit call `
+      + '(`{ ...base, issueId: "M14.0.F10.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
+      + `M49 verify-evidence-identity reports as an orphan`,
+    )
     console.log(
       SCOPED
         ? `\nwrote validation/m14/results/M14.0.F10.${SCOPED_LANG ?? SCOPED_REPO}.json (lane-scoped; canonical M14.0.F10.json untouched)`
