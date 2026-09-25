@@ -377,10 +377,31 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     return this.unparenthesize(nameNode.text)
   }
 
-  /** Inner text of `(x)`, or null when the parens hold a PATTERN, not a name. */
+  /**
+   * Inner text of `(x)`, or null when the parens hold a PATTERN, not a name.
+   *
+   * M49.R2 (wave 2026-09-25): the two literals this used to carry — `/^\(|\)$/g`
+   * and `/[,{}]/` — were the census's `needs_review` debt after the merge, and both
+   * are character predicates on AST node text, which the policy's "char-scan second"
+   * rule covers. Equivalence proof, edge cases included:
+   *   strip  `text.replace(/^\(|\)$/g, "")` removes at most one leading `(` and one
+   *          trailing `)` (both anchors are per-position, `g` adds nothing here), and
+   *          it does so in either order — a one-char string `"("` strips to `""` under
+   *          both rules, and `")x("` is untouched by both. `startsWith`/`endsWith` +
+   *          `slice` on the ALREADY stripped value is exactly that: the two removals are
+   *          independent of each other, so doing one then testing the other is the same
+   *          function.
+   *   test   `/[,{}]/` is a three-character membership; `includes` on a 3-char set is the
+   *          same predicate without the engine (and without the `lastIndex` state a `g`
+   *          literal carries, which this call never relied on).
+   */
   private unparenthesize(text: string): string | null {
-    const inner = text.replace(/^\(|\)$/g, "").trim()
-    if (!inner || /[,{}]/.test(inner)) return null
+    let body = text
+    if (body.startsWith("(")) body = body.slice(1)
+    if (body.endsWith(")")) body = body.slice(0, -1)
+    const inner = body.trim()
+    if (!inner) return null
+    if (inner.includes(",") || inner.includes("{") || inner.includes("}")) return null
     return inner
   }
 
