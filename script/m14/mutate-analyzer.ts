@@ -6657,6 +6657,72 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "reset", target: "gTotal", confidence: 0.9 }] }),
   },
   {
+    id: "dart/lines-dropped",
+    language: "dart",
+    defectClass: "line-attribution",
+    description: "M60 line contract (#929 lineage) regression: dart's relationships go back to carrying NO line — the exact pre-fix state (MEASURED 0 of 42,310 edges lined over a 240-file draw of proxicall + dart-http; every one of the 32 emit sites was unlined). Caught by dart/callsite-lines-825, which pins the wrapped import URI at 26, the wrapped member name at 46, the wrapped signature at 49, the wrapped heritage at 43/44, the override at 55, the redirect target at 70, the receiver-continued callee at 102 and the cascade sections at 92/93.",
+    transform: dropAllLineNumbers,
+  },
+  {
+    id: "dart/dup-decl-first-wins",
+    language: "dart",
+    defectClass: "payload-corruption",
+    description: "M60 / #753 (DARTD20) regression: the FIRST declaration wins again — the surviving `foo` symbol carries the first declaration's single parameter and the `contains` edge moves back to line 24, exactly the pre-fix state (the found shape: dart kept the first body and dropped the later declaration). Caught by dart/dup-decl-last-wins on BOTH channels: expectParameters (the live declaration carries `second`) and the contains line pin, whose forbid names 24.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.name === "foo" && s.ownerName === "D" && s.kind === "method" ? { ...s, parameters: [{ name: "first", type: "int" }] } : s),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "contains" && x.source === "D" && x.target === "foo" ? { ...x, line_number: 24 } : x),
+    }),
+  },
+  {
+    id: "dart/extension-type-members-unowned",
+    language: "dart",
+    defectClass: "misattribution",
+    description: "M60 DARTD21 regression: the Dart 3 `extension type` container goes back to being invisible — its members are TOP-LEVEL symbols with no owner and no `contains`, its `implements` clause emits nothing, and the surface reads exactly as script/m14/tmp/dt-exttype-shape.ts MEASURED it pre-fix (`symbol function isA owner=undefined scope=\"\"`, no heritage edge) on 303 declarations of the pinned corpus. Caught by dart/extension-type: expectSymbols/expectRelationships (container, member ownership, heritage) and the two forbidSymbols.",
+    transform: r => {
+      const containers = new Set(["Wrapper", "Plain"])
+      return {
+        ...r,
+        symbols: (r.symbols ?? [])
+          .filter((s: any) => !(s.kind === "extension" && containers.has(s.name)))
+          .map((s: any) => {
+            if (!s.ownerName || !containers.has(s.ownerName)) return s
+            const out: any = { ...s, ownerName: undefined, ownerKind: undefined, scope: "" }
+            if (s.name === "isA") out.kind = "function"
+            if (s.name === "doubled") out.metadata = { ...(s.metadata ?? {}), isTopLevelAccessor: true }
+            return out
+          }),
+        relationships: (r.relationships ?? []).filter((x: any) =>
+          !((x.type === "contains" && containers.has(String(x.source))) || (x.type === "implements" && containers.has(String(x.source))))),
+      }
+    },
+  },
+  {
+    id: "dart/enum-constant-decl-read",
+    language: "dart",
+    defectClass: "fabrication",
+    description: "M60 (#933 dart triage) revert: `enum_constant` leaves the DT-F+ declaration-name gate, so each enum VALUE is published as a bare read of its own enum again (`uses Shape -> circle` / `uses Payload -> small` at the declaration line, confidence 0.6). The sub-threshold confidence is the reason this defect outlived every gate: the analyzer refuses the claim and M12 files it as `unknown`, never as a false positive — only the fixture's four forbids can see it. Caught by dart/enum-constant-decls.",
+    transform: r => {
+      const enums = new Map<string, string[]>([["Shape", ["circle", "square"]], ["Payload", ["small", "large"]]])
+      const fabricated: any[] = []
+      for (const [owner, members] of enums) {
+        for (const m of members) {
+          fabricated.push({ type: "uses", source: owner, target: m, confidence: 0.6, metadata: { isBareRead: true } })
+        }
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+    },
+  },
+  {
+    id: "dart/line-zero-based",
+    language: "dart",
+    defectClass: "line-attribution",
+    description: "M60 line contract (#929 lineage): every line is emitted 0-based (`startPosition.row` instead of `row + 1`), the off-by-one this contract is one keystroke away from — and the class the M59 healing pass exists for (a stored 0 that reads as a real line). Caught by dart/callsite-lines-825: every expect entry lands one line early (the URI at 25, the member name at 45, the override at 54, the callee at 101) and the file-level forbid names line 0 itself.",
+    transform: shiftLineNumbersZeroBased,
+  },
+  {
     id: "swift/drop-implements-edge",
     language: "swift",
     defectClass: "relationship-loss",

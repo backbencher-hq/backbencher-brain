@@ -30,6 +30,7 @@
       "enum_declaration",
       "extension_body",
       "extension_declaration",
+      "extension_type_declaration",
       "factory_constructor_signature",
       "for_statement",
       "formal_parameter",
@@ -67,6 +68,7 @@
       "part_of_directive",
       "program",
       "redirecting_factory_constructor_signature",
+      "representation_declaration",
       "selector",
       "setter_signature",
       "static_final_declaration",
@@ -202,7 +204,7 @@
     ]
   },
   "gap": {
-    "_description": "Dart 3 modern constructs (extension types, records, patterns) are parsed but not yet emitted as symbols; they are tracked as gaps for a future wave. Switch expressions are HANDLED: each switch_expression_case contributes to cyclomatic complexity (family convention, csharp case_switch_label / java switch_block_statement_group parity). The differential floor and fixtures pin the stable core (classes, mixins, extensions, enums, heritage, calls, instantiates, imports, parts).",
+    "_description": "Dart 3 modern constructs (records, patterns) are parsed but not yet emitted as symbols; they are tracked as gaps for a future wave. EXTENSION TYPES left this list in the M60 dart lane (DARTD21): `extension_type_declaration` / `representation_declaration` are containers now, with a fixture that parses both node types (the F6 gate's condition for a `handled_verified` claim). Switch expressions are HANDLED: each switch_expression_case contributes to cyclomatic complexity (family convention, csharp case_switch_label / java switch_block_statement_group parity). The differential floor and fixtures pin the stable core (classes, mixins, extensions, enums, heritage, calls, instantiates, imports, parts).",
     "gaps": [
       {
         "node_type": "record_type, record_type_field, record_type_named_field, record_literal, record_field, field_initializer, initializer_list_entry, initializers",
@@ -212,11 +214,6 @@
       {
         "node_type": "pattern_variable_declaration, variable_pattern, list_pattern, map_pattern, object_pattern, rest_pattern, cast_pattern, null_check_pattern, null_assert_pattern, constant_pattern",
         "missing": "destructuring pattern variables as symbols",
-        "issue": "dart wave (#264 family)"
-      },
-      {
-        "node_type": "extension_type_declaration, representation_declaration",
-        "missing": "Dart 3 extension type symbols",
         "issue": "dart wave (#264 family)"
       },
       {
@@ -453,8 +450,32 @@
         "question": "Second review: `InvitationStatus.declined => ...` under `var x = switch` \u2014 binding or test? And member+blanket double edges in `${count}`?",
         "resolution": "Case TESTS never bind: constant patterns bind only through structural descent (record/list/map) to a declaration or for-in head \u2014 crossing a switch/if boundary tests (the first lane caught the broad version: 3 MISSING). The member(0.6)+blanket(0.9) double in interpolation is inherited DT1 contract (both sides, lane-neutral, presence-pinned) \u2014 ruled, not re-litigated.",
         "issue": "M49.DT2 dart second review"
+      },
+      {
+        "id": "DARTD20",
+        "node_type": "duplicate member / program-scope declarations (#753)",
+        "status": "FIXED",
+        "question": "When ONE scope declares the same callable name twice, whose BODY does the symbol keep? dart kept the FIRST (the #745 wrong-body family).",
+        "resolution": "LAST declaration wins \u2014 the family rule (js pinned last, py #748 both). Implemented as one shared `registerCallable` path: member dedup keys by (kind, name) into `seenMembers`, now a name -> symbol-index Map so the later declaration REPLACES the earlier one in place (same identity, later body/params/line) instead of being dropped, and program scope keys on `module:${name}:${accessorKind}` so a getter/setter pair is two symbols while a true duplicate collapses. Measured first, full extent: 2,547 corpus files, 15 genuine duplicate top-level callables (all in test files), 0 member-scope duplicates that were not census artifacts. Pinned by dart/dup-decl-last-wins and the CAUGHT mutant dart/dup-decl-first-wins.",
+        "issue": "#753 (M49-CONV, CONV-DART-2)"
+      },
+      {
+        "id": "DARTD21",
+        "node_type": "extension_type_declaration, representation_declaration",
+        "status": "FIXED",
+        "question": "Dart 3 `extension type` was parsed but emitted NOTHING as a container: its members surfaced as TOP-LEVEL symbols (no owner, no `contains`), and its `implements`/representation clauses emitted no heritage edge.",
+        "resolution": "An extension type is a container like a class: `extension_type_declaration` is dispatched into the container path (its `identifier[name]` is the symbol, `class_body[body]` the body), members resolve their owner through it, `interfaces` emits `implements`, and the `representation_declaration`'s field (`Wrapper(this.shape$)` shape: `(representation_declaration (identifier))`) becomes an owned `property` while its NAME stays a declaration, never a read. Corpus: 303 declarations over 4 pinned dart-http files. Pinned by dart/extension-type (9 symbols / 12 relationships, including the forbid that caught the fix's own first measurement) and the CAUGHT mutant dart/extension-type-members-unowned. Filed as #935 before the fix.",
+        "issue": "#935 (M49-CONV, CONV-DART-3)"
+      },
+      {
+        "id": "DARTD22",
+        "node_type": "enum_constant",
+        "status": "FIXED",
+        "question": "Is an enum VALUE (`enum Color { red }` \u2014 `(enum_body (enum_constant (identifier)))`) a read of its own enum? The DT-F+ declaration-name gate listed `enum_declaration` (the enum's name) but not the value's node, so every constant was published as `uses Color -> red` on the declaration line.",
+        "resolution": "No. `enum_constant` joins the declaration-name gate on BOTH sides (the analyzer's `isDartDeclNameParent` and the differential oracle's DECL_PARENTS, single rule stated twice) \u2014 a bind, never a read. The constants' ARGUMENTS stay ordinary reads. WHY IT OUTLIVED EVERY GATE: the edge was emitted at confidence 0.6, below the M12 harness's 0.7 claim threshold, so it was filed as `unknown` rather than as a false positive and no gate scored it \u2014 the M12 #933 triage is the instrument that surfaced it. Pinned by dart/enum-constant-decls and the CAUGHT mutant dart/enum-constant-decl-read.",
+        "issue": "#933 (dart half)"
       }
     ],
-    "lastUpdated": "2026-09-06 (M37 master-review 2: DARTD12-DARTD17)"
+    "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22)"
   }
 }
