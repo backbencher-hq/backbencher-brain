@@ -9903,6 +9903,12 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
 //     ONLY when that name is DECLARED in-file (forward references resolve via
 //     the pre-pass; imported/StdEnv names and pattern variables emit nothing),
 //     and `instantiates` for a constructor head outside pattern position;
+//   - an `operator_definition` (a DIFFERENT node from function_declaration) is a
+//     callable wherever it lives — the Clean norm for Eq/Ord instance members,
+//     and the definition half of a module-level operator declaration — so its
+//     body attributes to the operator's unparenthesized name; inside a where
+//     block it is scoped noise, and a comma/brace pattern mis-shape names
+//     nothing;
 //   - where-local functions and their bodies attribute to NOTHING (M11.11
 //     closure boundary), and an application outside any function emits
 //     nothing (the analyzer gates every call on `ctx.currentFunction`).
@@ -9959,6 +9965,42 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
     if (byField?.text) return byField.text
     return firstOf(fn, "identifier")?.text ?? ""
   }
+  // Inner text of `(x)`, or null when the parens hold a PATTERN, not a name —
+  // `# (a,b,c) = expr;` and `# (r,{gst & ls=s})` are tuple/record mis-shapes, and
+  // publishing them would fabricate a symbol no source declares. Mirror of the
+  // analyzer's `unparenthesize`.
+  const unparenthesize = (text: string): string | null => {
+    const inner = text.replace(/^\(|\)$/g, "").trim()
+    if (!inner || /[,{}]/.test(inner)) return null
+    return inner
+  }
+  // The name a `type_signature` declares, across all four shapes the grammar
+  // puts inside `signature_name`: `identifier`, `constructor` (Clean lets an
+  // uppercase name be a FUNCTION), `parenthesized_operator` (`(%.`), and
+  // `parenthesized_name` (`(bitxor)`). The old oracle added `signature_name.text`
+  // verbatim, so a parenthesized declaration entered the declared set as `(==)`
+  // where the analyzer now records `==`.
+  const sigDeclName = (node: any): string | null => {
+    const sig = firstOf(node, "signature_name")
+    const kid = sig && (sig.namedChildCount ?? 0) > 0 ? sig.namedChild(0) : null
+    if (!kid) return null
+    if (kid.type === "identifier" || kid.type === "constructor") return kid.text
+    if (kid.type === "parenthesized_operator" || kid.type === "parenthesized_name") return unparenthesize(kid.text)
+    return null
+  }
+  // The name an `operator_definition` declares — module-level operators are a
+  // DIFFERENT node from `function_declaration` (39 module-level and 192
+  // instance-member definitions on this lane's corpora), so an oracle that knew
+  // only the latter derived no callable for their bodies. Mirror of the
+  // analyzer's `operatorDefinitionName` (the `name` FIELD, unparenthesized).
+  const operatorName = (node: any): string | null => {
+    const nm =
+      node.childForFieldName?.("name") ??
+      firstOf(node, "parenthesized_operator") ??
+      firstOf(node, "parenthesized_name")
+    if (!nm?.text) return null
+    return unparenthesize(nm.text)
+  }
 
   // Pre-pass: in-file declared function/method names (forward references).
   // Mirrors the analyzer's collectDeclaredFunctions, INCLUDING its early stop:
@@ -9970,11 +10012,8 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
     while (stack.length > 0) {
       const n = stack.pop()
       if (n.type === "function_declaration") { const nm = declName(n); if (nm) declared.add(nm); continue }
-      if (n.type === "type_signature") {
-        const sig = firstOf(n, "signature_name")
-        if (sig?.text) declared.add(sig.text)
-        continue
-      }
+      if (n.type === "type_signature") { const nm = sigDeclName(n); if (nm) declared.add(nm); continue }
+      if (n.type === "operator_definition") { const nm = operatorName(n); if (nm) declared.add(nm); continue }
       for (const c of kids(n)) stack.push(c)
     }
   }
@@ -10019,6 +10058,7 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
       if (frame.hasRestore) currentFunction = frame.restore
       else if (
         node.type === "function_declaration" ||
+        node.type === "operator_definition" ||
         node.type === "type_definition" ||
         node.type === "class_declaration" ||
         node.type === "instance_declaration"
@@ -10065,6 +10105,26 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
         scopeStack.push({ node, name: "local", kind: "namespace" })
       } else {
         const nm = declName(node)
+        if (nm) {
+          currentFunction = nm
+          const kind = currentScope && (currentScope.kind === "interface" || currentScope.kind === "class") ? "method" : "function"
+          scopeStack.push({ node, name: nm, kind })
+          pushedScope = true
+        }
+      }
+    } else if (node.type === "operator_definition") {
+      // An operator definition is a CALLABLE wherever it lives (the Clean norm
+      // for Eq/Ord instance members, and the definition half of a module-level
+      // operator declaration) EXCEPT inside a where block, where it is scoped
+      // noise like a where-local function (M11.11). A pattern mis-shape
+      // (`# (a,b,c) = expr;`) names nothing and attributes nothing. Same
+      // three-way split as the analyzer's operator_definition branch.
+      if (currentScope?.kind === "namespace") {
+        stack.push({ node, exit: true, hasRestore: true, restore: currentFunction })
+        currentFunction = undefined
+        scopeStack.push({ node, name: "local", kind: "namespace" })
+      } else {
+        const nm = operatorName(node)
         if (nm) {
           currentFunction = nm
           const kind = currentScope && (currentScope.kind === "interface" || currentScope.kind === "class") ? "method" : "function"
