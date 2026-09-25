@@ -306,10 +306,22 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // gets a `contains` edge like any other declared member.
             const repName = rep?.childForFieldName("name")?.text
             if (rep && repName && repName !== "_") {
+              const repRange = this.nodeToRange(rep)
+              // M60 line contract, FIELD side: the `contains X -> field` edge
+              // NAMES the field, and a wrapped representation declaration
+              // (`X._(\n  ffi.Pointer<…> _$this,\n) implements …`, the pinned
+              // FFI bindings' shape) puts the name on a later line than the
+              // declaration's start. The lane's own consistency probe caught
+              // exactly this as its ONLY inconsistent edge out of 32,989
+              // (`UrlRequestCallbackProxy$…::_$this` claimed line 42, the
+              // container line). The symbol keeps the declaration SPAN; the
+              // edge takes the NAME's line, like every other member.
+              const repNameNode = rep.childForFieldName("name")
+              if (repNameNode) nameLines.set(dartNameLineKey(repName, repRange), this.nodeLine(repNameNode)!)
               symbols.push({
                 name: repName,
                 kind: ASTEngine.SymbolKind.Property,
-                range: this.nodeToRange(rep),
+                range: repRange,
                 scope: name,
                 ownerName: name,
                 ownerKind: ASTEngine.SymbolKind.Extension,
