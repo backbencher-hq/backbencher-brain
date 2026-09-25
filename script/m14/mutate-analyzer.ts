@@ -7559,6 +7559,34 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (typeof x.line_number === "number" ? { ...x, line_number: x.line_number + 1 } : x)) }),
   },
   {
+    id: "objc/drop-relationship-lines",
+    language: "objc",
+    defectClass: "payload-loss",
+    description: "M59.A7 regression: every relationship's `line_number` is dropped again — this is the lane's state at HEAD before the round (0 of 21,591 edges lined, which is why the `lines` cell read `fail`), and the line pins die in objc/edges-and-patterns, objc/selector-identity and objc/payload-and-complexity",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const { line_number, ...rest } = x; return rest }) }),
+  },
+  {
+    id: "objc/line-off-by-one",
+    language: "objc",
+    defectClass: "payload-corruption",
+    description: "M59.A7 regression: every claimed line shifts by one (the 0/1-base confusion whose line the equivalence probe refuses) — the line pins die, and the near-miss forbids are the second net",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (typeof x.line_number === "number" ? { ...x, line_number: x.line_number + 1 } : x)) }),
+  },
+  {
+    id: "objc/contains-line-at-container",
+    language: "objc",
+    defectClass: "payload-corruption",
+    description: "M59.A7 regression, the near-miss the fixtures FORBID: a `contains` row carries the CONTAINER's declaration line instead of the member's. This is the spelling that would have looked plausible here (the lane symbolizes a method at its implementation, so the container's line is the one a careless stamp would reach for), and only the member-name pins and their forbids can see it — a row whose line names `@interface Counter` still confirms a name that IS on that line",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "contains") return x
+        const owner = (r.symbols ?? []).find((s: any) => s.name === x.source)
+        return owner?.range?.startLine ? { ...x, line_number: owner.range.startLine } : x
+      }),
+    }),
+  },
+  {
     id: "objc/drop-implements-edge",
     language: "objc",
     defectClass: "relationship-loss",
@@ -7722,6 +7750,13 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-fabrication",
     description: "OC-E read-gate regression: the @selector name reads again — objc bare-value-reads selector forbid dies",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "maker", target: "fire", isExternal: true, weight: 1, confidence: 0.9, metadata: { isBareRead: true } }] }),
+  },
+  {
+    id: "objc/emit-param-decl-as-bare-read",
+    language: "objc",
+    defectClass: "relationship-fabrication",
+    description: "M60 regression: the block-pointer PARAMETER DECLARATION reads again (`uses runBlock -> handler` from `void (^handler)(NSString *)` alone) — the lane's state at HEAD before this round, mirrored by the pre-fix deriveObjcEdges oracle; caught by objc/bare-value-reads' parameter-declaration forbid",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "runBlock", target: "handler", isExternal: true, weight: 1, confidence: 0.9, metadata: { isBareRead: true } }] }),
   },
   {
     id: "objc/emit-synthesize-as-bare-read",

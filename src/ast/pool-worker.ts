@@ -358,10 +358,21 @@ const NOISE_TARGETS = new Set([
 function filterNoiseRelationships(rels: any[], language: string): any[] {
   if (!rels || rels.length === 0) return rels
 
+  // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
+  // An Objective-C selector ENDS in ':' by definition (`saveUser:`, `addObject:`,
+  // `errorWithDomain:code:userInfo:`) — that colon is the method's arity, not
+  // punctuation — so `split(":")` on a selector produced a trailing empty
+  // segment, `leaf.length < 1` fired, and the filter DROPPED every message-send
+  // target. Measured on the M12 objc differential: 12 of its 30 false negatives
+  // were rows the analyzer had emitted and this filter had eaten — every
+  // parameterized `contains` (`UserService -> initWithName:`) and every `calls`
+  // to a keyword selector (`saveUser -> addObject:`). The noise-blocking intent
+  // is unchanged: a target of `:` or `` still has no non-empty segment and is
+  // still dropped, and `file.h:12`/`std::vector` resolve exactly as before.
   const extractLeaf = (name: string): string => {
     const noLine = name.replace(/:\d+$/, "")
-    const segments = noLine.split(":")
-    const last = segments[segments.length - 1]
+    const segments = noLine.split(":").filter((s) => s.length > 0)
+    const last = segments[segments.length - 1] ?? ""
     const dotParts = last.split(".")
     return dotParts[dotParts.length - 1]
   }

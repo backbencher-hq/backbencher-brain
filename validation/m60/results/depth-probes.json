@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-25T14:53:38.662Z",
+  "at": "2026-09-25T15:33:47.288Z",
   "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
@@ -729,6 +729,26 @@
       "missing": 0,
       "unexplained": 0,
       "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
+    },
+    {
+      "repo": "sdwebimage",
+      "lang": "objc",
+      "files": 104,
+      "truth": 6052,
+      "covered": 6052,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (104/104 .m files — the whole pinned first corpus). hash 74f30e2d774e4d93, analyzer-edges 6,339, coverage 100%, fabrication 0%. Re-derived at this closure, on the code that carries the M59.A7 line contract AND the #D/#B fixes of this round: 21,204 edges over both corpora, 0 unlined, every claimed line re-checked against the source (21,204 token-checked, 0 INCONSISTENT, 0 exemptions used — script/m14/tmp/oc-line-equivalence.ts). Truth and analyzer moved TOGETHER by the #D fix (-38 here, -35 on afnetworking): the block-pointer parameter declaration is no longer a read on EITHER side, so coverage stayed 100%/0 while a fabrication class of 387 raw rows left the corpora."
+    },
+    {
+      "repo": "afnetworking",
+      "lang": "objc",
+      "files": 49,
+      "truth": 2855,
+      "covered": 2855,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (49/49 .m files — the whole pinned second corpus). hash 29684f4b8391be9f, analyzer-edges 3,170, coverage 100%, fabrication 0%. The heuristic-class counts (287 and 315) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap; they did not move with this round's fixes."
     }
   ],
   "current": [
@@ -911,26 +931,6 @@
       "missing": 0,
       "unexplained": 0,
       "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
-    },
-    {
-      "repo": "afnetworking",
-      "lang": "objc",
-      "files": 49,
-      "truth": 2890,
-      "covered": 2890,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "FULL EXTENT (49/49 .m files) with CONV-OC-1 live. hash 29684f4b8391be9f. heuristic=315 are the first-parent override GUESSES the differential counts as honest suspicion, not defects."
-    },
-    {
-      "repo": "sdwebimage",
-      "lang": "objc",
-      "files": 104,
-      "truth": 6090,
-      "covered": 6090,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "FULL EXTENT (104/104 .m files) with CONV-OC-1 live. hash 74f30e2d774e4d93. heuristic=287 first-parent override guesses."
     },
     {
       "repo": "powershell",
@@ -1291,6 +1291,26 @@
       "missing": 0,
       "unexplained": 0,
       "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
+    },
+    {
+      "repo": "sdwebimage",
+      "lang": "objc",
+      "files": 104,
+      "truth": 6052,
+      "covered": 6052,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (104/104 .m files — the whole pinned first corpus). hash 74f30e2d774e4d93, analyzer-edges 6,339, coverage 100%, fabrication 0%. Re-derived at this closure, on the code that carries the M59.A7 line contract AND the #D/#B fixes of this round: 21,204 edges over both corpora, 0 unlined, every claimed line re-checked against the source (21,204 token-checked, 0 INCONSISTENT, 0 exemptions used — script/m14/tmp/oc-line-equivalence.ts). Truth and analyzer moved TOGETHER by the #D fix (-38 here, -35 on afnetworking): the block-pointer parameter declaration is no longer a read on EITHER side, so coverage stayed 100%/0 while a fabrication class of 387 raw rows left the corpora."
+    },
+    {
+      "repo": "afnetworking",
+      "lang": "objc",
+      "files": 49,
+      "truth": 2855,
+      "covered": 2855,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (49/49 .m files — the whole pinned second corpus). hash 29684f4b8391be9f, analyzer-edges 3,170, coverage 100%, fabrication 0%. The heuristic-class counts (287 and 315) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap; they did not move with this round's fixes."
     }
   ],
   "adjudicated": {
@@ -1307,7 +1327,8 @@
     "elixir": "CLEAN at depth on two corpora, including phoenix (the framework dialect the primary corpus does not carry).",
     "erlang": "CLEAN at depth on two corpora (rebar3 200, otp 200) — and this does NOT clear the lane: erlang's fixture lane is 0/9 red, and the two gates measure different things. Named rather than averaged away.",
     "haskell": "#872's haskell analyzer half had never landed. Found by the hledger full-extent draw (`extends Lines -> Spr.Lines` MISSING), root-caused to `processClass` still being the flat-list walk the review itself calls the PRE-fix state, fixed in this round against the oracle's own rule (constraint-tree walk, left-spine class, qualified head verbatim), and pinned by four new fixture extends plus a third mutant. cabal was clean before and after — the canonical draw never sampled the shape, which is exactly why this needed depth to see.",
-    "zig": "CLEAN at depth on two corpora (zig 200/2947 + zls at full extent)."
+    "zig": "CLEAN at depth on two corpora (zig 200/2947 + zls at full extent).",
+    "objc": "#815 + #853 + the M12 adjudication (which found #D and #B below) — CLOSED this round. Both review waves' acceptance checklists are discharged on re-derived evidence: every claim probe-verified against the analyzer AND the oracle (reviews/objc/first-review.md, second-review.md), fixes checked against the lane's F5 lanes at full extent in this session (sdwebimage + afnetworking, 0/0 both), fixture pins + regression mutants per fix (objc fixtures 7/7 with 35 M59.A7 line pins and 11 near-miss forbids; 30/30 objc mutants CAUGHT), spec decisions recorded in script/m14/spec/objc-completeness.json (OC-B/OC-D/OC-E/OC-R1/R2 + OC-F/G/H/R3), and the lane's closure record written (reviews/objc/m60-closure.md)."
   },
   "worstPerLang": {
     "javascript": {
@@ -1390,7 +1411,8 @@
       "maxSample": 104,
       "missing": 0,
       "unexplained": 0,
-      "drawsRed": 0
+      "drawsRed": 0,
+      "note": "GREEN at FULL EXTENT on both corpora: sdwebimage 104/104 files (tree-truth 6,052 / 6,052, analyzer-edges 6,339, MISSING=0 unexplained=0) and afnetworking 49/49 (2,855 / 2,855, analyzer-edges 3,170, 0/0). Both file counts are the WHOLE corpus, not a draw: the two repos together are 153 files, which is why this lane's depth cell has always been answered rather than sampled — the residue class that kept swift's cell red (findings outside a 60-file draw of a 554-file corpus) cannot exist here, and that is a property of the corpus, not of the lane."
     },
     "csharp": {
       "maxSample": 900,
@@ -1489,6 +1511,10 @@
     "#938/#939/#940/#941/#942 (swift depth findings)": "Five analyzer/grammar defects the canonical 60-file draw never touched, each found by taking the canonical corpus to its full 554 files: the case-pattern recovery fabricating a `calls` to the keyword `case` (#938, fixture swift/case-pattern-recovery); the write gate stopping at the postfix wrapper so a force-unwrapped LHS member read as a read (#939, fixture swift/unwrap-write-gate, both halves); the grammar's `nonisolated(unsafe)` blind spot dropping a container and its members (#940, fixture swift/error-recovery-nominal); the dangling `self.init` call plus the self-named owner (#941, fixtures swift/error-recovery-nominal + swift/init-delegation); and the enum-construction splice retiring a DIFFERENT same-scope call to an identically named function (#942, fixture swift/enum-construction-splice). Mutants: swift/case-pattern-keyword-call, swift/unwrap-inner-write-as-read, swift/unwrap-outer-write-as-read, swift/error-recovery-no-container, swift/error-recovery-self-owner-target, swift/error-recovery-dangling-init-call, swift/enum-splice-first-edge, swift/enum-splice-no-conversion — all CAUGHT.",
     "swift line contract (M59.A7 handoff)": "Every published relationship carries the line of the NAME it names: 652 files, 78,747 edges, 0 unlined, 0 out of range, and 77,737 token-checked with 0 INCONSISTENT by script/m14/tmp/sw-line-equivalence.ts (the token checker's own self-test rejects `discount`/`other` for `count`, so it can fail). Found by the fixture dump rather than by a gate: the surviving `calls Endpoint -> method` edge claimed the CONVERTED site's line (L22) instead of the genuine call's (L29); the same round fixed `retiredLines` being GLOBAL instead of per-pool (it silently deleted unrelated lines), the import range including a preceding attribute line, and the per-emit-site stamping. Mutants swift/drop-relationship-lines and swift/line-off-by-one are CAUGHT.",
     "the five depth `n/a` cells with a corpus (clojure, elixir, erlang, haskell, zig)": "These five were the only lanes with a pinned corpus and an F5 row but no deeper draw — the measurable half of the matrix's 22 `depth: n/a` cells. Measured on the primary corpus and the second corpus each. Four are clean on both corpora; haskell found a live defect on the second corpus and it is fixed + pinned in this round.",
-    "#872 (haskell analyzer half)": "Recorded as FIXED + GATED in reviews/m49-hs1-superclass-constraint-tree.md, but the analyzer change was never in the tree: no commit has touched real-haskell-analyzer.ts since 2026-09-14, the oracle's own comment asserts lockstep it does not have, and both guarding mutants recorded `0 -> 0` in F4. The fixture pinned neither a tuple superclass nor the `Applied` class one mutant names. Now: analyzer walks the constraint tree, four shapes pinned (tuple, qualified, tuple-with-qualified, applied head), mutants CAUGHT, F4 survivors 8 -> 6 (all six remaining are erlang's known fixture red)."
+    "#872 (haskell analyzer half)": "Recorded as FIXED + GATED in reviews/m49-hs1-superclass-constraint-tree.md, but the analyzer change was never in the tree: no commit has touched real-haskell-analyzer.ts since 2026-09-14, the oracle's own comment asserts lockstep it does not have, and both guarding mutants recorded `0 -> 0` in F4. The fixture pinned neither a tuple superclass nor the `Applied` class one mutant names. Now: analyzer walks the constraint tree, four shapes pinned (tuple, qualified, tuple-with-qualified, applied head), mutants CAUGHT, F4 survivors 8 -> 6 (all six remaining are erlang's known fixture red).",
+    "#815 (objective-c first review wave) + #853 (second)": "The two acceptance checklists closed on re-derived evidence rather than on the reviews' own prose: OC-B (category exports), OC-D (C type inventory), OC-E (bare value reads), OC-R1/R2 (update operands, @synthesize/@selector), OC-F (enum cases as values), OC-G (@protocol(P) directive), OC-H (function decay) — each with its spec entry and its fixtures/mutants already in the tree, plus this round's F5 re-measurement at full extent on both corpora (0/0) and the closure record.",
+    "objective-c line contract (M59.A7 handoff)": "Before this round the objc analyzer emitted NO `line_number` at all — 0 of 21,591 edges, which is why the LCM's `lines` cell read `fail` for this lane. Now every relationship carries the line of the NAME it names, across all eight kinds the lane publishes (uses 9,669 / calls 8,033 / contains 2,192 / overrides 603 / references 515 / instantiates 507 / extends 52 / implements 20): 0 unlined, 0 out of range, and 21,591 token-checked with 0 INCONSISTENT (the probe self-tests its own boundary-aware token checker first, and needed ZERO exemptions — its two named exemption classes are declared and empty). The stamping is node-driven at every site (the text and the line come from one selection; `fullMessageSelectorNode` exists for exactly that reason), and the post-pass rows take the owning symbol's own declaration line — which is how the pins discovered that a method's owner row names its IMPLEMENTATION line, because an @interface method declaration is not symbolized in this lane (protocols excepted). Pinned by 35 line pins + 11 near-miss forbids across three fixtures and three reverting mutants (objc/drop-relationship-lines, objc/line-off-by-one, objc/contains-line-at-container), each CAUGHT by exactly the pinned fixtures.",
+    "#D — objc: a block-pointer parameter DECLARATION was published as a value read": "The M12 adjudication of this round surfaced one analyzer row that was a defect rather than a fact: `uses register_block -> handler` fired from `void (^handler)(NSString *)` ALONE, with no read anywhere in the function (probe script/m14/tmp/oc-callee-uses.ts: 'decl only' -> uses handler; the C analyzer given the identical function-pointer parameter emits NOTHING, and the identical probe on C still emits only the call). That contradicts the lane's own OC-E ruling ('declaration names' are never reads) and C family parity. Root cause: the bare-read pass tested the parent node type and init_declarator chains, but a block parameter's name nests `identifier < block_pointer_declarator < parenthesized_declarator < function_declarator < parameter_declaration`, so neither test could see it. Fixed structurally in src/ast/real-objective-c-analyzer.ts (isParameterDeclaredName: climb the shared DECLARATOR_WRAPPERS set and require the node to be the enclosing parameter's own `declarator` field). The ORACLE had the same hole and was fixed in the same round (script/m14/differential.ts objcIsParameterDeclaredName) — without that, the analyzer fix would have read as MISSING at full extent (the #916 lesson). Both corpora re-measured: truth 6,090->6,052 and 2,890->2,855, analyzer 6,377->6,339 and 3,205->3,170, coverage 100%/MISSING=0/unexplained=0 on both, heuristic unchanged (287/315). 387 raw rows left the corpora, all of them declaration-site reads. Pinned by the F9 probe battery (F9-PROBE-OBJC-PARAM-DECL, analyzer AND oracle, oracleForbid on) and by a new forbid pin + mutant in objc/bare-value-reads (objc/emit-param-decl-as-bare-read; lane mutants 30/30 -> 31/31 CAUGHT).",
+    "#B — production: the noise filter ate every selector target (17 of the M12 FNs)": "The other half of the M12 adjudication was not the analyzer at all. src/ast/pool-worker.ts filterNoiseRelationships computed a relationship target's 'leaf' as the LAST ':'-separated segment; an Objective-C selector ENDS in ':' because that colon IS its arity, so the leaf was empty, `leaf.length < 1` fired, and the row was dropped as noise BEFORE any consumer saw it — every `calls` to a keyword selector and every `contains` naming a parameterized method. Measured: 17 of the differential's 30 false negatives were rows the analyzer had emitted and this filter had eaten (the M14 fixture/mutant suites cannot see it: they call analyzer.analyze directly, which is why the lane's fixture suite stayed green over it). Fixed by skipping empty colon segments (the noise-blocking intent is unchanged: `:` or `` still has no leaf; period-terminated markdown prose still drops). Blast radius measured over the pinned corpora (script/m14/tmp/noise-filter-blast.ts): sdwebimage 3,641 of 17,696 relationships and afnetworking 1,724 of 8,333 were being silently dropped — 20% of sdwebimage's graph — plus Clyde 161; every other repo in the sample moved by 1-12 rows, and those are markdown/YAML heading keys whose text ends in ':' (`Breaking changes:`), the only other shape with a legitimate trailing colon. Fixture-level cross-lane check (script/m14/tmp/m12-cross-lane-filter-check.ts, all 41 languages, fix applied vs reverted on an otherwise identical tree): ONLY objective-c's differential moves (TP 72->89, FN 17->0, FP 0 in both). Pinned by the F9 probe battery (F9-PROBE-OBJC-PRODUCTION-SELECTOR runs the PRODUCTION entry over a real .m file and fails if the selector rows are dropped) and by the M12 objc differential itself (89/89, below)."
   }
 }

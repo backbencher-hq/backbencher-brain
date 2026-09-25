@@ -1,83 +1,1342 @@
 {
   "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "Independent hand audit of validation/m12/fixtures/objective-c/*.{h,m} against Objective-C semantics and the M11 Objective-C contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: @protocol -> interface with methods -> method; @interface class -> class with properties -> property and methods -> method (+ class methods via the + token, both method kind); @interface Class (Category) -> extension (category, symbol name = class name, never the category label); @implementation -> class with ivars -> property; methods -> method; C functions -> function; file-scope static vars -> variable. Noise: function-local variables (no symbol), blocks (no symbol), typedefs/enums/constants in .h config headers (parsed by the shared C-family path, same as C++ shape_config.h precedent). Relationships (family contract, matches Java M12.01 and C M12.16): contains = REAL container ownership only (class/protocol/extension -> member, interface -> method) — never `global contains X`; extends = class -> superclass, protocol -> adopted protocol; implements = class -> adopted protocol; calls = message expressions (source = enclosing method, target = SELECTOR — the first identifier after the receiver, never the receiver: [NSString stringWithFormat:] -> stringWithFormat not NSString; [super init] -> init not super; [message uppercaseString] -> uppercaseString not message) and C function calls; instantiates = [[Foo alloc] init] / [Foo new] (target = the class receiver); references = import/include dependencies (root -> module). Relationship sources are the enclosing METHOD name; top-level file-scope relationships use root. The config header user_config.h has no class-declaration markers so the shared C-family detection path parses it (constants -> constant, enum -> enum with members, typedef -> type, static var -> variable, function prototype -> function, contains for enum members) — identical to the C++ shape_config.h precedent; the differential encodes exactly what the pipeline emits. The modern `typedef NS_ENUM(...)` macro form is a genuine grammar gap (ERROR node) documented in docs/analyzers/real-objective-c-analyzer.md.",
+  "source": "Independent hand audit of validation/m12/fixtures/objective-c/*.{h,m} against Objective-C semantics and the M11 Objective-C contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: @protocol -> interface with methods -> method; @interface class -> class with properties -> property and methods -> method (+ class methods via the + token, both method kind); @interface Class (Category) -> extension (category, symbol name = class name, never the category label); @implementation -> class with ivars -> property; methods -> method; C functions -> function; file-scope static vars -> variable. Noise: function-local variables (no symbol), blocks (no symbol), typedefs/enums/constants in .h config headers (parsed by the shared C-family path, same as the C++ shape_config.h precedent). METHOD IDENTITY IS THE FULL SELECTOR (OBJCD7): `- (BOOL)saveUser:(NSString *)userId` is `saveUser:`, not `saveUser`, and `[NSError errorWithDomain:… code:… userInfo:…]` calls `errorWithDomain:code:userInfo:` — the selector IS a method's identity in ObjC, and leaf naming collapsed distinct overloads (measured on the pinned corpora: the three `initWithNamespace*` selectors and the `setValue*`/`storeImage*` family, 225 colliding occurrences across 35 owners; the lane's selector-identity fixture pins the distinctness). Relationships (family contract, matches Java M12.01 and C M12.16): contains = REAL container ownership only (class/protocol/extension -> member, interface -> method) — never `global contains X`; extends = class -> superclass, protocol -> adopted protocol; implements = class -> adopted protocol; calls = message expressions (source = enclosing method, target = the FULL SELECTOR — never the receiver, and never a first-keyword form that cannot name an overload) and C function calls; instantiates = `[[Foo alloc] init]` / `[Foo new]` (target = the class receiver); references = import/include dependencies (`root -> module` on the objc-native path) plus, on the shared C-family path, that path's file-scope type_reference rows for typedef aliases (source `global` — the C-family file-scope convention, c.json/cpp.json pin 7 such rows each, e.g. `typedef struct Point Point;` -> `references:global:Point`); uses = value reads (parameters in argument position, body locals, same-file ivars/properties, file globals, bare receivers) with source = the enclosing METHOD — a call callee is never also a `uses` row. Relationship sources are the enclosing METHOD name; top-level file-scope relationships use root on the objc-native path and global on the shared C-family path. The config header user_config.h has no class-declaration markers so the shared C-family path parses it (constants -> constant, enum -> enum with members, typedef -> type, static var -> variable, function prototype -> function, contains for enum members) — identical to the C++ shape_config.h precedent; the differential encodes exactly what the pipeline emits, INCLUDING the value-less `#define` (the C lane's #901 ruling: a `#define` DECLARES a name whatever its body — include guards cost one symbol per guarded file and produce no edge, measured on sqlite, where skipping them lost real reads). The modern `typedef NS_ENUM(...)` macro form is a genuine grammar gap (ERROR node) documented in docs/analyzers/real-objective-c-analyzer.md.\n\nAMENDED 2026-09-25 (M60 objc lane — the same stale-audit class as #933, the swift half). This audit had stopped describing the analyzer in four ways, and every row below was resolved by reading it back against the fixture SOURCE TEXT (each added fact's reference quotes its line), never by moving the number. (a) It carried LEAF method names (`saveUser`, `errorWithDomain`) where the analyzer publishes FULL selectors (OBJCD7): 29 facts were corrected in place, and each corrected reference now names the selector it asserts. (b) It predated the `uses` relationship entirely — the family contract it claims to follow (php/python/dart/c) publishes value reads, and 12 of them (parameter, local, ivar and receiver reads) were missing. (c) Four correct analyzer rows were missing as facts: protocol adoption (`@protocol UserStore <NSObject>` -> extends, which the audit's own prose already asserted), the two shared-C-path type_reference rows for `UserRole`/`UserId`, and the value-less `#define USER_CONFIG_H` constant. (d) One analyzer row was NOT added because it is a defect rather than a fact: `uses register_block -> handler` fired from the block-parameter DECLARATION alone (`void (^handler)(NSString *)`, with no read anywhere in the file), contradicting OC-E's own ruling that declaration names are never reads and C family parity (given the identical function-pointer parameter, the C analyzer emits nothing). Fixed in src/ast/real-objective-c-analyzer.ts (`isParameterDeclaredName`), pinned by the lane's fixture/mutant suite. The amendment also uncovered a PRODUCTION defect that was eating this lane's output before any consumer saw it: src/ast/pool-worker.ts `filterNoiseRelationships` computed a target's \"leaf\" as the LAST ':'-separated segment, so every selector — which ENDS in ':' because that colon IS its arity — read as an empty leaf and was dropped as noise. 17 of this differential's 30 false negatives were rows the analyzer had emitted and that filter had eaten (every parameterized `contains` and every `calls` to a keyword selector); the fix keeps them, and this differential is its regression pin.",
   "facts": [
-    {"id": "sym:Negative.m:10:variable:module_counter", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.m", "line": 10, "attributes": {"name": "module_counter", "symbolKind": "variable"}, "evidence": {"authority": "manual_audit", "reference": "static int module_counter = 0; file-scope static -> variable symbol"}},
-    {"id": "sym:Negative.m:12:function:user_config_version", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.m", "line": 12, "attributes": {"name": "user_config_version", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "int user_config_version(void) { return 2; } definition -> function"}},
-    {"id": "sym:Negative.m:16:extension:NSError", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.m", "line": 16, "attributes": {"name": "NSError", "symbolKind": "extension"}, "evidence": {"authority": "manual_audit", "reference": "@implementation NSError (UserError) -> extension named after class, category label UserError not a symbol"}},
-    {"id": "sym:Negative.m:18:method:userErrorWithCode", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.m", "line": 18, "attributes": {"name": "userErrorWithCode", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "+ (NSError *)userErrorWithCode:(NSInteger)code class method -> method"}},
-    {"id": "sym:Negative.m:23:method:localDescription", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.m", "line": 23, "attributes": {"name": "localDescription", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (NSString *)localDescription instance method -> method; local `prefix` is NOT a symbol"}},
-    {"id": "sym:Negative.m:30:function:register_block", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.m", "line": 30, "attributes": {"name": "register_block", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "void register_block(void (^handler)(NSString *)) -> function; block parameter is not a symbol"}},
-    {"id": "rel:Negative.m:references:root:Foundation/Foundation.h", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "root", "targetId": "Foundation/Foundation.h", "attributes": {"type": "references"}, "evidence": {"authority": "manual_audit", "reference": "#import <Foundation/Foundation.h> system import -> include dependency reference"}},
-    {"id": "rel:Negative.m:references:root:user_config.h", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "root", "targetId": "user_config.h", "attributes": {"type": "references"}, "evidence": {"authority": "manual_audit", "reference": "#import \"user_config.h\" local import -> include dependency reference"}},
-    {"id": "rel:Negative.m:calls:userErrorWithCode:errorWithDomain", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "userErrorWithCode", "targetId": "errorWithDomain", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[NSError errorWithDomain:...] message send -> calls selector errorWithDomain (receiver NSError is not the target)"}},
-    {"id": "rel:Negative.m:calls:localDescription:stringByAppendingString", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "localDescription", "targetId": "stringByAppendingString", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[prefix stringByAppendingString:@\"local\"] -> calls selector stringByAppendingString (local receiver not the target)"}},
-    {"id": "rel:Negative.m:calls:register_block:handler", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "register_block", "targetId": "handler", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "handler(@\"x\") block-parameter invocation -> calls handler (parameter is called; no symbol created for it)"}},
-    {"id": "rel:Negative.m:contains:NSError:userErrorWithCode", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "NSError", "targetId": "userErrorWithCode", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "extension NSError owns class method userErrorWithCode"}},
-    {"id": "rel:Negative.m:contains:NSError:localDescription", "layer": "relationships", "kind": "relationship", "file": "Negative.m", "sourceId": "NSError", "targetId": "localDescription", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "extension NSError owns instance method localDescription"}},
-
-    {"id": "sym:UserService.h:7:interface:UserStore", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 7, "attributes": {"name": "UserStore", "symbolKind": "interface"}, "evidence": {"authority": "manual_audit", "reference": "@protocol UserStore <NSObject> -> interface (protocol)"}},
-    {"id": "sym:UserService.h:8:method:saveUser", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 8, "attributes": {"name": "saveUser", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (BOOL)saveUser:(NSString *)userId protocol method declaration -> method"}},
-    {"id": "sym:UserService.h:9:method:findUser", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 9, "attributes": {"name": "findUser", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (NSString *)findUser:(NSString *)userId protocol method declaration -> method"}},
-    {"id": "sym:UserService.h:12:class:UserService", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 12, "attributes": {"name": "UserService", "symbolKind": "class"}, "evidence": {"authority": "manual_audit", "reference": "@interface UserService : NSObject <UserStore> -> class"}},
-    {"id": "sym:UserService.h:14:property:serviceName", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 14, "attributes": {"name": "serviceName", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "@property (nonatomic, copy) NSString *serviceName; -> property (name lives in struct_declarator)"}},
-    {"id": "sym:UserService.h:15:property:maxUsers", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 15, "attributes": {"name": "maxUsers", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "@property (nonatomic, assign) NSInteger maxUsers; -> property"}},
-    {"id": "sym:UserService.h:17:method:initWithName", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 17, "attributes": {"name": "initWithName", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (instancetype)initWithName:(NSString *)name method declaration -> method"}},
-    {"id": "sym:UserService.h:18:method:registerUser", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 18, "attributes": {"name": "registerUser", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (BOOL)registerUser:(NSString *)userId method declaration -> method"}},
-    {"id": "sym:UserService.h:19:method:sharedService", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.h", "line": 19, "attributes": {"name": "sharedService", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "+ (UserService *)sharedService class method declaration -> method"}},
-    {"id": "rel:UserService.h:references:root:Foundation/Foundation.h", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "root", "targetId": "Foundation/Foundation.h", "attributes": {"type": "references"}, "evidence": {"authority": "manual_audit", "reference": "#import <Foundation/Foundation.h> system import -> include dependency reference"}},
-    {"id": "rel:UserService.h:extends:UserService:NSObject", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "NSObject", "attributes": {"type": "extends"}, "evidence": {"authority": "manual_audit", "reference": "@interface UserService : NSObject -> extends superclass NSObject"}},
-    {"id": "rel:UserService.h:implements:UserService:UserStore", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "UserStore", "attributes": {"type": "implements"}, "evidence": {"authority": "manual_audit", "reference": "@interface UserService : NSObject <UserStore> -> implements protocol UserStore"}},
-    {"id": "rel:UserService.h:contains:UserStore:saveUser", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserStore", "targetId": "saveUser", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "protocol UserStore owns method saveUser"}},
-    {"id": "rel:UserService.h:contains:UserStore:findUser", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserStore", "targetId": "findUser", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "protocol UserStore owns method findUser"}},
-    {"id": "rel:UserService.h:contains:UserService:serviceName", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "serviceName", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns property serviceName"}},
-    {"id": "rel:UserService.h:contains:UserService:maxUsers", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "maxUsers", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns property maxUsers"}},
-    {"id": "rel:UserService.h:contains:UserService:initWithName", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "initWithName", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns method initWithName"}},
-    {"id": "rel:UserService.h:contains:UserService:registerUser", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "registerUser", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns method registerUser"}},
-    {"id": "rel:UserService.h:contains:UserService:sharedService", "layer": "relationships", "kind": "relationship", "file": "UserService.h", "sourceId": "UserService", "targetId": "sharedService", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns class method sharedService"}},
-
-    {"id": "sym:UserService.m:7:class:UserService", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 7, "attributes": {"name": "UserService", "symbolKind": "class"}, "evidence": {"authority": "manual_audit", "reference": "@implementation UserService -> class"}},
-    {"id": "sym:UserService.m:8:property:_activeUserId", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 8, "attributes": {"name": "_activeUserId", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "NSString *_activeUserId; ivar in @implementation block -> property (isInstanceVariable)"}},
-    {"id": "sym:UserService.m:9:property:_savedUsers", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 9, "attributes": {"name": "_savedUsers", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "NSMutableArray *_savedUsers; ivar -> property"}},
-    {"id": "sym:UserService.m:12:method:initWithName", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 12, "attributes": {"name": "initWithName", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (instancetype)initWithName:(NSString *)name method implementation -> method"}},
-    {"id": "sym:UserService.m:21:method:saveUser", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 21, "attributes": {"name": "saveUser", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (BOOL)saveUser:(NSString *)userId method implementation -> method"}},
-    {"id": "sym:UserService.m:27:method:findUser", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 27, "attributes": {"name": "findUser", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (NSString *)findUser:(NSString *)userId method implementation -> method"}},
-    {"id": "sym:UserService.m:34:method:registerUser", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 34, "attributes": {"name": "registerUser", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (BOOL)registerUser:(NSString *)userId method implementation -> method"}},
-    {"id": "sym:UserService.m:38:method:sharedService", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 38, "attributes": {"name": "sharedService", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "+ (UserService *)sharedService class method implementation -> method"}},
-    {"id": "sym:UserService.m:49:extension:UserService", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 49, "attributes": {"name": "UserService", "symbolKind": "extension"}, "evidence": {"authority": "manual_audit", "reference": "@implementation UserService (Validation) -> extension named after class, category label Validation not a symbol"}},
-    {"id": "sym:UserService.m:51:method:isValidUserId", "layer": "ast_extraction", "kind": "symbol", "file": "UserService.m", "line": 51, "attributes": {"name": "isValidUserId", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "- (BOOL)isValidUserId:(NSString *)userId method in category implementation -> method"}},
-    {"id": "rel:UserService.m:references:root:UserService.h", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "root", "targetId": "UserService.h", "attributes": {"type": "references"}, "evidence": {"authority": "manual_audit", "reference": "#import \"UserService.h\" local import -> include dependency reference"}},
-    {"id": "rel:UserService.m:calls:initWithName:init", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "initWithName", "targetId": "init", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[super init] -> calls selector init (receiver super is not the target)"}},
-    {"id": "rel:UserService.m:instantiates:initWithName:NSMutableArray", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "initWithName", "targetId": "NSMutableArray", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "[[NSMutableArray alloc] init] -> instantiates NSMutableArray (alloc receiver)"}},
-    {"id": "rel:UserService.m:calls:saveUser:addObject", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "saveUser", "targetId": "addObject", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[_savedUsers addObject:userId] -> calls selector addObject"}},
-    {"id": "rel:UserService.m:calls:findUser:containsObject", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "findUser", "targetId": "containsObject", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[_savedUsers containsObject:userId] -> calls selector containsObject"}},
-    {"id": "rel:UserService.m:calls:findUser:objectAtIndex", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "findUser", "targetId": "objectAtIndex", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[_savedUsers objectAtIndex:0] -> calls selector objectAtIndex"}},
-    {"id": "rel:UserService.m:calls:registerUser:saveUser", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "registerUser", "targetId": "saveUser", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[self saveUser:userId] -> calls selector saveUser"}},
-    {"id": "rel:UserService.m:calls:sharedService:dispatch_once", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "sharedService", "targetId": "dispatch_once", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "dispatch_once(&onceToken, ...) C function call -> calls dispatch_once"}},
-    {"id": "rel:UserService.m:calls:sharedService:initWithName", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "sharedService", "targetId": "initWithName", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[[UserService alloc] initWithName:@\"default\"] outer message -> calls selector initWithName"}},
-    {"id": "rel:UserService.m:instantiates:sharedService:UserService", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "sharedService", "targetId": "UserService", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "[[UserService alloc] initWithName:] inner [UserService alloc] -> instantiates UserService"}},
-    {"id": "rel:UserService.m:calls:isValidUserId:length", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "isValidUserId", "targetId": "length", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "[userId length] -> calls selector length (local receiver not the target)"}},
-    {"id": "rel:UserService.m:contains:UserService:_activeUserId", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "_activeUserId", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns ivar _activeUserId"}},
-    {"id": "rel:UserService.m:contains:UserService:_savedUsers", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "_savedUsers", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns ivar _savedUsers"}},
-    {"id": "rel:UserService.m:contains:UserService:initWithName", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "initWithName", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns method initWithName"}},
-    {"id": "rel:UserService.m:contains:UserService:saveUser", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "saveUser", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns method saveUser"}},
-    {"id": "rel:UserService.m:contains:UserService:findUser", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "findUser", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns method findUser"}},
-    {"id": "rel:UserService.m:contains:UserService:registerUser", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "registerUser", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns method registerUser"}},
-    {"id": "rel:UserService.m:contains:UserService:sharedService", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "sharedService", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns class method sharedService"}},
-    {"id": "rel:UserService.m:contains:UserService:isValidUserId", "layer": "relationships", "kind": "relationship", "file": "UserService.m", "sourceId": "UserService", "targetId": "isValidUserId", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "class UserService owns category method isValidUserId"}},
-
-    {"id": "sym:user_config.h:15:constant:MAX_USERS", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 15, "attributes": {"name": "MAX_USERS", "symbolKind": "constant"}, "evidence": {"authority": "manual_audit", "reference": "#define MAX_USERS 1000 object-like macro with body -> constant (C-family shared path)"}},
-    {"id": "sym:user_config.h:16:constant:USER_PREFIX", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 16, "attributes": {"name": "USER_PREFIX", "symbolKind": "constant"}, "evidence": {"authority": "manual_audit", "reference": "#define USER_PREFIX @\"usr_\" object-like macro with body -> constant"}},
-    {"id": "sym:user_config.h:19:enum_member:UserRoleGuest", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 19, "attributes": {"name": "UserRoleGuest", "symbolKind": "enum_member"}, "evidence": {"authority": "manual_audit", "reference": "enum member UserRoleGuest -> enum_member"}},
-    {"id": "sym:user_config.h:20:enum_member:UserRoleMember", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 20, "attributes": {"name": "UserRoleMember", "symbolKind": "enum_member"}, "evidence": {"authority": "manual_audit", "reference": "enum member UserRoleMember -> enum_member"}},
-    {"id": "sym:user_config.h:21:enum_member:UserRoleAdmin", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 21, "attributes": {"name": "UserRoleAdmin", "symbolKind": "enum_member"}, "evidence": {"authority": "manual_audit", "reference": "enum member UserRoleAdmin -> enum_member"}},
-    {"id": "sym:user_config.h:18:enum:UserRole", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 18, "attributes": {"name": "UserRole", "symbolKind": "enum"}, "evidence": {"authority": "manual_audit", "reference": "typedef enum { ... } UserRole; plain enum named by typedef -> enum (NS_ENUM macro form is a grammar gap)"}},
-    {"id": "sym:user_config.h:24:type:UserId", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 24, "attributes": {"name": "UserId", "symbolKind": "type"}, "evidence": {"authority": "manual_audit", "reference": "typedef NSString *UserId; alias differs from specifier -> type"}},
-    {"id": "sym:user_config.h:26:variable:defaultRole", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 26, "attributes": {"name": "defaultRole", "symbolKind": "variable"}, "evidence": {"authority": "manual_audit", "reference": "static NSString *const defaultRole = @\"member\"; file-scope static -> variable"}},
-    {"id": "sym:user_config.h:28:function:user_config_version", "layer": "ast_extraction", "kind": "symbol", "file": "user_config.h", "line": 28, "attributes": {"name": "user_config_version", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "int user_config_version(void); prototype -> function"}},
-    {"id": "rel:user_config.h:contains:UserRole:UserRoleGuest", "layer": "relationships", "kind": "relationship", "file": "user_config.h", "sourceId": "UserRole", "targetId": "UserRoleGuest", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "enum UserRole contains member UserRoleGuest"}},
-    {"id": "rel:user_config.h:contains:UserRole:UserRoleMember", "layer": "relationships", "kind": "relationship", "file": "user_config.h", "sourceId": "UserRole", "targetId": "UserRoleMember", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "enum UserRole contains member UserRoleMember"}},
-    {"id": "rel:user_config.h:contains:UserRole:UserRoleAdmin", "layer": "relationships", "kind": "relationship", "file": "user_config.h", "sourceId": "UserRole", "targetId": "UserRoleAdmin", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "enum UserRole contains member UserRoleAdmin"}}
+    {
+      "id": "sym:Negative.m:10:variable:module_counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.m",
+      "line": 10,
+      "attributes": {
+        "name": "module_counter",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "static int module_counter = 0; file-scope static -> variable symbol"
+      }
+    },
+    {
+      "id": "sym:Negative.m:12:function:user_config_version",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.m",
+      "line": 12,
+      "attributes": {
+        "name": "user_config_version",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int user_config_version(void) { return 2; } definition -> function"
+      }
+    },
+    {
+      "id": "sym:Negative.m:16:extension:NSError",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.m",
+      "line": 16,
+      "attributes": {
+        "name": "NSError",
+        "symbolKind": "extension"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@implementation NSError (UserError) -> extension named after class, category label UserError not a symbol"
+      }
+    },
+    {
+      "id": "sym:Negative.m:18:method:userErrorWithCode:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.m",
+      "line": 18,
+      "attributes": {
+        "name": "userErrorWithCode:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "+ (NSError *)userErrorWithCode:(NSInteger)code class method -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:Negative.m:23:method:localDescription",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.m",
+      "line": 23,
+      "attributes": {
+        "name": "localDescription",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (NSString *)localDescription instance method -> method; local `prefix` is NOT a symbol"
+      }
+    },
+    {
+      "id": "sym:Negative.m:30:function:register_block",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.m",
+      "line": 30,
+      "attributes": {
+        "name": "register_block",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "void register_block(void (^handler)(NSString *)) -> function; block parameter is not a symbol"
+      }
+    },
+    {
+      "id": "rel:Negative.m:references:root:Foundation/Foundation.h",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "root",
+      "targetId": "Foundation/Foundation.h",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#import <Foundation/Foundation.h> system import -> include dependency reference"
+      }
+    },
+    {
+      "id": "rel:Negative.m:references:root:user_config.h",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "root",
+      "targetId": "user_config.h",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#import \"user_config.h\" local import -> include dependency reference"
+      }
+    },
+    {
+      "id": "rel:Negative.m:calls:userErrorWithCode::errorWithDomain:code:userInfo:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "userErrorWithCode:",
+      "targetId": "errorWithDomain:code:userInfo:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Negative.m:19 `NSError *error = [NSError errorWithDomain:@\"User\" code:code userInfo:nil];` -> calls userErrorWithCode: -> errorWithDomain:code:userInfo: (message send; the callable identity is the FULL selector — three keyword parts, so the first-keyword form this audit used to carry could not name the overload it means. The receiver `NSError` is not the target. This row could not even reach the differential before the pool-worker leaf fix: its target ends in ':' and was being dropped as noise.)"
+      }
+    },
+    {
+      "id": "rel:Negative.m:uses:userErrorWithCode::code",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "userErrorWithCode:",
+      "targetId": "code",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Negative.m:19 `… code:code userInfo:nil]` -> uses userErrorWithCode: -> code (second keyword's ARGUMENT reads the method parameter `code`; source = the enclosing METHOD per the family `uses` contract, target = the value read. The keyword `code:` before it is a NAME, never a read.)"
+      }
+    },
+    {
+      "id": "rel:Negative.m:uses:userErrorWithCode::error",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "userErrorWithCode:",
+      "targetId": "error",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Negative.m:20 `return error;` -> uses userErrorWithCode: -> error (bare read of the method-local `error`, declared on line 20; locals bind in the OC-E value frame and are read targets, never symbols.)"
+      }
+    },
+    {
+      "id": "rel:Negative.m:calls:localDescription:stringByAppendingString:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "localDescription",
+      "targetId": "stringByAppendingString:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[prefix stringByAppendingString:@\"local\"] -> calls selector stringByAppendingString (local receiver not the target) AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:Negative.m:uses:localDescription:prefix",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "localDescription",
+      "targetId": "prefix",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Negative.m:25 `return [prefix stringByAppendingString:@\"local\"];` -> uses localDescription -> prefix (bare RECEIVER read of the method-local `prefix`, declared line 24 — the message's selector is the call target, the receiver is a value read.)"
+      }
+    },
+    {
+      "id": "rel:Negative.m:calls:register_block:handler",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "register_block",
+      "targetId": "handler",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "handler(@\"x\") block-parameter invocation -> calls handler (parameter is called; no symbol created for it)"
+      }
+    },
+    {
+      "id": "rel:Negative.m:contains:NSError:userErrorWithCode:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "NSError",
+      "targetId": "userErrorWithCode:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "extension NSError owns class method userErrorWithCode AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:Negative.m:contains:NSError:localDescription",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.m",
+      "sourceId": "NSError",
+      "targetId": "localDescription",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "extension NSError owns instance method localDescription"
+      }
+    },
+    {
+      "id": "sym:UserService.h:7:interface:UserStore",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 7,
+      "attributes": {
+        "name": "UserStore",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@protocol UserStore <NSObject> -> interface (protocol)"
+      }
+    },
+    {
+      "id": "sym:UserService.h:8:method:saveUser:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 8,
+      "attributes": {
+        "name": "saveUser:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (BOOL)saveUser:(NSString *)userId protocol method declaration -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.h:9:method:findUser:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 9,
+      "attributes": {
+        "name": "findUser:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (NSString *)findUser:(NSString *)userId protocol method declaration -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.h:12:class:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 12,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@interface UserService : NSObject <UserStore> -> class"
+      }
+    },
+    {
+      "id": "sym:UserService.h:14:property:serviceName",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 14,
+      "attributes": {
+        "name": "serviceName",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@property (nonatomic, copy) NSString *serviceName; -> property (name lives in struct_declarator)"
+      }
+    },
+    {
+      "id": "sym:UserService.h:15:property:maxUsers",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 15,
+      "attributes": {
+        "name": "maxUsers",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@property (nonatomic, assign) NSInteger maxUsers; -> property"
+      }
+    },
+    {
+      "id": "sym:UserService.h:17:method:initWithName:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 17,
+      "attributes": {
+        "name": "initWithName:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (instancetype)initWithName:(NSString *)name method declaration -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.h:18:method:registerUser:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 18,
+      "attributes": {
+        "name": "registerUser:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (BOOL)registerUser:(NSString *)userId method declaration -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.h:19:method:sharedService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.h",
+      "line": 19,
+      "attributes": {
+        "name": "sharedService",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "+ (UserService *)sharedService class method declaration -> method"
+      }
+    },
+    {
+      "id": "rel:UserService.h:references:root:Foundation/Foundation.h",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "root",
+      "targetId": "Foundation/Foundation.h",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#import <Foundation/Foundation.h> system import -> include dependency reference"
+      }
+    },
+    {
+      "id": "rel:UserService.h:extends:UserStore:NSObject",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserStore",
+      "targetId": "NSObject",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.h:7 `@protocol UserStore <NSObject>` -> extends UserStore -> NSObject (protocol adoption is protocol inheritance in this family: the audit's own prose already said \"extends = class -> superclass, protocol -> adopted protocol\" and the analyzer implements it — the FACT was simply missing from the audit's list.)"
+      }
+    },
+    {
+      "id": "rel:UserService.h:extends:UserService:NSObject",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "NSObject",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@interface UserService : NSObject -> extends superclass NSObject"
+      }
+    },
+    {
+      "id": "rel:UserService.h:implements:UserService:UserStore",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "UserStore",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@interface UserService : NSObject <UserStore> -> implements protocol UserStore"
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserStore:saveUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserStore",
+      "targetId": "saveUser:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "protocol UserStore owns method saveUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserStore:findUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserStore",
+      "targetId": "findUser:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "protocol UserStore owns method findUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserService:serviceName",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "serviceName",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns property serviceName"
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserService:maxUsers",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "maxUsers",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns property maxUsers"
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserService:initWithName:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "initWithName:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns method initWithName AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserService:registerUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "registerUser:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns method registerUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.h:contains:UserService:sharedService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.h",
+      "sourceId": "UserService",
+      "targetId": "sharedService",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns class method sharedService"
+      }
+    },
+    {
+      "id": "sym:UserService.m:7:class:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 7,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@implementation UserService -> class"
+      }
+    },
+    {
+      "id": "sym:UserService.m:8:property:_activeUserId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 8,
+      "attributes": {
+        "name": "_activeUserId",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "NSString *_activeUserId; ivar in @implementation block -> property (isInstanceVariable)"
+      }
+    },
+    {
+      "id": "sym:UserService.m:9:property:_savedUsers",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 9,
+      "attributes": {
+        "name": "_savedUsers",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "NSMutableArray *_savedUsers; ivar -> property"
+      }
+    },
+    {
+      "id": "sym:UserService.m:12:method:initWithName:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 12,
+      "attributes": {
+        "name": "initWithName:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (instancetype)initWithName:(NSString *)name method implementation -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.m:21:method:saveUser:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 21,
+      "attributes": {
+        "name": "saveUser:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (BOOL)saveUser:(NSString *)userId method implementation -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.m:27:method:findUser:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 27,
+      "attributes": {
+        "name": "findUser:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (NSString *)findUser:(NSString *)userId method implementation -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.m:34:method:registerUser:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 34,
+      "attributes": {
+        "name": "registerUser:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (BOOL)registerUser:(NSString *)userId method implementation -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:UserService.m:38:method:sharedService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 38,
+      "attributes": {
+        "name": "sharedService",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "+ (UserService *)sharedService class method implementation -> method"
+      }
+    },
+    {
+      "id": "sym:UserService.m:49:extension:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 49,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "extension"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@implementation UserService (Validation) -> extension named after class, category label Validation not a symbol"
+      }
+    },
+    {
+      "id": "sym:UserService.m:51:method:isValidUserId:",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.m",
+      "line": 51,
+      "attributes": {
+        "name": "isValidUserId:",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "- (BOOL)isValidUserId:(NSString *)userId method in category implementation -> method AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:references:root:UserService.h",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "root",
+      "targetId": "UserService.h",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#import \"UserService.h\" local import -> include dependency reference"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:initWithName::init",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "initWithName:",
+      "targetId": "init",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[super init] -> calls selector init (receiver super is not the target) AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:initWithName::name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "initWithName:",
+      "targetId": "name",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:15 `_serviceName = name;` -> uses initWithName: -> name (parameter read on the assignment's RIGHT-hand side; the LHS `_serviceName` is a write and is never a read — SCD1.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:instantiates:initWithName::NSMutableArray",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "initWithName:",
+      "targetId": "NSMutableArray",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[[NSMutableArray alloc] init] -> instantiates NSMutableArray (alloc receiver) AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:saveUser::userId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "saveUser:",
+      "targetId": "userId",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:22 `_activeUserId = userId;` -> uses saveUser: -> userId (parameter read; LHS `_activeUserId` is the write.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:saveUser::addObject:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "saveUser:",
+      "targetId": "addObject:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[_savedUsers addObject:userId] -> calls selector addObject AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:saveUser::_savedUsers",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "saveUser:",
+      "targetId": "_savedUsers",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:23 `[_savedUsers addObject:userId];` -> uses saveUser: -> _savedUsers (bare receiver read of the same-file ivar; the selector `addObject:` is the call target, owned by the calls edge.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:findUser::containsObject:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "findUser:",
+      "targetId": "containsObject:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[_savedUsers containsObject:userId] -> calls selector containsObject AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:findUser::_savedUsers",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "findUser:",
+      "targetId": "_savedUsers",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:28 `if ([_savedUsers containsObject:userId]) {` -> uses findUser: -> _savedUsers (bare receiver read of the ivar inside the condition.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:findUser::userId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "findUser:",
+      "targetId": "userId",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:28 `if ([_savedUsers containsObject:userId]) {` -> uses findUser: -> userId (the message's ARGUMENT reads the method parameter.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:findUser::objectAtIndex:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "findUser:",
+      "targetId": "objectAtIndex:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[_savedUsers objectAtIndex:0] -> calls selector objectAtIndex AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:registerUser::saveUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "registerUser:",
+      "targetId": "saveUser:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[self saveUser:userId] -> calls selector saveUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:registerUser::userId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "registerUser:",
+      "targetId": "userId",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:35 `return [self saveUser:userId];` -> uses registerUser: -> userId (argument read of the parameter; `self` is an implicit receiver and never a read.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:sharedService:dispatch_once",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "sharedService",
+      "targetId": "dispatch_once",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "dispatch_once(&onceToken, ...) C function call -> calls dispatch_once"
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:sharedService:onceToken",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "sharedService",
+      "targetId": "onceToken",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:41 `dispatch_once(&onceToken, ^{` -> uses sharedService -> onceToken (address-of read of the local declared line 40; the CALLEE `dispatch_once` is a call target, never also a read — family parity, and the probe script/m14/tmp/oc-callee-uses.ts shows the C analyzer emitting only the call for the same shape.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:sharedService:initWithName:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "sharedService",
+      "targetId": "initWithName:",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[[UserService alloc] initWithName:@\"default\"] outer message -> calls selector initWithName AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:instantiates:sharedService:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "sharedService",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[[UserService alloc] initWithName:] inner [UserService alloc] -> instantiates UserService"
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:sharedService:shared",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "sharedService",
+      "targetId": "shared",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:44 `return shared;` -> uses sharedService -> shared (bare read of the local declared line 40.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:calls:isValidUserId::length",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "isValidUserId:",
+      "targetId": "length",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "[userId length] -> calls selector length (local receiver not the target) AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:uses:isValidUserId::userId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "isValidUserId:",
+      "targetId": "userId",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService.m:52 `return [userId length] > 0;` -> uses isValidUserId: -> userId (bare RECEIVER read of the parameter; `length` is the zero-argument selector and is the calls target, never a read.)"
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:_activeUserId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "_activeUserId",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns ivar _activeUserId"
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:_savedUsers",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "_savedUsers",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns ivar _savedUsers"
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:initWithName:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "initWithName:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns method initWithName AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:saveUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "saveUser:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns method saveUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:findUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "findUser:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns method findUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:registerUser:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "registerUser:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns method registerUser AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:sharedService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "sharedService",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns class method sharedService"
+      }
+    },
+    {
+      "id": "rel:UserService.m:contains:UserService:isValidUserId:",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.m",
+      "sourceId": "UserService",
+      "targetId": "isValidUserId:",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService owns category method isValidUserId AMENDED 2026-09-25 (M60 objc lane, OBJCD7): this fact's identity was corrected from the leaf name to the method's FULL selector; the analyzer publishes the selector (the lane's selector-identity fixture pins three distinct `initWithNamespace*` overloads, which leaf naming collapsed), and the reference has been re-read against the fixture line quoted here."
+      }
+    },
+    {
+      "id": "sym:user_config.h:11:constant:USER_CONFIG_H",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 11,
+      "attributes": {
+        "name": "USER_CONFIG_H",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "user_config.h:11 `#define USER_CONFIG_H` (value-less, the include guard) -> constant. The shared C-family path mints the name by ruling (#901, measured on sqlite): a `#define` DECLARES a name whatever its body, and the old body-based skip lost real reads (`SQLITE_TCLAPI` decorating a function heading). Cost: one symbol per guarded file, no edge."
+      }
+    },
+    {
+      "id": "sym:user_config.h:15:constant:MAX_USERS",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 15,
+      "attributes": {
+        "name": "MAX_USERS",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#define MAX_USERS 1000 object-like macro with body -> constant (C-family shared path)"
+      }
+    },
+    {
+      "id": "sym:user_config.h:16:constant:USER_PREFIX",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 16,
+      "attributes": {
+        "name": "USER_PREFIX",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#define USER_PREFIX @\"usr_\" object-like macro with body -> constant"
+      }
+    },
+    {
+      "id": "sym:user_config.h:19:enum_member:UserRoleGuest",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 19,
+      "attributes": {
+        "name": "UserRoleGuest",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum member UserRoleGuest -> enum_member"
+      }
+    },
+    {
+      "id": "sym:user_config.h:20:enum_member:UserRoleMember",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 20,
+      "attributes": {
+        "name": "UserRoleMember",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum member UserRoleMember -> enum_member"
+      }
+    },
+    {
+      "id": "sym:user_config.h:21:enum_member:UserRoleAdmin",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 21,
+      "attributes": {
+        "name": "UserRoleAdmin",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum member UserRoleAdmin -> enum_member"
+      }
+    },
+    {
+      "id": "sym:user_config.h:18:enum:UserRole",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 18,
+      "attributes": {
+        "name": "UserRole",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef enum { ... } UserRole; plain enum named by typedef -> enum (NS_ENUM macro form is a grammar gap)"
+      }
+    },
+    {
+      "id": "sym:user_config.h:24:type:UserId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 24,
+      "attributes": {
+        "name": "UserId",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef NSString *UserId; alias differs from specifier -> type"
+      }
+    },
+    {
+      "id": "sym:user_config.h:26:variable:defaultRole",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 26,
+      "attributes": {
+        "name": "defaultRole",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "static NSString *const defaultRole = @\"member\"; file-scope static -> variable"
+      }
+    },
+    {
+      "id": "sym:user_config.h:28:function:user_config_version",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "user_config.h",
+      "line": 28,
+      "attributes": {
+        "name": "user_config_version",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int user_config_version(void); prototype -> function"
+      }
+    },
+    {
+      "id": "rel:user_config.h:references:global:UserRole",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "user_config.h",
+      "sourceId": "global",
+      "targetId": "UserRole",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "user_config.h:22 `} UserRole;` -> references global -> UserRole (the shared C-family path's file-scope type_reference row for a typedef alias; the same path emits it for EVERY typedef — measured `typedef int Foo;` -> `references:global:Foo` — and c.json pins the precedent `typedef struct Point Point;` -> `references:global:Point`. Source id `global` is that path's file-scope convention, not this lane's `root`.)"
+      }
+    },
+    {
+      "id": "rel:user_config.h:references:global:UserId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "user_config.h",
+      "sourceId": "global",
+      "targetId": "UserId",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "user_config.h:24 `typedef NSString *UserId;` -> references global -> UserId (same class as the row above: the shared C-family path's type_reference row for the typedef name, c/cpp precedent `references:global:*`.)"
+      }
+    },
+    {
+      "id": "rel:user_config.h:contains:UserRole:UserRoleGuest",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "user_config.h",
+      "sourceId": "UserRole",
+      "targetId": "UserRoleGuest",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum UserRole contains member UserRoleGuest"
+      }
+    },
+    {
+      "id": "rel:user_config.h:contains:UserRole:UserRoleMember",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "user_config.h",
+      "sourceId": "UserRole",
+      "targetId": "UserRoleMember",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum UserRole contains member UserRoleMember"
+      }
+    },
+    {
+      "id": "rel:user_config.h:contains:UserRole:UserRoleAdmin",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "user_config.h",
+      "sourceId": "UserRole",
+      "targetId": "UserRoleAdmin",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum UserRole contains member UserRoleAdmin"
+      }
+    }
   ]
 }
