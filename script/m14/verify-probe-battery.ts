@@ -2,7 +2,9 @@
  * M14.0.F9 — Defect-Class Probe Battery
  *
  * Every probe encodes a defect class that ACTUALLY occurred in this project
- * (haskell HSD12–HSD19, csharp CSD1–CSD12, php relative_scope, kotlin K1–K8).
+ * (haskell HSD12–HSD19, csharp CSD1–CSD12, php relative_scope, kotlin K1–K8,
+ * M60 objc: a block-pointer parameter declaration read as a value, and the
+ * production entry's noise filter eating every selector target that ends in ':').
  * Gates that mirror the analyzer (F5) cannot see shared holes; probes assert
  * the SEMANTIC contract on both sides:
  *   - analyzer: expected edges present, forbidden edges absent
@@ -58,7 +60,7 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm", scala: "tree-sitter-scala.wasm", go: "tree-sitter-go.wasm" }
+  const cfgs: Record<string, string> = { objc: "tree-sitter-objc.wasm", csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm", scala: "tree-sitter-scala.wasm", go: "tree-sitter-go.wasm" }
   const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfgs[lang])))
   const parser = new P()
   parser.setLanguage(langWasm)
@@ -917,6 +919,100 @@ class Host
       ],
       { oracleForbid: true },
     )
+  }
+
+  // ── M60 objc (#D): a parameter's DECLARED NAME is never a value read ────
+  // The lane's state at HEAD published `uses runBlock -> handler` from
+  // `void (^handler)(NSString *)` ALONE — no read anywhere in the function —
+  // and deriveObjcEdges mirrored it (probe script/m14/tmp/oc-oracle-param-uses.ts:
+  // "block decl only" -> uses handler on both sides, while the C oracle given
+  // the identical function-pointer parameter publishes nothing). Both sides now
+  // refuse the declaration; both must still publish the CALL where the
+  // parameter is invoked, which is what proves the name resolves and this probe
+  // is a declaration gate rather than a missing binding.
+  {
+    const src = [
+      `void runBlock(void (^handler)(NSString *)) {`,
+      `  NSString *tag = @"t";`,
+      `  handler(tag);`,
+      `}`,
+      ``,
+      `void runPtr(void (*cb)(int)) {`,
+      `  int x = 1;`,
+      `  cb(x);`,
+      `}`,
+      ``,
+      `@implementation Applier`,
+      `- (void)apply:(void (^)(int))done {`,
+      `  int n = 1;`,
+      `  done(n);`,
+      `}`,
+      `@end`,
+    ].join("\n") + "\n"
+    await probeLang("F9-PROBE-OBJC-PARAM-DECL", "objc",
+      "M60 (#D): a block-pointer/function-pointer PARAMETER's declared name is never a read — neither the analyzer nor the oracle publishes `uses runBlock -> handler` from the declaration, while BOTH publish the call where it is invoked and the argument read",
+      { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+      "deriveObjcEdges", src,
+      [
+        "calls:runBlock->handler",
+        "uses:runBlock->tag",
+        "calls:runPtr->cb",
+        "uses:runPtr->x",
+        "calls:apply:->done",
+        "uses:apply:->n",
+      ],
+      [
+        "uses:runBlock->handler",
+        "uses:runPtr->cb",
+        "uses:apply:->done",
+      ],
+      { oracleForbid: true },
+    )
+  }
+
+  // ── M60 objc (#B): the production entry keeps selector targets ──────────
+  // `filterNoiseRelationships` (src/ast/pool-worker.ts) computed a target's
+  // "leaf" as the LAST ':'-separated segment. An ObjC selector ENDS in ':'
+  // because that colon IS its arity, so the leaf was empty, `leaf.length < 1`
+  // fired, and EVERY message-send target was dropped before any consumer saw
+  // it: 17 of the M12 objc differential's 30 false negatives were rows the
+  // analyzer had emitted and this filter had eaten. The fixture/mutant suites
+  // cannot see it (M14 fixtures call `analyzer.analyze` directly), so the pin
+  // has to run the PRODUCTION entry over a real file.
+  {
+    const id = "F9-PROBE-OBJC-PRODUCTION-SELECTOR"
+    const description = "M60 (#B): pool-worker's production entry keeps a keyword-selector target that ends in ':' (calls saveUser: -> addObject:, contains UserService -> saveUser:)"
+    try {
+      const os = await import("os")
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "bb-f9-objc-prod-"))
+      const file = path.join(dir, "probe.m")
+      fs.writeFileSync(file, [
+        `#import <Foundation/Foundation.h>`,
+        `@interface UserService`,
+        `- (void)saveUser:(NSString *)userId;`,
+        `@end`,
+        `@implementation UserService {`,
+        `  NSMutableArray *_savedUsers;`,
+        `}`,
+        `- (void)saveUser:(NSString *)userId {`,
+        `  [_savedUsers addObject:userId];`,
+        `}`,
+        `@end`,
+      ].join("\n") + "\n")
+      const pw: any = await import("../../src/ast/pool-worker")
+      const prod = await pw.parseFile(file, dir)
+      const got = (prod.relationships ?? []).map((r: any) => `${r.type}:${r.source}->${r.target}`)
+      const expect = ["calls:saveUser:->addObject:", "contains:UserService->saveUser:"]
+      const missing = expect.filter((e) => !got.includes(e))
+      if (missing.length > 0) {
+        record(id, "objc", description, false, `production entry dropped: ${missing.join(", ")} (the analyzer emits them — this is the noise filter, see src/ast/pool-worker.ts filterNoiseRelationships)`)
+      } else {
+        record(id, "objc", description, true, "ok (production entry preserves trailing-colon selector targets)")
+      }
+      fs.rmSync(dir, { recursive: true, force: true })
+    } catch (e: any) {
+      record(id, "objc", description, false, e.message)
+    }
   }
 
   // ── F7 detector self-test: regexes regress like any code ────────────────

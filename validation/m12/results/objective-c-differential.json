@@ -1,8 +1,270 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:objective-c",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "7f5e3f2ba578e276c6376751d3b6422466fa25b437b0ce5f12d1b93c18845059",
+        "bytes": 75193
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "de307ac2a68ab6baee1f9f4cd0d3b4690d189d21b17e41b78e91c6206106f000",
+        "bytes": 46065
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
+        "bytes": 6421
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
+        "bytes": 7047
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
+        "bytes": 185825
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
+        "bytes": 22600
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "73bb44a7d8748a71e2ceaa030af0fcb771cfa9605b95ed35898965e961eb6a7c",
+        "bytes": 131026
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
+        "bytes": 190596
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
+        "bytes": 119919
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
+        "bytes": 169638
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "df52f3a53ab76a1c2133c4faa037ee3a43b8d9ffb6ddcd1bae8bd4a9ef36449b",
+        "bytes": 125447
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
+        "bytes": 55753
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
+        "bytes": 140355
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "b6fe91d7e477f81dc15f41e1c7659abe97eb146f1b724810311d2ba53e4f8caa",
+        "bytes": 72556
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
+        "bytes": 114562
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
+        "bytes": 88887
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "9b3beab78a85f835718a8d4ded9bc38f2921f7f6163a0010ce23db3c22182d2a",
+        "bytes": 107206
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
+        "bytes": 107709
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "4667d50a6e106580980d82aac2f9a2dd3398d8da11ffe2538efca71676827d51",
+        "bytes": 61224
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
+        "bytes": 18297
+      },
+      "src/brain/database.ts": {
+        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
+        "bytes": 17626
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
+        "bytes": 28163
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
+      },
+      "validation/m12/fixtures/objective-c/Negative.m": {
+        "sha256": "21a60583981b59b88d392a1246c2aa6a33cbea0292cd4e49cef71e1782f866bd",
+        "bytes": 997
+      },
+      "validation/m12/fixtures/objective-c/UserService.h": {
+        "sha256": "0545327297f58f68ce53ffa5d739cc08e2b6ecb3f0e26d8850a0d3de88ae8dd1",
+        "bytes": 603
+      },
+      "validation/m12/fixtures/objective-c/UserService.m": {
+        "sha256": "e478b3ab29f673bd6094a4a5be3bfa78cac34511d64b437d63fdb5860536df98",
+        "bytes": 1178
+      },
+      "validation/m12/fixtures/objective-c/user_config.h": {
+        "sha256": "70ad5293c0ed05c3257e99daf4f974b01a2d258c593467dfce639a73e608e7e7",
+        "bytes": 935
+      },
+      "validation/m12/ground-truth/objective-c.json": {
+        "sha256": "4a65c9586ba951609951f003173c4cf102f776d14cc06414b07f8723333cd697",
+        "bytes": 57888
+      }
+    },
+    "digest": "cc7c1394e671ca704d40a42e496cc79246f966ea9e818fb0eabe0d0b4bdf7297",
+    "parser": null
+  },
   "truthSource": "manual_audit",
-  "truthReference": "Independent hand audit of validation/m12/fixtures/objective-c/*.{h,m} against Objective-C semantics and the M11 Objective-C contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: @protocol -> interface with methods -> method; @interface class -> class with properties -> property and methods -> method (+ class methods via the + token, both method kind); @interface Class (Category) -> extension (category, symbol name = class name, never the category label); @implementation -> class with ivars -> property; methods -> method; C functions -> function; file-scope static vars -> variable. Noise: function-local variables (no symbol), blocks (no symbol), typedefs/enums/constants in .h config headers (parsed by the shared C-family path, same as C++ shape_config.h precedent). Relationships (family contract, matches Java M12.01 and C M12.16): contains = REAL container ownership only (class/protocol/extension -> member, interface -> method) — never `global contains X`; extends = class -> superclass, protocol -> adopted protocol; implements = class -> adopted protocol; calls = message expressions (source = enclosing method, target = SELECTOR — the first identifier after the receiver, never the receiver: [NSString stringWithFormat:] -> stringWithFormat not NSString; [super init] -> init not super; [message uppercaseString] -> uppercaseString not message) and C function calls; instantiates = [[Foo alloc] init] / [Foo new] (target = the class receiver); references = import/include dependencies (root -> module). Relationship sources are the enclosing METHOD name; top-level file-scope relationships use root. The config header user_config.h has no class-declaration markers so the shared C-family detection path parses it (constants -> constant, enum -> enum with members, typedef -> type, static var -> variable, function prototype -> function, contains for enum members) — identical to the C++ shape_config.h precedent; the differential encodes exactly what the pipeline emits. The modern `typedef NS_ENUM(...)` macro form is a genuine grammar gap (ERROR node) documented in docs/analyzers/real-objective-c-analyzer.md.",
+  "truthReference": "Independent hand audit of validation/m12/fixtures/objective-c/*.{h,m} against Objective-C semantics and the M11 Objective-C contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: @protocol -> interface with methods -> method; @interface class -> class with properties -> property and methods -> method (+ class methods via the + token, both method kind); @interface Class (Category) -> extension (category, symbol name = class name, never the category label); @implementation -> class with ivars -> property; methods -> method; C functions -> function; file-scope static vars -> variable. Noise: function-local variables (no symbol), blocks (no symbol), typedefs/enums/constants in .h config headers (parsed by the shared C-family path, same as the C++ shape_config.h precedent). METHOD IDENTITY IS THE FULL SELECTOR (OBJCD7): `- (BOOL)saveUser:(NSString *)userId` is `saveUser:`, not `saveUser`, and `[NSError errorWithDomain:… code:… userInfo:…]` calls `errorWithDomain:code:userInfo:` — the selector IS a method's identity in ObjC, and leaf naming collapsed distinct overloads (measured on the pinned corpora: the three `initWithNamespace*` selectors and the `setValue*`/`storeImage*` family, 225 colliding occurrences across 35 owners; the lane's selector-identity fixture pins the distinctness). Relationships (family contract, matches Java M12.01 and C M12.16): contains = REAL container ownership only (class/protocol/extension -> member, interface -> method) — never `global contains X`; extends = class -> superclass, protocol -> adopted protocol; implements = class -> adopted protocol; calls = message expressions (source = enclosing method, target = the FULL SELECTOR — never the receiver, and never a first-keyword form that cannot name an overload) and C function calls; instantiates = `[[Foo alloc] init]` / `[Foo new]` (target = the class receiver); references = import/include dependencies (`root -> module` on the objc-native path) plus, on the shared C-family path, that path's file-scope type_reference rows for typedef aliases (source `global` — the C-family file-scope convention, c.json/cpp.json pin 7 such rows each, e.g. `typedef struct Point Point;` -> `references:global:Point`); uses = value reads (parameters in argument position, body locals, same-file ivars/properties, file globals, bare receivers) with source = the enclosing METHOD — a call callee is never also a `uses` row. Relationship sources are the enclosing METHOD name; top-level file-scope relationships use root on the objc-native path and global on the shared C-family path. The config header user_config.h has no class-declaration markers so the shared C-family path parses it (constants -> constant, enum -> enum with members, typedef -> type, static var -> variable, function prototype -> function, contains for enum members) — identical to the C++ shape_config.h precedent; the differential encodes exactly what the pipeline emits, INCLUDING the value-less `#define` (the C lane's #901 ruling: a `#define` DECLARES a name whatever its body — include guards cost one symbol per guarded file and produce no edge, measured on sqlite, where skipping them lost real reads). The modern `typedef NS_ENUM(...)` macro form is a genuine grammar gap (ERROR node) documented in docs/analyzers/real-objective-c-analyzer.md.\n\nAMENDED 2026-09-25 (M60 objc lane — the same stale-audit class as #933, the swift half). This audit had stopped describing the analyzer in four ways, and every row below was resolved by reading it back against the fixture SOURCE TEXT (each added fact's reference quotes its line), never by moving the number. (a) It carried LEAF method names (`saveUser`, `errorWithDomain`) where the analyzer publishes FULL selectors (OBJCD7): 29 facts were corrected in place, and each corrected reference now names the selector it asserts. (b) It predated the `uses` relationship entirely — the family contract it claims to follow (php/python/dart/c) publishes value reads, and 12 of them (parameter, local, ivar and receiver reads) were missing. (c) Four correct analyzer rows were missing as facts: protocol adoption (`@protocol UserStore <NSObject>` -> extends, which the audit's own prose already asserted), the two shared-C-path type_reference rows for `UserRole`/`UserId`, and the value-less `#define USER_CONFIG_H` constant. (d) One analyzer row was NOT added because it is a defect rather than a fact: `uses register_block -> handler` fired from the block-parameter DECLARATION alone (`void (^handler)(NSString *)`, with no read anywhere in the file), contradicting OC-E's own ruling that declaration names are never reads and C family parity (given the identical function-pointer parameter, the C analyzer emits nothing). Fixed in src/ast/real-objective-c-analyzer.ts (`isParameterDeclaredName`), pinned by the lane's fixture/mutant suite. The amendment also uncovered a PRODUCTION defect that was eating this lane's output before any consumer saw it: src/ast/pool-worker.ts `filterNoiseRelationships` computed a target's \"leaf\" as the LAST ':'-separated segment, so every selector — which ENDS in ':' because that colon IS its arity — read as an empty leaf and was dropped as noise. 17 of this differential's 30 false negatives were rows the analyzer had emitted and that filter had eaten (every parameterized `contains` and every `calls` to a keyword selector); the fix keeps them, and this differential is its regression pin.",
   "fixtureDir": "validation/m12/fixtures/objective-c",
   "fixtures": [
     "Negative.m",
@@ -13,28 +275,28 @@
   "perFile": {
     "Negative.m": {
       "symbols": 6,
-      "relationships": 7
+      "relationships": 10
     },
     "UserService.h": {
       "symbols": 9,
-      "relationships": 10
+      "relationships": 11
     },
     "UserService.m": {
       "symbols": 10,
-      "relationships": 19
+      "relationships": 28
     },
     "user_config.h": {
-      "symbols": 9,
-      "relationships": 3
+      "symbols": 10,
+      "relationships": 5
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 73,
-      "observedResolved": 73,
-      "truePositive": 73,
+      "expected": 89,
+      "observedResolved": 89,
+      "truePositive": 89,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -49,70 +311,86 @@
     },
     "earliestFailingLayer": null,
     "truePositiveIds": [
-      "rel:Negative.m:calls:localDescription:stringByAppendingString",
+      "rel:Negative.m:calls:localDescription:stringByAppendingString:",
       "rel:Negative.m:calls:register_block:handler",
-      "rel:Negative.m:calls:userErrorWithCode:errorWithDomain",
+      "rel:Negative.m:calls:userErrorWithCode::errorWithDomain:code:userInfo:",
       "rel:Negative.m:contains:NSError:localDescription",
-      "rel:Negative.m:contains:NSError:userErrorWithCode",
+      "rel:Negative.m:contains:NSError:userErrorWithCode:",
       "rel:Negative.m:references:root:Foundation/Foundation.h",
       "rel:Negative.m:references:root:user_config.h",
-      "rel:UserService.h:contains:UserService:initWithName",
+      "rel:Negative.m:uses:localDescription:prefix",
+      "rel:Negative.m:uses:userErrorWithCode::code",
+      "rel:Negative.m:uses:userErrorWithCode::error",
+      "rel:UserService.h:contains:UserService:initWithName:",
       "rel:UserService.h:contains:UserService:maxUsers",
-      "rel:UserService.h:contains:UserService:registerUser",
+      "rel:UserService.h:contains:UserService:registerUser:",
       "rel:UserService.h:contains:UserService:serviceName",
       "rel:UserService.h:contains:UserService:sharedService",
-      "rel:UserService.h:contains:UserStore:findUser",
-      "rel:UserService.h:contains:UserStore:saveUser",
+      "rel:UserService.h:contains:UserStore:findUser:",
+      "rel:UserService.h:contains:UserStore:saveUser:",
       "rel:UserService.h:extends:UserService:NSObject",
+      "rel:UserService.h:extends:UserStore:NSObject",
       "rel:UserService.h:implements:UserService:UserStore",
       "rel:UserService.h:references:root:Foundation/Foundation.h",
-      "rel:UserService.m:calls:findUser:containsObject",
-      "rel:UserService.m:calls:findUser:objectAtIndex",
-      "rel:UserService.m:calls:initWithName:init",
-      "rel:UserService.m:calls:isValidUserId:length",
-      "rel:UserService.m:calls:registerUser:saveUser",
-      "rel:UserService.m:calls:saveUser:addObject",
+      "rel:UserService.m:calls:findUser::containsObject:",
+      "rel:UserService.m:calls:findUser::objectAtIndex:",
+      "rel:UserService.m:calls:initWithName::init",
+      "rel:UserService.m:calls:isValidUserId::length",
+      "rel:UserService.m:calls:registerUser::saveUser:",
+      "rel:UserService.m:calls:saveUser::addObject:",
       "rel:UserService.m:calls:sharedService:dispatch_once",
-      "rel:UserService.m:calls:sharedService:initWithName",
+      "rel:UserService.m:calls:sharedService:initWithName:",
       "rel:UserService.m:contains:UserService:_activeUserId",
       "rel:UserService.m:contains:UserService:_savedUsers",
-      "rel:UserService.m:contains:UserService:findUser",
-      "rel:UserService.m:contains:UserService:initWithName",
-      "rel:UserService.m:contains:UserService:isValidUserId",
-      "rel:UserService.m:contains:UserService:registerUser",
-      "rel:UserService.m:contains:UserService:saveUser",
+      "rel:UserService.m:contains:UserService:findUser:",
+      "rel:UserService.m:contains:UserService:initWithName:",
+      "rel:UserService.m:contains:UserService:isValidUserId:",
+      "rel:UserService.m:contains:UserService:registerUser:",
+      "rel:UserService.m:contains:UserService:saveUser:",
       "rel:UserService.m:contains:UserService:sharedService",
-      "rel:UserService.m:instantiates:initWithName:NSMutableArray",
+      "rel:UserService.m:instantiates:initWithName::NSMutableArray",
       "rel:UserService.m:instantiates:sharedService:UserService",
       "rel:UserService.m:references:root:UserService.h",
+      "rel:UserService.m:uses:findUser::_savedUsers",
+      "rel:UserService.m:uses:findUser::userId",
+      "rel:UserService.m:uses:initWithName::name",
+      "rel:UserService.m:uses:isValidUserId::userId",
+      "rel:UserService.m:uses:registerUser::userId",
+      "rel:UserService.m:uses:saveUser::_savedUsers",
+      "rel:UserService.m:uses:saveUser::userId",
+      "rel:UserService.m:uses:sharedService:onceToken",
+      "rel:UserService.m:uses:sharedService:shared",
       "rel:user_config.h:contains:UserRole:UserRoleAdmin",
       "rel:user_config.h:contains:UserRole:UserRoleGuest",
       "rel:user_config.h:contains:UserRole:UserRoleMember",
+      "rel:user_config.h:references:global:UserId",
+      "rel:user_config.h:references:global:UserRole",
       "symbol:Negative.m:10:variable:module_counter",
       "symbol:Negative.m:12:function:user_config_version",
       "symbol:Negative.m:16:extension:NSError",
-      "symbol:Negative.m:18:method:userErrorWithCode",
+      "symbol:Negative.m:18:method:userErrorWithCode:",
       "symbol:Negative.m:23:method:localDescription",
       "symbol:Negative.m:30:function:register_block",
       "symbol:UserService.h:12:class:UserService",
       "symbol:UserService.h:14:property:serviceName",
       "symbol:UserService.h:15:property:maxUsers",
-      "symbol:UserService.h:17:method:initWithName",
-      "symbol:UserService.h:18:method:registerUser",
+      "symbol:UserService.h:17:method:initWithName:",
+      "symbol:UserService.h:18:method:registerUser:",
       "symbol:UserService.h:19:method:sharedService",
       "symbol:UserService.h:7:interface:UserStore",
-      "symbol:UserService.h:8:method:saveUser",
-      "symbol:UserService.h:9:method:findUser",
-      "symbol:UserService.m:12:method:initWithName",
-      "symbol:UserService.m:21:method:saveUser",
-      "symbol:UserService.m:27:method:findUser",
-      "symbol:UserService.m:34:method:registerUser",
+      "symbol:UserService.h:8:method:saveUser:",
+      "symbol:UserService.h:9:method:findUser:",
+      "symbol:UserService.m:12:method:initWithName:",
+      "symbol:UserService.m:21:method:saveUser:",
+      "symbol:UserService.m:27:method:findUser:",
+      "symbol:UserService.m:34:method:registerUser:",
       "symbol:UserService.m:38:method:sharedService",
       "symbol:UserService.m:49:extension:UserService",
-      "symbol:UserService.m:51:method:isValidUserId",
+      "symbol:UserService.m:51:method:isValidUserId:",
       "symbol:UserService.m:7:class:UserService",
       "symbol:UserService.m:8:property:_activeUserId",
       "symbol:UserService.m:9:property:_savedUsers",
+      "symbol:user_config.h:11:constant:USER_CONFIG_H",
       "symbol:user_config.h:15:constant:MAX_USERS",
       "symbol:user_config.h:16:constant:USER_PREFIX",
       "symbol:user_config.h:18:enum:UserRole",
@@ -133,11 +411,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:objective-c",
-      "wallTimeMs": 34.536228,
-      "userCpuMs": 59.494,
-      "systemCpuMs": 17.078,
-      "peakRssBytes": 264904704,
-      "rssDeltaBytes": 3055616,
+      "wallTimeMs": 35.405218,
+      "userCpuMs": 81.692,
+      "systemCpuMs": 8.339,
+      "peakRssBytes": 294989824,
+      "rssDeltaBytes": 6291456,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

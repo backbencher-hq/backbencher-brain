@@ -9,6 +9,16 @@ const BARE_READ_SKIP: ReadonlySet<string> = new Set([
   "self", "super", "nil", "Nil", "NULL", "YES", "NO", "true", "false", "_cmd",
 ])
 
+// OC-E: the declarator wrappers a DECLARED NAME can nest under (shared by the
+// init-declarator and parameter-declarator name tests). Climbing these is how
+// `handler` inside `void (^handler)(NSString *)` is recognized as a declaration
+// rather than a read.
+const DECLARATOR_WRAPPERS: ReadonlySet<string> = new Set([
+  "array_declarator", "pointer_declarator", "parenthesized_declarator", "attributed_declarator",
+  "abstract_pointer_declarator", "abstract_block_pointer_declarator", "block_pointer_declarator",
+  "function_declarator",
+])
+
 // ============================================================================
 // CONV-OC-1: framework detection — the family contract (CONV-CS-2 reference,
 // swift/java siblings) over this lane's existing markers.
@@ -188,6 +198,10 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // or a string_literal child (`"Local.h"`). No source-text scanning.
       if (node.type === "preproc_include") {
         let modName: string | null = null
+        // The NODE the module name was read from: M59.A7 asks for the line of the NAME, and
+        // a name captured as a string has no line. For a quoted include the name is the
+        // string_content INSIDE the quotes (the quotes are punctuation, not part of a name).
+        let modNode: Node | null = null
         let isSystem = false
         for (let ci = 0; ci < node.namedChildCount; ci++) {
           const cn = node.namedChild(ci)
@@ -195,10 +209,11 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (cn.type === "system_lib_string") {
             isSystem = true
             const txt = cn.text
-            if (txt.length >= 2) modName = txt.slice(1, txt.length - 1)
+            if (txt.length >= 2) { modName = txt.slice(1, txt.length - 1); modNode = cn }
           } else if (cn.type === "string_literal") {
             const content = this.findChild(cn, (n) => n.type === "string_content")
             modName = content ? content.text : cn.text
+            modNode = content ?? cn
           }
           if (modName) break
         }
@@ -217,6 +232,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: modName,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.9,
+            line_number: this.nodeLine(modNode ?? node),
             metadata: { isObjCImport: true },
           })
         }
@@ -267,7 +283,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 for (let pj = 0; pj < cn.namedChildCount; pj++) {
                   const pn = cn.namedChild(pj)
                   if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) {
-                    relationships.push({ source: nameNode.text, target: pn.text, type: ASTEngine.RelationshipType.Implements, confidence: 1.0, metadata: { objcSpecific: true, isProtocol: true, isCategoryProtocol: true } })
+                    relationships.push({ source: nameNode.text, target: pn.text, type: ASTEngine.RelationshipType.Implements, confidence: 1.0, line_number: this.nodeLine(pn), metadata: { objcSpecific: true, isProtocol: true, isCategoryProtocol: true } })
                   }
                 }
               }
@@ -276,23 +292,27 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // Plain class: extract superclass + protocols for relationships.
             let foundName = false
             let superName: string | null = null
+            // The node each inherited name was read from. A name captured as a string has no
+            // line, and the M59.A7 contract asks for the line of the NAME.
+            let superNode: Node | null = null
             let protocols: string[] = []
+            const protocolNodes: Node[] = []
             for (let ci = 0; ci < node.namedChildCount; ci++) {
               const cn = node.namedChild(ci)
               if (!cn) continue
               if (cn.type === "identifier" && !foundName) { foundName = true; continue }
               // Pinned grammar: superclass is the plain identifier after `:`;
               // protocols live under parameterized_arguments > type_name.
-              if ((cn.type === "type_identifier" || cn.type === "identifier") && !superName) { superName = cn.text }
+              if ((cn.type === "type_identifier" || cn.type === "identifier") && !superName) { superName = cn.text; superNode = cn }
               if (cn.type === "parameterized_arguments") {
                 for (let pj = 0; pj < cn.namedChildCount; pj++) {
                   const pn = cn.namedChild(pj)
-                  if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) protocols.push(pn.text)
+                  if (pn && (pn.type === "type_identifier" || pn.type === "identifier" || pn.type === "type_name")) { protocols.push(pn.text); protocolNodes.push(pn) }
                 }
               }
             }
-            if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, metadata: { objcSpecific: true } }) }
-            for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, confidence: 1.0, metadata: { objcSpecific: true, isProtocol: true } }) }
+            if (superName) { relationships.push({ source: nameNode.text, target: superName, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, line_number: this.nodeLine(superNode ?? nameNode), metadata: { objcSpecific: true } }) }
+            for (let pk = 0; pk < protocols.length; pk++) { relationships.push({ source: nameNode.text, target: protocols[pk], type: ASTEngine.RelationshipType.Implements, confidence: 1.0, line_number: this.nodeLine(protocolNodes[pk] ?? nameNode), metadata: { objcSpecific: true, isProtocol: true } }) }
             symbols.push({
               name: nameNode.text,
               kind: ASTEngine.SymbolKind.Class,
@@ -324,7 +344,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (let ci = 0; ci < refList.namedChildCount; ci++) {
               const cn = refList.namedChild(ci)
               if (cn && cn.type === "identifier") {
-                relationships.push({ source: nameNode.text, target: cn.text, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, metadata: { objcSpecific: true, isProtocolInheritance: true } })
+                relationships.push({ source: nameNode.text, target: cn.text, type: ASTEngine.RelationshipType.Extends, confidence: 1.0, line_number: this.nodeLine(cn), metadata: { objcSpecific: true, isProtocolInheritance: true } })
               }
             }
           }
@@ -633,10 +653,14 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             const firstKw = msgSel.split(":")[0]
             if (firstKw === "alloc" || firstKw === "new") {
               let receiverLeaf: string | null = null
+              // The node the instantiated CLASS name was read from: the line belongs to the
+              // reference site's name, not to the enclosing statement's start.
+              let recvTargetNode: Node | null = null
               const receiver = node.namedChild(0)
               if (receiver) {
                 if (receiver.type === "identifier" || receiver.type === "type_identifier") {
                   receiverLeaf = receiver.text
+                  recvTargetNode = receiver
                 } else if (receiver.type === "message_expression") {
                   // Nested: [[Logger alloc] ...] — the inner message's receiver
                   // is the class. If the inner selector is itself alloc/new,
@@ -646,12 +670,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                     const innerRecv = receiver.namedChild(0)
                     if (innerRecv && (innerRecv.type === "identifier" || innerRecv.type === "type_identifier")) {
                       receiverLeaf = innerRecv.text
+                      recvTargetNode = innerRecv
                     }
                   }
                 }
               }
               if (receiverLeaf) {
-                relationships.push({ source: activeScope, target: receiverLeaf, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, metadata: { isObjCAlloc: true } })
+                relationships.push({ source: activeScope, target: receiverLeaf, type: ASTEngine.RelationshipType.Instantiates, confidence: 0.9, line_number: this.nodeLine(recvTargetNode ?? node), metadata: { isObjCAlloc: true } })
               }
             } else {
               relationships.push({
@@ -659,6 +684,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: msgSel,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.95,
+                line_number: this.nodeLine(this.fullMessageSelectorNode(node) ?? node),
                 metadata: { isMessageExpression: true }
               })
             }
@@ -698,6 +724,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   target: ktext,
                   type: ASTEngine.RelationshipType.Uses,
                   confidence: 0.9,
+                  line_number: this.nodeLine(kk.n),
                   metadata: { isBareRead: true, isMessageArgument: !this.sameNode(kk.n, recvNode) },
                 })
               }
@@ -726,6 +753,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: funcNode.text,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.95,
+              line_number: this.nodeLine(funcNode),
               metadata: { isCFunctionCall: true }
             })
         }
@@ -747,6 +775,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: field.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(field),
               metadata: { isFieldRead: true, relationshipType: "field_access" },
             })
           }
@@ -756,7 +785,8 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // A bare identifier in a body is a read when it names a bound value
       // (parameter, body local, same-file ivar/property, file global).
       // Everything else is a name, not a read: declarations (declarator
-      // names via isDeclaratorName, direct declaration children, parameter
+      // names via isDeclaratorName and the parameter-declarator chain via
+      // isParameterDeclaredName, direct declaration children, parameter
       // and method keywords), message parts (handled in the send branch
       // above), call callees (CGD17 parity — the callee is a call, not a
       // read), assignment-LHS writes (span-matched like the C analyzer),
@@ -780,7 +810,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             isName = true
           } else if (ptype === "for_statement" && parent && this.isForInVariable(parent, node)) {
             isName = true
-          } else if (this.isDeclaratorName(node)) {
+          } else if (this.isDeclaratorName(node) || this.isParameterDeclaredName(node)) {
             isName = true
           }
           if (!isName && isBoundValue(text, nextOwner)) {
@@ -789,6 +819,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(node),
               metadata: { isBareRead: true },
             })
           }
@@ -845,6 +876,13 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (nm.isFieldRead) pm.isFieldRead = true
           if (nm.isBareRead) pm.isBareRead = true
           prev.metadata = pm
+          // M59.A7: a merged duplicate must not LOSE the line the other copy carried —
+          // the dedup key is (type, source, target), so two reads of the same member at
+          // different sites collapse to one row and the survivor keeps the first line it
+          // was given (which is the site the row already claimed).
+          if (prev.line_number === undefined && relationships[i].line_number !== undefined) {
+            prev.line_number = relationships[i].line_number
+          }
         } else {
           uniqueRelMap.set(rk, relationships[i])
         }
@@ -865,6 +903,10 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: s.name,
             type: ASTEngine.RelationshipType.Contains,
             confidence: 1.0,
+            // M59.A7: the line of the name this edge NAMES — the member's own declared
+            // name line, taken from the symbol's range (the symbol and the edge come from
+            // one selection: the same node named both).
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { isContained: true },
           })
         }
@@ -924,6 +966,9 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.95,
+            // M59.A7: the OVERRIDING member's own declaration line (the base's copy lives
+            // in another translation unit, and the row is written here).
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { isOverride: true },
           })
         }
@@ -940,6 +985,7 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: `${base}.${s.name}`,
             type: ASTEngine.RelationshipType.Overrides,
             confidence: 0.5,
+            ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
             metadata: { isOverride: true, reasonCode: "first-parent-guess" },
           })
         }
@@ -1099,16 +1145,53 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Initializer values live outside that subtree and stay reads.
    */
   private isDeclaratorName(node: Node): boolean {
-    const wrappers = new Set(["array_declarator", "pointer_declarator", "parenthesized_declarator", "attributed_declarator", "abstract_pointer_declarator", "block_pointer_declarator", "function_declarator"])
     let cur: Node | null = node
     let p: Node | null = node.parent ?? null
-    while (p && wrappers.has(p.type) && cur) {
+    while (p && DECLARATOR_WRAPPERS.has(p.type) && cur) {
       cur = p
       p = p.parent ?? null
     }
     if (!p || p.type !== "init_declarator" || !cur) return false
     const head = p.namedChild(0)
     return !!head && this.spanContains(head, cur)
+  }
+
+  /**
+   * OC-E: true when the identifier is the DECLARED NAME of a parameter
+   * (`void (^handler)(NSString *)`, `NSString *name`, `int n`). Structural, not
+   * textual: climb the name-wrapping declarators and require that the node we
+   * land on IS the enclosing parameter's own `declarator` field — a declarator
+   * subtree holds no expressions, so nothing inside it can be a value read, and
+   * OC-E's rule is that "declaration names" are names, never reads.
+   *
+   * The direct `identifier < parameter_declaration` shape was already covered by
+   * the parent-type test. The BLOCK-POINTER parameter is the shape that leaked:
+   * its name nests `identifier < block_pointer_declarator <
+   * parenthesized_declarator < function_declarator < parameter_declaration`, so
+   * neither the parent-type test nor isDeclaratorName (which needs an
+   * init_declarator) could see it, and the declaration line was published as a
+   * `uses` read. Measured before the fix (script/m14/tmp/oc-callee-uses.ts):
+   * `void register_block(void (^handler)(NSString *)) { int x = 0; }` emitted
+   * `uses register_block -> handler` with NO read anywhere in the file — while
+   * the C analyzer, handed the same function-pointer parameter, emits nothing
+   * (family parity), and the M12 fixture read it as a false positive against a
+   * truth that only counts the call.
+   */
+  private isParameterDeclaredName(node: Node): boolean {
+    let cur: Node | null = node
+    let p: Node | null = node.parent ?? null
+    while (p && DECLARATOR_WRAPPERS.has(p.type) && cur) {
+      cur = p
+      p = p.parent ?? null
+    }
+    if (!p || !cur) return false
+    if (p.type !== "parameter_declaration" && p.type !== "method_parameter") return false
+    const declared = p.childForFieldName("declarator")
+    // method_parameter exposes no `declarator` field (probe 2026-09: its named
+    // children are method_type + identifier) — there its identifier child IS the
+    // name, never a read target.
+    if (!declared) return p.type === "method_parameter"
+    return this.spanContains(declared, cur)
   }
   /**
    * True when the identifier is a for-in loop variable
@@ -1280,6 +1363,44 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `[foo bar]` -> bar, `[self.imageTable removeAllObjects]` ->
    * removeAllObjects, `[[Foo alloc] init]` -> init).
    */
+  /**
+   * The FIRST selector node of a message send — the same selection `fullMessageSelector`
+   * builds its text from, returned as a NODE.
+   *
+   * The M59.A7 contract is that a relationship's `line_number` is the line of the NAME it
+   * names, and a name captured as a string has no line. swift's round paid for this lesson
+   * with a surviving `calls Endpoint -> method` edge that claimed the CONVERTED site's line,
+   * because the text and the line came from two different selections; here they come from one
+   * walk, and the equivalence probe re-checks that the node's own text is a prefix of the
+   * published selector (a keyword send) or equal to it (a zero-argument send).
+   */
+  private fullMessageSelectorNode(node: Node): Node | null {
+    let firstKeyword: Node | null = null
+    let lastIdentifier: Node | null = null
+    const count = node.childCount
+    for (let i = 0; i < count; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.isNamed && c.type === "identifier") {
+        const nxt = i + 1 < count ? node.child(i + 1) : null
+        if (nxt && !nxt.isNamed && nxt.type === ":") {
+          if (!firstKeyword) firstKeyword = c
+        } else {
+          lastIdentifier = c
+        }
+      }
+    }
+    return firstKeyword ?? lastIdentifier
+  }
+
+  /**
+   * The 1-based line a node is WRITTEN on. The unit of the M59.A7 contract, and deliberately
+   * computed from the node itself: two runs of the same file must produce the same number.
+   */
+  private nodeLine(n: Node): number {
+    return n.startPosition.row + 1
+  }
+
   private fullMessageSelector(node: Node): string {
     let sel = ""
     let lastId: string | null = null
