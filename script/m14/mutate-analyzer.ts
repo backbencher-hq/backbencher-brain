@@ -714,6 +714,46 @@ function cleanExportDuplicateName() {
   }
 }
 
+/** M59.A7 / dimension 8, half one: the pre-fix payload. Every relationship was
+ *  published with no `line_number` field at all, so a consumer of the graph has
+ *  an edge it cannot navigate — measured before the change: 0 of 11,108 corpus
+ *  edges named a site. Caught by every `line_number` constraint in the lane's
+ *  fixtures and by F9-PROBE-CLEAN-EDGE-LINE's coverage clause. */
+function cleanEdgeLineAbsent() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    if (!rels.some((rel) => rel && "line_number" in rel)) return r
+    return {
+      ...r,
+      relationships: rels.map((rel) => {
+        const { line_number, ...rest } = rel
+        return rest
+      }),
+    }
+  }
+}
+
+/** M59.A7 / dimension 8, half two: the field stays and the dedupe key goes back
+ *  to `source|type|target`, so the FIRST site's line is kept and every later
+ *  site's edge is swallowed — per-SET, not per-site. Faithful to the pre-fix key
+ *  verbatim; measured on the corpus, 1,722 edges belong to multi-site groups. A
+ *  fixture that pinned only the field's presence would survive this, which is why
+ *  the lane's line pins are written in PAIRS (the same name at two lines). */
+function cleanEdgeLinePerSet() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    const seen = new Set<string>()
+    const out: any[] = []
+    for (const rel of rels) {
+      const key = `${rel.source}|${rel.type}|${rel.target}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(rel)
+    }
+    return out.length === rels.length ? r : { ...r, relationships: out }
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -9914,6 +9954,23 @@ export const MUTANTS: Mutant[] = [
     defectClass: "name-surface",
     description: "The name-keyed export dedupe removed: a file that publishes one name in two KINDS offers it twice. Reached honestly — `instance == Collision` publishes its Class under the instance TARGET type, so 59 of the lane's 312 corpus files collided. Caught by clean/instance-target-name-collision via the exports-family invariant.",
     transform: cleanExportDuplicateName(),
+  },
+  // M59.A7 / formula §8 (dimension 8): the site line. Two mutants, because the
+  // contract has two halves and a fixture that only pinned the field's PRESENCE
+  // would survive the second one.
+  {
+    id: "clean/edge-line-absent",
+    language: "clean",
+    defectClass: "payload-loss",
+    description: "The pre-dimension-8 state: every relationship is published with no `line_number` field at all (measured: 0 of 11,108 edges named a site before this landed; the store can then navigate an edge to nothing). Caught by every line_number constraint in the lane's fixtures — expression-shapes (5 pins), signature-definition-merge (4), instance-target-name-collision (4), definition-module-interface (4), import-modules-alias-884 (4) — and by F9-PROBE-CLEAN-EDGE-LINE's coverage clause.",
+    transform: cleanEdgeLineAbsent(),
+  },
+  {
+    id: "clean/edge-line-per-set",
+    language: "clean",
+    defectClass: "relationship-identity",
+    description: "The line stays but the dedupe key goes back to `source|type|target`, i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: 1,722 edges belong to multi-site groups, so this collapses them). Caught by the per-site half of the pins — expression-shapes' `contains ExpressionShapes -> Point` at BOTH 19 and 31 with expectRelationshipCount equals 2, likewise instance-target-name-collision's two `contains -> Collision` lines, and F9-PROBE-CLEAN-EDGE-LINE's `calls f` at three distinct lines. A fixture pinning only `line_number: <one line>` would NOT catch this — which is why those pins are written in pairs.",
+    transform: cleanEdgeLinePerSet(),
   },
 ]
 

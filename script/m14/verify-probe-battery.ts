@@ -1266,6 +1266,49 @@ class Host
       ["instantiates:wrap->Just"],
       ["instantiates:unwrap->Just"],
     )
+
+    // 5. Dimension 8 / M59.O2: every edge names its SITE LINE, 1-based, on the
+    // name-bearing node, PER-SITE. The probe is written so each clause can fail on
+    // its own: a per-SET implementation (the pre-fix state: no line field at all,
+    // one edge per source|type|target) passes the coverage clause trivially when
+    // the line is absent, so the multiplicity clause is the one that pins per-site,
+    // and the anchor clause is the one the store's resolver actually reads (#921).
+    {
+      const lineSrc = [
+        "module EdgeLines",       // 1
+        "import StdEnv",          // 2
+        "f :: !Int -> Int",       // 3
+        "f x = x + 1",            // 4
+        "g :: !Int -> Int",       // 5
+        "g a = f a",              // 6
+        "h :: !Int -> Int",       // 7
+        "h b = f b",              // 8
+        "k :: !Int -> Int",       // 9
+        "k c = f c",              // 10
+        "",
+      ].join("\n")
+      const res = await analyzeWith("clean", cleanCfg, lineSrc)
+      const rels = (res.relationships ?? []) as any[]
+      const noLine = rels.filter((r) => !(typeof r.line_number === "number" && Number.isInteger(r.line_number) && r.line_number > 0))
+      const zero = rels.filter((r) => r.line_number === 0)
+      const callLines = rels.filter((r) => r.type === "calls" && r.target === "f").map((r) => r.line_number).sort((a, b) => a - b)
+      const perSite = callLines.length === 3 && new Set(callLines).size === 3 && callLines.join(",") === "6,8,10"
+      const containsF = rels.find((r) => r.type === "contains" && r.target === "f")
+      const fSym = (res.symbols ?? []).find((s: any) => s.name === "f")
+      const anchorOk = !!containsF && !!fSym && containsF.line_number === fSym.range?.startLine
+      const importEdge = rels.find((r) => r.type === "references" && r.target === "StdEnv")
+      const importOk = importEdge?.line_number === 2
+      const pass = rels.length > 0 && noLine.length === 0 && zero.length === 0 && perSite && anchorOk && importOk
+      record(
+        "F9-PROBE-CLEAN-EDGE-LINE",
+        "clean",
+        "every relationship carries the SITE LINE it happened on — 1-based, positive, never a fabricated 0, on the name-bearing node — and the line is part of the dedupe key: a function called from three lines is three edges at those three lines, while a `contains` edge carries the child's own naming line (the #921 anchor the store resolves with)",
+        pass,
+        pass
+          ? `ok (${rels.length} edges, all with a line; calls f at lines ${callLines.join(",")}; contains f at the definition's line; import at L2)`
+          : `edges=${rels.length} withoutLine=${noLine.length} zero=${zero.length} callsToF=[${callLines.join(",")}] (per-site needs 3 distinct) containsAnchor=${anchorOk} importLine=${importEdge?.line_number}`,
+      )
+    }
   }
 
   // ── F7 detector self-test: regexes regress like any code ────────────────

@@ -218,7 +218,9 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       const _owner = s.ownerName
       if (_owner && _owner !== s.name) {
-        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {})
+        // The CHILD's own naming line: this is the anchor that resolves the
+        // intended target among same-named siblings (#921).
+        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
       }
     }
 
@@ -291,6 +293,19 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Relationship emission (dedupe by source|type|target identity).
   // ==========================================================================
+  // Dimension 8 / M59.O2 (reviews/LANE-AUDIT-FORMULA.md §8): an edge carries the SITE
+  // LINE it happened on — 1-based, on the name-bearing node, per-site and not
+  // per-set — because navigation is the product. Two consequences, both deliberate:
+  //
+  //   * the line is part of the DEDUPE KEY (the clojure lane's rule,
+  //     real-clojure-analyzer.ts:1388): a function called from three lines is three
+  //     edges at three lines, not one edge at whichever line the walk saw first.
+  //     The store already keys its rows the same way (parallel-indexer.ts:4439),
+  //     and for a `contains` edge the child's own naming line is what resolves the
+  //     intended target among same-named siblings (#921);
+  //   * a line that is not a positive integer is recorded as ABSENT, never as 0.
+  //     M59.O2: the contract is "the site line or NULL" — a fabricated 0 reads as
+  //     "line 0" to every reader downstream.
   private pushRel(
     ctx: CleanContext,
     source: string,
@@ -298,11 +313,27 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     type: ASTEngine.RelationshipType,
     confidence: number,
     metadata: Record<string, any> = {},
+    line?: number,
   ) {
-    const key = `${source}|${type}|${target}`
+    const hasLine = typeof line === "number" && Number.isInteger(line) && line > 0
+    const key = `${source}|${type}|${target}|${hasLine ? line : ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
-    ctx.relationships.push({ source, target, type, confidence, metadata })
+    ctx.relationships.push({
+      source,
+      target,
+      type,
+      confidence,
+      metadata,
+      ...(hasLine ? { line_number: line as number } : {}),
+    })
+  }
+
+  /** 1-based line of a node, or undefined — never 0 (M59.O2). */
+  private lineOf(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    const line = node.startPosition.row + 1
+    return line > 0 ? line : undefined
   }
 
   // The name a `type_signature` DECLARES, normalized across the four shapes the
@@ -428,10 +459,16 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         metadata: { cleanSpecific: true, isQualified, alias },
       })
-      this.pushRel(ctx, ctx.currentModule || "", modName, ASTEngine.RelationshipType.References, 1.0, {
-        cleanSpecific: true,
-        isImportDependency: true,
-      })
+      // Site line = the imported module NAME's line (`import StdEnv` → that line).
+      this.pushRel(
+        ctx,
+        ctx.currentModule || "",
+        modName,
+        ASTEngine.RelationshipType.References,
+        1.0,
+        { cleanSpecific: true, isImportDependency: true },
+        this.lineOf(modNode),
+      )
       if (modName.indexOf("StdEnv") !== -1) ctx.patterns["Standard Environment"] = true
     }
   }
@@ -566,10 +603,17 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { cleanSpecific: true, className, targetType },
     })
 
-    this.pushRel(ctx, targetType, className, ASTEngine.RelationshipType.Implements, 1.0, {
-      cleanSpecific: true,
-      isInstance: true,
-    })
+    // Site line = the class NAME node's line (`instance Eq ParseState where` → that
+    // line). For an implements edge the class name is the name-bearing node.
+    this.pushRel(
+      ctx,
+      targetType,
+      className,
+      ASTEngine.RelationshipType.Implements,
+      1.0,
+      { cleanSpecific: true, isInstance: true },
+      this.lineOf(classNode),
+    )
 
     ctx.patterns["Type Classes"] = true
     scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Class })
@@ -676,10 +720,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Qualified call: M.lookup / 'Data.Error'.isError → full qualified target
     // (the Erlang gen_server:cast precedent).
     if (head.type === "qualified_identifier") {
-      this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Calls, 0.9, {
-        cleanSpecific: true,
-        isQualifiedCall: true,
-      })
+      this.pushRel(
+        ctx,
+        fn,
+        head.text,
+        ASTEngine.RelationshipType.Calls,
+        0.9,
+        { cleanSpecific: true, isQualifiedCall: true },
+        this.lineOf(head),
+      )
       return
     }
 
@@ -689,10 +738,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // via isPatternPosition.
     if (head.type === "constructor") {
       if (this.isPatternPosition(node)) return
-      this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Instantiates, 0.9, {
-        cleanSpecific: true,
-        isConstructorApplication: true,
-      })
+      this.pushRel(
+        ctx,
+        fn,
+        head.text,
+        ASTEngine.RelationshipType.Instantiates,
+        0.9,
+        { cleanSpecific: true, isConstructorApplication: true },
+        this.lineOf(head),
+      )
       return
     }
 
@@ -701,10 +755,15 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // not local symbols → no edge). Self-recursion IS emitted.
     if (head.type === "identifier") {
       if (ctx.declaredFunctions.has(head.text)) {
-        this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Calls, 0.9, {
-          cleanSpecific: true,
-          context: "local function call",
-        })
+        this.pushRel(
+          ctx,
+          fn,
+          head.text,
+          ASTEngine.RelationshipType.Calls,
+          0.9,
+          { cleanSpecific: true, context: "local function call" },
+          this.lineOf(head),
+        )
       }
     }
   }
