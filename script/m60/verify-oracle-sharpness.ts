@@ -47,15 +47,25 @@
  * in the tree. A lane whose closure contains a dirty file is marked `dirty` and can
  * never be cited as re-derivable.
  *
+ * CITING IT. The state is a working file in $TMPDIR, so no gate may read it; `--emit`
+ * writes the cited form to validation/m60/results/oracle-sharpness.json, and it
+ * publishes a lane only when that lane's row is a measurement OF THIS TREE — the
+ * closure digest must equal the digest it was measured at, no closure input may be
+ * dirty, and the verdict must be citable. Every other lane is listed in `refused`
+ * with its reason, and `complete` is true only when every lane published: an
+ * incomplete artefact says so rather than looking finished. The completion matrix
+ * reads this file for its `sharp` column, so a lane whose published (leaf) rule hid
+ * rows cannot be reported as done.
+ *
  * CLI:
  *   bun script/m60/verify-oracle-sharpness.ts --full            # measure every lane not yet measured
  *   bun script/m60/verify-oracle-sharpness.ts --lang java,scala # measure named lanes, merge into state
  *   bun script/m60/verify-oracle-sharpness.ts --report          # print the table, run nothing
+ *   bun script/m60/verify-oracle-sharpness.ts --emit            # write the citable artefact (refuses per lane, never per run)
  *   bun script/m60/verify-oracle-sharpness.ts --selftest        # the instrument's own negatives
  *
  * State: $BB_M60_OS_STATE, default $TMPDIR/m60-oracle-sharpness.json (a working
- * file, NOT evidence — the m14 evidence harness owns validation/m14/results, and an
- * artifact is emitted there only when every lane is measured at one clean digest).
+ * file, NOT evidence — `--emit` is what turns a measurement into evidence).
  * Logs: one file per lane next to the state file, so a kill loses at most one lane.
  */
 import * as fs from "node:fs"
@@ -79,9 +89,20 @@ const LANE_ORDER = Object.keys(LANGS)
 
 const sha = (buf: Buffer | string) => createHash("sha256").update(buf).digest("hex").slice(0, 16)
 const shaFile = (p: string) => { try { return sha(fs.readFileSync(p)) } catch { return "absent" } }
-const git = (args: string[]) => {
-  const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" })
-  return (r.stdout ?? "").trim()
+/**
+ * git, WITHOUT trimming its stdout. Porcelain v1 is `XY<space>path` per line, and the
+ * leading space of the FIRST line is data: trimming the whole output ate it, so every
+ * dirty-path message named its first file one character short (`src/ast/...` was
+ * reported as `rc/ast/...` — measured on the typescript row of this sweep). The count
+ * was right, which is why nothing else moved; the message sent a reader to a path that
+ * does not exist. Consumers trim what they need.
+ */
+const git = (args: string[]) => spawnSync("git", args, { cwd: ROOT, encoding: "utf8" }).stdout ?? ""
+
+/** Porcelain v1 -> paths. The status prefix is two characters plus one space, sliced
+ *  (never trimmed) per line; blank lines are an artefact of the trailing newline. */
+export function porcelainPaths(stdout: string): string[] {
+  return stdout.split("\n").filter(Boolean).map((l) => l.slice(3).trim())
 }
 
 /** The lane's IMPORT CLOSURE — the files whose content the measurement actually
@@ -122,9 +143,8 @@ function fingerprint(lang: string) {
   const inputs = [...files].map((f) => path.relative(ROOT, f)).sort()
   const digests = inputs.map((rel) => `${rel}:${shaFile(path.join(ROOT, rel))}`)
   if (wasm) digests.push(`wasm/${path.basename(wasm)}:${shaFile(wasm)}`)
-  const dirty = git(["status", "--porcelain", "--", ...inputs])
-    .split("\n").filter(Boolean).map((l) => l.slice(3).trim())
-  const head = git(["rev-parse", "HEAD"])
+  const dirty = porcelainPaths(git(["status", "--porcelain", "--", ...inputs]))
+  const head = git(["rev-parse", "HEAD"]).trim()
   return {
     head,
     headShort: head.slice(0, 8),
@@ -153,6 +173,7 @@ interface RepoRow {
 }
 interface LaneRow {
   lang: string
+  at?: string
   measuredAt: ReturnType<typeof fingerprint>
   after: ReturnType<typeof fingerprint> | null
   durationMs: number
@@ -263,7 +284,7 @@ function measureLane(lang: string): LaneRow {
   const log = fs.readFileSync(logPath, "utf8")
   const parsed = parseLane(lang, log)
   const row: Omit<LaneRow, "verdict"> = {
-    lang, measuredAt: before, after, durationMs, log: logPath,
+    lang, at: new Date().toISOString(), measuredAt: before, after, durationMs, log: logPath,
     repos: parsed.repos, breaches: parsed.breaches,
     hardSamples: parsed.hardSamples, softSamples: parsed.softSamples,
     stdoutTail: proc.status === 0 ? null : log.trim().split("\n").slice(-6),
@@ -279,6 +300,132 @@ function saveState(state: any) {
   state.updatedAt = new Date().toISOString()
   fs.mkdirSync(path.dirname(STATE), { recursive: true })
   fs.writeFileSync(STATE, JSON.stringify(state, null, 2) + "\n")
+}
+
+const ARTIFACT = process.env.BB_M60_OS_ARTIFACT ?? path.join(ROOT, "validation", "m60", "results", "oracle-sharpness.json")
+
+/** The verdicts that describe a RUN rather than an analyzer: a row carrying one of
+ *  these is not evidence about the lane, so it can never be published as if it were
+ *  (the instrument's own rule — see verdictOf — and the reason `--emit` refuses per
+ *  lane instead of refusing the whole run). */
+const NOT_CITABLE = new Set(["tree-moved", "dirty", "run-failed", "instrument-breach", "no-output", "no-corpus"])
+
+/**
+ * WHY A LANE'S ROW IS OR IS NOT PUBLISHABLE — the pure half of the emission, so the
+ * decision can be falsified (--selftest) instead of trusted. Note the asymmetry it
+ * encodes: a verdict that describes the ANALYZER (`hard-masks`) IS published, because
+ * a finding is the thing this artefact exists to carry, while a verdict that
+ * describes the RUN (`tree-moved`, `dirty`, `run-failed`, `instrument-breach`,
+ * `no-output`, `no-corpus`) is refused, because it is not evidence about the lane.
+ * A digest mismatch is checked before dirtiness: a moved input means the row's bytes
+ * are gone, a dirty one means they were never committed.
+ */
+export function emitRefusal(
+  verdict: string,
+  measuredDigest: string,
+  nowDigest: string,
+  dirty: { atMeasurement: string[]; now: string[] },
+): string | null {
+  if (verdict === "not-measured") return "not measured"
+  if (measuredDigest !== nowDigest) return `inputs moved since measurement (${measuredDigest} → ${nowDigest})`
+  const uniq = (xs: string[]) => [...new Set(xs)].filter(Boolean)
+  const a = uniq(dirty.atMeasurement)
+  const n = uniq(dirty.now)
+  // The two sides are reported SEPARATELY: a row measured while an input was dirty can
+  // never be published (its bytes are in no commit), even after that input is committed
+  // — and a reader chasing the refusal needs to know which of the two it is looking at.
+  // Measured confusion: the first version said "closure carries dirty input(s)" for both,
+  // so a refusal after the upstream commit still read as if the tree were dirty now.
+  if (a.length > 0 && n.length > 0) return `closure was dirty when measured (${a.join(", ")}) and is still dirty now (${n.join(", ")})`
+  if (a.length > 0) return `closure was dirty when measured: ${a.join(", ")} — the row's bytes are in no commit, even if that file has landed since`
+  if (n.length > 0) return `closure is dirty now: ${n.join(", ")} — the row would not describe a commit`
+  if (NOT_CITABLE.has(verdict)) return `verdict ${verdict}`
+  return null
+}
+
+/**
+ * EMIT — the cited form (validation/m60/results/oracle-sharpness.json).
+ *
+ * What makes a row evidence here is not that it was measured, but that it still
+ * describes THIS tree: the lane's closure digest must equal the digest the row was
+ * measured at, and no input in that closure may be dirty (a dirty input means the
+ * bytes that produced the row are not in any commit). A lane that fails either test
+ * goes to `refused` with its reason, so an incomplete artefact is visibly incomplete.
+ * Zero citable lanes refuses to write at all: an artefact with no rows would be
+ * quotable as a table of results while carrying none.
+ */
+function emitArtifact(state: any): number {
+  const rows: Record<string, any> = {}
+  const refused: { lang: string; reason: string }[] = []
+  for (const lang of LANE_ORDER) {
+    const row: LaneRow | undefined = state.lanes?.[lang]
+    if (!row) { refused.push({ lang, reason: "not measured" }); continue }
+    const now = fingerprint(lang)
+    const reason = emitRefusal(row.verdict, row.measuredAt.digest, now.digest, {
+      atMeasurement: [...(row.measuredAt.dirty ?? []), ...(row.after?.dirty ?? [])],
+      now: now.dirty ?? [],
+    })
+    if (reason) { refused.push({ lang, reason }); continue }
+    const sum = (f: (r: RepoRow) => number) => row.repos.reduce((a, r) => a + f(r), 0)
+    rows[lang] = {
+      verdict: row.verdict,
+      at: row.at ?? state.updatedAt ?? null,
+      head: row.measuredAt.headShort,
+      digest: row.measuredAt.digest,
+      files: sum((r) => r.files),
+      truth: sum((r) => r.truth),
+      publishedMissing: sum((r) => r.publishedMissing),
+      strictMissing: sum((r) => r.strictMissing),
+      hidden: sum((r) => r.hidden),
+      hard: sum((r) => r.hard),
+      soft: sum((r) => r.soft),
+      hardSamples: row.hardSamples.slice(0, 10),
+      softSamples: row.softSamples.slice(0, 5),
+      repos: row.repos.map((r) => ({
+        repo: r.repo, files: r.files, truth: r.truth, publishedMissing: r.publishedMissing,
+        strictMissing: r.strictMissing, hidden: r.hidden, hard: r.hard, soft: r.soft, hash: r.hash,
+      })),
+    }
+  }
+  const complete = Object.keys(rows).length === LANE_ORDER.length
+  if (Object.keys(rows).length === 0) {
+    console.error("emit refused: no lane's row is a measurement of this tree (nothing to publish is not a zero-count result)")
+    for (const r of refused) console.error(`  ${pad(r.lang, 11)} ${r.reason}`)
+    return 2
+  }
+  const artefact = {
+    gate: "M60.SHARP",
+    title: "Oracle sharpness — the differential's leaf matching rule re-run against each lane's truth as written",
+    at: new Date().toISOString(),
+    commit: git(["rev-parse", "HEAD"]).trim(),
+    instrument: "script/m60/verify-oracle-sharpness.ts",
+    method: "one `bun script/m14/differential.ts --lang X --sample " + SAMPLE + "` per lane with BB_F5_STRICT=1 BB_F5_SHOW_SAMPLES=1 into a private cold pool; the artefact publishes a lane only when its import closure still has the digest it was measured at and carries no dirty input; a lane whose published rule matched a DIFFERENT qualified target is `hard` and revokes the lane's `diff` cell in M60.LCM (a lane with hard>0 cannot be reported as done), `soft` is a spelling asymmetry and is disclosed, not libelled",
+    measuredSources: {
+      clean: true,
+      dirty: [],
+      rule: "git status --porcelain over each lane's import closure (differential + the lane's analyzer + its grammar binary), sampled before and after every lane",
+    },
+    expected: LANE_ORDER.length,
+    citable: Object.keys(rows).length,
+    complete,
+    rows,
+    refused,
+    columns: {
+      verdict: "agrees | hidden-soft-only | soft-asymmetry (hard>0 is `hard-masks` and is refused only when its inputs moved — it is published, because it is a finding)",
+      files: "corpus files the lane's own discovery admitted, at full extent",
+      truth: "truth rows derived for those files",
+      publishedMissing: "rows MISSING under the published leaf rule (normTarget = last segment)",
+      strictMissing: "rows not covered when the target is compared AS WRITTEN (generics stripped, qualifier kept)",
+      hidden: "strict misses the published rule nevertheless covered (- hidden == publishedMissing is asserted per repo)",
+      hard: "hidden rows where BOTH sides are qualified and disagree — the groovy d6a7cd89 shape",
+      soft: "hidden rows where one side is a bare leaf — a spelling contract question",
+    },
+  }
+  fs.mkdirSync(path.dirname(ARTIFACT), { recursive: true })
+  fs.writeFileSync(ARTIFACT, JSON.stringify(artefact, null, 1) + "\n")
+  console.log(`\nemitted ${path.relative(ROOT, ARTIFACT)} — ${Object.keys(rows).length}/${LANE_ORDER.length} lane(s) citable${complete ? " (complete)" : " (INCOMPLETE: the refused list is part of the artefact)"}`)
+  for (const r of refused) console.log(`  refused ${pad(r.lang, 11)} ${r.reason}`)
+  return 0
 }
 
 const pad = (s: any, n: number) => String(s).padEnd(n)
@@ -362,6 +509,44 @@ function selftest(): number {
   })())
   check("parser records HARD/SOFT samples for triage", parseLane("javascript", `${repoLine}\n${strictLine}\n    HARD file.js :: calls a -> X.y   vs analyzer -> Z.y\n`).hardSamples.length === 1)
 
+  // The emission's own negatives. An artefact that publishes a lane it should refuse
+  // is worse than no artefact, so the decision is falsified on both sides: the
+  // run-describing verdicts must be refused, the analyzer-describing ones must be
+  // PUBLISHED (a hard mask is the finding this file exists to carry), and the two
+  // provenance tests must convict with a message that names what moved.
+  const cleanDirty = { atMeasurement: [], now: [] }
+  const atM = { atMeasurement: ["src/ast/real-kotlin-analyzer.ts"], now: [] }
+  const nowD = { atMeasurement: [], now: ["src/ast/real-erlang-analyzer.ts"] }
+  check("emit: a clean measured row is publishable", emitRefusal("agrees", "d1", "d1", cleanDirty) === null)
+  check("emit: a HARD MASK is published, not refused (a finding is evidence)", emitRefusal("hard-masks", "d1", "d1", cleanDirty) === null)
+  check("emit: the soft verdicts are published too", ["hidden-soft-only", "soft-asymmetry"].every((v) => emitRefusal(v, "d1", "d1", cleanDirty) === null))
+  check("emit: every run-describing verdict is refused",
+    ["tree-moved", "dirty", "run-failed", "instrument-breach", "no-output", "no-corpus"].every((v) => (emitRefusal(v, "d1", "d1", cleanDirty) ?? "").startsWith("verdict ")))
+  check("emit: an unmeasured lane is refused by name", emitRefusal("not-measured", "d1", "d1", cleanDirty) === "not measured")
+  check("emit: a moved input is refused and the two digests are named",
+    /inputs moved since measurement \(d1 → d2\)/.test(emitRefusal("agrees", "d1", "d2", cleanDirty) ?? ""))
+  check("emit: a closure dirty WHEN MEASURED is refused even if that file has landed since",
+    /was dirty when measured/.test(emitRefusal("agrees", "d1", "d1", atM) ?? "") &&
+    (emitRefusal("agrees", "d1", "d1", atM) ?? "").includes("src/ast/real-kotlin-analyzer.ts"))
+  check("emit: a closure dirty NOW is a different message (the distinction the first version lost)",
+    /is dirty now/.test(emitRefusal("agrees", "d1", "d1", nowD) ?? "") &&
+    (emitRefusal("agrees", "d1", "d1", nowD) ?? "").includes("src/ast/real-erlang-analyzer.ts"))
+  check("emit: dirty on both sides names both lists",
+    /was dirty when measured .*and is still dirty now/.test(emitRefusal("agrees", "d1", "d1", { atMeasurement: ["a.ts"], now: ["b.ts"] }) ?? ""))
+  check("emit: a lane that is BOTH moved and dirty reports the move (the stronger statement)",
+    /inputs moved/.test(emitRefusal("agrees", "d1", "d2", nowD) ?? ""))
+  check("emit: duplicate dirty inputs are named once",
+    (emitRefusal("agrees", "d1", "d1", { atMeasurement: ["a.ts", "a.ts"], now: [] }) ?? "").match(/a\.ts/g)?.length === 1)
+  // The porcelain reader is part of the instrument because the message it builds is
+  // what a reader acts on. Measured defect: a whole-output trim made the FIRST dirty
+  // path lose its leading character, so the refusal named `rc/ast/...` for a file
+  // whose path starts `src/`.
+  check("porcelain: a leading-space status line keeps its path intact",
+    porcelainPaths(" M src/ast/real-kotlin-analyzer.ts\n")[0] === "src/ast/real-kotlin-analyzer.ts")
+  check("porcelain: the first line is not special-cased (the trim bug's exact site)",
+    porcelainPaths(" M a.ts\n?? b.ts\n")[0] === "a.ts" && porcelainPaths(" M a.ts\n?? b.ts\n")[1] === "b.ts")
+  check("porcelain: a missing trailing newline is not a path", porcelainPaths(" M a.ts").length === 1)
+  check("porcelain: an empty status is no paths", porcelainPaths("").length === 0)
   // The fingerprint must be a CONTENT identity over the closure, so that a commit
   // anywhere else in the tree cannot invalidate a lane whose inputs are unchanged.
   const jsClosure = closure(DIFFERENTIAL)
@@ -379,6 +564,7 @@ function main() {
   const wantFull = args.includes("--full")
   const selftestOnly = args.includes("--selftest")
   const reportOnly = args.includes("--report")
+  const emitOnly = args.includes("--emit")
 
   if (selftestOnly) process.exit(selftest())
   if (args.includes("--help") || args.length === 0) {
@@ -407,6 +593,9 @@ function main() {
   if (unknown.length) { console.error(`unknown lane(s): ${unknown.join(", ")}`); process.exit(2) }
 
   if (reportOnly) { printTable(state); process.exit(0) }
+  // Emission reads the state and fingerprints the tree; it measures nothing, so it
+  // takes no lane list and cannot be combined into a measurement run by accident.
+  if (emitOnly) process.exit(emitArtifact(state))
 
   const now = fingerprint(langs[0])
   const todo = langs.filter((lang) => {
