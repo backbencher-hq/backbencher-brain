@@ -4627,6 +4627,53 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
 //   - references: imports -> root -> module (mirrors handleImport)
 // The oracle emits UNIQUE (label,target) edges (seen-set per label+target),
 // matching the site-agnostic coverage match in main().
+// Swift #940 (both sides): an ERROR the pinned grammar failed to reduce into a
+// nominal declaration — its FIRST child is the anonymous nominal keyword token
+// and the recovery's OWN name node is present. The name rule is deliberately
+// the same one the analyzer's handleDeclaration uses (an extension is named by
+// the leaf of its `user_type`, everything else by its `type_identifier`), so a
+// recovered header and a reduced one can never disagree.
+const SW_NOMINAL_KW = new Set(["class", "struct", "enum", "extension", "actor"])
+// Header material may precede the keyword; declaration content may not (a
+// nested declaration the recovery left as a SIBLING contributes its own keyword
+// token to the same child list — measured on `extension SocketAddressError {
+// ... struct UnknownHost ... }`).
+const swIsHeaderNode = (t: string): boolean => t === "modifiers" || t === "attribute" || t === "comment"
+function swRecoveryHeader(n: any): { kind: string | null; nameNode: any } {
+  let kind: string | null = null
+  let nameNode: any = null
+  for (let i = 0; i < n.childCount; i++) {
+    const c = n.child(i)
+    if (!c) continue
+    if (!c.isNamed) {
+      if (!kind && SW_NOMINAL_KW.has(c.type)) kind = c.type
+      continue
+    }
+    if (swIsHeaderNode(c.type)) continue
+    if (c.type === "user_type" || c.type === "type_identifier" || c.type === "simple_identifier" || c.type === "identifier") nameNode = c
+    break
+  }
+  return { kind, nameNode }
+}
+function swRecoveryName(n: any): string | null {
+  const { nameNode } = swRecoveryHeader(n)
+  if (!nameNode) return null
+  if (nameNode.type === "user_type") {
+    let leaf: any = null
+    for (let i = 0; i < nameNode.namedChildCount; i++) {
+      const c = nameNode.namedChild(i)
+      if (c && c.type === "type_identifier") leaf = c
+    }
+    return leaf ? leaf.text : null
+  }
+  return nameNode.text
+}
+function swIsNominalRecovery(n: any): boolean {
+  if (!n || n.type !== "ERROR") return false
+  const { kind, nameNode } = swRecoveryHeader(n)
+  return kind !== null && nameNode !== null
+}
+
 export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -4653,14 +4700,39 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   // signal regardless of length — the old `length > 1` carve-out mislabeled
   // single-letter constructions (`E()`) as calls on BOTH sides (F5-blind).
   const isCapitalized = (t: string): boolean => t.length > 0 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
+  // #924 (swift half) — the name-surface mirror of the analyzer's two rules:
+  //   (a) Swift's keyword-escape quoting is not part of a name: `` `continue` ``
+  //       declares/references the identifier `continue`, and every corpus
+  //       reference spells it WITHOUT backticks, so a name that keeps them can
+  //       never match a reference;
+  //   (b) a tuple POSITION is not a name (the pinned grammar leaves `pair.0` as
+  //       a navigation suffix with no identifier child).
+  // Truth edges compare by (label,target), so both sides must agree on the
+  // spelling; without this mirror the analyzer's corrected names read as MISSING
+  // and its dropped `.0`/`.1` edges as missing truth.
+  const swStripQuoting = (t: string): string =>
+    t.length >= 2 && t.charCodeAt(0) === 96 && t.charCodeAt(t.length - 1) === 96 ? t.slice(1, -1) : t
   const key = (label: string, target: string) => label + ":" + target
   const push = (label: string, target: string) => {
+    target = swStripQuoting(target)
     const k = key(label, target)
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
   }
   // SW-B candidates (head + leaf), resolved post-walk against declared
   // enum cases; matched leaf calls convert to instantiates.
   const swEnumCtorCandidates: Array<{ head: string | null; owner: string | null; leaf: string; removeCalls: boolean }> = []
+  // #938/#942: how many CALL SITES contribute a `calls` edge per target.
+  // Truth edges are (label,target)-deduped and the analyzer's are then
+  // collapsed the same way by the harness, so a construction conversion must
+  // retire only ITS OWN site's contribution — the old splices removed the
+  // first edge with that target, which is a different site's call whenever two
+  // sites in one file share a leaf name (measured: `calls -> method` vanished
+  // from alamofire's TestHelpers.swift, and `calls -> websocket` vanished from
+  // Client.swift behind a phantom two-sided agreement).
+  const swCallsSites = new Map<string, number>()
+  const swNoteCallsSite = (target: string): void => {
+    swCallsSites.set(target, (swCallsSites.get(target) ?? 0) + 1)
+  }
   // SW-G: class -> superclass map for super.init targets.
   const swSuperByClass = new Map<string, string>()
   // hasSelfReceiver): navigation > (navigation | self_expression) — stops at
@@ -4697,11 +4769,25 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
       if (c && c.type === "navigation_suffix") {
-        const id = c.namedChildren.find((x: any) => x.type === "simple_identifier" || x.type === "identifier")
-        leaf = id ?? c
+        // #924: no identifier child -> not a name (tuple position `pair.0`),
+        // and the quoting syntax is stripped like the analyzer strips it.
+        leaf = c.namedChildren.find((x: any) => x.type === "simple_identifier" || x.type === "identifier") ?? null
       }
     }
-    return leaf ? leaf.text : null
+    return leaf ? swStripQuoting(leaf.text) : null
+  }
+
+  // #938 mirror: a `case .X(let y)` switch pattern does not reduce in the
+  // pinned grammar — it recovers as a call_expression whose callee navigation
+  // starts at the reserved `case` keyword. Read from the token, never text.
+  const isCasePatternRecovery = (callNode: any): boolean => {
+    for (let i = 0; i < callNode.namedChildCount; i++) {
+      const c = callNode.namedChild(i)
+      if (!c || c.type !== "navigation_expression") continue
+      const f = c.namedChildCount > 0 ? c.namedChild(0) : null
+      if (f && (f.type === "simple_identifier" || f.type === "identifier") && f.text === "case") return true
+    }
+    return false
   }
 
   // Base names from the inheritance_specifier (mirrors extractBaseName).
@@ -4739,7 +4825,10 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   while (stack.length > 0) {
     const { n, parentType } = stack.pop()!
     const t = n.type
-    if (t === "class_declaration") {
+    // #940 mirror: an ERROR-recovered nominal header is the container, exactly
+    // as a reduced `class_declaration` is (the keyword-token scan and the base
+    // extraction below are shape-driven, so they run unchanged on it).
+    if (t === "class_declaration" || swIsNominalRecovery(n)) {
       // Actor/struct/enum/extension are all class_declaration in the pinned
       // grammar, decided by the anonymous keyword token. Swift semantics:
       // ONLY a class can have a superclass (first base extends); struct/actor
@@ -4805,6 +4894,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // analyzer's isSubscriptRead gate).
       const isSubscriptCall = isSubscript(n)
       if (isSubscriptCall) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
+      // #938 mirror: the `case`-keyword recovery is a pattern match, not a
+      // call — emit nothing (still descend, so the arguments' own edges stay).
+      if (isCasePatternRecovery(n)) { for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push({ n: c, parentType: t }) }; continue }
       // callee: simple_identifier / identifier / navigation_expression
       const callee = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier" || c.type === "navigation_expression")
       if (callee && callee.type === "navigation_expression") {
@@ -4825,23 +4917,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           let o: any = n.parent
           let og = 0
           while (o && og++ < 14) {
-            if (o.type === "class_declaration") {
-              for (let k = 0; k < o.namedChildCount; k++) {
-                const c = o.namedChild(k)
-                if (c && c.type === "type_identifier") return c.text
-              }
-              for (let k = 0; k < o.namedChildCount; k++) {
-                const c = o.namedChild(k)
-                if (c && c.type === "user_type") {
-                  let lf: any = null
-                  for (let j = 0; j < c.namedChildCount; j++) {
-                    const x = c.namedChild(j)
-                    if (x && x.type === "type_identifier") lf = x
-                  }
-                  if (lf) return lf.text
-                }
-              }
-              return null
+            // #940 mirror: a recovered nominal names the enclosing type too.
+            if (o.type === "class_declaration" || swIsNominalRecovery(o)) {
+              return swRecoveryName(o)
             }
             if (o.type === "protocol_declaration") {
               for (let k = 0; k < o.namedChildCount; k++) {
@@ -4864,16 +4942,18 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
             else if (firstC.type === "self_expression") recv = "self"
             else if ((firstC.type === "simple_identifier" || firstC.type === "identifier" || firstC.type === "type_identifier") && firstC.text === "Self") recv = "Self"
           }
-          if (recv && enclosingType) {
+          if (recv) {
             const target = recv === "super" ? swSuperByClass.get(enclosingType) ?? null : enclosingType
-            if (target) {
-              push("instantiates", target)
-              consumed = true
-            }
+            if (target) push("instantiates", target)
+            // #941 mirror: SW-G, verbatim — "Unresolvable stays silent". An
+            // initializer delegation is never a `calls` edge, so the
+            // unresolvable case must not fall through to the generic path and
+            // publish the dangling `calls -> init`.
+            consumed = true
           }
         }
         if (!consumed) {
-          if (leaf && leaf !== "$0") push("calls", leaf)
+          if (leaf && leaf !== "$0") { swNoteCallsSite(leaf); push("calls", leaf) }
           // SW-B mirror: record enum-construction candidates (capitalized
           // DIRECT receiver + leaf) for post-walk resolution. Receiver is
           // second-to-last in document order; never descend into nested
@@ -4909,7 +4989,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         // functions, never types) must not fabricate instantiates edges.
         if (target && !SWIFT_BUILTINS.has(target) && !target.startsWith("XCT")) {
           if (isCapitalized(target)) push("instantiates", target)
-          else push("calls", target)
+          else { swNoteCallsSite(target); push("calls", target) }
         }
       }
       // SW-H mirror: implicit enum-case construction (`.a(v)` parses the
@@ -4965,8 +5045,12 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // directly_assignable_expression; gate only when this node sits
       // INSIDE the LHS span (the RHS of `self.x = self.y` stays a read).
       {
+        // #939 mirror: climb through the `postfix_expression` unwrap wrapper
+        // as well — `x.a!.b += 1` puts the inner navigation one wrapper away
+        // from the assignable path, and stopping there let the LHS-span test
+        // never run on the ANALYZER side while this side blocked descent.
         let a: any = n.parent
-        while (a && a.type === "directly_assignable_expression") a = a.parent
+        while (a && (a.type === "directly_assignable_expression" || a.type === "postfix_expression")) a = a.parent
         if (a && a.type === "assignment") {
           const lhs = a.namedChild(0)
           if (lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex) continue
@@ -5010,8 +5094,9 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           while (outer && outer.parent && outer.parent.type === "navigation_expression") outer = outer.parent
           const firstTok = outer ? outer.child(0) : null
           if (firstTok && !firstTok.isNamed && firstTok.type === ".") continue
+          // #939 mirror: the unwrap wrapper is part of the assignable path.
           let a2: any = n.parent
-          while (a2 && (a2.type === "directly_assignable_expression" || a2.type === "navigation_expression" || a2.type === "navigation_suffix")) a2 = a2.parent
+          while (a2 && (a2.type === "directly_assignable_expression" || a2.type === "postfix_expression" || a2.type === "navigation_expression" || a2.type === "navigation_suffix")) a2 = a2.parent
           if (a2 && a2.type === "assignment") {
             const lhs2 = a2.namedChild(0)
             if (lhs2 && lhs2.startIndex <= c.startIndex && lhs2.endIndex >= c.endIndex) continue
@@ -5060,12 +5145,19 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     while (pre.length > 0) {
       const pn = pre.pop()!
       if (!pn) continue
-      if (pn.type === "class_declaration" && hasEnumTok(pn)) {
-        let enm: string | null = null
-        for (let k = 0; k < pn.namedChildCount; k++) {
-          const c = pn.namedChild(k)
-          if (c && c.type === "type_identifier") { enm = c.text; break }
-        }
+      // #940 mirror: a recovered `enum` header owns its cases exactly as a
+      // reduced one does (the case inventory must match the analyzer's
+      // EnumMember symbols, which the recovery mints).
+      if ((pn.type === "class_declaration" || swIsNominalRecovery(pn)) && hasEnumTok(pn)) {
+        const enm: string | null = pn.type === "class_declaration"
+          ? (() => {
+              for (let k = 0; k < pn.namedChildCount; k++) {
+                const c = pn.namedChild(k)
+                if (c && c.type === "type_identifier") return c.text
+              }
+              return null
+            })()
+          : swRecoveryName(pn)
         if (enm) {
           const est: any[] = [pn]
           while (est.length > 0) {
@@ -5074,7 +5166,10 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
             if (en.type === "enum_entry") {
               for (let k = 0; k < en.namedChildCount; k++) {
                 const c = en.namedChild(k)
-                if (c && c.type === "simple_identifier") { enumCases.add(`${enm}.${c.text}`); break }
+                if (c && c.type === "simple_identifier") { enumCases.add(`${enm}.${swStripQuoting(c.text)}`); break }
+                // #924: an attributed case puts `modifiers` FIRST — the name is
+                // the identifier after it, exactly as the analyzer reads it.
+                if (c && (c.type === "modifiers" || c.type === "attribute")) continue
               }
             }
             for (let k = en.namedChildCount - 1; k >= 0; k--) {
@@ -5090,19 +5185,22 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       }
     }
     if (enumCases.size > 0) {
+      // #938/#942: retire only the contributing SITES, then drop a `calls`
+      // edge whose site count fell to zero, then append the instantiates
+      // edges. Splicing by (label,target) deleted another site's real call.
+      const instantiatesKeys: string[] = []
       for (const cand of swEnumCtorCandidates) {
         const key = cand.head ?? cand.owner
         if (!key || !enumCases.has(`${key}.${cand.leaf}`)) continue
-        if (cand.removeCalls) {
-          for (let k = edges.length - 1; k >= 0; k--) {
-            if (edges[k].label === "calls" && edges[k].target === cand.leaf) {
-              edges.splice(k, 1)
-              break
-            }
-          }
-        }
-        push("instantiates", key)
+        if (cand.removeCalls) swCallsSites.set(cand.leaf, (swCallsSites.get(cand.leaf) ?? 0) - 1)
+        instantiatesKeys.push(key)
       }
+      for (let k = edges.length - 1; k >= 0; k--) {
+        if (edges[k].label !== "calls") continue
+        if ((swCallsSites.get(edges[k].target) ?? 0) > 0) continue
+        edges.splice(k, 1)
+      }
+      for (const key of instantiatesKeys) push("instantiates", key)
     }
   }
   return edges
@@ -5124,7 +5222,12 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
     if (!set) { set = new Set<string>(); membersByOwner.set(s.ownerName, set) }
     set.add(s.name)
   }
+  // #924 mirror: the quoting syntax is not part of a name (`return \`default\``
+  // reads the member `default`, which is the name the declaration publishes).
+  const stripQuoting = (t: string): string =>
+    t.length >= 2 && t.charCodeAt(0) === 96 && t.charCodeAt(t.length - 1) === 96 ? t.slice(1, -1) : t
   const push = (name: string): void => {
+    name = stripQuoting(name)
     const key = "uses\u0000" + name
     if (seen.has(key)) return
     seen.add(key)
@@ -5152,10 +5255,14 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
   ])
   const VALUE_SCOPES = new Set(["lambda_literal", "property_declaration"])
   const isWrite = (n: any): boolean => {
+    // #939 mirror: traverse the unwrap wrapper (`x.a!` sits inside a
+    // postfix_expression) — otherwise the climb stops at its first step.
     let a: any = n.parent
     while (
       a && (a.type === "directly_assignable_expression" ||
-        a.type === "navigation_expression" || a.type === "navigation_suffix")
+        a.type === "postfix_expression" ||
+        a.type === "navigation_expression" ||
+        a.type === "navigation_suffix")
     ) a = a.parent
     if (a && a.type === "assignment") {
       const lhs = a.namedChild(0)
@@ -5218,6 +5325,12 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
     if (TYPE_NODES.has(t)) {
       const nameNode = firstName(n, "type_identifier") || firstName(n, "simple_identifier")
       if (nameNode) cTy = nameNode.text
+    } else if (swIsNominalRecovery(n)) {
+      // #940 mirror: an ERROR-recovered nominal is a container for its members
+      // exactly like a reduced declaration, so the member inventory a bare
+      // read is scored against must resolve the same way on both sides.
+      const nm = swRecoveryName(n)
+      if (nm) cTy = nm
     } else if (FUNC_SCOPES.has(t)) {
       cLocals = extendLocals(locals, n)
     } else if (VALUE_SCOPES.has(t)) {

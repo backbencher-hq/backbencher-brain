@@ -102,6 +102,19 @@ const CROSS_CUTTING: Record<number, string> = {
   // standard, not php completion work. php's own half of #930 — the lane whose gap the weak
   // wording let through — is fixed and closed (#929, cb9f846d: 18,303/19,750 unlined -> 0).
   930: "m60 lines-cell wording: the gate asks `is line_number written anywhere` so ONE emit site satisfies it — the fix re-measures every lane's cell, so it is family work, not the named lane's completion gap",
+  // #943 names php and cpp for the same reason #930 names php: they are where the defect was
+  // PROVEN, not the lanes that owe the repair. The subject is the INSTRUMENT — R8 and R10
+  // adjudicate a COMMITTED census artifact (php's framework surface went un-adjudicated at
+  // HEAD: 0 sites, 1 binding, while every count still read clean; cpp's committed R10 row was
+  // not HEAD-true) — and the remaining deliverable is a freshness device every lane's
+  // census/register pair needs, which is family-sweep work. BOTH named instances were repaired
+  // this round on the lane side of the line: the census's published-value vocabulary now
+  // follows a COLLECTION-LITERAL ARGUMENT, so php's chain-published surface
+  // (`ORDER.filter(...).concat([...detectedFrameworks])`) is a surface again — 9 sites, 52
+  // bindings, 27/27 self-tests, violations unmoved at 20 — and the register was re-derived
+  // from that reading (one deliberate GROWTH: php's #931 base-clause `TestCase` write); cpp's
+  // row was re-derived by hand with its evidence. What is left is the staleness class itself.
+  943: "M60.R8/R10 adjudicate a COMMITTED artifact: the fix is a freshness pin every lane's census/register pair needs (family sweep), and both named instances — php's un-adjudicated surface, cpp's stale R10 row — are repaired at HEAD this round",
 }
 // 612 is genuinely their closure gate, so it stays language-scoped.
 delete CROSS_CUTTING[612]
@@ -172,8 +185,12 @@ function trackerSelfTest(): { passed: number; failed: string[] } {
   const reasons = Object.entries(CROSS_CUTTING)
   check("exclusion hygiene: every exclusion states a reason",
     reasons.every(([, r]) => typeof r === "string" && r.length >= 40))
-  check("exclusion hygiene: the table's size is pinned (a new exclusion needs a deliberate edit here)",
-    reasons.length <= 3)
+  // The membership is pinned ID BY ID rather than by size: a size cap only says "not bigger",
+  // so a wave could SWAP one exclusion for another and stay green, which is exactly the
+  // strongest edit this cell allows (#943 joined the table on 2026-09-25, and this line is the
+  // deliberate edit that records it).
+  check("exclusion hygiene: the table's membership is pinned id by id (a new exclusion is a deliberate edit here)",
+    JSON.stringify(reasons.map(([n]) => Number(n)).sort((a, b) => a - b)) === JSON.stringify([593, 864, 930, 943]))
   check("exclusion hygiene: no exclusion is enumerated for a nonexistent issue id",
     reasons.every(([n]) => Number.isFinite(Number(n))))
   return { passed, failed }

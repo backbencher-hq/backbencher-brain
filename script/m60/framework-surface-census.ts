@@ -451,12 +451,58 @@ function publishedRefsFromValue(v: any, out: Set<string>, locals?: Map<string, a
       publishedRefsFromValue(unwrap(v.childForFieldName("consequence")), out, locals, depth)
       return publishedRefsFromValue(unwrap(v.childForFieldName("alternative")), out, locals, depth)
     case "call_expression": {
-      // `detectedFrameworks.map(...)` — the RECEIVER is the surface; the arguments are not.
+      // `detectedFrameworks.map(...)` — the RECEIVER is the surface; the arguments are not,
+      // EXCEPT when an argument is a collection DERIVATION (see the helper below).
       const fn = v.childForFieldName("function")
       const m = member(fn)
       const recv = m ? unwrap(m.obj) : unwrap(fn)
       if (recv && recv.type === "identifier") out.add(recv.text)
+      for (const a of v.childForFieldName("arguments")?.namedChildren ?? []) {
+        collectionSourcesOfArgument(unwrap(a), out, locals, depth)
+      }
       return
+    }
+    default:
+      return
+  }
+}
+
+/**
+ * The surface identifiers a CALL ARGUMENT contributes — bounded to collection shapes.
+ *
+ * `publishedRefsFromValue` does not descend into a call's arguments, and that refusal was
+ * paid for by measurement: with a blanket argument pass, `detectedFrameworks:
+ * this.detectGoFrameworks(symbols, relationships)` made `symbols` a surface, which turned
+ * every `symbols.push({...})` in go into an append-write and every member read inside its
+ * object literal into a dead surface (16 false findings in go, 14 in kotlin).
+ *
+ * php's shape is different in KIND, not in degree: its publication is a CHAIN whose
+ * accumulator arrives as a collection literal —
+ *
+ *   const frameworks = PHP_FRAMEWORK_ORDER.filter((f) => detectedFrameworks.has(f))
+ *     .concat([...detectedFrameworks].filter((f) => !PHP_FRAMEWORK_ORDER.includes(f)))
+ *   return { metadata: { framework: frameworks[0], detectedFrameworks: frameworks, ... } }
+ *
+ * — and the bare-identifier receiver rule above reaches `PHP_FRAMEWORK_ORDER` and stops, so
+ * the accumulator of a lane with nine writes was not a surface at all: php read 0 sites and
+ * lost exactly 1 binding while every count stayed clean. That is the same silent blind spot
+ * the objective-c IIFE produced, and it is why `bindingsExamined` is emitted at all. An
+ * argument is followed here ONLY when it is an array literal, a spread, a subscript, or a
+ * chain whose receiver is one of those — never a bare identifier, never an arbitrary
+ * expression, and never the receiver's sibling arguments (`symbols`, `relationships`).
+ */
+function collectionSourcesOfArgument(a: any, out: Set<string>, locals: Map<string, any>, depth: number): void {
+  if (!a) return
+  switch (a.type) {
+    case "array":
+    case "spread_element":
+    case "subscript_expression":
+      return publishedRefsFromValue(a, out, locals, depth)
+    case "parenthesized_expression":
+      return collectionSourcesOfArgument(unwrap(a.namedChild(0)), out, locals, depth)
+    case "call_expression": {
+      const m = member(a.childForFieldName("function"))
+      return collectionSourcesOfArgument(m ? unwrap(m.obj) : unwrap(a.childForFieldName("function")), out, locals, depth)
     }
     default:
       return
@@ -1125,6 +1171,28 @@ const SELF_TESTS: { name: string; src: string; expect: SurfaceShape[]; expectKey
     name: "prose in a comment is not a site",
     src: `// detectedFrameworks is always an array, and framework is the primary pick\nfunction a() {\n  return { metadata: {} }\n}`,
     expect: [],
+  },
+  // --- the published value is a CHAIN, and the accumulator arrives as an argument ---
+  // php's shape at HEAD. The bare-identifier receiver rule stops at the marker table, so
+  // without the collection-argument rule the lane reads 0 sites and loses 1 binding while
+  // every count stays clean — a silent blind spot, measured (R8: 7 registered sites drifted
+  // to 0). The case pins BOTH halves: the write IS seen, and the keys ARE read.
+  {
+    name: "a published CHAIN whose accumulator arrives as a collection literal keeps the surface",
+    src: `const ORDER = ["Laravel", "Symfony"]\nfunction a() {\n  const detectedFrameworks = new Set<string>()\n  detectedFrameworks.add("Laravel")\n  const frameworks = ORDER.filter((f) => detectedFrameworks.has(f)).concat([...detectedFrameworks].filter((f) => !ORDER.includes(f)))\n  return { metadata: { framework: frameworks[0], detectedFrameworks: frameworks, frameworkPatterns: frameworks.map((f) => ({ framework: f, patterns: [] })) } }\n}`,
+    expect: ["deduped-write"],
+    expectKeys: ["detectedFrameworks", "framework", "frameworkPatterns"],
+  },
+  // The negative the widening above must not break: the go/kotlin false-accusation
+  // precedent, verbatim in shape. `detect(symbols, symbols)` publishes a call whose
+  // arguments are BARE identifiers, and neither may become a surface — or every
+  // `symbols.push({...})` in the file becomes a reported append-write and every member
+  // read inside its literal a dead surface.
+  {
+    name: "a bare identifier argument does NOT make a surface (the go/kotlin precedent)",
+    src: `function detect(symbols: any[], relationships: any[]) {\n  return ["Django"]\n}\nfunction a(symbols: any[]) {\n  symbols.push({ name: "x" })\n  return { metadata: { framework: "Django", detectedFrameworks: detect(symbols, symbols), frameworkPatterns: [] } }\n}`,
+    expect: [],
+    expectKeys: ["detectedFrameworks", "framework", "frameworkPatterns"],
   },
 ]
 
