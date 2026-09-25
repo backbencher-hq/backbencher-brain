@@ -7473,8 +7473,8 @@ export const MUTANTS: Mutant[] = [
     id: "swift/unwrap-inner-write-as-read",
     language: "swift",
     defectClass: "relationship-fabrication",
-    description: "SCD1 (#939) regression: the climb stops at the unwrap wrapper again, so the INNER segment of a wrapped assignment LHS leaks as a read (`box.value!.total = 0` -> uses value, FileInfoTests.swift 21 sibling lines) — swift/unwrap-write-gate forbids catch them",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "bumpThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }, { type: "uses", source: "writeThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }] }),
+    description: "SCD1 (#939) regression: the climb stops at the unwrap wrapper again, so the INNER segment of a wrapped assignment LHS leaks as a read (`box.value!.total = 0` -> uses value, FileInfoTests.swift 21 sibling lines) AND the FLAT row (`box.value! = Inner()`, where the wrapper IS the whole assignable path — the row BOTH sides used to publish) leaks too — swift/unwrap-write-gate forbids catch all three",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "bumpThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }, { type: "uses", source: "writeThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }, { type: "uses", source: "writeFlatThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }] }),
   },
   {
     id: "swift/unwrap-outer-write-as-read",
@@ -7521,6 +7521,42 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-noise",
     description: "SW-G regression on the recovered file: the initializer delegation falls through to a dangling `calls -> init` (init is not a name in this vocabulary; constructors are literally `constructor`) — swift/error-recovery-nominal forbid dies",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "constructor", target: "init", confidence: 0.95 }] }),
+  },
+  {
+    id: "swift/attributed-case-payload-name",
+    language: "swift",
+    defectClass: "symbol-fabrication",
+    description: "#924 (swift half) regression: an attributed enum case takes the `modifiers` node as its name again — the `@available(...)` PAYLOAD becomes the member's name and the `contains` target while the real names vanish (measured on swift-nio HTTPTypes.swift, 5 cases) — swift/attributed-enum-case forbidSymbols/forbids die",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "enum_member" && s.name === "invalidHost" ? { ...s, name: '@available(*, deprecated, message: "Cannot be thrown")' } : s)),
+      relationships: (r.relationships ?? []).map((x: any) => (x.type === "contains" && x.source === "ParseError" && x.target === "invalidHost" ? { ...x, target: '@available(*, deprecated, message: "Cannot be thrown")' } : x)),
+    }),
+  },
+  {
+    id: "swift/attributed-case-range-at-decorator",
+    language: "swift",
+    defectClass: "payload-corruption",
+    description: "#924 (swift half), line half: a decorated enum case's range falls back to the whole `enum_entry` (which STARTS at the `@available` decorator), so its declaration line is the attribute's — the M59 #861 decorated-range ruling broken for swift — swift/attributed-enum-case line pins/forbid die",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "enum_member" && s.ownerName === "ParseError" && typeof s.range?.startLine === "number" ? { ...s, range: { ...s.range, startLine: s.range.startLine - 1 } } : s)),
+      relationships: (r.relationships ?? []).map((x: any) => (x.type === "contains" && x.source === "ParseError" && (x.target === "invalidHost" || x.target === "invalidPort") && typeof x.line_number === "number" ? { ...x, line_number: x.line_number - 1 } : x)),
+    }),
+  },
+  {
+    id: "swift/drop-relationship-lines",
+    language: "swift",
+    defectClass: "payload-loss",
+    description: "M59.A7 (#825 lineage) regression: every relationship's `line_number` is dropped again (the pre-round state of this lane — 0 of 78,750 edges lined) — the line pins die in write-gate, init-delegation, member-value-reads, enum-construction-splice, error-recovery-nominal and unwrap-write-gate",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const { line_number, ...rest } = x; return rest }) }),
+  },
+  {
+    id: "swift/line-off-by-one",
+    language: "swift",
+    defectClass: "payload-corruption",
+    description: "M59.A7 regression: every claimed line shifts by one (the 0/1-base confusion that produces a line the source does not confirm) — the line pins die; the near-miss forbids (declaration-borrow spellings) are the second net",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (typeof x.line_number === "number" ? { ...x, line_number: x.line_number + 1 } : x)) }),
   },
   {
     id: "objc/drop-implements-edge",
@@ -8831,6 +8867,13 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-fabrication",
     description: "#872 companion: an applied superclass head (Eq (f a) => Applied f a) is re-attributed to its ARGUMENT leaf (f a) — the pre-fix left-spine miss class; the fixture pins extends Applied->Eq",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "extends" && (x.metadata ?? {}).isSuperclass && x.source === "Applied" && x.target === "Eq" ? { ...x, target: "f a" } : x)) }),
+  },
+  {
+    id: "haskell/qualified-superclass-taken-as-leaf",
+    language: "haskell",
+    defectClass: "relationship-mislabelling",
+    description: "#872's THIRD shape, and the one the hledger depth draw caught: a qualified superclass head is republished as its bare LEAF (`Csv.ToNamedRecord` -> `ToNamedRecord`). The oracle takes the head VERBATIM, so a leafless spelling does not swap one defect for another — it re-spells a MISSING edge (`extends Lines -> Spr.Lines` was this exact class); fixture pins QualifiedSuper/BothSuper -> Csv.ToNamedRecord",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "extends" && (x.metadata ?? {}).isSuperclass && x.target === "Csv.ToNamedRecord" ? { ...x, target: "ToNamedRecord" } : x)) }),
   },
   {
     id: "haskell/drop-derived-implements",

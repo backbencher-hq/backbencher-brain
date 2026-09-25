@@ -131,6 +131,13 @@ interface OverrideTask {
   fqn: string
   methodName: string
   ownerFqn: string
+  /**
+   * M59.A7 (#825 lineage, swift lane): the override DECLARATION's own line —
+   * the method NAME's line, checkable against the source. Never a guess: an
+   * edge whose declaration has no range stays unlined (the field's ruled
+   * absence state) rather than borrowing the enclosing type's line.
+   */
+  line?: number
 }
 
 interface WalkFrame {
@@ -205,11 +212,24 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectDeclaredKinds(rootNode, inFileKinds)
 
     const emittedCalls = new Set<string>()
+    // #942: per-(source, leaf) CALL SITE counts. `emittedCalls` dedupes the
+    // relationship list to one edge per (source, label, target), so two sites
+    // sharing a (source, leaf) share ONE relationship — and an enum-construction
+    // conversion at one of them must not retire the other's genuine call (nor
+    // leave a dangling edge when the other site is gone). Counted per site, the
+    // post-walk retires the edge only when no non-construction site remains.
+    const callSiteCounts = new Map<string, number>()
+    // M59.A7 (#825 lineage): the LINES of those sites, per (source, leaf).
+    // `emittedCalls` keeps the FIRST site's edge, which after a #942
+    // conversion may be a site that no longer emits a call — so a surviving
+    // `calls` edge must be re-lined onto a site that is STILL a call, or the
+    // line names a construction and is not checkable against the source.
+    const callSiteLines = new Map<string, number[]>()
     const emittedUses = new Set<string>()
     const emittedContains = new Set<string>()
     // SW-B candidates: navigation calls with capitalized heads, resolved
     // post-walk against declared enum cases (symbols must be whole first).
-    const enumCtorCandidates: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean }> = []
+    const enumCtorCandidates: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean; line?: number }> = []
     // SW-G: class -> superclass (first base when it IS a superclass),
     // recorded at declaration time for `super.init(...)` targets.
     const superByClass = new Map<string, string>()
@@ -234,6 +254,19 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (curr.type === "class_declaration") {
         newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined, superByClass)
         if (newParentSymbol) newTypeName = newParentSymbol.name
+      } else if (curr.type === "ERROR" && this.isNominalRecovery(curr)) {
+        // SW-D23 (#940): the pinned grammar fails to REDUCE some nominal
+        // headers (measured: `nonisolated(unsafe)` in the body costs
+        // AsyncTestingChannel.swift its whole `class` header — the header and
+        // body land in an ERROR node instead). Nothing reduces it back, so
+        // the container symbol was never minted and every member it owns was
+        // orphaned (ownerName undefined: no `contains`, no member inventory
+        // for bare reads, no owner for `self.init`). The recovery shape is
+        // read from the tokens alone — the kind is the same anonymous keyword
+        // token SWIFTD1 already decides by, the name is the recovery's own
+        // name node — never from source text.
+        newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, context?.typeKinds as Map<string, string> | undefined, superByClass)
+        if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
         newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion)
       } else if (curr.type === "init_declaration") {
@@ -256,10 +289,28 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // enum_member ONLY inside an enum body — the parent symbol is the
         // enum. Switch `case` patterns are never symbols.
         if (parentSymbol && parentSymbol.kind === ASTEngine.SymbolKind.Enum) {
-          const caseNode = this.firstNamedChild(curr)
+          // #924 (swift half): an attributed case (`@available(...) case x`)
+          // puts a `modifiers` node FIRST, so taking the first named child
+          // published the ATTRIBUTE PAYLOAD as the member's name — 5 cases in
+          // swift-nio HTTPTypes.swift became `@available(*, deprecated,
+          // message: "Cannot be thrown")`, the real names were absent, and the
+          // dedupe folded all five into one `contains` target whose "name" is
+          // a decorator payload. The name is the identifier after `case`; the
+          // modifiers are metadata (surface them there, never as a name).
+          let caseNode: Node | null = null
+          for (let i = 0; i < curr.namedChildCount; i++) {
+            const c = curr.namedChild(i)
+            if (!c || c.type === "modifiers" || c.type === "attribute") continue
+            caseNode = c
+            if (c.type === "simple_identifier" || c.type === "identifier") break
+          }
           const caseName = caseNode ? caseNode.text : curr.text
           if (caseName && caseName !== "case") {
-            this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, curr, parentSymbol, symbols, { enumCase: true })
+            // The IDENTIFIER node carries the range, exactly as functions use
+            // their name node: a decorated declaration's line is its own `case`
+            // line, never the decorator's (the M59 #861 decorated-range ruling,
+            // applied to swift).
+            this.createSymbol(caseName, ASTEngine.SymbolKind.EnumMember, caseNode ?? curr, parentSymbol, symbols, { enumCase: true })
           }
         }
       } else if (curr.type === "typealias_declaration") {
@@ -273,7 +324,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.createSymbol(nameNode.text, ASTEngine.SymbolKind.Type, curr, parentSymbol, symbols, { isAssociatedType: true })
         }
       } else if (curr.type === "call_expression") {
-        this.handleCall(curr, relationships, parentSymbol, emittedCalls, enumCtorCandidates, superByClass)
+        this.handleCall(curr, relationships, parentSymbol, emittedCalls, enumCtorCandidates, superByClass, callSiteCounts, callSiteLines)
       } else if (curr.type === "navigation_expression") {
         // `self.x` member READ -> uses (source = enclosing type, target = leaf).
         this.handleSelfUse(curr, relationships, newTypeName, parentSymbol, emittedUses)
@@ -372,31 +423,79 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
       if (enumCases.size > 0) {
+        // #942: retire the contributing SITES, then drop a `calls` edge whose
+        // site count fell to zero, then append the instantiates edges. Splice
+        // by (source, leaf) alone took a DIFFERENT site's genuine call — and
+        // splicing this candidate's own index alone under-retired, because the
+        // dedupe had already folded a second site into the same relationship.
+        const retiredSites = new Set<string>()
+        // PER POOL, never global: two different pools can share a SOURCE LINE
+        // (`XCTAssertLessThanOrEqual(MemoryLayout.size(ofValue: Level1.case1(...)), 24)`
+        // puts a `size` call and a `case1` conversion on one line), and a
+        // global line set would re-line — or delink — an unrelated edge.
+        const retiredLines = new Map<string, Set<number>>()
+        const constructions: Array<{ source: string; target: string; line?: number }> = []
         for (const cand of enumCtorCandidates) {
           const key = cand.head ?? cand.owner
           if (!key || !enumCases.has(`${key}.${cand.leaf}`)) continue
           if (cand.removeCalls) {
-            for (let i = relationships.length - 1; i >= 0; i--) {
-              const r = relationships[i]
-              if (r.type === ASTEngine.RelationshipType.Calls && r.source === cand.source && String(r.target) === cand.leaf) {
-                relationships.splice(i, 1)
-                break
-              }
+            const siteKey = `${cand.source}\u0000${cand.leaf}`
+            const left = (callSiteCounts.get(siteKey) ?? 0) - 1
+            callSiteCounts.set(siteKey, left)
+            if (typeof cand.line === "number") {
+              const set = retiredLines.get(siteKey)
+              if (set) set.add(cand.line)
+              else retiredLines.set(siteKey, new Set([cand.line]))
             }
+            if (left <= 0) retiredSites.add(siteKey)
           }
-          const ekey = `${cand.source}\u0000instantiates\u0000${key}`
-          if (!emittedCalls.has(ekey)) {
-            emittedCalls.add(ekey)
-            relationships.push({
-              type: ASTEngine.RelationshipType.Instantiates,
-              source: cand.source,
-              target: key,
-              isExternal: true,
-              weight: 0.7,
-              confidence: 0.95,
-              metadata: { isEnumConstruction: true },
-            })
+          constructions.push({ source: cand.source, target: key, line: cand.line })
+        }
+        if (retiredSites.size > 0) {
+          for (let i = relationships.length - 1; i >= 0; i--) {
+            const r = relationships[i]
+            if (r.type !== ASTEngine.RelationshipType.Calls) continue
+            if (!retiredSites.has(`${r.source}\u0000${String(r.target)}`)) continue
+            relationships.splice(i, 1)
           }
+        }
+        // Re-line the SURVIVING calls edges onto a site that is still a call
+        // (#942 + M59.A7): the edge kept by the dedupe is the first site's, and
+        // that site may be exactly the one this conversion retired — the
+        // construction edge above already carries it.
+        if (callSiteLines.size > 0) {
+          for (const r of relationships) {
+            if (r.type !== ASTEngine.RelationshipType.Calls) continue
+            const key = `${r.source}\u0000${String(r.target)}`
+            const lines = callSiteLines.get(key)
+            if (!lines) continue
+            const retired = retiredLines.get(key)
+            if (!retired) continue
+            let kept: number | undefined
+            for (const l of lines) {
+              if (!retired.has(l)) { kept = l; break }
+            }
+            // No surviving DISTINCT line means the pool's sites share the
+            // retired line — a call still lives on it, so the current line
+            // stays right and is never dropped.
+            if (typeof kept === "number") r.line_number = kept
+          }
+        }
+        for (const c of constructions) {
+          const ekey = `${c.source}\u0000instantiates\u0000${c.target}`
+          if (emittedCalls.has(ekey)) continue
+          emittedCalls.add(ekey)
+          relationships.push({
+            type: ASTEngine.RelationshipType.Instantiates,
+            source: c.source,
+            target: c.target,
+            isExternal: true,
+            weight: 0.7,
+            confidence: 0.95,
+            // The CONVERTED call site's line, carried on the candidate.
+            ...(typeof c.line === "number" ? { line_number: c.line } : {}),
+            metadata: { isEnumConstruction: true },
+          })
         }
       }
     }
@@ -444,6 +543,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
             isExternal: false,
             weight: 1,
             confidence: 1.0,
+            // The DECLARATION's own line (the member's range start).
+            ...(typeof s.range?.startLine === "number" ? { line_number: s.range.startLine } : {}),
             metadata: {},
           })
         }
@@ -458,6 +559,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: 0.9,
           confidence: 1.0,
+          // The import statement's own line (handleImport records the range).
+          ...(typeof imp.range?.startLine === "number" ? { line_number: imp.range.startLine } : {}),
           metadata: { importModule: imp.module },
         })
       }
@@ -570,9 +673,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // inheritance list are CLASS-CONSTRAINT annotations, not protocol
     // parents — excluded (probe-verified: `protocol P: AnyObject, B` in
     // swift-nio parses AnyObject as an inheritance_specifier).
-    const bases = this.extractBases(node)
+    const baseSites = this.extractBaseSites(node)
     const parents: string[] = []
-    for (const base of bases) {
+    for (let i = 0; i < baseSites.length; i++) {
+      const base = baseSites[i].name
       if (base === "AnyObject" || base === "Any") continue
       parents.push(base)
       relationships.push({
@@ -582,6 +686,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         isExternal: true,
         weight: 1,
         confidence: 1.0,
+        // The base SPECIFIER's own line in the inheritance clause.
+        line_number: this.nodeLine(baseSites[i].node),
         metadata: { isImplements: false },
       })
     }
@@ -602,7 +708,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): ASTEngine.UniversalSymbol | null {
     let kind = ASTEngine.SymbolKind.Class
 
-    if (this.hasAnonToken(node, "actor")) {
+    // SW-D23 (#940): a recovered header decides its kind from the header's own
+    // keyword token, NOT from the deep search below — the deep search sees a
+    // nested declaration's keyword and would name the container after it.
+    const recoveredKind = node.type === "ERROR" ? this.recoveryKind(node) : null
+    if (recoveredKind) {
+      kind = recoveredKind
+    } else if (this.hasAnonToken(node, "actor")) {
       kind = ASTEngine.SymbolKind.Actor
     } else if (this.hasAnonToken(node, "struct")) {
       kind = ASTEngine.SymbolKind.Struct
@@ -620,7 +732,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // FIRST (Outer), minting an extension symbol that collided with the
     // container type's symbol id and mis-attributing every member.
     let nameNode: Node | null = null
-    if (kind === ASTEngine.SymbolKind.Extension) {
+    const recoveredName = node.type === "ERROR" ? this.recoveryNameNode(node) : null
+    if (recoveredName) {
+      nameNode = recoveredName
+    } else if (kind === ASTEngine.SymbolKind.Extension) {
       const ut = this.findChildByType(node, "user_type")
       if (ut) {
         nameNode = this.lastTypeIdentifier(ut)
@@ -659,7 +774,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const symbol = this.createSymbol(rawName, kind, nameNode, parent, symbols, meta, vis)
 
-    const bases = this.extractBases(node)
+    const baseSites = this.extractBaseSites(node)
+    const bases = baseSites.map((b) => b.name)
     const parents: string[] = []
     if (kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Struct || kind === ASTEngine.SymbolKind.Actor) {
       // Swift semantics (probe-verified fixture #266): ONLY a class can have
@@ -685,6 +801,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: isExtends ? 1 : 0.9,
           confidence: 1.0,
+          line_number: this.nodeLine(baseSites[i].node),
           metadata: { isImplements: !isExtends },
         })
       }
@@ -695,7 +812,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // protocol adoption (implements). Corpus: 380 sites in swift-nio that
       // previously emitted nothing (csharp partial-class conformance is the
       // managed-OO analog and IS materialized).
-      for (const base of bases) {
+      for (let i = 0; i < baseSites.length; i++) {
+        const base = baseSites[i].name
         parents.push(base)
         relationships.push({
           type: ASTEngine.RelationshipType.Implements,
@@ -704,6 +822,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: 0.9,
           confidence: 1.0,
+          line_number: this.nodeLine(baseSites[i].node),
           metadata: { isImplements: true },
         })
       }
@@ -723,6 +842,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: 0.9,
           confidence: 1.0,
+          line_number: this.nodeLine(baseSites[i].node),
           metadata: { isImplements: true },
         })
       }
@@ -771,6 +891,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         fqn: `${parent.name}.${symbol.name}`,
         methodName: symbol.name,
         ownerFqn: parent.name,
+        line: symbol.range?.startLine,
       })
     }
 
@@ -861,9 +982,24 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     parent: ASTEngine.UniversalSymbol | null,
     emittedCalls: Set<string>,
-    enumCtorCandidates?: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean }>,
+    enumCtorCandidates?: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean; line?: number }>,
     superByClass?: Map<string, string>,
+    callSiteCounts?: Map<string, number>,
+    callSiteLines?: Map<string, number[]>,
   ) {
+    // SW-D21 (#938): a switch-case PATTERN with an associated value does not
+    // reduce in the pinned grammar — `case .websocket(let x):` recovers as a
+    // call_expression whose callee navigation STARTS AT THE `case` KEYWORD
+    // (`simple_identifier "case"` + navigation_suffix + a call_suffix whose
+    // value_arguments hold `let` and an ERROR). A pattern match is not a call
+    // and not construction, so nothing may be emitted for it: the pre-fix
+    // code took the leaf (`websocket`) and published a fabricated `calls`
+    // edge (measured on the full-extent swift-nio draw: 3 rows across
+    // Client.swift/Server.swift, the only unexplained-by-truth edges in the
+    // lane). The keyword is a reserved word, so the shape is read from the
+    // token, never from source text.
+    if (this.isCasePatternRecovery(node)) return
+
     const source = parent ? parent.name : "root"
 
     // The function child: bare identifier or navigation/member expression.
@@ -885,7 +1021,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const owner = parent?.ownerName ?? null
           if (leaf && owner) {
-            enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: false })
+            enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: false, line: this.nodeLine(node) })
           }
         }
       }
@@ -908,7 +1044,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (leaf === "init") {
         const recv = this.navigationReceiver(funcNode)
         if (recv === "super" || recv === "self" || recv === "Self") {
-          const owner = parent?.ownerName ?? parent?.name
+          // SW-G owner rule (#941): a member symbol names its CONTAINER
+          // (ownerName); a type symbol IS the container — deinit/subscript/
+          // observer bodies have no symbol of their own, which is the only
+          // reason the type name fallback exists. The pre-fix expression
+          // (`ownerName ?? name`) therefore minted the enclosing symbol's OWN
+          // name as a target: inside an initializer whose owner is not
+          // resolvable it published `instantiates constructor -> constructor`
+          // (source and target both `constructor`, which is not a type).
+          const owner = parent
+            ? (MEMBER_OWNER_KINDS.has(parent.kind) ? parent.name : (parent.ownerName ?? null))
+            : null
           let target: string | null = null
           if ((recv === "self" || recv === "Self") && owner) target = owner
           else if (recv === "super" && owner && superByClass) target = superByClass.get(owner) ?? null
@@ -923,34 +1069,49 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
                 isExternal: true,
                 weight: 0.7,
                 confidence: 0.95,
+                // The DELEGATION call site's line (`self.init()` / `super.init()`).
+                ...(typeof this.nodeLine(node) === "number" ? { line_number: this.nodeLine(node)! } : {}),
                 metadata: { isSuperInit: recv === "super", isSelfInit: recv !== "super" },
               })
             }
-            return
           }
+          // SW-G, verbatim: "Unresolvable stays silent." An initializer
+          // delegation is NEVER a `calls` edge — `init` is not a name in this
+          // vocabulary (constructors are literally `constructor`), so the old
+          // fall-through published a dangling target (the dart DT-A disease
+          // SW-G was written to remove) and the truth side mirrored it.
+          return
         }
       }
       // SW-B (ultimate review): record enum-construction CANDIDATES
       // (`Result.success(1)` may build Result, not call success) — resolved
       // post-walk against declared enum cases (symbols must be whole first).
       // The receiver is second-to-last in the chain (`P.Foo.bar` -> Foo).
+      // #942: the index this site's own `calls` edge lands at (-1 when
+      // emitCall deduped it). The post-walk must splice THAT edge: the old
+      // splice removed "the first edge with this (source, leaf)", which
+      // belongs to a DIFFERENT call site whenever two sites in one scope call
+      // the same leaf name — measured on the alamofire full-extent draw, where
+      // `static var get: Endpoint { method(.get) }` silently lost its call to
+      // `Endpoint.method` because a property initializer elsewhere in the type
+      // called `Path.method(.get)`.
+      this.emitCall(relationships, source, leaf, emittedCalls, callSiteCounts, this.nodeLine(this.navigationLeafNode(funcNode)), callSiteLines)
       if (enumCtorCandidates) {
         const chain = this.navigationChain(funcNode)
         const receiver = chain.length >= 2 ? chain[chain.length - 2] : null
         if (receiver && this.isTypeName(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
-          enumCtorCandidates.push({ source, head: receiver, owner: null, leaf, removeCalls: true })
+          enumCtorCandidates.push({ source, head: receiver, owner: null, leaf, removeCalls: true, line: this.nodeLine(this.navigationLeafNode(funcNode)) })
         } else if (receiver === "Self") {
           // SW-H: `Self.a(v)` in an enum builds the enclosing enum.
           const owner = parent?.ownerName ?? null
-          if (owner) enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: true })
+          if (owner) enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: true, line: this.nodeLine(this.navigationLeafNode(funcNode)) })
         }
       }
-      this.emitCall(relationships, source, leaf, emittedCalls)
       return
     }
 
     // Bare identifier call.
-    const target = funcNode.text
+    const target = this.stripNameQuoting(funcNode.text)
     if (!target || BUILTIN_BARE_CALLS.has(target)) return
     // SWIFTD16: XCTest assertion FUNCTIONS (XCTAssertEqual/XCTFail/XCTSkip/...)
     // are the one capitalized free-function family in Swift — the capitalized-
@@ -981,11 +1142,18 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: 0.7,
           confidence: 1.0,
+          // The construction site's callee node line.
+          ...(typeof this.nodeLine(funcNode) === "number" ? { line_number: this.nodeLine(funcNode)! } : {}),
           metadata: { isInstantiation: true },
         })
       }
     } else {
-      this.emitCall(relationships, source, target, emittedCalls)
+      // #942: bare calls are call SITES too — the (source, leaf) pool the
+      // enum-construction retirement consults must include them, or a
+      // conversion in one scope retires the edge of a genuine bare call that
+      // nothing else re-creates (`static var get: Int { method(.get) }` next
+      // to `var path = Path.method(.get)`).
+      this.emitCall(relationships, source, target, emittedCalls, callSiteCounts, this.nodeLine(funcNode), callSiteLines)
     }
   }
 
@@ -994,7 +1162,21 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     source: string,
     target: string,
     emittedCalls: Set<string>,
+    callSiteCounts?: Map<string, number>,
+    line?: number,
+    callSiteLines?: Map<string, number[]>,
   ) {
+    // #942: count every SITE, including the ones the dedupe below absorbs — the
+    // post-walk needs sites, not edges.
+    if (callSiteCounts) {
+      const siteKey = `${source}\u0000${target}`
+      callSiteCounts.set(siteKey, (callSiteCounts.get(siteKey) ?? 0) + 1)
+      if (typeof line === "number") {
+        const arr = callSiteLines?.get(siteKey)
+        if (arr) arr.push(line)
+        else callSiteLines?.set(siteKey, [line])
+      }
+    }
     const key = `${source}\u0000calls\u0000${target}`
     if (emittedCalls.has(key)) return
     emittedCalls.add(key)
@@ -1005,6 +1187,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       isExternal: true,
       weight: 1,
       confidence: 0.95,
+      // The CALLEE node's own line — the site a reader checks.
+      ...(typeof line === "number" ? { line_number: line } : {}),
       metadata: {},
     })
   }
@@ -1041,8 +1225,14 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // inside. RHS values are not on this path (they sit under
       // binary/call/collection nodes, which stop the walk), and the span check
       // below still decides: only nodes INSIDE the LHS span are writes.
+      // SW-D22 (#939): the climb must also traverse the UNWRAP wrapper. The
+      // pinned grammar puts a force-unwrap (`x.a!`) inside a
+      // `postfix_expression`, so an LHS member under the wrapper stopped the
+      // walk on its first step, never reached the assignment, and the
+      // SCD1 gate never fired (`$0.status!.st_dev += 1` published
+      // `uses -> status`, 2 rows on the full-extent swift-nio draw).
       let a = node.parent
-      while (a && (a.type === "directly_assignable_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) a = a.parent
+      while (a && (a.type === "directly_assignable_expression" || a.type === "postfix_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) a = a.parent
       if (a && a.type === "assignment") {
         const lhs = a.namedChild(0)
         if (lhs && lhs.startIndex <= node.startIndex && lhs.endIndex >= node.endIndex) return
@@ -1093,6 +1283,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       isExternal: false,
       weight: 0.7,
       confidence: 0.95,
+      // The leaf segment's own node line (`self.a.b` -> the `b` node).
+      ...(typeof this.nodeLine(this.navigationLeafNode(node)) === "number"
+        ? { line_number: this.nodeLine(this.navigationLeafNode(node))! }
+        : {}),
       metadata: { isFieldAccess: true },
     })
   }
@@ -1152,10 +1346,15 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // SCD1 walk (same as handleSelfUse): climb the whole ASSIGNABLE PATH, then
     // gate only when this node sits INSIDE the assignment's LHS span.
     const isWrite = (n: Node): boolean => {
+      // SW-D22 (#939): traverse the unwrap wrapper too (`x.a!` sits inside a
+      // postfix_expression) — otherwise the climb stops on the first step and
+      // an assignment LHS under a force-unwrap reads as a value.
       let a = n.parent
       while (
         a && (a.type === "directly_assignable_expression" ||
-          a.type === "navigation_expression" || a.type === "navigation_suffix")
+          a.type === "postfix_expression" ||
+          a.type === "navigation_expression" ||
+          a.type === "navigation_suffix")
       ) a = a.parent
       if (a && a.type === "assignment") {
         const lhs = a.namedChild(0)
@@ -1214,6 +1413,16 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           cTy = nameNode.text
           cFn = null
         }
+      } else if (this.isNominalRecovery(n)) {
+        // SW-D23 (#940): an ERROR-recovered nominal is a container for its
+        // members exactly like a reduced one — without this the member
+        // inventory for a whole recovered class/extension stays invisible to
+        // bare reads (the mirror lives in the oracle's deriveSwiftBareUses).
+        const nm = this.recoveryName(n)
+        if (nm) {
+          cTy = nm
+          cFn = null
+        }
       } else if (FUNC_SCOPES.has(t)) {
         cFn = t === "init_declaration" ? "constructor" : (this.findChildByType(n, "simple_identifier")?.text ?? cFn)
         cLocals = extendLocals(locals, n)
@@ -1238,6 +1447,11 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           lookup = rest
         }
+        // #924: a KEYWORD-ESCAPED read (`return \`default\``) names the inner
+        // text — normalization happens BEFORE the ownership gate, because the
+        // member inventory is keyed on the stripped name (createSymbol applies
+        // the same rule), and a raw lookup would simply fail to resolve.
+        lookup = this.stripNameQuoting(lookup)
         const isMember = !!cTy && (membersByOwner.get(cTy)?.has(lookup) ?? false)
         // A chain leaf (`self.x`, `obj.x`) is owned by handleSelfUse; a bare
         // CALLEE (`go(...)`) is owned by handleCall; a leading-dot implicit
@@ -1264,6 +1478,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
               isExternal: false,
               weight: 0.7,
               confidence: 0.6,
+              line_number: this.nodeLine(n),
               metadata: { isBareRead: true },
             })
           }
@@ -1357,6 +1572,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isExternal: true,
           weight: 0.8,
           confidence,
+          ...(typeof task.line === "number" ? { line_number: task.line } : {}),
           metadata: { relationshipType: "method_override", isSwiftOverride: true, ...(reasonCode ? { reasonCode } : {}) },
         })
       }
@@ -1367,6 +1583,23 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   // Symbol creation / helpers
   // ==========================================================================
 
+  /**
+   * #924 (swift half): Swift's keyword-escape quoting is NOT part of a name.
+   * ``case `continue` `` declares the identifier `continue`; ``static var
+   * `default` `` declares `default` — and every REFERENCE in the corpus spells
+   * them without backticks (`flags: Flags = .default`), so a published name that
+   * keeps the syntax is a name no reference can ever match. Measured at full
+   * extent (`script/m14/tmp/sw-name-census.ts`): 29 symbols and 40 targets
+   * carried the backticks. Exactly one surrounding pair is stripped; a name
+   * that merely contains a backtick keeps it.
+   */
+  private stripNameQuoting(text: string): string {
+    if (text.length >= 2 && text.charCodeAt(0) === 96 && text.charCodeAt(text.length - 1) === 96) {
+      return text.slice(1, -1)
+    }
+    return text
+  }
+
   private createSymbol(
     name: string,
     kind: ASTEngine.SymbolKind,
@@ -1376,6 +1609,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     meta: Record<string, any> = {},
     visibility: string = "internal",
   ): ASTEngine.UniversalSymbol {
+    name = this.stripNameQuoting(name)
     const symbol: ASTEngine.UniversalSymbol = {
       id: parent ? `${parent.id}.${name}` : name,
       name,
@@ -1459,24 +1693,32 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private handleImport(node: Node, imports: ASTEngine.ImportInfo[], frameworksObj: Record<string, boolean>) {
     let moduleName = ""
+    let moduleNode: Node | null = null
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (c && (c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "identifier")) {
         moduleName = c.text
+        moduleNode = c
         break
       }
     }
     if (moduleName) {
+      // M59.A7: the range is the MODULE NAME's site, not the whole import
+      // declaration — an attribute on its own line (`@testable\nimport Alamofire`)
+      // made the declaration start one line above the `import`, so the
+      // references edge claimed a line holding only `@testable` (measured on
+      // alamofire Tests/ProtectedTests.swift).
+      const site = moduleNode ?? node
       imports.push({
         module: moduleName,
         isExternal: true,
         range: {
-          startLine: node.startPosition.row + 1,
-          startColumn: node.startPosition.column + 1,
-          endLine: node.endPosition.row + 1,
-          endColumn: node.endPosition.column + 1,
-          startIndex: node.startIndex,
-          endIndex: node.endIndex,
+          startLine: site.startPosition.row + 1,
+          startColumn: site.startPosition.column + 1,
+          endLine: site.endPosition.row + 1,
+          endColumn: site.endPosition.column + 1,
+          startIndex: site.startIndex,
+          endIndex: site.endIndex,
         },
       })
       if (moduleName === "SwiftUI") frameworksObj["SwiftUI"] = true
@@ -1686,16 +1928,115 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Base type names from the inheritance specifier (class/struct/actor). */
-  private extractBases(node: Node): string[] {
-    const bases: string[] = []
+  /**
+   * SW-D21 (#938): `case .X(let y)` recovery — the callee navigation's first
+   * token is the reserved `case` keyword (parsed as a simple_identifier).
+   * Swift never lets `case` name a value, so this is always grammar recovery.
+   */
+  private isCasePatternRecovery(callNode: Node): boolean {
+    for (let i = 0; i < callNode.namedChildCount; i++) {
+      const c = callNode.namedChild(i)
+      if (!c || c.type !== "navigation_expression") continue
+      const head = this.firstNamedChild(c)
+      if (head && (head.type === "simple_identifier" || head.type === "identifier") && head.text === "case") return true
+    }
+    return false
+  }
+
+  /**
+   * SW-D23 (#940): is this ERROR node a nominal DECLARATION the pinned grammar
+   * failed to reduce? True when its FIRST child is the anonymous nominal
+   * keyword token and its own next named child is the type name (`user_type`
+   * for an extension, an identifier otherwise). The name must be the
+   * recovery's own name node — never a nested declaration's — so a top-level
+   * `ERROR` that merely contains declarations somewhere below is not treated
+   * as one itself.
+   */
+  /**
+   * The nominal kind of an ERROR-recovered header, read from the TOKENS: the
+   * first anonymous nominal keyword child, provided nothing but header material
+   * (`modifiers` / `attribute` / `comment`) precedes it. Declaration content
+   * before a keyword means the keyword belongs to a nested declaration that the
+   * recovery left as a SIBLING (measured: `extension SocketAddressError { ...
+   * struct UnknownHost ... }` carries the nested `struct` token as a direct
+   * child of the recovery, so a plain "does any child token say struct" test
+   * names the extension a struct).
+   */
+  private recoveryKind(node: Node): ASTEngine.SymbolKind | null {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (!c.isNamed) {
+        if (c.type === "class") return ASTEngine.SymbolKind.Class
+        if (c.type === "struct") return ASTEngine.SymbolKind.Struct
+        if (c.type === "enum") return ASTEngine.SymbolKind.Enum
+        if (c.type === "extension") return ASTEngine.SymbolKind.Extension
+        if (c.type === "actor") return ASTEngine.SymbolKind.Actor
+        continue
+      }
+      if (c.type === "modifiers" || c.type === "attribute" || c.type === "comment") continue
+      return null
+    }
+    return null
+  }
+
+  /**
+   * The recovery's OWN name node: the first non-header child, which is the
+   * extended `user_type` for an extension and an identifier otherwise. Anything
+   * else (a nested declaration's type_identifier, a parameter type) is not this
+   * header's name.
+   */
+  private recoveryNameNode(node: Node): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "modifiers" || c.type === "attribute" || c.type === "comment") continue
+      if (c.type === "user_type" || c.type === "type_identifier" || c.type === "simple_identifier" || c.type === "identifier") return c
+      return null
+    }
+    return null
+  }
+
+  private recoveryName(node: Node): string | null {
+    const n = this.recoveryNameNode(node)
+    if (!n) return null
+    if (n.type === "user_type") {
+      const leaf = this.lastTypeIdentifier(n)
+      return leaf ? leaf.text : null
+    }
+    return n.text
+  }
+
+  private isNominalRecovery(node: Node): boolean {
+    if (node.type !== "ERROR") return false
+    return this.recoveryKind(node) !== null && this.recoveryNameNode(node) !== null
+  }
+
+  /**
+   * M59.A7 (#825 lineage): base sites WITH their name nodes, because a heritage
+   * edge must name the base specifier's own line — the declaration's line is a
+   * different site, and borrowing it is the fabrication the line rule forbids.
+   */
+  private extractBaseSites(node: Node): Array<{ name: string; node: Node }> {
+    const sites: Array<{ name: string; node: Node }> = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c && c.type === "inheritance_specifier") {
-        const name = this.extractBaseName(c)
-        if (name) bases.push(name)
+        const site = this.extractBaseSite(c)
+        if (site) sites.push(site)
       }
     }
-    return bases
+    return sites
+  }
+
+  /**
+   * The store's `line_number` for a node: its 1-based start row.
+   * `undefined` when there is no node — the field's ruled absence state, never
+   * a fabricated 0 and never an enclosing declaration's line (M59.A7 / R6).
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
   }
 
   /**
@@ -1732,20 +2073,20 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     return best
   }
 
-  private extractBaseName(spec: Node): string | null {
+  private extractBaseSite(spec: Node): { name: string; node: Node } | null {
     // `user_type > type_identifier` — take the LEAF type identifier
     // (SWIFTD19: last segment of dotted names, family leaf convention).
     for (let i = 0; i < spec.namedChildCount; i++) {
       const c = spec.namedChild(i)
       if (!c) continue
-      if (c.type === "type_identifier") return c.text
+      if (c.type === "type_identifier") return { name: c.text, node: c }
       if (c.type === "user_type") {
         const leaf = this.lastTypeIdentifier(c)
-        if (leaf) return leaf.text
+        if (leaf) return { name: leaf.text, node: leaf }
       }
     }
     const txt = spec.text.trim()
-    return txt && !txt.includes(" ") ? txt : null
+    return txt && !txt.includes(" ") ? { name: txt, node: spec } : null
   }
 
   /** SW-F: all-ASCII-digits check without regex (family contract). */
@@ -1839,7 +2180,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!c || c.type !== "navigation_suffix") continue
       const m = this.findChildByType(c, "simple_identifier") || this.findChildByType(c, "identifier")
       if (!m || !m.text) continue
-      const member = m.text
+      const member = this.stripNameQuoting(m.text)
       if (member === "$0" || member === "self" || member === "Self") continue
       // Callee: this navigation invokes through this suffix (non-subscript).
       const par = node.parent
@@ -1859,9 +2200,10 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       while (outer && outer.parent && outer.parent.type === "navigation_expression") outer = outer.parent
       const firstTok = outer ? outer.child(0) : null
       if (firstTok && !firstTok.isNamed && firstTok.type === ".") continue
-      // SCD1 write gate (same climb as handleSelfUse/handleBareUses).
+      // SCD1 write gate (same climb as handleSelfUse/handleBareUses) —
+      // including the `postfix_expression` unwrap wrapper (#939).
       let a = node.parent
-      while (a && (a.type === "directly_assignable_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) a = a.parent
+      while (a && (a.type === "directly_assignable_expression" || a.type === "postfix_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) a = a.parent
       if (a && a.type === "assignment") {
         const lhs = a.namedChild(0)
         if (lhs && lhs.startIndex <= c.startIndex && lhs.endIndex >= c.endIndex) continue
@@ -1876,6 +2218,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         isExternal: false,
         weight: 0.7,
         confidence: 0.9,
+        // The member identifier node inside this suffix.
+        line_number: this.nodeLine(m),
         metadata: { isMemberRead: true },
       })
     }
@@ -1906,16 +2250,18 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (n.type === "navigation_suffix") {
         const m = this.findChildByType(n, "simple_identifier") || this.findChildByType(n, "identifier")
         if (m && m.text && m.text !== "self" && m.text !== "Self") {
-          const key = `${source}\u0000uses\u0000${m.text}`
+          const keyPathMember = this.stripNameQuoting(m.text)
+          const key = `${source}\u0000uses\u0000${keyPathMember}`
           if (!emittedUses.has(key)) {
             emittedUses.add(key)
             relationships.push({
               type: ASTEngine.RelationshipType.Uses,
               source,
-              target: m.text,
+              target: keyPathMember,
               isExternal: false,
               weight: 0.7,
               confidence: 0.9,
+              line_number: this.nodeLine(m),
               metadata: { isMemberRead: true, isKeyPath: true },
             })
           }
@@ -1929,9 +2275,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  /** Leaf name of a navigation_expression: `users.first` -> `first`. */
-  private navigationLeaf(node: Node): string | null {
-    // The last navigation_suffix child holds the leaf identifier.
+  /**
+   * The leaf IDENTIFIER NODE of a navigation (`users.first` -> the `first`
+   * node) — the site a `uses`/`calls` edge's line must name. Paired with
+   * `navigationLeaf` (the string form) so no line is ever taken from a
+   * different segment of the chain.
+   */
+  private navigationLeafNode(node: Node): Node | null {
     let leaf: Node | null = null
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
@@ -1940,13 +2290,49 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         leaf = this.findChildByType(c, "simple_identifier") || this.findChildByType(c, "identifier") || c
       }
     }
-    if (leaf) return leaf.text
+    if (leaf) return leaf
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "simple_identifier") leaf = c
+    }
+    return leaf
+  }
+
+  /** Leaf name of a navigation_expression: `users.first` -> `first`. */
+  private navigationLeaf(node: Node): string | null {
+    // The last navigation_suffix child holds the leaf identifier.
+    let leaf: Node | null = null
+    let sawSuffix = false
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "navigation_suffix") {
+        // #924: a suffix with NO identifier is not a member name — the pinned
+        // grammar leaves a tuple POSITION (`pair.0`, `_key.1`) as a suffix
+        // whose only child is the position token, and the old `|| c` fallback
+        // published `.0`/`.1` as the target (full extent: 4 targets across
+        // WebSocketFrame.swift / MultiThreadedEventLoopGroup.swift). A position
+        // is not a name in this vocabulary, so there is no edge to publish.
+        sawSuffix = true
+        leaf = this.findChildByType(c, "simple_identifier") || this.findChildByType(c, "identifier")
+      }
+    }
+    if (leaf) return this.stripNameQuoting(leaf.text)
+    // The fallback below exists for the suffix-less shape the pinned grammar can
+    // produce; it must NOT run when a suffix was present and nameless, because
+    // the only simple_identifier in sight is then the RECEIVER — the first
+    // version of this rule dropped the `.0` TARGET and still published
+    // `queueCallbackPair` for `queueCallbackPair.1(overallError)`. Measured at
+    // full extent (652 files, both corpora): exactly ONE site has this shape, and
+    // it is that call through a tuple position — a local variable is not a call
+    // target. A position is not a name, so the whole edge goes, not just the leaf.
+    if (sawSuffix) return null
     // Fallback: last simple_identifier child.
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c && c.type === "simple_identifier") leaf = c
     }
-    return leaf ? leaf.text : null
+    return leaf ? this.stripNameQuoting(leaf.text) : null
   }
 
   /** Return type node after the `->` anonymous token (lightweight). */
