@@ -327,6 +327,49 @@ function shiftLineNumbersZeroBased(r: any) {
   }
 }
 
+// #612 store-phase, FORWARD direction: the analyzer stops publishing the
+// declaration/definition fact. This is the pre-fix state of every one of these
+// four lanes — and it is the state that matters, because the fact is what the
+// store's resolver reads to prefer a definition over a declaration. Dropping it
+// restores the exact defect the M14.0.SC1 family gate measured (a c `extern`
+// prototype in the caller's own file beating the cpp definition in another file,
+// `is_cross_language = 0`, `got 0`). Caught per lane by the meta.isDeclaration
+// expectSymbols entries in the fixture whose id names that lane.
+function dropDeclarationFlag(r: any) {
+  const syms: any[] = r.symbols ?? []
+  if (!syms.some((s: any) => s?.metadata?.isDeclaration === true)) return r
+  return {
+    ...r,
+    symbols: syms.map((s: any) => {
+      if (s?.metadata?.isDeclaration !== true) return s
+      const metadata = { ...s.metadata }
+      delete metadata.isDeclaration
+      return { ...s, metadata }
+    }),
+  }
+}
+
+// #612 store-phase, REVERSE direction: every function/method is published as a
+// declaration. A fixture that only asserted the flag is PRESENT would survive
+// this — which is exactly why every one of the four fixtures also carries
+// forbidSymbols entries (only_defined / stop / body_fn / call), and why those
+// entries are the ones that must fire here. Suppressing the flag on the
+// declaration-only side as well would be a no-op, so this marks unconditionally.
+function markEveryFunctionAsDeclaration(r: any) {
+  const syms: any[] = r.symbols ?? []
+  const isFn = (s: any) => {
+    const k = s?.kind ?? s?.type
+    return k === "function" || k === "method"
+  }
+  if (!syms.some(isFn)) return r
+  return {
+    ...r,
+    symbols: syms.map((s: any) =>
+      isFn(s) ? { ...s, metadata: { ...(s.metadata ?? {}), isDeclaration: true } } : s,
+    ),
+  }
+}
+
 // M59 (#825), the vue OPTIONS-API prop class: the PRE-FIX state EXACTLY. Every
 // prop/emit symbol was stamped with the `props: { … }` PAIR's range, so all of
 // them named one line instead of their own keys (measured on the corpus after the
@@ -998,6 +1041,24 @@ function reattributeAnonBodyCall(outerName: string) {
       String(x.type) === "calls" && String(x.source ?? "").startsWith("anonymous_")
         ? { ...x, source: outerName, from: outerName, fromSymbol: outerName }
         : x,
+    ),
+  })
+}
+
+// M60 groovy lane (2026-09-25): the anonymous-body OVERRIDE contract as a
+// faithful revert of the measured pre-fix behaviour. handleObjectCreationExpression
+// registered the anonymous type's symbol, its symbolMap key and its scope — but
+// never its `classHierarchy` entry — so resolveOverrides found no parent for the
+// anonymous owner at any of its three tiers and emitted NOTHING for every method
+// declared inside an anonymous body. The revert drops exactly those rows and
+// nothing else (written off the result's own edge set, so it stays valid on any
+// fixture); the unnamed-anonymous case (`new () {...}` with no constructible
+// base) reverts to the same silence because the pre-fix code took the same path.
+function dropAnonBodyOverride() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (x: any) => !(String(x.type) === "overrides" && String(x.source ?? "").startsWith("anonymous_")),
     ),
   })
 }
@@ -2761,6 +2822,76 @@ export const MUTANTS: Mutant[] = [
       "M60.P1 (#873) regression, the TWO-FIELD shape on cpp: the metadata line mirror goes back to `line_number - 1` while the row's own `line_number` stays 1-based — the pre-fix writer's off-by-one, now reachable on cpp because these rows carry both fields. Caught by cpp/callsite-lines-825 (forbid entries: `calls callMultiLine -> size` meta.line 33 and `instantiates makeIt -> Widget` meta.line 38) and by cpp/metadata-line-base-873, which forbids the one-above mirror on its two sites.",
     transform: revertMetadataLineBase,
   },
+  // #612 store-phase: the declaration/definition fact, both directions, on the
+  // four lanes that publish it (c always did; cpp/rust/zig gained it in #612).
+  // These two mutants are the pair the fixtures were written for: DROP proves
+  // the positive half (a missing flag fails the suite), ALWAYS-MARK proves the
+  // negative half (a flag applied to everything also fails it). A suite that
+  // only had the positive entries would report ALWAYS-MARK as SURVIVED.
+  {
+    id: "c/declaration-flag-dropped",
+    language: "c",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression: c stops publishing `metadata.isDeclaration`, so a prototype becomes indistinguishable from a definition and name resolution can prefer the declaration again. This fact has been published since the HC1 review; the mutant is the state the store-phase defect needed to exist. Caught by c/declaration-identity's meta.isDeclaration entries on `hidden` (a static prototype) and `libfn` (a prototype with no definition).",
+    transform: dropDeclarationFlag,
+  },
+  {
+    id: "c/declaration-flag-everywhere",
+    language: "c",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression, REVERSE direction: every c function is published as a declaration. Caught by c/declaration-identity's forbidSymbols entries (`shown`, `add`, `main`) — the half that a presence-only fixture would miss.",
+    transform: markEveryFunctionAsDeclaration,
+  },
+  {
+    id: "cpp/declaration-flag-dropped",
+    language: "cpp",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression: cpp stops publishing `metadata.isDeclaration` (the pre-fix state — the grammar's `function_definition` vs `declaration`/`field_declaration` distinction was used only for scope, never published). Caught by cpp/declaration-vs-definition-612's meta.isDeclaration entries on `only_declared` and `Engine::run`.",
+    transform: dropDeclarationFlag,
+  },
+  {
+    id: "cpp/declaration-flag-everywhere",
+    language: "cpp",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression, REVERSE direction: every cpp function/method is published as a declaration, so a header prototype and the definition implementing it look the same and resolution has no reason to prefer either. Caught by cpp/declaration-vs-definition-612's forbidSymbols entries (`only_defined`, `Engine::stop`).",
+    transform: markEveryFunctionAsDeclaration,
+  },
+  {
+    id: "rust/declaration-flag-dropped",
+    language: "rust",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression: rust stops publishing the `function_item` vs `function_signature_item` distinction, so an `extern \"C\"` declaration is indistinguishable from the definition implementing it. Caught by rust/declaration-vs-definition-612's meta.isDeclaration entries on `ffi_decl` and `sig_only`.",
+    transform: dropDeclarationFlag,
+  },
+  {
+    id: "rust/declaration-flag-everywhere",
+    language: "rust",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression, REVERSE direction: every rust function/method is published as a declaration. Caught by rust/declaration-vs-definition-612's forbidSymbols entries (`body_fn`, and the trait container `Runnable`).",
+    transform: markEveryFunctionAsDeclaration,
+  },
+  {
+    id: "zig/declaration-flag-dropped",
+    language: "zig",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression: zig stops publishing the body-less distinction. This grammar parses `extern fn f() c_int;` and `pub fn g() c_int { }` as the SAME node type (`function_declaration`), so with the flag gone the declaration is not merely unpinned — it is unpublished, and the store cannot prefer the definition. Caught by zig/declaration-vs-definition-612's meta.isDeclaration entry on `ffi_decl`.",
+    transform: dropDeclarationFlag,
+  },
+  {
+    id: "zig/declaration-flag-everywhere",
+    language: "zig",
+    defectClass: "payload-seam",
+    description:
+      "#612 store-phase regression, REVERSE direction: every zig function/method is published as a declaration — including the `block`-bearing bodies. Caught by zig/declaration-vs-definition-612's forbidSymbols entries (`body_fn`, `Sig::call`); this is the entry that fails a mutant keyed off the node type alone instead of the body.",
+    transform: markEveryFunctionAsDeclaration,
+  },
   {
     id: "cpp/lines-dropped",
     language: "cpp",
@@ -3252,6 +3383,13 @@ export const MUTANTS: Mutant[] = [
     defectClass: "misattribution",
     description: "M49/M37 (#866) regression: flattens calls made from an anonymous body onto the enclosing method (`calls anonymous_Runnable -> target` becomes `calls build -> target`). Caught by groovy/anonymous-field-member's forbid pin on `build -> target` at the initialiser's line.",
     transform: reattributeAnonBodyCall("build"),
+  },
+  {
+    id: "groovy/drop-anonymous-body-override",
+    language: "groovy",
+    defectClass: "edge-loss",
+    description: "M60 groovy lane regression: the anonymous body's `classHierarchy` entry is not written, so resolveOverrides finds no parents for the anonymous owner at any tier and every `overrides` edge whose source is an anonymous type disappears — the measured pre-fix output (the only MISSING rows on the 4,014-file grails-core draw: IdentityDecoder.groovy and SimpleDecoder.groovy). Caught by groovy/anonymous-body-overrides, which pins `overrides anonymous_TypeCodec.bsonType -> TypeCodec.bsonType` at line 23 with confidenceMin 0.9 — so a revert that left the row standing but demoted it to the tier-3 first-parent GUESS (0.5) is caught by the same fixture, not just an outright drop.",
+    transform: dropAnonBodyOverride(),
   },
   {
     id: "kotlin/drop-anon-body-field-member",

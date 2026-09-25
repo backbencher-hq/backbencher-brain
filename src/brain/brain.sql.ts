@@ -84,6 +84,7 @@ export const BrainSymbolTable = sqliteTable(
     complexity: integer(),
     owner_symbol_id: text(), // Parent class/namespace
     scope_kind: text(), // "global", "class", "function", "module"
+    is_declaration: integer({ mode: "boolean" }), // #612: analyzer-published declaration (c prototype, cpp/rust/zig signature form); NULL/0 = definition
     annotations: text({ mode: "json" }), // Language-specific annotations/decorators
     generic_parameters: text({ mode: "json" }),
     qualified_calls: text({ mode: "json" }), // ProxiCall-style: JSON array of qualified call strings extracted as-is

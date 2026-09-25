@@ -220,9 +220,17 @@ const SPECS: Record<string, FieldSpec> = {
   metadata: {
     iface: "UniversalSymbol",
     emit: /\bmetadata\s*:/,
-    store: { needle: /symbol\.metadata/, via: `${INDEXER}:2198-2200 -> annotations (json)` },
-    query: { needle: /annotations/, via: "doc-engine.ts:171 (s.*) + tool surface annotations" },
+    store: {
+      needle: /symbol\.metadata/,
+      via: `${INDEXER}:2198-2200 -> annotations (json), PLUS #612: the ONE metadata key the store phase itself reads gets a column of its own — \`metadata.isDeclaration\` is narrowed to \`is_declaration\` at the worker seam (pool-worker.ts, which for SYMBOLS used to drop the whole metadata object, exactly as it had for docstring/#35 and scope_kind/#837) and bound at the INSERT; name resolution orders by it so a definition wins over a declaration`,
+    },
+    query: {
+      needle: /annotations|is_declaration/,
+      via: "doc-engine.ts:171 (s.*) + tool surface annotations; is_declaration is read by the store-phase resolver (parallel-indexer.ts resolveTargetStmt)",
+    },
     tool: { needle: /annotations/ },
+    note:
+      "#612 widened this field's STORE claim without changing its shape: `annotations` is still the metadata JSON column and is still NULL at runtime for analyzer symbols (the worker drops the object), but `metadata.isDeclaration` now has a dedicated column and a reader. The runtime-absent annotations channel is recorded here rather than hidden — it is the same seam class as docstring (M35) and scope_kind (#837), and it is why three lanes' fixture pins for the declaration fact had to go through the worker payload instead of annotations.",
     // The LINE-VALUED keys inside this field are the ones #873 was about:
     // `metadata.line` on a relationship (only typescript and cpp write it at
     // all — 10 writers, census in reviews/m59-873-one-line-base.md) and the web
@@ -453,6 +461,10 @@ function main() {
   for (const [binding, note] of [
     ["symbol.docstring", "bound at " + INDEXER + ":2220 (M35 pre-work) — docstring is NOT on UniversalSymbol; only java/python/r emit it"],
     ["symbol.complexity", "bound at " + INDEXER + ":2195 (complexity column) — complexity is on FileMetadata, NOT on UniversalSymbol"],
+    [
+      "symbol.isDeclaration",
+      "#612: bound at " + INDEXER + " (is_declaration column) — isDeclaration is a WORKER-PAYLOAD field, narrowed from `metadata.isDeclaration` at the pool-worker seam and therefore NOT on UniversalSymbol either (see the `metadata` spec's store.via). Producers: c (since the HC1 review) + cpp/rust/zig (#612). Reader: the store-phase resolver (resolveTargetStmt), which orders definitions ahead of declarations.",
+    ],
   ] as const) {
     if (storeSrc.includes(binding) && !declared.includes(binding.replace("symbol.", ""))) {
       undeclared.push({ binding, note })
