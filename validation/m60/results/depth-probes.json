@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-25T03:05:46.660Z",
+  "at": "2026-09-25T05:03:35.444Z",
   "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
@@ -404,7 +404,8 @@
       "covered": 30690,
       "missing": 10,
       "unexplained": 2,
-      "note": "FULL EXTENT (1,931/1,931 .go — the whole pinned PRIMARY corpus, not a sample) via the lane's full-lane enumerator script/m14/tmp/go-799-surface.ts, because `--repo go-tools` cannot complete: repo-probe mode runs every lane against the repo and the repo carries 1 stray .cpp file whose oracle derives zero truth edges, which the harness refuses as a fabricated pass and aborts on. analyzer-edges 30361, heuristic 0. All 10 MISSING are `implements` and both unexplained are `implements -> A/T` (internal/gcimporter/testdata/issue25301.go): ONE class, the name-only oracle (#914), untouched by this round and unchanged by it (the same enumerator read missing 12/unexplained 2 before the round's two fixes, the 2 extra rows being the fabricated `instantiates -> s` of the grammar-gap class)."
+      "note": "FULL EXTENT (1,931/1,931 .go — the whole pinned PRIMARY corpus, not a sample) via the lane's full-lane enumerator script/m14/tmp/go-799-surface.ts, because `--repo go-tools` cannot complete: repo-probe mode runs every lane against the repo and the repo carries 1 stray .cpp file whose oracle derives zero truth edges, which the harness refuses as a fabricated pass and aborts on. analyzer-edges 30361, heuristic 0. All 10 MISSING are `implements` and both unexplained are `implements -> A/T` (internal/gcimporter/testdata/issue25301.go): ONE class, the name-only oracle (#914), untouched by this round and unchanged by it (the same enumerator read missing 12/unexplained 2 before the round's two fixes, the 2 extra rows being the fabricated `instantiates -> s` of the grammar-gap class).",
+      "supersededBy": "#914 (round 4, 2026-09-25) — the 10 MISSING + 2 UNEXPLAINED rows were the name-only `implements` oracle class; both are 0 now. Kept as the evidence the fix answers."
     },
     {
       "repo": "terraform",
@@ -424,7 +425,8 @@
       "covered": 4176,
       "missing": 2,
       "unexplained": 0,
-      "note": "a DIFFERENT rotation of the same 200-file draw (truth 4178 vs 4171 — why every row records its hash). analyzer-edges 4161, heuristic 0, hash c2469defc5d9fed6. The rotation surfaces 2 of the 22 `implements`-class rows the full extent carries (the name-only oracle, #914): the deeper draw finds what the previous one could not, which is the whole point of keeping rotations separate."
+      "note": "a DIFFERENT rotation of the same 200-file draw (truth 4178 vs 4171 — why every row records its hash). analyzer-edges 4161, heuristic 0, hash c2469defc5d9fed6. The rotation surfaces 2 of the 22 `implements`-class rows the full extent carries (the name-only oracle, #914): the deeper draw finds what the previous one could not, which is the whole point of keeping rotations separate.",
+      "supersededBy": "#914 (round 4, 2026-09-25) — the 2 MISSING rows were part of the same implements class (the oracle over-claimed `InitJSON/InitHuman -> Init`, `StateMigrateHuman -> StateMigrate`, `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer` and every `UnimplementedXServer -> XClient`). 0 now."
     },
     {
       "repo": "terraform",
@@ -434,7 +436,8 @@
       "covered": 8352,
       "missing": 2,
       "unexplained": 0,
-      "note": "2x the draw, same rotation family — 400/1,993 files. analyzer-edges 8297, heuristic 0, hash 5f5380809634b67f. MISSING=2: the same implements-class rows, no new defect class, no fabrication."
+      "note": "2x the draw, same rotation family — 400/1,993 files. analyzer-edges 8297, heuristic 0, hash 5f5380809634b67f. MISSING=2: the same implements-class rows, no new defect class, no fabrication.",
+      "supersededBy": "#914 (round 4, 2026-09-25) — the 2 MISSING rows were part of the same implements class (the oracle over-claimed `InitJSON/InitHuman -> Init`, `StateMigrateHuman -> StateMigrate`, `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer` and every `UnimplementedXServer -> XClient`). 0 now."
     },
     {
       "repo": "cython",
@@ -535,6 +538,36 @@
       "missing": 0,
       "unexplained": 0,
       "note": "canonical 60-file draw at this closure, re-derived on the final code (fresh private pool, so a different 60 files than the round's earlier canonical draw: hash 549143339f0cfaa9, truth 1,627 vs 2,601 before). CLEAN: analyzer-edges 1497, MISSING=0, unexplained=0."
+    },
+    {
+      "repo": "go-tools",
+      "lang": "go",
+      "files": 1931,
+      "truth": 30695,
+      "covered": 30695,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT, POST-#914 (1,931/1,931 .go). script/m14/tmp/go-799-surface.ts: filesRead 1931, skips 0, truthTotal 30695, analyzer-edges 30366, MISSING 0, UNEXPLAINED 0 on EVERY compared label (implements truth 193, extends 464, calls 26933, instantiates 3105) and 0 rows dropped silently. The truth moved DOWN 5 (30,700 -> 30,695) because the oracle stopped over-claiming same-name/different-signature pairs and gained the real ones (implements 183 -> 193); the analyzer moved UP to meet it exactly. `--repo go-tools` still cannot complete (1 stray .cpp aborts the cpp lane), so the full-lane enumerator is the instrument."
+    },
+    {
+      "repo": "terraform",
+      "lang": "go",
+      "files": 1993,
+      "truth": 40913,
+      "covered": 40913,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT, POST-#914 (1,993/1,993 .go). Same enumerator: filesRead 1993, skips 0, truthTotal 40913, analyzer-edges 40702, MISSING 0, UNEXPLAINED 0 (implements truth 295). The 18 MISSING implements rows the 200/400-file draws carried were 8 real analyzer gaps (variadic interface params, receiver-only implementors) and 16 oracle over-claims in the SAME class — a deeper draw of a 60-file floor found them, a full-extent read named them."
+    },
+    {
+      "repo": "terraform",
+      "lang": "go",
+      "files": 60,
+      "truth": 1174,
+      "covered": 1174,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "the canonical draw width on the second corpus, post-fix: `bun script/m14/differential.ts --repo terraform --no-batch` -> go 60 files, tree-truth 1174, covered 1174 (100%), MISSING 0, unexplained 0, heuristic 0, hash c52d3a09c6bf827c (a scoped run RE-DRAWS, which is why the hash is not the baseline's and every row carries its own)."
     }
   ],
   "current": [
@@ -1103,10 +1136,10 @@
     },
     "go": {
       "maxSample": 1931,
-      "missing": 10,
-      "unexplained": 2,
+      "missing": 0,
+      "unexplained": 0,
       "drawsRed": 0,
-      "note": "maxSample is the PRIMARY corpus at FULL EXTENT (a draw cap cannot express it); the deepest DRAW is 400 files on terraform"
+      "note": "maxSample is the PRIMARY corpus at FULL EXTENT (a draw cap cannot express it); the deepest DRAW is 400 files on terraform, and the 60-file canonical width was re-read post-#914 (hash c52d3a09c6bf827c). The two red rows (go-tools 10/2, terraform 200-rot + 400 at 2/0) are kept in `draws` with `supersededBy` — the class is #914 and it is closed."
     },
     "dart": {
       "maxSample": 2211,
@@ -1128,6 +1161,7 @@
     "#799 (go depth)": "go's first depth evidence: the primary corpus at full extent (1,931 files, all of go-tools) plus three rotating terraform draws up to 400 files, with the class of every non-zero row named (#914 implements, name-only oracle). The `depth: n/a` cell is answered, not asserted: the canonical draw was already clean, and the question the cell asks — does a deeper draw find what the canonical one hid? — is answered with measurements in both directions (the 200 rotation 2 draw finds 2 rows the first 200 draw did not, and the full extent finds 10 + 2).",
     "#928 (python, ORACLE-side depth residual)": "The override oracle registered only `def`s as class members, so a subclass `def` redefining a base class-ATTRIBUTE (PyrexType's chained `get_xdecref_code = ...` assignments, PyrexTypes.py 457-460) was invisible to it while the analyzer's ten `overrides` edges were correct. The oracle now registers every name of a chained class assignment at every nesting level of the right-nested chain; the analyzer was NOT touched, per the ruling. Same-files at hash 8e2340b6bbdeb581: truth 16208 -> 16218, unexplained 10 -> 0, analyzer-edges 20085 unmoved. requests is unaffected (37 files, truth 1216, analyzer 1336, 0/0).",
     "#937 (dart, ORACLE-side depth residual)": "The oracle's named-ctor prescan walked up from each constructor signature looking only for `class_definition`. The pinned FFI bindings declare their whole surface as `extension type` containers, so it registered 0 of 159 constructor signatures in native_cupertino_bindings.dart and every `Foo.named(...)` call inside such a container fell through to the keyword branch — the truth published `calls -> as` (the FFI `as` constructor's name) where the analyzer published the correct `instantiates`. Fix: accept `extension_type_declaration` as a constructor-owning container, mirroring DARTD21 and the oracle's own extension-type branch. Analyzer untouched, per the ruling.",
-    "#936 (cold pool keyed on the measured path)": "`coldPoolPick` recorded the absolute path it measured; for a corpus whose checkout is dirty or moved, that is a detached worktree under /tmp/m14-frozen-corpus-<hash>/, a NEW directory every run — so nothing ever looked sampled, the `[cold-pool] N/M fresh` disclosure line read 100% fresh forever, and the pool grew without bound. Fix: key on the corpus-relative path, accepting the old absolute spelling on read so in-place lanes are not reset. Found and closed by this round's full-extent work; it is lane-neutral machinery, so every lane measured on a frozen corpus was sampling blind."
+    "#936 (cold pool keyed on the measured path)": "`coldPoolPick` recorded the absolute path it measured; for a corpus whose checkout is dirty or moved, that is a detached worktree under /tmp/m14-frozen-corpus-<hash>/, a NEW directory every run — so nothing ever looked sampled, the `[cold-pool] N/M fresh` disclosure line read 100% fresh forever, and the pool grew without bound. Fix: key on the corpus-relative path, accepting the old absolute spelling on read so in-place lanes are not reset. Found and closed by this round's full-extent work; it is lane-neutral machinery, so every lane measured on a frozen corpus was sampling blind.",
+    "#914 (go implements — the lane's last non-zero count)": "variadic interface parameters (which also fabricated `unimplementedDialer -> Dialer`), receiver-only implementors, alias interfaces, diamond interface embedding, and the ORACLE's name-only method-set comparison. Post-fix the lane reads 0 MISSING / 0 UNEXPLAINED on EVERY label the harness compares: go-tools full extent 1,931 files (truth 30,695) and terraform full extent 1,993 files (truth 40,913), plus kubernetes 13,488 files in four index-range chunks with `selected == read, skips 0`. Executed negative against HEAD's real code: pre-fix 5 of 8 expected edges missing and 5 forbidden pairs fabricated (2 of them by the ANALYZER); post-fix 8/8 and 0. Pins: fixture go/implements-signature-914, four go/impl-* mutants, F9-PROBE-GO-IMPL-SIGNATURE (oracleForbid), spec GO20-GO24. Record: reviews/go/fifth-review.md."
   }
 }

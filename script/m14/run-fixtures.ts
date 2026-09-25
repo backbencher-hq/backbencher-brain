@@ -66,6 +66,17 @@ interface Entry { [k: string]: any }
 // M59 (#825): `line_number: null` is a supported constraint (see below) — the
 // unknown state, asserted rather than assumed. `undefined`/`null` both satisfy it;
 // a number (including the old fabricated 0) does not.
+/**
+ * Keys a `parameters` pin may NOT assert, each for a named reason:
+ *   `note`    — documentation; dart's DARTD13 rows carry one.
+ *   `isNamed` — dart carries it on the SYMBOL's metadata, not on a parameter,
+ *               so asserting it here would be a false alarm in another lane.
+ * Everything else a pin names IS asserted (go #914): `isVariadic` decides a Go
+ * method signature, and a payload field no pin can reach is exactly where a
+ * regression hides.
+ */
+const PARAM_PIN_EXEMPT = new Set(["note", "isNamed"])
+
 function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
     // Documentation fields on expectation entries are NOT match constraints.
@@ -330,11 +341,16 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       if (!sym) { problems.push(`expectParameters: symbol ${want.symbol}${want.ownerName ? " in " + want.ownerName : ""} not found`); continue }
       const actual: Entry[] = sym?.parameters ?? []
       for (const wp of want.parameters ?? []) {
-        const hit = actual.some((p: any) => {
-          if (wp.name !== undefined && p.name !== wp.name) return false
-          if (wp.type !== undefined && p.type !== wp.type) return false
-          return true
-        })
+        // EVERY key the pin names, not just name/type (go #914). The old
+        // matcher hard-coded those two fields, so a payload field that decides
+        // a signature could not be pinned at all: `...T` is a DIFFERENT Go type
+        // from `T`, the analyzer carries that in `isVariadic`, and a field that
+        // cannot be asserted is exactly where a regression hides. Keys a pin
+        // does not name are still ignored, so every existing pin keeps its
+        // exact meaning.
+        const hit = actual.some((p: any) =>
+          Object.entries(wp).every(([k, v]) => PARAM_PIN_EXEMPT.has(k) || p[k] === v),
+        )
         if (!hit) {
           problems.push(`expected ${want.symbol} parameter ${JSON.stringify(wp)}; got: ${JSON.stringify(actual.map((p: any) => ({ name: p.name, type: p.type })))}`)
         }
