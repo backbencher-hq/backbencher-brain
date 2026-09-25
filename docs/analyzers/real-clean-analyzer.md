@@ -83,7 +83,19 @@
   linear sweep.
 - Corpus envelope (clean_stdlib@6971a8a, 62 files ≥1KB):
   1,307 symbols / 1,416 relationships in 3.0s (435 syms/s) — see
-  `validation/m12/results/clean-complexity.json`.
+  `validation/m12/results/clean-complexity.json`. **Disclosed: that artifact is unscorable
+  by the M60 envelope instrument** (`validation/m60/results/analyzer-complexity.json`,
+  verdict `unscorable`, severity 5) because it records no `loadRule` (#871), no
+  `corpusManifest` (#909) and no `userCpuMsPerFile`/`loadAvg1` on its corpus row — so the
+  wall-clock figure above is not load-stable and predates the v1.2.7 pin. Re-measuring it
+  with load context is owed, and it is the only documented number on this lane that is not
+  artifact-backed to the current standard.
+- Cyclomatic complexity (`metadata.cyclomaticComplexity`) counts `case_expression`,
+  `case_alternative`, `guard_equation` (function guards), `guard` (list-comprehension
+  qualifiers) and `binary_expression`. Before the fix it counted `guard` and NOT
+  `guard_equation`, i.e. 23 comprehension filters were measured and 1,594 function guards were
+  not; `script/m14/verify-probe-battery.ts` (`F9-PROBE-CLEAN-GUARD-COMPLEXITY`) asserts the
+  delta now.
 
 ## Verification evidence
 
@@ -120,6 +132,38 @@
   files of the 41-file ≥1KB draw (9.8 %) measured against v1.2.4, then **1 of 41 (2.4 %)** against
   v1.2.7 (`script/m12/clean-corpus-errors.ts`) — measured a smaller draw; the file that no grammar
   of this pin parses remains `_SystemDynamic.icl` (inline `code { ... }` blocks).
+- Fixture coverage (F6, new enrolment): `script/m14/spec/clean-completeness.json`
+  classifies all 37 dispatch literals plus the silent wrappers, the three declared gaps and the
+  eight rulings, and the gate reads **handled=37, fixtureTypes=91, uncovered=0, deadLiterals=0
+  — PASS**. The lane was absent from this gate until now, which is how the analyzer's own
+  coverage claim went unchecked: enrolling it is what surfaced that 13 dispatch shapes (case,
+  lambda, guards, where, comprehension, the qualified call, records, the class trio) occurred in
+  NO fixture parse tree.
+- Fixtures (F3): five, each pinning a contract rather than a snapshot —
+  `definition-module-interface.dcl` (all four `signature_name` shapes publish AND export),
+  `signature-definition-merge.icl` (the merge is one entity whose range is the definition's; an
+  operator's call belongs to the operator and is released at scope exit),
+  `instance-target-name-collision.icl` (a type and its instance collide on one name; the export
+  list dedupes first-wins), `expression-shapes.icl` (the shapes above), and
+  `import-modules-alias-884.icl` (#884).
+- Mutation hardening (F4): **seven mutants, all caught**, each a revert of a MEASURED state —
+  declarations-not-published, declaration-range-wins, declaration-beside-definition,
+  operator-not-callable, operator-attribution-leak, export-owner-negation, export-duplicate-name.
+  `script/m14/tmp/mutant-catch-reasons.ts` prints WHY each died, so a mutant cannot be "caught"
+  by an expectation unrelated to its defect class. Run scoped (`BB_MUTANT_ONLY="clean/"`); the
+  canonical whole-set F4 artifact is a separate act.
+- Probes (F9): four CLEAN probes in the battery (36 total) — the `.dcl` interface, the
+  guard-equation complexity signal, and two SOURCE-AWARE checks (operator scope exit, head-pattern
+  attribution) that assert the analyzer and the oracle agree on both the edge and its absence.
+- Two defects this enrolment found, both in this analyzer rather than in the data:
+  `cyclomaticComplexity` counted the `guard` node type — 23 corpus sites, every one a
+  LIST-COMPREHENSION qualifier — while `guard_equation` (1,594 function guards) went uncounted; and
+  the function-head pattern gate tested for a child typed `operator` with text `=`, which this
+  grammar never produces (a definition's children are name/pattern…/body; the corpora's 1,576
+  `operator` nodes are operator symbols under binary_expression/unary_expression/paren_pattern), so
+  the gate was dead. Both are fixed and probe-pinned; the pattern gate is a dormant-guard repair,
+  and no fixture can catch its regression (head patterns parse as `constructor_pattern`, never as
+  applications), which is exactly why the probe asserts it directly.
 - M11 gates: FP probe genuinely **1.000/1.000** (the cached
   `fp-observed.json` was stale — honest regeneration exposed 0.986/0.920,
   fixed by emitting record fields + class-member methods; probe now real);
