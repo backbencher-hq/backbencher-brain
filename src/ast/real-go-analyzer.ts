@@ -171,12 +171,24 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       relationships.push({
         source: packageName || filePath,
         target: imp.module || "",
-        type: ASTEngine.RelationshipType.References,
+        // The FAMILY'S first-class `imports` kind, not a `references` edge
+        // (#799 round). An import names a MODULE, not a symbol: with the edge
+        // labelled `references`, every import path landed in the lane's
+        // references target surface, and an import path is a string literal
+        // (`net/http`, `github.com/google/go-cmp/cmp`) whose separators — `/`,
+        // `.`, `-` — no Go declaration may contain. R10 asks whether a target is
+        // a NAME; the answer for a module specifier is that it is a dependency,
+        // and the family's label for a dependency is `imports` (c moved to it in
+        // #910; go's own requiredKinds has named `imports` since the wave). The
+        // references surface is now separator-free, so a future foreign spelling
+        // there fails R10 immediately instead of hiding behind a recorded
+        // import-path convention.
+        type: ASTEngine.RelationshipType.Imports,
         confidence: 0.9,
-        // isImport:true makes the edge pinnable as the "imports" relationship
-        // kind by completeness section B (family convention — c pins the
-        // stdlib.h include edge the same way); isGoImportDep keeps the go-idiom
-        // marker for the oracle.
+        // isImport:true + isGoImportDep keep the edge pinnable as the "imports"
+        // relationship kind by completeness section B, which reads the MARKER
+        // (script/m14/completeness-inventory.ts, section B) — so the kind is
+        // claimed twice over and the evidence tier stays import_based.
         // M59.A7 (#825): the import_spec, whose line is the path's line for a
         // single import and for each entry of a grouped one (the spec starts
         // at its path — an alias would share the line).
@@ -272,6 +284,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = String(r.type ?? "")
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      // The dedicated `imports` kind is an import-based fact (the JVM lanes'
+      // T1/kotlin K8 regression class: the classifier's isImport branch fired
+      // only for `references`, so the dedicated kind fell through to
+      // usage_contextual). Go's import edges moved to this label this round.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") {
         md.evidenceClass =
           md.isGoImportDep || md.isImport ? "import_based"
@@ -344,16 +361,30 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         const names: Node[] = []
         collectTypeNameNodes(r, names)
         for (const t of names) {
-          const key = `${source}|${t.text}|${relType}`
+          // R10 (#799 round): a QUALIFIED type USE is published under the name
+          // the lane would publish for that type as a symbol — `io.Writer` ->
+          // `Writer` — with the package-qualified spelling kept in
+          // metadata.qualifiedType. One node kind, one answer: this is the
+          // rule the same round applied to struct/interface embedding's
+          // `extends` target, and it is what retires `references|.` for this
+          // surface. The R10 census measures the separators in a lane's
+          // TARGETS against the characters its own SYMBOLS use, and no Go
+          // declaration may contain `.`; a qualified use is written `pkg.Name`
+          // but DECLARES `Name`. (`uses` already targeted the leaf for
+          // `pkg.Fn` selector uses, so the raw form was this surface alone.)
+          const qualified = t.type === "qualified_type" ? t.text : undefined
+          const dot = qualified ? qualified.lastIndexOf(".") : -1
+          const target = qualified && dot > 0 ? qualified.slice(dot + 1) : t.text
+          const key = `${source}|${target}|${relType}`
           if (emitted.has(key)) continue
           emitted.add(key)
           relationships.push({
             source,
-            target: t.text,
+            target,
             type: ASTEngine.RelationshipType.References,
             confidence: 0.95,
             ...(this.nodeLine(t) ? { line_number: this.nodeLine(t)! } : {}),
-            metadata: { relationshipType: relType },
+            metadata: { relationshipType: relType, ...(qualified ? { qualifiedType: qualified } : {}) },
           })
         }
       }
@@ -607,9 +638,40 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let j = 0; j < child.namedChildCount; j++) {
           const fieldDecl = child.namedChild(j)
           if (fieldDecl?.type === "field_declaration") {
-            // Extract field name and type
-            const fieldNameNode = fieldDecl.childForFieldName("name")
+            // #889: a grouped field declaration names ONE OR MORE fields
+            // (`A, B int`), and the grammar's `name` field exposes only the
+            // FIRST `field_identifier` — so `childForFieldName("name")`
+            // published `A` and silently dropped `B` (and `D`/`E` of
+            // `C, D, E string`). The name nodes are collected the same way
+            // `extractGoVariables` already collects var/const names, because
+            // it is the same rule: a declaration that names N names declares N
+            // symbols. GO5's blank-identifier rule applies here too — Go
+            // allows `_ int` as a padding field, and `_` is not a declaration.
             const fieldTypeNode = fieldDecl.childForFieldName("type")
+            // Declared name NODES (a grouped declaration has several), deduped
+            // by SOURCE POSITION rather than object identity: tree-sitter hands
+            // out a fresh node wrapper per accessor call, so `includes()` never
+            // matches and the first name would be published twice.
+            const declaredNameNodes: Node[] = []
+            const seenFieldStart = new Set<number>()
+            const addDeclaredName = (n: Node | null | undefined) => {
+              if (!n) return
+              const at = n.startIndex ?? -1
+              if (seenFieldStart.has(at)) return
+              seenFieldStart.add(at)
+              declaredNameNodes.push(n)
+            }
+            addDeclaredName(fieldDecl.childForFieldName("name"))
+            for (let k = 0; k < fieldDecl.namedChildCount; k++) {
+              const c = fieldDecl.namedChild(k)
+              if (c && c.type === "field_identifier") addDeclaredName(c)
+            }
+            // Go's own rule (GO5, already applied to var/const): `_` declares
+            // nothing. It is a NAME though — `_ bool` is not an embedded field,
+            // so the embedded branch below must not fire for it (publishing a
+            // field named `bool` was this fixture's first catch).
+            const fieldNameNodes = declaredNameNodes.filter((n) => n.text !== "_")
+            const hasDeclaredName = declaredNameNodes.length > 0
             // Extract struct tags like `json:"name"` — pure string scan over
             // the raw_string_literal content (backtick-delimited), no regex.
             const tagNode = fieldDecl.childForFieldName("tag")
@@ -619,11 +681,42 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               structTags = this.parseStructTags(tagText)
             }
 
-            if (fieldNameNode) {
+            // Embedded field (`io.Reader`, `*S2`, `T[P]`): no explicit name, but
+            // the language still declares a FIELD — named by the type's leaf.
+            // Registered rather than silent, and the same leaf rule the
+            // embedded-interface path already uses (#889's second surface).
+            if (!hasDeclaredName && fieldTypeNode) {
+              const embeddedName = this.goEmbeddedFieldName(fieldTypeNode)
+              if (embeddedName) {
+                symbols.push({
+                  name: embeddedName,
+                  kind: ASTEngine.SymbolKind.Property,
+                  range: this.nodeToRange(fieldTypeNode),
+                  returnType: fieldTypeNode.text,
+                  visibility: this.isGoExported(embeddedName) ? "public" : "private",
+                  ownerName: structName,
+                  ownerKind: ASTEngine.SymbolKind.Struct,
+                  metadata: {
+                    structTags: getObjectKeysLength(structTags) > 0 ? structTags : undefined,
+                    nodeType: fieldDecl.type,
+                    isStructField: true,
+                    fieldType: fieldTypeNode.text,
+                    isExported: this.isGoExported(embeddedName),
+                    isEmbeddedField: true,
+                    embeddedField: fieldTypeNode.text,
+                  },
+                })
+              }
+            }
+
+            for (const fieldNameNode of fieldNameNodes) {
               symbols.push({
                 name: fieldNameNode.text,
                 kind: ASTEngine.SymbolKind.Property,
-                range: this.nodeToRange(fieldDecl),
+                // The FIELD's own span, not the whole declaration: `A, B int`
+                // names two fields at two positions, and a consumer that jumps
+                // to `B` must land on `B` (#919's range rule).
+                range: this.nodeToRange(fieldNameNode),
                 returnType: fieldTypeNode?.text,
                 visibility: this.isGoExported(fieldNameNode.text) ? "public" : "private",
                 ownerName: structName,
@@ -634,6 +727,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                   isStructField: true,
                   fieldType: fieldTypeNode?.text,
                   isExported: this.isGoExported(fieldNameNode.text),
+                  // #889: this field shares its declaration with others
+                  groupedFieldDeclaration: fieldNameNodes.length > 1,
                 },
               })
             }
@@ -642,6 +737,41 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       }
     }
+  }
+
+  /**
+   * The NAME an embedded field declares.
+   *
+   * Go's spec: "A field declared with a type but no explicit field name is
+   * called an embedded field ... The unqualified type name acts as the field
+   * name." So `io.Reader` declares a field `Reader`, `*S2` declares `S2`, and
+   * `T[P]` declares `T` — the same LEAF rule the embedded-INTERFACE path in
+   * `extractInterfaceMethods` already applies. Wrappers are transparent; only
+   * the leaf names the field.
+   */
+  private goEmbeddedFieldName(typeNode: Node): string | undefined {
+    let cur: Node | undefined = typeNode
+    for (let guard = 0; guard < 8 && cur; guard++) {
+      const t = cur.type
+      if (t === "pointer_type") {
+        cur = (cur.namedChildCount > 0 ? cur.namedChild(0) : undefined) ?? undefined
+        continue
+      }
+      if (t === "generic_type") {
+        cur = (cur.namedChildCount > 0 ? cur.namedChild(0) : undefined) ?? undefined
+        continue
+      }
+      break
+    }
+    if (!cur) return undefined
+    if (cur.type !== "type_identifier" && cur.type !== "qualified_type") return undefined
+    const raw = cur.text
+    const dot = raw.lastIndexOf(".")
+    const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+    // A dot-imported external type still names its own leaf; a leaf that is not
+    // an identifier (a qualified type with generics, an error-recovered node)
+    // names nothing honest, so it contributes no symbol.
+    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : undefined
   }
 
   /**
@@ -1389,9 +1519,24 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (structSpec) {
             const embeddedTypeNodes = this.extractGoEmbeddedTypeNodes(structSpec)
             forEachSymbol(embeddedTypeNodes, (embeddedType) => {
+              // R10 (#889 round): the target is the embedded type's LEAF, the
+              // same rule the interface branch below applies and the same way
+              // this lane spells every other name surface (its own
+              // embedded-interface member symbol is `Closer`, `contains`/
+              // `references`/`uses` all resolve to leaves). Publishing RAW
+              // source text (`io.Reader`, or `Pair[int, string]` for an
+              // embedded generic instantiation) made one relationship kind
+              // spell the same type two ways inside one file, and it is what
+              // put `extends|.` in the lane's unruled separator vocabulary. A
+              // local leaf still resolves; an external one stays a
+              // dangling-but-real target, exactly like `io.Closer` in the
+              // interface branch. The raw spelling is KEPT in metadata.
+              const rawEmbedded = String(embeddedType.text)
+              const embedLeaf = this.goEmbeddedFieldName(embeddedType)
+              if (!embedLeaf) return
               relationships.push({
                 source: typeName,
-                target: embeddedType.text,
+                target: embedLeaf,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 0.8,
                 // M59.A7 (#825): the EMBEDDED TYPE's line — the site the
@@ -1402,6 +1547,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
                   isEmbedding: true,
                   isAnonymous: true,
                   embedType: "struct_composition_extends",
+                  embeddedStruct: rawEmbedded,
                 },
               })
             })
@@ -1796,7 +1942,27 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             continue
           }
-          if (!leaf) continue
+          if (!leaf) {
+            // #799 round: an UNNAMEABLE callee is not a reason to abandon the
+            // subtree. resolveGoCallLeaf returns undefined for parenthesized,
+            // index/generic-instantiation and PARSE-RECOVERY callees; the old
+            // `continue` therefore pruned real code nested under debris. The
+            // measured case (go-tools @full extent, the two `calls` MISSING
+            // rows of slicesbackward.go): the pinned grammar's error recovery
+            // wraps `func indexExprMethodCall(s []sync.Mutex) {...}` in
+            // `call_expression` chains whose callee is another call_expression,
+            // so `s[i].Lock()` / `s[i].Unlock()` were never reached while
+            // `s[i].String()` twelve lines later was — the difference was
+            // recovery luck, not source. No edge is claimed here (an unnamed
+            // callee names no target); the walk descends, exactly like the
+            // oracle's flat DFS, so nested real calls are found and nested
+            // debris is judged by the same rules everywhere in the file.
+            for (let i = node.namedChildCount - 1; i >= 0; i--) {
+              const child = node.namedChild(i)
+              if (child) stack.push(child)
+            }
+            continue
+          }
           const qualified = fn.type === "selector_expression"
           const isCtor = leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase()
           const emit = !this.isGoBuiltin(leaf) && (qualified || dotImported || declared.has(leaf) || (isCtor && declared.has(leaf)))
@@ -1864,6 +2030,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const seen = new Set<string>()
     while (stack.length > 0) {
       const node = stack.pop()!
+      // A GRAMMAR error region is not evidence of a construction. The pinned
+      // tree-sitter-go errors on two legal constructs — a package-scope generic
+      // function VALUE (`var _ = slices.Backward[[]int]`) and a method whose
+      // receiver is an instantiated generic type (`func (Either[A, B]) A() A`)
+      // — and error RECOVERY re-reads the following declaration's text as a
+      // composite literal: for `func caller(s []int) {` it produced
+      // `composite_literal "s []int) { _ = s }"` and this pass published
+      // `instantiates -> s`, i.e. a construction edge to a NAME the source
+      // never constructs (and named after a parameter). The oracle mirrored the
+      // same fabrication from the same broken tree, so the differential agreed
+      // with it. Neither side derives construction from an ERROR subtree now.
+      if (node.type === "ERROR" || node.isMissing) continue
       // Package-scope stored-closure contract (mirrors
       // analyzeGoPackageScopeCalls and the oracle): a func_literal that is
       // NOT immediately invoked AND has no enclosing function/method is a

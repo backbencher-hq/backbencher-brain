@@ -5354,6 +5354,125 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "uses" && normRel(x).source === "sized" && normRel(x).target === "N")) }),
   },
   {
+    id: "go/grouped-field-first-name-only",
+    language: "go",
+    defectClass: "symbol-loss",
+    description:
+      "#889 regression: a grouped field declaration publishes only its FIRST name again (`A, B, C int` -> `A`), and an embedded field (`Inner`, `*Pair[int, string]`) publishes nothing at all — the pre-fix reading, reconstructed from the result's own metadata (`groupedFieldDeclaration` marks the siblings, `isEmbeddedField` the embedded ones). Caught by go/grouped-and-embedded-fields-889: its expectSymbols name B/C/Inner/Pair/pair-owner properties, its contains expectations name the same, and its forbidSymbols pin `_`/`bool` so a blank-field re-read cannot pass either.",
+    transform: r => {
+      const groupedFirst = new Set<string>()
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => {
+          if (s.metadata?.isEmbeddedField) return false
+          if (!s.metadata?.groupedFieldDeclaration) return true
+          const key = `${s.ownerName}|${s.metadata?.fieldType}|${s.metadata?.nodeType}`
+          if (groupedFirst.has(key)) return false
+          groupedFirst.add(key)
+          return true
+        }),
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const rel = normRel(x)
+          if (rel.type !== "contains") return true
+          const owner = String(r.symbols?.find((s: any) => s.name === rel.target && s.ownerName === rel.source)?.metadata?.groupedFieldDeclaration ?? false)
+          if (owner === "true") {
+            const hit = (r.symbols ?? []).find((s: any) => s.name === rel.target && s.ownerName === rel.source)
+            const groupedSiblings = (r.symbols ?? []).filter(
+              (s: any) => s.ownerName === rel.source && s.metadata?.groupedFieldDeclaration && s.metadata?.fieldType === hit?.metadata?.fieldType,
+            )
+            if (groupedSiblings.length > 1 && groupedSiblings[0]?.name !== rel.target) return false
+          }
+          for (const s of r.symbols ?? []) {
+            if (s.metadata?.isEmbeddedField && s.name === rel.target && s.ownerName === rel.source) return false
+          }
+          return true
+        }),
+      }
+    },
+  },
+  {
+    id: "go/embedding-target-raw-text",
+    language: "go",
+    defectClass: "name-surface",
+    description:
+      "R10 regression for go: a struct-embedding `extends` target goes back to RAW source text (`io.Reader`, `Pair[int, string]`) instead of the embedded type's LEAF (`Reader`, `Pair`) — the spelling one relationship kind used while every other surface (`contains`, `references`, `uses`, and the embedded-interface member symbol) used leaves. It is also what put `extends|.` in the lane's unruled separator vocabulary. Caught by go/grouped-and-embedded-fields-889, whose forbidRelationships pins `extends Holder -> Pair[int, string]`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const rel = normRel(x)
+        if (rel.type !== "extends") return x
+        const raw = (x.metadata as any)?.embeddedStruct
+        if (!raw) return x
+        return { ...x, target: raw }
+      }),
+    }),
+  },
+  {
+    id: "go/qualified-type-raw-text",
+    language: "go",
+    defectClass: "name-surface",
+    description:
+      "R10 regression for go: a qualified type USE goes back to RAW source text (`io.Writer`, `time.Time`) instead of the leaf of the name the lane would declare for it (`Writer`, `Time`) — the pre-round spelling, reversed here from the result's own metadata (`qualifiedType` carries the package-qualified form). It was the last place in this lane publishing source text as a target while `uses` targeted selector leaves (`pkg.Fn` -> `Fn`) and the same round's `extends` fix targeted the embedded type's leaf, and `references|.` was one of the four separator triples the R10 census reported unruled for go. Caught by go/type-usage-graph and go/relationship-and-payloads, whose expectations pin the leaf plus `meta.qualifiedType`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (normRel(x).type !== "references") return x
+        const q = (x.metadata as any)?.qualifiedType
+        if (!q) return x
+        return { ...x, target: q }
+      }),
+    }),
+  },
+  {
+    id: "go/error-region-construction",
+    language: "go",
+    defectClass: "fabrication",
+    description:
+      "#889 round regression: the pre-fix reading of a GRAMMAR ERROR region goes back — a construction edge is published for a composite literal the error RECOVERY synthesized out of the following declaration's text (`instantiates -> s`, `s` being a parameter of the mangled function). Both sides derived it from the same broken tree, so the differential agreed with the fabrication. Caught by go/grammar-error-not-a-construction-889, which forbids it.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        {
+          source: "global",
+          target: "s",
+          // tsc-friendly literals only: the mutant is a fixture pin, not a producer.
+          type: "instantiates" as any,
+          confidence: 0.8,
+          metadata: { relationshipType: "go_composite_literal_construction", isConstructor: true, evidenceClass: "structural" },
+        },
+      ],
+    }),
+  },
+  {
+    id: "go/error-region-callee-prunes-subtree",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "#799 round regression: a callee the analyzer cannot NAME abandons its subtree again — the package-scope walk returns instead of descending, which is how the two selector calls inside a grammar error region went silent (`s[i].Lock()` / `s[i].Unlock()`, the only non-implements MISSING rows the lane had at FULL extent on go-tools: 1,931 files, missing 12 -> 10, script/m14/tmp/go-799-surface.ts). Caught by go/error-region-callee-descend-799: its expectRelationships name calls -> Lock / calls -> Unlock, since the source really calls them and both sides read the same recovered tree.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        x => !(normRel(x).type === "calls" && (normRel(x).target === "Lock" || normRel(x).target === "Unlock")),
+      ),
+    }),
+  },
+  {
+    id: "go/import-dep-labeled-reference",
+    language: "go",
+    defectClass: "label-surface",
+    description:
+      "#799 round regression: the import dependency goes back to the `references` label (the pre-round state, reconstructed from the edge's own isGoImportDep/isImport marker). An import names a MODULE, so on the references label every import path (`net/http`, `github.com/google/go-cmp/cmp`) joined the lane's references TARGET surface and put `/`, `.` and `-` — characters no Go declaration may contain — into the R10 separator vocabulary, where they could only be excused by a ruling that would also excuse a real spelling defect on the same label. Caught by go/relationship-and-payloads (expects `imports` -> fmt with meta.isImport) and go/callsite-lines-825 (expects the imports edge on the import_spec's line 22).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type) === "imports" && ((x.metadata ?? {}).isGoImportDep || (x.metadata ?? {}).isImport)
+          ? { ...x, type: "references" as any }
+          : x,
+      ),
+    }),
+  },
+  {
     id: "go/map-key-silence",
     language: "go",
     defectClass: "relationship-loss",
