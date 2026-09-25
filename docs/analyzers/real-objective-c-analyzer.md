@@ -3,9 +3,15 @@
 ## Language
 
 - Analyzer file: `src/ast/real-objective-c-analyzer.ts`
-- Parser: `tree-sitter-objc` (pinned `wasm/tree-sitter-objc.wasm`; npm 3.0.2
-  verified behaviorally identical on the corpus — 0 vs 0 grammar errors — so
-  no upgrade was warranted; `translation_unit` → `class_interface`/
+- Parser: `tree-sitter-objc` — **vendored and patched** in `grammars/tree-sitter-objc/`
+  (upstream npm 3.0.2 plus the M60 `macro_prefixed_objc_declaration` rule), built to
+  `wasm/tree-sitter-objc.wasm` with `tree-sitter build --wasm` (CLI 0.26.9, bundled
+  WASI — no emcc, no network). It inherits **upstream** `tree-sitter-c` 0.24.1, not
+  this repo's patched copy: generating against the latter fails outright
+  (`Unresolved conflict: '^' identifier identifier • '<'`, objc's `generic_specifier`
+  vs the C rule's `identifier type_specifier`). See
+  `reviews/m60-743-objc-grammar-macro-specifier.md`; `translation_unit` →
+  `class_interface`/
   `class_implementation`/`protocol_declaration`/`method_declaration`/
   `method_definition`/`property_declaration`/`instance_variable`/
   `function_definition`/`declaration`/`message_expression`/`call_expression`/
@@ -15,6 +21,11 @@
 - Language detection: `.m`/`.mm` → `objective-c`; `.h` headers disambiguated
   by content markers (`@interface`/`@protocol`/`@implementation` → ObjC,
   C++ markers → cpp, else C) in `language-detection.ts`
+- **Sampling universe: the ROUTER's, not an extension list.** The lane reads `.m`
+  plus the headers `language-detection.ts` hands to objective-c (`ext: "m,h"` behind a
+  content guard in `script/m14/differential.ts`). Before the M60 wave it was `"m"`, so
+  **169 headers production already analysed were outside every number this lane had
+  ever reported** — 52% of the language's files on the two pinned corpora.
 - Wired in: `engine.ts getAnalyzer` → `RealObjectiveCAnalyzer`
 - Pure AST — symbols and relationships derive from Tree-sitter nodes/fields,
   never source-text scanning. The only string processing is on values already
@@ -132,12 +143,24 @@ scans. Imports are extracted during the same walk; no second pass over source.
 
 ## Corpus validation
 
-`script/m12/objc-corpus-errors.ts` scans the entire pinned corpus
+The lane's corpora are pinned clones, read at **full extent** (no draw):
+`sdwebimage` 247 objc-routed files (104 `.m` + 143 admitted `.h`) and `afnetworking`
+75 (49 + 26) — 322 files / 23,379 relationships. Both run `MISSING=0 unexplained=0`
+with 100% tree-truth coverage. Before the M60 wave the header half did not exist in
+these claims, and that is where the wave's defect lived: **11 headers lost 122 real
+symbols**, `AFHTTPSessionManager.h` analysing to 0 of its 37 declared symbols.
+
+M12 differential: 89 facts, TP 89 / FP 0 / FN 0, precision 1.000 / recall 1.000,
+`unknown 0`, digest `a776415bbaac`. Line contract over the same widened set: 23,379
+edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT.
+
+`script/m12/objc-corpus-errors.ts` also scans the M11-era pinned corpus
 (Clyde@8fec41dd, `git ls-files '*.m' '*.h'`, 7 files):
 
 - **7/7 parse clean — 0 grammar errors, 0 crashes, 0 timeouts**
-- npm tree-sitter-objc 3.0.2 wasm verified identical (0 vs 0 errors, 0
-  fixes, 0 regressions) — no grammar upgrade warranted
+- npm tree-sitter-objc 3.0.2 wasm verified identical on THAT corpus (0 vs 0 errors,
+  0 fixes, 0 regressions) — which is why no upgrade was warranted then: a 7-file
+  all-Clyde corpus contains neither the idiom nor the volume that exposed the defect
 - Shape-safety: all 32 analyzer node-type references exist in the grammar
   except 8 dead defensive alternatives the grammar never emits
   (`category_interface`/`category_implementation` — the grammar emits
@@ -149,8 +172,21 @@ scans. Imports are extracted during the same walk; no second pass over source.
 
 ## Limitations (honest gaps)
 
+- **objc does not inherit the C grammar's `#743` patch** (measured impossible to
+  build, see Language above). A bare macro decorating a *C* declaration inside a header
+  (`EXPORT NSInteger const kX;` stacked under another macro) is outside the M60 rule,
+  which only decorates `@`-declarations. Its own wave.
+- **A bare macro line at file scope with nothing after it still parses as a
+  `declaration` closed by a MISSING `;`**, and such a declaration publishes nothing
+  (`isUnterminatedDeclaration`) because it has no declarator. Stacked macro lines were
+  the shape this caught (`variable PROTOCOL_MACRO`); the grammar cannot distinguish
+  them from a declaration because tree-sitter has no newline sensitivity.
+- **42 of the 63 error-bearing corpus files still contain ERROR nodes**, outside the
+  nullability class this wave fixed (observed remainder includes macro-invocation
+  typedefs under a prologue macro). Extractable loss in that tail was NOT measured —
+  one verified class, not a claim about the rest.
 - `typedef NS_ENUM(NSInteger, X) {...}` / `NS_OPTIONS` macro forms: the
-  pinned grammar emits ERROR nodes (NS_ENUM is a macro, not a keyword). The
+  grammar emits ERROR nodes (NS_ENUM is a macro, not a keyword). The
   plain `typedef enum {...}` form extracts fully. Recorded in the manifest
   note; no upstream grammar parses these today.
 - Cross-file type resolution (e.g. `UserService` declared in UserService.h
@@ -198,3 +234,19 @@ scans. Imports are extracted during the same walk; no second pass over source.
 - Corpus: 7/7 files clean, 100 symbols / 333 relationships measured
 - M11 gate: `validation/m11/probe-systems.ts` — 1.000/1.000 (Logger.h/.m
   symbols intact, no regression)
+- **M60 grammar wave 2026-09-25 (#743's class, objc half).** `NS_ASSUME_NONNULL_BEGIN`
+  immediately above an `@interface` — the idiom every Apple header is written in — was
+  read as the first specifier of a declaration that then swallowed the `@interface` line
+  into an ERROR *inside that declaration*, costing the whole decorated surface and
+  minting phantoms from the wreckage (`variable NSObject`, `variable void`, `variable
+  provider` for a parameter name). Landed as `macro_prefixed_objc_declaration` in the
+  vendored grammar (no conflict entry demanded; `prec(-1)` load-bearing, and dropping it
+  was built and refused — `Add a conflict for these rules: type_specifier,
+  macro_prefixed_objc_declaration`). Full-corpus A/B, every file: 0 files worsened, 0
+  clean files perturbed, ERROR/MISSING nodes 795 → 582. The analyzer's own output was
+  diffed edge by edge because the F5 oracle walks the SAME tree and cannot tell a
+  removed phantom from a lost edge: 0 real symbol losses, 0 relationship losses, against
+  +113 symbols and +158 relationships. Pins: `objc/macro-prefixed-declaration` (fails on
+  the committed wasm, passes on this one) and mutant
+  `objc/publish-unterminated-declaration`; record
+  `reviews/m60-743-objc-grammar-macro-specifier.md`.

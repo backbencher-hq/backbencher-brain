@@ -40,16 +40,16 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
-        "bytes": 22600
+        "sha256": "52fd023113bb2524702994cecbec84e04c3b0f7c76c9716baf4299805c1d65c3",
+        "bytes": 30602
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
         "bytes": 89802
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "73bb44a7d8748a71e2ceaa030af0fcb771cfa9605b95ed35898965e961eb6a7c",
-        "bytes": 131026
+        "sha256": "5c4105e1555e8ac9c2e92d0b0f8c9fdd317e0d746fa4ac5823324eec1623bdcf",
+        "bytes": 133501
       },
       "src/ast/real-csharp-analyzer.ts": {
         "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
@@ -128,8 +128,8 @@
         "bytes": 13413
       },
       "src/ast/real-objective-c-analyzer.ts": {
-        "sha256": "b6fe91d7e477f81dc15f41e1c7659abe97eb146f1b724810311d2ba53e4f8caa",
-        "bytes": 72556
+        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
+        "bytes": 74340
       },
       "src/ast/real-perl-analyzer.ts": {
         "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
@@ -260,7 +260,7 @@
         "bytes": 57888
       }
     },
-    "digest": "cc7c1394e671ca704d40a42e496cc79246f966ea9e818fb0eabe0d0b4bdf7297",
+    "digest": "a776415bbaacd106fe8dbd0fe296d7cb0514a312cf43bcea9a8bf954f77df645",
     "parser": null
   },
   "truthSource": "manual_audit",
@@ -411,11 +411,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:objective-c",
-      "wallTimeMs": 35.405218,
-      "userCpuMs": 81.692,
-      "systemCpuMs": 8.339,
-      "peakRssBytes": 294989824,
-      "rssDeltaBytes": 6291456,
+      "wallTimeMs": 41.322537,
+      "userCpuMs": 83.891,
+      "systemCpuMs": 14.746,
+      "peakRssBytes": 270299136,
+      "rssDeltaBytes": 5898240,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
