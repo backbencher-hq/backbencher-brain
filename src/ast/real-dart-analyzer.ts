@@ -146,7 +146,17 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // owner:name:kind so a class with `get value` AND `set value` keeps both
     // symbols (setters carry the value param; the pair collapsed to one
     // Property symbol before).
-    const seenMembers = new Set<string>() // owner:name:kind — accessor-pair dedup
+    // owner:name:kind -> index in `symbols`. The accessor-pair dedup (DARTD12)
+    // AND the duplicate-declaration ruling (#753/DARTD20) both live here, so the
+    // value is the slot the LAST declaration of a name must replace.
+    const seenMembers = new Map<string, number>()
+    // M60 line contract, SYMBOL side: `contains`/`overrides` name the DECLARED
+    // member, and a WRAPPED declaration puts the name on a later line than the
+    // declaration's start — `final void Function(UrlRequest? u,\n    String? s)\n        _onSucceeded;` (cronet_http jni_bindings.dart). MEASURED before
+    // this map: 148 of 32,016 edges on a 120-file draw claimed the start line,
+    // i.e. a line the named token is not written on. Keyed by name+range
+    // because one declaration node can carry several names (`int a = 1, b = 2`).
+    const nameLines = new Map<string, number>()
 
     while (stack.length > 0) {
       const { node, scopes: frameScopes, functionDepth } = stack.pop()!
@@ -258,6 +268,60 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        case "extension_type_declaration": {
+          // Dart 3 EXTENSION TYPES (`extension type X._(objc.ObjCObject o)
+          // implements I`) — registered as MISSING in the lane's own spec
+          // (script/m14/spec/dart-completeness.json: "Dart 3 extension type
+          // symbols", node_type "extension_type_declaration,
+          // representation_declaration") and recorded by the M60 shape census
+          // as UNSCANNED (validation/m60/results/unscanned-shapes.json, 169
+          // occurrences). The #753 duplicate census over the FULL extent found
+          // it independently: 303 declarations in 4 pinned dart-http files
+          // (jni/objc bindings), whose members were emitted as TOP-LEVEL
+          // symbols with no owner — no `contains`, no heritage, no enclosing
+          // type for a call. Probed shape (dt-exttype-shape.ts):
+          //   extension_type_declaration
+          //     identifier [field=name]  <- the container name
+          //     representation_declaration > identifier [field=name] <- field
+          //     interfaces               <- heritage (same clause as a class)
+          //     class_body [field=body]  <- members
+          const name = node.childForFieldName("name")?.text
+          if (name) {
+            const comments = this.collectComments(node)
+            const rep = this.findChildByType(node, "representation_declaration")
+            const repType = this.representationTypeName(rep)
+            patterns["Extensions"] = true
+            symbols.push({
+              name,
+              kind: ASTEngine.SymbolKind.Extension,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: name.startsWith("_") ? "private" : "public",
+              comments,
+              metadata: { isExtension: true, isExtensionType: true, representationType: repType },
+            })
+            scopeStack.push({ name, kind: DartScopeKind.Class })
+            // the REPRESENTATION FIELD is a real member accessor of the type
+            // (`X(T field)` exposes `field`), so it joins the symbol table and
+            // gets a `contains` edge like any other declared member.
+            const repName = rep?.childForFieldName("name")?.text
+            if (rep && repName && repName !== "_") {
+              symbols.push({
+                name: repName,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.nodeToRange(rep),
+                scope: name,
+                ownerName: name,
+                ownerKind: ASTEngine.SymbolKind.Extension,
+                visibility: repName.startsWith("_") ? "private" : "public",
+                metadata: { isRepresentationField: true, dataType: repType },
+              })
+            }
+            this.extractClassHeritage(node, name, relationships, patterns)
+          }
+          break
+        }
+
         case "enum_declaration": {
           const name = node.childForFieldName("name")?.text
           if (name) {
@@ -328,11 +392,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 this.processConstructor(node, sig, owner, symbols, relationships, patterns)
               }
             } else {
-              this.processFunctionOrMethod(node, sig, symbols, scopeStack, patterns, seenMembers)
+              this.processFunctionOrMethod(node, sig, symbols, scopeStack, patterns, seenMembers, nameLines)
             }
           } else {
             // field / top-level variable declaration
-            this.processFieldOrVariable(node, symbols, scopeStack)
+            this.processFieldOrVariable(node, symbols, scopeStack, nameLines)
           }
           break
         }
@@ -347,6 +411,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // in `declaration` are handled by that case — skip them here to
           // avoid double-processing.
           if (node.parent?.type === "declaration") break
+          // DARTD20 (#753): the INNER signature of a `method_signature`
+          // wrapper is processed by the WRAPPER's own visit (which digs to
+          // `findInnerSignature`), so visiting it again here built a SECOND
+          // symbol for the same member — and a worse one: the inner node has
+          // no body SIBLING (complexity collapsed to 1) and no annotation
+          // sibling (`@override` was never attached). The FIRST-wins dedup
+          // this lane used to have hid that duplicate; the family ruling's
+          // LAST-wins (registerCallable) exposed it, which is how it was
+          // found: `dart/payload-and-complexity` and
+          // `dart/dedup-and-attribution` failed the moment the ruling
+          // landed. Same rule as the `declaration` guard above.
+          if (node.parent?.type === "method_signature") break
           // Local functions (local_function_declaration > lambda_expression >
           // function_signature[name]) are NOT symbols — family contract: no
           // locals (csharp/python/go never emit them; DARTD8). Without this
@@ -361,14 +437,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (owner && this.isConstructorSignature(inner.type)) {
             this.processConstructor(node, inner, owner, symbols, relationships, patterns)
           } else if (owner || t === "function_declaration") {
-            this.processFunctionOrMethod(node, node, symbols, scopeStack, patterns, seenMembers)
+            this.processFunctionOrMethod(node, node, symbols, scopeStack, patterns, seenMembers, nameLines)
           } else if (t === "function_signature" || t === "getter_signature" || t === "setter_signature") {
             // top-level function/getter/setter — signature with sibling
             // function_body. Top-level accessors were silently dropped before
             // (no dispatch branch), leaving their calls attributed to a
             // non-declared source (DARTD10 — corpus: translate.dart's
             // `List<String> get _deepLKeys`).
-            this.processTopLevelFunction(node, symbols, scopeStack, patterns)
+            this.processTopLevelFunction(node, symbols, scopeStack, patterns, nameLines, seenMembers)
           }
           break
         }
@@ -397,7 +473,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // initialized_identifier_list.
           const parent = node.parent
           if (parent && parent.type === "program") {
-            this.processTopLevelVariables(node, symbols, scopeStack)
+            this.processTopLevelVariables(node, symbols, scopeStack, nameLines)
           }
           break
         }
@@ -421,8 +497,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- Relationship passes -------------------------------------------------
-    this.addContainmentRelationships(symbols, relationships)
-    this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
+    this.addContainmentRelationships(symbols, relationships, nameLines)
+    this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion, nameLines)
     this.extractCallRelationships(rootNode, relationships, moduleName, symbols)
     // Deduplicate identical rows: calls/instantiates emit ONE row PER CALL
     // SITE, so N sites of the same callee in one function push N identical
@@ -563,6 +639,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Parts: [Class, ctor] or [alias, Class, ctor] — the class is
       // second-to-last (singletons like `= _$Y` stay whole).
       const parts: string[] = []
+      // M60 line contract: the node that NAMES the redirect edge is the
+      // redirect target identifier itself (`= A.B` written on a later line
+      // than the `factory` keyword).
+      const partNodes: Node[] = []
       let pastEquals = false
       for (let i = 0; i < sig.childCount; i++) {
         const c = sig.child(i)
@@ -571,15 +651,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c.isNamed && c.type === "=") pastEquals = true
           continue
         }
-        if (c.isNamed && (c.type === "type_identifier" || c.type === "identifier")) parts.push(c.text)
+        if (c.isNamed && (c.type === "type_identifier" || c.type === "identifier")) {
+          parts.push(c.text)
+          partNodes.push(c)
+        }
       }
       const redirectTarget = parts.length <= 1 ? parts[0] : parts[parts.length - 2]
+      const redirectNode = partNodes.length <= 1 ? partNodes[0] : partNodes[partNodes.length - 2]
       if (redirectTarget) {
         relationships.push({
           source: owner,
           target: redirectTarget,
           type: ASTEngine.RelationshipType.Instantiates,
           confidence: 0.95,
+          line_number: this.nodeLine(redirectNode),
           metadata: { isFactoryRedirection: true },
         })
       }
@@ -592,19 +677,29 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     scopeStack: DartScopeEntry[],
     patterns: Record<string, boolean>,
-    seenMembers: Set<string>,
+    seenMembers: Map<string, number>,
+    nameLines: Map<string, number>,
   ): void {
     // Dig through method_signature wrappers to the inner getter/setter/function
     // signature which carries the name field.
     const inner = this.findInnerSignature(sig)
+    const nameNode = this.signatureNameNode(inner)
     const name = this.signatureName(inner)
     if (!name) return
     const owner = scopeOwnerName(scopeStack)
     const isGetter0 = inner.type === "getter_signature"
     const isSetter0 = inner.type === "setter_signature"
     const dedupKey = `${owner ?? "module"}:${name}:${isGetter0 ? "get" : isSetter0 ? "set" : "fn"}`
-    if (seenMembers.has(dedupKey)) return
-    seenMembers.add(dedupKey)
+    // DARTD20 (#753, the family dup-key ruling): one scope declaring the same
+    // member twice is INVALID Dart (a compile error), so no compiling program
+    // reaches the shape — the analyzer's answer is a DETERMINISTIC family
+    // contract. dart kept the FIRST body (the symbol's range, parameters,
+    // return type, comments and `contains` line all described the declaration
+    // that does not run). The family matrix this was registered against is
+    // settled by python's #748, measured on 512 pinned files: 21 of the 25
+    // duplicate-name scopes were declaration CHAINS, 3 were branch
+    // ALTERNATIVES, exactly ONE was a genuine rebinding — and the language's
+    // own answer there was LAST-WINS. Same here (see registerCallable).
 
     const isGetter = isGetter0
     const isSetter = isSetter0
@@ -645,9 +740,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       complexity: this.methodComplexity(node),
       metadata: { isGetter, isSetter, isStatic, isAsync, isAbstract, hasBody: this.hasBody(node) },
     }
-    symbols.push(symbol)
+    // Replace IN PLACE when the scope already declared this name: the symbol
+    // table keeps exactly one entry per (owner,name,kind), and it is the
+    // declaration that RUNS (registerCallable).
+    if (!this.registerCallable(symbols, seenMembers, dedupKey, symbol, nameLines, nameNode)) return
 
     scopeStack.push({ name, kind: DartScopeKind.Function })
+  }
+
+  /**
+   * One symbol per (scope,name,kind), LAST declaration wins (DARTD20 — the
+   * family dup-key ruling; #753). Both producers of callable symbols use this:
+   * a duplicate is a compile error in Dart, so the analyzer's answer for the
+   * shape is a deterministic contract, and the family's (settled by python
+   * #748) is that the LAST declaration owns the name. Returns false when the
+   * symbol REPLACED an earlier one, so the caller can skip its scope push.
+   */
+  private registerCallable(
+    symbols: ASTEngine.UniversalSymbol[],
+    seenMembers: Map<string, number>,
+    dedupKey: string,
+    symbol: ASTEngine.UniversalSymbol,
+    nameLines: Map<string, number>,
+    nameNode: Node | null,
+  ): boolean {
+    if (nameNode) nameLines.set(dartNameLineKey(symbol.name, symbol.range), this.nodeLine(nameNode)!)
+    const priorIdx = seenMembers.get(dedupKey)
+    if (priorIdx !== undefined) {
+      symbols[priorIdx] = symbol
+      return false
+    }
+    seenMembers.set(dedupKey, symbols.length)
+    symbols.push(symbol)
+    return true
   }
 
   private processTopLevelFunction(
@@ -655,6 +780,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     scopeStack: DartScopeEntry[],
     patterns: Record<string, boolean>,
+    nameLines: Map<string, number>,
+    seenMembers: Map<string, number>,
   ): void {
     const nameNode = node.childForFieldName("name") || this.findChildByType(node, "identifier")
     if (!nameNode) return
@@ -666,10 +793,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const comments = this.collectComments(node)
 
     const isAccessor = node.type === "getter_signature" || node.type === "setter_signature"
-    symbols.push({
+    const range = this.rangeIncludingBody(node, node)
+    const symbol: ASTEngine.UniversalSymbol = {
       name,
       kind: isAccessor ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.Function,
-      range: this.rangeIncludingBody(node, node),
+      range,
       scope: scopeString(scopeStack),
       visibility: name.startsWith("_") ? "private" : "public",
       parameters: params,
@@ -684,7 +812,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         isTopLevelFunction: !isAccessor,
         isTopLevelAccessor: isAccessor,
       },
-    })
+    }
+    // #753 (program scope): the duplicate census over the FULL extent found 15
+    // genuine duplicate TOP-LEVEL callables in the pinned corpora (test-file
+    // helpers in proxicall and http2) — dart emitted BOTH symbols for those,
+    // which is the same defect one scope up. Same ruling, same helper.
+    const accessorKind = node.type === "getter_signature" ? "get" : node.type === "setter_signature" ? "set" : "fn"
+    if (!this.registerCallable(symbols, seenMembers, `module:${name}:${accessorKind}`, symbol, nameLines, nameNode)) return
     scopeStack.push({ name, kind: DartScopeKind.Function })
   }
 
@@ -692,6 +826,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     scopeStack: DartScopeEntry[],
+    nameLines: Map<string, number>,
   ): void {
     const declList = this.findChildByType(node, "initialized_identifier_list") ||
       this.findChildByType(node, "static_final_declaration_list") ||
@@ -706,18 +841,22 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isConst = this.hasModifier(node, "const")
     const isLate = this.hasModifier(node, "late")
     const dataType = this.extractFieldType(node, declList)
+    const declRange = this.nodeToRange(node)
 
     for (let i = 0; i < declList.namedChildCount; i++) {
       const child = declList.namedChild(i)
       if (!child) continue
       let name: string | undefined
+      let nameNode: Node | null = null
       if (child.type === "initialized_identifier" || child.type === "static_final_declaration") {
-        const id = this.findChildByType(child, "identifier")
-        name = id?.text
+        nameNode = this.findChildByType(child, "identifier")
+        name = nameNode?.text
       } else if (child.type === "identifier") {
         name = child.text
+        nameNode = child
       }
       if (!name) continue
+      nameLines.set(dartNameLineKey(name, declRange), this.nodeLine(nameNode ?? child)!)
 
       const kind =
         owner
@@ -729,7 +868,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbols.push({
         name,
         kind,
-        range: this.nodeToRange(node),
+        range: declRange,
         scope: scopeString(scopeStack),
         ownerName: owner,
         ownerKind: owner ? scopeOwnerKind(scopeStack) : undefined,
@@ -744,26 +883,31 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     scopeStack: DartScopeEntry[],
+    nameLines: Map<string, number>,
   ): void {
     const isFinal = this.hasModifier(node, "final") || this.hasModifier(node.parent!, "final")
     const isConst = this.hasModifier(node, "const") || this.hasModifier(node.parent!, "const")
     const dataType = this.extractFieldType(node, node)
+    const declRange = this.nodeToRange(node)
 
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
       let name: string | undefined
+      let nameNode: Node | null = null
       if (child.type === "initialized_identifier" || child.type === "static_final_declaration") {
-        const id = this.findChildByType(child, "identifier")
-        name = id?.text
+        nameNode = this.findChildByType(child, "identifier")
+        name = nameNode?.text
       } else if (child.type === "identifier") {
         name = child.text
+        nameNode = child
       }
       if (!name) continue
+      nameLines.set(dartNameLineKey(name, declRange), this.nodeLine(nameNode ?? child)!)
       symbols.push({
         name,
         kind: isConst || isFinal ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
-        range: this.nodeToRange(node),
+        range: declRange,
         scope: scopeString(scopeStack),
         visibility: name.startsWith("_") ? "private" : "public",
         metadata: { isStatic: false, isFinal, isConst, dataType, isField: false, isTopLevelVariable: true },
@@ -793,6 +937,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${uri}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
+          line_number: this.nodeLine(uriNode),
           metadata: { isPart: true, isPartOf: node.type === "part_of_directive" },
         })
       }
@@ -820,6 +965,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: uri,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
+        line_number: this.nodeLine(uriNode),
         metadata: {},
       })
     } else {
@@ -829,6 +975,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: `${uri}:*`,
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
+        line_number: this.nodeLine(uriNode),
         metadata: {},
       })
     }
@@ -841,6 +988,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   private addContainmentRelationships(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
+    nameLines: Map<string, number>,
   ): void {
     for (const symbol of symbols) {
       if (symbol.ownerName) {
@@ -849,6 +997,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: symbol.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1.0,
+          // The member's OWN NAME line — the name node when the producers could
+          // hand one over (a wrapped declaration moves it off the start line),
+          // the declaration start otherwise (php stamps contains the same way).
+          line_number: nameLines.get(dartNameLineKey(symbol.name, symbol.range)) ?? symbol.range?.startLine,
           metadata: {},
         })
       }
@@ -859,6 +1011,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     overrideCompanion?: Map<string, Set<string>>,
+    nameLines?: Map<string, number>,
   ): void {
     // DARTD16: the old engine only checked the DIRECT extends base — so a
     // chain (`A extends B extends C`, hello declared on C) emitted nothing,
@@ -960,6 +1113,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: `${target}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence,
+          // The overriding METHOD's own name line — the node that names the
+          // edge, not the base it shadows (and not a wrapped start line).
+          line_number: nameLines?.get(dartNameLineKey(s.name, s.range)) ?? s.range?.startLine,
           metadata,
         })
       }
@@ -1092,7 +1248,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nm = n.childForFieldName?.("name")?.text
         return nm || owner
       }
-      if (t === "extension_declaration") {
+      if (t === "extension_declaration" || t === "extension_type_declaration") {
         const nm = n.childForFieldName?.("name")?.text || this.extensionTargetType(n)
         return nm || owner
       }
@@ -1178,6 +1334,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: typeNode.text,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            line_number: this.nodeLine(typeNode),
             metadata: { isConstructorInvocation: true },
           })
         }
@@ -1191,7 +1348,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "selector" && this.findChildByType(n, "argument_part")) {
         const { head, links } = this.invocationChain(n)
         if (links.length === 0) {
-          const leaf = this.resolveSelectorCallee(n)
+          const leafNode = this.resolveSelectorCalleeNode(n)
+          const leaf = leafNode?.text ?? null
           if (leaf) {
             if (this.isDartGlobalBuiltin(leaf)) {
               // filtered
@@ -1204,6 +1362,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: leaf,
                 type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.95,
+                line_number: this.nodeLine(leafNode),
                 metadata: {},
               })
             } else {
@@ -1212,6 +1371,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: leaf,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
+                line_number: this.nodeLine(leafNode),
                 metadata: {},
               })
             }
@@ -1220,6 +1380,9 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           const method = links[links.length - 1]
           const before = links.length > 1 ? links[links.length - 2] : this.headNameText(head)
           const headText = this.headNameText(head)
+          // The leaf of the chain is the node that NAMES the edge (a wrapped
+          // `obj.\n method()` puts it on its own line).
+          const calleeNode = n.previousNamedSibling ? this.lastIdentifierNode(n.previousNamedSibling) : null
           if (this.isDartGlobalBuiltin(method)) {
             // filtered
           } else if (
@@ -1233,6 +1396,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: method,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
+              line_number: this.nodeLine(calleeNode),
               metadata: { isNamedConstructor: true, isPrefixQualified: true },
             })
           } else if (
@@ -1244,6 +1408,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: before,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
+              line_number: this.nodeLine(calleeNode),
               metadata: { isNamedConstructor: true },
             })
           } else {
@@ -1252,6 +1417,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: method,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
+              line_number: this.nodeLine(calleeNode),
               metadata: {},
             })
           }
@@ -1266,7 +1432,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // head with an in-file named ctor is a constructor tear-off
       // (`Foo.named` builds Foo — DT-A).
       if (t === "selector" && !this.findChildByType(n, "argument_part")) {
-        const member = this.linkMember(n)
+        const memberNode = this.linkMemberNode(n)
+        const member = memberNode?.text ?? null
         if (member && !this.isDartGlobalBuiltin(member)) {
           const next = n.nextNamedSibling
           const nextIsArgs = !!next && next.type === "selector" && !!this.findChildByType(next, "argument_part")
@@ -1279,6 +1446,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: headText,
                 type: ASTEngine.RelationshipType.Instantiates,
                 confidence: 0.95,
+                line_number: this.nodeLine(memberNode),
                 metadata: { isNamedConstructor: true, isTearOff: true },
               })
             } else {
@@ -1287,6 +1455,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 target: member,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
+                line_number: this.nodeLine(memberNode),
                 metadata: { isMemberRead: true },
               })
             }
@@ -1344,6 +1513,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.6,
+              line_number: this.nodeLine(n),
               metadata: { isBareRead: true },
             })
           } else if (locals.has(txt)) {
@@ -1354,6 +1524,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(n),
               metadata: { isLocalRead: true },
             })
           } else if (!isDeclaredMember && topLevelValues.has(txt)) {
@@ -1364,6 +1535,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: txt,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(n),
               metadata: { isGlobalRead: true },
             })
           }
@@ -1375,15 +1547,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // alias-free); `B() : this.named(x)` constructs the own class.
       if (t === "initializer_list_entry") {        let headIsSuper = false
         let headIsThis = false
+        // The `super`/`this` HEAD token is the node that names the destination
+        // class of the redirection (M60 line contract).
+        let headNode: Node | null = null
         const firstRaw = n.child(0)
         if (firstRaw && !firstRaw.isNamed && (firstRaw.text === "super" || firstRaw.text === "this")) {
           headIsSuper = firstRaw.text === "super"
           headIsThis = firstRaw.text === "this"
+          headNode = firstRaw
         } else {
           const firstNamed = n.namedChild(0)
           if (firstNamed && (firstNamed.type === "super" || firstNamed.type === "this")) {
             headIsSuper = firstNamed.type === "super"
             headIsThis = firstNamed.type === "this"
+            headNode = firstNamed
           }
         }
         if (headIsSuper && owner) {
@@ -1394,6 +1571,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: base,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
+              line_number: this.nodeLine(headNode),
               metadata: { isSuperConstructor: true },
             })
           }
@@ -1403,6 +1581,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: owner,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            line_number: this.nodeLine(headNode),
             metadata: { isRedirectingConstructor: true },
           })
         }
@@ -1414,11 +1593,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "redirection" && owner) {
         let rSuper = false
         let rThis = false
+        let headTok: Node | null = null
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (!c) continue
-          if (c.type === "this") { rThis = true; break }
-          if (c.type === "super") { rSuper = true; break }
+          if (c.type === "this") { rThis = true; headTok = c; break }
+          if (c.type === "super") { rSuper = true; headTok = c; break }
           if (c.type === "identifier" || c.type === "type_identifier" || c.type === "arguments") continue
           break
         }
@@ -1430,6 +1610,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: base,
               type: ASTEngine.RelationshipType.Instantiates,
               confidence: 0.95,
+              line_number: this.nodeLine(headTok),
               metadata: { isSuperConstructor: true },
             })
           }
@@ -1439,6 +1620,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: owner,
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
+            line_number: this.nodeLine(headTok),
             metadata: { isRedirectingConstructor: true },
           })
         }
@@ -1460,6 +1642,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: n.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(n),
               metadata: { isSubscriptBase: true },
             })
           } else if (this.isInsideTemplateSubstitution(n)) {
@@ -1471,6 +1654,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target: n.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 0.9,
+              line_number: this.nodeLine(n),
               metadata: { isInterpolationRead: true },
             })
           }
@@ -1487,6 +1671,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: name,
             type: ASTEngine.RelationshipType.Uses,
             confidence: 0.9,
+            line_number: this.nodeLine(n),
             metadata: { isInterpolationRead: true },
           })
         }
@@ -1518,24 +1703,28 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               c.type !== "conditional_assignable_selector" && c.type !== "selector") continue
           const next = n.namedChild(i + 1)
           if (next && next.type === "argument_part") {
-            const id = this.lastIdentifier(c)
+            const idNode = this.lastIdentifierNode(c)
+            const id = idNode?.text ?? null
             if (id && !this.isDartGlobalBuiltin(id)) {
               relationships.push({
                 source: callSource,
                 target: id,
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
+                line_number: this.nodeLine(idNode),
                 metadata: { isCascade: true },
               })
             }
           } else if (!sectionAssigns) {
-            const id = this.lastIdentifier(c)
+            const idNode = this.lastIdentifierNode(c)
+            const id = idNode?.text ?? null
             if (id && !this.isDartGlobalBuiltin(id)) {
               relationships.push({
                 source: callSource,
                 target: id,
                 type: ASTEngine.RelationshipType.Uses,
                 confidence: 0.9,
+                line_number: this.nodeLine(idNode),
                 metadata: { isMemberRead: true, isCascade: true },
               })
             }
@@ -1572,13 +1761,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (mixinAppCls) {
       const app = this.findChildByType(mixinAppCls, "mixin_application")
       if (app) {
-        const base = this.resolvedHeritageNames(app)[0] ?? null
-        if (base) {
+        const baseNode = this.resolvedHeritageNodes(app)[0] ?? null
+        if (baseNode) {
           relationships.push({
             source: className,
-            target: base,
+            target: baseNode.text,
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
+            line_number: this.nodeLine(baseNode),
             metadata: {},
           })
         }
@@ -1587,12 +1777,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           patterns["Mixins"] = true
           // DT-B: resolved (alias-free) mixin names — `with _i2.M` leaked
           // the alias as a mixin use.
-          for (const ti of this.resolvedHeritageNames(mx)) {
+          for (const ti of this.resolvedHeritageNodes(mx)) {
             relationships.push({
               source: className,
-              target: ti,
+              target: ti.text,
               type: ASTEngine.RelationshipType.Uses,
               confidence: 1.0,
+              line_number: this.nodeLine(ti),
               metadata: { isMixin: true },
             })
           }
@@ -1606,13 +1797,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The superclass/interfaces branches below never see it. DT-B: resolved
     // (alias-free) names — `on _i1.Base` leaked the alias as the base.
     if (node.type === "mixin_declaration") {
-      const onNames = this.resolvedHeritageNames(node).filter((t) => t !== className)
-      for (const base of onNames) {
+      const onNodes = this.resolvedHeritageNodes(node).filter((n) => n.text !== className)
+      for (const baseNode of onNodes) {
         relationships.push({
           source: className,
-          target: base,
+          target: baseNode.text,
           type: ASTEngine.RelationshipType.Extends,
           confidence: 1.0,
+          line_number: this.nodeLine(baseNode),
           metadata: { isMixinOn: true },
         })
       }
@@ -1623,13 +1815,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // import-alias prefix); the `mixins` child carries the with-clause.
     const superclass = this.findChildByType(node, "superclass")
     if (superclass) {
-      const base = this.resolvedHeritageNames(superclass)[0] ?? null
-      if (base) {
+      const baseNode = this.resolvedHeritageNodes(superclass)[0] ?? null
+      if (baseNode) {
         relationships.push({
           source: className,
-          target: base,
+          target: baseNode.text,
           type: ASTEngine.RelationshipType.Extends,
           confidence: 1.0,
+          line_number: this.nodeLine(baseNode),
           metadata: {},
         })
       }
@@ -1638,12 +1831,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // prefixes `_i2.Database` must not emit `_i2` as an interface target).
     const interfaces = this.findChildByType(node, "interfaces")
     if (interfaces) {
-      for (const ti of this.resolvedHeritageNames(interfaces)) {
+      for (const ti of this.resolvedHeritageNodes(interfaces)) {
         relationships.push({
           source: className,
-          target: ti,
+          target: ti.text,
           type: ASTEngine.RelationshipType.Implements,
           confidence: 1.0,
+          line_number: this.nodeLine(ti),
           metadata: { isImplements: true },
         })
       }
@@ -1655,12 +1849,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (mixinsNode) {
       patterns["Mixins"] = true
       // DT-B: resolved (alias-free) mixin names (same `_i2.M` leak as above).
-      for (const ti of this.resolvedHeritageNames(mixinsNode)) {
+      for (const ti of this.resolvedHeritageNodes(mixinsNode)) {
         relationships.push({
           source: className,
-          target: ti,
+          target: ti.text,
           type: ASTEngine.RelationshipType.Uses,
           confidence: 1.0,
+          line_number: this.nodeLine(ti),
           metadata: { isMixin: true },
         })
       }
@@ -1719,29 +1914,43 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private resolveSelectorCallee(selector: Node): string | null {
+    return this.resolveSelectorCalleeNode(selector)?.text ?? null
+  }
+
+  /** Node form of `resolveSelectorCallee` — the CALLEE identifier is the node
+   *  that names a call/instantiates edge (M60 line contract). */
+  private resolveSelectorCalleeNode(selector: Node): Node | null {
     const prev = selector.previousNamedSibling
     if (!prev) return null
     if (prev.type === "unconditional_assignable_selector" || prev.type === "conditional_assignable_selector" ||
         prev.type === "selector") {
       // obj.method(...) / Future.delayed(...) / super.toString()
       const inner = this.findChildByType(prev, "identifier")
-      if (inner) return inner.text
+      if (inner) return inner
       // nested selector chain (e.g. a.b.c()) — last identifier wins
-      const chain = this.lastIdentifier(prev)
-      return chain
+      return this.lastIdentifierNode(prev)
     }
     if (prev.type === "identifier" || prev.type === "type_identifier") {
-      return prev.text
+      return prev
     }
     return null
   }
 
   private lastIdentifier(node: Node): string | null {
-    let result: string | null = null
+    return this.lastIdentifierNode(node)?.text ?? null
+  }
+
+  /**
+   * Node form of `lastIdentifier`: the identifier that NAMES a cascade link's
+   * edge is also the node whose line the edge carries (M60 line contract), so
+   * both views come from ONE traversal and cannot disagree.
+   */
+  private lastIdentifierNode(node: Node): Node | null {
+    let result: Node | null = null
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "identifier" || n.type === "type_identifier") result = n.text
+      if (n.type === "identifier" || n.type === "type_identifier") result = n
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
@@ -1756,12 +1965,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    * child holding `method` in `obj.method`, `?.value`, `..length`).
    */
   private linkMember(sel: Node): string | null {
+    return this.linkMemberNode(sel)?.text ?? null
+  }
+
+  /** Node form of `linkMember`: the member identifier itself is the node that
+   *  NAMES a member-read/tear-off edge (M60 line contract). */
+  private linkMemberNode(sel: Node): Node | null {
     const probe: Node[] = sel.type === "selector" ? this.namedChildrenOf(sel) : [sel]
     for (const c of probe) {
       if (c.type === "unconditional_assignable_selector" || c.type === "conditional_assignable_selector" ||
           c.type === "cascade_selector") {
         const id = this.findChildByType(c, "identifier") ?? this.findChildByType(c, "type_identifier")
-        if (id) return id.text
+        if (id) return id
       }
     }
     return null
@@ -1847,7 +2062,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `static final int x = 1;`) — the declaration is a BIND, not a read.
       ptype === "initialized_identifier" || ptype === "static_final_declaration" ||
       ptype === "class_definition" || ptype === "enum_declaration" ||
-      ptype === "mixin_declaration" || ptype === "extension_declaration"
+      ptype === "mixin_declaration" || ptype === "extension_declaration" ||
+      // M60 (#933 triage): `enum_declaration` covered the enum's OWN name but
+      // not each VALUE's node, so every enum constant was published as a bare
+      // read of its own enum (`uses Shape -> circle` at the declaration line,
+      // confidence 0.6). The M12 harness files sub-threshold facts as
+      // `unknown`, never as false positives, which is how it survived the
+      // lane's whole fixture and mutant program — probe-verified node shape:
+      // `(enum_body (enum_constant (identifier)))`. The constant's ARGUMENTS
+      // are outside this gate and stay ordinary reads.
+      ptype === "enum_constant" ||
+      // DARTD21: an extension type's container name AND its representation
+      // field name (`extension type X._(T object$)`) are declarations.
+      ptype === "extension_type_declaration" || ptype === "representation_declaration"
   }
 
   /**
@@ -2044,13 +2271,29 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (nameNode) return nameNode.text
     // Operator overloads (`Vec operator +(Vec other)`) carry the operator
     // token as the 3rd child of operator_signature (return type, `operator`
-    // keyword, token, parameters) — no name field, no identifier.
+    // keyword, token, parameters) — no name field, no identifier. The name is
+    // the SYNTHESISED spelling `operator +` (a lane contract, like kotlin's
+    // phantom members) — never the raw token, so this branch does NOT go
+    // through `signatureNameNode`'s text.
     if (inner.type === "operator_signature") {
       const opTok = inner.childCount >= 3 ? inner.child(2) : null
       return opTok ? `operator ${opTok.text}` : null
     }
     const id = this.findChildByType(inner, "identifier")
     return id ? id.text : null
+  }
+
+  /** Node form of `signatureName`: the node that names a member edge is also
+   *  the node whose LINE the edge carries (M60 line contract). For an operator
+   *  overload the naming node is the operator TOKEN — its line, not its text,
+   *  is what the synthesised spelling contributes. */
+  private signatureNameNode(inner: Node): Node | null {
+    const nameNode = inner.childForFieldName("name")
+    if (nameNode) return nameNode
+    if (inner.type === "operator_signature") {
+      return inner.childCount >= 3 ? inner.child(2) : null
+    }
+    return this.findChildByType(inner, "identifier")
   }
 
   private findSignatureIn(node: Node): Node | null {
@@ -2259,6 +2502,22 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
+  /** The representation type's leaf name (`extension type X(objc.ObjCObject o)`
+   *  -> `ObjCObject`): alias-free like every other type name this lane emits
+   *  (DARTD1/DARTD2), since the first identifier is the IMPORT PREFIX. */
+  private representationTypeName(rep: Node | null): string | undefined {
+    if (!rep) return undefined
+    const nameNode = rep.childForFieldName("name")
+    let leaf: string | undefined
+    for (let i = 0; i < rep.namedChildCount; i++) {
+      const c = rep.namedChild(i)
+      if (!c) continue
+      if (nameNode && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex) break
+      if (c.type === "type_identifier" || c.type === "void_type") leaf = c.text
+    }
+    return leaf
+  }
+
   private extractTypeParameters(node: Node): string[] | undefined {
     const tp = this.findChildByType(node, "type_parameters")
     if (!tp) return undefined
@@ -2403,7 +2662,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   `generics.Map<String, int>`-> [Map]
    */
   private resolvedHeritageNames(node: Node): string[] {
-    const out: string[] = []
+    return this.resolvedHeritageNodes(node).map((n) => n.text)
+  }
+
+  /** Node form of `resolvedHeritageNames` — the heritage-name node IS the node
+   *  that names an extends/implements/uses edge (M60 line contract), so text
+   *  and line come from one selection. */
+  private resolvedHeritageNodes(node: Node): Node[] {
+    const out: Node[] = []
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
       if (!c) continue
@@ -2411,7 +2677,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c.type !== "type_identifier" && c.type !== "identifier") continue
       const next = node.child(i + 1)
       if (next && next.type === ".") continue // alias prefix: `A.B` keeps B
-      out.push(c.text)
+      out.push(c)
     }
     return out
   }
@@ -2456,6 +2722,20 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /**
+   * M60 (#929 lineage, dart lane): the line a relationship CLAIMS is the line
+   * of the node that NAMES its target — the base clause for extends/implements,
+   * the declared member for contains, the callee for calls, the constructed
+   * class for instantiates, the overriding method for overrides, the uri
+   * literal for an import/export/part, the redirect target for a factory
+   * redirection. No node means NO field (absent is honest; `0` is the M59
+   * fabrication).
+   */
+  private nodeLine(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
+  }
+
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {
       startLine: node.startPosition.row + 1,
@@ -2466,6 +2746,18 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       endIndex: node.endIndex,
     }
   }
+}
+
+/**
+ * M60 line contract, SYMBOL side (dart lane). The `contains`/`overrides` edges
+ * name the DECLARED member, and a WRAPPED declaration puts the name on a later
+ * line than the declaration's start (`final void Function(UrlRequest? u,\n
+ *     JString? s) _onRedirectReceived;` in cronet_http's generated jni
+ * bindings). Keyed by name + range because one declaration node can carry
+ * several names (`int a = 1, b = 2`).
+ */
+function dartNameLineKey(name: string, range: ASTEngine.UniversalSymbol["range"] | undefined): string {
+  return `${name}|${range?.startIndex ?? -1}|${range?.endIndex ?? -1}`
 }
 
 function scopeOwnerKind(scopes: DartScopeEntry[]): ASTEngine.SymbolKind | undefined {

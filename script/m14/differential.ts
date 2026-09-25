@@ -406,19 +406,44 @@ function saveColdPool(state: { seen: Record<string, string[]>; rotations: Record
   fs.mkdirSync(path.dirname(COLD_POOL_STATE), { recursive: true })
   fs.writeFileSync(COLD_POOL_STATE, JSON.stringify(state, null, 2))
 }
-function coldPoolPick<T>(items: T[], n: number, laneKey: string): { picked: T[]; coldCount: number; total: number; rotation: number } {
+// M60 (dart depth): a lane measured in a FROZEN tree must key its pool on the
+// CORPUS-relative path, not the path it happened to be measured at.
+//
+// Why this was a defect, measured: when the live corpus checkout is dirty or
+// moved, `--repo X` measures a detached worktree of the pin
+// (/tmp/m14-frozen-corpus-<hash>/X), and the pool recorded those absolute paths.
+// Every run freezes a NEW directory, so every file looked NEVER-SAMPLED, every
+// run drew 100% "fresh" files, and the pool grew without bound (proxicall:dart
+// held 5,942 paths for a 2,211-file corpus, under four different freeze
+// prefixes). The #760 guarantee — "each lane prefers files never sampled before,
+// deterministically seeded per rotation" — was therefore VOID on precisely the
+// corpora that need it, and the log line that exists to disclose sampling
+// (`[cold-pool] N/M fresh`) certified a freshness that did not exist. That is
+// how a "full extent" can be claimed twice while covering different halves.
+//
+// `poolKey` is the corpus-relative path, so a frozen measurement and an in-place
+// one describe the same file.
+function coldPoolPick<T>(items: T[], n: number, laneKey: string, poolKey?: (it: T) => string): { picked: T[]; coldCount: number; total: number; rotation: number } {
   const state = loadColdPool()
   const seen = new Set<string>(state.seen[laneKey] ?? [])
   const rotation = (state.rotations[laneKey] ?? 0) + 1
-  const paths = items.map((it) => String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
+  const paths = items.map((it) => poolKey
+    ? poolKey(it)
+    : String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
   const freshIdx: number[] = []
   const warmIdx: number[] = []
-  for (let i = 0; i < items.length; i++) (seen.has(paths[i]) ? warmIdx : freshIdx).push(i)
+  // Membership accepts EITHER spelling: the pool holds absolute paths written
+  // before this fix (every in-place lane, whose absolute path IS its identity —
+  // those lanes must not be reset), and corpus-relative keys written from here
+  // on (the only spelling that means anything for a frozen tree).
+  const rawPaths = items.map((it) => String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
+  for (let i = 0; i < items.length; i++) (seen.has(paths[i]) || seen.has(rawPaths[i]) ? warmIdx : freshIdx).push(i)
   const coldFresh = seededPick(freshIdx.map((i) => items[i]), Math.min(n, freshIdx.length), `${laneKey}:rot${rotation}:fresh`)
   const coldWarm = seededPick(warmIdx.map((i) => items[i]), n - coldFresh.length, `${laneKey}:rot${rotation}:warm`)
   const picked = [...coldFresh, ...coldWarm]
   const pickedPaths = picked.map((it) => String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
-  state.seen[laneKey] = [...new Set([...(state.seen[laneKey] ?? []), ...pickedPaths])]
+  const record = poolKey ? picked.map((it) => poolKey(it)) : pickedPaths
+  state.seen[laneKey] = [...new Set([...(state.seen[laneKey] ?? []), ...record])]
   state.rotations[laneKey] = rotation
   saveColdPool(state)
   return { picked, coldCount: coldFresh.length, total: items.length, rotation }
@@ -3898,6 +3923,19 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
           if (base) dartSuperByClass.set(nm, base)
         }
       }
+      // M60 depth (#933 dart half): a Dart 3 `extension type` is a CONTAINER
+      // like a class — and the pinned objective_c/FFI bindings declare their
+      // whole surface that way (`extension type NSCsondition._(...)
+      // implements ...` with `NSCondition.as(other) : object$ = other` INSIDE
+      // it). The parent walk below used to accept only `class_definition`, so
+      // on the full 335-file dart-http extent this prescan registered 0 of 159
+      // constructor signatures: every `Foo.named(...)` call inside such a
+      // container fell through to the keyword branch and the truth published
+      // `calls -> as` (the name of the FFI `as` constructor) while the
+      // analyzer — whose named-ctor set is built from SYMBOLS, where the
+      // extension type became an owner in DARTD21 — published the correct
+      // `instantiates`. 27 unexplained + 1 MISSING, one root cause, both sides
+      // reconciled here rather than by relaxing a gate.
       // All four constructor signature kinds (generative, factory, const,
       // redirecting) — the analyzer's namedSegment covers them all.
       if (pn.type === "constructor_signature" || pn.type === "factory_constructor_signature" ||
@@ -3910,10 +3948,14 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
         let own: any = pn.parent
         let og = 0
         while (own && og++ < 8) {
-          if (own.type === "class_definition") break
+          if (own.type === "class_definition" || own.type === "extension_type_declaration") break
           own = own.parent
         }
-        const onm = own && own.type === "class_definition" ? own.childForFieldName?.("name")?.text : null
+        const ownsCtor = !!own && (own.type === "class_definition" || own.type === "extension_type_declaration")
+        const onm = ownsCtor
+          ? (own.childForFieldName?.("name")?.text ??
+            own.namedChildren.find((c: any) => c.type === "identifier")?.text)
+          : null
         const seg = dids.find((id) => id !== onm)
         if (onm && seg) dartNamedCtors.add(`${onm}.${seg}`)
       }
@@ -4043,7 +4085,12 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
   while (stack.length > 0) {
     const n = stack.pop()!
     const t = n.type
-    if (t === "class_definition" || t === "mixin_declaration") {
+    // M60 (#753 census, DARTD21): `extension_type_declaration` (Dart 3) is a
+    // CONTAINER like a class — its `interfaces` clause carries real heritage
+    // (`extension type X._(T o) implements I` in the pinned jni/objc bindings)
+    // and the analyzer now emits it, so the truth instrument must know the
+    // shape or every such edge would read as analyzer-only.
+    if (t === "class_definition" || t === "mixin_declaration" || t === "extension_type_declaration") {
       const nm = n.childForFieldName?.("name")?.text ||
         (t === "mixin_declaration" ? n.namedChildren.find((c: any) => c.type === "identifier")?.text : undefined)
       if (nm) {
@@ -4339,6 +4386,15 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
     "getter_signature", "setter_signature", "type_alias", "label",
     "initialized_identifier", "static_final_declaration",
     "class_definition", "enum_declaration", "mixin_declaration", "extension_declaration",
+    // M60 (#753 census, DARTD21): the extension type's own name identifier AND
+    // its representation field's name are DECLARATIONS, not reads.
+    "extension_type_declaration", "representation_declaration",
+    // M60 (#933 dart triage): an enum VALUE is a declaration too — the analyzer
+    // publishes nothing for it since the fix, and without this mirror the
+    // oracle would keep deriving `uses Shape -> circle` and every enum-bearing
+    // corpus file would read as MISSING. Single source of truth: the analyzer's
+    // `isDartDeclNameParent` carries the same clause.
+    "enum_constant",
   ])
   const LINK_PARENTS = new Set([
     "unconditional_assignable_selector", "conditional_assignable_selector",
@@ -4463,7 +4519,7 @@ export function deriveDartBareUses(root: any, symbols: any[] = []): { label: str
     let p: any = n.parent
     let guard = 0
     while (p && guard++ < 64) {
-      if (p.type === "class_definition" || p.type === "enum_declaration") {
+      if (p.type === "class_definition" || p.type === "enum_declaration" || p.type === "extension_type_declaration") {
         return p.childForFieldName?.("name")?.text ?? null
       }
       if (p.type === "extension_declaration" || p.type === "mixin_declaration") {
@@ -11840,9 +11896,23 @@ async function main() {
 
     // M49 #760: cold-pool rotation — prefer never-sampled files each wave.
     // Falls back to warm files only when the fresh pool is exhausted.
-    const pool = coldPoolPick(files, SAMPLE_PER_LANG, `${langRepo}:${lang}`)
+    const pool = coldPoolPick(files, SAMPLE_PER_LANG, `${langRepo}:${lang}`,
+      // Corpus-relative, so a frozen-worktree measurement and an in-place one
+      // describe the same file (see coldPoolPick).
+      (f: string) => path.relative(repoDir, f))
     const sample = pool.picked
     console.log(`  [cold-pool] ${langRepo}:${lang}: ${pool.coldCount}/${sample.length} fresh (rot ${pool.rotation}, corpus ${pool.total})`)
+    // Which files were measured, on request. The row records filesSampled and
+    // the drawn set's HASH, which answers "same sample?" but never "which
+    // files?" — and for a corpus too large for one process (dart/proxicall:
+    // 2211 files, measured in chunks because the wasm heap dies mid-sweep and
+    // the parsed-but-empty guard refuses the fabricated 0/0 row) the honest
+    // question is exactly the union of the chunks. Printing the drawn paths
+    // under a flag keeps the artifact unchanged while making that union
+    // verifiable from the run log.
+    if (process.env.BB_F5_SHOW_FILES) {
+      for (const f of sample) console.log(`    [file] ${path.relative(laneRepoDir(langRepo), f)}`)
+    }
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
     let heuristicUnexplained = 0
