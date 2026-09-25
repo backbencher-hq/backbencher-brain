@@ -896,7 +896,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private handleObjectCreationExpression(node: Node, s: GroovyWalkState): void {
-    const { symbols, relationships, symbolMap, scopeStack } = s
+    const { symbols, relationships, symbolMap, classHierarchy, scopeStack } = s
     const type = node.type
         // new Foo(...) → Instantiates. Type is a type_identifier for plain
         // types, a generic_type for generic constructions, and a
@@ -944,6 +944,17 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(anonSym)
         symbolMap.set(anonFqn, anonSym)
+        // The override pass reaches a method's parent through `classHierarchy`,
+        // keyed by the OWNER's FQN. This block registered the anonymous symbol,
+        // its symbolMap key and its scope — but NOT the hierarchy entry — so
+        // every override task inside an anonymous body fell through all three
+        // tiers and emitted nothing. An anonymous type's parent is the type it
+        // CONSTRUCTS; that is what it extends. Measured at full extent on
+        // grails-core (2026-09-25): the lane's only two MISSING rows in 4,014
+        // files were `overrides anonymous_IdentityTypeDecoder.bsonType ->
+        // IdentityTypeDecoder.bsonType` and its SimpleDecoder twin, both of
+        // which the differential's tree-truth derives and the analyzer did not.
+        classHierarchy.set(anonFqn, superName ? [superName] : [])
         s.newContext = {
           node: classBody,
           name: anonName,

@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-25T18:02:48.384Z",
+  "at": "2026-09-25T18:59:53.498Z",
   "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
@@ -84,27 +84,6 @@
       "covered": 3653,
       "missing": 0,
       "unexplained": 0
-    },
-    {
-      "repo": "grails-core",
-      "lang": "groovy",
-      "files": 200,
-      "truth": 3852,
-      "covered": 3852,
-      "missing": 0,
-      "unexplained": 1,
-      "note": "draw 1 — the self-override leaf-name collision (FindAllByFinder.doInvokeInternal)",
-      "supersededBy": "grails-core:groovy post-fix draw (2026-09-20)"
-    },
-    {
-      "repo": "grails-core",
-      "lang": "groovy",
-      "files": 200,
-      "truth": 3351,
-      "covered": 3351,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "draw 2"
     },
     {
       "repo": "Exposed",
@@ -771,19 +750,29 @@
       "missing": 0,
       "unexplained": 0,
       "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers — the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
-    }
-  ],
-  "current": [
+    },
     {
       "repo": "grails-core",
       "lang": "groovy",
-      "files": 200,
-      "truth": 2892,
-      "covered": 2892,
+      "files": 6931,
+      "truth": 94659,
+      "covered": 94659,
       "missing": 0,
       "unexplained": 0,
-      "note": "post-fix draw (2026-09-20, self-override fix live)"
+      "note": "FULL EXTENT (6,931/6,931 = every .groovy and .gradle file the router hands this lane, `.gradle` included via the M60 universe widening). hash 5c0530ca713cebeb, analyzer-edges 98,031, coverage 100%, fabrication 0%. Supersedes the 200-file draws below, which were themselves drawn from the CAPPED pool: the scan's hard 4,000-file bound made the pool a directory-order prefix (4,014 of 6,931 files, 2,917 hidden — 2,762 .groovy and 155 .gradle), so 26,485 truth edges (28% of the lane's truth) had never been compared. The cap is now `DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)`; canonical 60-file draws keep the 4,000-file pool and their sampleSetHash is untouched. Pre-fix/post-fix on the identical capped drawn set (same hash 17cce86be37fb899): MISSING 2 -> 0, analyzer edges 70,798 -> 71,044, heuristic 3,024 -> 3,261 — the anonymous-body classHierarchy entry (reviews/m60-groovy-anonymous-body-override.md)."
     },
+    {
+      "repo": "geb",
+      "lang": "groovy",
+      "files": 668,
+      "truth": 7556,
+      "covered": 7556,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (668/668 = the whole pinned second corpus; never affected by the 4,000-file cap). hash 9c2299575193bf12, analyzer-edges 7,702, coverage 100%, fabrication 0%. The heuristic class (288) is the lane's DECLARED first-parent override guesses at 0.5 — reported by the differential as heuristic, never as unexplained."
+    }
+  ],
+  "current": [
     {
       "repo": "grails-core",
       "lang": "java",
@@ -1333,6 +1322,26 @@
       "missing": 0,
       "unexplained": 0,
       "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers — the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
+    },
+    {
+      "repo": "grails-core",
+      "lang": "groovy",
+      "files": 6931,
+      "truth": 94659,
+      "covered": 94659,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (6,931/6,931 = every .groovy and .gradle file the router hands this lane, `.gradle` included via the M60 universe widening). hash 5c0530ca713cebeb, analyzer-edges 98,031, coverage 100%, fabrication 0%. Supersedes the 200-file draws below, which were themselves drawn from the CAPPED pool: the scan's hard 4,000-file bound made the pool a directory-order prefix (4,014 of 6,931 files, 2,917 hidden — 2,762 .groovy and 155 .gradle), so 26,485 truth edges (28% of the lane's truth) had never been compared. The cap is now `DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)`; canonical 60-file draws keep the 4,000-file pool and their sampleSetHash is untouched. Pre-fix/post-fix on the identical capped drawn set (same hash 17cce86be37fb899): MISSING 2 -> 0, analyzer edges 70,798 -> 71,044, heuristic 3,024 -> 3,261 — the anonymous-body classHierarchy entry (reviews/m60-groovy-anonymous-body-override.md)."
+    },
+    {
+      "repo": "geb",
+      "lang": "groovy",
+      "files": 668,
+      "truth": 7556,
+      "covered": 7556,
+      "missing": 0,
+      "unexplained": 0,
+      "note": "FULL EXTENT (668/668 = the whole pinned second corpus; never affected by the 4,000-file cap). hash 9c2299575193bf12, analyzer-edges 7,702, coverage 100%, fabrication 0%. The heuristic class (288) is the lane's DECLARED first-parent override guesses at 0.5 — reported by the differential as heuristic, never as unexplained."
     }
   ],
   "adjudicated": {
@@ -1351,7 +1360,8 @@
     "haskell": "#872's haskell analyzer half had never landed. Found by the hledger full-extent draw (`extends Lines -> Spr.Lines` MISSING), root-caused to `processClass` still being the flat-list walk the review itself calls the PRE-fix state, fixed in this round against the oracle's own rule (constraint-tree walk, left-spine class, qualified head verbatim), and pinned by four new fixture extends plus a third mutant. cabal was clean before and after — the canonical draw never sampled the shape, which is exactly why this needed depth to see.",
     "zig": "CLEAN at depth on two corpora (zig 200/2947 + zls at full extent).",
     "objc": "#815 + #853 + the M12 adjudication (which found #D and #B below) — CLOSED. Both review waves' acceptance checklists are discharged on re-derived evidence: every claim probe-verified against the analyzer AND the oracle (reviews/objc/first-review.md, second-review.md), fixes checked against the lane's F5 lanes at full extent (sdwebimage + afnetworking, 0/0 both, now header-inclusive), fixture pins + regression mutants per fix (objc fixtures 8/8 with 35 M59.A7 line pins and 12 near-miss forbids; 32/32 objc mutants CAUGHT), spec decisions recorded in script/m14/spec/objc-completeness.json (OC-B/OC-D/OC-E/OC-R1/R2 + OC-F/G/H/R3), and the lane's closure record written (reviews/objc/m60-closure.md).",
-    "cpp": "#612's own bar for the family is a 200+-file deep differential per language. cpp could not meet it: its F5 sampling universe was `ext: \"cc,h\"` while three other declarations in this repo (the product's indexer, the M12 census, the fixture harness) treat .cpp/.hpp as C++. Corrected, the second corpus went 17 -> 496 drawable files, and at full extent the lane was NOT clean — one MISSING (environ, fixed and pinned this round) and one unexplained (the wrapped-declarator scope loss, fixed and pinned this round). Both are now closed: fmt 73 files 5328/5328, nlohmann-json 496 files 6887/6887, 0/0 on both, at hashes identical to the red runs. The depth cell reads pass because the red draws were fixed, not because the sampler was narrowed."
+    "cpp": "#612's own bar for the family is a 200+-file deep differential per language. cpp could not meet it: its F5 sampling universe was `ext: \"cc,h\"` while three other declarations in this repo (the product's indexer, the M12 census, the fixture harness) treat .cpp/.hpp as C++. Corrected, the second corpus went 17 -> 496 drawable files, and at full extent the lane was NOT clean — one MISSING (environ, fixed and pinned this round) and one unexplained (the wrapped-declarator scope loss, fixed and pinned this round). Both are now closed: fmt 73 files 5328/5328, nlohmann-json 496 files 6887/6887, 0/0 on both, at hashes identical to the red runs. The depth cell reads pass because the red draws were fixed, not because the sampler was narrowed.",
+    "groovy": "M49/M37 groovy review waves + the M60 wave: the analyzer defect (an anonymous class body never entered classHierarchy, so every override inside it was silently dropped) is fixed and pinned by fixture groovy/anonymous-body-overrides + mutant groovy/drop-anonymous-body-override; the lane's M14.0.F6 red cell (uncovered: [lambda_expression]) is closed by fixture groovy/lambda-expression with a contract rather than a node census; the harness's 4,000-file discovery cap and the leaf-only coverage match are recorded with their measurements in reviews/m60-groovy-anonymous-body-override.md §2-§3."
   },
   "worstPerLang": {
     "javascript": {
@@ -1387,10 +1397,11 @@
       "drawsRed": 0
     },
     "groovy": {
-      "maxSample": 200,
+      "maxSample": 6931,
       "missing": 0,
       "unexplained": 0,
-      "drawsRed": 0
+      "drawsRed": 0,
+      "note": "GREEN at FULL EXTENT on both corpora under the widened universe: grails-core 6,931/6,931 files (tree-truth 94,659 / 94,659, analyzer-edges 98,031, MISSING=0 unexplained=0) and geb 668/668 (7,556 / 7,556, 7,702 edges, 0/0). Both file counts are the WHOLE corpus, not a draw. The earlier 200-file draws are kept in `draws` as history: they were drawn from a pool the discovery cap had truncated at 4,000 files, which is why this cell read green while 28% of the lane's truth edges were outside every draw — the residue class that keeps other lanes red (findings outside a draw of a larger corpus) could not be seen here either, and was only visible once the pool itself was the corpus."
     },
     "kotlin": {
       "maxSample": 200,
@@ -1546,6 +1557,7 @@
     "cpp wrapped function declarators losing the method symbol and its scope (CPPD17/CPPD18)": "Two spellings wrap the declarator — a parenthesized NAME (`bool (acceptParenthesized)(…)`) and a macro between the return type and the name (`JSON_HEDLEY_NON_NULL(3)` + a multi-line parameter list, which the grammar recovers as `parenthesized_declarator[ERROR, function_declarator]`). The declared-name lookup scanned the function_declarator's DIRECT children, so neither was found: no method symbol, and because the caller pushes the function scope out of that same result, no scope — so parameters never bound and their reads resolved outward (the lane's last unexplained edge, `uses binary_reader -> strict @8299`; 14 method symbols lost in that one header). Pinned by cpp/wrapped-declarator-names-612 (both spellings; the macro one carries the ERROR exactly as the corpus does) and F9-PROBE-CPP-WRAPPED-DECLARATOR-SCOPE; the macro spelling cannot live in a probe because the battery refuses snippets whose tree has errors. One mutant CAUGHT.",
     "cpp fabricated `uses` duplicates for template-wrapped member calls (CPPD14)": "Three `uses <owner> -> get_ref` edges the oracle does not derive, which HEAD hid behind the declarator bug (the wrong local binding happened to be named `get_ref`). Suppressed through the member-leaf rule's template climbing plus a narrow declaration-name guard; the corpus reads unobstructed (0/0) with the suppression in place, and cpp/wrapped-declarator-names-612 pins the declaration-name half.",
     "the F9 battery's oracle loader kept a second copy of the wasm table": "`oracleFor` loaded the grammar from a hand-kept 8-language map that duplicated LANGS verbatim and had no `cpp` entry — so a cpp probe that pins an ORACLE contract (the only kind that catches collusion, which is exactly what the template-declaration class was) could not be written at all. It now reads LANGS, the F5 sweep's own table. Found by trying to write the probe, which is the same way the lane's other instrument gaps were found.",
-    "the M60 objc grammar wave (#743's class, objc half)": "The lane's sampling universe was extended to the header half the product already feeds it (`ext: \"m,h\"` behind the objective-c content guard), and the header half exposed the #743 class in its own idiom: a BARE macro invocation line at file scope immediately before an `@`-declaration (`NS_ASSUME_NONNULL_BEGIN` .. `_END`, which wraps every Apple header) was read as the first specifier of a declaration that then swallowed the `@interface` line into an ERROR — 11 headers, 122 real symbols, AFHTTPSessionManager.h analysing to 0 of its 37 declared symbols, plus phantom symbols minted from the wreckage (`variable NSObject`, `variable void`, `variable provider`). Landed as a grammar rule (grammars/tree-sitter-objc, rebuilt wasm): `macro_prefixed_objc_declaration`, no conflict entry demanded, `prec(-1)` load-bearing (dropping it was built and refused: `Add a conflict for these rules: type_specifier, macro_prefixed_objc_declaration`). Full-corpus A/B: 0 files worsened, 0 clean files perturbed, ERROR/MISSING nodes 795 -> 582, analyzer output diffed edge by edge (the differential cannot answer this — its oracle walks the same tree) with 0 real symbol losses and 0 relationship losses against +113 symbols / +158 relationships. The one residue (`prec(-1)` leaves two STACKED macro lines to the `declaration` path, which published `variable PROTOCOL_MACRO`) is refused in the analyzer by isUnterminatedDeclaration, the family's existing ERROR policy. Pinned by objc/macro-prefixed-declaration (which FAILS on the committed wasm and passes on the new one) + objc/publish-unterminated-declaration. Record: reviews/m60-743-objc-grammar-macro-specifier.md."
+    "the M60 objc grammar wave (#743's class, objc half)": "The lane's sampling universe was extended to the header half the product already feeds it (`ext: \"m,h\"` behind the objective-c content guard), and the header half exposed the #743 class in its own idiom: a BARE macro invocation line at file scope immediately before an `@`-declaration (`NS_ASSUME_NONNULL_BEGIN` .. `_END`, which wraps every Apple header) was read as the first specifier of a declaration that then swallowed the `@interface` line into an ERROR — 11 headers, 122 real symbols, AFHTTPSessionManager.h analysing to 0 of its 37 declared symbols, plus phantom symbols minted from the wreckage (`variable NSObject`, `variable void`, `variable provider`). Landed as a grammar rule (grammars/tree-sitter-objc, rebuilt wasm): `macro_prefixed_objc_declaration`, no conflict entry demanded, `prec(-1)` load-bearing (dropping it was built and refused: `Add a conflict for these rules: type_specifier, macro_prefixed_objc_declaration`). Full-corpus A/B: 0 files worsened, 0 clean files perturbed, ERROR/MISSING nodes 795 -> 582, analyzer output diffed edge by edge (the differential cannot answer this — its oracle walks the same tree) with 0 real symbol losses and 0 relationship losses against +113 symbols / +158 relationships. The one residue (`prec(-1)` leaves two STACKED macro lines to the `declaration` path, which published `variable PROTOCOL_MACRO`) is refused in the analyzer by isUnterminatedDeclaration, the family's existing ERROR policy. Pinned by objc/macro-prefixed-declaration (which FAILS on the committed wasm and passes on the new one) + objc/publish-unterminated-declaration. Record: reviews/m60-743-objc-grammar-macro-specifier.md.",
+    "groovy: anonymous-body overrides + the 4,000-file discovery cap + F6 lambda_expression": "One analyzer defect and two measurement defects, all re-derived at the whole corpus: 0 MISSING / 0 unexplained on 6,931 + 668 files, groovy fixtures 73/73, groovy mutants 56/56 CAUGHT, F6 groovy uncovered=0 deadLiterals=0, F9 battery 36/36, and the M12 groovy artifact byte-identical (its own red is the stale hand audit, recorded and filed rather than passed)."
   }
 }
