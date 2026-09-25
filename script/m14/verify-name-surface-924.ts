@@ -46,7 +46,7 @@ import { emitEvidence } from "./evidence-harness"
 const ROOT = path.resolve(__dirname, "..", "..")
 const REPOS = "$HOME/fixtures/repositories"
 
-const LANES: Array<{ lang: "c" | "cpp" | "rust"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
+const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
   { lang: "c", dirs: ["jq", "sqlite"], exts: [".c"] },
   { lang: "cpp", dirs: ["fmt", "nlohmann-json"], exts: [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx", ".h"] },
   // R10 (#798): rust rides the M60 corpora, and it is read at the FULL EXTENT
@@ -59,6 +59,18 @@ const LANES: Array<{ lang: "c" | "cpp" | "rust"; dirs: string[]; exts: string[];
   {
     lang: "rust", dirs: ["ripgrep", "cargo"], exts: [".rs"], limit: Number.MAX_SAFE_INTEGER,
     why: "full extent — the census's 40-file draw does not contain the file that carried the R10 conviction (rust-798-draw-check.ts), so reading the same draw would have missed it. A gate must be able to fail on the defect it was written for.",
+  },
+  // GO (#799 round, R10): go rides the M60 corpora at FULL EXTENT for the same
+  // measured reason rust does — a name-surface gate that samples the way the
+  // census samples inherits the census's blind spot. This round's go work is
+  // exactly a name-surface change (a qualified type USE is published by leaf,
+  // and the import path moved off `references` onto the family's `imports`
+  // label), so the gate reads every `.go` file of both corpora and its counts
+  // are then comparable to the census's own full-draw reading
+  // (`--lane go --sample 2200`: syms=25962 rels=270842 sep=11933).
+  {
+    lang: "go", dirs: ["go-tools", "terraform"], exts: [".go"], limit: Number.MAX_SAFE_INTEGER,
+    why: "full extent of both corpora — the R10 census's canonical draw is 40 go-tools + 24 terraform files, and the class this round changed is sparse (a qualified type use, an import path); reading the draw would let the gate read clean on files it never opened.",
   },
 ]
 const PER_LANE_LIMIT = Number(process.env.BB_NAMESURFACE_SAMPLE ?? 40)
@@ -179,6 +191,62 @@ interface Violation {
   detail: string
 }
 
+// ---------------------------------------------------------------------- go
+//
+// Go's name predicate, written out HERE rather than imported from the analyzer
+// (a gate that shares the rule cannot see the rule). Go has no raw identifiers,
+// no operator declarations and no qualified declaration names, so the predicate
+// is the spec's own: an identifier is a `letter` (unicode_letter or `_`)
+// followed by letters and unicode DIGITS. IT IS NOT ASCII, and the first draft
+// of this gate proved why: an ASCII-only predicate convicted 41 `uses` targets
+// and 86 symbols on these corpora — every one a LEGAL identifier, because
+// go-tools' own `go/ssa/interp/external.go` writes `ext۰bytes۰Equal` with an
+// Arabic zero numeral U+06F0 (category Nd) as a "dot" and says so in a comment
+// above it. A name predicate that is narrower than the language convicts the
+// language; the calibration belongs in the predicate, not in an allowlist.
+// (`\p{L}` = unicode_letter, `\p{Nd}` = unicode_digit, per the Go spec.)
+const GO_IDENT = /^[\p{L}_][\p{L}\p{Nd}_]*$/u
+function goNameDefect(name: string): string | null {
+  if (name.trim() === "") return "empty name"
+  if (!GO_IDENT.test(name)) return "not a Go identifier (whitespace, punctuation, or a qualified/wrapper spelling)"
+  return null
+}
+
+/**
+ * GO-PRE: the two spellings this round retired, re-derived from the TREE (never
+ * from the analyzer).
+ *
+ *   (a) every `qualified_type` node's own text — `io.Writer`, `time.Time`,
+ *       `types.Importer`. That is what `references/declared_type` and
+ *       `references/return_type` published before the round, and the whole
+ *       reason `references|.` stood in the lane's separator vocabulary.
+ *   (b) every import spec's PATH — `net/http`, `github.com/google/go-cmp/cmp`.
+ *       That is the target the import-dependency edge carried while it was
+ *       labelled `references`: a module specifier, which is not a name at all.
+ *
+ * Both are strings the source writes and neither is a Go identifier, so the
+ * gate MUST flag them — that is the self-test, and it is derived from the
+ * grammar rather than copied from the rule it checks.
+ */
+function prefixGoTargets(root: any): string[] {
+  const out: string[] = []
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "qualified_type") out.push(String(n.text ?? ""))
+    if (n.type === "import_spec") {
+      const kids: any[] = n.namedChildren ?? []
+      const path = kids.find((c: any) => c.type === "interpreted_string_literal" || c.type === "raw_string_literal")
+      if (path) out.push(String(path.text ?? "").replace(/^["`]/, "").replace(/["`]$/, ""))
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
 /**
  * V4's pre-fix derivation of the CALL side, from the source text alone: the old
  * descent returned whatever node it stopped on, so a callee that is a lambda
@@ -239,6 +307,10 @@ async function main(): Promise<void> {
   // symbols it actually adjudicated.
   const rustViolations: Violation[] = []
   const rustPreViolations: Violation[] = []
+  // GO (#799 round): go's own counters, same discipline — the gate has to be
+  // able to say how many name-bearing targets and symbols it adjudicated.
+  const goViolations: Violation[] = []
+  const goPreViolations: Violation[] = []
   let files = 0
   let calls = 0
   let symbols = 0
@@ -250,6 +322,9 @@ async function main(): Promise<void> {
   const filesByLane = new Map<string, number>()
   let rustSymbols = 0
   let rustPreTargets = 0
+  let goTargets = 0
+  let goSymbols = 0
+  let goPreTargets = 0
 
   for (const lane of LANES) {
     for (const f of collectFiles(lane)) {
@@ -295,6 +370,38 @@ async function main(): Promise<void> {
           // under both — each check must be able to fail on its own.
           rustPreViolations.push({ file: rel, lang: "rust", check: "R1-no-whitespace-name-target", detail: `${JSON.stringify(t.slice(0, 60))} — ${bad}` })
           rustPreViolations.push({ file: rel, lang: "rust", check: "R2-symbol-name-is-a-rust-name", detail: `${JSON.stringify(t.slice(0, 60))} — ${bad}` })
+        }
+        continue
+      }
+
+      if (lane.lang === "go") {
+        // G1: every name-bearing target is a Go identifier. The ONE exemption
+        // is the module SPECIFIER on an `imports` edge (named here, not
+        // tolerated silently): a path is the dependency's own spelling, which
+        // is why this round moved it off `references` and onto the family's
+        // `imports` label instead of ruling the separators into the references
+        // surface where they would have excused a real spelling defect too.
+        for (const e of r.relationships ?? []) {
+          const label = String(e.type ?? "")
+          if (label === "imports") continue
+          if (e.target === undefined || e.target === null) continue
+          goTargets++
+          const t = String(e.target)
+          const bad = goNameDefect(t)
+          if (bad) goViolations.push({ file: rel, lang: "go", check: "G1-target-is-a-go-name", detail: `${label} -> ${JSON.stringify(t.slice(0, 80))} — ${bad}` })
+        }
+        // G2: every published SYMBOL name is a Go identifier.
+        for (const s of r.symbols ?? []) {
+          goSymbols++
+          const bad = goNameDefect(String(s.name ?? ""))
+          if (bad) goViolations.push({ file: rel, lang: "go", check: "G2-symbol-name-is-a-go-name", detail: `${String(s.kind)} ${JSON.stringify(String(s.name ?? "").slice(0, 80))} — ${bad}` })
+        }
+        // G1's self-test: the retired spellings, re-derived from the tree.
+        const goRoot = (await ASTEngine.getParser("go" as any)).parse(src).rootNode
+        for (const t of prefixGoTargets(goRoot)) {
+          goPreTargets++
+          const bad = goNameDefect(t)
+          if (bad) goPreViolations.push({ file: rel, lang: "go", check: "G1-target-is-a-go-name", detail: `${JSON.stringify(t.slice(0, 60))} — ${bad}` })
         }
         continue
       }
@@ -368,18 +475,39 @@ async function main(): Promise<void> {
       ? "ok   R3-selftest-prefix-is-caught the pre-fix impl-target rule re-derived from these files trips both checks — the gate can fail"
       : `FAIL R3-selftest: no pre-fix violation for ${rustSelfTestFails.join(", ")} — a check that cannot fail is decoration`,
   )
-  const ok = okCFamily && okRust
+  // GO (#799 round): G1 with its tree-derived self-test; G2 is an INVARIANT
+  // without one, and the reason is stated in the limitations rather than
+  // papered over — the strings GO-PRE recovers are TARGET spellings, and this
+  // lane never published a non-name SYMBOL (its non-name symbol shapes were
+  // published as nothing at all, the #889 class).
+  const goByCheck = new Map<string, number>()
+  for (const v of goViolations) goByCheck.set(v.check, (goByCheck.get(v.check) ?? 0) + 1)
+  const goPreByCheck = new Map<string, number>()
+  for (const v of goPreViolations) goPreByCheck.set(v.check, (goPreByCheck.get(v.check) ?? 0) + 1)
+  const goFiles = filesByLane.get("go") ?? 0
+  lines.push(`go corpus: ${goFiles} files (FULL extent of ${LANES.find((l) => l.lang === "go")?.dirs.join("+")}), ${goTargets} name-bearing targets (module specifiers excluded by name), ${goSymbols} symbols, ${goPreTargets} RETIRED spellings re-derived from the tree`)
+  show("G1-target-is-a-go-name", goByCheck.get("G1-target-is-a-go-name") ?? 0, goPreByCheck.get("G1-target-is-a-go-name") ?? 0, (goByCheck.get("G1-target-is-a-go-name") ?? 0) === 0)
+  show("G2-symbol-name-is-a-go-name", goByCheck.get("G2-symbol-name-is-a-go-name") ?? 0, 0, (goByCheck.get("G2-symbol-name-is-a-go-name") ?? 0) === 0)
+  const goSelfTestFails = (goPreByCheck.get("G1-target-is-a-go-name") ?? 0) === 0 ? ["G1-target-is-a-go-name"] : []
+  const okGo = goViolations.length === 0 && goSelfTestFails.length === 0
+  lines.push(
+    goSelfTestFails.length === 0
+      ? "ok   G-PRE-selftest the retired spellings re-derived from these files trip G1 — the gate can fail"
+      : "FAIL G-PRE-selftest: no pre-fix violation for G1-target-is-a-go-name — a check that cannot fail is decoration",
+  )
+
+  const ok = okCFamily && okRust && okGo
 
   console.log(lines.join("\n"))
-  for (const v of [...violations, ...rustViolations].slice(0, 20)) console.log(`   ${v.lang} ${v.file} ${v.check} ${v.detail}`)
+  for (const v of [...violations, ...rustViolations, ...goViolations].slice(0, 20)) console.log(`   ${v.lang} ${v.file} ${v.check} ${v.detail}`)
   console.log(
-    `\n${ok ? "PASS" : "FAIL"} — ${ok ? "c/cpp 3/3 + rust 2/2 + 2 self-tests" : `c/cpp ${violations.length} violation(s)/${selfTestFails.length} dead check(s), rust ${rustViolations.length} violation(s)/${rustSelfTestFails.length} dead check(s)`}`,
+    `\n${ok ? "PASS" : "FAIL"} — ${ok ? "c/cpp 3/3 + rust 2/2 + go 2/2 + 3 self-tests" : `c/cpp ${violations.length} violation(s)/${selfTestFails.length} dead check(s), rust ${rustViolations.length} violation(s)/${rustSelfTestFails.length} dead check(s), go ${goViolations.length} violation(s)/${goSelfTestFails.length} dead check(s)`}`,
   )
 
   if (process.argv.includes("--emit")) {
     emitEvidence({
       issueId: "M14.0.F14",
-      title: "A lane publishes NAMES: C/C++ call targets and symbol names (#924), rust name-bearing targets and symbol names (#798/R10)",
+      title: "A lane publishes NAMES: C/C++ call targets and symbol names (#924), rust name-bearing targets and symbol names (#798/R10), go name-bearing targets and symbol names (#799/R10)",
       claimLevel: "L1",
       layers: ["corpus", "mutation"],
       checks: [
@@ -390,6 +518,9 @@ async function main(): Promise<void> {
         { id: "R1-no-whitespace-name-target", description: `rust: every name-bearing relationship TARGET (all labels except the module paths \`imports\`/\`exports\`) is a rust name path — ${rustTargets} targets over the FULL extent of ripgrep+cargo (${rustFiles} files); PRE-FIX derivation flags ${rustPreByCheck.get("R1-no-whitespace-name-target") ?? 0}`, status: (rustByCheck.get("R1-no-whitespace-name-target") ?? 0) === 0 ? "pass" : "fail" },
         { id: "R2-symbol-name-is-a-rust-name", description: `rust: every published symbol name is a \`::\`-joined path of rust identifiers (a RAW identifier keeps its \`r#\` prefix — see the limitations) with no bare keyword segment — ${rustSymbols} symbols; PRE-FIX derivation flags ${rustPreByCheck.get("R2-symbol-name-is-a-rust-name") ?? 0}`, status: (rustByCheck.get("R2-symbol-name-is-a-rust-name") ?? 0) === 0 ? "pass" : "fail" },
         { id: "R3-selftest-prefix-is-caught", description: `rust: the pre-fix impl-target rule, re-derived from the TREE (${rustPreTargets} spellings), trips both rust checks`, status: rustSelfTestFails.length === 0 ? "pass" : "fail" },
+        { id: "G1-target-is-a-go-name", description: `go: every name-bearing relationship TARGET is a Go identifier — ${goTargets} targets over the FULL extent of go-tools+terraform (${goFiles} files), with the module SPECIFIER on an \`imports\` edge as the one named exemption; PRE-FIX derivation (qualified type texts + import paths, from the tree) flags ${goPreByCheck.get("G1-target-is-a-go-name") ?? 0}`, status: (goByCheck.get("G1-target-is-a-go-name") ?? 0) === 0 ? "pass" : "fail" },
+        { id: "G2-symbol-name-is-a-go-name", description: `go: every published symbol name is a Go identifier — ${goSymbols} symbols; stated as an INVARIANT (see the limitations: this lane has never published a non-name symbol, so it has no pre-fix hit and is not given one)`, status: (goByCheck.get("G2-symbol-name-is-a-go-name") ?? 0) === 0 ? "pass" : "fail" },
+        { id: "G-PRE-selftest", description: `go: the two spellings this round retired — qualified type texts re-published by leaf, import paths moved off \`references\` onto \`imports\` — re-derived from the TREE (${goPreTargets} spellings), trip G1`, status: goSelfTestFails.length === 0 ? "pass" : "fail" },
       ],
       limitations: [
         `sample: up to ${PER_LANE_LIMIT} files per corpus for the C/C++ lanes (jq, sqlite, fmt, nlohmann-json), excluding test/docs/third-party directories — the full-corpus A/B is script/m14/tmp/c924-calls-ab.ts and c924qid-ab.ts. Rust is the exception and is read at full extent; the per-lane counts are pinned in corpusPins`,
@@ -399,6 +530,10 @@ async function main(): Promise<void> {
         "one `calls -> uint64_t` remains on the corpora by deliberate decision (a typedef name IS a legal identifier, so refusing it by name would be a heuristic) and is therefore not a V2 violation",
         "rust is measured over the FULL EXTENT of ripgrep + cargo (every non-test/docs `.rs` file), NOT on a draw — and NOT on the M60 census's 40-file spread, because the file that carried the R10 conviction (cargo/crates/cargo-test-support/src/lib.rs) is absent from that spread and present at caps 400 and 1400 (script/m14/tmp/rust-798-draw-check.ts). Reading the census's draw here would have made this gate unable to fail on the defect it was written for, so the gate deliberately reads MORE than the census; the census's own full-extent reading is `--lane rust --sample 2285`. The rust checks are R1/R2 with the R3 self-test, NOT the C/C++ V1/V2/V3",
         "RUST IS NOT GIVEN THE C/C++ V2 (no call target spells a builtin type keyword) because that claim is FALSE about rust: its primitive names are not keywords, so `fn usize()` is legal. Measured on rust's own files through this gate (script/m14/tmp/rust-798-calls-keywords.ts): 18 published `calls` targets spell a primitive name and every one is a real call to a real function — `convert::usize(&v.unwrap_value())` at ripgrep/crates/core/flags/defs.rs:264, whose module declares `pub(super) fn usize(v: &OsStr) -> anyhow::Result<usize>`. Importing that predicate would have convicted 18 correct edges",
+        "GO IS READ AT THE FULL EXTENT OF BOTH CORPORA (go-tools + terraform, every non-test/docs `.go` file), NOT on a draw — the class this round changed is sparse (one qualified type use, one import path), and go-tools carries 1 stray `.cpp` file that makes the differential's `--repo` probe mode abort (`differential: go-tools:cpp parsed 1 file(s) and derived ZERO truth edges`), which is why the go reading here does not come from a differential run",
+        "G2 (a go symbol name is an identifier) IS STATED WITHOUT A SELF-TEST, deliberately: GO-PRE recovers TARGET spellings, and this lane has never published a non-name SYMBOL — its non-name symbol shapes were published as NOTHING at all (`Inner`/`*Pair[int, string]`/`io.Reader` embedded fields emitting nothing, the #889 class), so there is no pre-fix symbol string to flag. Writing one would be reclassifying a target as a symbol to make the counter move",
+        "GO'S PREDICATE IS THE SPEC'S, NOT ASCII — and the gate's first draft was ASCII: it convicted 41 `uses` targets and 86 symbol names, every one a LEGAL Go identifier (`ext۰bytes۰Equal` in go-tools/go/ssa/interp/external.go, whose own comment names the character: `U+06F0`, an Arabic zero numeral in category Nd, which Go's identifier rule accepts as a unicode_digit). The narrower predicate was the defect, not the lane: it is recorded here because the same mistake would convict any lane whose source uses non-ASCII identifiers, and because the R10 census solves it differently — by CALIBRATING against the lane's own symbol alphabet (a character the lane's own symbols use can never be a separator) rather than by enumerating the language's character classes",
+        "G1's ONE EXEMPTION is the module SPECIFIER on an `imports` edge: a Go import path is a string literal naming a module (`net/http`, `github.com/google/go-cmp/cmp`), not an identifier, and the lane publishes it on the family's `imports` label — which is exactly the label the R10 census now sees the lane's remaining separators on (`imports|.`, `imports|/`, `imports|-`, recorded as owed in validation/m60/target-spelling-register.json for go and for 17 other lanes). Nothing else is exempt: before this round the same paths rode `references`, and that IS a violation G1 would have flagged",
         "R2 ACCEPTS A RAW IDENTIFIER'S `r#` PREFIX as the identifier's own spelling: `r#try`/`r#async` cannot be written any other way in source, the prefix is carried on BOTH the symbol and its targets (so the edge resolves — symbol and target census: refTargetNotName 0), and the alternative is prohibited by R2 itself, since a stripped name would be the bare keyword `try`/`async`. Measured on rust: ripgrep 1 symbol + 1 target, cargo 2 symbols + 11 targets",
       ],
       corpusPins: LANES.map((l) => ({ repo: l.dirs.join("+"), lang: l.lang, files: filesByLane.get(l.lang) ?? 0, draw: l.why ?? `first ${PER_LANE_LIMIT} sorted files per corpus` })),
@@ -422,6 +557,17 @@ async function main(): Promise<void> {
           prefixViolations: rustPreViolations.length,
           prefixByCheck: Object.fromEntries(rustPreByCheck),
           samples: rustViolations.slice(0, 20),
+        },
+        go: {
+          files: goFiles,
+          nameBearingTargets: goTargets,
+          symbols: goSymbols,
+          retiredSpellingsReDerived: goPreTargets,
+          violations: goViolations.length,
+          byCheck: Object.fromEntries(goByCheck),
+          prefixViolations: goPreViolations.length,
+          prefixByCheck: Object.fromEntries(goPreByCheck),
+          samples: goViolations.slice(0, 20),
         },
       },
     })
