@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-24T15:12:57.866Z",
+  "generatedAt": "2026-09-25T23:05:37.714Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
   "totalRegexUsages": 23,
@@ -234,7 +234,7 @@
       "usages": [
         {
           "file": "real-cpp-analyzer.ts",
-          "line": 1051,
+          "line": 1220,
           "column": 43,
           "source": "/::|\\s+/",
           "operation": "split",
@@ -245,7 +245,7 @@
         },
         {
           "file": "real-cpp-analyzer.ts",
-          "line": 1073,
+          "line": 1242,
           "column": 35,
           "source": "/::|\\s+/",
           "operation": "split",
@@ -307,7 +307,7 @@
       "usages": [
         {
           "file": "real-zig-analyzer.ts",
-          "line": 1000,
+          "line": 1016,
           "column": 33,
           "source": "/[!*\\s\\[\\]\\{\\}]+/g",
           "operation": "replace",
