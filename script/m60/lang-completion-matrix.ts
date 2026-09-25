@@ -395,10 +395,22 @@ writeFileSync(OUT, JSON.stringify({
     grammarAudit: `validation/m14/results/M14.0.F1.json @ ${F1.commit?.slice(0, 8)}`,
     corpusClaims: `validation/m12/results/corpus-claims-gate.json @ ${CLAIMS.checkedAt}`,
     lineEmission: `validation/m60/results/P1.json @ ${P1.at}`,
+    depth: DEPTH ? `validation/m60/results/depth-probes.json @ ${DEPTH.at} (${DEPTH.draws?.length ?? 0} draws over ${Object.keys(DEPTH.worstPerLang ?? {}).length} lanes)` : "validation/m60/results/depth-probes.json @ absent",
     tracker: `validation/m49/lang-open-issues.json @ ${TRACKER.snapshotAt} (${TRACKER.count} open)`,
   },
   crossCuttingIssues: CROSS_CUTTING,
-  depthProbes: DEPTH?.runs ?? [],
+  // The depth column is computed from THIS map (worstPerLang), so publish it as the verdicts
+  // it holds. The field used to read DEPTH?.runs — a key depth-probes.json has never had — so
+  // every emission published `[]`: a citation that named the evidence and carried none. The
+  // evidence file's own prose stays there; this is only what the column was computed from.
+  depthProbes: Object.fromEntries(
+    Object.entries(DEPTH?.worstPerLang ?? {}).map(([l, w]: [string, any]) => [
+      l,
+      w.missing === 0 && w.unexplained === 0
+        ? `clean @${w.maxSample} files`
+        : `MISSING=${w.missing} unexplained=${w.unexplained} @${w.maxSample} files${w.issue ? ` — ${w.issue}` : ""}`,
+    ]),
+  ),
   columns: {
     diff: "M14.0.F5 MISSING/unexplained/fabrication all zero",
     depth: "every 200-file draw on the lane's pinned repo is MISSING=0 and unexplained=0 (60 is the canonical draw)",
