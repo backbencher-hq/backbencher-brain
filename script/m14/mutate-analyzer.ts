@@ -4932,6 +4932,98 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "cpp/declarator-name-from-initializer",
+    language: "cpp",
+    defectClass: "relationship-loss",
+    description:
+      "CPPD12 (#612 family deep differential) regression: restores the pre-fix DECLARED-NAME extraction — the shallow, document-order lookup over an init_declarator's children, whose first identifier is the INITIALIZER. Caught by cpp/wrapped-declarator-names-612, which pins both halves of what the wrong name costs: the reference is published as `alias` (the mutant renames it back to `backing`, the object it binds TO) and the two reads a pointer local's initializer must still produce survive (`firstBuffer -> environ` — the corpus MISSING edge at FuzzerUtilDarwin.cpp:98 — and `readThroughLocal -> single`). Measured on that fixture through the production entry: symbols 19 -> 15, edges 8 -> 6.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.name === "alias" ? { ...s, name: "backing" } : s)),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && (x.target === "environ" || x.target === "single")),
+      ),
+    }),
+  },
+  {
+    id: "cpp/wrapped-declarator-symbol-loss",
+    language: "cpp",
+    defectClass: "symbol-loss",
+    description:
+      "CPPD12 (#612 family deep differential) regression: restores the pre-fix fallback, which looked ONE level into pointer/reference wrappers and never considered array declarators — so `extern \"C\" char **environ;`, `char **buffers;`, `int counts[4];` and the function-pointer `int (*handler)(int);` published NO symbol at all (and with no declaration in the roster, their reads resolved to nothing). Caught by cpp/wrapped-declarator-names-612's expectSymbols. Measured on the fixture: 19 -> 14 symbols.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter(
+        (s: any) => !(["environ", "buffers", "counts", "alias", "handler"].includes(s.name) && s.kind === "variable"),
+      ),
+    }),
+  },
+  {
+    id: "cpp/function-name-as-value",
+    language: "cpp",
+    defectClass: "symbol-fabrication",
+    description:
+      "CPPD12b (#612 family deep differential) regression: drops the guard that stops the declarator chain at a FUNCTION name, so a function DECLARATION publishes a value symbol. This is the shape that minted `variable:assert_invariant` / `property:JSON_ASSERT` / `variable:dump` out of ERROR-recovered macro statements on nlohmann-json, and one of those names then made `key.get_ref<string_t&>()` resolvable and added three fabricated `push_back -> get_ref` uses edges. Caught by cpp/wrapped-declarator-names-612's forbidSymbols (declaredNotDefined must stay a function) while the same fixture's `handler` expectSymbols is the control: a function POINTER is still a value.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        { name: "declaredNotDefined", kind: "variable", visibility: "public", range: { startLine: 54, startColumn: 1, endLine: 54, endColumn: 20 } },
+      ],
+    }),
+  },
+  {
+    id: "cpp/template-declared-name-as-read",
+    language: "cpp",
+    defectClass: "relationship-fabrication",
+    description:
+      "CPPD15/CPPD16 (#612 family deep differential) regression: restores the pre-fix read of a template-wrapped declarator's NAME — the declared entity read as a use of itself. The pin lives in cpp/template-declarator-name-612, whose forbidRelationships rejects ANY `uses -> bits_of`, and the mutant emits exactly the edge HEAD emitted on that fixture through the production entry (`uses detail -> bits_of @39`, the `template <>` specialization line). This class is why the mutation suite alone cannot carry it: the F5 ORACLE derived the same false read, so analyzer and truth agreed and the lane counted 100%/0/0 with 7 fabricated pairs (the fmt full extent sites are named in the fixture header). The executable control for the truth side is the F9 probe F9-PROBE-CPP-TEMPLATE-DECL-NAME, which asserts with `oracleForbid` that the edge is absent on BOTH sides — reverting the shared rule on either side fails it.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        {
+          type: "uses",
+          source: "detail",
+          fromSymbol: "detail",
+          target: "bits_of",
+          toSymbol: "bits_of",
+          confidence: 1,
+          line_number: 39,
+          metadata: { relationshipType: "identifier_usage", nodeType: "identifier" },
+        },
+      ],
+    }),
+  },
+  {
+    id: "cpp/wrapped-function-declarator-scope-loss",
+    language: "cpp",
+    defectClass: "scope-blindness",
+    description:
+      "CPPD17/CPPD18 (#612 family deep differential) regression: removes the declarator-chain descent that finds the declared NAME and the function_declarator under a wrapper, so a wrapped spelling publishes no method symbol AND — because the caller pushes the function scope out of that same result — leaves the function without a scope, letting its parameters' reads resolve OUTWARD to the file-scope enumerator. This is the pre-fix output measured on cpp/wrapped-declarator-names-612 through the production entry (HEAD: symbols 16, edges 7; fix: symbols 22, edges 10): the two wrapped methods vanish and `uses WrappedNames -> strict @111` appears. Caught by that fixture's expectSymbols (both methods) and its target-only `uses -> strict` forbid. Corpus weight, since a fixture can only carry the shape: include/nlohmann/json_v3_10_5.hpp lost 14 method symbols and emitted the lane's last unexplained edge (`uses binary_reader -> strict @8299`) from exactly this.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter(
+        (s: any) => !(s.kind === "method" && ["acceptParenthesized", "acceptMacroDecorated"].includes(s.name)),
+      ),
+      relationships: [
+        ...(r.relationships ?? []).filter(
+          (x: any) => !(x.type === "contains" && ["acceptParenthesized", "acceptMacroDecorated"].includes(x.target)),
+        ),
+        {
+          type: "uses",
+          source: "WrappedNames",
+          fromSymbol: "WrappedNames",
+          target: "strict",
+          toSymbol: "strict",
+          confidence: 1,
+          line_number: 111,
+          metadata: { relationshipType: "identifier_usage", nodeType: "identifier" },
+        },
+      ],
+    }),
+  },
+  {
     id: "c/macro-truncated-declaration-phantoms",
     language: "c",
     defectClass: "symbol-fabrication",

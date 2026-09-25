@@ -39,7 +39,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { CPP_BUILTIN_TYPE_KEYWORDS, macroDeclaredBody, qualifiedDeclaratorLeaf } from "../../src/ast/real-cpp-analyzer"
+import { CPP_BUILTIN_TYPE_KEYWORDS, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -361,7 +361,20 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
-  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc,h" },
+  // `ext` is the lane's SAMPLING UNIVERSE, and for cpp it read "cc,h" until the
+  // M37.19 family round (2026-09-25): .cpp — the most common C++ extension — and
+  // .hpp were invisible to every F5 draw. Three other declarations in this repo
+  // disagree with that string and all three are authoritative: the product's own
+  // indexer (`parallel-indexer.ts` accepts .c/.h/.cpp/.hpp/.cc/.cxx and maps
+  // cpp -> "cpp"), the M12 corpus census (`verify-corpus-census.ts`, cpp:
+  // [.cc, .cpp, .h, .hpp]) and the fixture harness (`run-fixtures.ts`, ext "cpp"
+  // — every cpp fixture is a .cpp file). Measured consequence on the second
+  // corpus: `--repo nlohmann-json` drew 17 files out of 497, so the lane's
+  // deepest measurement was fmt's 73 and the family's own 200-file floor was
+  // unreachable for cpp through no fault of the analyzer. The canonical F5 row
+  // recorded at fdbf069f was drawn under the old string and is not comparable to
+  // a re-run in the .cpp-inclusive universe.
+  cpp: { wasm: "tree-sitter-cpp.wasm", analyzerFile: "real-cpp-analyzer", className: "RealCppAnalyzer", ext: "cc,cpp,cxx,h,hpp" },
   c: { wasm: "tree-sitter-c.wasm", analyzerFile: "real-c-analyzer", className: "RealCAnalyzer", ext: "c" },
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
@@ -2014,6 +2027,19 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
   const isDeclaringPos = (n: any): boolean => {
     const p = n.parent
     if (!p) return false
+    // CPPD15/CPPD16 MIRROR (imported, never re-implemented — the analyzer's own
+    // rule): the NAME of a template-wrapped declarator is a DECLARED entity, not
+    // a read of one. `template <> constexpr auto num_bits<native_int128>() -> int`
+    // puts the defined name inside `template_function`, so the leftmost-
+    // declarator rule below (which gates on the node's DIRECT parent) read it as
+    // a value use. Measured: fmt's full extent derived 7 such `uses` truth edges
+    // (format.h num_bits/digits10, printf.h find, gtest.h GenerateNamesRecursively,
+    // one-arg.cc from_repr, fuzzer-common.h assign_from_buf, format-impl-test.cc
+    // run_double_tests), every one of them a false read of the imported
+    // specialization's own name — and the analyzer matched them, so the two sides
+    // agreed on a wrong answer and no count moved. See the analyzer's
+    // `templateWrappedDeclaratorName` for the shape and the narrowness argument.
+    if (templateWrappedDeclaratorName(n)) return true
     if (p.type === "optional_parameter_declaration" || p.type === "type_parameter_declaration" ||
         p.type === "template_type_parameter" || p.type === "template_value_parameter") {
       for (let k = 0; k < p.namedChildCount; k++) {
