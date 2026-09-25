@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-24T23:02:59.778Z",
+  "snapshotAt": "2026-09-25T03:08:14.965Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 108,
+  "count": 105,
   "issues": [
     {
       "number": 134,
@@ -355,11 +355,6 @@
       "labels": []
     },
     {
-      "number": 753,
-      "title": "M49-CONV: CONV-DART-2 dart — duplicate method names keep FIRST body (wrong-body class, #745 family)",
-      "labels": []
-    },
-    {
       "number": 755,
       "title": "M49-CONV: CONV-HS-1 haskell — value-level references between bindings emit no edges (only applications do)",
       "labels": []
@@ -455,11 +450,6 @@
       "labels": []
     },
     {
-      "number": 827,
-      "title": "M49.DT1 Dart first review wave: process reviews/dart DT-A-DT-F under the verify-first protocol",
-      "labels": []
-    },
-    {
       "number": 828,
       "title": "M60.G1 — Standing rules R1–R4 and the gate that enforces them",
       "labels": []
@@ -507,11 +497,6 @@
     {
       "number": 853,
       "title": "M49.OC2 ObjC second review wave: process reviews/objc OC-F/G/H under the verify-first protocol",
-      "labels": []
-    },
-    {
-      "number": 856,
-      "title": "M49.DT2 Dart second review wave: process reviews/dart DT2-A/B under the verify-first protocol",
       "labels": []
     },
     {
