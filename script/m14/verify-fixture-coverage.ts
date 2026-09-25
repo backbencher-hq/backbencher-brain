@@ -66,6 +66,13 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   haskell:    { wasm: "tree-sitter-haskell.wasm",    ext: [".hs"],     analyzer: "real-haskell-analyzer.ts" },
   clojure:    { wasm: "tree-sitter-clojure.wasm",    ext: [".clj", ".cljc", ".cljs"], analyzer: "real-clojure-analyzer.ts" },
   elixir:     { wasm: "tree-sitter-elixir.wasm",     ext: [".ex", ".exs"], analyzer: "real-elixir-analyzer.ts" },
+  // M60 functional family: the clean lane was absent from this gate, so its
+  // spec claim (a definition module's declared interface, the operator
+  // callable, the export surface) had no fixture-coverage check at all. Its two
+  // extensions are both real sources: a `.dcl` is declarations only and a
+  // `.icl` is the implementation — the F6 check must see both or the ruling's
+  // first half is unexercised by construction.
+  clean:      { wasm: "tree-sitter-clean.wasm",     ext: [".icl", ".dcl"], analyzer: "real-clean-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types
