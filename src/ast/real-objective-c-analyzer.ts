@@ -19,6 +19,30 @@ const DECLARATOR_WRAPPERS: ReadonlySet<string> = new Set([
   "function_declarator",
 ])
 
+// Is this declaration's terminating `;` a MISSING token?
+//
+// `declaration` is the grammar's home for a real C declaration AND for parse
+// wreckage. When two macro lines STACK with no declaration between them —
+// `NS_ASSUME_NONNULL_END` on one line and the next macro on the following one,
+// which is how every Apple header closes one nullability region and opens
+// another — the grammar absorbs both identifiers as SPECIFIERS and closes the
+// declaration with a MISSING `;`. Nothing is declared (measured: the node's
+// named children are two identifiers and there is no declarator at all, while
+// `declaratorField` resolves to the second macro), yet the file-scope loop
+// below publishes that second identifier as a Variable. That is the phantom
+// class the #743 grammar wave removed for c and cpp (`variable
+// NS_ASSUME_NONNULL_END`); objc's grammar cannot remove it (see the
+// `macro_prefixed_objc_declaration` note in grammars/tree-sitter-objc), so the
+// analyzer refuses it here instead. A declaration that was never terminated
+// declares nothing.
+function isUnterminatedDeclaration(node: any): boolean {
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i)
+    if (child && child.isMissing && child.type === ";") return true
+  }
+  return false
+}
+
 // ============================================================================
 // CONV-OC-1: framework detection — the family contract (CONV-CS-2 reference,
 // swift/java siblings) over this lane's existing markers.
@@ -569,27 +593,35 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // pointer_declarator, so a direct-child lookup misses them. Bare
           // declarators without initializers (`static NSArray * g;`) bind
           // the same way; prototypes (function_declarator) never bind.
-          for (let di = 0; di < node.namedChildCount; di++) {
-            const dc = node.namedChild(di)
-            if (!dc) continue
-            let dname: string | null = null
-            if (dc.type === "init_declarator") {
-              dname = this.declaratorName(dc)
-            } else if (dc.type === "identifier") {
-              dname = dc.text
-            } else if (dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
-                       dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
-              dname = this.declaratorName(dc)
-            }
-            if (dname) {
-              symbols.push({
-                name: dname,
-                kind: ASTEngine.SymbolKind.Variable,
-                range: this.getRange(node),
-                metadata: { objcSpecific: true },
-              })
-              // OC-E: file-scope names are resolvable read targets.
-              globals.add(dname)
+          //
+          // An UNTERMINATED declaration publishes nothing (see
+          // isUnterminatedDeclaration): it has no declarator, so the only
+          // identifier in reach is a specifier macro. Traversal still descends
+          // either way — the walk below is driven by this branch's return
+          // state, not by the loop — so nothing nested is skipped.
+          if (!isUnterminatedDeclaration(node)) {
+            for (let di = 0; di < node.namedChildCount; di++) {
+              const dc = node.namedChild(di)
+              if (!dc) continue
+              let dname: string | null = null
+              if (dc.type === "init_declarator") {
+                dname = this.declaratorName(dc)
+              } else if (dc.type === "identifier") {
+                dname = dc.text
+              } else if (dc.type === "pointer_declarator" || dc.type === "array_declarator" ||
+                         dc.type === "parenthesized_declarator" || dc.type === "attributed_declarator") {
+                dname = this.declaratorName(dc)
+              }
+              if (dname) {
+                symbols.push({
+                  name: dname,
+                  kind: ASTEngine.SymbolKind.Variable,
+                  range: this.getRange(node),
+                  metadata: { objcSpecific: true },
+                })
+                // OC-E: file-scope names are resolvable read targets.
+                globals.add(dname)
+              }
             }
           }
       } else if (node.type === "declaration" && nextBindable) {

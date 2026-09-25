@@ -22,6 +22,7 @@ import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
 import { createHash } from "crypto"
+import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { execSync, spawnSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
@@ -373,7 +374,14 @@ const CHILD_SLICE = (() => {
 const NO_BATCH = process.argv.includes("--no-batch")
 const BATCH_SIZE = process.env.BB_F5_BATCH_SIZE ? parseInt(process.env.BB_F5_BATCH_SIZE) : 8
 
-export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+// The ROUTER's spelling of a lane's language, for extensions the router decides
+// by CONTENT (see `routeByContent`). src/ast/language-detection.ts is the one
+// registry that admits a file to an analyzer, so it is the one this harness has
+// to agree with rather than a second opinion kept here.
+const ROUTER_LANGUAGE: Record<string, string> = { objc: "objective-c" }
+const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).toLowerCase()
+
+export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
       typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
@@ -403,7 +411,12 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
-  objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+  // M60 objc headers (2026-09-25): `ext` is the lane's sampling universe and it
+  // read "m" — so the header half of the language was outside every F5 row,
+  // depth draw and fixture, while production DOES hand the analyzer those files.
+  // `h` joins it, but under `routeByContent`: the extension is decided by the
+  // router's sniff, not by its name (see the admission rule in `scan`).
+  objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m,h", routeByContent: ["h"] },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   python: { wasm: "tree-sitter-python.wasm", analyzerFile: "real-python-analyzer", className: "RealPythonAnalyzer", ext: "py" },
@@ -12493,7 +12506,24 @@ async function main() {
       for (const e of entries) {
         const p = path.join(d, e.name)
         if (e.isDirectory()) { if (!/^(\.|node_modules|build|target)/.test(e.name)) scan(p) }
-        else if (cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) files.push(p)
+        else {
+          if (!cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) continue
+          // A content-routed extension cannot be admitted by name. `h` is C, C++
+          // and Objective-C at once: language-detection.ts sniffs
+          // @interface/@protocol and hands the file to objective-c. Admitting
+          // every `.h` here would grade C and C++ headers with the Objective-C
+          // analyzer; admitting none (this lane's state before the change) left
+          // production's header half ungraded — measured, 169 of the 322
+          // objc-routed files in the lane's own two pinned repos carried 1,812
+          // symbols and 2,025 relationships no gate had ever looked at. So the
+          // router decides per file and the lane takes only what it is handed.
+          if (cfg.routeByContent?.includes(extOf(e.name))) {
+            let head = ""
+            try { head = fs.readFileSync(p, "utf8").slice(0, 65536) } catch { continue }
+            if (detectLanguageFromPath(p, head) !== (ROUTER_LANGUAGE[lang] ?? lang)) continue
+          }
+          files.push(p)
+        }
       }
     }
     scan(repoDir)
