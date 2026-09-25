@@ -314,7 +314,23 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             // emit symbol.complexity; zig did NOT, so completeness section C
             // was impossible). Added zig wave 2026-08-29.
             complexity: this.zigBodyComplexity(node),
-            metadata: { zigFunction: true, inline: isInline, paramCount: params.length },
+            metadata: {
+              zigFunction: true,
+              inline: isInline,
+              paramCount: params.length,
+              // #612 store-phase: DECLARATION vs DEFINITION. Measured against
+              // this grammar (tree dump, 2026-09-25): `extern fn run_engine()
+              // c_int;` and `pub fn call_it() c_int { … }` BOTH parse as
+              // `function_declaration` — the body is the discriminator, a
+              // `block` child. A body-less form is a declaration (`extern fn`,
+              // and the `function_signature` spelling if the grammar produces
+              // it); a `block` child is a definition. Without the flag an
+              // `extern` declaration competed on equal footing with the
+              // definition implementing it in another file.
+              ...(type === "function_signature" || !this.anyChild(node, (n) => n.type === "block")
+                ? { isDeclaration: true }
+                : {}),
+            },
           }
           symbols.push(sym)
           if (isExported && !isMethod) exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function })

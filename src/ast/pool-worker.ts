@@ -573,6 +573,18 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // worker boundary. It was dropped here AND never bound in the
           // brain_symbol INSERT, so brain_symbol.docstring was always NULL.
           docstring: s.docstring ?? null,
+          // #612 store-phase (same seam class as docstring above and scope_kind
+          // below): the declaration/definition fact. c has published
+          // `metadata.isDeclaration` since the HC1 review, and cpp/rust/zig
+          // publish it as of #612 — but the whole `metadata` object was dropped
+          // HERE, so brain_symbol.annotations was NULL for every analyzer
+          // symbol and the store had nothing but the NAME to resolve with. The
+          // narrow key is carried rather than all of metadata: it is the one
+          // metadata fact the store phase reads (a schema column of its own,
+          // `is_declaration`), and widening `annotations` for every symbol in
+          // every language is a separate, larger change that would need its own
+          // measurement round.
+          isDeclaration: s.metadata?.isDeclaration === true || undefined,
           snippet,
         }
       }),

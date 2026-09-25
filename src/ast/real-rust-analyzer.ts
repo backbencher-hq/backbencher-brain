@@ -1352,7 +1352,20 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       node,
       parent,
-      { type: "function", isConstFn, isAsyncFn, isUnsafeFn },
+      {
+        type: "function",
+        isConstFn,
+        isAsyncFn,
+        isUnsafeFn,
+        // #612 store-phase: a rust `function_item` carries a body; a
+        // `function_signature_item` does not — that node is a trait method
+        // signature or an `extern "C" { fn f(); }` FFI declaration. Both used
+        // to publish an indistinguishable `function` symbol, so the extern
+        // declaration could win name resolution against the definition that
+        // implements it in another file. (The node-type discriminator already
+        // existed here for scope purposes; only the published fact was absent.)
+        ...(node.type === "function_signature_item" ? { isDeclaration: true } : {}),
+      },
     )
 
     if (isConstFn) symbol.metadata = { ...symbol.metadata, isConst: true }

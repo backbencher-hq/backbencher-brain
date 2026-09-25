@@ -58,6 +58,13 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         complexity INTEGER,
         owner_symbol_id TEXT,
         scope_kind TEXT,
+        -- #612: 1 = the analyzer published this symbol as a DECLARATION
+        -- (a c prototype, a cpp in-class/field-declaration or header
+        -- prototype, a rust function_signature_item, a body-less zig
+        -- function declaration), NULL = a definition or a language that does
+        -- not distinguish. Name resolution reads this to prefer the
+        -- definition when a declaration and its definition share a name.
+        is_declaration INTEGER,
         annotations TEXT,
         generic_parameters TEXT,
         qualified_calls TEXT,
@@ -368,6 +375,25 @@ export function ensureEmbeddingBlobColumn(raw: any): void {
   } catch {}
 }
 
+/**
+ * #612: additive migration for the declaration/definition column.
+ * Additive-only and idempotent, same contract as ensureEmbeddingBlobColumn:
+ * legacy DBs gain a NULL column (NULL = "a definition, or a language that does
+ * not distinguish", which is exactly what every pre-#612 row is), fresh DBs
+ * already have it from the DDL. Safe on read-only or busy opens (try/catch).
+ * Leaving legacy rows NULL is deliberate, not a gap: the resolver treats NULL
+ * and 0 identically, so an un-migrated DB keeps the previous resolution order
+ * until a re-index writes the real value.
+ */
+export function ensureSymbolDeclarationColumn(raw: any): void {
+  try {
+    const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
+    if (cols.length === 0) return // table absent (fresh DB handled by DDL)
+    if (cols.includes("is_declaration")) return
+    raw.exec("ALTER TABLE brain_symbol ADD COLUMN is_declaration INTEGER")
+  } catch {}
+}
+
 export function ensureHealthIndexes(raw: any): { recreated: number } {
   try {
     raw.exec(`CREATE INDEX IF NOT EXISTS brain_embed_health_idx ON brain_semantic_embedding(project_id, embedding_model, entity_id, vector_dimension)`)
@@ -528,6 +554,9 @@ export function ensureSchema(raw: any): void {
   // already carries it for fresh DBs, this covers re-created tables via paths
   // that ran an older DDL).
   ensureEmbeddingBlobColumn(raw)
+  // #612: additive symbol column (idempotent; the DDL above carries it for
+  // fresh DBs, this covers DBs created by an older DDL).
+  ensureSymbolDeclarationColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}

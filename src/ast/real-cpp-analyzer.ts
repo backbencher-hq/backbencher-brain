@@ -1495,6 +1495,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               isConstructor,
               isDestructor,
               isOperatorOverload: isOperator,
+              // #612 store-phase: DECLARATION vs DEFINITION. This branch is
+              // reached for all three node types that can name a function, and
+              // the type itself is the whole discriminator — the grammar parses
+              // a body as `function_definition` and a prototype (file-scope
+              // `int f(void);`, an in-class `int f();`, a field declaration) as
+              // `declaration`/`field_declaration`. Without this key the only
+              // signal the store had was the symbol NAME, so a cpp header
+              // prototype competed on equal footing with the .cpp definition
+              // in another file and name resolution could pick the prototype.
+              ...(type === "function_definition" ? {} : { isDeclaration: true }),
               // #921 (M60): the line the declared NAME is written on. A wrapped
               // return type puts it below the declaration's start
               // (`void NORETURN` then `CheckFailed(const char *file, …)`), and the
