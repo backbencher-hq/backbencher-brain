@@ -1,8 +1,8 @@
 {
-  "snapshotAt": "2026-09-25T03:08:14.965Z",
+  "snapshotAt": "2026-09-25T14:13:27.815Z",
   "source": "gh issue list --state open --limit 300",
   "rule": "a snapshot of OPEN issues at snapshotAt; the matrix's tracker cell reads only this list, so a closed issue that lingers here keeps a language red past its resolution",
-  "count": 105,
+  "count": 110,
   "issues": [
     {
       "number": 134,
@@ -529,6 +529,8 @@
       "labels": [
         "analyzer",
         "bug",
+        "lang:go",
+        "lang:haskell",
         "m14",
         "m14.0-foundation"
       ]
@@ -611,7 +613,9 @@
     {
       "number": 914,
       "title": "F5 go implements truth is NAME-only: the oracle fabricates an edge when two interfaces share a method name with different signatures",
-      "labels": []
+      "labels": [
+        "lang:go"
+      ]
     },
     {
       "number": 924,
@@ -635,6 +639,41 @@
     {
       "number": 933,
       "title": "m12: six OO lanes read PASS off audits frozen in August — the analyzers have changed for five weeks since",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 938,
+      "title": "swift: a switch-case pattern with an associated value error-recovers into a call_expression whose callee is the keyword `case` — the analyzer publishes a fabricated `calls`",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 939,
+      "title": "swift: the SCD1 write gate stops at the `postfix_expression` wrapper, so a force-unwrapped member inside an assignment LHS is published as a forced read",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 940,
+      "title": "swift: the pinned grammar cannot parse `nonisolated(unsafe)`, so a whole class header lands in an ERROR node and the container plus every member it owns is silently dropped (5 corpus sites)",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 941,
+      "title": "swift: an unresolvable `self.init` publishes a dangling `calls -> init` on the truth side, and the analyzer invents the enclosing symbol's OWN name as the owner (`instantiates constructor -> constructor`)",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "number": 942,
+      "title": "swift: the enum-construction splice removes \"the first calls edge with this source and leaf\", so a same-scope call to an identically named function silently loses its edge (alamofire full extent)",
       "labels": [
         "bug"
       ]
