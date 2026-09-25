@@ -58,7 +58,7 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm", scala: "tree-sitter-scala.wasm" }
+  const cfgs: Record<string, string> = { csharp: "tree-sitter-c_sharp.wasm", haskell: "tree-sitter-haskell.wasm", php: "tree-sitter-php.wasm", java: "tree-sitter-java.wasm", javascript: "tree-sitter-javascript.wasm", scala: "tree-sitter-scala.wasm", go: "tree-sitter-go.wasm" }
   const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfgs[lang])))
   const parser = new P()
   parser.setLanguage(langWasm)
@@ -713,6 +713,52 @@ class Host
     ["calls:generateColumns", "calls:from", "calls:map"],
     ["calls:return", "calls:key", "calls:string", "calls:if"],
   )
+
+  // ── GO-EMBED-GENERIC (#799 round 3: the go-heavy corpus stress read) ─────
+  // Real defect, found on a corpus the pinned ones cannot stand in for: the go
+  // lane's two corpora carry ZERO generic embedded fields (a measured count,
+  // not an impression), while kubernetes' generated client code embeds
+  // INSTANTIATED GENERICS everywhere. The ORACLE resolved an embedded field's
+  // name as `lastSegment(raw text)`, and for a generic the last dot lands
+  // INSIDE the type arguments: `listers.ResourceIndexer[*crv1.Example]` became
+  // `Example]` and `*gentype.ClientWithListAndApply[*crv1.Example, …]` became
+  // `…ApplyConfiguration]`. The analyzer names the LEAF of the base type (Go
+  // promotes the BASE's methods, not a type argument's), so the two sides
+  // disagreed in bulk — 648 MISSING + 557 UNEXPLAINED `extends` rows over
+  // 13,488 files, invisible on go-tools (10/2, all `implements`) and terraform
+  // (22/0). The fix is pinned on BOTH sides: reverting the oracle fails the
+  // probe as `oracle no longer derives: extends:exampleLister->ResourceIndexer, …`
+  // (executed 2026-09-24 — it is the expect-side oracle check that fires first),
+  // and `oracleForbid` additionally forbids the bracket text where the
+  // analyzer's own forbid already refuses it. The plain external embed
+  // (`io.Reader` -> `Reader`) is the control: it worked before and must keep
+  // working.
+  {
+    const goCfg = { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: ".go" }
+    const src = [
+      `package probe`,
+      ``,
+      `type ctl struct {`,
+      `\tio.Reader`,
+      `}`,
+      ``,
+      `type exampleLister struct {`,
+      `\tlisters.ResourceIndexer[*crv1.Example]`,
+      `}`,
+      ``,
+      `type examples struct {`,
+      `\t*gentype.ClientWithListAndApply[*crv1.Example, *crv1.ExampleList, *applyconfigurationcrv1.ExampleApplyConfiguration]`,
+      `}`,
+      ``,
+    ].join("\n")
+    await probeLang("F9-PROBE-GO-EMBED-GENERIC", "go",
+      "an embedded INSTANTIATED GENERIC names the LEAF of its base type on the analyzer AND the oracle (ResourceIndexer, ClientWithListAndApply), and the truth never derives a TYPE ARGUMENT as the embedded type's name (Example])",
+      goCfg, "deriveGoEdges", src,
+      ["extends:ctl->Reader", "extends:exampleLister->ResourceIndexer", "extends:examples->ClientWithListAndApply"],
+      ["extends:exampleLister->Example]", "extends:examples->CustomResourceDefinitionApplyConfiguration]"],
+      { oracleForbid: true },
+    )
+  }
 
   // ── F7 detector self-test: regexes regress like any code ────────────────
   {
