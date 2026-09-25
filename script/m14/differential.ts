@@ -13414,13 +13414,18 @@ async function main() {
       // spec) — not the whole checkout. Another lane's in-flight analyzer edit
       // did not produce these rows, so it must not mark them unclaimable; but the
       // lane's own uncommitted code MUST, so the oracle stays inside the set.
-      const laneInputs = new Set<string>([
-        "script/m14/differential.ts",
-        "script/m14/evidence-harness.ts",
+      // Split so the artifact cannot be misread: the lane's OWN code (its
+      // analyzer, its spec) is the lane's claim, while the SHARED harness
+      // (the oracle + evidence harness) is everybody's — a shared-file dirt is
+      // named as such rather than reported as this lane's defect.
+      const ownInputs = new Set<string>([
         ...Object.keys(report).map(l => `src/ast/${(LANGS as any)[l]?.analyzerFile}.ts`),
         ...Object.keys(report).map(l => `script/m14/spec/${l}-completeness.json`),
       ])
-      const laneDirt = codeInputs.dirty.filter(p => laneInputs.has(p))
+      const sharedInputs = new Set<string>(["script/m14/differential.ts", "script/m14/evidence-harness.ts"])
+      const laneInputs = new Set<string>([...ownInputs, ...sharedInputs])
+      const laneDirt = codeInputs.dirty.filter(p => ownInputs.has(p))
+      const sharedDirt = codeInputs.dirty.filter(p => sharedInputs.has(p))
       const otherDirt = codeInputs.dirty.filter(p => !laneInputs.has(p))
       const { emitEvidence } = await import("./evidence-harness")
       const rowCheck = (key: string, row: any) => ({
@@ -13438,12 +13443,20 @@ async function main() {
         layers: ["differential"],
         checks: [
           {
-            id: "differential-code-inputs",
-            description: "the analyzers, oracle and spec that produced THIS lane's rows are this commit's",
+            id: "differential-lane-code-inputs",
+            description: "THIS lane's own analyzer and spec are this commit's",
             status: laneDirt.length === 0 ? "pass" : "fail",
             detail: laneDirt.length === 0
-              ? `this lane's measured inputs are clean at head ${codeInputs.head.slice(0, 10)}`
-              : `${laneDirt.length} of this lane's measured input(s) differ from head ${codeInputs.head.slice(0, 10)}: ${laneDirt.join(", ")}`,
+              ? `${[...ownInputs].join(", ")} clean at head ${codeInputs.head.slice(0, 10)}`
+              : `${laneDirt.length} of this lane's own input(s) differ from head ${codeInputs.head.slice(0, 10)}: ${laneDirt.join(", ")}`,
+          },
+          {
+            id: "differential-harness-code-inputs",
+            description: "the SHARED oracle/harness that produced these rows is this commit's",
+            status: sharedDirt.length === 0 ? "pass" : "fail",
+            detail: sharedDirt.length === 0
+              ? `shared harness clean at head ${codeInputs.head.slice(0, 10)}`
+              : `${sharedDirt.length} shared harness file(s) differ from head ${codeInputs.head.slice(0, 10)}: ${sharedDirt.join(", ")} — the harness is shared by every lane, so this can be another lane's uncommitted work and is NOT evidence about this lane's rows`,
           },
           ...Object.entries<any>(report).map(([k, r]) => rowCheck(k, r)),
           ...Object.entries<any>(reportSecond).map(([k, r]) => rowCheck(k, r)),
@@ -13461,7 +13474,7 @@ async function main() {
           samplingRule: `seeded ${SAMPLE_PER_LANG} files/language, scoped to ${scope}`,
           report,
           secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
-          codeInputs: { ...codeInputs, laneInputs: [...laneInputs], laneDirt, otherDirt },
+          codeInputs: { ...codeInputs, ownInputs: [...ownInputs], sharedInputs: [...sharedInputs], laneDirt, sharedDirt, otherDirt },
         },
       })
       console.log(`wrote validation/m14/results/M14.0.F5.${scope}.json (lane-scoped; canonical M14.0.F5.json untouched)`)
