@@ -70,6 +70,12 @@ type Lane = { wasm: string; repos: string[]; sample: number }
 const LANES: Record<string, Lane> = {
   c: { wasm: "wasm/tree-sitter-c.wasm", repos: ["sqlite", "jq"], sample: 400 },
   cpp: { wasm: "wasm/tree-sitter-cpp.wasm", repos: ["fmt", "nlohmann-json"], sample: 400 },
+  // M60 functional/clean lane. The four repos are every Clean source base on this box
+  // (312 tracked .icl/.dcl in total, and the lane's own M12 pin is a 41-file subset of one
+  // of them), so this is the widest draw the grammar decision can be taken on TODAY —
+  // disclosed as below the owner's heavy-corpus standard (900+), which the lane still owes.
+  // `eastwood` is a Clean language server, not the Clojure linter of the same name.
+  clean: { wasm: "wasm/tree-sitter-clean.wasm", repos: ["Clyde", "clean-stdlib", "Prelude", "cloogle.org", "eastwood"], sample: 400 },
 }
 const CORPUS = "$HOME/fixtures/repositories"
 
@@ -77,7 +83,7 @@ const LANG = argValue("--lang", "cpp")!
 const CANDIDATE = argValue("--candidate")
 const lane = LANES[LANG]
 if (!lane) { console.error(`unknown --lang ${LANG} (expected ${Object.keys(LANES).join(" | ")})`); process.exit(2) }
-if (!CANDIDATE || !existsSync(CANDIDATE)) { console.error("usage: verify-grammar-leaves.ts --lang <c|cpp> --candidate <wasm> [--repo X] [--emit]"); process.exit(2) }
+if (!CANDIDATE || !existsSync(CANDIDATE)) { console.error(`usage: verify-grammar-leaves.ts --lang <${Object.keys(LANES).join("|")}> --candidate <wasm> [--repo X] [--emit]`); process.exit(2) }
 const repos = hasArg("--repo") ? [argValue("--repo")!] : lane.repos
 const sample = parseInt(argValue("--sample", String(lane.sample))!, 10)
 
@@ -244,6 +250,19 @@ const vanishedRows: string[] = []
 const qualifierRows: string[] = []
 let pairsAdded = 0, pairsRemoved = 0, reAttributed = 0, lost = 0
 const lostRows: string[] = []
+// The ADDED side, for the same reason the removed side is listed: without it a reader
+// cannot tell a LOSS from a MOVE. Measured on the clean v1.2.7 candidate: G3 keys are
+// line-inclusive, and that grammar's whole point is fixing positions (`conversions` is
+// published at the source's line 354 while the file writes the name at 31/118/122/123),
+// so a corrected position reads as one vanished name plus one added name — a move.
+const addedSymbolRows: string[] = []
+const addedPairRows: string[] = []
+// Uncapped copies, because the repair-aware classification below must see EVERY row to be
+// sound: a 400-row cap would make "is this name declared in its file?" depend on row order.
+const vanishedAll: string[] = []
+const addedSymAll: string[] = []
+const lostAll: string[] = []
+const addedPairAll: string[] = []
 let filesChanged = 0
 
 for (const repo of repos) {
@@ -264,26 +283,171 @@ for (const repo of repos) {
     if (!removedSyms.length && !addedSyms.length && !removedRels.length && !addedRels.length) continue
     filesChanged++
     symAdded += addedSyms.length; symRemoved += removedSyms.length
+    for (const s of addedSyms) { addedSymAll.push(`${repo}/${rel}  ${s}`); if (addedSymbolRows.length < 400) addedSymbolRows.push(`${repo}/${rel}  ${s}`) }
+    for (const r of addedRels) { addedPairAll.push(`${repo}/${rel}  ${r}`); if (addedPairRows.length < 400) addedPairRows.push(`${repo}/${rel}  ${r}`) }
     const addedBases = new Set(addedSyms.map(baseOf))
     for (const s of removedSyms) {
-      if (addedBases.has(baseOf(s))) { qualifierChanged++; if (qualifierRows.length < 20) qualifierRows.push(`${repo}/${rel}  ${s}`) }
-      else { vanished++; if (vanishedRows.length < 20) vanishedRows.push(`${repo}/${rel}  ${s}`) }
+      if (addedBases.has(baseOf(s))) { qualifierChanged++; if (qualifierRows.length < 100) qualifierRows.push(`${repo}/${rel}  ${s}`) }
+      else { vanished++; vanishedAll.push(`${repo}/${rel}  ${s}`); if (vanishedRows.length < 400) vanishedRows.push(`${repo}/${rel}  ${s}`) }
     }
     pairsAdded += addedRels.length; pairsRemoved += removedRels.length
     const addedKeys = new Set(addedRels.map(pairOf))
     for (const r of removedRels) {
       if (addedKeys.has(pairOf(r))) reAttributed++
-      else { lost++; if (lostRows.length < 20) lostRows.push(`${repo}/${rel}  ${r}`) }
+      else { lost++; lostAll.push(`${repo}/${rel}  ${r}`); if (lostRows.length < 400) lostRows.push(`${repo}/${rel}  ${r}`) }
     }
   }
+}
+
+// ---------------------------------------------- G3 repair-aware identity (moved / fabricated)
+//
+// Two repairs, both measured on tree-sitter-clean v1.2.7 before being written down.
+//
+// 1. POSITION IS NOT IDENTITY. `baseOf` keys a symbol on `^\d+:kind:name@owner`, so a
+//    corrected LINE reads as one vanished symbol plus one added one. On a grammar whose whole
+//    release note is fixing positions that is the wrong instrument: 7 of 142 vanished names
+//    were the same (kind,name,owner) at a different line. Identity is (kind,name,owner); the
+//    line is evidence.
+//
+// 2. FABRICATION. A vanished name is not a loss unless the file declares it. Three classes are
+//    not declarations under this analyzer's own design — a `where`-local is scoped noise by
+//    declaration (M11.11 closure boundary), a reserved word is not a name, and a StdEnv
+//    predefine is bound by the environment. Measured: 63 of the 122 residue rows were
+//    where-locals and 58 had no module-level declaration at all, including the first
+//    parameter of a function published under the parameter's own name.
+//
+// What survives both repairs and IS declared at module level is the residue, and only the
+// residue blocks. The repairs remove false accusations, never evidence: every class is
+// emitted with its rows.
+type SymRow = { file: string; line: number | null; kind: string; name: string; owner: string | null }
+const parseSymRow = (row: string): SymRow | null => {
+  const file = row.split(/\s+/)[0]
+  const rest = row.slice(file.length).trim()
+  const m = rest.match(/^(\d+):([a-z]+):(.+)$/)
+  if (!m) return null
+  let name = m[3]
+  let owner: string | null = null
+  const at = name.lastIndexOf("@")
+  if (at >= 0) { owner = name.slice(at + 1); name = name.slice(0, at) }
+  return { file, line: Number(m[1]), kind: m[2], name, owner }
+}
+const symIdent = (s: SymRow) => `${s.kind}:${s.name}@${s.owner ?? ""}`
+
+const CLEAN_KEYWORDS = new Set(["where", "type", "instance", "class", "import", "from", "of", "if", "then", "else", "case", "let", "in", "with", "derive", "foreign", "export", "module", "implementation", "definition", "system", "infix", "infixl", "infixr", "special", "generic", "priority"])
+const CLEAN_PREDEFINES = new Set(["Int", "Real", "Bool", "Char", "String", "List", "Maybe", "Array", "Void", "otherwise", "True", "False", "Nil", "Cons", "Just", "Nothing", "File", "World"])
+// The scope rules are Clean's node vocabulary; for another lane only the (sound, language
+// independent) position repair applies and every remaining row stays residue. A lane that
+// wants its own fabrication rule adds its own declaration shapes here.
+const scopeRulesForLang = LANG === "clean"
+
+const declCache = new Map<string, Set<string>>()
+/** Names declared at module level under the CANDIDATE tree (where-locals excluded). */
+const moduleLevelDecls = (rel: string): Set<string> => {
+  const hit = declCache.get(rel)
+  if (hit) return hit
+  const out = new Set<string>()
+  let src: string
+  try { src = readFileSync(path.join(CORPUS, rel), "utf8") } catch { declCache.set(rel, out); return out }
+  const root = candParser.parse(src).rootNode
+  const stack: any[] = [root]
+  while (stack.length) {
+    const n = stack.pop()
+    if (n.type === "function_declaration" || n.type === "type_signature") {
+      let nm: string | undefined
+      const byField = n.childForFieldName?.("name") ?? null
+      if (byField?.text) nm = byField.text
+      if (!nm) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (n.type === "function_declaration" && c.type === "identifier") { nm = c.text; break }
+          if (n.type === "type_signature" && c.type === "signature_name") { nm = c.text; break }
+        }
+      }
+      if (nm) {
+        let cur = n.parent
+        let local = false
+        while (cur) { if (cur.type === "where_block") { local = true; break } cur = cur.parent }
+        if (!local) out.add(nm)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  declCache.set(rel, out)
+  return out
+}
+
+const addedIdentLines = new Map<string, Set<number>>()
+for (const row of addedSymAll) {
+  const s = parseSymRow(row)
+  if (!s) continue
+  const k = `${s.file}\u0000${symIdent(s)}`
+  const set = addedIdentLines.get(k) ?? new Set<number>()
+  if (s.line !== null) set.add(s.line)
+  addedIdentLines.set(k, set)
+}
+
+const symbolMoved: string[] = []
+const symbolRetiredKeyword: string[] = []
+const symbolRetiredPredefine: string[] = []
+const symbolFabricated: string[] = []
+const symbolResidue: string[] = []
+const retiredNamesByFile = new Map<string, Set<string>>()
+const retireName = (file: string, name: string) => {
+  const s = retiredNamesByFile.get(file) ?? new Set<string>()
+  s.add(name)
+  retiredNamesByFile.set(file, s)
+}
+for (const row of vanishedAll) {
+  const s = parseSymRow(row)
+  if (!s) { symbolResidue.push(row); continue }
+  const lines = addedIdentLines.get(`${s.file}\u0000${symIdent(s)}`)
+  if (lines && [...lines].some((l) => l !== s.line)) { symbolMoved.push(row); retireName(s.file, s.name); continue }
+  if (scopeRulesForLang && CLEAN_KEYWORDS.has(s.name)) { symbolRetiredKeyword.push(row); retireName(s.file, s.name); continue }
+  if (scopeRulesForLang && CLEAN_PREDEFINES.has(s.name)) { symbolRetiredPredefine.push(row); retireName(s.file, s.name); continue }
+  if (scopeRulesForLang && !moduleLevelDecls(s.file).has(s.name)) { symbolFabricated.push(row); retireName(s.file, s.name); continue }
+  symbolResidue.push(row)
+}
+
+// An edge to a retired name is not an edge. Parse both endpoints of each lost pair.
+const parsePairRow = (row: string) => {
+  const file = row.split(/\s+/)[0]
+  const rest = row.slice(file.length).trim()
+  const m = rest.match(/^([^:]*):([a-z]+):(.*)$/)
+  if (!m) return null
+  const arrow = m[3].indexOf("->")
+  if (arrow < 0) return null
+  return { file, kind: m[2], src: m[3].slice(0, arrow), dst: m[3].slice(arrow + 2).replace(/#.*$/, "") }
+}
+const pairRetired: string[] = []
+const pairResidue: string[] = []
+for (const row of lostAll) {
+  const p = parsePairRow(row)
+  if (!p) { pairResidue.push(row); continue }
+  const retired = retiredNamesByFile.get(p.file)
+  const keywordEndpoint = scopeRulesForLang && (CLEAN_KEYWORDS.has(p.src) || CLEAN_KEYWORDS.has(p.dst))
+  const retiredEndpoint = retired ? retired.has(p.src) || retired.has(p.dst) : false
+  if (keywordEndpoint || retiredEndpoint) { pairRetired.push(row); continue }
+  // A LOCAL call edge is emitted only for an application head the analyzer found in
+  // `declaredFunctions`, and an edge is only attributed while a function is in scope. So for
+  // `calls`, BOTH endpoints are declarations in this file by construction — `calls:step->paths`
+  // where `paths` is a `#`-let local, or `calls:a->createArray` where `a` is a type variable, is
+  // a pinned-side invention, not a lost edge. The rule is deliberately limited to `calls`:
+  // `instantiates`/`references` targets legitimately live in other modules, and `contains`
+  // targets include constructors that are not `function_declaration`s.
+  if (scopeRulesForLang && p.kind === "calls") {
+    const decls = moduleLevelDecls(p.file)
+    if (!decls.has(p.src) || !decls.has(p.dst)) { pairRetired.push(row); continue }
+  }
+  pairResidue.push(row)
 }
 
 // ---------------------------------------------------------------- verdict
 const reasons: string[] = []
 if (newlyDamaged.length) reasons.push(`G1: ${newlyDamaged.length} file(s) newly damaged`)
-if (vanished) reasons.push(`G3: ${vanished} symbol name(s) vanished`)
+if (symbolResidue.length) reasons.push(`G3: ${symbolResidue.length} declared symbol name(s) vanished`)
 if (qualifierChanged) reasons.push(`G3: ${qualifierChanged} symbol(s) changed owner qualifier`)
-if (lost) reasons.push(`G3: ${lost} (label,target) pair(s) lost`)
+if (pairResidue.length) reasons.push(`G3: ${pairResidue.length} (label,target) pair(s) lost`)
 if (identityBreaks.length) reasons.push(`G2: ${identityBreaks.length} clean file(s) changed tree shape`)
 const admissible = reasons.length === 0
 
@@ -298,23 +462,45 @@ if (worse.length) console.log(`             worse: ${worse.slice(0, 8).join(", "
 console.log(`G2 identity  clean-under-pinned ${cleanChecked} · tree differences ${identityBreaks.length}${identityBreaks.length ? " <-- BLOCKS" : ""}`)
 for (const r of identityBreaks.slice(0, 10)) console.log(`             ${r}`)
 console.log(`G3 output    files changed ${filesChanged} | symbols +${symAdded} -${symRemoved} (qualifier-changed ${qualifierChanged}, VANISHED ${vanished}) | pairs +${pairsAdded} -${pairsRemoved} (re-attributed ${reAttributed}, LOST ${lost})`)
-for (const r of vanishedRows.slice(0, 8)) console.log(`             VANISHED ${r}`)
+// The repair is reported as its own line, always: a repair that only shrinks a number without
+// showing what it removed is indistinguishable from a gate that stopped looking.
+console.log(`G3 repair    of ${vanished} vanished: moved-to-a-new-line ${symbolMoved.length}, retired keyword ${symbolRetiredKeyword.length}, retired predefine ${symbolRetiredPredefine.length}, not-a-declaration ${symbolFabricated.length} -> RESIDUE ${symbolResidue.length}`)
+console.log(`             of ${lost} lost pairs: endpoint retired ${pairRetired.length} -> RESIDUE ${pairResidue.length}`)
+for (const r of symbolResidue.slice(0, 10)) console.log(`             VANISHED ${r}`)
 for (const r of qualifierRows.slice(0, 6)) console.log(`             qualifier ${r}`)
-for (const r of lostRows.slice(0, 8)) console.log(`             LOST ${r}`)
+for (const r of pairResidue.slice(0, 8)) console.log(`             LOST ${r}`)
 
 console.log(`\nverdict: ${admissible ? "ADMISSIBLE (exit 0)" : "INADMISSIBLE (exit 1)"}`)
 for (const r of reasons) console.log(`  ${r}`)
 
+// M60 (functional/clean lane): a SCOPED run must not overwrite another lane's evidence.
+//
+// Measured while adjudicating tree-sitter-clean v1.2.7: `emitEvidence` derives the file
+// name from `issueId` alone, so `--lang clean --emit` overwrote the committed c/cpp
+// verdict (`data.lang: "cpp"`, the f11-control-cpp run) — a scoped run destroying
+// canonical evidence, which is the mirror of #943 (a gate trusting committed evidence
+// that no longer describes HEAD). Fail-closed: when the canonical target already
+// describes a DIFFERENT lane, this run writes its own lane-scoped artifact and leaves
+// the other lane's evidence byte-identical; a run for the lane that already owns the
+// canonical name keeps writing it.
+const CANONICAL_F11 = path.join(ROOT, "validation/m14/results/M14.0.F11.json")
+let emitId = "M14.0.F11"
+try {
+  const prev = JSON.parse(readFileSync(CANONICAL_F11, "utf8"))
+  const prevLang = prev?.data?.lang ?? null
+  if (prevLang && prevLang !== LANG) emitId = `M14.0.F11.${LANG}`
+} catch { /* no prior artifact: the canonical name is free */ }
+
 if (hasArg("--emit")) {
   const out = emitEvidence({
-    issueId: "M14.0.F11",
+    issueId: emitId,
     title: `Grammar-leaf admissibility gate — ${LANG} candidate ${path.basename(CANDIDATE)}`,
     claimLevel: "L3",
     layers: ["grammar", "analyzer", "corpus"],
     checks: [
       { id: "F11.G1", description: "no file becomes newly damaged", status: newlyDamaged.length ? "fail" : "pass", detail: `fixed=${fixed.length} newly=${newlyDamaged.length} improved=${improved.length} worse=${worse.length}` },
       { id: "F11.G2", description: "every file clean under the pinned grammar keeps a byte-identical s-expression", status: identityBreaks.length ? "fail" : "pass", detail: `${cleanChecked} clean file(s) checked, ${identityBreaks.length} difference(s)` },
-      { id: "F11.G3", description: "the analyzer loses no symbol name, qualifier or (label,target) pair", status: vanished + qualifierChanged + lost === 0 ? "pass" : "fail", detail: `vanished=${vanished} qualifier-changed=${qualifierChanged} lost=${lost} added=[symbols ${symAdded}, pairs ${pairsAdded}]` },
+      { id: "F11.G3", description: "the analyzer loses no declared symbol name, qualifier or (label,target) pair", status: symbolResidue.length + qualifierChanged + pairResidue.length === 0 ? "pass" : "fail", detail: `residue=[symbols ${symbolResidue.length}, qualifier-changed ${qualifierChanged}, pairs ${pairResidue.length}] raw=[vanished ${vanished} lost ${lost}] repaired=[moved ${symbolMoved.length}, keyword ${symbolRetiredKeyword.length}, predefine ${symbolRetiredPredefine.length}, not-a-declaration ${symbolFabricated.length}, pairs-retired ${pairRetired.length}] added=[symbols ${symAdded}, pairs ${pairsAdded}]` },
     ],
     limitations: [
       { description: "G3 measures the designated corpora at the gate's sample cap, not every repo the product will see.", justification: "the sample is the same deterministic draw F10 pins, so a regression inside the draw is caught and the digest makes the set reproducible" },
@@ -330,8 +516,32 @@ if (hasArg("--emit")) {
       repos,
       sample,
       g1: { filesPinnedDamaged, filesCandDamaged, sitesPinned, sitesCand, missingPinned, missingCand, errorLinesPinned, errorLinesCand, fixed: fixed.length, newlyDamaged: newlyDamaged.length, improved: improved.length, worse: worse.length, kindChange: kinder.length },
-      g2: { cleanChecked, identityBreaks: identityBreaks.length },
-      g3: { filesChanged, symAdded, symRemoved, qualifierChanged, vanished, pairsAdded, pairsRemoved, reAttributed, lost },
+      // A gate that reports "142 symbol name(s) vanished" as a COUNT and names eight of them
+      // on stdout leaves its own worklist unreadable — the adjudication cannot be reproduced,
+      // and a later run cannot say which items were ruled. The lists are bounded, and where a
+      // bound bites it is recorded (`truncated`), never silently dropped.
+      g2: { cleanChecked, identityBreaks: identityBreaks.length, identityBreakFiles: identityBreaks.slice(0, 200), identityBreakFilesTruncated: Math.max(0, identityBreaks.length - 200) },
+      g3: {
+        filesChanged, symAdded, symRemoved, qualifierChanged, vanished, pairsAdded, pairsRemoved, reAttributed, lost,
+        vanishedSymbols: vanishedRows,
+        vanishedSymbolsTruncated: Math.max(0, vanished - vanishedRows.length),
+        addedSymbols: addedSymbolRows,
+        qualifierChangedSymbols: qualifierRows,
+        lostPairs: lostRows,
+        lostPairsTruncated: Math.max(0, lost - lostRows.length),
+        addedPairs: addedPairRows,
+        // Repair-aware classes. `residue` is what the verdict reads; the other four are what
+        // was ruled out and on what grounds, so the ruling is reproducible row by row.
+        symbolMoved,
+        symbolRetiredKeyword,
+        symbolRetiredPredefine,
+        symbolFabricated,
+        symbolResidue,
+        pairRetired,
+        pairResidue,
+        rawVanished: vanished,
+        rawLost: lost,
+      },
       admissible,
       reasons,
     },

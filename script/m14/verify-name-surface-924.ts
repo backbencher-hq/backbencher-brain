@@ -46,7 +46,7 @@ import { emitEvidence } from "./evidence-harness"
 const ROOT = path.resolve(__dirname, "..", "..")
 const REPOS = "$HOME/fixtures/repositories"
 
-const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
+const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
   { lang: "c", dirs: ["jq", "sqlite"], exts: [".c"] },
   { lang: "cpp", dirs: ["fmt", "nlohmann-json"], exts: [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx", ".h"] },
   // R10 (#798): rust rides the M60 corpora, and it is read at the FULL EXTENT
@@ -72,7 +72,44 @@ const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go"; dirs: string[]; exts: st
     lang: "go", dirs: ["go-tools", "terraform"], exts: [".go"], limit: Number.MAX_SAFE_INTEGER,
     why: "full extent of both corpora — the R10 census's canonical draw is 40 go-tools + 24 terraform files, and the class this round changed is sparse (a qualified type use, an import path); reading the draw would let the gate read clean on files it never opened.",
   },
+  {
+    lang: "clean",
+    dirs: ["Clyde", "clean-stdlib", "Prelude", "cloogle.org", "eastwood"],
+    exts: [".icl", ".dcl"],
+    limit: Number.MAX_SAFE_INTEGER,
+    why: "EVERY Clean source base on this machine — the defect is present in 15.3% of declarations, so a 40-file draw is enough to see it, but the count that matters is the one a lane can quote and 312 files is all this box has. Reading the full extent is also what makes C1's violation count comparable with the fix's own measurement (704 declarations over the same 312 files).",
+  },
 ]
+/**
+ * The fifth name-surface class, found while adjudicating tree-sitter-clean v1.2.7 — and the
+ * only one of the five that is not about a string that is not a name, but about WHICH name was
+ * read at all.
+ *
+ * `processFunction` read the declared name as `findChild(node, n => n.type === "identifier")`,
+ * the FIRST identifier child. Both the pinned v1.2.4 and the v1.2.7 grammar expose the name as
+ * the `name:` FIELD, and the heuristic is wrong wherever the name is not typed `identifier` —
+ * an uppercase definition's name is a `constructor`, so the heuristic skipped it and published
+ * the first PARAMETER instead. Measured over this lane's five corpora (script/m14/tmp/
+ * clean-127-name-field.ts):
+ *
+ *   pinned v1.2.4 : 4,607 declarations — 452 published a parameter as the name, 252 dropped
+ *   v1.2.7        : 4,647 declarations — 447 published a parameter as the name, 244 dropped
+ *
+ * So it is a live HEAD defect in BOTH grammars and not something the grammar bump introduced:
+ * `NSMakeSize w h #! ptr = …` was published as `function:w`, `AppDelDidFinishLaunching
+ * impAppDelDidFinishLaunching self cmd …` as `function:impAppDelDidFinishLaunching`, and the
+ * 122-row ``where``-local/fabrication residue of the v1.2.7 adjudication is mostly this one rule.
+ *
+ * The checks are written against the FIELD, computed here and not imported from the analyzer
+ * (a gate that shares the rule cannot see the rule):
+ *   C1  every module-level definition's DECLARED name is published somewhere in its file.
+ *   C2  no published function/method name is one the file never declares — this is the check
+ *       that a parameter published under its own name fails.
+ *   C-PRE  the pre-fix name derivation (first `identifier` child) re-derived from the same
+ *       trees must trip C1 — without it the check is decoration.
+ */
+const CLEAN_DECL_TYPES = new Set(["function_declaration", "type_signature"])
+
 const PER_LANE_LIMIT = Number(process.env.BB_NAMESURFACE_SAMPLE ?? 40)
 const SKIP_DIRS = new Set([".git", "node_modules", "build", "out", "dist", "target", "third_party", "vendor", "test", "tests", "docs", "doc"])
 
@@ -325,6 +362,15 @@ async function main(): Promise<void> {
   let goTargets = 0
   let goSymbols = 0
   let goPreTargets = 0
+  // Clean's own counters (M60 functional lane) — see the CLEAN_DECL_TYPES header.
+  const cleanViolations: Violation[] = []
+  const cleanPreViolations: Violation[] = []
+  let cleanFiles = 0
+  let cleanDeclarations = 0
+  let cleanMissing = 0
+  let cleanFabricated = 0
+  let cleanPreMissing = 0
+  let cleanPreFabricated = 0
 
   for (const lane of LANES) {
     for (const f of collectFiles(lane)) {
@@ -371,6 +417,88 @@ async function main(): Promise<void> {
           rustPreViolations.push({ file: rel, lang: "rust", check: "R1-no-whitespace-name-target", detail: `${JSON.stringify(t.slice(0, 60))} — ${bad}` })
           rustPreViolations.push({ file: rel, lang: "rust", check: "R2-symbol-name-is-a-rust-name", detail: `${JSON.stringify(t.slice(0, 60))} — ${bad}` })
         }
+        continue
+      }
+
+      if (lane.lang === "clean") {
+        // C1/C2 over the tree's own `name:` fields, and C-PRE over the pre-fix derivation.
+        const root = (await getParser("clean" as any)).parse(src).rootNode
+        const declaredNow = new Set<string>()
+        const declaredPre = new Set<string>()
+        const memberSignatures = new Set<string>()
+        // What the PRE-FIX rule would have published for every module-level definition, so C2
+        // can be given the self-test its own doctrine requires rather than stated as decoration.
+        const prePublished = new Set<string>()
+        const stack: any[] = [root]
+        while (stack.length > 0) {
+          const n = stack.pop()!
+          if (n.type === "function_declaration" || n.type === "type_signature") {
+            const field = n.childForFieldName?.("name") ?? null
+            const declared = field?.text ? String(field.text) : null
+            // Module-level only: a `where`-local is scoped noise by this lane's own design
+            // (M11.11 closure boundary), so it is not a declaration C1 may require.
+            let cur = n.parent
+            let local = false
+            while (cur) { if (cur.type === "where_block") { local = true; break } cur = cur.parent }
+            // C1's population is DEFINITIONS only. A `type_signature` is a declaration of an
+            // interface name and this lane deliberately publishes no symbol for it (it records
+            // metadata and continues), so a signature is not a name C1 may demand — the first
+            // draft of this check made that mistake and reported 1,078 "never published" rows
+            // that were almost entirely `.dcl` signatures. Signatures are still collected, as
+            // the ADMISSION set for C2: a class-member signature IS published, as a Method.
+            if (n.type === "type_signature") {
+              if (declared) memberSignatures.add(declared)
+            } else {
+              // The pre-fix derivation, from the same node: the first `identifier` child.
+              let firstId: any = null
+              for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c?.type === "identifier") { firstId = c; break } }
+              if (!local && declared) {
+                declaredNow.add(declared)
+                cleanDeclarations++
+                if (firstId?.text) declaredPre.add(String(firstId.text))
+              }
+              if (declared) prePublished.add(firstId?.text ? String(firstId.text) : "\u0000dropped")
+            }
+          }
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+        }
+        const publishedFn = new Set<string>()
+        for (const s of r.symbols ?? []) {
+          const kind = String(s.kind ?? "")
+          if (kind === "function" || kind === "Function" || kind === "method" || kind === "Method") {
+            publishedFn.add(String(s.name ?? ""))
+          }
+        }
+        // C1 — a declared name that is never published. This is the defect's own signature:
+        // under the pre-fix rule the declared name is replaced by a parameter, or dropped.
+        for (const d of declaredNow) {
+          if (publishedFn.has(d)) continue
+          cleanMissing++
+          if (cleanViolations.length < 60) cleanViolations.push({ file: rel, lang: "clean", check: "C1-declared-name-is-published", detail: `declares ${JSON.stringify(d)}; published ${JSON.stringify([...publishedFn].slice(0, 3))}` })
+        }
+        // C2 — a published function/method name the file never declares. Class-member
+        // signatures are published as Method symbols, so they are admitted by name.
+        for (const p of publishedFn) {
+          if (declaredNow.has(p) || memberSignatures.has(p)) continue
+          // A multi-clause function's later clauses are merged, and the merged symbol carries
+          // the first clause's name — so `declaredNow` is the right admission set here too.
+          cleanFabricated++
+          if (cleanViolations.length < 60) cleanViolations.push({ file: rel, lang: "clean", check: "C2-no-undeclared-name", detail: `${JSON.stringify(p)} is published but never declared in this file` })
+        }
+        // C2-PRE — the same predicate over the pre-fix derivation's published names.
+        for (const p of prePublished) {
+          if (p === "\u0000dropped") { cleanPreFabricated++; continue }
+          if (declaredNow.has(p) || memberSignatures.has(p)) continue
+          cleanPreFabricated++
+          if (cleanPreViolations.length < 60) cleanPreViolations.push({ file: rel, lang: "clean", check: "C2-no-undeclared-name", detail: `pre-fix derivation would publish ${JSON.stringify(p)}, which this file never declares` })
+        }
+        // C-PRE — the same C1 predicate, applied to the pre-fix derivation.
+        for (const d of declaredNow) {
+          if (declaredPre.has(d)) continue
+          cleanPreMissing++
+          if (cleanPreViolations.length < 60) cleanPreViolations.push({ file: rel, lang: "clean", check: "C1-declared-name-is-published", detail: `pre-fix derivation never publishes ${JSON.stringify(d)}` })
+        }
+        cleanFiles++
         continue
       }
 
@@ -496,18 +624,37 @@ async function main(): Promise<void> {
       : "FAIL G-PRE-selftest: no pre-fix violation for G1-target-is-a-go-name — a check that cannot fail is decoration",
   )
 
-  const ok = okCFamily && okRust && okGo
+  // CLEAN (M60 functional lane): C1 with a tree-derived self-test, C2 as an invariant.
+  const cleanByCheck = new Map<string, number>()
+  for (const v of cleanViolations) cleanByCheck.set(v.check, (cleanByCheck.get(v.check) ?? 0) + 1)
+  const cleanFilesRead = filesByLane.get("clean") ?? 0
+  lines.push(`clean corpus: ${cleanFilesRead} files (EVERY Clean source base on this machine), ${cleanDeclarations} module-level function definitions, ${cleanMissing} declared name(s) never published`)
+  show("C1-declared-name-is-published", cleanMissing, cleanPreMissing, cleanMissing === 0)
+  show("C2-no-undeclared-name", cleanFabricated, cleanPreFabricated, cleanFabricated === 0)
+  // A gate that read nothing cannot fail: on this lane an empty population is itself a failure.
+  const cleanSelfTestFails: string[] = []
+  if (cleanDeclarations === 0) cleanSelfTestFails.push("C-zero-declarations-read")
+  if (cleanPreMissing === 0) cleanSelfTestFails.push("C1-declared-name-is-published")
+  if (cleanPreFabricated === 0) cleanSelfTestFails.push("C2-no-undeclared-name")
+  const okClean = cleanViolations.length === 0 && cleanSelfTestFails.length === 0
+  lines.push(
+    cleanSelfTestFails.length === 0
+      ? `ok   C-PRE-selftest the pre-fix derivation re-derived from these trees leaves ${cleanPreMissing} declared name(s) unpublished and publishes ${cleanPreFabricated} undeclared one(s) — the gate can fail`
+      : `FAIL C-PRE-selftest: ${cleanSelfTestFails.join(", ")} — a check that cannot fail is decoration, and a check with no population has not looked`,
+  )
+
+  const ok = okCFamily && okRust && okGo && okClean
 
   console.log(lines.join("\n"))
-  for (const v of [...violations, ...rustViolations, ...goViolations].slice(0, 20)) console.log(`   ${v.lang} ${v.file} ${v.check} ${v.detail}`)
+  for (const v of [...violations, ...rustViolations, ...goViolations, ...cleanViolations].slice(0, 20)) console.log(`   ${v.lang} ${v.file} ${v.check} ${v.detail}`)
   console.log(
-    `\n${ok ? "PASS" : "FAIL"} — ${ok ? "c/cpp 3/3 + rust 2/2 + go 2/2 + 3 self-tests" : `c/cpp ${violations.length} violation(s)/${selfTestFails.length} dead check(s), rust ${rustViolations.length} violation(s)/${rustSelfTestFails.length} dead check(s), go ${goViolations.length} violation(s)/${goSelfTestFails.length} dead check(s)`}`,
+    `\n${ok ? "PASS" : "FAIL"} — ${ok ? "c/cpp 3/3 + rust 2/2 + go 2/2 + clean 2/2 + 4 self-tests" : `c/cpp ${violations.length} violation(s)/${selfTestFails.length} dead check(s), rust ${rustViolations.length} violation(s)/${rustSelfTestFails.length} dead check(s), go ${goViolations.length} violation(s)/${goSelfTestFails.length} dead check(s), clean ${cleanViolations.length} violation(s)/${cleanSelfTestFails.length} dead check(s)`}`,
   )
 
   if (process.argv.includes("--emit")) {
     emitEvidence({
       issueId: "M14.0.F14",
-      title: "A lane publishes NAMES: C/C++ call targets and symbol names (#924), rust name-bearing targets and symbol names (#798/R10), go name-bearing targets and symbol names (#799/R10)",
+      title: "A lane publishes NAMES: C/C++ call targets and symbol names (#924), rust name-bearing targets and symbol names (#798/R10), go name-bearing targets and symbol names (#799/R10), clean declared names (#924 round, M60 functional lane)",
       claimLevel: "L1",
       layers: ["corpus", "mutation"],
       checks: [
@@ -521,6 +668,9 @@ async function main(): Promise<void> {
         { id: "G1-target-is-a-go-name", description: `go: every name-bearing relationship TARGET is a Go identifier — ${goTargets} targets over the FULL extent of go-tools+terraform (${goFiles} files), with the module SPECIFIER on an \`imports\` edge as the one named exemption; PRE-FIX derivation (qualified type texts + import paths, from the tree) flags ${goPreByCheck.get("G1-target-is-a-go-name") ?? 0}`, status: (goByCheck.get("G1-target-is-a-go-name") ?? 0) === 0 ? "pass" : "fail" },
         { id: "G2-symbol-name-is-a-go-name", description: `go: every published symbol name is a Go identifier — ${goSymbols} symbols; stated as an INVARIANT (see the limitations: this lane has never published a non-name symbol, so it has no pre-fix hit and is not given one)`, status: (goByCheck.get("G2-symbol-name-is-a-go-name") ?? 0) === 0 ? "pass" : "fail" },
         { id: "G-PRE-selftest", description: `go: the two spellings this round retired — qualified type texts re-published by leaf, import paths moved off \`references\` onto \`imports\` — re-derived from the TREE (${goPreTargets} spellings), trip G1`, status: goSelfTestFails.length === 0 ? "pass" : "fail" },
+        { id: "C1-declared-name-is-published", description: `clean: every module-level definition's declared \`name:\` is published somewhere in its file — ${cleanDeclarations} definitions over ${cleanFilesRead} files (EVERY Clean source base on this machine), ${cleanMissing} violation(s); PRE-FIX derivation (first \`identifier\` child, re-derived from the same trees) leaves ${cleanPreMissing} declared name(s) unpublished`, status: cleanMissing === 0 ? "pass" : "fail" },
+        { id: "C2-no-undeclared-name", description: `clean: no published function/method name is one the file never declares — ${cleanFabricated} violation(s); PRE-FIX derivation would publish ${cleanPreFabricated} undeclared name(s). This is the check a PARAMETER fails: \`NSMakeSize w h #! ptr = …\` was published as \`function:w\` and \`AppDelDidFinishLaunching impAppDelDidFinishLaunching self cmd …\` as \`function:impAppDelDidFinishLaunching\``, status: cleanFabricated === 0 ? "pass" : "fail" },
+        { id: "C-PRE-selftest", description: `clean: the pre-fix name derivation, re-derived from these trees, trips C1 on ${cleanPreMissing} declared name(s) and C2 on ${cleanPreFabricated}`, status: cleanSelfTestFails.length === 0 ? "pass" : "fail" },
       ],
       limitations: [
         `sample: up to ${PER_LANE_LIMIT} files per corpus for the C/C++ lanes (jq, sqlite, fmt, nlohmann-json), excluding test/docs/third-party directories — the full-corpus A/B is script/m14/tmp/c924-calls-ab.ts and c924qid-ab.ts. Rust is the exception and is read at full extent; the per-lane counts are pinned in corpusPins`,
@@ -568,6 +718,19 @@ async function main(): Promise<void> {
           prefixViolations: goPreViolations.length,
           prefixByCheck: Object.fromEntries(goPreByCheck),
           samples: goViolations.slice(0, 20),
+        },
+        clean: {
+          files: cleanFilesRead,
+          moduleLevelFunctionDefinitions: cleanDeclarations,
+          declaredNamesNeverPublished: cleanMissing,
+          undeclaredNamesPublished: cleanFabricated,
+          prefixDerivationMissing: cleanPreMissing,
+          prefixDerivationFabricated: cleanPreFabricated,
+          violations: cleanViolations.length,
+          byCheck: Object.fromEntries(cleanByCheck),
+          prefixViolations: cleanPreViolations.length,
+          samples: cleanViolations.slice(0, 20),
+          prefixSamples: cleanPreViolations.slice(0, 20),
         },
       },
     })
