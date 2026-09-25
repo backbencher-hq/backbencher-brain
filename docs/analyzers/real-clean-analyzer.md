@@ -3,9 +3,24 @@
 ## Language
 
 - Analyzer file: `src/ast/real-clean-analyzer.ts`
-- Parser: `tree-sitter-clean` v1.2.4 (authored by the project owner; pinned
-  `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@58729d3`
-  release v1.2.4, pulled during M12.26). Grammar tree shape (v1.2.4):
+- Parser: `tree-sitter-clean` **v1.2.7** (authored by the project owner; pinned
+  `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@302fb5d0`
+  release v1.2.7, adopted 2026-09-25 on the adjudication recorded in
+  `reviews/m60-clean-grammar-127-adjudication.md`). The v1.2.4 pin it replaced was
+  `tree-sitter-clean@58729d3`, pulled during M12.26.
+
+  **What v1.2.5–v1.2.7 changed, measured on the corpus (312 `.icl`/`.dcl` across the five
+  Clean bases on this machine), not read off the release notes:** a lexer correction
+  (v1.2.4 split identifiers beginning `mod`/`rem`, so `mode` parsed as `mod`+`e` and
+  `removeTabViewItem` as `rem`+`oveTabViewItem`); four grammar node types that did not exist
+  before (`monad_bind`, `array_generator_sep`, `char_list`, `open_range_expression`, all four
+  currently **unreferenced** by this analyzer — see the shape-safety note below); and named
+  terminal types replacing generic ones (`operator` → `monad_bind`, `->` → `arrow`, `where`
+  and the other keywords as their own node types). The parse win is large and one-directional:
+  damaged files **67 → 37** of 312, MISSING tokens **148 → 9**, ERROR lines **6 508 → 2 426**,
+  with **no file newly damaged**.
+
+  Grammar tree shape (as pinned, v1.2.7):
   `module_declaration` → `module_name` → `module_identifier`; imports are
   `import_declaration` with `module_name` children (the `as` alias is a second
   `module_name` child; `import qualified` is an anonymous `qualified` token);
@@ -75,9 +90,25 @@
   parseable Clean), `_SystemDynamic.icl`/`.dcl` (exotic record-pattern /
   record-update-with-comprehension constructs). Same category as Go's
   testdata / Haskell's TemplateHaskell quasiquotes.
-- Grammar: tree-sitter-clean v1.2.4 (fresh release during M12.26, wasm
-  rebuilt) — shape-safe **32/32 dispatch refs live** against 119 emitted
-  types from the corpus.
+- Grammar: tree-sitter-clean **v1.2.7** (`302fb5d0`, adopted 2026-09-25). Shape safety
+  re-derived against the pinned grammar rather than restated (`script/m14/tmp/clean-127-shape-safety.ts`,
+  which reads the analyzer's `node.type ===` literals and intersects them with the grammar's own
+  `src/node-types.json`): **34 referenced node-type literals, 0 dead** — 33 are node types the
+  grammar defines and the 34th is tree-sitter's reserved `ERROR`. The grammar defines **198**
+  distinct node types, so this analyzer dispatches on 33 of them; the 4 types new in v1.2.7
+  (`monad_bind`, `array_generator_sep`, `char_list`, `open_range_expression`) are named nowhere
+  in it, which is a named worklist rather than a hidden one.
+- Differential: **still a manual audit, not a derived oracle.**
+  `validation/m12/results/clean-differential.json` records `truthSource: manual_audit` over two
+  fixtures (`Service.icl`, `Negative.icl`, 68 facts, precision/recall 1.000), and the lane is
+  still absent from `script/m14/differential.ts`'s sweep map. Adding it is not a one-line change:
+  measured, a probe run reports `[Clyde] clean: files=60 ... derived ZERO truth edges`, and F5
+  refuses a 0/0 row by design. The lane needs its own `deriveCleanEdges` — the build clojure and
+  elixir each got — before it can take a differential **or** an F10 parse-success floor.
+- Parse-success: no floor is pinned (see above). The figure this doc used to quote — 4 error files
+  of the 41-file ≥1KB draw (9.8 %), stated against the v1.2.4 grammar — re-measured on the pinned
+  v1.2.7 grammar with the same instrument (`script/m12/clean-corpus-errors.ts`) is **1 of 41
+  (2.4 %)**, the single remaining file being `_SystemDynamic.icl`.
 - M11 gates: FP probe genuinely **1.000/1.000** (the cached
   `fp-observed.json` was stale — honest regeneration exposed 0.986/0.920,
   fixed by emitting record fields + class-member methods; probe now real);

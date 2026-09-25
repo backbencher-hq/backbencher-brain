@@ -222,12 +222,33 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.relationships.push({ source, target, type, confidence, metadata })
   }
 
+  // The declared name of a function definition, read from the grammar's FIELD.
+  //
+  // `findChild(node, n => n.type === "identifier")` returns the FIRST identifier child, which is
+  // only the name while the name happens to be typed `identifier`. An uppercase definition's
+  // name is typed `constructor`, so the heuristic skipped over it and published the first
+  // PARAMETER as the function name. Measured over this lane's five corpora, per grammar:
+  //
+  //   pinned v1.2.4 : 4,607 declarations — 452 published a parameter as the name, 252 dropped
+  //   v1.2.7        : 4,647 declarations — 447 published a parameter as the name, 244 dropped
+  //
+  // So this is a live HEAD defect, not something the grammar bump introduced: e.g.
+  // `NSMakeSize w h #! ptr = ...` was published as `function:w` and
+  // `AppDelDidFinishLaunching impAppDelDidFinishLaunching self cmd ...` as
+  // `function:impAppDelDidFinishLaunching`. Both grammars expose `name:`, so the field is used
+  // when present and the old heuristic remains only as a fallback for nodes without one.
+  private declaredName(node: Node): Node | null {
+    const byField = node.childForFieldName("name")
+    if (byField?.text) return byField
+    return this.findChild(node, (n) => n.type === "identifier")
+  }
+
   // ==========================================================================
   // Pre-pass: declared function/method names (forward-reference resolution).
   // ==========================================================================
   private collectDeclaredFunctions(node: Node, out: Set<string>): void {
     if (node.type === "function_declaration") {
-      const id = this.findChild(node, (n) => n.type === "identifier")
+      const id = this.declaredName(node)
       if (id?.text) out.add(id.text)
       return
     }
@@ -422,7 +443,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     currentScope: Scope | undefined,
     scopeStack: Scope[],
   ): boolean {
-    const nameNode = this.findChild(node, (n) => n.type === "identifier")
+    const nameNode = this.declaredName(node)
     if (!nameNode?.text) return false
     const name = nameNode.text
 
