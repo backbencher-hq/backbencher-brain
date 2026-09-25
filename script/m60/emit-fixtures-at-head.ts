@@ -35,16 +35,44 @@ if (!fs.existsSync(LOG)) {
 }
 const raw = fs.readFileSync(LOG, "utf8")
 
-// The runner prints `FAIL  <lang>/<fixture-slug>` once per failing fixture, and a
-// single `summary: {...}` JSON line. Both are parsed rather than recomputed, so
-// this file can never disagree with the log it names.
-const failSlugs = [...raw.matchAll(/^FAIL {2}([a-z0-9_]+)\/([a-z0-9._-]+)\s*$/gim)].map((m) => `${m[1]}/${m[2]}`)
+// The runner prints `PASS  <lang>/<fixture-slug>` and `FAIL  <lang>/<fixture-slug>`
+// once per fixture, and a single `summary: {...}` JSON line. Both are parsed rather
+// than recomputed, so this file can never disagree with the log it names.
+//
+// PASSES ARE PARSED TOO, and that is the second half of the #899 rule. The runner's
+// own `summary` counts EVERY fixture on disk, so a lane whose author has added a
+// fixture but not committed it reads one fixture higher than it has evidence for —
+// and the field is read downstream as "<pass>/<pass> COMMITTED" (the matrix's
+// fixtures note), so the overcount is a claim, not a detail. Excluding only untracked
+// FAILURES keeps the loud half of the rule and drops the quiet half: an in-flight
+// fixture that PASSES is the one that silently inflates a lane. So the run set is
+// reconstructed from the log and split by `git ls-files`, and the split is
+// CROSS-CHECKED against the runner's own total — if the log ever stops printing one
+// line per fixture, the counts would shrink silently, and this refuses instead.
+// The excluded fixtures are DISCLOSED in `untrackedFixtures`, never dropped: an
+// artifact that quietly forgets in-flight work is how a lane's real count gets lost.
+const slugOf = (kind: string) =>
+  [...raw.matchAll(new RegExp(`^${kind} {2}([a-z0-9_]+)\\/([a-z0-9._-]+)\\s*$`, "gim"))].map((m) => `${m[1]}/${m[2]}`)
+const passSlugs = slugOf("PASS")
+const failSlugs = slugOf("FAIL")
+const runSlugs = [...passSlugs, ...failSlugs]
 const summaryLine = raw.split("\n").find((l) => l.trimStart().startsWith("summary: "))
 if (!summaryLine) {
   console.error("emit-fixtures-at-head: the log carries no `summary: {...}` line — is this a run-fixtures.ts log?")
   process.exit(2)
 }
-const summary = JSON.parse(summaryLine.slice(summaryLine.indexOf("{")))
+const runnerSummary = JSON.parse(summaryLine.slice(summaryLine.indexOf("{"))) as Record<
+  string,
+  { pass: number; fail: number }
+>
+const runnerTotal = Object.values(runnerSummary).reduce((n, v) => n + v.pass + v.fail, 0)
+if (runSlugs.length !== runnerTotal) {
+  console.error(
+    `emit-fixtures-at-head: the log yields ${runSlugs.length} per-fixture lines but its summary totals ${runnerTotal}. ` +
+      `The per-fixture split would be derived from an incomplete run set, so nothing is written.`,
+  )
+  process.exit(2)
+}
 
 // #899: committed = the expectation file is tracked at HEAD. A fixture can be
 // failing *and* committed (a real, pinned defect) — that is the case the matrix
@@ -72,6 +100,24 @@ const countBy = (pred: (f: (typeof failures)[number]) => boolean): Record<string
   return out
 }
 
+// The committed half of the run, keyed by the runner's own language order so the
+// artifact's shape does not churn when this changes: a re-emitted file should differ
+// in the numbers that moved, not in the order of its keys.
+const langOf = (slug: string) => slug.split("/")[0]
+const committedRun = runSlugs.filter(isCommitted)
+const inFlightRun = runSlugs.filter((s) => !isCommitted(s))
+const committedSet = new Set(committedRun)
+const countLang = (slugs: string[]): Record<string, number> => {
+  const out: Record<string, number> = {}
+  for (const s of slugs) out[langOf(s)] = (out[langOf(s)] ?? 0) + 1
+  return out
+}
+const committedPass = countLang(passSlugs.filter((s) => committedSet.has(s)))
+const committedFail = countLang(failSlugs.filter((s) => committedSet.has(s)))
+const summary: Record<string, { pass: number; fail: number }> = {}
+for (const lang of Object.keys(runnerSummary)) summary[lang] = { pass: committedPass[lang] ?? 0, fail: committedFail[lang] ?? 0 }
+const untrackedFixtures = countLang(inFlightRun)
+
 const commit =
   argOf("--commit") ??
   (() => {
@@ -88,15 +134,19 @@ const artifact = {
   commit,
   rawLog: LOG,
   summary,
+  untrackedFixtures,
+  runnerTotal,
   totalFailures: failures.length,
   committedFixtureFailures: countBy((f) => f.committed),
   untrackedFixtureFailures: countBy((f) => !f.committed),
   failures,
-  rule: "a failing fixture whose expectation file is NOT tracked by git is in-flight lane work, not milestone evidence (#899): it is reported and excluded from the committed-fixture column",
+  rule: "COMMITTED evidence only: `summary` counts the fixtures whose expectation file is tracked by git at the time of the run, and every untracked (in-flight) fixture is disclosed in `untrackedFixtures` instead of counted (#899 — a failing fixture whose expectation file is not tracked is in-flight lane work, not milestone evidence; the same applies to a passing one, which is the count a reader would otherwise mistake for stable)",
 }
 
 fs.writeFileSync(OUT, JSON.stringify(artifact, null, 2) + "\n")
 console.log(
-  `emit-fixtures-at-head: ${failures.length} failure(s) — committed ${JSON.stringify(artifact.committedFixtureFailures)}, ` +
-    `in-flight ${JSON.stringify(artifact.untrackedFixtureFailures)} → validation/m60/results/fixtures-at-head.json @ ${String(commit).slice(0, 8)}`,
+  `emit-fixtures-at-head: ${committedRun.length}/${runSlugs.length} fixture(s) committed ` +
+    `(in-flight excluded: ${JSON.stringify(untrackedFixtures)}) — ${failures.length} failure(s), ` +
+    `committed ${JSON.stringify(artifact.committedFixtureFailures)}, in-flight ${JSON.stringify(artifact.untrackedFixtureFailures)} ` +
+    `→ validation/m60/results/fixtures-at-head.json @ ${String(commit).slice(0, 8)}`,
 )
