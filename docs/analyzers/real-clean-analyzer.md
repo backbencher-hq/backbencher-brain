@@ -75,9 +75,12 @@
 | extends | ❌ | Clean classes have no superclass syntax (type classes stand alone); no edge emitted | — |
 | uses | ❌ | intentionally not emitted — variable references are noise under the FP-family contract (Clojure/Elixir/Erlang/Haskell precedent) | — |
 
+Every edge above carries `line_number` — the site line the edge happened on, 1-based, on the
+name-bearing node, per-site and not per-set. Details and the gates are in §8 below.
+
 ## Complexity
 
-Declared budget: fixtures < 5 s (met: 0.33 s); corpus (309 files) < 60 s, symbols/s ≥ 200,
+Declared budget: fixtures < 5 s (met: 0.36 s); corpus (309 files) < 60 s, symbols/s ≥ 200,
 relationships/s ≥ 200. **Met**, with the margins stated below rather than asserted — but see the
 *how many draws* paragraph: the declaration fixes the wall bound, and the load-stable comparison is
 `userCpuMsPerFile`.
@@ -92,24 +95,33 @@ itself across runs, and the manifest's `setDigest` pins the exact set.
   scans). Multi-clause function merging is O(1) via `functionSymbolIndex`
   (key = `scope::name`). The post-loop contains pass is a single O(symbols)
   linear sweep.
-- Corpus envelope, **re-measured 2026-09-25** at the v1.2.7 pin and after the `.dcl` ruling:
-  **309 files → 6,338 symbols / 9,656 relationships in 4,757 ms** (1,332 symbols/s,
-  2,030 relationships/s) — `validation/m12/results/clean-complexity.json`. The frame is complete:
-  `loadRule`, `corpusManifest` with set digest `27935ec564834992` and `extensionFiltered: true`,
-  `loadAvg1` 2.75, `loadQuiet: true`, `userCpuMsPerFile` **29.9**. Against the declaration above
-  that is 4,757 ms of 60,000 ms (12.6x), 1,332 of ≥ 200 symbols/s (6.7x) and 2,030 of ≥ 200
-  relationships/s (10.2x).
+- Corpus envelope, **re-measured 2026-09-25** at the v1.2.7 pin, after the `.dcl` ruling and after
+  the site-line change (§8 below): **309 files → 6,338 symbols / 10,878 relationships in
+  4,483 ms** (1,414 symbols/s, 2,426 relationships/s) — `validation/m12/results/clean-complexity.json`.
+  The frame is complete: `loadRule`, `corpusManifest` with set digest `27935ec564834992` and
+  `extensionFiltered: true`, `loadAvg1` 3.22, `loadQuiet: true`, `userCpuMsPerFile` **28.2**.
+  Against the declaration above that is 4,483 ms of 60,000 ms (13.4x), 1,414 of ≥ 200 symbols/s
+  (7.1x) and 2,426 of ≥ 200 relationships/s (12.1x).
   The M60 envelope instrument now reads this lane **`within-budget`**
   (`script/m60/analyzer-complexity-gate.ts`), where its predecessor read `unscorable`
   (severity 5) — clean is the **second** lane in the tree with a scored envelope, c being the
   first.
-- **How many draws, and why that matters.** The same rule was drawn twice within 90 seconds, both
-  draws on a box the harness itself judged quiet: **6,643 ms** at `load1` 3.35 and **4,757 ms** at
-  `load1` 2.75 — identical file set (digest `27935ec564834992`, so the *set* is not the variance) and
-  identical counts (6,338 / 9,656, so the *work* is not either). A wall swing of 39.6 % of the faster
-  draw is the measurement, not noise to round off: it is why `userCpuMsPerFile` (36.0 vs 29.9, 17 %)
-  is the number to compare across lanes, and why a wall row is evidence only when its frame names
-  the load it ran under. The artifact holds the second draw; both are recorded here.
+- **How many draws, and why that matters.** Three draws, all on a box the harness itself judged
+  quiet:
+
+  | draw | analyzer | files | symbols | relationships | wall | `load1` | `userCpuMsPerFile` |
+  |---|---|---|---|---|---|---|---|
+  | 1 | pre-site-line | 309 | 6,338 | 9,656 | 6,643 ms | 3.35 | 36.0 |
+  | 2 | pre-site-line | 309 | 6,338 | 9,656 | 4,757 ms | 2.75 | 29.9 |
+  | 3 (committed) | **current** | 309 | 6,338 | **10,878** | 4,483 ms | 3.22 | 28.2 |
+
+  Draws 1 and 2 are the variance sample: same set (digest `27935ec564834992`, so the *set* is not
+  the difference) and the same counts (6,338 / 9,656, so the *work* is not either), 39.6 % apart in
+  wall time. Draw 3 differs in work by design — the site-line change added 1,222 edges (per-site
+  dedupe, §8) — so it is not a third variance sample and must not be read as one. What the three
+  together establish is the reason `userCpuMsPerFile` is the number to compare across lanes
+  (36.0 → 29.9 → 28.2 while wall moved 6,643 → 4,483 ms) and why a wall row is evidence only when
+  its frame names the load it ran under.
 - The figure this replaces, kept rather than deleted: 62 files / 1,307 symbols / 1,416
   relationships in 3.0 s from `corpusDir: "/tmp/clean-corpus-copy"` under the **v1.2.4** grammar.
   A temp path that no longer exists means the number was never re-derivable, which is the #909
@@ -127,7 +139,8 @@ itself across runs, and the manifest's `setDigest` pins the exact set.
   for each. 8/8, plus the control (the committed artifact has no gap and reads `within-budget`).
   The probe also caught a real defect in the first draft of this paragraph: it had draw 1's
   throughput (954/1,454) written beside draw 2's wall time (the artifact's rates for the row it
-  holds are 1,332/2,030).
+  holds are 1,332/2,030 — the rates of the pre-site-line draw; the current artifact's are
+  1,414/2,426, which is draw 3 below).
 - **Disclosed, and this one is not the lane's to fix:** `script/m60/analyzer-complexity-gate.ts`,
   its register `validation/m60/analyzer-budget-register.json` and its census
   `validation/m60/results/analyzer-complexity.json` are **untracked in this checkout** — the R6
@@ -142,6 +155,32 @@ itself across runs, and the manifest's `setDigest` pins the exact set.
   `guard_equation`, i.e. 23 comprehension filters were measured and 1,594 function guards were
   not; `script/m14/verify-probe-battery.ts` (`F9-PROBE-CLEAN-GUARD-COMPLEXITY`) asserts the
   delta now.
+
+### Edge site lines (M59.A7, formula §8)
+
+Every relationship carries `line_number`: the **site line** the edge happened on, 1-based, on the
+name-bearing node — the call's callee identifier, the import's module name, the instance's class
+name, and for a `contains` edge the **child's own naming line** (the anchor the store resolves
+same-named siblings with, #921). Two properties are contract, not implementation detail:
+
+- **Per-site, not per-set.** The line is part of the dedupe key, so a function called from three
+  lines is three edges at three lines, not one edge at whichever line the walk saw first. Measured
+  over the lane's 312 files: 11,108 edges, **11,108 with a positive line (100 %)**, 0 fabricated
+  zeroes, 0 negatives, 0 non-integers (`script/m14/tmp/clean-edge-line-census.ts`); 1,722 of them
+  belong to multi-site groups, i.e. the property is doing real work rather than being true
+  vacuously; and all **5,823 `contains` edges** were checked against the child symbol's own line —
+  0 wrong, 0 without a line.
+- **Never a fabricated 0.** An absent line stays absent (`line_number` omitted, or `null` once the
+  store has it). A 0 reads as "line 0" to every reader downstream.
+
+The gates: five lines in each of the lane's fixtures are pinned in **pairs** — the same name at two
+lines (`contains ExpressionShapes -> Point` at 19 and 31; `contains InstanceTargetNameCollision ->
+Collision` at 15 and 17) — and `F9-PROBE-CLEAN-EDGE-LINE` asserts the general rule on a snippet
+where `f` is called from three lines. Both halves are mutation-verified: `clean/edge-line-absent`
+is caught by all five fixtures, and `clean/edge-line-per-set` is caught by exactly the two fixtures
+whose pins are paired — which is the point, because a fixture asserting only that the field is
+PRESENT survives the per-set mutant (`script/m14/run-fixtures.ts`, M59 #825's `line_number: null`
+form is how a fixture says "this edge must NOT name a line").
 
 ## Verification evidence
 
