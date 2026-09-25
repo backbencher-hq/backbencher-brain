@@ -2,24 +2,48 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:clean",
   "fixtureDir": "validation/m12/fixtures/clean",
-  "corpusDir": "/tmp/clean-corpus-copy",
+  "corpusDir": "$HOME/fixtures/repositories",
+  "corpusManifest": {
+    "corpusDir": "$HOME/fixtures/repositories",
+    "fileCount": 309,
+    "extensions": [
+      ".icl",
+      ".dcl"
+    ],
+    "extensionFiltered": true,
+    "minBytes": 1,
+    "maxBytes": 1048576,
+    "limit": null,
+    "totalBytes": 1460707,
+    "avgBytes": 4727,
+    "maxFileBytes": 100091,
+    "setDigest": "27935ec564834992"
+  },
+  "nproc": 8,
+  "loadRule": "#909: a complexity row is only scorable with its load context and its file set. Each run records loadAvg1 after a bounded wait for load <= quietLoadTarget; loadQuiet=false means the box was busy and the throughput numbers are advisory. corpusManifest records the set digest, size distribution and extension filter, so a number can be re-derived instead of trusted. A row whose manifest.extensionFiltered is false measures EVERY file in the directory under this language's name.",
   "runs": [
     {
       "name": "fixtures",
       "measurement": {
         "name": "fixtures:clean",
-        "wallTimeMs": 1463.121143,
-        "userCpuMs": 1071.443,
-        "systemCpuMs": 643.652,
-        "peakRssBytes": 200941568,
-        "rssDeltaBytes": 154804224,
+        "wallTimeMs": 332.17121,
+        "userCpuMs": 270.092,
+        "systemCpuMs": 178.199,
+        "peakRssBytes": 262991872,
+        "rssDeltaBytes": 219844608,
         "databaseBytes": null,
         "files": 2,
         "symbols": 29,
         "relationships": 39,
-        "filesPerSecond": 1.3669408097672469,
-        "symbolsPerSecond": 19.820641741625078,
-        "relationshipsPerSecond": 26.655345790461315
+        "filesPerSecond": 6.020991403800468,
+        "symbolsPerSecond": 87.30437535510679,
+        "relationshipsPerSecond": 117.40933237410913,
+        "loadAvg1": 2.89,
+        "loadAvgRetried": false,
+        "loadWaitedMs": 0,
+        "quietLoadTarget": 4,
+        "loadQuiet": true,
+        "userCpuMsPerFile": 135.046
       },
       "symbols": 29,
       "relationships": 39
@@ -28,21 +52,27 @@
       "name": "corpus_subset",
       "measurement": {
         "name": "corpus_subset:clean",
-        "wallTimeMs": 3003.54593,
-        "userCpuMs": 6532.512,
-        "systemCpuMs": 546.511,
-        "peakRssBytes": 268943360,
-        "rssDeltaBytes": 74248192,
+        "wallTimeMs": 4756.986799,
+        "userCpuMs": 9235.778,
+        "systemCpuMs": 731.427,
+        "peakRssBytes": 593281024,
+        "rssDeltaBytes": 24543232,
         "databaseBytes": null,
-        "files": 62,
-        "symbols": 1307,
-        "relationships": 1416,
-        "filesPerSecond": 20.64226798755829,
-        "symbolsPerSecond": 435.15232676997886,
-        "relationshipsPerSecond": 471.44276565133134
+        "files": 309,
+        "symbols": 6338,
+        "relationships": 9656,
+        "filesPerSecond": 64.95708587313236,
+        "symbolsPerSecond": 1332.3560202715628,
+        "relationshipsPerSecond": 2029.8563792587897,
+        "loadAvg1": 2.75,
+        "loadAvgRetried": false,
+        "loadWaitedMs": 0,
+        "quietLoadTarget": 4,
+        "loadQuiet": true,
+        "userCpuMsPerFile": 29.88924919093851
       },
-      "symbols": 1307,
-      "relationships": 1416
+      "symbols": 6338,
+      "relationships": 9656
     }
   ],
   "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
