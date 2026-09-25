@@ -13436,8 +13436,7 @@ async function main() {
           `files=${row.filesSampled} tree-truth=${row.treeTruthEdges} covered=${row.coveredByAnalyzer} (${row.coveragePct}%) MISSING=${row.missingInAnalyzer} ` +
           `| analyzer-edges=${row.analyzerEdges} unexplained=${row.unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${row.heuristicUnexplained} hash=${row.sampleSetHash}`,
       })
-      emitEvidence({
-        issueId: `M14.0.F5.${scope}`,
+      const base = {
         title: `Differential corpus harness, LANE-SCOPED (${scope}: ${measuredKeys.join(", ")}) — NOT the canonical ${Object.keys(LANGS).length}-language claim`,
         claimLevel: "L1",
         layers: ["differential"],
@@ -13476,7 +13475,21 @@ async function main() {
           secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
           codeInputs: { ...codeInputs, ownInputs: [...ownInputs], sharedInputs: [...sharedInputs], laneDirt, sharedDirt, otherDirt },
         },
-      })
+      }
+      // The artifact id must be a PLAIN LITERAL in the emit call. M49's producer
+      // register (`verify-evidence-identity`) discovers a producer by the exact
+      // shape `issueId: "M14…"` inside the emit window, so a computed id leaves
+      // its artifact an ORPHAN to that gate (measured while adding this: the
+      // canonical M14.0.F5 kept its producer, the template `M14.0.F5.${scope}`
+      // had none, and the same ternary in verify-parse-success.ts cost the
+      // canonical M14.0.F10 its claim too). Hence one declared branch per lane,
+      // and a REFUSAL — never a silent computed id — for an undeclared scope.
+      if (scope === "clean") emitEvidence({ ...base, issueId: "M14.0.F5.clean" })
+      else throw new Error(
+        `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
+        + '(`{ ...base, issueId: "M14.0.F5.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
+        + `M49 verify-evidence-identity reports as an orphan`,
+      )
       console.log(`wrote validation/m14/results/M14.0.F5.${scope}.json (lane-scoped; canonical M14.0.F5.json untouched)`)
     }
     console.log(
