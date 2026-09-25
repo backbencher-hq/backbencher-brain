@@ -760,6 +760,165 @@ class Host
     )
   }
 
+  // ── GO-IMPL-SIGNATURE (#914 round 4: the implements oracle) ─────────────
+  // Real defects, all four found by classifying every remaining `implements`
+  // disagreement on BOTH pinned corpora (go-tools 9 MISSING + 2 UNEXPLAINED,
+  // terraform 18 MISSING) plus 90 MISSING over 13,488 kubernetes files. Three
+  // were in the analyzer, one in the oracle, and the SAME probe source pins all
+  // of them because each is a shape of the same question: is a Go method set
+  // compared the way Go defines it?
+  //
+  //  (1) VARIADIC interface params. `variadic_parameter_declaration` was
+  //      rejected outright by the interface-method extractor, so
+  //      `Logf(format string, args ...any)` lost `args` on the DECLARED side
+  //      while the implementor kept it as a plain param — the two texts could
+  //      never match, and every grpc client (all of whose methods end in
+  //      `opts ...grpc.CallOption`) and every `Output(code, args ...any)` view
+  //      interface was silently un-satisfiable. `myLogger -> Logger` is the
+  //      go-tools shape (printf/testdata/src/a/a2.go).
+  //  (2) RECEIVER-ONLY implementors. The candidates were the types DECLARED in
+  //      the file, but Go's method set is a PACKAGE-level property: gopls
+  //      declares `clientDispatcher` in protocol.go and all 21 of Client's
+  //      methods in tsclient.go, so the pair is provable from this file alone.
+  //      The oracle has always keyed its map by receiver name, so this was a
+  //      pure asymmetry.
+  //  (3) ALIAS interfaces. `type A = interface{ M() }` is a `type_alias`, not a
+  //      `type_spec`, so the ORACLE skipped it — and an interface that EMBEDS
+  //      the alias folded nothing (gcimporter/testdata/issue25301.go was the
+  //      lane's only UNEXPLAINED pair, both rows this one shape).
+  //  (4) DIAMOND interface embedding. The visiting mark was never released, so
+  //      it was a global `seen` set: `A { B; C }`, `B { D }`, `C { D }` left C
+  //      (and A) without D's methods, by declaration order alone. Both sides
+  //      lost it, which is exactly why no differential could ever see it.
+  //
+  // The NEGATIVE half is the oracle-over-claim class, which is what the four
+  // `forbid` rows are: the oracle compared method NAMES only, a strict superset
+  // of Go's rule, so it published `Value -> Type` (`Elem() Value` against
+  // `Elem() Type`), `VT -> VI` (`F(int, ...string)` against `F(int)`),
+  // `Diff -> DiffRenderer`, `graphTransformerMulti -> GraphVertexTransformer`
+  // and every `UnimplementedXServer -> XClient` (fixed arity against variadic).
+  // Each of those was charged to the analyzer as a MISSING edge it could never
+  // close. `StrictValue`, `ArityVariadic`, `SliceNotVariadic` and
+  // `unimplementedDialer` are those shapes; `oracleForbid` asserts the truth no
+  // longer derives ANY of them either (pre-fix it derived all four, so this is
+  // a real execution of the negative, not a declaration).
+  {
+    const goCfg = { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: ".go" }
+    const src = [
+      `package probe`,
+      ``,
+      `// (1) variadic interface parameter (go-tools printf/testdata a2.go)`,
+      `type Logger interface {`,
+      `\tLogf(format string, args ...any)`,
+      `}`,
+      ``,
+      `type myLogger int`,
+      ``,
+      `func (myLogger) Logf(format string, args ...any) {}`,
+      ``,
+      `// (2) receiver-only implementor (gopls protocol tsclient.go)`,
+      `type Client interface {`,
+      `\tCall(ctx context.Context, in *Params) error`,
+      `}`,
+      ``,
+      `func (c *clientDispatcher) Call(ctx context.Context, in *Params) error { return nil }`,
+      ``,
+      `// (3) alias interface + the interface that embeds it (gcimporter issue25301.go)`,
+      `type Alias = interface {`,
+      `\tM()`,
+      `}`,
+      ``,
+      `type Embedder interface {`,
+      `\tAlias`,
+      `}`,
+      ``,
+      `type AliasImpl struct{}`,
+      ``,
+      `func (AliasImpl) M() {}`,
+      ``,
+      `// (4) diamond interface embedding: a PATH mark, not a global seen set`,
+      `type D interface { Deep() }`,
+      `type B interface {`,
+      `\tD`,
+      `}`,
+      `type C interface {`,
+      `\tD`,
+      `}`,
+      `type A interface {`,
+      `\tB`,
+      `\tC`,
+      `}`,
+      ``,
+      `type Diamond struct{}`,
+      ``,
+      `func (Diamond) Deep() {}`,
+      ``,
+      `// ---- NEGATIVE: same NAME, different SIGNATURE (must not implement) ----`,
+      `type StrictType interface {`,
+      `\tElem() StrictType`,
+      `}`,
+      ``,
+      `type StrictValue struct{}`,
+      ``,
+      `func (StrictValue) Elem() StrictValue { return StrictValue{} }`,
+      ``,
+      `type ArityIface interface {`,
+      `\tF(x int)`,
+      `}`,
+      ``,
+      `type ArityVariadic struct{}`,
+      ``,
+      `func (ArityVariadic) F(x int, y ...string) {}`,
+      ``,
+      `type SliceIface interface {`,
+      `\tG(xs ...string)`,
+      `}`,
+      ``,
+      `type SliceNotVariadic struct{}`,
+      ``,
+      `func (SliceNotVariadic) G(xs []string) {}`,
+      ``,
+      `type Dialer interface {`,
+      `\tDial(ctx context.Context, addr string, opts ...string) error`,
+      `}`,
+      ``,
+      `type unimplementedDialer struct{}`,
+      ``,
+      `func (unimplementedDialer) Dial(ctx context.Context, addr string) error { return nil }`,
+      ``,
+      `type BareIface interface {`,
+      `\tH(x string)`,
+      `}`,
+      ``,
+      `type VariadicOnly struct{}`,
+      ``,
+      `func (VariadicOnly) H(x ...string) {}`,
+      ``,
+    ].join("\n")
+    await probeLang("F9-PROBE-GO-IMPL-SIGNATURE", "go",
+      "implements compares Go METHOD SETS: variadic interface params, receiver-only implementors, alias interfaces and diamond embedding all derive on BOTH sides, and a same-name/different-signature pair derives on NEITHER",
+      goCfg, "deriveGoImplements", src,
+      [
+        "implements:myLogger->Logger",
+        "implements:clientDispatcher->Client",
+        "implements:AliasImpl->Alias",
+        "implements:AliasImpl->Embedder",
+        "implements:Diamond->D",
+        "implements:Diamond->B",
+        "implements:Diamond->C",
+        "implements:Diamond->A",
+      ],
+      [
+        "implements:StrictValue->StrictType",
+        "implements:ArityVariadic->ArityIface",
+        "implements:SliceNotVariadic->SliceIface",
+        "implements:unimplementedDialer->Dialer",
+        "implements:VariadicOnly->BareIface",
+      ],
+      { oracleForbid: true },
+    )
+  }
+
   // ── F7 detector self-test: regexes regress like any code ────────────────
   {
     const hyg = await import("./verify-analyzer-hygiene")

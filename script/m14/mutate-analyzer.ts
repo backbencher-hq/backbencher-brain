@@ -5487,6 +5487,83 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter(x => !(normRel(x).type === "calls" && normRel(x).source === "duplicate" && normRel(x).target === "DeepCopyValue")) }),
   },
   {
+    id: "go/impl-iface-variadic-param-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "#914 regression: an INTERFACE method loses its variadic parameter again — the pre-fix reading, when `variadic_parameter_declaration` was not in the interface-method extractor's node set at all. The implementor keeps `args ...any` as a real parameter, so the two canonical signatures can never match and the pair goes silent. Caught by go/implements-signature-914 (expects implements myLogger->Logger, whose interface method is `Logf(format string, args ...any)`): it is the class that made every grpc client method (`opts ...grpc.CallOption`) and every `Output(code, args ...any)` view interface un-satisfiable across terraform and kubernetes.",
+    transform: r => {
+      const ifaces = new Set((r.symbols ?? []).filter((s: any) => s.metadata?.isInterface).map((s: any) => s.name))
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          String(s.kind) === "method" && ifaces.has(s.ownerName) && Array.isArray(s.parameters)
+            ? { ...s, parameters: s.parameters.filter((p: any) => !p.isVariadic) }
+            : s,
+        ),
+      }
+    },
+  },
+  {
+    id: "go/impl-variadic-marker-stripped",
+    language: "go",
+    defectClass: "fabrication",
+    description:
+      "#914 regression: the `isVariadic` marker is dropped from every parameter, so a signature compare cannot tell `...T` from `T` — `H(x ...string)` and `H(x string)` become the same text and `VariadicOnly` is declared to implement `BareIface`, which Go refuses (a variadic parameter's type is `...T`). Caught by go/implements-signature-914, whose forbidRelationships pin `implements VariadicOnly -> BareIface`; the pin's expectParameters rows name `isVariadic` on the field itself, so the payload cannot drift silently either.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        Array.isArray(s.parameters) && s.parameters.some((p: any) => p.isVariadic)
+          ? { ...s, parameters: s.parameters.map((p: any) => (p.isVariadic ? { ...p, isVariadic: undefined } : p)) }
+          : s,
+      ),
+    }),
+  },
+  {
+    id: "go/impl-receiver-only-candidate-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "#914 regression: the implementor candidates go back to the types DECLARED in the file, so a receiver whose type lives in a sibling file stops being one — `clientDispatcher -> Client` vanishes although all 21 of the interface's methods are declared right here (gopls protocol: the struct is in protocol.go, the methods in tsclient.go). Go's method set is a PACKAGE-level property, and the differential oracle had always keyed its map by receiver name, so this was a pure asymmetry. Reconstructed from the result's own symbols: an implements source that is not a declared type symbol. Caught by go/implements-signature-914 (expects implements clientDispatcher->Client; the type is declared nowhere in that file deliberately) and go/implements-params before it.",
+    transform: r => {
+      const declared = new Set((r.symbols ?? []).map((s: any) => s.name))
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter(x => normRel(x).type !== "implements" || declared.has(normRel(x).source)),
+      }
+    },
+  },
+  {
+    id: "go/impl-diamond-embedding-single-branch",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "#914 regression: the visiting mark in the embedded-interface walk becomes a global seen set again, so a DIAMOND loses its methods after the first branch — `A { B; C }`, `B { D }`, `C { D }` leaves D's methods with whichever branch was walked first, and an interface with no own methods and two embeddings (A) loses the edge entirely by declaration order alone. The pre-fix ORACLE lost it the same way, which is exactly why no differential could see it. Reconstructed from the output: an implements edge whose target declares no own method and has two or more go_interface_embedding edges. Caught by go/implements-signature-914 (expects implements Diamond->A).",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const withOwnMethods = new Set<string>()
+      for (const s of r.symbols ?? []) {
+        if (String(s.kind) === "method" && s.ownerName) withOwnMethods.add(String(s.ownerName))
+      }
+      const embeddings: Record<string, number> = {}
+      for (const x of rels) {
+        const rel = normRel(x)
+        if (rel.type === "extends" && (x.metadata ?? {}).relationshipType === "go_interface_embedding") {
+          embeddings[rel.source] = (embeddings[rel.source] ?? 0) + 1
+        }
+      }
+      return {
+        ...r,
+        relationships: rels.filter((x: any) => {
+          const rel = normRel(x)
+          if (rel.type !== "implements") return true
+          if (withOwnMethods.has(rel.target)) return true
+          return (embeddings[rel.target] ?? 0) < 2
+        }),
+      }
+    },
+  },
+  {
     id: "svelte/script-relative-indices",
     language: "svelte",
     defectClass: "range-incoherence",
@@ -7384,6 +7461,66 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "SW-H regression: Self.failure builds nothing — swift init-delegation dup->Result pin dies",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "instantiates" && x.source === "dup" && x.target === "Result")) }),
+  },
+  {
+    id: "swift/case-pattern-keyword-call",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "SW-D21 (#938) regression: the case PATTERN recovers as a call again — re-injects the exact pre-fix rows probe-verified on the 554-file swift-nio draw (`case .websocket(let channel):` -> calls websocket) — swift/case-pattern-recovery forbids catch them",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "handle", target: "websocket", confidence: 0.95 }] }),
+  },
+  {
+    id: "swift/unwrap-inner-write-as-read",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 (#939) regression: the climb stops at the unwrap wrapper again, so the INNER segment of a wrapped assignment LHS leaks as a read (`box.value!.total = 0` -> uses value, FileInfoTests.swift 21 sibling lines) — swift/unwrap-write-gate forbids catch them",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "bumpThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }, { type: "uses", source: "writeThroughUnwrap", target: "value", confidence: 0.9, metadata: { isMemberRead: true } }] }),
+  },
+  {
+    id: "swift/unwrap-outer-write-as-read",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "SCD1 (#939) regression, outer half: the assignment LHS span is not recognised through the wrapper, so the OUTER segment leaks as a read (`box.value!.total = 0` -> uses total) — swift/unwrap-write-gate forbids catch them",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "bumpThroughUnwrap", target: "total", confidence: 0.9, metadata: { isMemberRead: true } }, { type: "uses", source: "writeThroughUnwrap", target: "total", confidence: 0.9, metadata: { isMemberRead: true } }] }),
+  },
+  {
+    id: "swift/enum-splice-first-edge",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "#942 regression: the construction retirement takes the first (source, leaf) calls edge, losing a DIFFERENT site's genuine call (`static var get` loses its call to Endpoint.method, measured on the 98-file alamofire draw) — swift/enum-construction-splice expectRelationships calls Endpoint->method dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && x.source === "Endpoint" && x.target === "method")) }),
+  },
+  {
+    id: "swift/enum-splice-no-conversion",
+    language: "swift",
+    defectClass: "relationship-loss",
+    description: "#942 regression, conversion half: the enum-cased navigation stops converting, leaving only the dangling calls edge — swift/enum-construction-splice instantiates Endpoint->Path pin dies",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "instantiates" && x.source === "Endpoint" && x.target === "Path")) }),
+  },
+  {
+    id: "swift/error-recovery-no-container",
+    language: "swift",
+    defectClass: "symbol-loss",
+    description: "#940 regression: the ERROR-wrapped class header is not recovered — no Container symbol, no membership for its members (every member it owns was orphaned with ownerName undefined) — swift/error-recovery-nominal expectSymbols/contains pins die",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.name === "Container" && s.kind === "class")),
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && x.source === "Container")),
+    }),
+  },
+  {
+    id: "swift/error-recovery-self-owner-target",
+    language: "swift",
+    defectClass: "relationship-fabrication",
+    description: "#941 regression: an unresolvable initializer delegation falls back to the enclosing symbol's OWN name (`instantiates constructor -> constructor` — not a type in this vocabulary) — swift/error-recovery-nominal forbid dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "constructor", target: "constructor", confidence: 0.95, metadata: { isSelfInit: true } }] }),
+  },
+  {
+    id: "swift/error-recovery-dangling-init-call",
+    language: "swift",
+    defectClass: "relationship-noise",
+    description: "SW-G regression on the recovered file: the initializer delegation falls through to a dangling `calls -> init` (init is not a name in this vocabulary; constructors are literally `constructor`) — swift/error-recovery-nominal forbid dies",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "constructor", target: "init", confidence: 0.95 }] }),
   },
   {
     id: "objc/drop-implements-edge",

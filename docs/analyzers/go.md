@@ -71,11 +71,67 @@ defects the go-tools corpus could not (its interfaces are parameterless):
    shadowing honored) and the interface-implements check includes promoted
    methods; the oracle `structEmbedded` fold mirrors it exactly.
 
-All three are pinned by `go/implements-params` (parameterized implements +
-embedded-interface false-positive guard + embedded-struct `Worker→Runner2`
-promotion + negative `PlainWorker` guard) and the differential now holds
-0 missing / 0 unexplained on BOTH `go-tools` (822/822) and `terraform`
-(1423/1423).
+9. **Variadic interface parameters dropped, and `...` collapsed** (#914) —
+   `extractGoMethodSpecParameters` accepted `parameter_declaration` only, so
+   every variadic interface method lost its LAST parameter:
+   `Logf(format string, args ...any)` on the declared side became
+   `Logf(string) void` while the implementor kept `args`, and the textual
+   compare refused a pair Go accepts. Not an edge case — every grpc-generated
+   client method ends in `opts ...grpc.CallOption`, and terraform's view
+   interfaces are `Output(code InitMessageCode, args ...any)`. It FABRICATED
+   too: a fixed-arity `Dial(ctx, addr)` matched a variadic
+   `Dial(ctx, addr string, opts ...string)` once the declared side had lost
+   `opts`. Both extractors now publish `isVariadic` (the parameter's `type`
+   stays the ELEMENT type — the pinned payload contract), and
+   `buildGoMethodSignature` renders `...T`, so `...T`, `T` and `[]T` are three
+   different types again.
+10. **Implementor candidates were only the types DECLARED in the file** (#914)
+   — but a Go method set is a PACKAGE-level property. gopls declares
+   `clientDispatcher` in `protocol.go` and all 21 of `Client`'s methods in
+   `tsclient.go`, so the file holds every method the interface needs and the
+   pair is provable from its own evidence; the oracle had always keyed its
+   implementor map by receiver NAME, so the analyzer was the odd side out.
+   The candidate list is now the declared non-interface types PLUS every
+   receiver type name with no same-file declaration (mirrored on both sides:
+   a name with no declaration cannot be a declared generic, and a type whose
+   embedding is declared elsewhere cannot promote).
+11. **Alias interfaces and DIAMOND embedding** (#914) —
+   `type A = interface{ M() }` parses as `type_alias`, not `type_spec`, and the
+   ORACLE registered interfaces from `type_spec` only, so `A` never entered its
+   map and `type T interface { A }` folded nothing (go-tools
+   `gcimporter/testdata/issue25301.go` was the lane's only unexplained pair).
+   Separately, both sides marked an interface visited and never released the
+   mark — a global seen set rather than a path mark — so for
+   `A { B; C }`, `B { D }`, `C { D }` the first branch to reach `D` consumed it
+   and the second returned nothing: `Diamond → A/C` was lost by declaration
+   order alone. Each side lost it in a DIFFERENT shape, which is why no
+   differential could charge anyone.
+12. **The oracle compared method NAMES only** (#914) — a strict SUPERSET of
+   Go's rule, documented in the oracle as a deliberate simplification. It
+   published pairs Go refuses (`Value -> Type` with `Elem() Value` against
+   `Elem() Type`; `VT -> VI` with `F(int, ...string)` against `F(int)`;
+   `Diff -> DiffRenderer`; `ReferenceMap -> GraphNodeReferencer`;
+   `graphTransformerMulti -> GraphVertexTransformer`; every
+   `UnimplementedXServer -> XClient`) and charged each to the analyzer as a
+   MISSING edge it could never close. `deriveGoImplements` now derives the
+   analyzer's canonical signature text from the tree — parameters by TYPE only,
+   grouped declarations expanded one parameter per name, `...T` kept, named
+   results reduced to their types, no result = `void`, whitespace collapsed,
+   `interface{}` → `any` — and resolves each embedded interface/struct FULLY
+   before merging.
+
+All of the above are pinned by `go/implements-params` (parameterized implements
++ embedded-interface false-positive guard + embedded-struct `Worker→Runner2`
+promotion + negative `PlainWorker` guard), `go/implements-signature-914` (variadic
+parameters and the `isVariadic` payload field, receiver-only implementors, alias
+interfaces, diamond embedding, and five same-name/different-signature negative
+guards), the mutants `go/impl-iface-variadic-param-dropped`,
+`go/impl-variadic-marker-stripped`, `go/impl-receiver-only-candidate-dropped` and
+`go/impl-diamond-embedding-single-branch`, and `F9-PROBE-GO-IMPL-SIGNATURE` (which
+pins the ORACLE side with `oracleForbid`; the executed negative against HEAD's real
+code misses 5 of 8 edges and fabricates 5). At FULL extent the differential holds
+0 missing / 0 unexplained on `go-tools` (1,931 files, truth 30,695), `terraform`
+(1,993 files, truth 40,913) and `kubernetes` (13,488 files, read in index ranges).
 
 ## #419-D evidence tiers (family standard)
 
