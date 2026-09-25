@@ -9,10 +9,12 @@
   0 fixed, 0 regressed — so no upgrade was warranted; tree:
   `-module`/`-export`/`-import`/`-include`/`-include_lib`/`-behaviour`/
   `-define`/`-record`/`-type` are `attribute` nodes; functions are
-  `function` → `function_clause` → `clause_head`/`clause_body`; calls are
-  `call` (`Module:func(...)` → `call` with a `module`/`function_name`
-  pair child or `atom`/`identifier` for unqualified; local calls are
-  `call` with a bare `identifier`); `#state{...}` construction is
+  functions are `fun_decl` → `function_clause` → `expr_args` + `clause_body`
+  (a NEW `fun_decl` opens at every semicolon-separated clause, so merging
+  clauses into one symbol is the analyzer's job — measured 2026-09-25); calls
+  are `call` (`Module:func(...)` → `remote` → `remote_module` (atom) + the
+  function `atom`; local calls are `call` with a bare `atom` callee);
+  `#state{...}` construction is
   `record_expr`, `State#state{...}` update is `record_update_expr`,
   `State#state.q` access is `record_field_expr` (all three distinct node
   types); `receive ... end` is `receive_expr` with optional
@@ -29,8 +31,9 @@
 
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | ✅ | `-module` → module name; `-record` → record name; `-define` → macro name (with `?` prefix); `-type` → type name; functions → the `clause_head` function name (arity-stripped); exported functions (`-export` arity match) are identical symbols (dedup) | 
-| kind | ✅ | `-module` → `module`; `-record` → `struct` (Erlang records are the record-struct analog); `-define` → `macro`; `-type` → `type`; functions → `function` (OTP callbacks `handle_call`/`handle_cast`/`handle_info`/`init`/`terminate` marked via the gen_server/gen_statem behaviour metadata); fields of a record → `property` |
+| name | ✅ | `-module` → module name (FIRST declaration wins, ER-D15); `-record` → record name; `-define` → macro name; `-type` → type name; `-opaque` → type name with `meta.isOpaque`; `-callback` → a Method symbol with the sig's arity and `meta.isCallback`; functions → the clause's `atom` name. Function IDENTITY is name + ARITY (#880/ER-D2): `pick/0` and `pick/1` are two symbols, and every semicolon-separated clause group of one name/arity merges into ONE symbol whose range spans every clause and whose `meta.clauseCount` states how many |
+| kind | ✅ | `-module` → `module`; `-record` → `struct` (Erlang records are the record-struct analog); `-define` → `constant`; `-type`/`-opaque` → `type`; `-callback` → `method`; `-nifs`/`-on_load` entries → `function`; functions → `function`; fields of a record → `property` |
+| complexity | ✅ | per SYMBOL: base 1 + case/receive/try arms (`cr_clause`, `catch_clause`), if arms (`if_clause`), a `receive_after`, `andalso`/`orelse`, plus one per extra clause (ER-D13). A clause HEAD is a match, not an arm |
 | qualified/container name | ✅ | `ownerName` = enclosing module for records/macros/types/functions; record fields owned by their record symbol (`contains record -> field`) |
 | range (start/end line + column) | ✅ | the declaration node |
 | parameters | ✅ (metadata only) | from the `clause_head` variable children |
@@ -42,10 +45,10 @@
 | --- | --- | --- | --- |
 | contains | ✅ | real ownership only: module → its records/macros/types/functions (`contains service -> handle_call`), record → its fields (`contains person -> id`). Sources the RECORD symbol, never the `#state` field text. | 1.0 |
 | implements | ✅ | `-behaviour(gen_server)` → `implements service -> gen_server` (behaviour = the Erlang interface analog) | 0.9 |
-| calls | ✅ | `call` nodes with function sources (source = the containing FUNCTION, not the module). Qualified module calls emit `calls submit -> make_payload`-style leaf targets; `Module:func(...)` emits the leaf `func`; local calls to functions declared in the same module resolve (forward references included — `submit` → `make_payload` declared later in the file). Self-recursion IS emitted. The module-level dedup bug that dropped `stop -> gen_server:cast` when both a local and qualified call shared a source was fixed — one `calls` edge per (source, target) | 1.0 |
-| instantiates | ✅ | `record_expr` (`#state{...}`) in BODY position only → `instantiates new -> state`. Record literals in PATTERN position (function heads, `clause_head` `expr_args`) emit NOTHING. `record_update_expr` (`State#state{...}`) is a copy/update, not a construction — no instantiates | 0.9 |
-| references | ✅ | module dependencies only: `-import`/`-include`/`-include_lib` → `references module -> dep` (the FP-family module-dep contract). Body identifier/variable uses emit NOTHING (variable `uses` noise removed) | 0.9 |
-| uses | ❌ | record field access (`State#state.q` → `record_field_expr`) is a field read — no edge (fields already have `contains` ownership) | — |
+| calls | ✅ | `call` nodes in EVALUATION contexts (a clause head is a pattern; type syntax is DECL-ONLY — ER-D3). Source = the named function, else the enclosing `-record` (a field default, ER-D12), else the module. Remote calls keep `module:function` (ER-D1) with STRUCTURAL extraction (the module atom of `remote_module`, the function atom of `remote`) and `?MODULE:` expands to the current module (ER-D14, `meta.macroModule`); local calls resolve against the file's declared name/ARITY set (forward references included). Self-recursion IS emitted. `meta.callArity` is the call's `expr_args` named-child count, comments excluded, and it is part of the edge identity: `f/1` and `f/2` sites are distinct edges (ER-D2) | 0.9 |
+| instantiates | ✅ | `record_expr` (`#state{...}`) in BODY/guard position only → `instantiates run -> state`. Record literals in PATTERN position (function heads, `expr_args` before the guard/body) emit NOTHING. `record_update_expr` (`State#state{...}`) is a member WRITE, not a construction — no instantiates (ER-D4) | 1.0 |
+| uses | ✅ | record member READ (`State#state.q`, `#state.label` index reads) → `uses -> <record>` AND `uses -> <field>`; record member UPDATE (`State#state{count = X}`) → `uses -> <record>` and → each assigned field. Evaluation contexts only: a head pattern emits nothing (ER-D7, closes ER-G4). `meta.context` is `record member read` or `record field update` | 1.0 |
+| references | ✅ | module dependencies (`-include`/`-include_lib` path string, `-import` module); macro USES (`?TIMEOUT`, `?MODULE`, `?SERVER_HEADER` — emitted whether or not the macro is defined here, ER-D8, closes ER-G1); fun VALUES (`fun f/1` bare, `fun lists:map/2` qualified — a value is not an invocation, ER-D9, closes ER-G2); type dependencies from `-type`/`-opaque` to every NAMED type in the expression (atoms + applied call heads; vars are parameters, ER-D10, closes ER-G5). Body variable uses emit NOTHING | 1.0 |
 
 ## Noise-elimination contract (what produces NO edges)
 
@@ -57,26 +60,36 @@
   `send_expression` branch is dead); sends are not calls to any symbol.
 - Attribute heads (`-export([...])`, `-spec`, `-record`, ...) — the attribute
   declares the symbol; its inner content is never a call.
-- Macros in guard positions (`?WITH_STACKTRACE(...)`) — attribute/macro
-  references only, never call edges.
+- Macro uses (`?WITH_STACKTRACE(...)`, `?TIMEOUT`, `?MODULE`) — a `references`
+  edge to the macro name (ER-D8), never a call edge; `?MODULE:` in remote-module
+  position additionally resolves the call to the current module (ER-D14).
+- Type syntax (`-spec`, `-callback`, `-type`, `-opaque`) — DECL-ONLY (ER-D3):
+  `state()` there is a type application, never a call site. `-spec` records
+  nothing standalone; `-callback` declares a Method symbol.
 - Params/locals never become symbols.
 
 ## Complexity model (live, verified against emitted shapes)
 
-Cyclomatic complexity counts decision points from the pinned grammar's actual
-emitted node types:
+Cyclomatic complexity counts decision points per ARM, per SYMBOL (ER-D13),
+from the pinned grammar's actual emitted node types:
 
-- Each function clause — `function_clause`/`fun_clause` (live; `fun` bodies
-  count their clauses).
-- `case_expr`/`if_expr`/`try_expr` — one each.
-- `receive_expr` — one; a `receive_after` child adds one more ("Receive with
-  Timeout" pattern).
+- `cr_clause` — one per case/receive/try-of arm (the grammar uses one node
+  type for all three), `if_clause` one per if arm, `catch_clause` one per
+  catch arm, `receive_after` one ("Receive with Timeout" pattern).
+- `andalso`/`orelse` (`binary_op_expr`) — one each.
+- One per EXTRA clause of a function (`meta.clauseCount - 1`); a clause HEAD is
+  a match, not an arm.
+- The symbol carries the total (`symbol.complexity`); the file total is base 1
+  plus every symbol's arm contribution, so the two cannot drift apart.
+
+Pinned by `validation/m14/fixtures/erlang/record-ops-er2.expectation.json`
+(`expectComplexity`: transitions 7 = base 1 + 3 case arms + 2 receive arms +
+receive_after; guarded 4 = base 1 + 2 if arms + andalso; heady/get_count/idx 1)
+and by mutant `erlang/complexity-arms-flattened`.
 
 The dead baseline entries (`receive_expression`, `after_clause`,
-`send_expression`) were removed — those node types are never emitted by the
-pinned grammar. The receive detection was verified live on real receive code
-(`receive_expr`/`receive_after` confirmed via shape probe; shape-safety shows
-9/9 analyzer node refs live, 0 dead).
+`send_expression`) and the dead `string_literal` include fallback are gone —
+those node types are never emitted by the pinned grammar.
 
 ## Regex census
 
@@ -131,5 +144,37 @@ types (`-type`/`-spec`), behaviours (`-behaviour` implements), exports
 (gen_server/gen_statem callback marking).
 
 Not modeled (deliberately): `!` send (parses as `binary_op_expr` — no symbol
-edge), macro expansion contents (unparseable by design — recorded as grammar
-limitations), record field access (no edge), pattern-position record literals.
+edge), macro expansion CONTENTS (unparseable by design — recorded as grammar
+limitations), pattern-position record literals and member reads.
+
+## Restoration record (ER1 + ER2, 2026-09-25)
+
+The ER1/ER2 waves landed this contract on the working tree on 2026-09-18
+(`reviews/erlang/m49-er1-arity-lines-dual-lens.md`,
+`reviews/erlang/m49-er2-done-bar.md`), and their pins survived — the nine
+fixtures, the identity verifier, `script/m14/spec/erlang-completeness.json`,
+the review records and (part of) the mutant registry — while the analyzer
+SOURCE did not: `git log --all -S record_field_expr --
+src/ast/real-erlang-analyzer.ts` finds no commit that ever held it, and neither
+did the differential oracle. Measured at HEAD before the restoration: 9 of 9
+committed erlang fixtures FAIL, the F5 oracle derived only
+calls/implements/instantiates, and 5,951 of 5,951 relationships on a 60-file
+draw carried no line at all.
+
+The contract above was therefore re-implemented against its own surviving spec
+(fixtures first, rulings ER-D1..ER-D15) and re-measured:
+
+| Witness | Result |
+| --- | --- |
+| `bun script/m14/run-fixtures.ts --lang erlang` | **9/9 PASS** (was 0/9) |
+| `bun script/m14/verify-erlang-identity.ts` | PASS — 4 functions, 2 export arities, call-site arity + site lines on local and remote calls, **13/13 output mutations CAUGHT** |
+| `BB_MUTANT_ONLY="erlang/" bun script/m14/mutate-analyzer.ts` | **20/20 CAUGHT** (9 recovered + 11 re-authored for the ER2 surface), each by its intended fixture |
+| `bun script/m60/lane-surface-audit.ts --lang erlang --limit 60` | **0 unlined of 8,645 edges** (was 5,951/5,951 unlined); labels calls/contains/references/uses/instantiates/implements; 0 ghosts |
+| `bun script/m14/differential.ts --lang erlang` | **rebar3 3,328/3,328 covered, MISSING 0, unexplained 0** · **otp 4,585/4,585, MISSING 0, unexplained 0** — with `uses` and `references` now COMPARED kinds |
+| `bun script/m14/verify-corpus-census.ts --lang erlang` | PASS files=60 err=1 types=102 blind=0 |
+| `npx tsc --noEmit` | clean |
+
+The shape probes this round added are committed as evidence:
+`script/m14/tmp/erlang-er2-shapes2.ts` (fun_decl/expr_args arity, the `?MODULE:`
+module position, the guard's ancestry — the pattern-position boundary is
+`guard`/`clause_body`, never the clause itself).
