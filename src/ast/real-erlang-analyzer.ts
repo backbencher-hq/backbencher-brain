@@ -105,7 +105,13 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ---- -include / -include_lib (pp_include / pp_include_lib) ----
       // The include path node is `string`; `string_literal` does not exist in this
       // grammar (ER1: the fallback was a dead branch the F1 auditor held open).
-      if (type === "include_attribute" || type === "include_lib_attribute" || type === "pp_include" || type === "pp_include_lib") {
+      // MEASURED (script/m14/tmp/erlang-er2-literal-audit.ts, 4,433 files): the
+      // grammar's include WRAPPERS are `pp_include` / `pp_include_lib`; there is
+      // no `*_attribute` include type. The restored branch list carried both,
+      // and neither existing register could see it — the F1 extractor and the
+      // F6 audit both recognise `x.type ===` (a member expression) or the
+      // *ByType helpers, and this branch reads a LOCAL (`const type = node.type`).
+      if (type === "pp_include" || type === "pp_include_lib") {
         const fNode = this.getChildByType(node, "string")
         if (fNode) {
           const includePath = this.stripQuotes(fNode.text)
@@ -114,7 +120,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `"path.hrl"` on line 9 pins 9 (M59.O2 — the name-bearing node, never
           // the construct that contains it).
           this.pushRel(ctx, ctx.currentModule || filePath, includePath, ASTEngine.RelationshipType.References, 0.9, {
-            erlangSpecific: true, isInclude: type === "include_attribute" || type === "pp_include", isLibInclude: type === "include_lib_attribute" || type === "pp_include_lib",
+            erlangSpecific: true, isInclude: type === "pp_include", isLibInclude: type === "pp_include_lib",
           }, this.lineOf(fNode))
         }
       }
@@ -187,11 +193,16 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // ---- -nifs([...]) / -on_load(...) ----
+      // ---- -nifs([...]) ----
+      // A NIF is declared HERE and nowhere else: this attribute is the only
+      // symbol source for it, so it publishes one Function per entry.
+      // (`-on_load(init/0)` names a function the module ALREADY declares — a
+      // symbol here would be a second row for one entity, so it emits nothing;
+      // pinned by erlang/imports-and-try.)
       else if (type === "wild_attribute") {
         const attrNameNode = this.getChildByType(node, "attr_name")
         const attrName = attrNameNode ? this.lastAtomText(attrNameNode) : undefined
-        if (attrName === "nifs" || attrName === "on_load") {
+        if (attrName === "nifs") {
           for (const entry of this.nifEntries(node)) {
             ctx.symbols.push({
               name: entry.name,
@@ -244,17 +255,18 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
-      // ---- -define(MACRO, value). (pp_define) ----
-      else if (type === "define" || type === "pp_define") {
+      // ---- -define(MACRO, value). ----
+      // The node type is `pp_define`; `define` is the unnamed keyword TOKEN the
+      // wrapper contains (measured: it never occurs as a parent in 4,433 files),
+      // and the name lives in `macro_lhs` (`var`, with `var_args` when the macro
+      // takes parameters). The older `macro_name` fallback is not a grammar type
+      // at all — both dead branches are gone (same probe as the include note).
+      else if (type === "pp_define") {
         let macroName = ""
         const macroLhs = this.getChildByType(node, "macro_lhs")
         if (macroLhs) {
           const varNode = this.getChildByType(macroLhs, "var") || this.getChildByType(macroLhs, "atom")
           macroName = varNode?.text || ""
-        }
-        if (!macroName) {
-          const atomNode = this.getChildByType(node, "macro_name") || this.getChildByType(node, "atom")
-          if (atomNode && atomNode.text !== "define") macroName = atomNode.text
         }
         if (macroName) {
           ctx.symbols.push({
