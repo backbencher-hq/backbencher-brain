@@ -37,7 +37,13 @@
   `identifier`); constructor application heads are `constructor`; lambdas are
   `lambda_expression`; where-locals live under `where_block` →
   `local_binding` → `function_declaration`; record construction is
-  `record_expression`/`record_update`; field access is `field_access`.)
+  `record_expression`/`record_update`; field access is `field_access`.
+  A module-level operator is a DIFFERENT node from a function:
+  `operator_definition` with a `name` FIELD holding
+  `parenthesized_operator` (`(++|)`) or `parenthesized_name`; an
+  instance/synonym body is a `macro_definition`; a signature is `type_signature`
+  → `signature_name` → `identifier` / `constructor` / `parenthesized_operator` /
+  `parenthesized_name`; an infix use is a `binary_expression`.)
 - Language detection: `.icl`/`.dcl` → `clean` in `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealCleanAnalyzer`
 - Pure AST — symbols and relationships derive from Tree-sitter nodes/fields,
@@ -50,12 +56,12 @@
 
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | ✅ | `module_declaration` → `module_name`; `type_definition` → first `constructor` (type); `record_definition` → `record_field` → `identifier` (property); `data_constructor` → `constructor` (constructor); `class_name` → `constructor` (interface); class members → `class_member` → `type_signature` → `signature_name` → `identifier` (method); `instance_declaration` → named by the TARGET type `constructor` (the Rust `impl User`/Haskell `instance ... User` contract); instance members → inner `function_declaration` first `identifier` (method); top-level functions → `function_declaration` first `identifier` |
+| name | ✅ | `module_declaration` → `module_name`; `type_definition` → first `constructor` (type); `record_definition` → `record_field` → `identifier` (property); `data_constructor` → `constructor` (constructor); `class_name` → `constructor` (interface); class members → `class_member` → `type_signature` → `signature_name` → `identifier` (method); `instance_declaration` → named by the TARGET type `constructor` (the Rust `impl User`/Haskell `instance ... User` contract); instance members → inner `function_declaration` `name` FIELD (method); top-level functions → `function_declaration` `name` FIELD (an uppercase name is typed `constructor`, so the field — not the first `identifier` child — is the name); a MODULE-LEVEL `type_signature` → `signature_name` child, normalized across all four shapes (`identifier`, `constructor`, `parenthesized_operator` `(==)` → `==`, `parenthesized_name` `(bitxor)` → `bitxor`; a comma/brace payload is a tuple/record PATTERN mis-shape and publishes nothing); an `operator_definition` → its `name` FIELD unparenthesized (`(++|)` → `++|`) |
 | kind | ✅ | module; type_definition → `type`; record fields → `property`; ADT constructors → `constructor`; class → `interface`; instance → `class`; class/instance members → `method`; top-level functions → `function` |
 | qualified/container name | ✅ | `ownerName` = enclosing module for all module-level symbols (tracked via `ctx.currentModule`); constructors/fields owned by their type (`Vec`); class/instance methods owned by their interface/class |
 | range (start/end line + column) | ✅ | the declaration node |
 | parameters | ✅ (metadata only) | function head identifiers after the name |
-| visibility | ✅ | always `public` (Clean has no visibility keyword; everything is exported by default) |
+| visibility | ✅ | always `public`. Clean has no visibility keyword and a module's definition list governs what it offers, so the export list is the module-level symbols: `sym.ownerName === currentModule || !sym.ownerName` (the haskell rule — the module is the namespace, members are importable by name), restricted to exportable kinds and deduped by NAME first-wins, because the exports-family invariant (run-fixtures.ts) requires a name a duplicate cannot identify its provider for. Clean reaches the collision honestly — `instance Eq ParseState` publishes its Class under the instance TARGET type, so a file that both defines the type and implements an instance for it offered the name twice (59 of 312 files). The predicate here used to be `!sym.ownerName`, the exact NEGATION of the rule its own comment stated: measured, 312 of 312 files exported ≤ 1 thing (295 exports against 6,031 module-owned symbols). Now **4,443 exports over 305 of 312 files**; the 7 without one are the `_`-prefixed compiler-internal modules, which are not part of any importable interface |
 
 ## Relationship ontology
 
@@ -63,7 +69,7 @@
 | --- | --- | --- | --- |
 | contains | ✅ | post-loop over `ownerName`: module → every module-level symbol (`contains Service -> User`), type → its constructors (`contains Side -> Bid`), type → record fields (`contains User -> name`), interface/class → methods (`contains Serializable -> serialize`). Self-named edges skipped (`data User = User {...}` would collapse into a self-loop in symbol-ID space) | 1.0 |
 | implements | ✅ | `instance_declaration` → `implements targetType -> className` (from `instance_class` + target `constructor`) | 1.0 |
-| calls | ✅ | `application` heads with function sources (source = the containing function/method via `currentFunction`). Local calls emit LEAF targets only when the callee is a module-level declared function (pre-pass collects all `function_declaration` names → forward references resolve, e.g. `submitOrder -> describe` declared later). Self-recursion and mutual recursion ARE emitted (`countDown -> countDown`, `mutualA -> mutualB`). Qualified calls emit FULL targets (`M.lookup` — the Erlang `gen_server:cast` precedent, from `qualified_identifier`). Exclusions: stdlib/imported functions (`foldl`, `map`, `fromMaybe`), type variables, pattern vars, record-field selectors (`u.name`), operator/infix syntax, where-local functions (their bodies are scoped noise) | 1.0 |
+| calls | ✅ | `application` heads with function sources (source = the containing function/method via `currentFunction`; an `operator_definition` is a callable on the same terms, so its body attributes to the operator's unparenthesized name — `(++) x y = g x y` emits `calls ++ -> g`), and the attribution is released when the callable's scope exits. Local calls emit LEAF targets only when the callee is a module-level declared function (pre-pass collects all `function_declaration` names → forward references resolve, e.g. `submitOrder -> describe` declared later). Self-recursion and mutual recursion ARE emitted (`countDown -> countDown`, `mutualA -> mutualB`). Qualified calls emit FULL targets (`M.lookup` — the Erlang `gen_server:cast` precedent, from `qualified_identifier`). Exclusions: stdlib/imported functions (`foldl`, `map`, `fromMaybe`), type variables, pattern vars, record-field selectors (`u.name`), operator/infix syntax, where-local functions (their bodies are scoped noise) | 1.0 |
 | instantiates | ✅ | `application` heads that are `constructor` (uppercase) in BODY position → `instantiates fn -> Type` (`makeUser n a = User n a` → `instantiates makeUser -> User`). Pattern-position constructors (`addBid (Book bids asks) price`) and where-local patterns NEVER instantiate — excluded via `isPatternPosition` (pattern vars in function heads / `case_alternative` heads / `where_block` locals) | 1.0 |
 | references | ✅ | module dependency edges: `import StdEnv` → `references Service -> StdEnv` (import-list-less form `from Data.List import fromMaybe` also handled; the qualified/`as` import shapes produce the same dependency edge) | 1.0 |
 | extends | ❌ | Clean classes have no superclass syntax (type classes stand alone); no edge emitted | — |
@@ -93,22 +99,27 @@
 - Grammar: tree-sitter-clean **v1.2.7** (`302fb5d0`, adopted 2026-09-25). Shape safety
   re-derived against the pinned grammar rather than restated (`script/m14/tmp/clean-127-shape-safety.ts`,
   which reads the analyzer's `node.type ===` literals and intersects them with the grammar's own
-  `src/node-types.json`): **34 referenced node-type literals, 0 dead** — 33 are node types the
-  grammar defines and the 34th is tree-sitter's reserved `ERROR`. The grammar defines **198**
-  distinct node types, so this analyzer dispatches on 33 of them; the 4 types new in v1.2.7
+  `src/node-types.json`): **37 referenced node-type literals, 0 dead** — 36 are node types the
+  grammar defines and the 37th is tree-sitter's reserved `ERROR`. The grammar defines **198**
+  distinct node types, so this analyzer dispatches on 36 of them; the 4 types new in v1.2.7
   (`monad_bind`, `array_generator_sep`, `char_list`, `open_range_expression`) are named nowhere
   in it, which is a named worklist rather than a hidden one.
-- Differential: **still a manual audit, not a derived oracle.**
-  `validation/m12/results/clean-differential.json` records `truthSource: manual_audit` over two
-  fixtures (`Service.icl`, `Negative.icl`, 68 facts, precision/recall 1.000), and the lane is
-  still absent from `script/m14/differential.ts`'s sweep map. Adding it is not a one-line change:
-  measured, a probe run reports `[Clyde] clean: files=60 ... derived ZERO truth edges`, and F5
-  refuses a 0/0 row by design. The lane needs its own `deriveCleanEdges` — the build clojure and
-  elixir each got — before it can take a differential **or** an F10 parse-success floor.
-- Parse-success: no floor is pinned (see above). The figure this doc used to quote — 4 error files
-  of the 41-file ≥1KB draw (9.8 %), stated against the v1.2.4 grammar — re-measured on the pinned
-  v1.2.7 grammar with the same instrument (`script/m12/clean-corpus-errors.ts`) is **1 of 41
-  (2.4 %)**, the single remaining file being `_SystemDynamic.icl`.
+- Differential: **derived, and the lane is enrolled.** `deriveCleanEdges`
+  (`script/m14/differential.ts`, keyed to the pinned v1.2.7 shapes rather than translated from
+  this analyzer) is the read oracle, and F5 row `M14.0.F5.clean.json` records
+  `Clyde:clean` 60 files / 683 tree-truth / 683 covered (100 %, 0 MISSING, 0 unexplained) and
+  `clean-stdlib:clean` 60 files / 744 / 744 (0/0). Exhaustively, un-sampled, over every file of
+  the lane's 312: Clyde 109 files truth 2,288 / analyzer 1,459, clean-stdlib 74 / 773 / 562,
+  Prelude 42 / 130 / 124, cloogle.org 14 / 271 / 182, eastwood 73 / 924 / 777 — 0 MISSING and
+  0 UNEXPLAINED on all five. The M12 manual audit (`validation/m12/results/clean-differential.json`,
+  68 facts, 1.000/1.000) still stands beside it as the fixture-level audit.
+- Parse-success: floor `M14.0.F10.clean.json` — `Clyde:clean` 109 files, 17 carrying damage
+  (15.6 %; ERROR 14.7 %, MISSING 3.7 %, damaged lines median 3 / max 81) and `clean-stdlib:clean`
+  74 / 1 (1.4 %). Both are still `unpinned` in the shared baseline; a whole-set `--update-baseline`
+  rewrites all 48 lanes, so pinning them is a separate, deliberate act. The earlier figure — 4 error
+  files of the 41-file ≥1KB draw (9.8 %) measured against v1.2.4, then **1 of 41 (2.4 %)** against
+  v1.2.7 (`script/m12/clean-corpus-errors.ts`) — measured a smaller draw; the file that no grammar
+  of this pin parses remains `_SystemDynamic.icl` (inline `code { ... }` blocks).
 - M11 gates: FP probe genuinely **1.000/1.000** (the cached
   `fp-observed.json` was stale — honest regeneration exposed 0.986/0.920,
   fixed by emitting record fields + class-member methods; probe now real);
