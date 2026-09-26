@@ -1,12 +1,29 @@
 {
-  "grammar": "@derekstride/tree-sitter-sql 0.3.11",
-  "corpus": "$HOME/ProxiCall",
+  "analyzer": "sql",
+  "grammar": "@derekstride/tree-sitter-sql 0.3.11 (the pinned build)",
+  "grammarLabelSupplied": true,
   "wasmArtifact": "tree-sitter-sql.wasm",
-  "files": 207,
-  "errorFiles": 146,
-  "errorNodes": 3876,
-  "totalBytes": 1527168,
+  "wasmSha256": "bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800",
+  "wasmBytes": 2440507,
+  "corpus": "$HOME/ProxiCall",
+  "corpusRevision": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+  "corpusDirty": true,
+  "files": 438,
+  "errorFiles": 318,
+  "errorNodes": 6407,
+  "errorRatePct": 72.6,
+  "totalBytes": 3358961,
   "errors": [
+    {
+      "file": ".copilot-tools/m24_2892/ROLLBACK_restore_13_legacy_rows.sql",
+      "nodes": 1,
+      "bytes": 5005
+    },
+    {
+      "file": "_dev/m17b_2980_gallery_limit_proof.sql",
+      "nodes": 27,
+      "bytes": 9412
+    },
     {
       "file": "database/archive/2025/0015_fix_rejected_rules_invalidation.sql",
       "nodes": 6,
@@ -243,6 +260,11 @@
       "bytes": 6968
     },
     {
+      "file": "database/archive/2026/20260820_employee_payouts_rls_tests.sql",
+      "nodes": 20,
+      "bytes": 12464
+    },
+    {
       "file": "database/archive/202607/20260717_inventory_rls_cascade.sql",
       "nodes": 21,
       "bytes": 4459
@@ -251,6 +273,11 @@
       "file": "database/archive/202607/20260718_content_rls_cascade.sql",
       "nodes": 10,
       "bytes": 2879
+    },
+    {
+      "file": "database/m16_2821_coupon_ledger_probe.sql",
+      "nodes": 23,
+      "bytes": 7420
     },
     {
       "file": "database/migrations/025_fix_orders_schema.sql",
@@ -506,11 +533,1084 @@
       "file": "database/migrations/20260523_fms_discounts.sql",
       "nodes": 8,
       "bytes": 7648
+    },
+    {
+      "file": "database/migrations/20260523_fms_invoices.sql",
+      "nodes": 5,
+      "bytes": 2692
+    },
+    {
+      "file": "database/migrations/20260523_fms_monetization.sql",
+      "nodes": 4,
+      "bytes": 8289
+    },
+    {
+      "file": "database/migrations/20260524210524_fms_audit_fixes.sql",
+      "nodes": 4,
+      "bytes": 2952
+    },
+    {
+      "file": "database/migrations/20260524_fms_refunds.sql",
+      "nodes": 12,
+      "bytes": 20549
+    },
+    {
+      "file": "database/migrations/20260612_coms_p8_7_indexes_pagination.sql",
+      "nodes": 1,
+      "bytes": 1903
+    },
+    {
+      "file": "database/migrations/20260613_coms_p13_1_subtype_tables.sql",
+      "nodes": 27,
+      "bytes": 22869
+    },
+    {
+      "file": "database/migrations/20260613_coms_p13_3_rls_audit_fix.sql",
+      "nodes": 113,
+      "bytes": 34531
+    },
+    {
+      "file": "database/migrations/20260613_coms_p13_4_data_retention.sql",
+      "nodes": 34,
+      "bytes": 17428
+    },
+    {
+      "file": "database/migrations/20260702_inventory_categories_nutrition_translations.sql",
+      "nodes": 2,
+      "bytes": 4246
+    },
+    {
+      "file": "database/migrations/20260707_create_business_reports.sql",
+      "nodes": 5,
+      "bytes": 2113
+    },
+    {
+      "file": "database/migrations/20260707_drop_business_rules.sql",
+      "nodes": 5,
+      "bytes": 1585
+    },
+    {
+      "file": "database/migrations/20260714_add_accepted_payment_methods.sql",
+      "nodes": 3,
+      "bytes": 1062
+    },
+    {
+      "file": "database/migrations/20260722_translation_system_integrity.sql",
+      "nodes": 28,
+      "bytes": 9953
+    },
+    {
+      "file": "database/migrations/20260806_fix_invitations_rls_invitee_email.sql",
+      "nodes": 2,
+      "bytes": 2073
+    },
+    {
+      "file": "database/migrations/20260810_block_self_admin_escalation.sql",
+      "nodes": 11,
+      "bytes": 4153
+    },
+    {
+      "file": "database/migrations/20260819050000_fix_firebase_content_owner_rls.sql",
+      "nodes": 11,
+      "bytes": 2309
+    },
+    {
+      "file": "database/migrations/20260819070000_review_integrity.sql",
+      "nodes": 2,
+      "bytes": 744
+    },
+    {
+      "file": "database/migrations/20260819080000_coms_queue_tables.sql",
+      "nodes": 50,
+      "bytes": 11425
+    },
+    {
+      "file": "database/migrations/20260819_content_translation_rls.sql",
+      "nodes": 27,
+      "bytes": 5610
+    },
+    {
+      "file": "database/migrations/20260819_ems_rls_self_update_escalation.sql",
+      "nodes": 15,
+      "bytes": 6235
+    },
+    {
+      "file": "database/migrations/20260819_ems_task_claim_authorization.sql",
+      "nodes": 16,
+      "bytes": 4995
+    },
+    {
+      "file": "database/migrations/20260819_fix_orders_cart_items_rls.sql",
+      "nodes": 22,
+      "bytes": 3717
+    },
+    {
+      "file": "database/migrations/20260819_sensitive_data_rls.sql",
+      "nodes": 14,
+      "bytes": 2844
+    },
+    {
+      "file": "database/migrations/20260819_user_role_audit_append_only.sql",
+      "nodes": 7,
+      "bytes": 1086
+    },
+    {
+      "file": "database/migrations/20260820_business_status_audit_append_only.sql",
+      "nodes": 11,
+      "bytes": 2745
+    },
+    {
+      "file": "database/migrations/20260820_business_verification_events_append_only.sql",
+      "nodes": 11,
+      "bytes": 2023
+    },
+    {
+      "file": "database/migrations/20260820_connection_events_append_only.sql",
+      "nodes": 7,
+      "bytes": 1116
+    },
+    {
+      "file": "database/migrations/20260820_deletion_audit_append_only.sql",
+      "nodes": 11,
+      "bytes": 2627
+    },
+    {
+      "file": "database/migrations/20260820_employee_payouts_schema.sql",
+      "nodes": 5,
+      "bytes": 6489
+    },
+    {
+      "file": "database/migrations/20260820_free_item_price_check.sql",
+      "nodes": 2,
+      "bytes": 1517
+    },
+    {
+      "file": "database/migrations/20260820_pms_audit_log_append_only.sql",
+      "nodes": 7,
+      "bytes": 1020
+    },
+    {
+      "file": "database/migrations/20260820_wallet_security_audit_append_only.sql",
+      "nodes": 7,
+      "bytes": 1096
+    },
+    {
+      "file": "database/migrations/20260822_currency_migration_drafts.sql",
+      "nodes": 3,
+      "bytes": 1881
+    },
+    {
+      "file": "database/migrations/20260822_e1_country_policies.sql",
+      "nodes": 5,
+      "bytes": 4913
+    },
+    {
+      "file": "database/migrations/20260822_g1_money_table_rls.sql",
+      "nodes": 35,
+      "bytes": 4438
+    },
+    {
+      "file": "database/migrations/20260822_item_promotions.sql",
+      "nodes": 7,
+      "bytes": 2296
+    },
+    {
+      "file": "database/migrations/20260822_stripe_dispute_recovery.sql",
+      "nodes": 6,
+      "bytes": 8966
+    },
+    {
+      "file": "database/migrations/20260823020000_m14_theme_purchase_usd.sql",
+      "nodes": 5,
+      "bytes": 727
+    },
+    {
+      "file": "database/migrations/20260823_m14_ad_tracking_rpc.sql",
+      "nodes": 16,
+      "bytes": 8114
+    },
+    {
+      "file": "database/migrations/20260823_m14_business_country_code.sql",
+      "nodes": 4,
+      "bytes": 1420
+    },
+    {
+      "file": "database/migrations/20260823_m14_country_policy_rls_repair.sql",
+      "nodes": 5,
+      "bytes": 650
+    },
+    {
+      "file": "database/migrations/20260823_m14_fms_refunds_rls_repair.sql",
+      "nodes": 10,
+      "bytes": 2225
+    },
+    {
+      "file": "database/migrations/20260823_m14_g1_rls_repair.sql",
+      "nodes": 2,
+      "bytes": 498
+    },
+    {
+      "file": "database/migrations/20260824_m14_bdn_tables.sql",
+      "nodes": 14,
+      "bytes": 5214
+    },
+    {
+      "file": "database/migrations/20260824_m14_webhook_dedup_rls.sql",
+      "nodes": 10,
+      "bytes": 2715
+    },
+    {
+      "file": "database/migrations/20260825_m14_ad_rpc_active_guard.sql",
+      "nodes": 17,
+      "bytes": 3944
+    },
+    {
+      "file": "database/migrations/20260825_m19_grace_days_for_deletion.sql",
+      "nodes": 1,
+      "bytes": 1622
+    },
+    {
+      "file": "database/migrations/20260826_m14_append_only_ledgers.sql",
+      "nodes": 18,
+      "bytes": 5145
+    },
+    {
+      "file": "database/migrations/20260826_m14_deploy_missing_tables.sql",
+      "nodes": 20,
+      "bytes": 9793
+    },
+    {
+      "file": "database/migrations/20260826_m14_g1_firebase_money_rls_repair.sql",
+      "nodes": 12,
+      "bytes": 4671
+    },
+    {
+      "file": "database/migrations/20260826_m14_v17_exchange_contract.sql",
+      "nodes": 48,
+      "bytes": 8574
+    },
+    {
+      "file": "database/migrations/20260827_m14_admin_revenue_functions.sql",
+      "nodes": 10,
+      "bytes": 6554
+    },
+    {
+      "file": "database/migrations/20260902_add_app_download_imports.sql",
+      "nodes": 1,
+      "bytes": 2245
+    },
+    {
+      "file": "database/migrations/20260904050000_m21_support_email_ingest_dedupe.sql",
+      "nodes": 2,
+      "bytes": 1961
+    },
+    {
+      "file": "database/migrations/20260904_m21_apply_pms_2fa_system.sql",
+      "nodes": 63,
+      "bytes": 29761
+    },
+    {
+      "file": "database/migrations/20260904_m21_pms_2fa_rekey_text_uid.sql",
+      "nodes": 57,
+      "bytes": 13321
+    },
+    {
+      "file": "database/migrations/20260904_m21_wallet_grant_ri_update_fix.sql",
+      "nodes": 3,
+      "bytes": 1943
+    },
+    {
+      "file": "database/migrations/20260905_record_refund_counter_payment.sql",
+      "nodes": 12,
+      "bytes": 9468
+    },
+    {
+      "file": "database/migrations/20260905_verify_ledger_hash_chain_pointer_walk.sql",
+      "nodes": 7,
+      "bytes": 6064
+    },
+    {
+      "file": "database/migrations/20260906010000_m22_ens_server_store.sql",
+      "nodes": 3,
+      "bytes": 3843
+    },
+    {
+      "file": "database/migrations/20260906050000_theme_prices_catalog_currency.sql",
+      "nodes": 4,
+      "bytes": 3952
+    },
+    {
+      "file": "database/migrations/20260906_fms_subscription_currency_prices.sql",
+      "nodes": 5,
+      "bytes": 3678
+    },
+    {
+      "file": "database/migrations/20260911_m14_2829_fix_fms_calculate_refund_format.sql",
+      "nodes": 17,
+      "bytes": 3047
+    },
+    {
+      "file": "database/migrations/20260913_m16_2827_park_annual_billing_interval.sql",
+      "nodes": 1,
+      "bytes": 3343
+    },
+    {
+      "file": "database/migrations/20260914_m23_2886_order_tasks_handoff_reference.sql",
+      "nodes": 6,
+      "bytes": 6002
+    },
+    {
+      "file": "database/migrations/20260915_fms_ad_duration_enforcement.sql",
+      "nodes": 11,
+      "bytes": 5195
+    },
+    {
+      "file": "database/migrations/20260915_fms_catalog_truth_rebuild.sql",
+      "nodes": 12,
+      "bytes": 15738
+    },
+    {
+      "file": "database/migrations/20260915_fms_plan_decisions.sql",
+      "nodes": 14,
+      "bytes": 8260
+    },
+    {
+      "file": "database/migrations/20260915_fms_resolve_business_limit.sql",
+      "nodes": 26,
+      "bytes": 10984
+    },
+    {
+      "file": "database/migrations/20260915_fms_subscription_business_attribution.sql",
+      "nodes": 19,
+      "bytes": 11162
+    },
+    {
+      "file": "database/migrations/20260915_fms_translation_cap.sql",
+      "nodes": 12,
+      "bytes": 6753
+    },
+    {
+      "file": "database/migrations/20260917_m17b_2871_job_postings_visibility.sql",
+      "nodes": 4,
+      "bytes": 2553
+    },
+    {
+      "file": "database/migrations/20260918_m16_2822_fix_theme_purchase_usd_lock.sql",
+      "nodes": 5,
+      "bytes": 2838
+    },
+    {
+      "file": "database/migrations/20260918_m24_2935_ad_duration_inclusive_days.sql",
+      "nodes": 11,
+      "bytes": 6135
+    },
+    {
+      "file": "database/migrations/20260921_m17b_2980_gallery_limit_enforcement.sql",
+      "nodes": 16,
+      "bytes": 9012
+    },
+    {
+      "file": "database/migrations/20260921_m21_3029_strip_removed_rules_key.sql",
+      "nodes": 5,
+      "bytes": 5918
+    },
+    {
+      "file": "database/migrations/20260921_m24_2953_one_live_subscription_per_business.sql",
+      "nodes": 4,
+      "bytes": 4345
+    },
+    {
+      "file": "database/migrations/20260921_m24_2955_grace_period_anchor.sql",
+      "nodes": 6,
+      "bytes": 6577
+    },
+    {
+      "file": "database/migrations/20260922_m21_3028_admin_document_access_events.sql",
+      "nodes": 12,
+      "bytes": 4741
+    },
+    {
+      "file": "database/migrations/20260924_m14_3041_ad_counter_hardening.sql",
+      "nodes": 13,
+      "bytes": 9293
+    },
+    {
+      "file": "database/migrations/20260924_m14_3089_orphan_charges.sql",
+      "nodes": 2,
+      "bytes": 7657
+    },
+    {
+      "file": "database/migrations/20260924_m14_3092_reserve_accrual_gaps.sql",
+      "nodes": 2,
+      "bytes": 7102
+    },
+    {
+      "file": "database/migrations/20260924_m17b_3066_reviews_moderation_rls.sql",
+      "nodes": 17,
+      "bytes": 12998
+    },
+    {
+      "file": "database/migrations/_fix_2_cleanup_before_rerun.sql",
+      "nodes": 1,
+      "bytes": 1013
+    },
+    {
+      "file": "database/migrations/_fix_6_verification_limits_with_checksum_bypass.sql",
+      "nodes": 8,
+      "bytes": 7341
+    },
+    {
+      "file": "database/schema.sql",
+      "nodes": 205,
+      "bytes": 515179
+    },
+    {
+      "file": "database/verify_counter_refund_rpc_probe.sql",
+      "nodes": 26,
+      "bytes": 8233
+    },
+    {
+      "file": "database/verify_fms_ad_duration_gate.sql",
+      "nodes": 16,
+      "bytes": 8020
+    },
+    {
+      "file": "database/verify_fms_business_attribution.sql",
+      "nodes": 17,
+      "bytes": 7376
+    },
+    {
+      "file": "database/verify_fms_resolve_business_limit.sql",
+      "nodes": 10,
+      "bytes": 9428
+    },
+    {
+      "file": "database/verify_ledger_chain_walk_detection.sql",
+      "nodes": 12,
+      "bytes": 6343
+    },
+    {
+      "file": "database/verify_m12_coms_queue.sql",
+      "nodes": 10,
+      "bytes": 2122
+    },
+    {
+      "file": "database/verify_m12_sensitive_rls.sql",
+      "nodes": 11,
+      "bytes": 2621
+    },
+    {
+      "file": "database/verify_m12_translation_rls.sql",
+      "nodes": 13,
+      "bytes": 3362
+    },
+    {
+      "file": "database/verify_m14_3035_impression_dedup.sql",
+      "nodes": 24,
+      "bytes": 9073
+    },
+    {
+      "file": "database/verify_m14_3041_ad_counter_hardening.sql",
+      "nodes": 35,
+      "bytes": 12194
+    },
+    {
+      "file": "database/verify_m14_3089_orphan_charges.sql",
+      "nodes": 29,
+      "bytes": 11669
+    },
+    {
+      "file": "database/verify_m14_append_only_probes.sql",
+      "nodes": 39,
+      "bytes": 8373
+    },
+    {
+      "file": "database/verify_m14_deploy_probes.sql",
+      "nodes": 35,
+      "bytes": 7651
+    },
+    {
+      "file": "database/verify_m14_money_rls.sql",
+      "nodes": 26,
+      "bytes": 12103
+    },
+    {
+      "file": "database/verify_m14_v17_exchange_probes.sql",
+      "nodes": 19,
+      "bytes": 4714
+    },
+    {
+      "file": "database/verify_m16_2827_annual_parked_probe.sql",
+      "nodes": 5,
+      "bytes": 4831
+    },
+    {
+      "file": "database/verify_m17b_3066_reviews_rls.sql",
+      "nodes": 13,
+      "bytes": 6089
+    },
+    {
+      "file": "database/verify_m23_2886_handoff_triggers.sql",
+      "nodes": 18,
+      "bytes": 3696
+    },
+    {
+      "file": "database/verify_m24_2953_duplicate_refused.sql",
+      "nodes": 9,
+      "bytes": 4757
+    },
+    {
+      "file": "database/verify_m24_2955_grace_period_anchor.sql",
+      "nodes": 14,
+      "bytes": 8343
+    },
+    {
+      "file": "database/verify_m95_2988_conversation_core.sql",
+      "nodes": 34,
+      "bytes": 26499
+    },
+    {
+      "file": "database/verify_m95_2989_safety_core.sql",
+      "nodes": 48,
+      "bytes": 48507
+    },
+    {
+      "file": "database/verify_m95_2996_message_velocity.sql",
+      "nodes": 156,
+      "bytes": 31113
+    },
+    {
+      "file": "database/verify_m95_2997_outbox.sql",
+      "nodes": 133,
+      "bytes": 31333
+    },
+    {
+      "file": "database/verify_m95_2998_realtime.sql",
+      "nodes": 133,
+      "bytes": 21015
+    },
+    {
+      "file": "database/verify_m95_3003_inbox_grants.sql",
+      "nodes": 80,
+      "bytes": 27453
+    },
+    {
+      "file": "database/verify_m95_3004_report_flow.sql",
+      "nodes": 47,
+      "bytes": 30992
+    },
+    {
+      "file": "database/verify_m95_3005_blocks.sql",
+      "nodes": 71,
+      "bytes": 32505
+    },
+    {
+      "file": "database/verify_m95_3007_moderation_queue.sql",
+      "nodes": 7,
+      "bytes": 17618
+    },
+    {
+      "file": "database/verify_m95_3025_business_reports_rls.sql",
+      "nodes": 32,
+      "bytes": 11807
+    },
+    {
+      "file": "database/verify_m95_3043_coms_rls_hardening.sql",
+      "nodes": 76,
+      "bytes": 21955
+    },
+    {
+      "file": "database/verify_orders_cart_rls.sql",
+      "nodes": 11,
+      "bytes": 2627
+    },
+    {
+      "file": "database/verify_rls_completeness.sql",
+      "nodes": 29,
+      "bytes": 4020
+    },
+    {
+      "file": "database/verify_wallet_ledger_integrity.sql",
+      "nodes": 6,
+      "bytes": 12847
+    },
+    {
+      "file": "database/verify_wallet_ledger_tamper_probe.sql",
+      "nodes": 7,
+      "bytes": 4466
+    },
+    {
+      "file": "supabase/migrations/20260524000000_fms_refunds.sql",
+      "nodes": 12,
+      "bytes": 20549
+    },
+    {
+      "file": "supabase/migrations/20260524210524_fms_audit_fixes.sql",
+      "nodes": 4,
+      "bytes": 2952
+    },
+    {
+      "file": "supabase/migrations/20260804000000_pms_bank_accounts_encryption.sql",
+      "nodes": 47,
+      "bytes": 14205
+    },
+    {
+      "file": "supabase/migrations/20260804010000_pms_withdrawal_encryption.sql",
+      "nodes": 19,
+      "bytes": 9218
+    },
+    {
+      "file": "supabase/migrations/20260804020000_fix_vault_api_functions.sql",
+      "nodes": 10,
+      "bytes": 1629
+    },
+    {
+      "file": "supabase/migrations/20260804030000_lockdown_vault_functions.sql",
+      "nodes": 3,
+      "bytes": 2139
+    },
+    {
+      "file": "supabase/migrations/20260804040000_revoke_anon_financial_rpcs.sql",
+      "nodes": 3,
+      "bytes": 1580
+    },
+    {
+      "file": "supabase/migrations/20260804050000_fix_get_withdrawal_account_number.sql",
+      "nodes": 4,
+      "bytes": 1423
+    },
+    {
+      "file": "supabase/migrations/20260804060000_rls_completeness.sql",
+      "nodes": 53,
+      "bytes": 12320
+    },
+    {
+      "file": "supabase/migrations/20260804070000_wallet_ledger_append_only.sql",
+      "nodes": 12,
+      "bytes": 2945
+    },
+    {
+      "file": "supabase/migrations/20260810000000_block_self_admin_escalation.sql",
+      "nodes": 10,
+      "bytes": 3845
+    },
+    {
+      "file": "supabase/migrations/20260819000000_ems_rls_self_update_escalation.sql",
+      "nodes": 15,
+      "bytes": 6235
+    },
+    {
+      "file": "supabase/migrations/20260819020000_fix_orders_cart_items_rls.sql",
+      "nodes": 24,
+      "bytes": 2898
+    },
+    {
+      "file": "supabase/migrations/20260819030000_sensitive_data_rls.sql",
+      "nodes": 14,
+      "bytes": 2844
+    },
+    {
+      "file": "supabase/migrations/20260819040000_content_translation_rls.sql",
+      "nodes": 27,
+      "bytes": 5610
+    },
+    {
+      "file": "supabase/migrations/20260819050000_fix_firebase_content_owner_rls.sql",
+      "nodes": 11,
+      "bytes": 2309
+    },
+    {
+      "file": "supabase/migrations/20260819070000_review_integrity.sql",
+      "nodes": 2,
+      "bytes": 744
+    },
+    {
+      "file": "supabase/migrations/20260819080000_coms_queue_tables.sql",
+      "nodes": 50,
+      "bytes": 11425
+    },
+    {
+      "file": "supabase/migrations/20260819100000_user_role_audit_append_only.sql",
+      "nodes": 7,
+      "bytes": 1086
+    },
+    {
+      "file": "supabase/migrations/20260820110000_business_verification_events_append_only.sql",
+      "nodes": 11,
+      "bytes": 2023
+    },
+    {
+      "file": "supabase/migrations/20260820120000_deletion_audit_append_only.sql",
+      "nodes": 11,
+      "bytes": 2627
+    },
+    {
+      "file": "supabase/migrations/20260820130000_business_status_audit_append_only.sql",
+      "nodes": 11,
+      "bytes": 2745
+    },
+    {
+      "file": "supabase/migrations/20260820140001_wallet_security_audit_append_only.sql",
+      "nodes": 7,
+      "bytes": 1096
+    },
+    {
+      "file": "supabase/migrations/20260820150000_free_item_price_check.sql",
+      "nodes": 2,
+      "bytes": 1244
+    },
+    {
+      "file": "supabase/migrations/20260820150001_pms_audit_log_append_only.sql",
+      "nodes": 7,
+      "bytes": 1020
+    },
+    {
+      "file": "supabase/migrations/20260820160000_connection_events_append_only.sql",
+      "nodes": 7,
+      "bytes": 1116
+    },
+    {
+      "file": "supabase/migrations/20260822010000_stripe_dispute_recovery.sql",
+      "nodes": 6,
+      "bytes": 8966
+    },
+    {
+      "file": "supabase/migrations/20260822030000_item_promotions.sql",
+      "nodes": 7,
+      "bytes": 2296
+    },
+    {
+      "file": "supabase/migrations/20260822040000_currency_migration_drafts.sql",
+      "nodes": 3,
+      "bytes": 1881
+    },
+    {
+      "file": "supabase/migrations/20260822050000_restrict_business_payment_methods.sql",
+      "nodes": 2,
+      "bytes": 610
+    },
+    {
+      "file": "supabase/migrations/20260822052000_g1_money_table_rls.sql",
+      "nodes": 35,
+      "bytes": 4438
+    },
+    {
+      "file": "supabase/migrations/20260822060000_e1_country_policies.sql",
+      "nodes": 5,
+      "bytes": 4913
+    },
+    {
+      "file": "supabase/migrations/20260823010000_m14_country_policy_rls_repair.sql",
+      "nodes": 5,
+      "bytes": 650
+    },
+    {
+      "file": "supabase/migrations/20260823011000_m14_g1_rls_repair.sql",
+      "nodes": 2,
+      "bytes": 498
+    },
+    {
+      "file": "supabase/migrations/20260823012000_m14_business_country_code.sql",
+      "nodes": 4,
+      "bytes": 1420
+    },
+    {
+      "file": "supabase/migrations/20260823020000_m14_theme_purchase_usd.sql",
+      "nodes": 5,
+      "bytes": 727
+    },
+    {
+      "file": "supabase/migrations/20260823030000_m14_fms_refunds_rls_repair.sql",
+      "nodes": 10,
+      "bytes": 2225
+    },
+    {
+      "file": "supabase/migrations/20260823040000_m14_ad_tracking_rpc.sql",
+      "nodes": 16,
+      "bytes": 8114
+    },
+    {
+      "file": "supabase/migrations/20260824000000_m14_bdn_tables.sql",
+      "nodes": 14,
+      "bytes": 5214
+    },
+    {
+      "file": "supabase/migrations/20260824010000_m14_webhook_dedup_rls.sql",
+      "nodes": 10,
+      "bytes": 2715
+    },
+    {
+      "file": "supabase/migrations/20260825000000_m14_ad_rpc_active_guard.sql",
+      "nodes": 17,
+      "bytes": 3944
+    },
+    {
+      "file": "supabase/migrations/20260826010000_m14_g1_firebase_money_rls_repair.sql",
+      "nodes": 12,
+      "bytes": 4671
+    },
+    {
+      "file": "supabase/migrations/20260826020000_m14_append_only_ledgers.sql",
+      "nodes": 18,
+      "bytes": 5145
+    },
+    {
+      "file": "supabase/migrations/20260826030000_m14_deploy_missing_tables.sql",
+      "nodes": 20,
+      "bytes": 9793
+    },
+    {
+      "file": "supabase/migrations/20260826040000_m14_v17_exchange_contract.sql",
+      "nodes": 49,
+      "bytes": 9412
+    },
+    {
+      "file": "supabase/migrations/20260827010000_m14_admin_revenue_functions.sql",
+      "nodes": 10,
+      "bytes": 6554
+    },
+    {
+      "file": "supabase/migrations/20260830010000_m14_pms_c2_5_webhook_events_port.sql",
+      "nodes": 64,
+      "bytes": 21788
+    },
+    {
+      "file": "supabase/migrations/20260830020000_m14_pk_phase1_wallet_payment_methods.sql",
+      "nodes": 1,
+      "bytes": 2494
+    },
+    {
+      "file": "supabase/migrations/20260830040000_m14_wallet_checksum_unification.sql",
+      "nodes": 122,
+      "bytes": 36377
+    },
+    {
+      "file": "supabase/migrations/20260830050000_m14_security_definer_search_path_pin.sql",
+      "nodes": 11,
+      "bytes": 4385
+    },
+    {
+      "file": "supabase/migrations/20260830060000_m14_process_rpc_repairs.sql",
+      "nodes": 40,
+      "bytes": 13906
+    },
+    {
+      "file": "supabase/migrations/20260831010000_m14_2805_order_payment_reality_fix.sql",
+      "nodes": 22,
+      "bytes": 20514
+    },
+    {
+      "file": "supabase/migrations/20260904010000_m21_wallet_grant_ri_update_fix.sql",
+      "nodes": 6,
+      "bytes": 2215
+    },
+    {
+      "file": "supabase/migrations/20260904020000_m21_apply_pms_2fa_system.sql",
+      "nodes": 63,
+      "bytes": 29767
+    },
+    {
+      "file": "supabase/migrations/20260904040000_m21_pms_2fa_rekey_text_uid.sql",
+      "nodes": 62,
+      "bytes": 14834
+    },
+    {
+      "file": "supabase/migrations/20260904050000_m21_support_email_ingest_dedupe.sql",
+      "nodes": 2,
+      "bytes": 1961
+    },
+    {
+      "file": "supabase/migrations/20260905000000_record_refund_counter_payment.sql",
+      "nodes": 12,
+      "bytes": 9468
+    },
+    {
+      "file": "supabase/migrations/20260905020000_verify_ledger_hash_chain_pointer_walk.sql",
+      "nodes": 7,
+      "bytes": 6064
+    },
+    {
+      "file": "supabase/migrations/20260906000000_fms_subscription_currency_prices.sql",
+      "nodes": 5,
+      "bytes": 3678
+    },
+    {
+      "file": "supabase/migrations/20260906010000_m22_ens_server_store.sql",
+      "nodes": 3,
+      "bytes": 3843
+    },
+    {
+      "file": "supabase/migrations/20260906050000_theme_prices_catalog_currency.sql",
+      "nodes": 4,
+      "bytes": 3952
+    },
+    {
+      "file": "supabase/migrations/20260911010000_m14_2829_fix_fms_calculate_refund_format.sql",
+      "nodes": 17,
+      "bytes": 3047
+    },
+    {
+      "file": "supabase/migrations/20260913010000_m16_2827_park_annual_billing_interval.sql",
+      "nodes": 1,
+      "bytes": 3343
+    },
+    {
+      "file": "supabase/migrations/20260914120000_m23_2886_order_tasks_handoff_reference.sql",
+      "nodes": 6,
+      "bytes": 6002
+    },
+    {
+      "file": "supabase/migrations/20260915000000_fms_catalog_truth_rebuild.sql",
+      "nodes": 12,
+      "bytes": 15738
+    },
+    {
+      "file": "supabase/migrations/20260915010000_fms_plan_decisions.sql",
+      "nodes": 14,
+      "bytes": 8260
+    },
+    {
+      "file": "supabase/migrations/20260915010000_fms_resolve_business_limit.sql",
+      "nodes": 26,
+      "bytes": 10984
+    },
+    {
+      "file": "supabase/migrations/20260915020000_fms_ad_duration_enforcement.sql",
+      "nodes": 11,
+      "bytes": 5195
+    },
+    {
+      "file": "supabase/migrations/20260915020000_fms_translation_cap.sql",
+      "nodes": 12,
+      "bytes": 6753
+    },
+    {
+      "file": "supabase/migrations/20260915040000_fms_subscription_business_attribution.sql",
+      "nodes": 19,
+      "bytes": 11162
+    },
+    {
+      "file": "supabase/migrations/20260917000000_m17b_2871_job_postings_visibility.sql",
+      "nodes": 4,
+      "bytes": 1413
+    },
+    {
+      "file": "supabase/migrations/20260918010000_m16_2822_fix_theme_purchase_usd_lock.sql",
+      "nodes": 5,
+      "bytes": 2838
+    },
+    {
+      "file": "supabase/migrations/20260918020000_m24_2935_ad_duration_inclusive_days.sql",
+      "nodes": 11,
+      "bytes": 6135
+    },
+    {
+      "file": "supabase/migrations/20260921000000_m17b_2980_gallery_limit_enforcement.sql",
+      "nodes": 16,
+      "bytes": 9012
+    },
+    {
+      "file": "supabase/migrations/20260921000000_m24_2953_one_live_subscription_per_business.sql",
+      "nodes": 4,
+      "bytes": 4345
+    },
+    {
+      "file": "supabase/migrations/20260921000000_m95_2988_mms_conversation_core.sql",
+      "nodes": 28,
+      "bytes": 26511
+    },
+    {
+      "file": "supabase/migrations/20260921000001_m24_2955_grace_period_anchor.sql",
+      "nodes": 6,
+      "bytes": 6577
+    },
+    {
+      "file": "supabase/migrations/20260921000100_m95_2996_message_velocity.sql",
+      "nodes": 8,
+      "bytes": 9833
+    },
+    {
+      "file": "supabase/migrations/20260921000200_m95_2989_safety_core.sql",
+      "nodes": 39,
+      "bytes": 30224
+    },
+    {
+      "file": "supabase/migrations/20260921000300_m95_3025_business_reports_rls_repair.sql",
+      "nodes": 19,
+      "bytes": 9713
+    },
+    {
+      "file": "supabase/migrations/20260921000400_m95_3005_block_severance.sql",
+      "nodes": 10,
+      "bytes": 13367
+    },
+    {
+      "file": "supabase/migrations/20260921000500_m95_2997_outbox.sql",
+      "nodes": 17,
+      "bytes": 16602
+    },
+    {
+      "file": "supabase/migrations/20260921000600_m95_2998_realtime_publication.sql",
+      "nodes": 9,
+      "bytes": 10666
+    },
+    {
+      "file": "supabase/migrations/20260922000000_m95_3003_business_inbox_grants.sql",
+      "nodes": 7,
+      "bytes": 12474
+    },
+    {
+      "file": "supabase/migrations/20260922000100_m95_3026_auth_uid_policy_repair.sql",
+      "nodes": 7,
+      "bytes": 14203
+    },
+    {
+      "file": "supabase/migrations/20260922000200_m95_3043_coms_rls_hardening_reapply.sql",
+      "nodes": 14,
+      "bytes": 10405
+    },
+    {
+      "file": "supabase/migrations/20260924000000_m17b_3066_reviews_moderation_rls.sql",
+      "nodes": 17,
+      "bytes": 12998
+    },
+    {
+      "file": "supabase/migrations/20260924000000_m95_3007_moderation_queue.sql",
+      "nodes": 4,
+      "bytes": 6682
+    },
+    {
+      "file": "supabase/migrations/20260924000001_m14_3089_orphan_charges.sql",
+      "nodes": 2,
+      "bytes": 7657
+    },
+    {
+      "file": "supabase/migrations/20260924000002_m14_3092_reserve_accrual_gaps.sql",
+      "nodes": 2,
+      "bytes": 7102
+    },
+    {
+      "file": "supabase/migrations/20260924000003_m14_3041_ad_counter_hardening.sql",
+      "nodes": 13,
+      "bytes": 9293
+    },
+    {
+      "file": "supabase/seed.sql",
+      "nodes": 2,
+      "bytes": 2430
+    },
+    {
+      "file": "website/database/migrations/20250630_adms_tracking_functions.sql",
+      "nodes": 2,
+      "bytes": 1514
     }
   ],
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.105Z",
-    "contentSha256": "ab0d23093d27603a505494b2c8d9ab6531323246f5a93bee5f8116c16ba64c7d"
-  }
+  "superseded": {
+    "note": "The artifact this replaces recorded files 207 / errorFiles 146 / errorNodes 3876 with NO corpus revision, and re-running the same script on the same corpus produced 438 / 318 / 6407. The old draw is not reproducible from this instrument. Corrected 2026-09-26 (M60 grammar-consistency).",
+    "previousFiles": 207,
+    "previousErrorFiles": 146,
+    "previousErrorNodes": 3876,
+    "previousErrorRatePct": 70.5
+  },
+  "policy": "Every file in the corpus extension set, drawn by sorted `git ls-files` at a recorded corpus revision, parsed with a fresh parser per file; ERROR and MISSING nodes counted separately through a named-children walk. The corpus revision and the wasm sha256 are recorded so the claim is falsifiable: if either moves, this number describes a different measurement and the gate says so."
 }
