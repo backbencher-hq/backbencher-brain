@@ -9403,13 +9403,31 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
     return found || (n.type === "atom" ? n.text ?? "" : "")
   }
 
-  // Type dependencies (ER-D10): -type and -opaque emit references from the
-  // declared type to every NAMED type in the expression. Vars are the type's
-  // PARAMETERS (never references), quoted atoms are literals, and the
-  // declaration's own type_name subtree is skipped BY SPAN (the hygiene gate's
-  // KAD2/TSD2 rule — a fresh wrapper never compares equal, so a self-reference
-  // would have been emitted on both sides and mirrored invisibly).
+  // Type dependencies (ER-D10, narrowed by ER3): -type and -opaque emit
+  // references from the declared type to every type name it APPLIES. In Erlang
+  // type syntax a bare unquoted atom is the atom LITERAL of that name (writing
+  // `integer` without parens is the atom, not the type `integer()`), and a
+  // map/record field key is a DECLARATION, so neither is a type use: the ER2
+  // authoring counted every bare atom, which fabricated `job -> id`/`job ->
+  // kind` (map keys) on the M12 fixtures. Applied names are the language's type
+  // USE shape: a call head (`name(...)`, `mod:name(...)`) or a record type's
+  // own name (`#state{...}`). Vars are the type's PARAMETERS (never references),
+  // quoted atoms are literals, and the declaration's own type_name subtree is
+  // skipped BY SPAN (the hygiene gate's KAD2/TSD2 rule — a fresh wrapper never
+  // compares equal, so a self-reference would have been emitted on both sides
+  // and mirrored invisibly).
   const typeRefs = (node: any, typeNameNode: any, declaredName: string): void => {
+    const pushRef = (target: string) => {
+      if (!target || target.startsWith("'")) return
+      push("references", declaredName, target)
+    }
+    const remoteName = (n: any): string => {
+      // Shape (pinned grammar): `remote(remote_module(atom Mod, ':'), atom Type)`.
+      const modNode = childByType(n, "remote_module")
+      const typeNode = childByType(n, "atom")
+      const mod = modNode ? lastAtom(modNode) : ""
+      return mod && typeNode?.text ? `${mod}:${typeNode.text}` : ""
+    }
     const walkT = (n: any): void => {
       if (typeNameNode && n.startIndex >= typeNameNode.startIndex && n.endIndex <= typeNameNode.endIndex) return
       switch (n.type) {
@@ -9419,16 +9437,22 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
         case "float":
         case "string":
         case "char":
+        case "atom":
           return
-        case "atom": {
-          const txt = n.text
-          if (!txt || txt.startsWith("'")) return
-          push("references", declaredName, txt)
+        case "record_expr": {
+          const nameNode = childByType(n, "record_name") || childByType(n, "atom")
+          const recName = nameNode?.text ? stripLeadingHash(lastAtom(nameNode) || nameNode.text) : ""
+          pushRef(recName)
+          for (const c of kids(n)) walkT(c)
           return
         }
+        case "remote":
+          pushRef(remoteName(n))
+          return
         case "call": {
           const head = firstNamed(n)
-          if (head?.type === "atom" && head.text && !head.text.startsWith("'")) push("references", declaredName, head.text)
+          if (head?.type === "atom") pushRef(head.text ?? "")
+          else if (head?.type === "remote") pushRef(remoteName(head))
           for (let i = 1; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walkT(c) }
           return
         }
@@ -9447,13 +9471,18 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
     const t = n.type
     if (t === "include_attribute" || t === "include_lib_attribute" || t === "pp_include" || t === "pp_include_lib") {
       const s = childByType(n, "string")
-      if (s?.text) push("references", modName || "", stripQuotes(s.text))
+      // A module-less file (a header's 290-file class) attributes its
+      // file-level edges to `Global`, the same fallback the expression walk
+      // above uses — the analyzer's own fileSource mirror. `modName || ""`
+      // dropped these edges (push refuses an empty source), so every header's
+      // include reference was analyzer-only on the big corpora.
+      if (s?.text) push("references", modName || "Global", stripQuotes(s.text))
     } else if (t === "import_attribute") {
       const m = childByType(n, "atom")
-      if (m?.text) push("references", modName || "", m.text)
+      if (m?.text) push("references", modName || "Global", m.text)
     } else if (t === "behaviour_attribute") {
       const b = childByType(n, "atom")
-      if (b?.text) push("implements", modName, b.text)
+      if (b?.text) push("implements", modName || "Global", b.text)
     } else if (t === "record_decl") {
       const nameNode = childByType(n, "atom")
       const recordName = nameNode?.text ?? ""
@@ -9497,7 +9526,9 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
         }
       }
     } else if (t === "record_expr") {
-      if (!inHead(n)) {
+      // ER3: a record_expr inside type syntax is a record TYPE (a declaration of
+      // the record's shape), never a construction — mirrored on both sides.
+      if (!inHead(n) && !inTypeSyntax(n)) {
         const nameNode = childByType(n, "record_name") || childByType(n, "atom")
         const r = nameNode ? stripLeadingHash(nameNode.text) : ""
         if (r) push("instantiates", fn || rec || modName || "Global", r)

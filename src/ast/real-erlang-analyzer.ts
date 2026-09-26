@@ -119,7 +119,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Site line = the include path STRING's line: `-include(` on line 8 and
           // `"path.hrl"` on line 9 pins 9 (M59.O2 — the name-bearing node, never
           // the construct that contains it).
-          this.pushRel(ctx, ctx.currentModule || filePath, includePath, ASTEngine.RelationshipType.References, 0.9, {
+          this.pushRel(ctx, this.fileSource(ctx), includePath, ASTEngine.RelationshipType.References, 0.9, {
             erlangSpecific: true, isInclude: type === "pp_include", isLibInclude: type === "pp_include_lib",
           }, this.lineOf(fNode))
         }
@@ -147,7 +147,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Any behaviour is a cross-module contract: the Implements edge only,
           // never a standalone symbol. OTP behaviours additionally mark the
           // OTP patterns. Line = the behaviour ATOM's line, not `-behaviour(`'s.
-          this.pushRel(ctx, ctx.currentModule || filePath, beNode.text, ASTEngine.RelationshipType.Implements, 1.0, {
+          this.pushRel(ctx, this.fileSource(ctx), beNode.text, ASTEngine.RelationshipType.Implements, 1.0, {
             erlangSpecific: true,
             behaviour: beNode.text,
             context: "OTP behaviour callback implementation",
@@ -187,7 +187,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         if (modNode?.text) {
           ctx.imports.push({ module: modNode.text, functions: funcs, file: "", line: currentLine, isNif: false })
-          this.pushRel(ctx, ctx.currentModule || filePath, modNode.text, ASTEngine.RelationshipType.References, 1.0, {
+          this.pushRel(ctx, this.fileSource(ctx), modNode.text, ASTEngine.RelationshipType.References, 1.0, {
             erlangSpecific: true, isModuleImport: true, importedFunctions: funcs,
           }, this.lineOf(modNode))
         }
@@ -343,7 +343,12 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       // record_update_expr / record_field_expr / record_index_expr — NOT
       // construction. A record_expr in a clause HEAD is a PATTERN, not a site.
       else if (type === "record_expr") {
-        if (!this.isInClauseHead(node)) {
+        // ER3: a record_expr INSIDE type syntax is a record TYPE
+        // (`-type r() :: #state{q :: [job()]}`) — a declaration of the record's
+        // shape, never a construction, so it emits no instantiates (the same
+        // DECL-ONLY boundary the calls rule uses). The record/dependency side of
+        // that declaration is emitted by collectTypeRefs.
+        if (!this.isInClauseHead(node) && !this.isInTypeSyntax(node)) {
           const nameNode = this.getChildByType(node, "record_name") || this.getChildByType(node, "atom")
           const recordName = nameNode?.text ? this.stripLeadingHash(nameNode.text) : ""
           if (recordName) {
@@ -611,6 +616,20 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     return ctx.currentFunction || ctx.currentRecord || ctx.currentModule || "Global"
   }
 
+  /** Where a FILE-LEVEL edge's source lives: the module when the file declares
+   *  one, else `Global` — the same fallback the expression paths above use.
+   *
+   *  ER3 (measured on the big corpora): these three attribute sites (include,
+   *  behaviour, import) used to fall back to the FILE PATH, so every one of the
+   *  corpus's 290 module-less headers attributed its edges to an absolute
+   *  checkout path. Nothing caught it: F5 compares `label + target` and never
+   *  reads `from`, and the lane's sample is `.erl`-only. A path is also not an
+   *  identity — it changes with the checkout, which is exactly what an evidence
+   *  artifact must not do. */
+  private fileSource(ctx: ErlangContext): string {
+    return ctx.currentModule || "Global"
+  }
+
   // ==========================================================================
   // Relationship emission. The identity key includes the SITE LINE (M59.O2/#825
   // per-site edges, ER-D2) and, for calls, the callee ARITY — so two call sites
@@ -678,12 +697,47 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // ==========================================================================
-  // Type references (ER-D10): -type and -opaque emit references from the
-  // declared type to every NAMED type in the expression. Vars are the type's
-  // PARAMETERS (never references), quoted atoms are literals, and the
-  // declaration's own name is skipped by span.
+  // Type references (ER-D10, narrowed by ER3): -type and -opaque emit
+  // references from the declared type to every type name it APPLIES.
+  //
+  // ER3 (2026-09-25, from the M12 differential): a type dependency is an
+  // applied name, and only an applied name. In Erlang type syntax
+  //   -type day() :: monday | tuesday.        % atom LITERALS, not types
+  //   -type job() :: #{id := job_id()}.       % `id` is a field DECLARATION
+  //   -type t() :: maps:iterator().           % remote type: mod:type
+  //   -type r() :: #state{q :: [job()]}.      % record type + applied args
+  // a bare unquoted atom denotes the atom literal of that name (writing
+  // `integer` without parens is the ATOM integer, not the type integer()), and
+  // a map/record field key is a declaration site. The ER2 authoring counted
+  // every bare atom as a reference; on the M12 fixtures that produced two false
+  // dependencies (`job -> id`, `job -> kind`, map keys of a `#{}` type that
+  // resolved to the record properties of the same name). Applied names are the
+  // shape the language gives a type USE: `name(...)` inside a call node, and a
+  // record type's own name. Vars are the type's PARAMETERS (never references),
+  // quoted atoms are literals, and the declaration's own name is skipped by
+  // span.
   // ==========================================================================
   private collectTypeRefs(node: Node, typeNameNode: Node | null, declaredName: string, ctx: ErlangContext): void {
+    const pushTypeRef = (name: string, line: number | undefined) => {
+      if (!name || name.startsWith("'")) return
+      this.pushRel(ctx, declaredName, name, ASTEngine.RelationshipType.References, 1.0, {
+        erlangSpecific: true, context: "type reference",
+      }, line)
+    }
+    // `Mod:Type` (a REMOTE type application). Kept whole, like the analyzer's
+    // remote call/fun targets (ER-D1: the separator is semantic). Shape (pinned
+    // grammar): `remote(remote_module(atom Mod, ':'), atom Type)` — the module
+    // atom is wrapped in `remote_module`, exactly as in a remote call.
+    const walkRemote = (n: Node): boolean => {
+      const modNode = this.getChildByType(n, "remote_module")
+      const typeNode = this.getChildByType(n, "atom")
+      const modName = modNode ? this.lastAtomText(modNode) : undefined
+      if (modName && typeNode?.text) {
+        pushTypeRef(`${modName}:${typeNode.text}`, this.lineOf(modNode))
+        return true
+      }
+      return false
+    }
     const walk = (n: Node) => {
       if (typeNameNode && n.startIndex >= typeNameNode.startIndex && n.endIndex <= typeNameNode.endIndex) return
       switch (n.type) {
@@ -693,25 +747,32 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "float":
         case "string":
         case "char":
+        // ER3: a bare atom is an atom LITERAL or a field KEY, never a type use.
+        case "atom":
           return
-        case "atom": {
-          const text = n.text
-          if (!text || text.startsWith("'")) return
-          this.pushRel(ctx, declaredName, text, ASTEngine.RelationshipType.References, 1.0, {
-            erlangSpecific: true, context: "type reference",
-          }, this.lineOf(n))
+        // A record TYPE (`-type r() :: #state{q :: [job()]}`): the record name
+        // is a type use, the field keys are declarations. The field TYPES are
+        // walked (they are the record type's own dependencies).
+        case "record_expr": {
+          const nameNode = this.getChildByType(n, "record_name") || this.getChildByType(n, "atom")
+          const recordName = nameNode?.text ? this.stripLeadingHash(this.lastAtomText(nameNode) || nameNode.text) : ""
+          pushTypeRef(recordName, this.lineOf(nameNode))
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const child = n.namedChild(i)
+            if (child) walk(child)
+          }
           return
         }
+        case "remote":
+          walkRemote(n)
+          return
         case "call": {
           // An applied type: the HEAD names a type, the args are its parameters.
           const head = n.namedChild(0)
           if (head?.type === "atom") {
-            const text = head.text
-            if (text && !text.startsWith("'")) {
-              this.pushRel(ctx, declaredName, text, ASTEngine.RelationshipType.References, 1.0, {
-                erlangSpecific: true, context: "type reference",
-              }, this.lineOf(head))
-            }
+            pushTypeRef(head.text, this.lineOf(head))
+          } else if (head?.type === "remote") {
+            walkRemote(head)
           }
           for (let i = 1; i < n.namedChildCount; i++) {
             const child = n.namedChild(i)
