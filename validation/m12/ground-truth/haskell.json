@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "truthSource": "haskell-observed-dump.ts (audited against fixtures + FP-family contract)",
- "source": "validation/m12/fixtures/haskell/*.hs",
+ "source": "validation/m12/fixtures/haskell/ (Negative.hs, Service.hs) — hand-audited against Haskell semantics: module→module, data/newtype→type + constructor + record-field properties, class→class, instance/deriving→implements, function/method→function (multi-clause and pattern-head binds merged), operators (infix a +.+ b, prefix (<!>), backtick infix_id)→function; relationships: references (module→imported module), implements (instance/deriving target→class, incl. qualified and applied class heads), extends (class→superclass, from the context constraint tree: tuple lists, parens, applied heads), instantiates (body-position constructor application: bare, qualified M.Just, record construction — record UPDATE and all pattern positions excluded), calls (leaf sources; qualified heads taken VERBATIM, M.lookup; unqualified heads ONLY when the name is declared in-file — imported/Prelude names and parameters produce no edge; self-recursion IS emitted), contains (module→top-level symbol, class/interface→method). WHERE/LET-LOCALS (2026-09-25 adjudication of the HSD6/HSD19 wave): a local callable is NOT a symbol, but a call made inside a local's body attributes to the LOCAL itself — never leaked to the enclosing function, which does not make that call — and a local resolves as a call target; Negative.hs's where-clause therefore yields helper→go and go→go. KNOWN LIMITATION (measured, not assumed): local endpoints are BARE names, so a module-level symbol of the same name in the same file (e.g. `pure`/`fmap`/`show` shadowed by a where-binder) leaves the edge ambiguous — 282 of 2,356 files (hledger+cabal full extent, script/m14/tmp/haskell-local-calls-collision.ts) carry such a shadowing binder; scoping local identity is owed.",
  "facts": [
   {
    "id": "symbol:Negative.hs:1:module:Negative",
@@ -151,6 +151,36 @@
    "evidence": {
     "authority": "manual_audit",
     "reference": "references Negative -> Data.List"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:calls:helper:go",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "helper",
+   "targetId": "go",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls helper -> go (source text L21 `helper x = go x`: the call exists in the source; go is the where-clause callable of helper — no symbol by contract, but a real call target)"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:calls:go:go",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "go",
+   "targetId": "go",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls go -> go (source text L23 `go n = n + go (n - 1)`: self-recursion of the where-local, attributed to the LOCAL — attributing it to the enclosing helper would be a call helper never makes)"
    }
   },
   {
