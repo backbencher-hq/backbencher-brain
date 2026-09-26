@@ -3,10 +3,15 @@
 ## Language
 
 - Analyzer file: `src/ast/real-erlang-analyzer.ts`
-- Parser: `tree-sitter-erlang` (pinned `wasm/tree-sitter-erlang.wasm`; npm
-  tree-sitter-erlang downloaded and verified behaviorally identical on the
-  corpus via the production `parseFile` path — 11 vs 11 grammar-error files,
-  0 fixed, 0 regressed — so no upgrade was warranted; tree:
+- Parser: `tree-sitter-erlang` (pinned `wasm/tree-sitter-erlang.wasm`, sha256
+  `8d20d814…`; the wired bytes are byte-identical to `@lumis-sh/wasm-erlang@0.26.0`,
+  whose metadata names WhatsApp/tree-sitter-erlang v0.15.0 at rev `f21023bb` built
+  with tree-sitter 0.26. The M12.24 A/B on the corpus had found 11 vs 11
+  grammar-error files, 0 fixed, 0 regressed — no swap; upstream has moved past
+  v0.15.0, but no newer source or build is obtainable offline, so that upgrade is
+  not claimed, and npm's tree-sitter-erlang is a `0.0.1-security` placeholder with
+  no build. Registry: `validation/m14/grammar-pins.json`; round:
+  `reviews/functional-family/m60-grammar-pins.md`. Tree:
   `-module`/`-export`/`-import`/`-include`/`-include_lib`/`-behaviour`/
   `-define`/`-record`/`-type` are `attribute` nodes; functions are
   functions are `fun_decl` → `function_clause` → `expr_args` + `clause_body`

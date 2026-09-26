@@ -7,7 +7,12 @@
   `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@302fb5d0`
   release v1.2.7, adopted 2026-09-25 on the adjudication recorded in
   `reviews/m60-clean-grammar-127-adjudication.md`). The v1.2.4 pin it replaced was
-  `tree-sitter-clean@58729d3`, pulled during M12.26.
+  `tree-sitter-clean@58729d3`, pulled during M12.26. The 2026-09-26 grammar-pin
+  round folded this pin into `validation/m14/grammar-pins.json` (sha256 `9ea8525d…`,
+  6,743,856 B; registry + round record `reviews/functional-family/m60-grammar-pins.md`):
+  npm's `tree-sitter-clean@1.2.7` publishes `grammar.js`/`scanner.c`/`grammar.json`/
+  `node-types.json` but **no wasm**, so the wired bytes are not claimed to be
+  hash-matched to a published artifact.
 
   **What v1.2.5–v1.2.7 changed, measured on the corpus (312 `.icl`/`.dcl` across the five
   Clean bases on this machine), not read off the release notes:** a lexer correction

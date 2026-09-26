@@ -3,7 +3,7 @@
 ## Language
 
 - Analyzer file: `src/ast/real-fsharp-analyzer.ts`
-- Parser: `tree-sitter-fsharp` (patched grammar — see Grammar below; WASM in `wasm/tree-sitter-fsharp.wasm`; the `~/.bb/wasm` mirror is STALE — old 5MB build — refresh it or rely on the repo copy, which the engine loads first)
+- Parser: `tree-sitter-fsharp` (patched grammar — see Grammar below; WASM in `wasm/tree-sitter-fsharp.wasm`, sha256 `16cb8779…`, 12,613,928 B; the `~/.bb/wasm` mirror is STALE — old 5MB build — refresh it or rely on the repo copy, which the engine loads first). The 2026-09-26 grammar-pin round pinned the rebuild's provenance: the wired surface is upstream 0.3.11 **plus exactly** `module_val_declaration` and `nullable_type`, minus nothing, and on the lane's 400-file M12 sample the patch repairs 9 files that unpatched 0.3.11 damages while damaging 1 it parses clean — see `validation/m14/grammar-pins.json` and `reviews/functional-family/m60-grammar-pins.md`, which also records that the claimed scanner patch has **no in-tree source and no minimal repro** (corroborated-in-aggregate, not proven)
 - Language detection: extension `.fs` / `.fsi` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealFsharpAnalyzer`
 

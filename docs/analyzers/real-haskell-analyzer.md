@@ -3,10 +3,13 @@
 ## Language
 
 - Analyzer file: `src/ast/real-haskell-analyzer.ts`
-- Parser: `tree-sitter-haskell` (pinned `wasm/tree-sitter-haskell.wasm`; npm
-  tree-sitter-haskell 0.23.1 downloaded and verified behaviorally identical on
-  the corpus via the production `parseFile` path — 7 vs 7 grammar-error files,
-  0 fixed, 0 regressed — so no upgrade was warranted; tree:
+- Parser: `tree-sitter-haskell` **v0.23.1** (pinned `wasm/tree-sitter-haskell.wasm`,
+  sha256 `37a6b07b…`; the wired bytes are **byte-identical** to the wasm published
+  in npm tree-sitter-haskell 0.23.1 — the newest release of a dormant grammar — and
+  that tarball's source is vendored in `grammars/tree-sitter-haskell/`; the M12.26
+  A/B on the corpus agreed: 7 vs 7 grammar-error files, 0 fixed, 0 regressed.
+  Registry: `validation/m14/grammar-pins.json`; round:
+  `reviews/functional-family/m60-grammar-pins.md`. Tree:
   `header` → `module`/`module_id` (dotted names assemble from chained
   `module_id` children) + `exports`; imports are `import` nodes with `module`
   + `import_list` (+ `qualified`/`hiding`/`as` tokens); `data_type` wraps
