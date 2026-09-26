@@ -1,0 +1,657 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-26T19:01:19.925Z",
+  "commit": "7ad740426e585b211d21f20ba445d1c835f4f5e3",
+  "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell); the shape extends to any lane with an entry in script/m14/verify-grammar-pins.ts",
+  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
+  "lanes": {
+    "haskell": {
+      "wired": {
+        "file": "wasm/tree-sitter-haskell.wasm",
+        "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
+        "bytes": 3805902
+      },
+      "surface": {
+        "ids": 552,
+        "uniqueNames": 450,
+        "namedIds": 253,
+        "namedUnique": 174,
+        "anonIds": 299,
+        "anonUnique": 293,
+        "fieldCount": 84,
+        "idOrderDigest": "dcc05605584c21209b6578170b54a50efccb690824d798feb91c1ab1964a69be",
+        "typeSetDigest": "5e8a5c477afbb791ea5c78c6dca010de923d79b9f50cc0b3d7bafa3769a18ec2",
+        "fieldSetDigest": "0dda6061298221a190a2159220ea86d23887491c91c616dd7f74732f13a32abc"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-haskell.wasm",
+          "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
+          "byteIdentical": true
+        },
+        {
+          "label": "npm tree-sitter-haskell@0.23.1",
+          "path": "~/.bun/install/cache/tree-sitter-haskell@0.23.1@@@1/tree-sitter-haskell.wasm",
+          "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
+          "byteIdentical": true
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-haskell",
+        "files": {
+          "grammar/class.js": {
+            "sha256": "296eba1fd07719ec43c6a872a6becd5a4237d461b6e96e00a111075f1fa31a1a",
+            "bytes": 3126
+          },
+          "grammar/conflicts.js": {
+            "sha256": "68e12fb8436ac4db0b1e748b576160a79e3a49e2c5b2aac9288065ab0fef4e0f",
+            "bytes": 3841
+          },
+          "grammar/context.js": {
+            "sha256": "27f94cd1ea6814e703040f405206e827e6224ec5132ff68492bb40a17b0f85c5",
+            "bytes": 1969
+          },
+          "grammar/data.js": {
+            "sha256": "e8f51c84f5f5693e10998bb07a28fbf15bb3b43edd049f292c386dcee68f0e1b",
+            "bytes": 5745
+          },
+          "grammar/decl.js": {
+            "sha256": "ae45ef486c74799fa4e5a308abc3023bddbe879beb88075717250aabd1b75410",
+            "bytes": 4656
+          },
+          "grammar/exp.js": {
+            "sha256": "420b3288e676bdde5ce0290be7baf8133e285bd8e25e6317e15d9123c35fcba8",
+            "bytes": 11764
+          },
+          "grammar/externals.js": {
+            "sha256": "f720226791ef96feea7458e7482e1077bbb539f877625b59db86072a1de94aea",
+            "bytes": 9335
+          },
+          "grammar/general.js": {
+            "sha256": "430fa55cbb3aeeddb00e75ca98f5cb92e3becba9d963060ad531499133940ce9",
+            "bytes": 1230
+          },
+          "grammar/id.js": {
+            "sha256": "647a25d5d009ba966da9f26339112be8d3f16a6b20e1b069226ba6626ebb55db",
+            "bytes": 3648
+          },
+          "grammar/inline.js": {
+            "sha256": "8d2254fb7379f30c11ed10402e4a9ebad4465342cb62542d6c56aff9077dd77b",
+            "bytes": 1978
+          },
+          "grammar/lexeme.js": {
+            "sha256": "251810dc8f2b68f5e2d96e5859bb5d79fceaca160b9045fe9e952703a0afea39",
+            "bytes": 2025
+          },
+          "grammar/literal.js": {
+            "sha256": "759554548a48a151205e61274e9aa27608dcc61d4cc5235740fdc2d04c8250a2",
+            "bytes": 1945
+          },
+          "grammar/module.js": {
+            "sha256": "dbbd7e3852b98cfb26cda062d3b305c9a680bf2a3f4165e8adabed7fc673401d",
+            "bytes": 4097
+          },
+          "grammar/operator.js": {
+            "sha256": "3d06e0ddc82b269c92df748b372a7c44715b32321db646ffa80d1e09870931d8",
+            "bytes": 2113
+          },
+          "grammar/pat.js": {
+            "sha256": "c0bde5178f2db937b13c19da519c81288731659ff8a8a500a3847f58a9ec9351",
+            "bytes": 4935
+          },
+          "grammar/patsyn.js": {
+            "sha256": "a95871be73db39e7bd6fbb3e409de09e86f10eb7c0addf4b82caaf7e83b6e42a",
+            "bytes": 1114
+          },
+          "grammar/precedences.js": {
+            "sha256": "1ee791f68405081f5db6356da91312b569e2cee145dabb831f6bc8eedab52d93",
+            "bytes": 2109
+          },
+          "grammar/th.js": {
+            "sha256": "a367d878adf0034a73b02f0747f82c1abe8dfa6f850490cfb6e09ae8d87acc74",
+            "bytes": 2479
+          },
+          "grammar/type.js": {
+            "sha256": "1786ca725ec1b41c9a27bd3186108fb793c85179fc24a1119cadb070a0a2376b",
+            "bytes": 11989
+          },
+          "grammar/util.js": {
+            "sha256": "8e6eedccd339393bd721d31a26bcda9f1ba133079419075289c90f122f1d3b19",
+            "bytes": 4861
+          },
+          "grammar.js": {
+            "sha256": "a8bd15e99d2e276685ab2f41d58eef2c00e6e47615aad9dc6691065fc75e9873",
+            "bytes": 2615
+          },
+          "LICENSE": {
+            "sha256": "2e0110e07abef7c2548b26ec9d6969775617ca539a0dc8dbeeb14d6452c711d1",
+            "bytes": 1080
+          },
+          "package.json": {
+            "sha256": "9fb932ca69323e81a1f7dd8c01cf710cedfaf19fa3b2989ec954d28337c95d21",
+            "bytes": 1277
+          },
+          "README.md": {
+            "sha256": "e9ec7650b46ecc583d56d9feefbadb187b209eb440994f0e3ac17f6a3bc1ad1a",
+            "bytes": 12902
+          },
+          "src/grammar.json": {
+            "sha256": "509bd0c498d149234296d0cf6a5e93de3320679371ead4ce97d1c266b3102c3e",
+            "bytes": 298399
+          },
+          "src/node-types.json": {
+            "sha256": "da12ac400f963fa2a2de6a331d538763602709db83be1d1a5b170b417e09ab3e",
+            "bytes": 113405
+          },
+          "src/scanner.c": {
+            "sha256": "344cd5c8161dbfafdf76438343672e035f20c62d0cbba63fd1e62c730b016c67",
+            "bytes": 113897
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "4ff743903dc46f5db6aa54f31c6b4d160a8a9779e5b2ab1ee59ae7ebcd850ea1",
+            "bytes": 10420
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "a1f6ef161fbaf48a0e10fca90ef5290a062462b307b3898aa562993853b9f80a",
+            "bytes": 7039
+          },
+          "src/unicode.h": {
+            "sha256": "5dc193ae6173ddeeb9d0d724cad043b7299353c0edeff125059df1ccb0b685e5",
+            "bytes": 122709
+          },
+          "tree-sitter.json": {
+            "sha256": "ebc13cd7ec0f4c027100a75fb73d95201fed70e5e769bf964b3068e1c274b3c3",
+            "bytes": 899
+          }
+        },
+        "digest": "2000d27be63f273c22cc0924b69152ed617241987bd2bfe270676e928f5e4b8a",
+        "fileCount": 32
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-haskell/src/node-types.json",
+        "declaredNamedTypes": 187,
+        "declaredSupertypes": 14,
+        "wasmNamedUnique": 174,
+        "wasmUniqueNames": 450,
+        "missingInWasm": [],
+        "allowedWasmExtras": [
+          "error_sentinel"
+        ],
+        "namedOnlyInWasm": []
+      }
+    },
+    "elixir": {
+      "wired": {
+        "file": "wasm/tree-sitter-elixir.wasm",
+        "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
+        "bytes": 1412267
+      },
+      "surface": {
+        "ids": 235,
+        "uniqueNames": 202,
+        "namedIds": 74,
+        "namedUnique": 45,
+        "anonIds": 161,
+        "anonUnique": 158,
+        "fieldCount": 9,
+        "idOrderDigest": "558f0798f2fa258b6122e37285c2124bc686a8db7766bd01313d053dcec4a63a",
+        "typeSetDigest": "0fbd8b7b55bff49b5c2cc222515cfd315517069ee1df268c9dba69a492f8e8b0",
+        "fieldSetDigest": "842813d55e101870976c863f0bd050fb58ec812b26741b0e7e2db338bc1aed96"
+      },
+      "copies": [
+        {
+          "label": "mirror (already upstream 0.3.5)",
+          "path": "~/.bb/wasm/tree-sitter-elixir.wasm",
+          "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
+          "byteIdentical": true
+        },
+        {
+          "label": "npm tree-sitter-elixir@0.3.5",
+          "path": "~/.bun/install/cache/tree-sitter-elixir@0.3.5@@@1/tree-sitter-elixir.wasm",
+          "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
+          "byteIdentical": true
+        },
+        {
+          "label": "tree-sitter-wasms@0.1.13 (the REPLACED incumbent)",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-elixir.wasm",
+          "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
+          "byteIdentical": false
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-elixir",
+        "files": {
+          "grammar.js": {
+            "sha256": "930a986debc8b83772bab3475e363c5fdae66d540962696327839d32cef0885b",
+            "bytes": 26639
+          },
+          "LICENSE": {
+            "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+            "bytes": 10173
+          },
+          "package.json": {
+            "sha256": "a210dcc0ffd0bf4496a797c50c30e88f74b81d8f8dad616c0c3411f02a723d77",
+            "bytes": 1239
+          },
+          "README.md": {
+            "sha256": "788e34153ca509031cf30c770bac92756da658cf6d6aa42e30e9b1124b9fc23d",
+            "bytes": 449
+          },
+          "src/grammar.json": {
+            "sha256": "320c4af03d6d34085c744ac9923d9b963848bd639a97c5f04401472931b059c4",
+            "bytes": 170077
+          },
+          "src/node-types.json": {
+            "sha256": "34d6d28dba5c089e3cf9c760a0f6d94026b4e25b74ec936d58d6767a9daf061a",
+            "bytes": 63223
+          },
+          "src/scanner.c": {
+            "sha256": "2d49d8974f7fdf0d38bdb7ed792f7a60aa87dd087b0c0bb469cd5b138b08ba57",
+            "bytes": 18627
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "4ff743903dc46f5db6aa54f31c6b4d160a8a9779e5b2ab1ee59ae7ebcd850ea1",
+            "bytes": 10420
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "a1f6ef161fbaf48a0e10fca90ef5290a062462b307b3898aa562993853b9f80a",
+            "bytes": 7039
+          }
+        },
+        "digest": "5228cedc1ca0cf55ecea9fd57a5ccbdcd265dd5049ec973547157d32826881eb",
+        "fileCount": 10
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-elixir/src/node-types.json",
+        "declaredNamedTypes": 45,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 45,
+        "wasmUniqueNames": 202,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "fsharp": {
+      "wired": {
+        "file": "wasm/tree-sitter-fsharp.wasm",
+        "sha256": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
+        "bytes": 12613928
+      },
+      "surface": {
+        "ids": 544,
+        "uniqueNames": 510,
+        "namedIds": 213,
+        "namedUnique": 196,
+        "anonIds": 331,
+        "anonUnique": 318,
+        "fieldCount": 28,
+        "idOrderDigest": "7249e51cf34632861c57bee0bb6e9a0b7e7821a84bef51d3e24e5064c303fe57",
+        "typeSetDigest": "6f873d7c06fa15f46eb94692a3695b885f3e86c490203ec0124c6ab6a867b074",
+        "fieldSetDigest": "b8ab83b3f21ebb5f2b7457ca78056de267b4aceeaa993fdcb9e16adb6a84bc75"
+      },
+      "copies": [
+        {
+          "label": "npm tree-sitter-fsharp@0.3.11 (unpatched)",
+          "path": "~/.bun/install/cache/tree-sitter-fsharp@0.3.11@@@1/tree-sitter-fsharp.wasm",
+          "sha256": "eec41a14091fa6d55b8c163c27536774324234e52cbdab7272ef37b15a192ae4",
+          "byteIdentical": false
+        },
+        {
+          "label": "npm tree-sitter-fsharp@0.1.0",
+          "path": "~/.bun/install/cache/tree-sitter-fsharp@0.1.0@@@1/tree-sitter-fsharp.wasm",
+          "sha256": "eed22235ab0b5389e065e46b16e411aaf314c42a2cc3c7a3dd875b8fe519e677",
+          "byteIdentical": false
+        },
+        {
+          "label": "mirror (stale, pre-patch)",
+          "path": "~/.bb/wasm/tree-sitter-fsharp.wasm",
+          "sha256": "eed22235ab0b5389e065e46b16e411aaf314c42a2cc3c7a3dd875b8fe519e677",
+          "byteIdentical": false
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-fsharp",
+        "files": {
+          "common/scanner.h": {
+            "sha256": "5548c842f4d55f74cb59c80e25d7867870e2d96cb9d638f81fec1e91d64235e2",
+            "bytes": 90251
+          },
+          "fsharp/grammar.js": {
+            "sha256": "dbfa744f6fe58edbd23c05f5399cc4bfb84340d4eaacd0ee2a04dffce075884b",
+            "bytes": 83620
+          },
+          "LICENSE": {
+            "sha256": "f9352b63e87252b282b252bf27530027c8ca69829e0023f8b8b682a736f271fd",
+            "bytes": 1074
+          },
+          "package.json": {
+            "sha256": "c02eb252e98a7971ea685f655da3a71bd70a815b3be7f41322443b943a564b60",
+            "bytes": 1472
+          },
+          "README.md": {
+            "sha256": "d12d6a6f49f29fd3589c9c01da32d710d21c57e8ec6194848c74c33fc99ddb51",
+            "bytes": 2319
+          },
+          "tree-sitter.json": {
+            "sha256": "2199759bcb6b7e9eafb83febf751c086837187078de1bcaa944934e8ed47c42f",
+            "bytes": 1293
+          }
+        },
+        "digest": "6ba7bc08517eab44f85934822acd4043968bc25294f89a8a6bca5d18087dd74c",
+        "fileCount": 6
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "the vendored tree carries no generated src/node-types.json + src/grammar.json pair, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+      }
+    },
+    "erlang": {
+      "wired": {
+        "file": "wasm/tree-sitter-erlang.wasm",
+        "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
+        "bytes": 401807
+      },
+      "surface": {
+        "ids": 338,
+        "uniqueNames": 300,
+        "namedIds": 137,
+        "namedUnique": 132,
+        "anonIds": 201,
+        "anonUnique": 173,
+        "fieldCount": 51,
+        "idOrderDigest": "9890cdcc552a3e8428d0c5e86c2d4245225027b2e25f245dac3e93fbad4404c4",
+        "typeSetDigest": "7ba5971510799464f41aff7d365e708e7f7db0847e1b639baa0d25d48ce7acd5",
+        "fieldSetDigest": "88cd23e8bbd4a77a62d835dfb45010d4c93916077950016cfaaed8830acbf4d1"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-erlang.wasm",
+          "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
+          "byteIdentical": true
+        },
+        {
+          "label": "@lumis-sh/wasm-erlang@0.26.0",
+          "path": "~/.bun/install/cache/@lumis-sh/wasm-erlang@0.26.0@@@1/tree-sitter-erlang.wasm",
+          "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
+          "byteIdentical": true
+        }
+      ],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
+    },
+    "clojure": {
+      "wired": {
+        "file": "wasm/tree-sitter-clojure.wasm",
+        "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+        "bytes": 91957
+      },
+      "surface": {
+        "ids": 73,
+        "uniqueNames": 73,
+        "namedIds": 35,
+        "namedUnique": 35,
+        "anonIds": 38,
+        "anonUnique": 38,
+        "fieldCount": 11,
+        "idOrderDigest": "237152785479b22cceb93dce795f4e0c5b020a3ebe0c2bc763b07c70c7589e79",
+        "typeSetDigest": "ca7a7ee237c1730c36b4bfa2e4413ac4d631b80a95eeb13d19ffb2557698fc69",
+        "fieldSetDigest": "5c487278f2a72269d5c230098ea219976bf99d82af374c38cf42117a8be45c8d"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-clojure.wasm",
+          "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+          "byteIdentical": true
+        }
+      ],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
+    },
+    "clean": {
+      "wired": {
+        "file": "wasm/tree-sitter-clean.wasm",
+        "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
+        "bytes": 6743856
+      },
+      "surface": {
+        "ids": 280,
+        "uniqueNames": 276,
+        "namedIds": 139,
+        "namedUnique": 137,
+        "anonIds": 141,
+        "anonUnique": 139,
+        "fieldCount": 28,
+        "idOrderDigest": "82c656b7e014a7e91a8e4c7e2bd13b4bd3239155e1ce7ca780ce7635d366e32c",
+        "typeSetDigest": "aa774ef6e89e46fcff4ed4222bf8afac8f488c2bb8bd5142a61fc19f37e4860a",
+        "fieldSetDigest": "722a05b65970d94a389cb0063b82a349051865fc6a43e7a5a9aaef444119fbd3"
+      },
+      "copies": [],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
+    }
+  },
+  "decisions": {
+    "haskell": {
+      "provenance": {
+        "kind": "byte-identical-to-npm-tarball",
+        "package": "tree-sitter-haskell",
+        "version": "0.23.1"
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-haskell",
+        "note": "grammar.js + the split grammar modules (grammar/*.js) + src/ (scanner.c, grammar.json, node-types.json, unicode.h, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-haskell@0.23.1. The GENERATED src/parser.c (20 MB here) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c."
+      },
+      "decision": "Pin as-is: the wired wasm is byte-identical to the wasm published in tree-sitter-haskell@0.23.1, which is the newest release of tree-sitter/tree-sitter-haskell (the grammar is dormant at 0.23.1), and that tarball's source is now vendored in-tree with per-file hashes. No better candidate exists, locally or upstream.",
+      "alternatives": [],
+      "evidence": [
+        "validation/m14/results/wasm-provenance-census.json",
+        "validation/m14/results/family-grammar-fingerprints.json"
+      ],
+      "notVendored": [
+        {
+          "path": "binding.gyp, bindings/, prebuilds/",
+          "why": "native bindings; not parser source"
+        },
+        {
+          "path": "queries/",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js; 20 MB; `tree-sitter generate` rebuilds it"
+        },
+        {
+          "path": "tree-sitter-haskell.wasm",
+          "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
+    },
+    "elixir": {
+      "provenance": {
+        "kind": "byte-identical-to-npm-tarball",
+        "package": "tree-sitter-elixir",
+        "version": "0.3.5"
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-elixir",
+        "note": "grammar.js + src/ (scanner.c, grammar.json, node-types.json, tree_sitter/ headers) + package.json + README.md + LICENSE, byte-for-byte from the npm tarball tree-sitter-elixir@0.3.5. The GENERATED src/parser.c (13 MB here) is deliberately not vendored, for the same reason as haskell's."
+      },
+      "decision": "REPLACED the incumbent with upstream v0.3.5 (its npm tarball wasm; the sha256 is measured below). The incumbent was a 2024 prebuilt, byte-identical to tree-sitter-wasms@0.1.13's out/tree-sitter-elixir.wasm whose declared upstream dependency is tree-sitter-elixir ^0.1.1, and its only surface difference from upstream v0.3.5 was one anonymous token, `^^`, that upstream's source does not contain. That token was not inert: `x = ^^y` produced an ERROR node under the incumbent and parses cleanly under v0.3.5; both grammars agree on `1 ^^^ 2` and on single-caret pins. On the lane's two corpora the two builds produce identical trees on 773 of 773 files, so the upgrade costs nothing measurable and buys a named release, a vendorable source, and a wasm published by the grammar's own maintainers.",
+      "alternatives": [
+        {
+          "option": "keep the 2024 prebuilt (tree-sitter-wasms@0.1.13)",
+          "measured": "identical trees on 773/773 corpus files; carries a legacy `^^` token upstream removed, which mis-parses `x = ^^y` into an ERROR node",
+          "artifact": "validation/m14/results/elixir-grammar-ab.json"
+        },
+        {
+          "option": "upstream v0.3.5 (npm tarball wasm)",
+          "measured": "identical trees on 773/773 corpus files, 0 damaged files under both; cleaner `^^` handling; named release + vendored source",
+          "artifact": "validation/m14/results/elixir-grammar-ab.json"
+        }
+      ],
+      "evidence": [
+        "validation/m14/results/elixir-grammar-ab.json",
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "script/m14/tmp/elixir-grammar-token-probe.ts"
+      ],
+      "notVendored": [
+        {
+          "path": "binding.gyp, bindings/, prebuilds/",
+          "why": "native bindings; not parser source"
+        },
+        {
+          "path": "queries/",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js; 13 MB; `tree-sitter generate` rebuilds it"
+        },
+        {
+          "path": "tree-sitter-elixir.wasm",
+          "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
+    },
+    "fsharp": {
+      "provenance": {
+        "kind": "local-rebuild-from-vendored-source",
+        "base": {
+          "repo": "ionide/tree-sitter-fsharp",
+          "version": "0.3.11"
+        },
+        "patches": [
+          "grammar: adds `module_val_declaration` and `nullable_type` — exactly the two named types the wired wasm has that npm tree-sitter-fsharp@0.3.11's wasm does not",
+          "scanner: the manifest records an interface-probe patch with token-type lookahead; its SOURCE IS NOT IN-TREE (`common/scanner.h` is byte-identical to the npm 0.3.11 tarball's), so the patch is not reconstructible from this repo — recorded here rather than papered over"
+        ],
+        "patchEvidence": "validation/m14/results/family-grammar-fingerprints.json"
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-fsharp",
+        "note": "fsharp/grammar.js (the patched grammar — the npm tarball ships no grammar.js, so its vintage is fixed by hash here rather than by byte-identity to a tarball) + common/scanner.h (byte-identical to the npm 0.3.11 tarball) + package.json + tree-sitter.json + LICENSE + README.md. The vendored src/ holds only tree_sitter/ headers, which is why the source↔wasm check cannot run for this lane."
+      },
+      "decision": "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING → 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) — so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
+      "alternatives": [
+        {
+          "option": "npm tree-sitter-fsharp@0.3.11 (unpatched)",
+          "measured": "surface is a strict subset of the wired wasm's: missing module_val_declaration and nullable_type, carrying no type the wired one lacks",
+          "artifact": "validation/m14/results/family-grammar-fingerprints.json"
+        },
+        {
+          "option": "npm tree-sitter-fsharp@0.1.0 (2019 vintage)",
+          "measured": "21 named types missing vs the wired wasm, 0 extra",
+          "artifact": "validation/m14/results/family-grammar-fingerprints.json"
+        }
+      ],
+      "evidence": [
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "validation/m14/results/fsharp-pin-evidence.json",
+        "validation/m14/results/fsharp-grammar-ab.json",
+        "validation/m14/results/fsharp-corpus-census.json"
+      ],
+      "notVendored": null
+    },
+    "erlang": {
+      "provenance": {
+        "kind": "byte-identical-to-third-party-package",
+        "package": "@lumis-sh/wasm-erlang",
+        "version": "0.26.0",
+        "upstream": {
+          "repo": "WhatsApp/tree-sitter-erlang",
+          "version": "0.15.0",
+          "rev": "f21023bbd6cd30cadbc793d80ae4d990d9be86fc",
+          "builtWith": "tree-sitter build --wasm v0.26.7 (tree-sitter 0.26)"
+        }
+      },
+      "source": {
+        "state": "not-obtainable-offline",
+        "note": "no erlang grammar source exists on this machine (the npm name `tree-sitter-erlang` resolves to a security-holder placeholder). The pin is therefore bytes + surface fingerprint + the redistributor's own provenance table, not source."
+      },
+      "decision": "Pin the bytes with the strongest provenance available offline: the wired wasm is byte-identical to @lumis-sh/wasm-erlang@0.26.0, whose package metadata names WhatsApp/tree-sitter-erlang v0.15.0 at rev f21023bb built by tree-sitter CLI 0.26.7. Upstream is further along than v0.15.0, but no newer source or build exists locally, so an upgrade cannot be measured here and is not claimed.",
+      "alternatives": [],
+      "evidence": [
+        "validation/m14/results/wasm-provenance-census.json",
+        "validation/m14/results/family-grammar-fingerprints.json"
+      ],
+      "notVendored": null
+    },
+    "clojure": {
+      "provenance": {
+        "kind": "unnamed-build-sha-only",
+        "chain": "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local package or source for the yogthos fork exists, so the spoken provenance cannot be re-derived here; the surface fingerprint below is the identity that CAN be checked."
+      },
+      "source": {
+        "state": "not-obtainable-offline",
+        "note": "the canonical sogaiu tree-sitter-clojure@0.4.0 source IS in the bun cache, but it is a DIFFERENT grammar from the wired wasm (the wired build's vocabulary is the fork's), so vendoring it would put a mismatched source in-tree next to the wired bytes — worse than no source. No yogthos source exists locally."
+      },
+      "decision": "Pin bytes + surface fingerprint + the commit that swapped them, and record the alternative that was measured and rejected: canonical sogaiu 0.4.0 failed 128/141 corpus files (34972a88), while the wired fork leaves 2 of 585 files damaged. A maintained fork (tree-sitter-clojure-orchard v0.2.8) is the obvious upgrade candidate but is unobtainable offline, so no claim is made about it.",
+      "alternatives": [
+        {
+          "option": "canonical sogaiu tree-sitter-clojure 0.4.0",
+          "measured": "128/141 corpus files with grammar errors (from 34972a88); the wired fork: 2/585 damaged",
+          "artifact": "validation/m12/results/clojure-differential.json"
+        }
+      ],
+      "evidence": [
+        "validation/m14/results/wasm-provenance-census.json",
+        "validation/m14/results/family-grammar-fingerprints.json"
+      ],
+      "notVendored": null
+    },
+    "clean": {
+      "provenance": {
+        "kind": "unnamed-build-sha-only",
+        "chain": "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The SOURCE was not vendored then, and these bytes exist in no local copy, so this pin records the sha + surface + the adjudication that adopted it."
+      },
+      "source": {
+        "state": "not-obtainable-offline",
+        "note": "the bun cache holds only tree-sitter-clean@1.2.0 (an older release whose tarball ships no wasm); nothing on this machine carries v1.2.7's source or bytes. The version claim rests on 2bc64693's own instruments (the differential table's sha, the adjudication doc, spec/clean-completeness.json)."
+      },
+      "decision": "Keep v1.2.7 (already pin-verified by the clean round) and fold it into this registry so the family has one place that answers the question; for clean the answer is a sha + surface + a named adjudication rather than a vendored source.",
+      "alternatives": [
+        {
+          "option": "stay on v1.2.4 (sha 2b805890)",
+          "measured": "damaged files 67/312, MISSING 148, ERROR lines 6,508 → v1.2.7: 37/312, 9, 2,426, none newly damaged (G1)",
+          "artifact": "reviews/m60-clean-grammar-127-adjudication.md"
+        }
+      ],
+      "evidence": [
+        "reviews/m60-clean-grammar-127-adjudication.md"
+      ],
+      "notVendored": null
+    }
+  }
+}
