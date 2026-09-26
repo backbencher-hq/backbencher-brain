@@ -6,6 +6,13 @@
 // debt is named, never smoothed.
 //
 // Hard failures (gate is red):
+//   H6. A `candidates` pin that names a commit the repository does not contain.
+//       A pin that RESOLVES but is older than the checkout is a legitimate
+//       historical pin and is reported, not convicted.
+//   H7. An artifact whose own corpusRevision does not match the manifest pin for
+//       that corpus. H1-H5 compare the manifest to the artifact and the artifact
+//       to nothing, so a claim and its artifact once agreed with each other
+//       while describing a draw the instrument cannot reproduce.
 //   H1. A manifest `measured.grammarErrorFiles` number that disagrees with
 //       its artifact's `errorFiles`. The whole point: prose and measurement
 //       must agree or someone must reconcile them by hand.
@@ -32,12 +39,17 @@
 //
 // Usage: bun script/m12/verify-corpus-claims.ts
 // Writes: validation/m12/results/corpus-claims-gate.json
+import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 
 const manifest = JSON.parse(readFileSync("validation/m12/corpus-manifest.json", "utf8"))
 
 const hard: string[] = []
 const remainder: string[] = []
+/** Named, reported, and NOT convicted: a candidate repo that is not cloned on this
+ *  box, and an artifact that pins no corpus revision. Both are visible debt. */
+const knownGapDirs = new Set<string>()
+const knownGapPins: string[] = []
 /** Claims in the `measured` block that no artifact backs. Named, never a pass. */
 const unbacked: { language: string; claim: string; value: number }[] = []
 const checked: {
@@ -127,6 +139,172 @@ for (const a of manifest.analyzers) {
   checked[checked.length - 1].volume = volume
 }
 
+// ---------------------------------------------------------------------------
+// H6 / H7 — the corpus PIN must RESOLVE, and the artifact's draw must BE it.
+//
+// Found 2026-09-26 while re-measuring sql. Two distinct defects, and the first
+// version of this check conflated them, which is worth recording because the
+// conflation produced a false accusation in a manifest note before it was caught.
+//
+//   H6  a `candidates` pin must name a commit that EXISTS in the named
+//       repository. `candidates` is a list of corpora CONSIDERED, so a pin that
+//       resolves but is older than the checkout is a legitimate historical pin
+//       and is reported, not convicted. An unresolvable one is a fabrication.
+//
+//   H7  the ARTIFACT's own `corpusRevision` must resolve in the corpus the
+//       manifest names, and must equal the manifest's pin for that corpus. This
+//       is where the teeth are. H1-H5 compare the manifest to the artifact and
+//       the artifact to nothing: a claim and its artifact agreed with each other
+//       while describing a draw the instrument cannot reproduce. sql was the
+//       case — artifact at 3b6ebd40, manifest pin 383e603e, 438 files versus 185
+//       — and every one of H1-H5 was green.
+//
+// The form is the manifest's own convention, `<repoId>@<short-sha>(<dirty|clean>)`.
+// A row whose candidate does not parse as that form is reported too: an
+// unparseable pin is not a pass.
+// ---------------------------------------------------------------------------
+
+// Corpora are cloned under MORE THAN ONE root: fixtures/repositories holds most,
+// but others live at absolute paths outside it (the M20 C2 registry records the
+// real ones). So a repo this gate cannot LOCATE is a known gap — unverifiable
+// here, not wrong. Absence of evidence is not evidence of a false pin, and a
+// gate that convicts on its own failure to look is worse than no gate.
+const CORPUS_ROOTS = [
+  process.env.BB_CORPUS_ROOT,
+  "$HOME/fixtures/repositories",
+  "$HOME",
+].filter((x): x is string => typeof x === "string" && x.length > 0)
+
+/** Every location a corpus id might live, across all roots. */
+function locateRepo(id: string): string[] {
+  return CORPUS_ROOTS.map((r) => `${r}/${id}`)
+}
+
+const gitS = (dir: string, args: string[]): string | null => {
+  try {
+    return execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).trim()
+  } catch {
+    return null
+  }
+}
+
+const candidatesChecked: Array<Record<string, unknown>> = []
+
+for (const a of manifest.analyzers) {
+  const cands: string[] = Array.isArray(a.candidates) ? a.candidates : []
+  for (const raw of cands) {
+    // A trailing `# ...` is the manifest's own annotation convention.
+    const text = String(raw).replace(/\s+#.*$/, "").trim()
+    // `candidates` is OVERLOADED: for the clean lane it also carries the GRAMMAR
+    // pin, not a corpus. A grammar pin is not a corpus claim and is not this
+    // gate's business; convicting it for not naming a cloned repo was a false
+    // positive found the first time this ran.
+    if (/^tree_sitter_/.test(text)) {
+      candidatesChecked.push({ language: a.analyzer, candidate: text, status: "grammar-pin-not-a-corpus" })
+      continue
+    }
+    const m = /^([A-Za-z0-9._-]+)@([0-9a-f]{7,40})\((dirty|clean)\)$/.exec(text)
+    if (!m) {
+      candidatesChecked.push({ language: a.analyzer, candidate: text, status: "unparseable-pin" })
+      knownGapPins.push(`${a.analyzer} (unparseable candidate "${text}")`)
+      continue
+    }
+    const [, repo, sha, state] = m
+    const dirs = locateRepo(repo).filter((d) => existsSync(d))
+    if (dirs.length === 0) {
+      candidatesChecked.push({ language: a.analyzer, candidate: text, repo, sha, state, status: "repo-not-located" })
+      knownGapDirs.add(`${a.analyzer}:${repo}`)
+      continue
+    }
+    // `cat-file -e <sha>^{commit}` is the test that matters: a prefix matching
+    // nothing fails here. The `merge-base --is-ancestor <sha>` form takes TWO
+    // arguments and exits non-zero on a usage error, which is how a real,
+    // perfectly valid historical commit was briefly reported as fictional.
+    const resolvedIn = dirs.find((d) => {
+      try {
+        execFileSync("git", ["-C", d, "cat-file", "-e", `${sha}^{commit}`], { encoding: "utf8" })
+        return true
+      } catch {
+        return false
+      }
+    })
+    if (!resolvedIn) {
+      const heads = dirs.map((d) => `${d}@${(gitS(d, ["rev-parse", "HEAD"]) ?? "?").slice(0, 12)}`).join("  ")
+      candidatesChecked.push({ language: a.analyzer, candidate: text, repo, sha, state, status: "sha-does-not-exist" })
+      hard.push(
+        `H6 ${a.analyzer}: candidate "${text}" names commit ${sha} which does not exist in any located copy of ${repo} (git cat-file -e fails; located: ${heads}). A pin that does not resolve cannot be the revision a claim was measured at.`,
+      )
+      continue
+    }
+    const head = gitS(resolvedIn, ["rev-parse", "HEAD"]) ?? ""
+    candidatesChecked.push({
+      language: a.analyzer,
+      candidate: text,
+      repo,
+      sha,
+      state,
+      head,
+      at: resolvedIn,
+      // A pin that RESOLVES but is older than the checkout is a legitimate
+      // historical pin — `candidates` lists corpora CONSIDERED, not only the
+      // current one. Reported, never convicted.
+      status: head.startsWith(sha) ? "at-head" : "resolves-historical",
+    })
+  }
+}
+
+/** H7 — the artifact's own draw must resolve and must equal the manifest's pin. */
+const corpusIdentities: Array<Record<string, unknown>> = []
+for (const a of manifest.analyzers) {
+  const lg = a.analyzer
+  const artPath = `validation/m12/results/${lg}-corpus-errors.json`
+  if (!existsSync(artPath)) continue
+  const art = JSON.parse(readFileSync(artPath, "utf8"))
+  // A union corpus pins several revisions through a map; that is a pin.
+  const rev: string | null = art.corpusRevision ?? art.revision ?? null
+  const revMap: Record<string, string> | null = art.revisions ?? null
+  if (rev == null && revMap == null) {
+    corpusIdentities.push({ language: lg, status: "artifact-pins-no-corpus" })
+    knownGapPins.push(lg)
+    continue
+  }
+  if (rev != null) {
+    // Prefix comparison in BOTH directions. The manifest pins 7-character short
+    // shas in most rows and 8 in others, so a one-sided `slice(0, 8)` reported
+    // markdown as undeclared when `scala3@18df09c(clean)` and the artifact's
+    // `18df09c05fa4` are the same commit. A gate that convicts on its own
+    // string-length assumption is not a gate.
+    const shaOf = (c: string): string | null => /@([0-9a-f]{7,40})\(/.exec(c.replace(/\s+#.*$/, "").trim())?.[1] ?? null
+    const norm = (id: string) => id.replace(/[_-]/g, "").toLowerCase()
+    const pin =
+      (a.candidates ?? [])
+        .map(String)
+        .find((c) => {
+          const sha = shaOf(c)
+          if (!sha) return false
+          const shaMatch = rev.startsWith(sha) || sha.startsWith(rev.slice(0, sha.length))
+          if (!shaMatch) return false
+          // An artifact that names no corpus id can still be matched on the
+          // revision alone: json/xml/yaml/hcl record only a revision, and
+          // requiring an id match reported five lanes as undeclared when the sha
+          // was identical. Where the artifact DOES name a repo, the id must
+          // agree too — otherwise `python`'s proxicall@7163d975 would match a
+          // pin for a different repo at the same revision by coincidence.
+          const named = String(art.corpusRepo ?? "")
+          if (!named) return true
+          return norm(c.slice(0, c.indexOf("@"))) === norm(named)
+        }) ?? null
+    corpusIdentities.push({ language: lg, revision: rev, manifestPin: pin, status: pin ? "pass" : "no-matching-manifest-pin" })
+    if (!pin) {
+      hard.push(
+        `H7 ${lg}: the artifact was measured at corpus ${art.corpusRepo ?? "?"}@${rev.slice(0, 12)}, which NO manifest candidate declares (${(a.candidates ?? []).map(String).join(", ") || "no candidates"}) — the manifest does not declare the draw its own evidence came from`,
+      )
+    }
+  } else {
+    corpusIdentities.push({ language: lg, revisions: Object.keys(revMap!), status: "union-pinned" })
+  }
+}
+
 const passed = hard.length === 0
 const result = {
   gate: "m12-corpus-claims",
@@ -137,18 +315,26 @@ const result = {
   remainderLanguages: remainder.sort(),
   remainderIssue: remainder.length > 0 ? "#897" : null,
   unbackedClaims: unbacked,
+  corpusCandidates: candidatesChecked,
+  corpusIdentities,
+  knownGaps: {
+    candidateRepoNotCloned: [...knownGapDirs].sort(),
+    artifactPinsNoCorpusRevision: knownGapPins.sort(),
+  },
   checked,
   passed,
   policy:
-    "Every manifest grammarErrorFiles claim must agree with its measured artifact (H1), limit-map entries must carry reasons and be backed by the measurement (H2/H3), no artifact may declare pass while recording unexpected errors or crashes (H4), and every corpusSymbols/corpusRelationships claim must agree with the artifact that carries those counts (H5). A volume claim with NO artifact behind it is reported in `unbackedClaims` — named, never counted as agreed. Languages without artifacts are the registered remainder R1 — named here, never smoothed — and the gate goes green with them only while the tracker still carries the follow-up that owns them.",
+    "Every manifest grammarErrorFiles claim must agree with its measured artifact (H1), limit-map entries must carry reasons and be backed by the measurement (H2/H3), no artifact may declare pass while recording unexpected errors or crashes (H4), every corpusSymbols/corpusRelationships claim must agree with the artifact that carries those counts (H5), every candidate pin must name a commit that EXISTS in the named repository (H6), and every artifact-s own corpusRevision must match the manifest pin for that corpus (H7). A volume claim with NO artifact behind it is reported in `unbackedClaims` — named, never counted as agreed. Languages without artifacts are the registered remainder R1 — named here, never smoothed — and the gate goes green with them only while the tracker still carries the follow-up that owns them.",
 }
 
 const out = "validation/m12/results/corpus-claims-gate.json"
 writeFileSync(out, JSON.stringify(result, null, 2) + "\n")
 
-console.log(`H1-H5: ${hard.length === 0 ? "clean" : "FAIL"}`)
+console.log(`H1-H7: ${hard.length === 0 ? "clean" : "FAIL"}`)
 for (const h of hard) console.log("  " + h)
 console.log(`R1 remainder: ${remainder.length} language(s) without artifacts: ${remainder.sort().join(", ") || "(none)"}`)
+if (knownGapDirs.size) console.log(`KNOWN GAP: ${knownGapDirs.size} candidate repo id(s) not cloned on this box (pin unverifiable here, not wrong): ${[...knownGapDirs].sort().join(", ")}`)
+if (knownGapPins.length) console.log(`KNOWN GAP: ${knownGapPins.length} artifact(s) pin NO corpus revision: ${knownGapPins.sort().join(", ")}`)
 if (unbacked.length) {
   const langs = [...new Set(unbacked.map((u) => u.language))].sort()
   console.log(`UNBACKED volume claims: ${unbacked.length} across ${langs.length} language(s) — named, NOT counted as agreed:`)
