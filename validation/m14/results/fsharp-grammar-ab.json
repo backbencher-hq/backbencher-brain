@@ -1,0 +1,2382 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-26T18:55:42.459Z",
+  "commit": "7ad740426e585b211d21f20ba445d1c835f4f5e3",
+  "corpus": {
+    "repo": "fsharp",
+    "head": "22a8a5dcc724ea58041b8bc0b95e51268d7b656d",
+    "files": 400,
+    "basis": {
+      "kind": "recorded-sample",
+      "sampleFile": "validation/m12/results/fsharp-corpus-sample.txt",
+      "sampleSize": 400,
+      "corpusFiles": 6627
+    }
+  },
+  "grammars": [
+    {
+      "label": "wired",
+      "file": "wasm/tree-sitter-fsharp.wasm",
+      "provenance": "repo wasm/ — 0.3.11 + module_val_declaration + nullable_type (see fsharp-pin-evidence.json)",
+      "sha256": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e"
+    },
+    {
+      "label": "npm-0.3.11-unpatched",
+      "file": "../../.bun/install/cache/tree-sitter-fsharp@0.3.11@@@1/tree-sitter-fsharp.wasm",
+      "provenance": "npm tree-sitter-fsharp@0.3.11 tarball wasm",
+      "sha256": "eec41a14091fa6d55b8c163c27536774324234e52cbdab7272ef37b15a192ae4"
+    }
+  ],
+  "method": {
+    "damage": "ERROR nodes and MISSING tokens over all children",
+    "digest": "ordered serialization of the whole tree: type + field name + leaf token text, positions excluded",
+    "sentinel": "union_type_cases / interface_implementation / union_type_case counts per file, for the manifest's scanner claim"
+  },
+  "perGrammar": {
+    "wired": {
+      "files": 400,
+      "damagedFiles": 108,
+      "errorNodes": 1189,
+      "missingTokens": 49,
+      "crashes": 0,
+      "sentinels": {
+        "union_type_cases": 921,
+        "union_type_case": 3503,
+        "interface_implementation": 223,
+        "nullable_type": 31,
+        "module_val_declaration": 1
+      }
+    },
+    "npm-0.3.11-unpatched": {
+      "files": 400,
+      "damagedFiles": 116,
+      "errorNodes": 1178,
+      "missingTokens": 63,
+      "crashes": 0,
+      "sentinels": {
+        "union_type_cases": 904,
+        "union_type_case": 3442,
+        "interface_implementation": 222
+      }
+    }
+  },
+  "adjudication": {
+    "files": 400,
+    "bothParsed": 400,
+    "treesIdentical": 357,
+    "treesDiffer": 43,
+    "damagedOnlyUnderWired": [
+      {
+        "file": "tests/EndToEndBuildTests/BasicProvider/BasicProvider/BasicProvider.Runtime.fs",
+        "wired": {
+          "digest": "ebdf4b4878a8c5da6108073254be9ccd1346a7634ac8a31e55ec92226d847aaf",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "9af9dd8ae999e4b213809876f2fce9ce39c9bb1aac88df6ef73692d2186ab518",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {}
+        }
+      }
+    ],
+    "damagedOnlyUnderBase": [
+      {
+        "file": "src/Compiler/Checking/infos.fs",
+        "wired": {
+          "digest": "7108e3c027d279761f039030be19f899f00b15f1b3fc8ceea17e74dc4d5fc2ca",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 20,
+            "union_type_case": 42,
+            "nullable_type": 2
+          }
+        },
+        "base": {
+          "digest": "ff353fab212d5350a6de357f49ee8c0b51203ac0a5688646d8b3417559613108",
+          "errors": 41,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 8,
+            "union_type_case": 19
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypedTreeOps.Attributes.fs",
+        "wired": {
+          "digest": "a73f25c97f692d65fd6c0698dae6bb8d557f067fd0d23b042416871f5e4ab2f4",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "e70f94252462af2b31bea0b7624653e639c4cdca0a03929c4175f21991347800",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/FileSystem.fs",
+        "wired": {
+          "digest": "fcdff2af20e47cec59410038b99a9196fbee49ae777836178949a54d260b684f",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4,
+            "nullable_type": 3
+          }
+        },
+        "base": {
+          "digest": "d72f1da23a1f74bf0e3d059b5c55392a538ba6fcd99f81937edc6ba642dddd44",
+          "errors": 3,
+          "missing": 3,
+          "sentinels": {
+            "interface_implementation": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/AbstractIL/ilnativeres.fs",
+        "wired": {
+          "digest": "9f3976ada736b7bcd0fd5fee543fc8e38797544cdafecd699384abb0f744c07f",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 4,
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "ebb819f75f83ae879b8834056c0702201acf6fe08ce8580bcc3b1320feda3fa2",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/AccessibilityLogic.fs",
+        "wired": {
+          "digest": "4a5c75e5030e3b7e15572e37af69ce863dfb491a8d33b08fb9e952335b9d8d95",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 4,
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "984522089fee9f0565f72b037e029c27a860beb5d1bef6c4d81d1fc5bdf2e3fd",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/MethodCalls.fs",
+        "wired": {
+          "digest": "18cee1db87e5563537abf1ff6b4a6af0daf8e9f03bf0c0c4fc8e1b15fc104470",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 7,
+            "union_type_case": 14,
+            "nullable_type": 2
+          }
+        },
+        "base": {
+          "digest": "894d85f0b9afb725a610652bec556190d187cd97906e9fb390f379d0e869c3ed",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 7,
+            "union_type_case": 14
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Facilities/CompilerLocation.fs",
+        "wired": {
+          "digest": "26362669f1b297fbe93bb769ee8e11cd38cfb235be375f4da744ad514677de97",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "e2f03537acd32aeb2f24c430c3775ee0d666c7c4afc525be3cbbb2e97c3aa071",
+          "errors": 2,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/Activity.fs",
+        "wired": {
+          "digest": "d5456a5bdec68255ecf8f95af67bfc77987900d278f052869178571f6a6579bd",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "nullable_type": 2
+          }
+        },
+        "base": {
+          "digest": "816448e8f393579e8fa1d3b0f2c49bafecc1651f6295fb8e249a42f27954e5b3",
+          "errors": 2,
+          "missing": 2,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/Cancellable.fs",
+        "wired": {
+          "digest": "0f6543bc81a7cb54d51f2d72c24a2f7d6c406554ccd476375b786861ff86cfc8",
+          "errors": 0,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 3,
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "4a8f4f8c9081b32b2fbc328965bfc4f3b7cdada0a3ae5174e3490c4183cffe25",
+          "errors": 13,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        }
+      }
+    ],
+    "damagedUnderBoth": [
+      {
+        "file": "buildtools/fslex/fslexpars.fs",
+        "wired": {
+          "digest": "321e5c797ee46c05771de5319d8c390f01a3057f2e1cb4e4118097c11e3702ee",
+          "errors": 102,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 63
+          }
+        },
+        "base": {
+          "digest": "321e5c797ee46c05771de5319d8c390f01a3057f2e1cb4e4118097c11e3702ee",
+          "errors": 102,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 63
+          }
+        }
+      },
+      {
+        "file": "buildtools/fslex/Parsing.fs",
+        "wired": {
+          "digest": "12f9f3a6255299103092f929c847353ec82b599fe2d210d2e1cfa85266cc2f76",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "12f9f3a6255299103092f929c847353ec82b599fe2d210d2e1cfa85266cc2f76",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "buildtools/fsyacc/fsyaccast.fs",
+        "wired": {
+          "digest": "3a9ab66808861b0980566e0ff4bd2b0c03626e7b6d684f2c8f6cdb0b9d5649a6",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 18,
+            "union_type_case": 25
+          }
+        },
+        "base": {
+          "digest": "3a9ab66808861b0980566e0ff4bd2b0c03626e7b6d684f2c8f6cdb0b9d5649a6",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 18,
+            "union_type_case": 25
+          }
+        }
+      },
+      {
+        "file": "buildtools/fsyacc/fsyaccpars.fs",
+        "wired": {
+          "digest": "f35d733bdb3556b0b76df02cf710b2ff27956a5407cb44376cb484b5f3359288",
+          "errors": 84,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 52
+          }
+        },
+        "base": {
+          "digest": "f35d733bdb3556b0b76df02cf710b2ff27956a5407cb44376cb484b5f3359288",
+          "errors": 84,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 52
+          }
+        }
+      },
+      {
+        "file": "buildtools/fsyacc/Parsing.fs",
+        "wired": {
+          "digest": "12f9f3a6255299103092f929c847353ec82b599fe2d210d2e1cfa85266cc2f76",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "12f9f3a6255299103092f929c847353ec82b599fe2d210d2e1cfa85266cc2f76",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/AbstractIL/il.fs",
+        "wired": {
+          "digest": "9ad12d6b9aec7e64ed0c8fe04148255f672fc00da73e0ecb4083cce2d4565962",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 57,
+            "union_type_case": 390,
+            "interface_implementation": 7
+          }
+        },
+        "base": {
+          "digest": "1b11e06199f7be573beae0ebff0b88faa11a6a73278c4b573bee72f0390e4170",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 57,
+            "union_type_case": 390,
+            "interface_implementation": 7
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/AbstractIL/ilreflect.fs",
+        "wired": {
+          "digest": "3a31c0f50175903e3ff1c1854919f25ab98175250a127c69b0e2f282ad6ed7e3",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        },
+        "base": {
+          "digest": "6e4e639d88987a6da5c4ebb795267f014a4b3f71d60470d2d408880804d5db04",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/AttributeChecking.fs",
+        "wired": {
+          "digest": "90dcb5fd778df77a3c927b403697114c71e06acc9df32da65f0ffcf9d399dc85",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        },
+        "base": {
+          "digest": "90dcb5fd778df77a3c927b403697114c71e06acc9df32da65f0ffcf9d399dc85",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+        "wired": {
+          "digest": "0a5bc00501b0767bf236d3dccfba3bd138601b1f6c30c76f22b56647db5fe758",
+          "errors": 126,
+          "missing": 2,
+          "sentinels": {
+            "union_type_cases": 28,
+            "union_type_case": 54
+          }
+        },
+        "base": {
+          "digest": "824ffe953f5ffab74b06be9479948824d40928bb50e64837ef636b477a5ceafa",
+          "errors": 125,
+          "missing": 2,
+          "sentinels": {
+            "union_type_cases": 28,
+            "union_type_case": 54
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/Expressions/CheckSequenceExpressions.fs",
+        "wired": {
+          "digest": "c21f928357d768a65bafa7a99fa39e4e626cd11d31e96e42757b5f136901672c",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "c21f928357d768a65bafa7a99fa39e4e626cd11d31e96e42757b5f136901672c",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/import.fs",
+        "wired": {
+          "digest": "2f77fd1938ec023de38f784da97fe02ae17eb97c16f79d96cfa491bbb168124a",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "nullable_type": 1,
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        },
+        "base": {
+          "digest": "43ffbddcc4e03896c0a66487b95c8e72a846e46bacd91c2cbbc49f89fd21b96a",
+          "errors": 7,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/MethodOverrides.fs",
+        "wired": {
+          "digest": "9f45b028de09c730132d90a44a3f20d24974bf6e56ee56777e9348979759135d",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 8
+          }
+        },
+        "base": {
+          "digest": "ccd17e865ed23a209abdda3e14a938851f57d373209a9caf74ea8dbc5407346f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 8
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/NicePrint.fs",
+        "wired": {
+          "digest": "14496fe203266271b2f56c12bd8f13d0849cc71454bb030b323c6ec6fc576f1d",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        },
+        "base": {
+          "digest": "14496fe203266271b2f56c12bd8f13d0849cc71454bb030b323c6ec6fc576f1d",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/QuotationTranslator.fs",
+        "wired": {
+          "digest": "0012fead92c6c165c69192c7b6a546d7912c9223425251167615110d8c334449",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        },
+        "base": {
+          "digest": "0012fead92c6c165c69192c7b6a546d7912c9223425251167615110d8c334449",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/SignatureConformance.fs",
+        "wired": {
+          "digest": "920c6c030db88584637654597d722a1662c1c17d7d8e5696de7c3dc7346faddb",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 4
+          }
+        },
+        "base": {
+          "digest": "920c6c030db88584637654597d722a1662c1c17d7d8e5696de7c3dc7346faddb",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/CodeGen/IlxGen.fs",
+        "wired": {
+          "digest": "4df5250570a236b808c0c7475dc2b3a86d32f4be80bc177eedd6433496f07ef4",
+          "errors": 3,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 12,
+            "union_type_case": 33
+          }
+        },
+        "base": {
+          "digest": "4df5250570a236b808c0c7475dc2b3a86d32f4be80bc177eedd6433496f07ef4",
+          "errors": 3,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 12,
+            "union_type_case": 33
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Driver/CompilerConfig.fs",
+        "wired": {
+          "digest": "4a5dc5ade8d81d12100673e8f1b2afbc5456bbc449c936ea319f17ef3707f46e",
+          "errors": 10,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 19,
+            "union_type_case": 41
+          }
+        },
+        "base": {
+          "digest": "aaf7db068a8f797cae3bb2ef5dab79041d733c2a53745d0ee908f03adf5f7d30",
+          "errors": 10,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 19,
+            "union_type_case": 41
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Driver/CompilerImports.fs",
+        "wired": {
+          "digest": "c8f561e08ebcb7452d5ae4bb650f18fdc7ba1f37854387bda9330b996eb4807e",
+          "errors": 16,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 7,
+            "interface_implementation": 4,
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "e1593d994f5f25f9acb763516a97aa1928893fb522bd9a48cdaf4c48e4e014d0",
+          "errors": 26,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 6,
+            "union_type_case": 9,
+            "interface_implementation": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Driver/FxResolver.fs",
+        "wired": {
+          "digest": "4deaee4e10d1ad9c64a454a0c3e20d3719fcad19c8f280482b70f02a1e32a60a",
+          "errors": 0,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 1
+          }
+        },
+        "base": {
+          "digest": "4deaee4e10d1ad9c64a454a0c3e20d3719fcad19c8f280482b70f02a1e32a60a",
+          "errors": 0,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Driver/GraphChecking/Graph.fs",
+        "wired": {
+          "digest": "73b55a665686e755be4e913403929ecdc309145faa3d018ea676e38e6e3b9b41",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "73b55a665686e755be4e913403929ecdc309145faa3d018ea676e38e6e3b9b41",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Interactive/fsi.fs",
+        "wired": {
+          "digest": "3ea9723750fb75d322418dea3eb28e0eb4154621a9a7ddb24dc94213f6695f3f",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4,
+            "union_type_cases": 7,
+            "union_type_case": 19
+          }
+        },
+        "base": {
+          "digest": "0e5d14c677e650e6b7b281cc1d72b8d62d3a5eb28b62354efbb0f3ef881ac4c7",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4,
+            "union_type_cases": 7,
+            "union_type_case": 19
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/FSharpCheckerResults.fs",
+        "wired": {
+          "digest": "cfc1f06c2c31b503771cab9c3f2fa713495f4a913a07eea0101d6e5e6e05c70b",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 7,
+            "union_type_case": 17
+          }
+        },
+        "base": {
+          "digest": "cfc1f06c2c31b503771cab9c3f2fa713495f4a913a07eea0101d6e5e6e05c70b",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 7,
+            "union_type_case": 17
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+        "wired": {
+          "digest": "0b46d0638108fbb980beb56606cfa46344468c60ce3122884d74101da8aaeeaf",
+          "errors": 17,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 3,
+            "module_val_declaration": 1
+          }
+        },
+        "base": {
+          "digest": "29badb4db9564a450b2c961b1c1bcf25a1ca7b5e9f25052c5a12a53487312ebb",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 3
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/ServiceDeclarationLists.fs",
+        "wired": {
+          "digest": "0838ae18dcf77779f4d5ca5b41e60fa9e806d1d32b946ad6bde7dad5a82bb9e7",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 12
+          }
+        },
+        "base": {
+          "digest": "0838ae18dcf77779f4d5ca5b41e60fa9e806d1d32b946ad6bde7dad5a82bb9e7",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 12
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/SynPat.fs",
+        "wired": {
+          "digest": "1ec70c734f5c70127ef88e312af44dac9dc3d29221b887813182956f03dfa03e",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "1ec70c734f5c70127ef88e312af44dac9dc3d29221b887813182956f03dfa03e",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Symbols/SymbolHelpers.fs",
+        "wired": {
+          "digest": "93df77e1db4c7113caa09753810a7a2e0fa3801212e03d222a81ced7bbeb8506",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 3
+          }
+        },
+        "base": {
+          "digest": "93df77e1db4c7113caa09753810a7a2e0fa3801212e03d222a81ced7bbeb8506",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 3
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Symbols/Symbols.fs",
+        "wired": {
+          "digest": "036a521ad62137fc86cbae42aabf7c6a57b0a4a00731e3c6528918a563b42000",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 5,
+            "union_type_case": 15
+          }
+        },
+        "base": {
+          "digest": "036a521ad62137fc86cbae42aabf7c6a57b0a4a00731e3c6528918a563b42000",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 5,
+            "union_type_case": 15
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/SyntaxTree/LexFilter.fs",
+        "wired": {
+          "digest": "d83479ecd0b778477cf57df174e53760c95710ca0dc0670662b5c4f9f0b65224",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 34
+          }
+        },
+        "base": {
+          "digest": "d83479ecd0b778477cf57df174e53760c95710ca0dc0670662b5c4f9f0b65224",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 34
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/SyntaxTree/ParseHelpers.fs",
+        "wired": {
+          "digest": "be1c372c73e36b7ad98f758bee7ed33f5f8148f7ddb196dc90ff70a085cf36cb",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 7,
+            "union_type_case": 19
+          }
+        },
+        "base": {
+          "digest": "be1c372c73e36b7ad98f758bee7ed33f5f8148f7ddb196dc90ff70a085cf36cb",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 7,
+            "union_type_case": 19
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/QuotationPickler.fs",
+        "wired": {
+          "digest": "99ff42ecdc98e2640746565005906add8f41ccb05333bff19406b882d7822d65",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 6,
+            "union_type_case": 68
+          }
+        },
+        "base": {
+          "digest": "99ff42ecdc98e2640746565005906add8f41ccb05333bff19406b882d7822d65",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 6,
+            "union_type_case": 68
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/tainted.fs",
+        "wired": {
+          "digest": "c86b1f72fb1e04ac55fe024a8414f82a50f5008b012e3b7104384cbb0ad05a34",
+          "errors": 91,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 1,
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "64dcffaa1c9ee2a1864506c7587ce6b2c36cd56c2687266e5d0f46f91790c036",
+          "errors": 91,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypedTreeBasics.fs",
+        "wired": {
+          "digest": "8fb4def3bde991dfc825ad52257a00ef880ca99b8f8b3c0a61934348edeaaf9e",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "8fb4def3bde991dfc825ad52257a00ef880ca99b8f8b3c0a61934348edeaaf9e",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypedTreeOps.Transforms.fs",
+        "wired": {
+          "digest": "39361b190b35a7d17cebfc5d20a241a9122f79192f7679ce68c266df8d68cdcc",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 8,
+            "union_type_case": 12
+          }
+        },
+        "base": {
+          "digest": "39361b190b35a7d17cebfc5d20a241a9122f79192f7679ce68c266df8d68cdcc",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 8,
+            "union_type_case": 12
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypeProviders.fs",
+        "wired": {
+          "digest": "ce92c88bd263cfc932f27e3c0142f72fb221bb9f7c1d45670766a5d9a4586497",
+          "errors": 9,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 24,
+            "nullable_type": 10,
+            "interface_implementation": 5
+          }
+        },
+        "base": {
+          "digest": "57c2b25e0639f4bd2f0b395eb13c88cba2e38f661959d24daf96d2ff41dbdc7c",
+          "errors": 21,
+          "missing": 2,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 5,
+            "interface_implementation": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+        "wired": {
+          "digest": "cd1c3405d8765307386dc76b5f9798bd2a68c7ca8697d139c3e41af0fedbf82b",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "cd1c3405d8765307386dc76b5f9798bd2a68c7ca8697d139c3e41af0fedbf82b",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/Caches.fs",
+        "wired": {
+          "digest": "35dcc579bb1b01f427305dd9ddd50936fcbe0890670640a62937f041660c55c8",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 5,
+            "interface_implementation": 1
+          }
+        },
+        "base": {
+          "digest": "35dcc579bb1b01f427305dd9ddd50936fcbe0890670640a62937f041660c55c8",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 5,
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/DependencyGraph.fs",
+        "wired": {
+          "digest": "bd8808cac20aada985e50146b96a7ba113be811d896ab85d2746029b0b6aa58f",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 2
+          }
+        },
+        "base": {
+          "digest": "bd8808cac20aada985e50146b96a7ba113be811d896ab85d2746029b0b6aa58f",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/ImmutableArray.fs",
+        "wired": {
+          "digest": "56f5b48e4073b81d4fa9f3f6c55c5e4db384d887eed9dd17f32c0890921038a3",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "56f5b48e4073b81d4fa9f3f6c55c5e4db384d887eed9dd17f32c0890921038a3",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/lib.fs",
+        "wired": {
+          "digest": "a2e735953ccbe0b8107a56315d5f4fe1d580aa43fe2f03bcd63b59f04085e8df",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2,
+            "interface_implementation": 1
+          }
+        },
+        "base": {
+          "digest": "a2e735953ccbe0b8107a56315d5f4fe1d580aa43fe2f03bcd63b59f04085e8df",
+          "errors": 4,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2,
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/sformat.fs",
+        "wired": {
+          "digest": "138afbb2d149ee0446dd83ad7daceb37e071080a49a5ae5c68567a7df3564cce",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 8,
+            "union_type_case": 60
+          }
+        },
+        "base": {
+          "digest": "e1eec5d2806d141d641652e908e665b0130b924b0f06ea1e83b9c147a68b8955",
+          "errors": 24,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 41
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Build/WriteCodeFragment.fs",
+        "wired": {
+          "digest": "f519988d67d9fd00dfbd6cdce9c3bd85e3f430f6774b503169183f4ae2ef3f6d",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "b2babaa2108dbcbad1062df9e79f255b2bd8198c79ac66b9e33be4c248a459ff",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/array2.fs",
+        "wired": {
+          "digest": "56264b325c2bfedbacffb329d09641d4b48031315f708030b88b05a80e3d7052",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "56264b325c2bfedbacffb329d09641d4b48031315f708030b88b05a80e3d7052",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/array.fs",
+        "wired": {
+          "digest": "49b727ccfa3fa5941ba26f083be106c4b834a86bbd0e8696975f9ad6d354a4f9",
+          "errors": 2,
+          "missing": 2,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "49b727ccfa3fa5941ba26f083be106c4b834a86bbd0e8696975f9ad6d354a4f9",
+          "errors": 2,
+          "missing": 2,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/collections.fs",
+        "wired": {
+          "digest": "fd505a6ebc7d2eb063ff0c4f374bbda1776e4a05a3eb6890c316ea5349b6341c",
+          "errors": 0,
+          "missing": 4,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "fd505a6ebc7d2eb063ff0c4f374bbda1776e4a05a3eb6890c316ea5349b6341c",
+          "errors": 0,
+          "missing": 4,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/Linq.fs",
+        "wired": {
+          "digest": "c90c7cecc6be5e98ca0d0eb68a9f4592f30602ffe47c8edfd6bc5fd34b5d3f78",
+          "errors": 0,
+          "missing": 2,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "c90c7cecc6be5e98ca0d0eb68a9f4592f30602ffe47c8edfd6bc5fd34b5d3f78",
+          "errors": 0,
+          "missing": 2,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/local.fs",
+        "wired": {
+          "digest": "3b2a0aa035a0b595d01089d5418f065efdef76ee6e7c3a97355f948a0a06d093",
+          "errors": 7,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "3b2a0aa035a0b595d01089d5418f065efdef76ee6e7c3a97355f948a0a06d093",
+          "errors": 7,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/map.fs",
+        "wired": {
+          "digest": "f25824aac0429ce4538d33b6ce8e9c39ee118e96fbca9c01d5ba2363529d4412",
+          "errors": 3,
+          "missing": 3,
+          "sentinels": {
+            "interface_implementation": 10
+          }
+        },
+        "base": {
+          "digest": "f25824aac0429ce4538d33b6ce8e9c39ee118e96fbca9c01d5ba2363529d4412",
+          "errors": 3,
+          "missing": 3,
+          "sentinels": {
+            "interface_implementation": 10
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/option.fs",
+        "wired": {
+          "digest": "7a9b1c9fe26b5fad6ae81127f059e191baa7fbc8c6116607ed29d7e6ec9f5112",
+          "errors": 14,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "41daf246ae064700925bbd254fc688b77ed667f9ad390d8d421690d97edb220b",
+          "errors": 14,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/prim-types-prelude.fs",
+        "wired": {
+          "digest": "4cc39fa2c1c4cdc000c7363a05f2f4c616c6c66a30229947bea44855391adc6a",
+          "errors": 37,
+          "missing": 4,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 4
+          }
+        },
+        "base": {
+          "digest": "4cc39fa2c1c4cdc000c7363a05f2f4c616c6c66a30229947bea44855391adc6a",
+          "errors": 37,
+          "missing": 4,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 4
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/QueryExtensions.fs",
+        "wired": {
+          "digest": "83a3f579fd8c251038f85ab8a48960021525f270c3030b43bd0c824e367e4c39",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 3,
+            "union_type_cases": 1,
+            "union_type_case": 5
+          }
+        },
+        "base": {
+          "digest": "83a3f579fd8c251038f85ab8a48960021525f270c3030b43bd0c824e367e4c39",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 3,
+            "union_type_cases": 1,
+            "union_type_case": 5
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/quotations.fs",
+        "wired": {
+          "digest": "f7614ffafb369458c99eb62e235a281a78447272c5f8a586aa9a6367af315834",
+          "errors": 6,
+          "missing": 2,
+          "sentinels": {
+            "interface_implementation": 1,
+            "union_type_cases": 5,
+            "union_type_case": 47
+          }
+        },
+        "base": {
+          "digest": "ff7cfb7eb7500a19dab4d95f8c964b51dda9cf42562cd90914100f82cb819210",
+          "errors": 6,
+          "missing": 2,
+          "sentinels": {
+            "interface_implementation": 1,
+            "union_type_cases": 5,
+            "union_type_case": 47
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/resumable.fs",
+        "wired": {
+          "digest": "64e9ae51963b875c332d48353de59e3f29060fcf77ec5ad1a7a7543af727460b",
+          "errors": 8,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 2
+          }
+        },
+        "base": {
+          "digest": "fb5f9a8c0df10267f34e08cfc87cb3baa857c099850799611bcec5d566e892db",
+          "errors": 8,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 2
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/seq.fs",
+        "wired": {
+          "digest": "652352d160e7cfa7cfbba83fdfb8f641cea2b83366e9b59fa83478d1847260de",
+          "errors": 9,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 6,
+            "interface_implementation": 20
+          }
+        },
+        "base": {
+          "digest": "652352d160e7cfa7cfbba83fdfb8f641cea2b83366e9b59fa83478d1847260de",
+          "errors": 9,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 6,
+            "interface_implementation": 20
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/SI.fs",
+        "wired": {
+          "digest": "31c522ed3e05c6265e323defa600f26128fc3dcb2509205cced32d0003064679",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 28,
+            "union_type_case": 28
+          }
+        },
+        "base": {
+          "digest": "31c522ed3e05c6265e323defa600f26128fc3dcb2509205cced32d0003064679",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 28,
+            "union_type_case": 28
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/tasks.fs",
+        "wired": {
+          "digest": "5c66050deac8ffc253741f27976b6ad1152b0ddfd307036bdbfa93f481da3301",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "5c66050deac8ffc253741f27976b6ad1152b0ddfd307036bdbfa93f481da3301",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "tests/benchmarks/FCSBenchmarks/decentlySizedStandAloneFile.fs",
+        "wired": {
+          "digest": "ba0171ea1c80adae16cfc1a4c8530bfe6f4b2918335660628d6dee86fe3974d7",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 5
+          }
+        },
+        "base": {
+          "digest": "ba0171ea1c80adae16cfc1a4c8530bfe6f4b2918335660628d6dee86fe3974d7",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 5
+          }
+        }
+      },
+      {
+        "file": "tests/EndToEndBuildTests/ComboProvider/ComboProvider.Tests/ComboProvider.Tests.fs",
+        "wired": {
+          "digest": "04befc6a87c82f609cbfec12e8ad06e20ba6ca0e645504a2a888ced7ab97b743",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "04befc6a87c82f609cbfec12e8ad06e20ba6ca0e645504a2a888ced7ab97b743",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "tests/EndToEndBuildTests/ProvidedTypes/ProvidedTypes.fs",
+        "wired": {
+          "digest": "f3ba060f0876fd86089ce8c2466bbc9db79d8b4b374c988afe814bf0d0133592",
+          "errors": 81,
+          "missing": 4,
+          "sentinels": {
+            "union_type_cases": 62,
+            "union_type_case": 275
+          }
+        },
+        "base": {
+          "digest": "e16a4e7e8c71c778be283731ed994b2ad4b32da49fe04c534285a02a1e3896dd",
+          "errors": 35,
+          "missing": 3,
+          "sentinels": {
+            "union_type_cases": 62,
+            "union_type_case": 275
+          }
+        }
+      },
+      {
+        "file": "tests/fsharp/Compiler/CodeGen/EmittedIL/ReferenceAssemblyTests.fs",
+        "wired": {
+          "digest": "3e40dad3f7405edc421049ee862a466b15fb08aaab32b2ce4a2146f4821e2bcc",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "3e40dad3f7405edc421049ee862a466b15fb08aaab32b2ce4a2146f4821e2bcc",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "buildtools/fslex/Arg.fs",
+        "wired": {
+          "digest": "51cd8b6d10d406f3549dafcecbe3181ecd84fbed3ec0d8ff0432b9c2e081a80f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 7
+          }
+        },
+        "base": {
+          "digest": "51cd8b6d10d406f3549dafcecbe3181ecd84fbed3ec0d8ff0432b9c2e081a80f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 7
+          }
+        }
+      },
+      {
+        "file": "buildtools/fslex/fslexlex.fs",
+        "wired": {
+          "digest": "24d78c35b3eb4779d3a82cf80543ffe8adbd3bec770f39f18ad7124c0d7e102d",
+          "errors": 10,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "24d78c35b3eb4779d3a82cf80543ffe8adbd3bec770f39f18ad7124c0d7e102d",
+          "errors": 10,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "buildtools/fsyacc/Arg.fs",
+        "wired": {
+          "digest": "51cd8b6d10d406f3549dafcecbe3181ecd84fbed3ec0d8ff0432b9c2e081a80f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 7
+          }
+        },
+        "base": {
+          "digest": "51cd8b6d10d406f3549dafcecbe3181ecd84fbed3ec0d8ff0432b9c2e081a80f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 7
+          }
+        }
+      },
+      {
+        "file": "buildtools/fsyacc/fsyacclex.fs",
+        "wired": {
+          "digest": "52e09d8cb16ac2af67ad2509ec4c434514752a7d641dcb1f3e62a96698b503ec",
+          "errors": 12,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "52e09d8cb16ac2af67ad2509ec4c434514752a7d641dcb1f3e62a96698b503ec",
+          "errors": 12,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/AbstractIL/ilread.fs",
+        "wired": {
+          "digest": "9dcc66db7b8b98955723d8af64ce9f4e09c80ef2d3a4b71f5d04dac0c69a0574",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 20,
+            "union_type_case": 61,
+            "interface_implementation": 9
+          }
+        },
+        "base": {
+          "digest": "9dcc66db7b8b98955723d8af64ce9f4e09c80ef2d3a4b71f5d04dac0c69a0574",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 20,
+            "union_type_case": 61,
+            "interface_implementation": 9
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/AbstractIL/ilwrite.fs",
+        "wired": {
+          "digest": "6275d6e87694ba767c57212e805141f75c198a54698af1999f9303297e09a9ee",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 8,
+            "union_type_case": 12,
+            "interface_implementation": 2
+          }
+        },
+        "base": {
+          "digest": "6275d6e87694ba767c57212e805141f75c198a54698af1999f9303297e09a9ee",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 8,
+            "union_type_case": 12,
+            "interface_implementation": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/AbstractIL/IlxDeltaStreams.fs",
+        "wired": {
+          "digest": "ddcbb3047580014514bdd7a0b1f866abb662e8636c045f041a926b95641aeb67",
+          "errors": 6,
+          "missing": 1,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "ddcbb3047580014514bdd7a0b1f866abb662e8636c045f041a926b95641aeb67",
+          "errors": 6,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/CheckDeclarations.fs",
+        "wired": {
+          "digest": "210c9cbef42ab253f8596aff5c66b13bbac723a6655b39dfb52077ce1b494b22",
+          "errors": 15,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 17,
+            "union_type_case": 37
+          }
+        },
+        "base": {
+          "digest": "210c9cbef42ab253f8596aff5c66b13bbac723a6655b39dfb52077ce1b494b22",
+          "errors": 15,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 17,
+            "union_type_case": 37
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+        "wired": {
+          "digest": "dcf928379f64d9814aee6ac7da660860bc1613c516675bfebb53bed1ca92c95f",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        },
+        "base": {
+          "digest": "8ba3f87dc27df682752a4cfa7c21deceb32ed6d999543a992fcc9a3a14362348",
+          "errors": 9,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/CheckRecordSyntaxHelpers.fs",
+        "wired": {
+          "digest": "c9f31624188213e2564edfcbccbdb1a4bb9155c8a02f8d68e9a2a05b96e7c6a5",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "c9f31624188213e2564edfcbccbdb1a4bb9155c8a02f8d68e9a2a05b96e7c6a5",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/Expressions/CheckArrayOrListComputedExpressions.fs",
+        "wired": {
+          "digest": "fef0560c386c8daebca017d27570e343f9bbabf07e0502b925286f2b8bec757f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "fef0560c386c8daebca017d27570e343f9bbabf07e0502b925286f2b8bec757f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/Expressions/CheckComputationExpressions.fs",
+        "wired": {
+          "digest": "28012c75c9c9e58240e6ef2a234b36e98aa0b2f642366bb425635e5a27013c9b",
+          "errors": 17,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 5
+          }
+        },
+        "base": {
+          "digest": "28012c75c9c9e58240e6ef2a234b36e98aa0b2f642366bb425635e5a27013c9b",
+          "errors": 17,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 5
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/NameResolution.fs",
+        "wired": {
+          "digest": "ea3dbda768354f031cd353f649b485fd675aa41e4303dcdeb73fb62bcf291292",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 24,
+            "union_type_case": 78,
+            "interface_implementation": 2
+          }
+        },
+        "base": {
+          "digest": "ea3dbda768354f031cd353f649b485fd675aa41e4303dcdeb73fb62bcf291292",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 24,
+            "union_type_case": 78,
+            "interface_implementation": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Checking/PostInferenceChecks.fs",
+        "wired": {
+          "digest": "4286c7a3c14c4f78410ca51f7e31eadbbb37636c1e420909c0dc55f583a19435",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 5,
+            "union_type_case": 18
+          }
+        },
+        "base": {
+          "digest": "4286c7a3c14c4f78410ca51f7e31eadbbb37636c1e420909c0dc55f583a19435",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 5,
+            "union_type_case": 18
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/DependencyManager/DependencyProvider.fs",
+        "wired": {
+          "digest": "222da07c36b1bb4990439f03d76b35032ce1c3deca69cc1d4ed5c5a7248d0aab",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2,
+            "interface_implementation": 2
+          }
+        },
+        "base": {
+          "digest": "222da07c36b1bb4990439f03d76b35032ce1c3deca69cc1d4ed5c5a7248d0aab",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2,
+            "interface_implementation": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Driver/GraphChecking/FileContentMapping.fs",
+        "wired": {
+          "digest": "bf6931a9c08003c1306758007bc05517f62f39575860cad2a368d24fb5e6dd14",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        },
+        "base": {
+          "digest": "bf6931a9c08003c1306758007bc05517f62f39575860cad2a368d24fb5e6dd14",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Driver/ParseAndCheckInputs.fs",
+        "wired": {
+          "digest": "27cb1aee106de898d601c30cbf3da356c5060ac866bbb8ab731f60e1c190b5f0",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 2
+          }
+        },
+        "base": {
+          "digest": "f15ef3602e1fb8de0944eaaff0c1c365a746ad1df94f525c102eba1c508b0fab",
+          "errors": 7,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Facilities/AsyncMemoize.fs",
+        "wired": {
+          "digest": "9048cb4f1a888a64e88424b34ffdb1fb8b91253af00e07e6f1b31dbaf13e115f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 15
+          }
+        },
+        "base": {
+          "digest": "9048cb4f1a888a64e88424b34ffdb1fb8b91253af00e07e6f1b31dbaf13e115f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 15
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Optimize/LowerSequences.fs",
+        "wired": {
+          "digest": "ddc68dd930d66f19550743440b87cb4773796363dc81d6f7a11aff628c34222c",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "ddc68dd930d66f19550743440b87cb4773796363dc81d6f7a11aff628c34222c",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Service/FSharpParseFileResults.fs",
+        "wired": {
+          "digest": "176bacf70c17bfac641539a596ece957e39561004e97f5c994088a9538be4675",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 17
+          }
+        },
+        "base": {
+          "digest": "176bacf70c17bfac641539a596ece957e39561004e97f5c994088a9538be4675",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 17
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/IncrementalBuild.fs",
+        "wired": {
+          "digest": "49c695b0e8a26120a5a04ba6cca5dbb7def54bf2de8d32928962d6f94a5e4e41",
+          "errors": 5,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 6,
+            "interface_implementation": 2
+          }
+        },
+        "base": {
+          "digest": "46eb69062a9bcb925005227651510b7ad4ccac540fa43ef74e1b3b729d0eef85",
+          "errors": 5,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 6,
+            "interface_implementation": 2
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/ServiceAssemblyContent.fs",
+        "wired": {
+          "digest": "9353f3dfbcb86ea327119bf891cb744284307e3a7567b9c207813b0e50af2ac5",
+          "errors": 2,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 6,
+            "interface_implementation": 1
+          }
+        },
+        "base": {
+          "digest": "9353f3dfbcb86ea327119bf891cb744284307e3a7567b9c207813b0e50af2ac5",
+          "errors": 2,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 4,
+            "union_type_case": 6,
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Service/ServiceErrorResolutionHints.fs",
+        "wired": {
+          "digest": "ff64d31f5494606e4492982f6762baf2f714df21edd6d7caa903f9d1af532e4c",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "ff64d31f5494606e4492982f6762baf2f714df21edd6d7caa903f9d1af532e4c",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Service/SynExpr.fs",
+        "wired": {
+          "digest": "1ecaa985bbf60f614f64a295cf333b27282e25e331e9a8c17f155e5084a0a63f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 5,
+            "union_type_case": 27,
+            "interface_implementation": 3
+          }
+        },
+        "base": {
+          "digest": "1ecaa985bbf60f614f64a295cf333b27282e25e331e9a8c17f155e5084a0a63f",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 5,
+            "union_type_case": 27,
+            "interface_implementation": 3
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/SyntaxTree/UnicodeLexing.fs",
+        "wired": {
+          "digest": "99f2ecaa015cd921d8792cc2a1b208d6619212d2654ffa6839898a0c3922e82f",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "99f2ecaa015cd921d8792cc2a1b208d6619212d2654ffa6839898a0c3922e82f",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypedTree.fs",
+        "wired": {
+          "digest": "25b8df0fba20916c906dc078ff0ac29c6fdcd3040b5efe08b0c78f84fdf1c4a2",
+          "errors": 10,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 71,
+            "union_type_case": 238,
+            "interface_implementation": 1
+          }
+        },
+        "base": {
+          "digest": "663f9f8105db577b7bd8e46f180aed46b8946dce6d4b72bb6f88ca7b69f6951a",
+          "errors": 10,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 71,
+            "union_type_case": 238,
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypedTreeOps.ExprConstruction.fs",
+        "wired": {
+          "digest": "997a47da15ce9214a2d66591a1b90b228fa9ff758cb5185d5cd484fb224bc789",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 5
+          }
+        },
+        "base": {
+          "digest": "997a47da15ce9214a2d66591a1b90b228fa9ff758cb5185d5cd484fb224bc789",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 3,
+            "union_type_case": 5
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypedTreePickle.fs",
+        "wired": {
+          "digest": "0882941cac5390e2d729b982357964f6897efbf38b2d21abc294fff134f6dc06",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "0882941cac5390e2d729b982357964f6897efbf38b2d21abc294fff134f6dc06",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/HashMultiMap.fs",
+        "wired": {
+          "digest": "6fd0ee5a6c7a558b8dcace4a4e0247c7642018a53b082039dc9794911643c128",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4
+          }
+        },
+        "base": {
+          "digest": "cfcafcd848bc3d059fe734e4ad590f752f9c293b965b3d4e15cc6b1c04bc9fe4",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/illib.fs",
+        "wired": {
+          "digest": "417a6b4c88f21a79dc5855024965013b261c83e91a56aab061a7e6e504199512",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "nullable_type": 3,
+            "interface_implementation": 2,
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        },
+        "base": {
+          "digest": "339a0c5bc691171a2849fcfe89661c5de2de8338b5141695cccd0f5f21fccc95",
+          "errors": 8,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 2,
+            "union_type_cases": 2,
+            "union_type_case": 3
+          }
+        }
+      },
+      {
+        "file": "src/Compiler/Utilities/LruCache.fs",
+        "wired": {
+          "digest": "2ac0c9adcff6487405a1920dcc3a7c7ade4a2c71af80a530bbfad337009b0769",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 7,
+            "nullable_type": 1
+          }
+        },
+        "base": {
+          "digest": "b654e0eb3ca23f23e11b3d783de75a9d8b56a1d330fe4c1547c23e036ccfdc0c",
+          "errors": 2,
+          "missing": 1,
+          "sentinels": {
+            "union_type_cases": 2,
+            "union_type_case": 7
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Build/Fsc.fs",
+        "wired": {
+          "digest": "6f8ae64c8b50fe9ef344e3250fdf8f5954f4dd6d6bb53fa475f46c23aa818c05",
+          "errors": 31,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "dd580b78f7d40f441e4939e04f904fc6a5acb88801ea3757fd604c4ac9cafa68",
+          "errors": 31,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Build/Fsi.fs",
+        "wired": {
+          "digest": "9718659b7f5b706828dd3814e998feb0bf2aa7d2001cb557d05a88db2df9d391",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "9773ec8deada4a4e34d833e0da4e22822479d199a3749104e797e8ce57cdf399",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/array3.fs",
+        "wired": {
+          "digest": "bdd7b3d5287b687590ea190448e262e57525a80b4fd0bb369bd7d823b58dcc38",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "bdd7b3d5287b687590ea190448e262e57525a80b4fd0bb369bd7d823b58dcc38",
+          "errors": 1,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/event.fs",
+        "wired": {
+          "digest": "da70f10e6fe9e3327da66f1e204eef719be3bd6da5970202fe7360d91e7cc7d1",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4
+          }
+        },
+        "base": {
+          "digest": "da70f10e6fe9e3327da66f1e204eef719be3bd6da5970202fe7360d91e7cc7d1",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 4
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/fslib-extra-pervasives.fs",
+        "wired": {
+          "digest": "b657b6e5e486836e3842d4edc0dbcb4494f7edc41b02e2ba65a212ff5e280d24",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 8
+          }
+        },
+        "base": {
+          "digest": "b657b6e5e486836e3842d4edc0dbcb4494f7edc41b02e2ba65a212ff5e280d24",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 8
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/list.fs",
+        "wired": {
+          "digest": "715f1405bf7d7e3289d569315e476c5638831ffcc9fe254606a94a557e00da82",
+          "errors": 17,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "81246c550559eb811eb5a118d3570fb3993d51d2ecc2a9d20ef941d79e63dd6d",
+          "errors": 11,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/nativeptr.fs",
+        "wired": {
+          "digest": "95ef9c9c36bbc92f3b9f7a58a773b4125cac39a281631bd5da33aec5dbd2b908",
+          "errors": 22,
+          "missing": 1,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "95ef9c9c36bbc92f3b9f7a58a773b4125cac39a281631bd5da33aec5dbd2b908",
+          "errors": 22,
+          "missing": 1,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "src/FSharp.Core/prim-types.fs",
+        "wired": {
+          "digest": "47357305d1c0acf9c1f4cf64e99fb9aa7fe89c777711d6966fcac806714c8046",
+          "errors": 230,
+          "missing": 8,
+          "sentinels": {
+            "interface_implementation": 1,
+            "union_type_cases": 4,
+            "union_type_case": 7
+          }
+        },
+        "base": {
+          "digest": "04abee67324256f007609ec81e0656326e66df44ae48360ca5cdd5ec65b04728",
+          "errors": 165,
+          "missing": 9,
+          "sentinels": {
+            "interface_implementation": 1,
+            "union_type_cases": 4,
+            "union_type_case": 7
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/seqcore.fs",
+        "wired": {
+          "digest": "941326e6a572b07a0d35cc1f7ac38c43cda42a8bd32c4e6b3c483a54e8b0dd6d",
+          "errors": 5,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 24,
+            "union_type_cases": 1,
+            "union_type_case": 1
+          }
+        },
+        "base": {
+          "digest": "941326e6a572b07a0d35cc1f7ac38c43cda42a8bd32c4e6b3c483a54e8b0dd6d",
+          "errors": 5,
+          "missing": 1,
+          "sentinels": {
+            "interface_implementation": 24,
+            "union_type_cases": 1,
+            "union_type_case": 1
+          }
+        }
+      },
+      {
+        "file": "src/FSharp.Core/set.fs",
+        "wired": {
+          "digest": "12e1419d04b30485e40550b36f79a98acc398df22e3d34fbd97248bdf8dc989e",
+          "errors": 4,
+          "missing": 2,
+          "sentinels": {
+            "interface_implementation": 8
+          }
+        },
+        "base": {
+          "digest": "12e1419d04b30485e40550b36f79a98acc398df22e3d34fbd97248bdf8dc989e",
+          "errors": 4,
+          "missing": 2,
+          "sentinels": {
+            "interface_implementation": 8
+          }
+        }
+      },
+      {
+        "file": "src/fsi/fsimain.fs",
+        "wired": {
+          "digest": "979fe16f599d1275a47e0e812a4834dac511b9d039b0a41f776ce51b009dd887",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 1
+          }
+        },
+        "base": {
+          "digest": "979fe16f599d1275a47e0e812a4834dac511b9d039b0a41f776ce51b009dd887",
+          "errors": 3,
+          "missing": 0,
+          "sentinels": {
+            "interface_implementation": 1
+          }
+        }
+      },
+      {
+        "file": "tests/benchmarks/CompiledCodeBenchmarks/ILGenCodegen/CallVirtOnValueType.fs",
+        "wired": {
+          "digest": "c88b2310108ab11cb8af9610b185a2831b3a298d56883c498910e5fdcd15bf7c",
+          "errors": 5,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "c88b2310108ab11cb8af9610b185a2831b3a298d56883c498910e5fdcd15bf7c",
+          "errors": 5,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "tests/benchmarks/CompiledCodeBenchmarks/ILGenCodegen/FilterInFinally.fs",
+        "wired": {
+          "digest": "bdfc395252152cb30c096fc68a717888f7e9b332ab532e35d50d5fd7aa5a88a9",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "bdfc395252152cb30c096fc68a717888f7e9b332ab532e35d50d5fd7aa5a88a9",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "tests/benchmarks/CompiledCodeBenchmarks/MicroPerf/Equality/Misc.fs",
+        "wired": {
+          "digest": "b703598d4dd0db4f61b62bf1dd27113c270cebbd4b406a2b773a0179692f62c9",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 1
+          }
+        },
+        "base": {
+          "digest": "b703598d4dd0db4f61b62bf1dd27113c270cebbd4b406a2b773a0179692f62c9",
+          "errors": 6,
+          "missing": 0,
+          "sentinels": {
+            "union_type_cases": 1,
+            "union_type_case": 1
+          }
+        }
+      },
+      {
+        "file": "tests/EndToEndBuildTests/BasicProvider/BasicProvider.Tests/BasicProvider.Tests.fs",
+        "wired": {
+          "digest": "39125cfe41e0683bee2b44b7951ba0514248c51346e7983f7c5f62f5bc59754c",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "39125cfe41e0683bee2b44b7951ba0514248c51346e7983f7c5f62f5bc59754c",
+          "errors": 1,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "tests/FSharp.Compiler.ComponentTests/CompilerOptions/fsc/checked/checked01.fs",
+        "wired": {
+          "digest": "082871376feb0382dc1a0a52b4229a76efd5224c290ba5ab68fbbb1b7bb4e629",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "082871376feb0382dc1a0a52b4229a76efd5224c290ba5ab68fbbb1b7bb4e629",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      },
+      {
+        "file": "tests/FSharp.Compiler.ComponentTests/CompilerOptions/fsc/checked/unchecked01.fs",
+        "wired": {
+          "digest": "2a6c8072a831b5d8a2674e2e204f1f4bfc636f49356c1bc7767bba4a391fd871",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        },
+        "base": {
+          "digest": "2a6c8072a831b5d8a2674e2e204f1f4bfc636f49356c1bc7767bba4a391fd871",
+          "errors": 2,
+          "missing": 0,
+          "sentinels": {}
+        }
+      }
+    ],
+    "sentinelUnionTypeCasesWhereInterfaceExpected": [
+      {
+        "file": "src/Compiler/Driver/CompilerImports.fs",
+        "wiredUnion": 4,
+        "baseUnion": 6,
+        "wiredImpl": 4,
+        "baseImpl": 4,
+        "treesDiffer": true
+      },
+      {
+        "file": "src/Compiler/TypedTree/TypeProviders.fs",
+        "wiredUnion": 4,
+        "baseUnion": 3,
+        "wiredImpl": 5,
+        "baseImpl": 4,
+        "treesDiffer": true
+      }
+    ],
+    "scannedShards": 2
+  },
+  "differingFiles": [
+    "src/Compiler/AbstractIL/il.fs",
+    "src/Compiler/AbstractIL/ilreflect.fs",
+    "src/Compiler/Checking/ConstraintSolver.fs",
+    "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+    "src/Compiler/Checking/import.fs",
+    "src/Compiler/Checking/infos.fs",
+    "src/Compiler/Checking/MethodOverrides.fs",
+    "src/Compiler/Checking/PatternMatchCompilation.fs",
+    "src/Compiler/Driver/CompilerConfig.fs",
+    "src/Compiler/Driver/CompilerImports.fs",
+    "src/Compiler/Facilities/DiagnosticsLogger.fs",
+    "src/Compiler/Interactive/fsi.fs",
+    "src/Compiler/Service/FSharpProjectSnapshot.fs",
+    "src/Compiler/SyntaxTree/SyntaxTrivia.fs",
+    "src/Compiler/TypedTree/tainted.fs",
+    "src/Compiler/TypedTree/TypedTreeOps.Attributes.fs",
+    "src/Compiler/TypedTree/TypeProviders.fs",
+    "src/Compiler/Utilities/FileSystem.fs",
+    "src/Compiler/Utilities/sformat.fs",
+    "src/FSharp.Build/WriteCodeFragment.fs",
+    "src/FSharp.Core/option.fs",
+    "src/FSharp.Core/quotations.fs",
+    "src/FSharp.Core/resumable.fs",
+    "tests/EndToEndBuildTests/ProvidedTypes/ProvidedTypes.fs",
+    "src/Compiler/AbstractIL/ilnativeres.fs",
+    "src/Compiler/Checking/AccessibilityLogic.fs",
+    "src/Compiler/Checking/CheckIncrementalClasses.fs",
+    "src/Compiler/Checking/MethodCalls.fs",
+    "src/Compiler/Driver/CompilerDiagnostics.fs",
+    "src/Compiler/Driver/ParseAndCheckInputs.fs",
+    "src/Compiler/Facilities/CompilerLocation.fs",
+    "src/Compiler/Service/IncrementalBuild.fs",
+    "src/Compiler/TypedTree/TypedTree.fs",
+    "src/Compiler/Utilities/Activity.fs",
+    "src/Compiler/Utilities/Cancellable.fs",
+    "src/Compiler/Utilities/HashMultiMap.fs",
+    "src/Compiler/Utilities/illib.fs",
+    "src/Compiler/Utilities/LruCache.fs",
+    "src/FSharp.Build/Fsc.fs",
+    "src/FSharp.Build/Fsi.fs",
+    "src/FSharp.Core/list.fs",
+    "src/FSharp.Core/prim-types.fs",
+    "tests/EndToEndBuildTests/BasicProvider/BasicProvider/BasicProvider.Runtime.fs"
+  ]
+}
