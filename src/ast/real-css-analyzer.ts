@@ -27,6 +27,14 @@ interface StackFrame {
   media: string
   layer: string
   container: string
+  /**
+   * A `@scope` prelude — `@scope (.a) to (.b) { … }`. It is a SELECTOR, not a
+   * media condition, so it gets its own frame field rather than being folded
+   * into `media` (which would misname it) or dropped (which is what happened:
+   * `scope_statement` had no case at all, so rules inside a `@scope` were
+   * attributed to whatever scope happened to enclose them).
+   */
+  scope: string
   currentSelector: string
 }
 
@@ -184,10 +192,22 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileHasParseError: rootNode.hasError === true,
     }
 
-    const stack: StackFrame[] = [{ node: rootNode, media: "", layer: "", container: "", currentSelector: "" }]
+    // D5 (2026-09-26). The keyframe-name set was filled DURING the walk, so an
+    // `animation:` reference only resolved if the `@keyframes` block appeared
+    // EARLIER IN THE FILE. Measured: `.x { animation: fade 1s }` followed by
+    // `@keyframes fade { … }` emitted no reference edge at all, while the same
+    // two blocks in the opposite order did. CSS has no such ordering rule — a
+    // stylesheet is not order-dependent for name resolution, and in practice an
+    // `@keyframes` is often shared from a block far below its first use.
+    //
+    // So the names are collected in a PRE-PASS over the tree, which makes the
+    // walk order-independent by construction rather than by a heuristic.
+    this.collectKeyframeNames(rootNode, ctx)
+
+    const stack: StackFrame[] = [{ node: rootNode, media: "", layer: "", container: "", scope: "", currentSelector: "" }]
 
     while (stack.length > 0) {
-      const { node, media, layer, container, currentSelector } = stack.pop()!
+      const { node, media, layer, container, scope, currentSelector } = stack.pop()!
 
       // Record every parse error the tree reports, and NEVER claim otherwise.
       //
@@ -231,11 +251,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       let nextMedia = media
       let nextLayer = layer
       let nextContainer = container
+      let nextScope = scope
       let nextSelector = currentSelector
 
       switch (node.type) {
         case "rule_set":
-          nextSelector = this.processRuleSet(node, media, layer, container, currentSelector, ctx) || nextSelector
+          nextSelector = this.processRuleSet(node, media, layer, container, scope, currentSelector, ctx) || nextSelector
           break
         case "import_statement":
           this.processImport(node, ctx)
@@ -254,7 +275,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.processSupports(node, ctx)
           break
         case "at_rule":
-        case "postcss_statement": {
+        case "postcss_statement":
+        case "namespace_statement":
+        case "scope_statement":
+        case "charset_statement": {
           // M14 F1 debt repaid 2026-09-26. `include_statement` and
           // `mixin_statement` were registered dead literals: the pinned
           // tree-sitter-css wasm enumerates 151 node types and neither is among
@@ -270,6 +294,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           const scopeUpdate = this.processAtRule(node, currentSelector, ctx)
           if (scopeUpdate.layer) nextLayer = scopeUpdate.layer
           if (scopeUpdate.container) nextContainer = scopeUpdate.container
+          if (scopeUpdate.scope) nextScope = scopeUpdate.scope
           break
         }
         case "declaration": {
@@ -291,6 +316,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             media: nextMedia,
             layer: nextLayer,
             container: nextContainer,
+            scope: nextScope,
             currentSelector: nextSelector,
           })
         }
@@ -372,6 +398,46 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * contain a string only inside `[attr="value"]`, and there the string sits
    * under an `attribute_selector`, never as a selector of its own.
    */
+  /**
+   * The leading `@keyword` of an at-rule's own text, or `""`.
+   *
+   * Pure-String, bounded to the characters CSS actually allows in an at-keyword
+   * (`@`, then letters/digits/`-`/`_`), so it cannot run past the keyword into a
+   * prelude. Returns `""` when the text does not start with `@`, which is the
+   * honest answer for a node that is not an at-rule at all.
+   */
+  private leadingAtKeyword(text: string): string {
+    if (text.charAt(0) !== "@") return ""
+    let i = 1
+    while (i < text.length) {
+      const c = text[i]
+      const ok =
+        (c >= "a" && c <= "z") ||
+        (c >= "A" && c <= "Z") ||
+        (c >= "0" && c <= "9") ||
+        c === "-" ||
+        c === "_"
+      if (!ok) break
+      i++
+    }
+    return i > 1 ? text.slice(0, i) : ""
+  }
+
+  /** First descendant satisfying `predicate`, breadth-first. */
+  private findDescendant(node: Node, predicate: (n: Node) => boolean): Node | null {
+    const queue: Node[] = [node]
+    while (queue.length > 0) {
+      const n = queue.shift() as Node
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (predicate(c)) return c
+        queue.push(c)
+      }
+    }
+    return null
+  }
+
   private isKeyframeStepSelector(selectorsNode: Node): boolean {
     const t = selectorsNode.text.trim()
     return t === "from" || t === "to"
@@ -456,6 +522,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     media: string,
     layer: string,
     container: string,
+    scope: string,
     parentSelector: string,
     ctx: CssContext,
   ): string | null {
@@ -526,14 +593,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Universal reset rules (*, *::before, *::after) are boilerplate that
     // carries no semantic symbol — suppress them to keep output clean.
-    let isResetRule = rawSelectors.length > 0
+    //
+    // D8 (2026-09-26). The test was "is EVERY selector in the group a reset
+    // selector", so a MIXED group survived whole: `*, .real { … }` produced one
+    // symbol named `*, .real` — a fabricated identity that names the universal
+    // reset AND a real class in one string, so neither the reset's suppression
+    // nor `.real`'s own identity was expressed. The group is now SPLIT: the
+    // reset selectors are dropped and the real ones are kept under their own
+    // names, which is what a comma group means.
+    const keptSelectors: string[] = []
     for (let i = 0; i < rawSelectors.length; i++) {
-      if (!isResetSelector(rawSelectors[i])) {
-        isResetRule = false
-        break
-      }
+      if (!isResetSelector(rawSelectors[i])) keptSelectors.push(rawSelectors[i])
     }
-    if (isResetRule) return null
+    if (keptSelectors.length === 0) return null
+    if (keptSelectors.length !== rawSelectors.length) {
+      rawSelectors.length = 0
+      for (let i = 0; i < keptSelectors.length; i++) rawSelectors.push(keptSelectors[i])
+    }
 
     let parentSelectors: string[] = [""]
     if (parentSelector) {
@@ -610,6 +686,16 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           hasAttributeSelector = true
           specClass += 1
           isUtility = false
+          // D7 (2026-09-26). Every other chain form pushes itself — id, tag,
+          // class, universal — and the attribute form did not, so `.a [href]`
+          // emitted NO chain edge while `.a .b`, `.a #b` and `.a *` all did. The
+          // omission was silent: the selector symbol and its `uses` edges were
+          // unaffected, so only the chain edge was missing, and only for
+          // attribute selectors. The attribute NAME is pushed rather than the
+          // full `[href^=x]` text, because the name is the part that identifies
+          // the step — the same reason `class_name` is pushed as `.name`.
+          const attrName = this.findChild(n, (c) => c?.type === "attribute_name")
+          chain.push(attrName ? attrName.text : n.text)
         }
         if (n.type === "id_selector") {
           hasIdSelector = true
@@ -679,6 +765,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       isComplex,
     )
 
+    // D4 (2026-09-26). A nested rule whose resolved selector is IDENTICAL to its
+    // parent is not a new selector. The case is a bare `&`:
+    // `.a { & { color: red } }` — a real CSS construct that adds declarations to
+    // the parent's own context. Resolving `&` to `.a` and then emitting a symbol
+    // for it produced TWO symbols both named `.a`, one scoped `.a` inside the
+    // other, which is a duplicate identity: the store keys on name, so one of
+    // them is unreachable and the `contains .a -> .a` self-edge is a
+    // relationship between a thing and itself.
+    //
+    // The declarations are already attributed to the same `currentSelector` by
+    // the walk, so nothing is lost by not emitting a second symbol — the rule
+    // still contributes its `uses` edges. The return value is the parent's own
+    // name, so any further nesting resolves against it unchanged.
+    if (parentSelector && selectorText === parentSelector) {
+      return null
+    }
+
     ctx.symbols.push({
       name: selectorText,
       kind: selectorKind,
@@ -737,6 +840,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
         metadata: { cssSpecific: true, isContainerScope: true },
+      })
+    }
+    if (scope) {
+      ctx.relationships.push({
+        source: scope,
+        target: selectorText,
+        type: ASTEngine.RelationshipType.Contains,
+        metadata: { cssSpecific: true, isScopeScope: true },
       })
     }
     if (parentSelector) {
@@ -819,6 +930,29 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /**
+   * Every `@keyframes` name in the file, collected before the main walk so that
+   * an `animation:` reference resolves regardless of where the block sits.
+   */
+  private collectKeyframeNames(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "keyframes_statement") {
+        const nameNode = this.findChild(
+          n,
+          (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
+        )
+        if (nameNode) ctx.keyframeNames[stripAllQuotes(nameNode.text)] = true
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private processKeyframes(node: Node, ctx: CssContext) {
     const nameNode = this.findChild(
       node,
@@ -882,7 +1016,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processAtRule(node: Node, currentSelector: string, ctx: CssContext): { layer?: string; container?: string } {
+  private processAtRule(node: Node, currentSelector: string, ctx: CssContext): { layer?: string; container?: string; scope?: string } {
     const atKeywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
 
     // M14 F1 debt repaid 2026-09-26. The two `node.type === "mixin_statement"`
@@ -892,15 +1026,46 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (and `@include` likewise). The keyword is therefore taken from the tree and
     // never from the node type — which is also the only spelling that can be
     // right, since a node type is not a keyword.
-    const keyword = atKeywordNode ? atKeywordNode.text : ""
+    // The keyword is read from the `at_keyword` child when there is one, and
+    // from the node's OWN leading token when there is not — because the grammar
+    // does not use an `at_keyword` node everywhere. Measured on the pinned wasm:
+    // `at_rule` (`@layer`, `@container`, `@font-face`, `@apply`, …) has one, and
+    // `namespace_statement`, `scope_statement` and `supports_statement` carry an
+    // ANONYMOUS `@namespace` / `@scope` / `@supports` token instead. Reading only
+    // the child silently dropped all three, which is the same root cause that
+    // named every `@supports` "@supports @supports".
+    let keyword = atKeywordNode ? atKeywordNode.text : ""
+    if (!keyword) keyword = this.leadingAtKeyword(node.text)
 
     if (!keyword) return {}
 
     let namePart = ""
 
+    // D6 (2026-09-26). Four at-rules that NAME something were producing nothing
+    // at all, because the whitelist below did not mention them:
+    //
+    //   @font-face   names a font family and its sources. A stylesheet's declared
+    //                font faces are part of its public surface and were invisible.
+    //   @property    REGISTERS a custom property, with `syntax`, `inherits` and
+    //                `initial-value` descriptors. It is a declaration site, and
+    //                the descriptors are exactly the kind of fact a graph carries.
+    //   @namespace   maps a prefix to a URL — a reference, dropped entirely.
+    //   @scope       a scoping construct with no case at all, and unlike @media
+    //                it has no fallback path, so rules inside it were attributed
+    //                to the wrong scope.
+    //
+    // `@page`, `@starting-style` and `@position-try` are deliberately NOT added:
+    // they scope nothing that a `contains` edge can name (a page box, a
+    // transition entry condition, a fallback position), so a symbol for them
+    // would be a name with no referent. They are recorded as silent in
+    // script/m14/spec/css-completeness.json with that reason.
     if (
       keyword === "@layer" ||
       keyword === "@container" ||
+      keyword === "@scope" ||
+      keyword === "@font-face" ||
+      keyword === "@property" ||
+      keyword === "@namespace" ||
       keyword === "@tailwind" ||
       keyword === "@apply" ||
       keyword === "@theme" ||
@@ -910,6 +1075,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       keyword === "@forward" ||
       keyword === "@use"
     ) {
+      // Set for `@font-face`, whose prelude is empty and whose declared name
+      // lives in its block; declared first so its use below is in scope.
+      let namePartOverride = ""
+
       // The name is the keyword plus the at-rule's OWN PRELUDE — the source text
       // between the keyword and the at-rule's block or terminating `;`.
       //
@@ -936,18 +1105,48 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // prelude still yields a single-line, stable symbol name (M60 R10 — a target
       // must be spelled the way the lane spells its own symbols, and that
       // spelling has to be deterministic).
+      // `@font-face` has an EMPTY prelude — the thing it declares is inside its
+      // block — so a keyword-plus-prelude name would be the bare placeholder
+      // `@font-face`, which is a name with no referent and one per stylesheet
+      // (M60 R7). The name is the family it declares, read from the block's own
+      // `font-family` declaration.
+      if (keyword === "@font-face") {
+        // The declaration lives inside the `block` child, so this is a DESCENDANT
+        // search — a direct-child search finds nothing, which is why the first
+        // attempt left the name as the bare `@font-face`.
+        const block = this.findChild(node, (c) => c?.type === "block")
+        const family = block ? this.findDescendant(block, (n) => {
+          if (n.type !== "declaration") return false
+          const prop = this.findChild(n, (g) => g?.type === "property_name")
+          return prop !== null && prop.text === "font-family"
+        }) : null
+        if (family) {
+          const value = this.findChild(family, (c) => c?.type === "plain_value" || c?.type === "string_value")
+          if (value) namePartOverride = collapseWhitespace(stripAllQuotes(value.text))
+        }
+      }
+
       const afterKeyword = node.text.slice(keyword.length)
       const braceAt = afterKeyword.indexOf("{")
       const semiAt = afterKeyword.indexOf(";")
       let cut = afterKeyword.length
       if (braceAt !== -1) cut = braceAt
       if (semiAt !== -1 && semiAt < cut) cut = semiAt
-      const namePart = stripAllQuotes(collapseWhitespace(afterKeyword.slice(0, cut)))
+      const namePart = namePartOverride || stripAllQuotes(collapseWhitespace(afterKeyword.slice(0, cut)))
       const ruleName = `${keyword}${namePart ? " " + namePart : ""}`
 
       ctx.symbols.push({
         name: ruleName,
-        kind: keyword === "@mixin" ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Module,
+        // A declared `@font-face` and a registered `@property` are both
+        // declarations of a named thing, which is what `variable` and
+        // `interface` mean in this ontology; the rest are structural scopes,
+        // which is `module`.
+        kind:
+          keyword === "@mixin"
+            ? ASTEngine.SymbolKind.Function
+            : keyword === "@font-face" || keyword === "@property"
+              ? ASTEngine.SymbolKind.Variable
+              : ASTEngine.SymbolKind.Module,
         range: this.nodeToRange(node),
         scope: keyword === "@include" ? currentSelector : "",
         visibility: "public",
@@ -977,6 +1176,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       return {
         layer: keyword === "@layer" ? ruleName : undefined,
         container: keyword === "@container" ? ruleName : undefined,
+        // A `@scope` prelude is a SELECTOR (`(.a) to (.b)`), not a condition, so
+        // it cannot reuse the media field's name. It is reported as its own
+        // scope so a rule inside it is attributable to the scope that contains
+        // it, which is the whole point of the construct.
+        scope: keyword === "@scope" ? ruleName : undefined,
       }
     }
     return {}
@@ -1011,18 +1215,20 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (propName === "composes") {
       ctx.patterns["CSS Modules (composes)"] = true
       ctx.frameworks["CSS Modules"] = true
-      const valueNodes: Node[] = []
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i)
-        if (c !== null && c.type !== "property_name" && c.type !== ":") {
-          valueNodes.push(c)
-        }
-      }
-      for (let i = 0; i < valueNodes.length; i++) {
-        const val = valueNodes[i]
+      // D9 (2026-09-26). The value collection took every child that is not
+      // `property_name` and not `:`, which INCLUDED the anonymous `;` — so
+      // `.a { composes: b; }` emitted `uses .a -> "b"` and `uses .a -> ";"`. A
+      // semicolon is punctuation, not a name, and it was a fabricated edge in
+      // every CSS-Modules stylesheet in the corpus. The filter is now NAMED
+      // children only, which is what a value is.
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const val = node.namedChild(i)
+        if (!val || val.type === "property_name") continue
+        const target = collapseWhitespace(val.text)
+        if (!target) continue
         ctx.relationships.push({
           source: currentSelector,
-          target: val.text.trim(),
+          target,
           type: ASTEngine.RelationshipType.Uses,
           metadata: { cssSpecific: true, isComposition: true },
         })
