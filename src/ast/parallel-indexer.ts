@@ -1851,8 +1851,8 @@ export async function storeResults(
    // relationship types carry), so the intended target is the candidate written
    // on that line. MEASURED before landing, over the same-file containment edges
    // of the ten pinned heavy repos (record:
-   // validation/m14/controls/containment-612.before.json — the control arm; the
-   // arm after this rule is validation/m14/results/containment-612.json. Those two
+   // validation/m14/measurements/containment-612.before.json — the control arm; the
+   // arm after this rule is validation/m14/measurements/containment-612.json. Those two
    // names, not `M14.0.*`: that namespace belongs to gates that call `emitEvidence`,
    // and a corpus sweep is a measurement, not a gate. Probe contains-line-hint-612;
    // `line pins 1` = the target name repeats AND exactly one same-file candidate
@@ -1886,8 +1886,8 @@ export async function storeResults(
    // after arm's own replay reads 45,419 of its 135,922, 45,498, and the SAME 437
    // and 436 escapes: the escape counts are arm-invariant, which is how the change
    // is separated from the population it moved (records:
-   // validation/m14/controls/containment-old-rule-612.before.json and
-   // validation/m14/results/containment-old-rule-612.json, probe
+   // validation/m14/measurements/containment-old-rule-612.before.json and
+   // validation/m14/measurements/containment-old-rule-612.json, probe
    // contains-old-rule-612, which replays the old ORDER BY against the same
    // candidate sets, so no pre-#612 build has to be resurrected to compare).
    // Every one of the 49,672 edges the line pins (58,048 on the after arm) resolves
@@ -1909,7 +1909,7 @@ export async function storeResults(
    //
    // "On the line" is exact equality of `line_start`, and those 24 rows are a SPAN
    // shape, not a wrong symbol: every one of them was listed and checked against the
-   // source text (record: validation/m14/controls/containment-inner-line-samples-612.json,
+   // source text (record: validation/m14/measurements/containment-inner-line-samples-612.json,
    // probe contains-inner-line-samples-612). In all 24 the edge's line IS a line the
    // name is written on, and the stored span simply OPENS EARLIER — either on the
    // line directly above (17 rows; nlohmann's `lexer::get_decimal_point`, span
@@ -2369,8 +2369,8 @@ export async function storeResults(
                // line / owner name not unique in its file / owner does NOT enclose
                // its child / of those, a covering candidate of the same name
                // exists (records:
-               // validation/m14/controls/containment-owner-span-612.before.json and
-               // validation/m14/results/containment-owner-span-612.json, probe
+               // validation/m14/measurements/containment-owner-span-612.before.json and
+               // validation/m14/measurements/containment-owner-span-612.json, probe
                // contains-owner-span-612):
                //   nlohmann-json cpp  5,621 / 2,024 /  1,661 / 1,156
                //   fmt cpp            1,968 /   840 /    535 /   532
@@ -2875,8 +2875,8 @@ export async function storeResults(
              // here, plus the unique-name cases no name rule can place). The two
              // corpus arms of this rule — the same gauges over all ten repos,
              // before and after — are
-             // validation/m14/controls/containment-612.before.json and
-             // validation/m14/results/containment-612.json (probes
+             // validation/m14/measurements/containment-612.before.json and
+             // validation/m14/measurements/containment-612.json (probes
              // contains-source-hint-612 and contains-source-span-delta-612).
              const relLine =
                typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
