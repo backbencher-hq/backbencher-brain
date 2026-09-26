@@ -47,6 +47,19 @@
  * in the tree. A lane whose closure contains a dirty file is marked `dirty` and can
  * never be cited as re-derivable.
  *
+ * A SNAPSHOT THAT CANNOT BE TAKEN IS NOT A CLEAN SNAPSHOT (measured 2026-09-26, run
+ * `2soo-muhq7d4l`). The `zig` row recorded `dirty: []` while its after-digest hashed the
+ * bytes that were committed sixteen minutes later as `35e80314`, and the NEXT lane's
+ * before-snapshot — three seconds later, over the same paths — named that very file: two
+ * snapshots of one tree, disagreeing, with nothing in the row to say so. The cause is in
+ * the git helper: `spawnSync(...).stdout ?? ""` made a git that FAILED indistinguishable
+ * from a git that printed nothing, so an exit-128 `git status` (index.lock contention, a
+ * killed helper) became "nothing is dirty" — the one sentence this instrument may never
+ * say without evidence. A failed status is now carried BY NAME in the snapshot
+ * (`dirtyUnknown`) and makes the row an `instrument-breach`; the dirty query also covers
+ * the lane's grammar binary, which the digest already hashes (before that, a rebuilt wasm
+ * moved a lane's identity while `dirty` stayed empty).
+ *
  * CITING IT. The state is a working file in $TMPDIR, so no gate may read it; `--emit`
  * writes the cited form to validation/m60/results/oracle-sharpness.json, and it
  * publishes a lane only when that lane's row is a measurement OF THIS TREE — the
@@ -129,7 +142,31 @@ const shaFile = (p: string) => { try { return sha(fs.readFileSync(p)) } catch { 
  * was right, which is why nothing else moved; the message sent a reader to a path that
  * does not exist. Consumers trim what they need.
  */
-const git = (args: string[]) => spawnSync("git", args, { cwd: ROOT, encoding: "utf8" }).stdout ?? ""
+/** A git invocation that says WHETHER IT RAN. `spawnSync(...).stdout ?? ""` collapsed two
+ *  different worlds into one value: a git that failed and a git that printed nothing. A
+ *  status that failed then read as "nothing is dirty", so `fingerprint` could record a
+ *  clean snapshot over bytes no commit holds (the zig row of run `2soo-muhq7d4l`, whose
+ *  after-digest is the content of commit `35e80314` while `dirty` was `[]`). The failure
+ *  is returned by name; the caller decides — and the decision, for a fingerprint, is
+ *  refuse. */
+function gitRun(args: string[]): { stdout: string; failed: string | null } {
+  const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" })
+  if (r.error) return { stdout: "", failed: `spawn failed: ${r.error.message}` }
+  if (r.status !== 0) {
+    const firstErr = ((r.stderr ?? "") as string).trim().split("\n")[0] || "no stderr"
+    return { stdout: r.stdout ?? "", failed: `exit ${r.status}: ${firstErr}` }
+  }
+  return { stdout: r.stdout ?? "", failed: null }
+}
+const git = (args: string[]) => gitRun(args).stdout
+
+/** The paths the dirty query must cover: every source input AND the lane's grammar
+ *  binary. The wasm is part of the digest, so omitting it (the first version did) meant a
+ *  rebuilt binary moved a lane's identity while `dirty` still read empty — the same
+ *  invisible-input class as a failed `git status`. Pure, so `--selftest` can falsify it. */
+export function statusPaths(inputs: string[], wasmRel: string | null): string[] {
+  return wasmRel ? [...inputs, wasmRel] : inputs
+}
 
 /** Porcelain v1 -> paths. The status prefix is two characters plus one space, sliced
  *  (never trimmed) per line; blank lines are an artefact of the trailing newline. */
@@ -175,8 +212,12 @@ function fingerprint(lang: string) {
   const inputs = [...files].map((f) => path.relative(ROOT, f)).sort()
   const digests = inputs.map((rel) => `${rel}:${shaFile(path.join(ROOT, rel))}`)
   if (wasm) digests.push(`wasm/${path.basename(wasm)}:${shaFile(wasm)}`)
-  const dirty = porcelainPaths(git(["status", "--porcelain", "--", ...inputs]))
-  const head = git(["rev-parse", "HEAD"]).trim()
+  const st = gitRun(["status", "--porcelain", "--", ...statusPaths(inputs, wasm ? path.relative(ROOT, wasm) : null)])
+  // HEAD is informational (the identity is the bytes, see above), so a failed rev-parse
+  // is recorded as an absent head and refuses nothing.
+  const headRun = gitRun(["rev-parse", "HEAD"])
+  const head = headRun.failed ? "" : headRun.stdout.trim()
+  const dirty = st.failed ? [] : porcelainPaths(st.stdout)
   return {
     head,
     headShort: head.slice(0, 8),
@@ -184,6 +225,7 @@ function fingerprint(lang: string) {
     digest: sha(digests.join("\n")),
     dirty,
     dirtyInputs: dirty.length,
+    dirtyUnknown: st.failed,
   }
 }
 const fpKey = (f: ReturnType<typeof fingerprint>) => f.digest
@@ -328,6 +370,10 @@ function verdictOf(row: Omit<LaneRow, "verdict">): string {
   // lane at all, so no count derived from it may be read as one (header, CONCURRENCY).
   if (row.parseError) return "instrument-breach"
   if (row.breaches.length) return "instrument-breach"
+  // A dirty list that could not be READ is not an empty dirty list: the digest may be a
+  // measurement of bytes no commit holds, and no provenance was ever sampled. Refused by
+  // name, in the same class as an unreadable log.
+  if (row.measuredAt.dirtyUnknown || (row.after && row.after.dirtyUnknown)) return "instrument-breach"
   if (row.after && fpKey(row.measuredAt) !== fpKey(row.after)) return "tree-moved"
   if (row.repos.length === 0) return "no-output"
   const truth = row.repos.reduce((a, r) => a + r.truth, 0)
@@ -500,6 +546,27 @@ export function emitRefusal(
 }
 
 /**
+ * The cleanliness claim the artefact makes about itself, DERIVED from the rows being published.
+ *
+ * The first version hardcoded `{ clean: true, dirty: [] }`, so it asserted clean sources without
+ * looking at any row: a day when a published row had been measured over a dirty closure would have
+ * shipped a document that claimed its own sources were clean. Nothing about that claim was ever
+ * measured, which is this program's definition of a story. It is computed here instead — from the
+ * rows that actually go into the artefact — and an empty published set is NOT clean, because
+ * "nothing dirty" over "nothing published" is silence, not cleanliness.
+ */
+export function measuredSourcesOf(published: string[], rows: Record<string, any>): { clean: boolean; dirty: string[]; rule: string } {
+  const dirty = [...new Set(published.flatMap((l) => [
+    ...(rows[l]?.measuredAt?.dirty ?? []), ...(rows[l]?.after?.dirty ?? []),
+  ]).filter(Boolean))].sort()
+  return {
+    clean: published.length > 0 && dirty.length === 0,
+    dirty,
+    rule: "git status --porcelain over each lane's import closure (differential + the lane's analyzer + its grammar binary), sampled before and after every lane",
+  }
+}
+
+/**
  * EMIT — the cited form (validation/m60/results/oracle-sharpness.json).
  *
  * What makes a row evidence here is not that it was measured, but that it still
@@ -557,11 +624,7 @@ function emitArtifact(state: any): number {
     commit: git(["rev-parse", "HEAD"]).trim(),
     instrument: "script/m60/verify-oracle-sharpness.ts",
     method: "one `bun script/m14/differential.ts --lang X --sample " + SAMPLE + "` per lane with BB_F5_STRICT=1 BB_F5_SHOW_SAMPLES=1 into a private cold pool; the artefact publishes a lane only when its import closure still has the digest it was measured at and carries no dirty input; a lane whose published rule matched a DIFFERENT qualified target is `hard` and revokes the lane's `diff` cell in M60.LCM (a lane with hard>0 cannot be reported as done), `soft` is a spelling asymmetry and is disclosed, not libelled",
-    measuredSources: {
-      clean: true,
-      dirty: [],
-      rule: "git status --porcelain over each lane's import closure (differential + the lane's analyzer + its grammar binary), sampled before and after every lane",
-    },
+    measuredSources: measuredSourcesOf(Object.keys(rows), state.lanes ?? {}),
     expected: LANE_ORDER.length,
     citable: Object.keys(rows).length,
     complete,
@@ -721,6 +784,17 @@ function selftest(): number {
     /was dirty when measured .*and is still dirty now/.test(emitRefusal("agrees", "d1", "d1", { atMeasurement: ["a.ts"], now: ["b.ts"] }) ?? ""))
   check("emit: a lane that is BOTH moved and dirty reports the move (the stronger statement)",
     /inputs moved/.test(emitRefusal("agrees", "d1", "d2", nowD) ?? ""))
+  // The artefact's self-description must be derived from the rows it publishes: the first version
+  // hardcoded `clean: true`, an assertion about sources nothing had looked at.
+  check("emit: measuredSources is DERIVED — a published row measured over a dirty closure makes it false",
+    measuredSourcesOf(["ruby"], { ruby: { measuredAt: { dirty: ["src/ast/real-ruby-analyzer.ts"] }, after: { dirty: [] } } }).clean === false &&
+    measuredSourcesOf(["ruby"], { ruby: { measuredAt: { dirty: ["src/ast/real-ruby-analyzer.ts"] }, after: { dirty: [] } } }).dirty.includes("src/ast/real-ruby-analyzer.ts"))
+  check("emit: measuredSources is true only when the published rows were all clean",
+    measuredSourcesOf(["ruby"], { ruby: { measuredAt: { dirty: [] }, after: { dirty: [] } } }).clean === true)
+  check("emit: dirty ONCE across the before/after samples",
+    measuredSourcesOf(["ruby"], { ruby: { measuredAt: { dirty: ["a.ts"] }, after: { dirty: ["a.ts"] } } }).dirty.length === 1)
+  check("emit: publishing nothing is not cleanliness (silence is not a clean source)",
+    measuredSourcesOf([], {}).clean === false)
   check("emit: duplicate dirty inputs are named once",
     (emitRefusal("agrees", "d1", "d1", { atMeasurement: ["a.ts", "a.ts"], now: [] }) ?? "").match(/a\.ts/g)?.length === 1)
   // The porcelain reader is part of the instrument because the message it builds is
@@ -733,6 +807,20 @@ function selftest(): number {
     porcelainPaths(" M a.ts\n?? b.ts\n")[0] === "a.ts" && porcelainPaths(" M a.ts\n?? b.ts\n")[1] === "b.ts")
   check("porcelain: a missing trailing newline is not a path", porcelainPaths(" M a.ts").length === 1)
   check("porcelain: an empty status is no paths", porcelainPaths("").length === 0)
+  // A git that FAILS must not read as a clean tree (measured 2026-09-26, run
+  // `2soo-muhq7d4l`): the helper was `.stdout ?? ""`, so an exit-128 `git status` with
+  // empty stdout produced `dirty: []`. The zig row was recorded that way over bytes now
+  // committed as `35e80314` — while the very next lane's snapshot named the dirty file.
+  const deadGit = gitRun(["--git-dir=/nonexistent", "status", "--porcelain"])
+  check("git: a FAILED status is a named failure, not an empty dirty list",
+    deadGit.failed !== null && /exit 128/.test(deadGit.failed ?? "") && porcelainPaths(deadGit.stdout).length === 0)
+  const cleanRow = { repos: [{ truth: 1, hard: 0, soft: 0, hidden: 0 }], measuredAt: { digest: "d1", dirty: [], dirtyInputs: 0, dirtyUnknown: null }, after: null, breaches: [], parseError: null }
+  check("git: a row whose dirty list could not be read is an instrument breach, never `agrees`",
+    verdictOf({ ...cleanRow, measuredAt: { ...cleanRow.measuredAt, dirtyUnknown: "exit 128: fatal: not a git repository" } } as any) === "instrument-breach")
+  check("git: positive control — the same row with the status read is not a breach",
+    verdictOf(cleanRow as any) === "agrees")
+  check("git: the dirty query covers the grammar binary the digest already hashes",
+    statusPaths(["a.ts"], "wasm/x.wasm").includes("wasm/x.wasm") && statusPaths(["a.ts"], null).length === 1)
   // The fingerprint must be a CONTENT identity over the closure, so that a commit
   // anywhere else in the tree cannot invalidate a lane whose inputs are unchanged.
   const jsClosure = closure(DIFFERENTIAL)
