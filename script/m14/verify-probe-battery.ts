@@ -78,10 +78,21 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   // Passing a Set here silently ran the walker without its language branches,
   // i.e. a probe that no longer mirrored the sweep it claims to gate. The
   // dispatch is explicit so a future deriveTreeEdges probe stays honest.
+  // Three oracle signatures, dispatched explicitly so a future probe stays honest
+  // (the note above records what passing the wrong second argument silently did):
+  //   deriveTreeEdges  — (root, languageTag)
+  //   deriveHtmlEdges  — (root, moduleName): the DOCUMENT is the module and the
+  //     containment tree's root is that name, so it takes a string. Handing it
+  //     the `new Set()` every other language oracle gets would type-mismatch at
+  //     runtime into the string "[object Object]" — every document-root `contains`
+  //     row would then source from a name no file has.
+  //   everything else  — (root, typeKinds Set)
   const edges =
     deriveFn === "deriveTreeEdges"
       ? (diff as any)[deriveFn](tree.rootNode, lang)
-      : (diff as any)[deriveFn](tree.rootNode, new Set())
+      : deriveFn === "deriveHtmlEdges"
+        ? (diff as any)[deriveFn](tree.rootNode, "probe")
+        : (diff as any)[deriveFn](tree.rootNode, new Set())
   return new Set(edges.map((e: any) => `${e.label}:${e.target}`))
 }
 
@@ -236,12 +247,111 @@ const HS = (s: string) => s.replace(/^\n/, "")
 const PHP = (s: string) => s.replace(/^\n/, "")
 
 async function main() {
+  const htmlCfg = { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: ".html" }
   const csharpCfg = { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: ".cs" }
   const haskellCfg = { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: ".hs" }
   const phpCfg = { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: ".php" }
   const javaCfg = { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: ".java" }
 
   // ── CSD11: assignment-form target-typed new() ───────────────────────────
+  // ── html (M14 #288) ─────────────────────────────────────────────────────
+  // The F9 battery's job is to assert a contract on BOTH sides at once: the
+  // analyzer must produce it, the independently-written oracle must still
+  // derive it (an oracle that stopped is a blind gate), and the ORACLE MUST NOT
+  // derive anything on the forbidden set (lockstep mirroring a fabrication is
+  // how a lane reports 100/0/0 on a wrong contract). Each html probe below is
+  // one of the classes the missing gates were hiding.
+  const htmlCfgSrc = (body: string) => `<!doctype html>\n<html lang="en">\n<body>\n${body}\n</body>\n</html>\n`
+
+  await probeLang("F9-PROBE-HTML-IDENTITY", "html",
+    "HTML-IDENTITY: an element is a symbol because it is ADDRESSABLE — `id`, or `name` with no `id`. A `class` is a shared styling hook and never an identity, on either side.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <div class="card"><span class="card">shared</span></div>
+  <header id="site-header" class="header bar"><a href="#orders">jump</a></header>
+  <main id="app"><section id="orders"></section>
+    <form id="search" action="/api/search"><label for="q">Q</label><input id="q" name="q"></form>
+  </main>`),
+    ["contains:orders", "uses:/api/search", "uses:q"],
+    ["contains:card", "contains:header bar"])
+
+  await probeLang("F9-PROBE-HTML-SCHEME", "html",
+    "SCHEME CONTRACT: all five javascript: spellings are recognised, including the two entity-obfuscated forms an HTML parser sees as identical to `javascript:` — and a cross-origin or non-resource hyperlink is NOT a code dependency on either side.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <a id="a1" href="javascript:void(0)">1</a>
+  <a id="a2" href="JavaScript:alert(1)">2</a>
+  <a id="a3" href=" javascript:alert(2)">3</a>
+  <a id="a4" href="&#106;avascript:alert(3)">4</a>
+  <a id="a5" href="&#0000106;avascript:alert(4)">5</a>
+  <a id="ext" href="https://example.com/x">ext</a>
+  <a id="mail" href="mailto:a@b.c">mail</a>
+  <a id="tel" href="tel:+15550100">tel</a>
+  <a id="rel" href="/orders">in-project</a>`),
+    // Two things this channel will not let you skip, both found by writing the
+    // obvious form first and watching it not match:
+    //  1. `uses:javascript:` is AMBIGUOUS here and silently unmatchable — a bare
+    //     `label:target` expectation is compared as `e.split(":")[1]`, so the trailing
+    //     colon of the scheme reads as a second separator and the comparison becomes
+    //     `javascript` vs `javascript:`. Only the `label:source->target` form (exact
+    //     string equality) can name a target ending in a colon.
+    //  2. the SOURCE is the `<a>` element, not the document module: each `<a>` here
+    //     carries an `id`, so it is addressable and a resource declared on it belongs
+    //     to its declarer. Naming the module would have been a plausible-looking
+    //     expectation that no output could ever satisfy.
+    ["uses:a1->javascript:", "uses:a2->javascript:", "uses:a3->javascript:", "uses:a4->javascript:", "uses:a5->javascript:", "uses:/orders"],
+    ["uses:https://example.com/x", "uses:mailto:a@b.c", "uses:tel:+15550100", "uses:JavaScript:alert(1)"])
+
+  await probeLang("F9-PROBE-HTML-LINE", "html",
+    "M59.O2 / R6: every edge names the 1-based line it is written on, and a fragment reference resolves to the SYMBOL rather than to the written `#text`.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <header id="site-header">
+    <a href="#orders">jump</a>
+    <img id="logo" src="/a.png" alt="a">
+  </header>
+  <main id="app">
+    <form id="search" action="/api/search"><label for="q">Q</label><input id="q" name="q"></form>
+    <section id="orders"></section>
+  </main>`),
+    ["uses:orders", "uses:/a.png", "uses:/api/search", "uses:q"],
+    ["uses:#orders", "uses:#q"])
+
+  await probeLang("F9-PROBE-HTML-CARRIERS", "html",
+    "RESOURCE TABLE: the carriers the pre-fix branch chain had no arm for — object[data], embed[src], track[src], input[src], iframe[src], source[srcset], SVG use/image href — are derivable truth, not just analyzer output.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <object id="o" data="/assets/o.json"></object>
+  <embed id="e" src="/assets/e.swf">
+  <video id="v"><track id="t" src="/assets/c.vtt"></video>
+  <input id="i" type="image" src="/assets/b.png" alt="b">
+  <iframe id="f" src="/pages/x.html" loading="lazy"></iframe>
+  <picture><source id="s" srcset="/assets/one.webp 1x, /assets/two.webp 2x"></picture>
+  <svg id="g"><use id="u" href="#g"></use><image id="im" href="/assets/h.svg"></image></svg>`),
+    ["uses:/assets/o.json", "uses:/assets/e.swf", "uses:/assets/c.vtt", "uses:/assets/b.png",
+     "uses:/pages/x.html", "uses:/assets/one.webp", "uses:/assets/two.webp", "uses:/assets/h.svg"],
+    ["uses:1x", "uses:2x", "uses:/app/"])
+
+  // NOTE on what this probe can and cannot assert. The battery's edge key is
+  // `label:target` — SOURCE-AGNOSTIC, deliberately, because the coverage match
+  // everywhere in this repo is site-agnostic. So "the fragment belongs to `app`,
+  // not to the template" is NOT expressible here: `contains:frag` is the same key
+  // either way. Asserting it as a forbid (my first attempt) convicts the CORRECT
+  // behaviour. What this channel CAN say is that each fragment element is a
+  // containment target at all, and that a BARE barrier's name never becomes one —
+  // and the source attribution itself is pinned where sources are visible:
+  // html/scope-barriers-and-references (exact `from`/`to` pairs) and CC1's
+  // document-root assertion. Stated rather than silently narrowed.
+  await probeLang("F9-PROBE-HTML-BARRIER", "html",
+    "SCOPE BARRIER: a `<template>`/`<slot>` fragment's element is a containment target of its nearest LIVE ancestor, and a bare barrier's name never becomes a target. Source attribution is pinned by the fixture and CC1 — this channel's key is target-only.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <main id="app">
+    <template><section id="frag">inert</section></template>
+    <template id="own"><p id="inside">own fragment</p></template>
+    <slot name="s"><h2 id="fallback">fallback</h2></slot>
+  </main>`),
+    ["contains:app", "contains:own", "contains:inside", "contains:fallback", "contains:frag"],
+    // A barrier's TAG never becomes a symbol name: only `id` (or `name` with no
+    // `id`) is an identity, and `<slot name="s">` IS addressable by that name, so
+    // the slot's own name legitimately appears — the tag does not.
+    ["contains:template", "contains:slot", "contains:section", "contains:p", "contains:h2"])
+
   await probeLang("F9-PROBE-CSD11", "csharp",
     "assignment-form `_f = new();` emits instantiates via member-type map; declarator + property forms unchanged",
     csharpCfg, "deriveCSharpEdges", CS(`
