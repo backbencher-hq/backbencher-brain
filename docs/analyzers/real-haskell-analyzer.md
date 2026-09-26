@@ -222,3 +222,58 @@ symbol of that file (`pure`, `fmap`, `show`, `rnf`, `parsec`, `pretty`,
 `structure`), which leaves those edges ambiguous to any consumer that resolves
 by name. Scoping local identity (elixir #17 `scope-arity` precedent) is owed
 and requires truth + fixture + F5 oracle + mutants to move in lockstep.
+
+## The site line — dimension 8 / M59.A7 (2026-09-26)
+
+Every relationship now carries `line_number` — the line of the node that
+**names** the target (the callee head for `calls`, the constructed name for
+`instantiates`, the class name for `implements`/`extends`, the imported module
+name for `references`, and for `contains` the **child's own** naming line).
+Two contract halves, clean/erlang's verbatim:
+
+- **The line is part of the dedupe key** (`source|type|target|line`): a call
+  from three lines is three edges. Anchoring on the name-bearing node is not
+  pedantry — the fixture's own file holds two same-named children
+  (`UserId` the newtype @29, `UserId` the Mergeable impl @61, since an instance
+  publishes its impl symbol named after its target type, the universal
+  impl-naming contract), and only the child's own line distinguishes them.
+- **A non-positive line is recorded as absent, never 0** (M59.O2) —
+  `pushRel`'s `hasLine` guard; `lineOf()` returns `undefined` for a node with
+  no position.
+
+**Before/after, same ruler.** `script/m60/lane-surface-audit.ts` (the
+instrument that recorded the pre-round state) over its cabal+hledger 60-file
+draw: **5,240 of 5,240 edges unlined → 0 of 6,235** (`no line: 0 (none)`).
+The delta 5,240 → 6,235 is the per-site expansion: edges that the pre-round
+`source|type|target` key swallowed.
+
+**Full extents** (`script/m14/tmp/hs-line-coverage.ts`, artifacts
+`validation/m14/results/haskell-line-coverage.json` and
+`haskell-line-coverage-cabal.json`):
+
+| Corpus | Files | Edges now | Pre-change (same draw) | Expansion | Worst multi-site group |
+| --- | --- | --- | --- | --- | --- |
+| hledger | 186 (full) | **15,151 lined / 0 unlined** | 12,526 | 2,625 | 40 (`calls`) |
+| cabal | 2,134 (full) | **55,974 lined / 0 unlined** | 46,753 | 9,221 | 186 (`calls`) |
+
+The pre-change column is exact, not an estimate: the old key WAS the collapse
+key, so the pre-round edge count on a fixed draw equals the distinct
+`source|type|target` group count. Both artifacts carry a `beforeAfter` block
+recording this basis, including the live pre-round draw (5,240/5,240) from the
+family sweep.
+
+**Gates.** Fixture `payload-and-complexity`: **12 `line_number` pins + 2
+count pins**, one per anchor shape (import name, child own-line, deriving
+class node, instance class node, superclass head, qualified head, backtick
+infix, record constructor, qualified ctor, guard pair @197/198) — the pair
+pins are pairs precisely because a single-line pin survives a per-set
+regression. `expectRelationshipCount` covers every multi-site group in the
+fixture (`recount→signed` = 2, `Data.User→UserId` = 2), so no group can
+collapse unnoticed. Mutants `haskell/edge-line-absent` (strips every
+`line_number`) and `haskell/edge-line-per-set` (reverts the key to the pre-fix
+`source|type|target`) — **14/14 caught**; per-pin catch evidence in
+`validation/m14/results/haskell-line-mutant-pins.json` (absent fails 12/12
+line pins; per-set fails exactly the two second-site pins + both count pins).
+M12 identity unaffected: **77/77, precision/recall 1.000, earliest failing
+layer `none`** (the line is payload, not identity —
+`validation/m12/results/haskell-differential.json` re-pinned fresh).

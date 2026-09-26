@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "2e5c71e75cb874461acea0bc3a2b48a3142a64a4a84fe2beb4d37312e8cdd6a7",
+        "bytes": 59420
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -252,7 +252,7 @@
         "bytes": 28184
       }
     },
-    "digest": "a5fcaf5f9a95869691890dd3b0f935cfd623882bafea308b45bc820e202ed678",
+    "digest": "3b385b6de8b0ebef87e255cea3599dd72f395624b15a4ae57e98714c342be021",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm",
       "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
@@ -273,7 +273,7 @@
     },
     "Service.hs": {
       "symbols": 25,
-      "relationships": 33
+      "relationships": 34
     }
   },
   "passing": {
@@ -385,11 +385,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:haskell",
-      "wallTimeMs": 55.249923,
-      "userCpuMs": 163.591,
-      "systemCpuMs": 24.111,
-      "peakRssBytes": 273567744,
-      "rssDeltaBytes": 15794176,
+      "wallTimeMs": 83.441536,
+      "userCpuMs": 171.327,
+      "systemCpuMs": 27.328,
+      "peakRssBytes": 265195520,
+      "rssDeltaBytes": 17817600,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
