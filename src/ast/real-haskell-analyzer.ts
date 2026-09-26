@@ -190,6 +190,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // parens heads are invalid Haskell — the grammar itself ERRORs.)
         const grab = (nn: Node) => {
           let cls: string | undefined
+          let clsNode: Node | null = null
           let target: string | undefined
           for (let i = 0; i < nn.namedChildCount; i++) {
             const c = nn.namedChild(i)
@@ -200,20 +201,33 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // or an apply head (class application). Previously the qualified
             // class form emitted NOTHING here even though the data-level
             // deriving path already handled it.
-            if (c.type === "name" || c.type === "qualified") cls = c.text
-            else if (c.type === "apply") {
+            if (c.type === "name" || c.type === "qualified") {
+              cls = c.text
+              clsNode = c
+            } else if (c.type === "apply") {
               const h = c.namedChildCount > 0 ? c.namedChild(0) : null
-              if (h?.text) cls = h.text
+              if (h?.text) {
+                cls = h.text
+                clsNode = h
+              }
             } else if (c.type === "type_patterns") {
               const t2 = this.findNamedChildByType(c, ["name", "constructor"])
               target = t2?.text
             } else if (c.type === "parens") grab(c)
           }
           if (cls && target) {
-            this.pushRel(ctx, target, cls, ASTEngine.RelationshipType.Implements, 1.0, {
-              derived: true,
-              isStandaloneDeriving: true,
-            })
+            this.pushRel(
+              ctx,
+              target,
+              cls,
+              ASTEngine.RelationshipType.Implements,
+              1.0,
+              {
+                derived: true,
+                isStandaloneDeriving: true,
+              },
+              this.lineOf(clsNode),
+            )
           }
         }
         grab(node)
@@ -228,10 +242,18 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // guard) carry a constructor head and previously fabricated
         // `instantiates` from pattern position. Same gate as apply sites.
         if (ctor?.text && ctx.currentFunction && !this.isDataDeclarationPosition(node) && !this.isPatternPosition(node)) {
-          this.pushRel(ctx, ctx.currentFunction, ctor.text, ASTEngine.RelationshipType.Instantiates, 0.9, {
-            haskellSpecific: true,
-            isRecordConstruction: true,
-          })
+          this.pushRel(
+            ctx,
+            ctx.currentFunction,
+            ctor.text,
+            ASTEngine.RelationshipType.Instantiates,
+            0.9,
+            {
+              haskellSpecific: true,
+              isRecordConstruction: true,
+            },
+            this.lineOf(ctor),
+          )
         }
       } else if (node.type === "apply") {
         this.extractApplyCall(node, ctx)
@@ -270,7 +292,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || (s.scope && s.scope !== ctx.currentModule ? s.scope : undefined)
       if (_owner && _owner !== s.name) {
-        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {})
+        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
       }
     }
 
@@ -315,6 +337,19 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Relationship emission (dedupe by source|type|target identity).
   // ==========================================================================
+  // M59.A7 / formula §8 (dimension 8) — the site line, the clean/erlang
+  // contract verbatim:
+  //   * the line is part of the DEDUPE KEY: a function called from three lines
+  //     is three edges at three lines, not one edge at whichever line the walk
+  //     saw first (the store keys its rows the same way, parallel-indexer.ts);
+  //   * the anchor is the NAME-BEARING node — the callee head for a call, the
+  //     constructed name for an `instantiates`, the class name for
+  //     `implements`/`extends`, the imported module name for `references`, and
+  //     the child's OWN naming line for `contains` (#921: it is what resolves
+  //     the intended target among same-named siblings);
+  //   * a line that is not a positive integer is recorded as ABSENT, never as 0
+  //     (M59.O2: the contract is "the site line or NULL" — a fabricated 0 reads
+  //     as "line 0" to every reader downstream).
   private pushRel(
     ctx: HaskellContext,
     source: string,
@@ -322,11 +357,27 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     type: ASTEngine.RelationshipType,
     confidence: number,
     metadata: Record<string, any> = {},
+    line?: number,
   ) {
-    const key = `${source}|${type}|${target}`
+    const hasLine = typeof line === "number" && Number.isInteger(line) && line > 0
+    const key = `${source}|${type}|${target}|${hasLine ? line : ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
-    ctx.relationships.push({ source, target, type, confidence, metadata })
+    ctx.relationships.push({
+      source,
+      target,
+      type,
+      confidence,
+      metadata,
+      ...(hasLine ? { line_number: line as number } : {}),
+    })
+  }
+
+  /** 1-based line of a node, or undefined — never 0 (M59.O2). */
+  private lineOf(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    const line = node.startPosition.row + 1
+    return line > 0 ? line : undefined
   }
 
   // ==========================================================================
@@ -452,7 +503,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processImport(node: Node, ctx: HaskellContext) {
     let isQualified = false
     const items: string[] = []
-    const modulesToImport: { name: string; alias?: string; isHiding?: boolean }[] = []
+    const modulesToImport: { name: string; alias?: string; isHiding?: boolean; node?: Node }[] = []
     let currentIsHiding = this.findChildIndexByText(node, "hiding") !== -1
 
     for (let i = 0; i < node.childCount; i++) {
@@ -467,7 +518,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const lastMod = modulesToImport[modulesToImport.length - 1]
           if (lastMod) lastMod.alias = name
         } else {
-          modulesToImport.push({ name, isHiding: currentIsHiding })
+          modulesToImport.push({ name, isHiding: currentIsHiding, node: child })
         }
       } else if (child.type === "hiding") {
         currentIsHiding = true
@@ -503,9 +554,17 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       // DependsOn for imports — source is the MODULE (FP-family contract:
       // references module -> dep), never the import itself.
-      this.pushRel(ctx, ctx.currentModule || "", mod.name, ASTEngine.RelationshipType.References, 0.9, {
-        isHaskellImport: true,
-      })
+      this.pushRel(
+        ctx,
+        ctx.currentModule || "",
+        mod.name,
+        ASTEngine.RelationshipType.References,
+        0.9,
+        {
+          isHaskellImport: true,
+        },
+        this.lineOf(mod.node),
+      )
 
       if (mod.name.indexOf("Scotty") !== -1) ctx.frameworks["Scotty"] = true
       if (mod.name.indexOf("Servant") !== -1) ctx.frameworks["Servant"] = true
@@ -744,23 +803,41 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const deriving = this.findNamedChildByType(node, ["deriving", "deriving_strategy"])
     if (deriving) {
       const derived: string[] = []
+      // Parallel to `derived`, pushed in lockstep: the CLASS's own node, which is
+      // the name-bearing anchor for this edge (the clean lane's instance rule).
+      const derivedNodes: Node[] = []
       const grab = (nn: Node) => {
         for (let i = 0; i < nn.namedChildCount; i++) {
           const c = nn.namedChild(i)
           if (!c) continue
-          if (c.type === "name") derived.push(c.text)
-          else if (c.type === "qualified") derived.push(c.text)
-          else if (c.type === "apply") {
+          if (c.type === "name") {
+            derived.push(c.text)
+            derivedNodes.push(c)
+          } else if (c.type === "qualified") {
+            derived.push(c.text)
+            derivedNodes.push(c)
+          } else if (c.type === "apply") {
             const h = c.namedChildCount > 0 ? c.namedChild(0) : null
-            if (h?.text) derived.push(h.text)
+            if (h?.text) {
+              derived.push(h.text)
+              derivedNodes.push(h)
+            }
           } else if (c.type === "parens") grab(c)
         }
       }
       const tuple = this.findNamedChildByType(deriving, ["tuple"])
       if (tuple) grab(tuple)
       grab(deriving)
-      for (const dc of derived) {
-        this.pushRel(ctx, name, dc, ASTEngine.RelationshipType.Implements, 1.0, { derived: true })
+      for (let i = 0; i < derived.length; i++) {
+        this.pushRel(
+          ctx,
+          name,
+          derived[i],
+          ASTEngine.RelationshipType.Implements,
+          1.0,
+          { derived: true },
+          this.lineOf(derivedNodes[i]),
+        )
       }
     }
 
@@ -822,6 +899,8 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const context = this.findNamedChildByType(node, ["context"])
     if (context) {
       const superNames = new Set<string>()
+      // class name text -> the node that carried it (the extends anchor).
+      const superNodes = new Map<string, Node>()
       const stack: Node[] = [context]
       while (stack.length > 0) {
         const x = stack.pop()!
@@ -831,12 +910,21 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           while (head && head.type === "apply") head = head.namedChildren[0] ?? null
           if (head && (head.type === "name" || head.type === "constructor" || head.type === "qualified")) {
             superNames.add(head.text)
+            if (!superNodes.has(head.text)) superNodes.set(head.text, head)
           }
         }
         for (const c of x.namedChildren) if (c) stack.push(c)
       }
       for (const sn of superNames) {
-        this.pushRel(ctx, name, sn, ASTEngine.RelationshipType.Extends, 1.0, { isSuperclass: true })
+        this.pushRel(
+          ctx,
+          name,
+          sn,
+          ASTEngine.RelationshipType.Extends,
+          1.0,
+          { isSuperclass: true },
+          this.lineOf(superNodes.get(sn)),
+        )
       }
     }
 
@@ -914,7 +1002,15 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
 
     if (className && targetType) {
-      this.pushRel(ctx, targetType, className, ASTEngine.RelationshipType.Implements, 1.0, { isInstance: true })
+      this.pushRel(
+        ctx,
+        targetType,
+        className,
+        ASTEngine.RelationshipType.Implements,
+        1.0,
+        { isInstance: true },
+        this.lineOf(classNode),
+      )
     }
 
     scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Class })
@@ -937,10 +1033,18 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // node are patterns, never construction sites.
     if (head.type === "constructor" || head.type === "prefix") {
       if (this.isPatternPosition(node)) return
-      this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Instantiates, 0.9, {
-        haskellSpecific: true,
-        isConstructorApplication: true,
-      })
+      this.pushRel(
+        ctx,
+        fn,
+        head.text,
+        ASTEngine.RelationshipType.Instantiates,
+        0.9,
+        {
+          haskellSpecific: true,
+          isConstructorApplication: true,
+        },
+        this.lineOf(head),
+      )
       return
     }
 
@@ -958,19 +1062,35 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const ctor = this.findNamedChildByType(head, ["constructor"])
       if (modText && ctor?.text) {
         if (!this.isPatternPosition(node)) {
-          this.pushRel(ctx, fn, `${modText}.${ctor.text}`, ASTEngine.RelationshipType.Instantiates, 0.9, {
-            haskellSpecific: true,
-            isQualifiedConstructorApplication: true,
-          })
+          this.pushRel(
+            ctx,
+            fn,
+            `${modText}.${ctor.text}`,
+            ASTEngine.RelationshipType.Instantiates,
+            0.9,
+            {
+              haskellSpecific: true,
+              isQualifiedConstructorApplication: true,
+            },
+            this.lineOf(head),
+          )
         }
         return
       }
       const func = this.findNamedChildByType(head, ["variable"])
       if (modText && func?.text) {
-        this.pushRel(ctx, fn, `${modText}.${func.text}`, ASTEngine.RelationshipType.Calls, 0.9, {
-          haskellSpecific: true,
-          isQualifiedCall: true,
-        })
+        this.pushRel(
+          ctx,
+          fn,
+          `${modText}.${func.text}`,
+          ASTEngine.RelationshipType.Calls,
+          0.9,
+          {
+            haskellSpecific: true,
+            isQualifiedCall: true,
+          },
+          this.lineOf(head),
+        )
       }
       return
     }
@@ -980,10 +1100,18 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // variables produce no edge). Self-recursion IS emitted.
     if (head.type === "variable") {
       if (ctx.declaredFunctions.has(head.text)) {
-        this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Calls, 0.9, {
-          haskellSpecific: true,
-          context: "local function call",
-        })
+        this.pushRel(
+          ctx,
+          fn,
+          head.text,
+          ASTEngine.RelationshipType.Calls,
+          0.9,
+          {
+            haskellSpecific: true,
+            context: "local function call",
+          },
+          this.lineOf(head),
+        )
       }
     }
   }
@@ -1047,10 +1175,18 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const fn = ctx.currentFunction
       const target = this.findNamedChildByType(infixId, ["variable"])
       if (fn && target?.text && ctx.declaredFunctions.has(target.text)) {
-        this.pushRel(ctx, fn, target.text, ASTEngine.RelationshipType.Calls, 0.9, {
-          haskellSpecific: true,
-          context: "backtick infix call",
-        })
+        this.pushRel(
+          ctx,
+          fn,
+          target.text,
+          ASTEngine.RelationshipType.Calls,
+          0.9,
+          {
+            haskellSpecific: true,
+            context: "backtick infix call",
+          },
+          this.lineOf(target),
+        )
       }
     } else if (opNode?.text === "$") {
       // `$` application: LHS is the applied function (possibly qualified),
@@ -1062,20 +1198,36 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const c = node.namedChild(i)
           if (!c || c.type === "operator") continue
           if (c.type === "variable" && ctx.declaredFunctions.has(c.text)) {
-            this.pushRel(ctx, fn, c.text, ASTEngine.RelationshipType.Calls, 0.9, {
-              haskellSpecific: true,
-              context: "$ application",
-            })
+            this.pushRel(
+              ctx,
+              fn,
+              c.text,
+              ASTEngine.RelationshipType.Calls,
+              0.9,
+              {
+                haskellSpecific: true,
+                context: "$ application",
+              },
+              this.lineOf(c),
+            )
           } else if (c.type === "qualified") {
             const mod = this.findNamedChildByType(c, ["module"])
             const func = this.findNamedChildByType(c, ["variable"])
             const modText = mod ? this.stripTrailingDot(mod.text) : ""
             if (modText && func?.text) {
-              this.pushRel(ctx, fn, `${modText}.${func.text}`, ASTEngine.RelationshipType.Calls, 0.9, {
-                haskellSpecific: true,
-                isQualifiedCall: true,
-                context: "$ application",
-              })
+              this.pushRel(
+                ctx,
+                fn,
+                `${modText}.${func.text}`,
+                ASTEngine.RelationshipType.Calls,
+                0.9,
+                {
+                  haskellSpecific: true,
+                  isQualifiedCall: true,
+                  context: "$ application",
+                },
+                this.lineOf(c),
+              )
             }
           }
           break
