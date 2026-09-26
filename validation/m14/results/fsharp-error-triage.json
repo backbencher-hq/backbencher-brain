@@ -1,0 +1,2551 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-fsharp-error-triage",
+  "generatedAt": "2026-09-26T02:51:27.437Z",
+  "roots": [
+    "$HOME/fixtures/repositories/fsharp/src"
+  ],
+  "note": "Triage of the ERROR nodes the fsharp census counted (133/497 src files). Two measurements, neither derivable from the census: the construct clusters (ERROR node parent + first token + ancestor path) and the declaration-coverage ratio inside vs outside error regions — the ratio is the evidence, because locals legitimately carry no symbol, so an absolute count would be noise.",
+  "totals": {
+    "files": 497,
+    "filesWithError": 130,
+    "errorNodes": 1387,
+    "missingNodes": 62,
+    "errorLines": 24867,
+    "errorLineSpan": {
+      "median": 4,
+      "p90": 115,
+      "max": 14035,
+      "totalFileLines": 183711
+    },
+    "declInsideError": {
+      "decls": 4071,
+      "withSymbol": 2006
+    },
+    "declOutsideError": {
+      "decls": 57282,
+      "withSymbol": 18091
+    }
+  },
+  "clusters": [
+    {
+      "key": "identifier_pattern :: =",
+      "count": 79,
+      "lines": 94,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckComputationExpressions.fs",
+          "line": 1965,
+          "text": "trivia = { LeadingKeyword = leadingKeyword }) ]"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckComputationExpressions.fs",
+          "line": 1964,
+          "text": "range = mBind"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckComputationExpressions.fs",
+          "line": 1963,
+          "text": "debugPoint = spBind"
+        }
+      ]
+    },
+    {
+      "key": "namespace :: #)",
+      "count": 62,
+      "lines": 140,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 114,
+          "text": "(# \"!0[0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 111,
+          "text": "(# \"!0[0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 108,
+          "text": "(# \"!0[0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0 ...,0"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: :",
+      "count": 47,
+      "lines": 48,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 527,
+          "text": "projectOutputFile: string *"
+        },
+        {
+          "file": "src/Compiler/Symbols/Symbols.fsi",
+          "line": 666,
+          "text": "member Range: range"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 182,
+          "text": "let GetHashCodeTainted (t:Tainted<'T>) = t.PUntaintNoFailure hash"
+        }
+      ]
+    },
+    {
+      "key": "function_or_value_defn :: mutable",
+      "count": 44,
+      "lines": 44,
+      "examples": [
+        {
+          "file": "src/FSharp.Build/Fsc.fs",
+          "line": 97,
+          "text": "let mutable vslcid: string | null = null"
+        },
+        {
+          "file": "src/FSharp.Build/Fsc.fs",
+          "line": 95,
+          "text": "let mutable win32manifest: string | null = null"
+        },
+        {
+          "file": "src/FSharp.Build/Fsc.fs",
+          "line": 94,
+          "text": "let mutable win32res: string | null = null"
+        }
+      ]
+    },
+    {
+      "key": "namespace :: type",
+      "count": 33,
+      "lines": 57,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 36,
+          "text": "type ``[,]``<'T> = (# \"!0[0 ...,0 ...]\" #)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fsi",
+          "line": 401,
+          "text": "type 'T ``[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]`` ="
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fsi",
+          "line": 393,
+          "text": "type 'T ``[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]`` ="
+        }
+      ]
+    },
+    {
+      "key": "application_expression :: ^",
+      "count": 32,
+      "lines": 32,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 5249,
+          "text": "when ^T : float      = (# \"conv.u2\" value  : char #)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 5248,
+          "text": "when ^T : string     = (Char.Parse(castToString value))"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 2755,
+          "text": "when ^T : ^T = (^T : (static member One : ^T) ())"
+        }
+      ]
+    },
+    {
+      "key": "function_or_value_defn :: (#",
+      "count": 29,
+      "lines": 29,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/array2.fs",
+          "line": 26,
+          "text": "let length1 (array: 'T[,]) =  (# \"ldlen.multi 2 0\" array : int #)"
+        },
+        {
+          "file": "src/FSharp.Core/array3.fs",
+          "line": 17,
+          "text": "let length1 (array: 'T[,,]) = (# \"ldlen.multi 3 0\" array : int #)"
+        },
+        {
+          "file": "src/FSharp.Core/local.fs",
+          "line": 90,
+          "text": "let inline arrayZeroCreate (n:int) = (# \"newarr !0\" type ('T) n : 'T array #)"
+        }
+      ]
+    },
+    {
+      "key": "identifier_pattern :: '",
+      "count": 27,
+      "lines": 27,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3759,
+          "text": "| Choice7Of7 of 'T7"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3758,
+          "text": "| Choice6Of7 of 'T6"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3757,
+          "text": "| Choice5Of7 of 'T5"
+        }
+      ]
+    },
+    {
+      "key": "ERROR :: |",
+      "count": 26,
+      "lines": 27,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10144,
+          "text": "| Item.ActivePatternCase _ ->"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10143,
+          "text": "| Item.OtherName _"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10142,
+          "text": "| Item.CustomBuilder _"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: (",
+      "count": 25,
+      "lines": 25,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 538,
+          "text": "| ILModuleReference(projectOutputFile = projectOutputFile) -> projectOutputFile"
+        },
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 537,
+          "text": "| FSharpReference(projectOutputFile = projectOutputFile)"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 182,
+          "text": "let GetHashCodeTainted (t:Tainted<'T>) = t.PUntaintNoFailure hash"
+        }
+      ]
+    },
+    {
+      "key": "function_or_value_defn :: #",
+      "count": 23,
+      "lines": 23,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/nativeptr.fs",
+          "line": 37,
+          "text": "let inline toByRef (address: nativeptr<'T>) : byref<'T> = (# \"\" address : 'T byref  #)"
+        },
+        {
+          "file": "src/FSharp.Core/nativeptr.fs",
+          "line": 33,
+          "text": "let inline toILSigPtr (address: nativeptr<'T>) = (# \"\" address : ilsigptr<'T> #)"
+        },
+        {
+          "file": "src/FSharp.Core/nativeptr.fs",
+          "line": 29,
+          "text": "let inline ofILSigPtr (address: ilsigptr<'T>) = (# \"\" address : nativeptr<'T> #)"
+        }
+      ]
+    },
+    {
+      "key": "union_type_defn :: interface",
+      "count": 22,
+      "lines": 23,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/il.fsi",
+          "line": 1703,
+          "text": "interface ILPreTypeDef"
+        },
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 86,
+          "text": "interface IDisposable"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerImports.fsi",
+          "line": 154,
+          "text": "interface IDisposable"
+        }
+      ]
+    },
+    {
+      "key": "preproc_if :: |",
+      "count": 22,
+      "lines": 47,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 9470,
+          "text": "| _ -> item, minfos"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 9416,
+          "text": "TcMethodApplicationThen cenv env overallTy None tpenv None [] mExprAndTypeArgs mItemIdent methodName ad NeverMutates false [(minfoAfterStati"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 3172,
+          "text": "Expr.Const (TcFieldInit m lit, m, fieldTy)"
+        }
+      ]
+    },
+    {
+      "key": "repeat_pattern :: '",
+      "count": 21,
+      "lines": 21,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3752,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6,'T7> ="
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3752,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6,'T7> ="
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3752,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6,'T7> ="
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: =",
+      "count": 20,
+      "lines": 42,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10263,
+          "text": "let rec loopExpr expr cont : struct (_ * _) ="
+        },
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 538,
+          "text": "| ILModuleReference(projectOutputFile = projectOutputFile) -> projectOutputFile"
+        },
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 537,
+          "text": "| FSharpReference(projectOutputFile = projectOutputFile)"
+        }
+      ]
+    },
+    {
+      "key": "field_initializers :: #",
+      "count": 19,
+      "lines": 19,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/import.fs",
+          "line": 878,
+          "text": "#endif"
+        },
+        {
+          "file": "src/Compiler/Checking/import.fs",
+          "line": 874,
+          "text": "#if !NO_TYPEPROVIDERS"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 815,
+          "text": "#endif"
+        }
+      ]
+    },
+    {
+      "key": "declaration_expression :: )",
+      "count": 18,
+      "lines": 20,
+      "examples": [
+        {
+          "file": "src/Compiler/CodeGen/IlxGen.fs",
+          "line": 9455,
+          "text": "(* ILNativeType.Custom of bytes * string * string * bytes (* GUID, nativeTypeName, custMarshallerName, cookieString *) *)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 5239,
+          "text": "when 'T : int64 = let x = (# \"\" value : int64 #) in x.ToString(null, CultureInfo.InvariantCulture)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 5238,
+          "text": "when 'T : int32 = let x = (# \"\" value : int32 #) in x.ToString(null, CultureInfo.InvariantCulture)"
+        }
+      ]
+    },
+    {
+      "key": "namespace :: )",
+      "count": 18,
+      "lines": 27,
+      "examples": [
+        {
+          "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+          "line": 78,
+          "text": "| DllImportAttribute = (1uL <<< 0)"
+        },
+        {
+          "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+          "line": 66,
+          "text": "| AutoOpenAttribute = (1uL <<< 0)"
+        },
+        {
+          "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+          "line": 11,
+          "text": "| RequireQualifiedAccessAttribute = (1uL <<< 0)"
+        }
+      ]
+    },
+    {
+      "key": "infix_expression :: ]",
+      "count": 17,
+      "lines": 26,
+      "examples": [
+        {
+          "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+          "line": 140,
+          "text": "[<Class>]"
+        },
+        {
+          "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+          "line": 118,
+          "text": "[<Class>]"
+        },
+        {
+          "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+          "line": 102,
+          "text": "[<Class>]"
+        }
+      ]
+    },
+    {
+      "key": "type_name :: )",
+      "count": 17,
+      "lines": 17,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 252,
+          "text": "member Zip: firstSource:QuerySource<'T1> * secondSource:QuerySource<'T2> * resultSelector:('T1 -> 'T2 -> 'Result) -> QuerySource<'Result>"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 243,
+          "text": "member LeftOuterJoin: outerSource:QuerySource<'Outer,'Q> * innerSource:QuerySource<'Inner,'Q> * outerKeySelector:('Outer -> 'Key) * innerKey"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 243,
+          "text": "member LeftOuterJoin: outerSource:QuerySource<'Outer,'Q> * innerSource:QuerySource<'Inner,'Q> * outerKeySelector:('Outer -> 'Key) * innerKey"
+        }
+      ]
+    },
+    {
+      "key": "type_arguments :: and",
+      "count": 15,
+      "lines": 15,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/il.fs",
+          "line": 172,
+          "text": "type LazyOrderedMultiMap<'Key, 'Data when 'Key: equality and 'Key: not null>(keyf: 'Data -> 'Key, lazyItems: InterruptibleLazy<'Data list>)"
+        },
+        {
+          "file": "src/Compiler/Facilities/AsyncMemoize.fs",
+          "line": 182,
+          "text": "when 'TKey: equality and 'TVersion: equality and 'TKey: not null and 'TVersion: not null>"
+        },
+        {
+          "file": "src/Compiler/Facilities/AsyncMemoize.fsi",
+          "line": 43,
+          "text": "when 'TKey: equality and 'TVersion: equality and 'TKey: not null and 'TVersion: not null> ="
+        }
+      ]
+    },
+    {
+      "key": "type_arguments :: when",
+      "count": 15,
+      "lines": 15,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/ilwrite.fs",
+          "line": 365,
+          "text": "type MetadataTable<'T when 'T:not null> ="
+        },
+        {
+          "file": "src/Compiler/SyntaxTree/UnicodeLexing.fs",
+          "line": 21,
+          "text": "member lexbuf.TryGetLocalData<'T when 'T: not null>(key: string) ="
+        },
+        {
+          "file": "src/Compiler/SyntaxTree/UnicodeLexing.fs",
+          "line": 13,
+          "text": "member lexbuf.GetLocalData<'T when 'T: not null>(key: string, initializer) ="
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: #",
+      "count": 15,
+      "lines": 15,
+      "examples": [
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 579,
+          "text": "#endif"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 551,
+          "text": "#endif"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 341,
+          "text": "#endif"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: )",
+      "count": 15,
+      "lines": 25,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 537,
+          "text": "| FSharpReference(projectOutputFile = projectOutputFile)"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 182,
+          "text": "let GetHashCodeTainted (t:Tainted<'T>) = t.PUntaintNoFailure hash"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 180,
+          "text": "t1.PUntaintNoFailure(fun t1 -> t1 === t2.AccessObjectDirectly)"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: >]",
+      "count": 15,
+      "lines": 17,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 418,
+          "text": "member ThenByNullableDescending: source:QuerySource<'T,'Q> * [<ProjectionParameter>] keySelector:('T -> Nullable<'Key>) -> QuerySource<'T,'Q"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 410,
+          "text": "member ThenByNullable: source:QuerySource<'T,'Q> * [<ProjectionParameter>] keySelector:('T -> Nullable<'Key>) -> QuerySource<'T,'Q> when 'Ke"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 402,
+          "text": "member SortByNullableDescending: source:QuerySource<'T,'Q> * [<ProjectionParameter>] keySelector:('T -> Nullable<'Key>) -> QuerySource<'T,'Q"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: (\"",
+      "count": 15,
+      "lines": 15,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 394,
+          "text": "[<CustomOperation(\"sortByNullable\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 387,
+          "text": "[<CustomOperation(\"takeWhile\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 380,
+          "text": "[<CustomOperation(\"take\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: [<",
+      "count": 15,
+      "lines": 15,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 394,
+          "text": "[<CustomOperation(\"sortByNullable\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 387,
+          "text": "[<CustomOperation(\"takeWhile\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 380,
+          "text": "[<CustomOperation(\"take\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        }
+      ]
+    },
+    {
+      "key": "record_fields :: #",
+      "count": 14,
+      "lines": 14,
+      "examples": [
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 576,
+          "text": "#if !NO_TYPEPROVIDERS"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 549,
+          "text": "#if DEBUG"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 338,
+          "text": "#if !NO_TYPEPROVIDERS"
+        }
+      ]
+    },
+    {
+      "key": "application_expression :: [<",
+      "count": 14,
+      "lines": 20,
+      "examples": [
+        {
+          "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+          "line": 139,
+          "text": "/// Additional data for 'argument names in the signature and implementation do not match' diagnostic"
+        },
+        {
+          "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+          "line": 117,
+          "text": "/// Additional data for diagnostics about a field whose declarations differ in signature and implementation"
+        },
+        {
+          "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+          "line": 100,
+          "text": "member DisplayContext: FSharpDisplayContext"
+        }
+      ]
+    },
+    {
+      "key": "curried_spec :: |",
+      "count": 13,
+      "lines": 13,
+      "examples": [
+        {
+          "file": "src/Compiler/DependencyManager/AssemblyResolveHandler.fsi",
+          "line": 15,
+          "text": "new: assemblyProbingPaths: AssemblyResolutionProbe | null -> AssemblyResolveHandler"
+        },
+        {
+          "file": "src/Compiler/DependencyManager/NativeDllResolveHandler.fsi",
+          "line": 15,
+          "text": "new: nativeProbingRoots: NativeResolutionProbe | null -> NativeDllResolveHandler"
+        },
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 283,
+          "text": "val (|Contains|_|): pattern: string -> value: string | null -> unit option"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: |",
+      "count": 12,
+      "lines": 13,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 537,
+          "text": "| FSharpReference(projectOutputFile = projectOutputFile)"
+        },
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 526,
+          "text": "| ILModuleReference of"
+        },
+        {
+          "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+          "line": 518,
+          "text": "| PEReference of getStamp: (unit -> DateTime) * delayedReader: DelayedILModuleReader"
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: ,",
+      "count": 12,
+      "lines": 16,
+      "examples": [
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 170,
+          "text": "Tainted(context, this.Protect(fun value -> box value :?> 'U) range)"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 151,
+          "text": "| Some x -> Some (Tainted(context, x))"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 145,
+          "text": "| NonNull a -> a |> Array.filter filter |> Array.map (fun u -> Tainted(context,u))"
+        }
+      ]
+    },
+    {
+      "key": "compound_type :: [<",
+      "count": 12,
+      "lines": 12,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 418,
+          "text": "member ThenByNullableDescending: source:QuerySource<'T,'Q> * [<ProjectionParameter>] keySelector:('T -> Nullable<'Key>) -> QuerySource<'T,'Q"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 410,
+          "text": "member ThenByNullable: source:QuerySource<'T,'Q> * [<ProjectionParameter>] keySelector:('T -> Nullable<'Key>) -> QuerySource<'T,'Q> when 'Ke"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 402,
+          "text": "member SortByNullableDescending: source:QuerySource<'T,'Q> * [<ProjectionParameter>] keySelector:('T -> Nullable<'Key>) -> QuerySource<'T,'Q"
+        }
+      ]
+    },
+    {
+      "key": "identifier_pattern :: (",
+      "count": 11,
+      "lines": 30,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/CheckDeclarations.fs",
+          "line": 5871,
+          "text": "and [<TailCall>] TcModuleOrNamespaceElementsNonMutRec cenv parent typeNames endm (defsSoFar, env, envAtEnd) (moreDefs: SynModuleDecl list) ("
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 13412,
+          "text": "let finalBinding = TBind(vspec, expr, debugPoint)"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10256,
+          "text": "PropagateThenTcDelayed cenv overallTy env tpenv mWholeExpr (MakeApplicableExprNoFlex cenv expr) exprTy atomicFlag delayed"
+        }
+      ]
+    },
+    {
+      "key": "disjunct_pattern :: >",
+      "count": 11,
+      "lines": 11,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 13426,
+          "text": "|> List.filter (fun pgrbind ->"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10165,
+          "text": "CheckILEventAttributes g einfo.DeclaringTyconRef (einfo.GetCustomAttrs()) mItemIdent |> CommitOperationResult"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10160,
+          "text": "let delTy = einfo.GetDelegateType(cenv.amap, mItem) |> replaceNullnessOfTy KnownWithoutNull"
+        }
+      ]
+    },
+    {
+      "key": "ERROR :: member",
+      "count": 11,
+      "lines": 42,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 243,
+          "text": "member LeftOuterJoin: outerSource:QuerySource<'Outer,'Q> * innerSource:QuerySource<'Inner,'Q> * outerKeySelector:('Outer -> 'Key) * innerKey"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 234,
+          "text": "member GroupJoin: outerSource:QuerySource<'Outer,'Q> * innerSource:QuerySource<'Inner,'Q> * outerKeySelector:('Outer -> 'Key) * innerKeySele"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 226,
+          "text": "member Join: outerSource:QuerySource<'Outer,'Q> * innerSource:QuerySource<'Inner,'Q> * outerKeySelector:('Outer -> 'Key) * innerKeySelector:"
+        }
+      ]
+    },
+    {
+      "key": "typecast_expression :: ^",
+      "count": 11,
+      "lines": 11,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/tasks.fsi",
+          "line": 397,
+          "text": "and ^Awaiter1 :> ICriticalNotifyCompletion"
+        },
+        {
+          "file": "src/FSharp.Core/tasks.fsi",
+          "line": 357,
+          "text": "and ^Awaiter1 :> ICriticalNotifyCompletion"
+        },
+        {
+          "file": "src/FSharp.Core/tasks.fsi",
+          "line": 316,
+          "text": "and ^Awaiter1 :> ICriticalNotifyCompletion"
+        }
+      ]
+    },
+    {
+      "key": "infix_expression :: *",
+      "count": 10,
+      "lines": 10,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/TransparentCompiler.fsi",
+          "line": 195,
+          "text": "useChangeNotifications: bool *"
+        },
+        {
+          "file": "src/Compiler/Utilities/FileSystem.fsi",
+          "line": 403,
+          "text": "static member Create: capacity: int * ?useArrayPool: bool -> ByteBuffer"
+        },
+        {
+          "file": "src/FSharp.Core/async.fsi",
+          "line": 1043,
+          "text": "continuation:('T -> unit) * exceptionContinuation:(ExceptionDispatchInfo -> unit) * cancellationContinuation:(OperationCanceledException -> "
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: '",
+      "count": 9,
+      "lines": 9,
+      "examples": [
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 583,
+          "text": "member AddOrModify: key: 'Key * f: ('Value option -> 'Value) -> Map<'Key, 'Value> when 'Key: comparison"
+        },
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 581,
+          "text": "member AddMany: kvs: KeyValuePair<'Key, 'Value>[] -> Map<'Key, 'Value> when 'Key: comparison"
+        },
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 575,
+          "text": "static member Empty: Map<'Key, 'Value> when 'Key: comparison"
+        }
+      ]
+    },
+    {
+      "key": "typed_pattern :: =",
+      "count": 9,
+      "lines": 18,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 417,
+          "text": "[<CustomOperation(\"thenByNullableDescending\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 409,
+          "text": "[<CustomOperation(\"thenByNullable\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 401,
+          "text": "[<CustomOperation(\"sortByNullableDescending\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        }
+      ]
+    },
+    {
+      "key": "repeat_pattern :: =",
+      "count": 9,
+      "lines": 9,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 417,
+          "text": "[<CustomOperation(\"thenByNullableDescending\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 409,
+          "text": "[<CustomOperation(\"thenByNullable\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 401,
+          "text": "[<CustomOperation(\"sortByNullableDescending\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        }
+      ]
+    },
+    {
+      "key": "ERROR :: *",
+      "count": 9,
+      "lines": 9,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 272,
+          "text": "member MinByNullable: source:QuerySource<'T,'Q> * [<ProjectionParameter>] valueSelector:('T -> Nullable<'Value>) -> Nullable<'Value>"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 261,
+          "text": "member inline SumByNullable: source:QuerySource<'T,'Q> * [<ProjectionParameter>] valueSelector:('T -> Nullable< ^Value >) -> Nullable< ^Valu"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 218,
+          "text": "member GroupValBy<'T,'Key,'Value,'Q> : source:QuerySource<'T,'Q> * [<ProjectionParameter>] resultSelector:('T -> 'Value) * [<ProjectionParam"
+        }
+      ]
+    },
+    {
+      "key": "enum_type_case :: (",
+      "count": 8,
+      "lines": 8,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/il.fs",
+          "line": 1236,
+          "text": "| IsReadOnlyAttribute = (1u <<< 0)"
+        },
+        {
+          "file": "src/Compiler/AbstractIL/il.fsi",
+          "line": 890,
+          "text": "| IsReadOnlyAttribute = (1u <<< 0)"
+        },
+        {
+          "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+          "line": 78,
+          "text": "| DllImportAttribute = (1uL <<< 0)"
+        }
+      ]
+    },
+    {
+      "key": "generic_type :: list",
+      "count": 8,
+      "lines": 8,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/CheckDeclarations.fs",
+          "line": 1051,
+          "text": "type MutRecDefnsPhase2CData = MutRecShape<TyconBindingsPhase2C, PreInitializationGraphEliminationBinding list, MutRecDefnsPhase2DataForModul"
+        },
+        {
+          "file": "src/Compiler/Checking/CheckDeclarations.fs",
+          "line": 1007,
+          "text": "type MutRecDefnsPhase2AData = MutRecShape<TyconBindingsPhase2A, PreCheckingRecursiveBinding list, MutRecDefnsPhase2DataForModule * TcEnv> li"
+        },
+        {
+          "file": "src/Compiler/Checking/CheckDeclarations.fs",
+          "line": 212,
+          "text": "type MutRecDefnsPhase2Info = MutRecShape<MutRecDefnsPhase2InfoForTycon, RecDefnBindingInfo list, MutRecDefnsPhase2DataForModule * TcEnv> lis"
+        }
+      ]
+    },
+    {
+      "key": "namespace :: new",
+      "count": 8,
+      "lines": 20,
+      "examples": [
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 88,
+          "text": "/// Construct a new DependencyProvider with no dynamic load handlers (only for compilation/analysis)"
+        },
+        {
+          "file": "src/Compiler/Service/BackgroundCompiler.fsi",
+          "line": 222,
+          "text": "interface IBackgroundCompiler"
+        },
+        {
+          "file": "src/Compiler/Service/ServiceAssemblyContent.fsi",
+          "line": 82,
+          "text": "interface IAssemblyContentCache"
+        }
+      ]
+    },
+    {
+      "key": "type_argument_constraints :: '",
+      "count": 7,
+      "lines": 7,
+      "examples": [
+        {
+          "file": "src/Compiler/TypedTree/TypeProviders.fs",
+          "line": 223,
+          "text": "let TryTypeMemberNonNull<'T, 'U when 'U : not null and 'U : not struct>(st: Tainted<'T>, fullName, memberName, m, recover: 'U,"
+        },
+        {
+          "file": "src/Compiler/TypedTree/tainted.fsi",
+          "line": 107,
+          "text": "val (|Null|NonNull|): Tainted<('T | null)> -> Choice<unit, Tainted<'T>> when 'T: not null and 'T: not struct"
+        },
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 453,
+          "text": "when 'a: not null and 'a: not struct"
+        }
+      ]
+    },
+    {
+      "key": "identifier_pattern :: <'",
+      "count": 7,
+      "lines": 7,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3767,
+          "text": "abstract Specialize<'T> : unit -> obj"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3752,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6,'T7> ="
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3742,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6> ="
+        }
+      ]
+    },
+    {
+      "key": "attribute_pattern :: type",
+      "count": 7,
+      "lines": 7,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3766,
+          "text": "type FSharpTypeFunc [<DebuggerHidden>] () ="
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3752,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6,'T7> ="
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fs",
+          "line": 3742,
+          "text": "type Choice<'T1,'T2,'T3,'T4,'T5,'T6> ="
+        }
+      ]
+    },
+    {
+      "key": "(root) :: //",
+      "count": 6,
+      "lines": 18666,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+          "line": 1,
+          "text": "// Copyright (c) Microsoft Corporation. All Rights Reserved. See License.txt in the project root for license information."
+        },
+        {
+          "file": "src/Compiler/Checking/CheckRecordSyntaxHelpers.fs",
+          "line": 1,
+          "text": "// Copyright (c) Microsoft Corporation. All Rights Reserved. See License.txt in the project root for license information."
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 1,
+          "text": "// Copyright (c) Microsoft Corporation. All Rights Reserved. See License.txt in the project root for license information."
+        }
+      ]
+    },
+    {
+      "key": "application_expression :: and",
+      "count": 6,
+      "lines": 14,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 12942,
+          "text": "((primaryBinding :: extraBindings), (vspec :: extraValues)), (tpenv, recBindIdx)"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 10147,
+          "text": "// Instance IL event (fake up event-as-value)"
+        },
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 7983,
+          "text": "/// Check a constant expression."
+        }
+      ]
+    },
+    {
+      "key": "prefixed_expression :: :",
+      "count": 6,
+      "lines": 6,
+      "examples": [
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 101,
+          "text": "new:"
+        },
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 98,
+          "text": "new: assemblyProbingPaths: AssemblyResolutionProbe * nativeProbingRoots: NativeResolutionProbe -> DependencyProvider"
+        },
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 95,
+          "text": "new: nativeProbingRoots: NativeResolutionProbe * useResultsCache: bool -> DependencyProvider"
+        }
+      ]
+    },
+    {
+      "key": "repeat_pattern :: \"",
+      "count": 6,
+      "lines": 6,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 394,
+          "text": "[<CustomOperation(\"sortByNullable\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 387,
+          "text": "[<CustomOperation(\"takeWhile\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 380,
+          "text": "[<CustomOperation(\"take\",MaintainsVariableSpace=true,AllowIntoPattern=true)>]"
+        }
+      ]
+    },
+    {
+      "key": "typed_pattern :: \")>]",
+      "count": 6,
+      "lines": 12,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 370,
+          "text": "[<CustomOperation(\"sumBy\")>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 349,
+          "text": "[<CustomOperation(\"nth\")>]"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 342,
+          "text": "[<CustomOperation(\"head\")>]"
+        }
+      ]
+    },
+    {
+      "key": "flexible_type :: \"!",
+      "count": 6,
+      "lines": 6,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 122,
+          "text": "type ilsigptr<'T> = (# \"!0*\" #)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 34,
+          "text": "type ``[]``<'T> = (# \"!0[]\" #)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fsi",
+          "line": 451,
+          "text": "type ilsigptr<'T> = (# \"!0*\" #)"
+        }
+      ]
+    },
+    {
+      "key": "application_expression :: #",
+      "count": 5,
+      "lines": 5,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/CheckDeclarations.fs",
+          "line": 3339,
+          "text": "#endif"
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerImports.fs",
+          "line": 2302,
+          "text": "#endif"
+        },
+        {
+          "file": "src/Compiler/Service/IncrementalBuild.fs",
+          "line": 961,
+          "text": "#endif"
+        }
+      ]
+    },
+    {
+      "key": "preproc_if :: else",
+      "count": 5,
+      "lines": 5,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+          "line": 5194,
+          "text": "if tcref.Deref.IsProvided then TcProvidedTypeApp cenv env tpenv tcref synArgTys m else"
+        },
+        {
+          "file": "src/Compiler/Checking/PostInferenceChecks.fs",
+          "line": 2382,
+          "text": "if tycon.IsProvidedGeneratedTycon then () else"
+        },
+        {
+          "file": "src/Compiler/Symbols/SymbolHelpers.fs",
+          "line": 136,
+          "text": "if tcref.IsProvided then None else"
+        }
+      ]
+    },
+    {
+      "key": "namespace :: *",
+      "count": 5,
+      "lines": 5,
+      "examples": [
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 129,
+          "text": "[<Optional; DefaultParameterValue(\"\")>] fileName: string *"
+        },
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 128,
+          "text": "[<Optional; DefaultParameterValue(\"\")>] mainScriptName: string *"
+        },
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 127,
+          "text": "[<Optional; DefaultParameterValue(\"\")>] implicitIncludeDir: string *"
+        }
+      ]
+    },
+    {
+      "key": "measure_product :: :",
+      "count": 5,
+      "lines": 8,
+      "examples": [
+        {
+          "file": "src/Compiler/TypedTree/tainted.fs",
+          "line": 177,
+          "text": "let Eq (p:Tainted<'T>) (v:'T) = p.PUntaintNoFailure (fun pv -> pv = v)"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fsi",
+          "line": 2714,
+          "text": "static member Cons: head: 'T * tail: 'T list -> 'T list"
+        },
+        {
+          "file": "src/FSharp.Core/prim-types.fsi",
+          "line": 2714,
+          "text": "static member Cons: head: 'T * tail: 'T list -> 'T list"
+        }
+      ]
+    },
+    {
+      "key": "type_name :: :",
+      "count": 5,
+      "lines": 16,
+      "examples": [
+        {
+          "file": "src/Compiler/Utilities/Cancellable.fsi",
+          "line": 72,
+          "text": "when 'Resource :> IDisposable and 'Resource: not struct and 'Resource: not null"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 274,
+          "text": "and 'Value: comparison"
+        },
+        {
+          "file": "src/FSharp.Core/Query.fsi",
+          "line": 264,
+          "text": "and default ^Value: int"
+        }
+      ]
+    },
+    {
+      "key": "type_extension_elements :: :",
+      "count": 5,
+      "lines": 5,
+      "examples": [
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 581,
+          "text": "member AddMany: kvs: KeyValuePair<'Key, 'Value>[] -> Map<'Key, 'Value> when 'Key: comparison"
+        },
+        {
+          "file": "src/Compiler/Utilities/illib.fsi",
+          "line": 575,
+          "text": "static member Empty: Map<'Key, 'Value> when 'Key: comparison"
+        },
+        {
+          "file": "src/FSharp.Core/tasks.fsi",
+          "line": 386,
+          "text": "when ^TaskLike2: (member GetAwaiter: unit -> ^Awaiter2)"
+        }
+      ]
+    }
+  ],
+  "rootClusters": [
+    {
+      "key": "type_arguments :: and",
+      "count": 9,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/il.fs",
+          "line": 172,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Facilities/AsyncMemoize.fs",
+          "line": 182,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "type_arguments :: when",
+      "count": 9,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/ilwrite.fs",
+          "line": 365,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/SyntaxTree/UnicodeLexing.fs",
+          "line": 13,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "preproc_if :: |",
+      "count": 8,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/NicePrint.fs",
+          "line": 2276,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Checking/QuotationTranslator.fs",
+          "line": 1016,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "(root) :: //",
+      "count": 6,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+          "line": 1,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Checking/CheckRecordSyntaxHelpers.fs",
+          "line": 1,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "union_type_defn :: interface",
+      "count": 6,
+      "examples": [
+        {
+          "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+          "line": 86,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Interactive/fsi.fsi",
+          "line": 142,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "record_fields :: #",
+      "count": 6,
+      "examples": [
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fs",
+          "line": 338,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Driver/CompilerConfig.fsi",
+          "line": 410,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "namespace :: )",
+      "count": 4,
+      "examples": [
+        {
+          "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+          "line": 11,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/TypedTree/WellKnownAttribs.fsi",
+          "line": 10,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "identifier_pattern :: =",
+      "count": 3,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/Expressions/CheckSequenceExpressions.fs",
+          "line": 114,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/SyntaxTree/ParseHelpers.fs",
+          "line": 539,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "function_or_value_defn :: mutable",
+      "count": 3,
+      "examples": [
+        {
+          "file": "src/FSharp.Build/Fsc.fs",
+          "line": 23,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Build/Fsi.fs",
+          "line": 26,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "module_defn :: let",
+      "count": 3,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/QueryExtensions.fs",
+          "line": 127,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/array.fs",
+          "line": 835,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "function_or_value_defn :: (#",
+      "count": 3,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/array2.fs",
+          "line": 26,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/array3.fs",
+          "line": 17,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "function_or_value_defn :: res",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/ilreflect.fs",
+          "line": 700,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Interactive/fsi.fs",
+          "line": 379,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "sequential_expression :: |",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/PostInferenceChecks.fs",
+          "line": 947,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/SyntaxTree/LexFilter.fs",
+          "line": 2307,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "field_initializers :: #",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/import.fs",
+          "line": 874,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Driver/ParseAndCheckInputs.fs",
+          "line": 1079,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "curried_spec :: |",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/DependencyManager/AssemblyResolveHandler.fsi",
+          "line": 15,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/DependencyManager/NativeDllResolveHandler.fsi",
+          "line": 15,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "module_defn :: val",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Driver/GraphChecking/Graph.fsi",
+          "line": 23,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/resumable.fsi",
+          "line": 93,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "type_abbrev_defn :: interface",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Facilities/DiagnosticResolutionHints.fsi",
+          "line": 18,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Utilities/QueueList.fsi",
+          "line": 10,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "namespace :: new",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/BackgroundCompiler.fsi",
+          "line": 222,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Service/ServiceAssemblyContent.fsi",
+          "line": 82,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "file :: module",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Service/ServiceErrorResolutionHints.fs",
+          "line": 7,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Utilities/lib.fs",
+          "line": 479,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "preproc_if :: else",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Symbols/SymbolHelpers.fs",
+          "line": 136,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Symbols/Symbols.fs",
+          "line": 820,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "type_argument_constraints :: '",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/TypedTree/TypeProviders.fs",
+          "line": 223,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/option.fsi",
+          "line": 444,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "postfix_type :: .",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Utilities/ImmutableArray.fs",
+          "line": 8,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Utilities/ImmutableArray.fsi",
+          "line": 9,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "anon_type_defn :: static",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Utilities/TaggedCollections.fsi",
+          "line": 74,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/set.fsi",
+          "line": 137,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "preproc_if :: namespace",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/Compiler/Utilities/sformat.fs",
+          "line": 11,
+          "text": ""
+        },
+        {
+          "file": "src/Compiler/Utilities/sformat.fsi",
+          "line": 16,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "type_definition :: type",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/async.fsi",
+          "line": 36,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/fslib-extra-pervasives.fsi",
+          "line": 379,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "flexible_type :: \"!",
+      "count": 2,
+      "examples": [
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fs",
+          "line": 34,
+          "text": ""
+        },
+        {
+          "file": "src/FSharp.Core/prim-types-prelude.fsi",
+          "line": 149,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "anon_type_defn :: let",
+      "count": 1,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/IlxDeltaStreams.fs",
+          "line": 141,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "named_module :: )",
+      "count": 1,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/il.fsi",
+          "line": 890,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "typed_expression :: |",
+      "count": 1,
+      "examples": [
+        {
+          "file": "src/Compiler/AbstractIL/ilread.fs",
+          "line": 229,
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "sequential_expression :: #",
+      "count": 1,
+      "examples": [
+        {
+          "file": "src/Compiler/Checking/AttributeChecking.fs",
+          "line": 677,
+          "text": ""
+        }
+      ]
+    }
+  ],
+  "declByType": {
+    "function_or_value_defn": {
+      "inDecls": 3649,
+      "inSym": 1830,
+      "outDecls": 36223,
+      "outSym": 13334
+    },
+    "member_defn": {
+      "inDecls": 232,
+      "inSym": 60,
+      "outDecls": 12923,
+      "outSym": 768
+    },
+    "type_definition": {
+      "inDecls": 62,
+      "inSym": 0,
+      "outDecls": 3440,
+      "outSym": 0
+    },
+    "exception_definition": {
+      "inDecls": 48,
+      "inSym": 47,
+      "outDecls": 237,
+      "outSym": 234
+    },
+    "union_type_defn": {
+      "inDecls": 38,
+      "inSym": 36,
+      "outDecls": 1324,
+      "outSym": 1164
+    },
+    "anon_type_defn": {
+      "inDecls": 14,
+      "inSym": 10,
+      "outDecls": 985,
+      "outSym": 760
+    },
+    "record_type_defn": {
+      "inDecls": 10,
+      "inSym": 10,
+      "outDecls": 640,
+      "outSym": 566
+    },
+    "module_defn": {
+      "inDecls": 10,
+      "inSym": 10,
+      "outDecls": 665,
+      "outSym": 665
+    },
+    "type_abbrev_defn": {
+      "inDecls": 3,
+      "inSym": 3,
+      "outDecls": 365,
+      "outSym": 307
+    },
+    "value_declaration": {
+      "inDecls": 3,
+      "inSym": 0,
+      "outDecls": 94,
+      "outSym": 0
+    },
+    "additional_constr_defn": {
+      "inDecls": 2,
+      "inSym": 0,
+      "outDecls": 82,
+      "outSym": 0
+    },
+    "named_module": {
+      "inDecls": 0,
+      "inSym": 0,
+      "outDecls": 234,
+      "outSym": 234
+    },
+    "enum_type_defn": {
+      "inDecls": 0,
+      "inSym": 0,
+      "outDecls": 44,
+      "outSym": 36
+    },
+    "delegate_type_defn": {
+      "inDecls": 0,
+      "inSym": 0,
+      "outDecls": 21,
+      "outSym": 20
+    },
+    "interface_type_defn": {
+      "inDecls": 0,
+      "inSym": 0,
+      "outDecls": 5,
+      "outSym": 3
+    }
+  },
+  "filesWithHasError": 133,
+  "lostDeclarations": [
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 964,
+      "type": "function_or_value_defn",
+      "name": "cctorBodyOpt",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 973,
+      "type": "function_or_value_defn",
+      "name": "cctorBody",
+      "context": "declaration_expression<sequential_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 969,
+      "type": "function_or_value_defn",
+      "name": "cctorInitAction",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 900,
+      "type": "function_or_value_defn",
+      "name": "ctorBodyOpt",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 960,
+      "type": "function_or_value_defn",
+      "name": "ctorBody",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 957,
+      "type": "function_or_value_defn",
+      "name": "ctorBody",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 920,
+      "type": "function_or_value_defn",
+      "name": "ctorBody",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 948,
+      "type": "function_or_value_defn",
+      "name": "inheritsExpr",
+      "context": "declaration_expression<declaration_expression<function_or_value_defn"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 936,
+      "type": "function_or_value_defn",
+      "name": "inheritsExpr",
+      "context": "declaration_expression<function_or_value_defn<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 942,
+      "type": "function_or_value_defn",
+      "name": "ldexpr",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 917,
+      "type": "function_or_value_defn",
+      "name": "ctorBody",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 912,
+      "type": "function_or_value_defn",
+      "name": "ctorBody",
+      "context": "declaration_expression<declaration_expression<rule"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 898,
+      "type": "function_or_value_defn",
+      "name": "methodBinds",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 897,
+      "type": "function_or_value_defn",
+      "name": "ctorInitActions",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 896,
+      "type": "function_or_value_defn",
+      "name": "cctorInitActions",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 882,
+      "type": "function_or_value_defn",
+      "name": "binds",
+      "context": "declaration_expression<function_or_value_defn<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 874,
+      "type": "function_or_value_defn",
+      "name": "reps",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 867,
+      "type": "function_or_value_defn",
+      "name": "takenFieldNames",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 824,
+      "type": "function_or_value_defn",
+      "name": "TransDec",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 846,
+      "type": "function_or_value_defn",
+      "name": "binders",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 855,
+      "type": "function_or_value_defn",
+      "name": "isPriorToSuperInit",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 854,
+      "type": "function_or_value_defn",
+      "name": "binder",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 853,
+      "type": "function_or_value_defn",
+      "name": "setExpr",
+      "context": "declaration_expression<declaration_expression<rule"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 852,
+      "type": "function_or_value_defn",
+      "name": "setExpr",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 828,
+      "type": "function_or_value_defn",
+      "name": "binders",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 838,
+      "type": "function_or_value_defn",
+      "name": "isPriorToSuperInit",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 837,
+      "type": "function_or_value_defn",
+      "name": "binder",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 836,
+      "type": "function_or_value_defn",
+      "name": "setExpr",
+      "context": "declaration_expression<declaration_expression<rule"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 835,
+      "type": "function_or_value_defn",
+      "name": "setExpr",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 784,
+      "type": "function_or_value_defn",
+      "name": "TransTrueDec",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 815,
+      "type": "function_or_value_defn",
+      "name": "isPriorToSuperInit",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 814,
+      "type": "function_or_value_defn",
+      "name": "binder",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 810,
+      "type": "function_or_value_defn",
+      "name": "doExpr",
+      "context": "declaration_expression<declaration_expression<rule"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 808,
+      "type": "function_or_value_defn",
+      "name": "doExpr",
+      "context": "declaration_expression<rule<rules"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 801,
+      "type": "function_or_value_defn",
+      "name": "methodBinds",
+      "context": "declaration_expression<declaration_expression<rule"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 799,
+      "type": "function_or_value_defn",
+      "name": "reps",
+      "context": "declaration_expression<declaration_expression<if_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 794,
+      "type": "function_or_value_defn",
+      "name": "reps",
+      "context": "declaration_expression<if_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 789,
+      "type": "function_or_value_defn",
+      "name": "reps",
+      "context": "declaration_expression<function_or_value_defn<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 696,
+      "type": "function_or_value_defn",
+      "name": "TransBind",
+      "context": "declaration_expression<declaration_expression<declaration_expression"
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "line": 775,
+      "type": "function_or_value_defn",
+      "name": "assignExpr",
+      "context": "declaration_expression<declaration_expression<fun_expression"
+    }
+  ],
+  "errorFiles": [
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckExpressions.fs",
+      "errors": 126,
+      "errorLines": 14035,
+      "fileLines": 13649
+    },
+    {
+      "file": "src/FSharp.Core/quotations.fs",
+      "errors": 6,
+      "errorLines": 2982,
+      "fileLines": 2973
+    },
+    {
+      "file": "src/FSharp.Core/prim-types.fs",
+      "errors": 230,
+      "errorLines": 2546,
+      "fileLines": 7356
+    },
+    {
+      "file": "src/Compiler/Checking/CheckIncrementalClasses.fs",
+      "errors": 11,
+      "errorLines": 993,
+      "fileLines": 977
+    },
+    {
+      "file": "src/Compiler/Driver/GraphChecking/FileContentMapping.fs",
+      "errors": 11,
+      "errorLines": 768,
+      "fileLines": 754
+    },
+    {
+      "file": "src/FSharp.Core/seqcore.fs",
+      "errors": 5,
+      "errorLines": 668,
+      "fileLines": 662
+    },
+    {
+      "file": "src/FSharp.Core/Query.fsi",
+      "errors": 147,
+      "errorLines": 653,
+      "fileLines": 451
+    },
+    {
+      "file": "src/Compiler/TypedTree/tainted.fs",
+      "errors": 91,
+      "errorLines": 311,
+      "fileLines": 186
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypedTree.fs",
+      "errors": 10,
+      "errorLines": 241,
+      "fileLines": 6553
+    },
+    {
+      "file": "src/Compiler/Checking/CheckRecordSyntaxHelpers.fs",
+      "errors": 2,
+      "errorLines": 220,
+      "fileLines": 219
+    },
+    {
+      "file": "src/Compiler/Checking/QuotationTranslator.fs",
+      "errors": 4,
+      "errorLines": 166,
+      "fileLines": 1379
+    },
+    {
+      "file": "src/FSharp.Core/prim-types.fsi",
+      "errors": 93,
+      "errorLines": 118,
+      "fileLines": 6276
+    },
+    {
+      "file": "src/FSharp.Core/prim-types-prelude.fs",
+      "errors": 37,
+      "errorLines": 115,
+      "fileLines": 124
+    },
+    {
+      "file": "src/FSharp.Core/async.fsi",
+      "errors": 17,
+      "errorLines": 95,
+      "fileLines": 1587
+    },
+    {
+      "file": "src/FSharp.Core/prim-types-prelude.fsi",
+      "errors": 67,
+      "errorLines": 90,
+      "fileLines": 453
+    },
+    {
+      "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+      "errors": 17,
+      "errorLines": 62,
+      "fileLines": 846
+    },
+    {
+      "file": "src/FSharp.Core/tasks.fsi",
+      "errors": 34,
+      "errorLines": 41,
+      "fileLines": 460
+    },
+    {
+      "file": "src/FSharp.Core/set.fsi",
+      "errors": 6,
+      "errorLines": 38,
+      "fileLines": 959
+    },
+    {
+      "file": "src/FSharp.Core/local.fs",
+      "errors": 7,
+      "errorLines": 35,
+      "fileLines": 1241
+    },
+    {
+      "file": "src/FSharp.Build/Fsc.fs",
+      "errors": 31,
+      "errorLines": 31,
+      "fileLines": 829
+    },
+    {
+      "file": "src/FSharp.Core/option.fs",
+      "errors": 14,
+      "errorLines": 30,
+      "fileLines": 354
+    },
+    {
+      "file": "src/Compiler/Symbols/FSharpDiagnostic.fsi",
+      "errors": 16,
+      "errorLines": 29,
+      "fileLines": 291
+    },
+    {
+      "file": "src/Compiler/Utilities/lib.fs",
+      "errors": 4,
+      "errorLines": 28,
+      "fileLines": 504
+    },
+    {
+      "file": "src/FSharp.Core/list.fs",
+      "errors": 17,
+      "errorLines": 27,
+      "fileLines": 1184
+    },
+    {
+      "file": "src/FSharp.Core/nativeptr.fs",
+      "errors": 22,
+      "errorLines": 22,
+      "fileLines": 85
+    },
+    {
+      "file": "src/Compiler/AbstractIL/IlxDeltaStreams.fs",
+      "errors": 6,
+      "errorLines": 20,
+      "fileLines": 292
+    },
+    {
+      "file": "src/Compiler/Checking/CheckDeclarations.fs",
+      "errors": 15,
+      "errorLines": 19,
+      "fileLines": 6332
+    },
+    {
+      "file": "src/Compiler/Service/ItemKey.fsi",
+      "errors": 5,
+      "errorLines": 19,
+      "fileLines": 26
+    },
+    {
+      "file": "src/Compiler/Utilities/illib.fsi",
+      "errors": 17,
+      "errorLines": 19,
+      "fileLines": 604
+    },
+    {
+      "file": "src/FSharp.Core/seq.fs",
+      "errors": 9,
+      "errorLines": 18,
+      "fileLines": 2134
+    },
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckComputationExpressions.fs",
+      "errors": 17,
+      "errorLines": 17,
+      "fileLines": 3153
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerImports.fs",
+      "errors": 16,
+      "errorLines": 16,
+      "fileLines": 2708
+    },
+    {
+      "file": "src/FSharp.Core/QueryExtensions.fs",
+      "errors": 3,
+      "errorLines": 16,
+      "fileLines": 342
+    },
+    {
+      "file": "src/Compiler/Utilities/Cancellable.fsi",
+      "errors": 4,
+      "errorLines": 15,
+      "fileLines": 79
+    },
+    {
+      "file": "src/FSharp.Core/resumable.fs",
+      "errors": 8,
+      "errorLines": 15,
+      "fileLines": 426
+    },
+    {
+      "file": "src/FSharp.Core/fslib-extra-pervasives.fsi",
+      "errors": 3,
+      "errorLines": 14,
+      "fileLines": 592
+    },
+    {
+      "file": "src/Compiler/DependencyManager/DependencyProvider.fsi",
+      "errors": 11,
+      "errorLines": 12,
+      "fileLines": 150
+    },
+    {
+      "file": "src/Compiler/Checking/Expressions/CheckSequenceExpressions.fs",
+      "errors": 11,
+      "errorLines": 11,
+      "fileLines": 486
+    },
+    {
+      "file": "src/FSharp.Build/Fsi.fs",
+      "errors": 11,
+      "errorLines": 11,
+      "fileLines": 425
+    },
+    {
+      "file": "src/FSharp.Core/seqcore.fsi",
+      "errors": 7,
+      "errorLines": 11,
+      "fileLines": 210
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerConfig.fs",
+      "errors": 10,
+      "errorLines": 10,
+      "fileLines": 1516
+    },
+    {
+      "file": "src/Compiler/Symbols/Symbols.fsi",
+      "errors": 3,
+      "errorLines": 10,
+      "fileLines": 1285
+    },
+    {
+      "file": "src/Compiler/Utilities/lib.fsi",
+      "errors": 7,
+      "errorLines": 10,
+      "fileLines": 322
+    },
+    {
+      "file": "src/Compiler/TypedTree/TypeProviders.fs",
+      "errors": 9,
+      "errorLines": 9,
+      "fileLines": 1457
+    },
+    {
+      "file": "src/Compiler/TypedTree/WellKnownAttribs.fs",
+      "errors": 6,
+      "errorLines": 9,
+      "fileLines": 184
+    },
+    {
+      "file": "src/Compiler/TypedTree/WellKnownAttribs.fsi",
+      "errors": 6,
+      "errorLines": 9,
+      "fileLines": 148
+    },
+    {
+      "file": "src/Compiler/AbstractIL/il.fsi",
+      "errors": 5,
+      "errorLines": 8,
+      "fileLines": 2562
+    },
+    {
+      "file": "src/FSharp.Core/option.fsi",
+      "errors": 8,
+      "errorLines": 8,
+      "fileLines": 969
+    },
+    {
+      "file": "src/Compiler/Driver/CompilerImports.fsi",
+      "errors": 6,
+      "errorLines": 7,
+      "fileLines": 226
+    },
+    {
+      "file": "src/Compiler/Facilities/DiagnosticsLogger.fsi",
+      "errors": 3,
+      "errorLines": 7,
+      "fileLines": 506
+    },
+    {
+      "file": "src/Compiler/Interactive/fsi.fsi",
+      "errors": 5,
+      "errorLines": 7,
+      "fileLines": 439
+    },
+    {
+      "file": "src/Compiler/Utilities/QueueList.fsi",
+      "errors": 3,
+      "errorLines": 7,
+      "fileLines": 59
+    },
+    {
+      "file": "src/Compiler/Utilities/sformat.fsi",
+      "errors": 6,
+      "errorLines": 7,
+      "fileLines": 412
+    },
+    {
+      "file": "src/FSharp.Core/array.fs",
+      "errors": 2,
+      "errorLines": 7,
+      "fileLines": 2955
+    },
+    {
+      "file": "src/Compiler/CodeGen/IlxGen.fs",
+      "errors": 3,
+      "errorLines": 6,
+      "fileLines": 13303
+    },
+    {
+      "file": "src/Compiler/Service/TransparentCompiler.fsi",
+      "errors": 4,
+      "errorLines": 6,
+      "fileLines": 219
+    },
+    {
+      "file": "src/Compiler/TypedTree/tainted.fsi",
+      "errors": 4,
+      "errorLines": 6,
+      "fileLines": 121
+    },
+    {
+      "file": "src/Compiler/Utilities/TaggedCollections.fsi",
+      "errors": 2,
+      "errorLines": 6,
+      "fileLines": 226
+    },
+    {
+      "file": "src/Compiler/Utilities/sformat.fs",
+      "errors": 6,
+      "errorLines": 6,
+      "fileLines": 1672
+    },
+    {
+      "file": "src/fsi/fsimain.fs",
+      "errors": 3,
+      "errorLines": 6,
+      "fileLines": 403
+    }
+  ]
+}
