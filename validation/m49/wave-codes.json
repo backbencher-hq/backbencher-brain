@@ -1,31 +1,77 @@
 {
   "schemaVersion": 1,
-  "purpose": "The wave-code vocabulary M49.G1 enforces over validation/m49/ledger.json. It lives here, as data, because the ledger is an append-only record written by whichever agent closes a review wave: a vocabulary hardcoded inside the gate drifts the moment a wave appends a legitimate code, and the drift shows up as G1 failing on a row no rule forbade (CPP1/RS1/GO1/CS1/Z1 at W13; RB1 at W14). The gate keeps its full strictness — a code outside this registry still fails — and now additionally requires every reviews/ language directory to either own a code or be listed under `unwaved` with a reason, so the next wave must register itself instead of tripping an invisible list.",
+  "purpose": "The wave-code vocabulary M49.G1 enforces over validation/m49/ledger.json. It lives here, as data, because the ledger is an append-only record written by whichever agent closes a review wave: a vocabulary hardcoded inside the gate drifts the moment a wave appends a legitimate code, and the drift shows up as G1 failing on a row no rule forbade (CPP1/RS1/GO1/CS1/Z1 at W13; RB1 at W14). The gate keeps its full strictness \u2014 a code outside this registry still fails \u2014 and now additionally requires every reviews/ language directory to either own a code or be listed under `unwaved` with a reason, so the next wave must register itself instead of tripping an invisible list.",
   "prefixes": {
-    "C": ["c"],
-    "CLJ": ["clojure"],
-    "CPP": ["cpp"],
-    "CS": ["csharp"],
-    "DT": ["dart"],
-    "ELX": ["elixir"],
-    "G": ["scaffold", "groovy"],
-    "GO": ["go"],
-    "J": ["javascript"],
-    "K": ["kotlin"],
-    "OC": ["objc"],
-    "PHP": ["php"],
-    "R": ["scaffold"],
-    "RB": ["ruby"],
-    "RS": ["rust"],
-    "S": ["scala"],
-    "SW": ["swift"],
-    "T": ["typescript"],
-    "V": ["vue"],
-    "X": ["scaffold"],
-    "Z": ["zig"]
+    "C": [
+      "c"
+    ],
+    "CLJ": [
+      "clojure"
+    ],
+    "CPP": [
+      "cpp"
+    ],
+    "CS": [
+      "csharp"
+    ],
+    "DT": [
+      "dart"
+    ],
+    "ELX": [
+      "elixir"
+    ],
+    "G": [
+      "scaffold",
+      "groovy"
+    ],
+    "GO": [
+      "go"
+    ],
+    "J": [
+      "javascript"
+    ],
+    "K": [
+      "kotlin"
+    ],
+    "OC": [
+      "objc"
+    ],
+    "PHP": [
+      "php"
+    ],
+    "R": [
+      "scaffold"
+    ],
+    "RB": [
+      "ruby"
+    ],
+    "RS": [
+      "rust"
+    ],
+    "S": [
+      "scala"
+    ],
+    "SW": [
+      "swift"
+    ],
+    "T": [
+      "typescript"
+    ],
+    "V": [
+      "vue"
+    ],
+    "X": [
+      "scaffold"
+    ],
+    "Z": [
+      "zig"
+    ],
+    "HTML": [
+      "html"
+    ]
   },
   "unwaved": {
-    "convergence": "Cross-language convergence sweep (M49.CONV) — its findings land as waves, not as a per-language ledger row.",
+    "convergence": "Cross-language convergence sweep (M49.CONV) \u2014 its findings land as waves, not as a per-language ledger row.",
     "java": "Java's review waves are registered in script/m14/spec/java-completeness.json (JD codes) plus the onboarding board; the M49 ledger carries no java row, because J2/J4/J5/J6 are JAVASCRIPT (J = javascript above). Recorded here rather than left silent, so the gap is visible in the gate output.",
     "svelte": "Svelte's waves (Sv1/Sv2, M49.W4) close through the web-family folder; no per-language M49 ledger row exists.",
     "systems-family": "Family-level roll-up (closure report + onboarding rows), not a per-language wave.",

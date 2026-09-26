@@ -36,6 +36,14 @@ const EVIDENCE = path.join(ROOT, "validation", "m14", "results", "M14.0.F8.json"
 const CENSUS_FILES = process.argv.includes("--files") ? parseInt(process.argv[process.argv.indexOf("--files") + 1]) : 60
 
 const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
+  // M14 (#288): html joins the census. This gate is the one that finds a node type
+  // the CORPUS actually produces which the analyzer AND the oracle both skip — the
+  // blind-spot class no fixture can see, because a fixture is written from what its
+  // author already knew to write. html's census is what found the five
+  // internal_silent rows and confirmed the twelve handled ones are the whole real
+  // surface. `otp` is the same corpus the F5 lane uses, and both spellings are
+  // declared because `language-detection.ts` routes `.htm` to the same analyzer.
+  html: { wasm: "tree-sitter-html.wasm", ext: [".html", ".htm"], repo: "otp" },
   java: { wasm: "tree-sitter-java.wasm", ext: [".java"], repo: "grails-core" },
   groovy: { wasm: "tree-sitter-groovy.wasm", ext: [".groovy"], repo: "grails-core" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", ext: [".kt"], repo: "Exposed" },

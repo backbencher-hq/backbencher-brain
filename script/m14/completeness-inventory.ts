@@ -419,6 +419,39 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "vue pass (#419)",
   },
+  // M14 (#288): html enters the inventory as INVENTORY-DONE, deliberately NOT
+  // in GATED_LANGS yet. The status ladder is NOT-STARTED / INVENTORY-DONE /
+  // GAPS-CLOSED / CONFORMANT, and a language joins GATED_LANGS when it reaches
+  // CONFORMANT — which means all eight sections are green. html's section A is
+  // complete (19/19 named node types classified in script/m14/spec/
+  // html-completeness.json, with one OPEN GAP), B and D are carried by the eight
+  // fixtures, and E/F/G/H are not yet satisfiable: the differential floors are
+  // measured but unpinned, `docs/analyzers/html.md` does not exist, and CC1 has no
+  // html block. Adding html to GATED_LANGS now would turn `npm run verify` red
+  // for three gates that have not been built yet, which is a different statement
+  // from "html is not ready" — the ladder exists precisely so the difference is
+  // visible. Run it directly with `--lang html` in the meantime.
+  //
+  // `requiredKinds` is `uses` + `contains` and nothing else, because that is what
+  // html HAS: the schema's other types describe OO heritage, and html has no
+  // heritage clause. `parameters` is deliberately absent from `payloads` — an
+  // element is not a callable and there is no honest value to pin, so claiming the
+  // Matrix 1b row would be a fabrication dressed as coverage.
+  html: {
+    id: "html",
+    wasm: "tree-sitter-html.wasm",
+    classification: "html-completeness.json",
+    fixturesDir: "validation/m14/fixtures/html",
+    docs: ["docs/analyzers/html.md", "docs/analyzers/real-html-analyzer.md"],
+    differentialCheck: "differential-html",
+    perfKey: "otp:html",
+    requiredKinds: ["uses", "contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "html/framework-and-scores (addressable-subtree size per symbol)" },
+      visibility: { key: "expectVisibility", pin: "html/framework-and-scores (document scope — html has no private/package)" },
+    },
+    title: "html pass (#419, #288)",
+  },
   svelte: {
     id: "svelte",
     wasm: "tree-sitter-svelte.wasm",
